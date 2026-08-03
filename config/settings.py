@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     litellm_api_key: Optional[str] = None
     gemini_api_key: Optional[str] = None          # TB_GEMINI_API_KEY
     heavy_model: str = "gpt-4o"  # For structural rescheduling
-    light_model: str = "gemini/gemini-1.5-flash"  # For translations, simple QA
+    light_model: str = "gpt-4o-mini"  # For translations, simple QA (16x cheaper than gpt-4o)
     embedding_model: str = "text-embedding-3-small"
     embedding_dimensions: int = 1536
 
