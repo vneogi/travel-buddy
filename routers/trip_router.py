@@ -7,19 +7,12 @@ Implements all API endpoints with the 5 guardrail levers:
 4. Asymmetric Route Switcher
 5. Ad-Injection Weight Lever
 
-Endpoints:
-  POST /api/v1/trip/create - Create a new trip
-  POST /api/v1/trip/event  - Process a trip event (main endpoint)
-  GET  /api/v1/trip/{trip_id} - Get trip state
-  GET  /api/v1/user/{user_id}/status - Get user tier info
-  GET  /api/v1/health - Health check
+All user/trip endpoints require a verified identity (see security.py); the
+authenticated user_id is the source of truth and trip ownership is enforced.
 """
 
-from datetime import datetime, timedelta
-from typing import Optional
-
-from fastapi import APIRouter, HTTPException, status
-from pydantic import BaseModel
+from datetime import timedelta
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from config.settings import settings
 from models.schemas import (
@@ -29,13 +22,12 @@ from models.schemas import (
     TripEventResponse,
     CreateTripRequest,
     CurrentContext,
-    ExecutionControl,
-    NodeStatus,
     EventType,
 )
 from services.database_service import db_service
 from services.cache_service import cache_service
 from agents.state_machine import state_machine
+from security import get_current_user_id, require_trip_owner
 
 router = APIRouter(prefix="/api/v1", tags=["trip"])
 
@@ -46,7 +38,7 @@ router = APIRouter(prefix="/api/v1", tags=["trip"])
 
 @router.get("/health")
 async def health_check():
-    """Health check endpoint."""
+    """Health check endpoint (public)."""
     return {
         "status": "healthy",
         "app": settings.app_name,
@@ -57,9 +49,9 @@ async def health_check():
     }
 
 
-@router.get("/user/{user_id}/status")
-async def get_user_status(user_id: str):
-    """Get user tier information and remaining reroutes."""
+@router.get("/user/status")
+async def get_user_status(user_id: str = Depends(get_current_user_id)):
+    """Get the authenticated user's tier info and remaining reroutes."""
     user = db_service.get_or_create_user(user_id)
     allowed, remaining, max_reroutes = db_service.check_reroute_allowed(user_id)
     return {
@@ -76,12 +68,13 @@ async def get_user_status(user_id: str):
 # ==============================================================================
 
 @router.post("/trip/create")
-async def create_trip(request: CreateTripRequest):
-    """Create a new trip with a sample Dubai itinerary."""
-    # Ensure user exists
-    db_service.get_or_create_user(request.user_id)
+async def create_trip(
+    request: CreateTripRequest,
+    user_id: str = Depends(get_current_user_id),
+):
+    """Create a new trip with a sample Dubai itinerary for the caller."""
+    db_service.get_or_create_user(user_id)
 
-    # Generate a sample Dubai itinerary
     start = request.start_date.replace(hour=9, minute=0, second=0)
     nodes = [
         TripNode(
@@ -133,13 +126,10 @@ async def create_trip(request: CreateTripRequest):
     ]
 
     trip = TripState(
-        user_id=request.user_id,
-        current_context=CurrentContext(
-            mood=request.initial_mood or "exploratory"
-        ),
+        user_id=user_id,
+        current_context=CurrentContext(mood=request.initial_mood or "exploratory"),
         nodes=nodes,
     )
-
     db_service.save_trip(trip)
 
     return {
@@ -152,14 +142,9 @@ async def create_trip(request: CreateTripRequest):
 
 
 @router.get("/trip/{trip_id}")
-async def get_trip(trip_id: str):
-    """Get the current state of a trip."""
-    trip = db_service.get_trip(trip_id)
-    if not trip:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Trip {trip_id} not found",
-        )
+async def get_trip(trip_id: str, user_id: str = Depends(get_current_user_id)):
+    """Get the current state of a trip the caller owns."""
+    trip = require_trip_owner(db_service.get_trip(trip_id), user_id)
     return trip.model_dump(mode="json")
 
 
@@ -168,18 +153,16 @@ async def get_trip(trip_id: str):
 # ==============================================================================
 
 @router.post("/trip/event", response_model=TripEventResponse)
-async def process_trip_event(request: TripEventRequest):
-    """Process a trip event with full guardrail stack.
+async def process_trip_event(
+    request: TripEventRequest,
+    user_id: str = Depends(get_current_user_id),
+):
+    """Process a trip event with the full guardrail stack."""
 
-    Implements all 5 BRD levers in order:
-    1. Reroute Throttle (free tier limit)
-    2. Semantic Cache Check
-    3. Circuit Breaker (handled in state machine)
-    4. Asymmetric Routing (handled in router agent)
-    5. Ad-Injection (handled in hybrid search)
-    """
+    # --- Ownership: authorize before doing any work or consuming quota ---
+    trip = require_trip_owner(db_service.get_trip(request.trip_id), user_id)
 
-    # --- LEVER 1: Reroute Throttle ---
+    # --- LEVER 1: Reroute Throttle (keyed on the authenticated user) ---
     structural_events = {
         EventType.CANCEL_ACTIVITY,
         EventType.SWAP_ACTIVITY,
@@ -190,9 +173,7 @@ async def process_trip_event(request: TripEventRequest):
     }
 
     if request.event_type in structural_events:
-        allowed, remaining, max_reroutes = db_service.check_reroute_allowed(
-            request.user_id
-        )
+        allowed, remaining, max_reroutes = db_service.check_reroute_allowed(user_id)
         if not allowed:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -202,25 +183,11 @@ async def process_trip_event(request: TripEventRequest):
                         f"You've used all {max_reroutes} daily reroutes. "
                         "Upgrade to Pro for 50 reroutes/day, or wait until tomorrow."
                     ),
-                    "upgrade_url": "/api/v1/user/upgrade",
                     "resets_at": "midnight_local",
                 },
             )
 
-    # --- Retrieve Trip State ---
-    trip = db_service.get_trip(request.trip_id)
-    if not trip:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Trip {request.trip_id} not found",
-        )
-
-    # --- LEVER 2: Semantic Cache (handled inside state machine for light requests) ---
-    # --- LEVER 3: Circuit Breaker (handled inside state machine) ---
-    # --- LEVER 4: Asymmetric Routing (handled inside router agent) ---
-    # --- LEVER 5: Ad-Injection (handled inside hybrid search) ---
-
-    # Process through the state machine
+    # Levers 2-5 are handled inside the state machine / router agent / search.
     result = state_machine.process_event(
         trip_state=trip,
         event_type=request.event_type.value,
@@ -229,25 +196,21 @@ async def process_trip_event(request: TripEventRequest):
         preferences=request.preferences,
     )
 
-    # Increment reroute count if structural
     if request.event_type in structural_events and not result["from_cache"]:
-        db_service.increment_reroute_count(request.user_id)
+        db_service.increment_reroute_count(user_id)
 
-    # Save updated trip state
     updated_trip = result["updated_trip_state"]
     db_service.save_trip(updated_trip)
 
-    # Log the event
     db_service.log_event(
-        user_id=request.user_id,
+        user_id=user_id,
         trip_id=request.trip_id,
         event_type=request.event_type.value,
         routing_tier=result["routing_tier_used"],
         from_cache=result["from_cache"],
     )
 
-    # Calculate remaining reroutes
-    _, remaining, _ = db_service.check_reroute_allowed(request.user_id)
+    _, remaining, _ = db_service.check_reroute_allowed(user_id)
 
     return TripEventResponse(
         trip_id=request.trip_id,
@@ -264,17 +227,9 @@ async def process_trip_event(request: TripEventRequest):
 # Utility Endpoints
 # ==============================================================================
 
-@router.post("/user/{user_id}/upgrade")
-async def upgrade_user(user_id: str):
-    """Upgrade user to pro tier."""
-    user = db_service.upgrade_user(user_id)
-    return {
-        "user_id": user.user_id,
-        "tier": user.tier_status.value,
-        "max_daily_reroutes": user.max_daily_reroutes,
-        "message": "Upgraded to Pro! You now have 50 daily reroutes.",
-    }
-
+# NOTE: The old `POST /user/{user_id}/upgrade` endpoint was removed. It granted
+# Pro with no payment and no auth. Tier upgrades now happen only via verified
+# payments (see routers/payment_router.py — fix #2).
 
 @router.get("/venues/search")
 async def search_venues(
@@ -283,6 +238,7 @@ async def search_venues(
     lng: float = 55.2744,
     radius_km: float = 15.0,
     top_k: int = 5,
+    user_id: str = Depends(get_current_user_id),
 ):
     """Search venues using hybrid RAG search."""
     results = db_service.hybrid_venue_search(
@@ -300,8 +256,8 @@ async def search_venues(
 
 
 @router.get("/stats")
-async def get_stats():
-    """Get system statistics."""
+async def get_stats(user_id: str = Depends(get_current_user_id)):
+    """Get system statistics (requires auth — exposes internal analytics)."""
     return {
         "cache": cache_service.get_stats(),
         "events": db_service.get_event_stats(),

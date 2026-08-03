@@ -22,6 +22,11 @@ class Settings(BaseSettings):
     supabase_url: Optional[str] = None
     supabase_key: Optional[str] = None
 
+    # --- Auth (Supabase JWT verification) ---
+    # Project Settings -> API -> JWT Secret. Loaded from TB_SUPABASE_JWT_SECRET.
+    supabase_jwt_secret: Optional[str] = None
+    jwt_audience: str = "authenticated"
+
     # --- Model Gateway (LiteLLM) ---
     litellm_api_key: Optional[str] = None
     heavy_model: str = "gpt-4o"  # For structural rescheduling

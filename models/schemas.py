@@ -112,7 +112,9 @@ class GraphState(TypedDict):
 
 class TripEventRequest(BaseModel):
     """POST /api/v1/trip/event - Incoming user event."""
-    user_id: str
+    # NOTE: user_id is derived from the auth token server-side; any value sent
+    # by the client is ignored. Kept optional only for backward compatibility.
+    user_id: Optional[str] = None
     trip_id: str
     event_type: EventType
     message: str
@@ -133,7 +135,8 @@ class TripEventResponse(BaseModel):
 
 class CreateTripRequest(BaseModel):
     """POST /api/v1/trip/create - Create a new trip."""
-    user_id: str
+    # NOTE: user_id is derived from the auth token server-side; ignored if sent.
+    user_id: Optional[str] = None
     start_date: datetime
     preferences: dict = {}
     initial_mood: Optional[str] = "exploratory"
