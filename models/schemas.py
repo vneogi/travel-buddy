@@ -64,6 +64,7 @@ class TripNode(BaseModel):
     vibe_tags: List[str] = []
     lat: Optional[float] = None
     lng: Optional[float] = None
+    opening_hours: Optional[str] = None  # "HH:MM-HH:MM"; used for re-validation
 
 
 class CurrentContext(BaseModel):
