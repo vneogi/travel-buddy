@@ -406,7 +406,7 @@ class SupabaseService:
 ADDITIONAL_SQL_FUNCTIONS = """
 -- Atomic reroute increment (unconditional; kept for compatibility)
 CREATE OR REPLACE FUNCTION increment_reroute(target_user_id UUID)
-RETURNS INTEGER AS $
+RETURNS INTEGER AS $$
 DECLARE
     new_count INTEGER;
 BEGIN
@@ -417,13 +417,13 @@ BEGIN
     RETURNING daily_reroute_count INTO new_count;
     RETURN new_count;
 END;
-$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 -- Atomic check-and-increment: increments only if under the cap.
 -- Returns the new count, or NULL if the user is already at the limit.
 -- Use this in the throttle path to avoid the check-then-increment race.
 CREATE OR REPLACE FUNCTION consume_reroute(target_user_id UUID)
-RETURNS INTEGER AS $
+RETURNS INTEGER AS $$
 DECLARE
     new_count INTEGER;
 BEGIN
@@ -435,7 +435,7 @@ BEGIN
     RETURNING daily_reroute_count INTO new_count;
     RETURN new_count;  -- NULL when no row updated (over the cap)
 END;
-$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 -- Semantic cache similarity search
 CREATE OR REPLACE FUNCTION check_semantic_cache(
@@ -445,7 +445,7 @@ CREATE OR REPLACE FUNCTION check_semantic_cache(
 RETURNS TABLE (
     cache_id UUID, cached_response_text TEXT,
     similarity_score FLOAT, hit_count INTEGER
-) AS $
+) AS $$
 BEGIN
     RETURN QUERY
     SELECT c.cache_id, c.cached_response_text,
@@ -457,7 +457,7 @@ BEGIN
     ORDER BY similarity_score DESC
     LIMIT 1;
 END;
-$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 """
 
 

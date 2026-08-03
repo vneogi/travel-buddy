@@ -112,14 +112,14 @@ CREATE INDEX idx_event_log_trip ON event_log(trip_id);
 -- Function: Reset daily reroute counts (called by cron)
 -- =============================================================================
 CREATE OR REPLACE FUNCTION reset_daily_reroutes()
-RETURNS void AS $
+RETURNS void AS $$
 BEGIN
     UPDATE user_tiers
     SET daily_reroute_count = 0,
         last_reset_date = CURRENT_DATE
     WHERE last_reset_date < CURRENT_DATE;
 END;
-$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 -- =============================================================================
 -- Function: Hybrid venue search with sponsored boost
@@ -137,7 +137,7 @@ RETURNS TABLE (
     vibe_tags TEXT[], lat DOUBLE PRECISION, lng DOUBLE PRECISION,
     opening_hours TEXT, similarity_score FLOAT, final_score FLOAT,
     distance_km DOUBLE PRECISION
-) AS $
+) AS $$
 BEGIN
     RETURN QUERY
     SELECT
@@ -160,5 +160,5 @@ BEGIN
     ORDER BY final_score DESC
     LIMIT result_limit;
 END;
-$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 """
