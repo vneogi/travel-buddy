@@ -148,6 +148,19 @@ class SupabaseService:
         }).eq("user_id", user_id).execute()
         return self.get_or_create_user(user_id)
 
+    def downgrade_user(self, user_id: str) -> UserTier:
+        """Downgrade a user back to the free tier."""
+        self.client.table("user_tiers").update({
+            "tier_status": "free",
+            "max_daily_reroutes": settings.max_daily_reroutes_free,
+            "updated_at": datetime.utcnow().isoformat(),
+        }).eq("user_id", user_id).execute()
+        return self.get_or_create_user(user_id)
+
+    def get_venue_count(self) -> int:
+        result = self.client.table("venues_rag").select("venue_id", count="exact").execute()
+        return result.count or 0
+
     # =========================================================================
     # Trip State Operations
     # =========================================================================
@@ -215,46 +228,62 @@ class SupabaseService:
 
     def hybrid_venue_search(
         self,
-        query_embedding: List[float],
+        query: Optional[str] = None,
         user_lat: float = 25.1972,
         user_lng: float = 55.2744,
         radius_km: float = None,
         vibe_filter: Optional[List[str]] = None,
+        audience_filter: Optional[List[str]] = None,
         top_k: int = None,
-    ) -> List[Dict]:
+        query_embedding: Optional[List[float]] = None,
+    ) -> List[VenueSearchResult]:
         """Perform hybrid search using the database function.
 
-        Calls the hybrid_venue_search SQL function which handles:
-        - Vector cosine similarity
-        - Distance filtering
-        - Sponsored boost calculation
+        Interface-compatible with the in-memory backend: accepts a text `query`,
+        embeds it, calls the pgvector function, and returns VenueSearchResult
+        objects with coordinates (needed by the scheduler).
         """
+        from services.embedding_service import embedding_service
         if radius_km is None:
             radius_km = settings.transit_radius_km
         if top_k is None:
             top_k = settings.max_venue_results
+        if query_embedding is None:
+            if not query:
+                raise ValueError("hybrid_venue_search needs `query` or `query_embedding`")
+            query_embedding = embedding_service.generate_embedding(query)
 
-        result = self.client.rpc(
-            "hybrid_venue_search",
-            {
-                "query_embedding": query_embedding,
-                "user_lat": user_lat,
-                "user_lng": user_lng,
-                "radius_km": radius_km,
-                "sponsored_boost": settings.sponsored_boost_multiplier,
-                "result_limit": top_k,
-            }
-        ).execute()
+        rows = self.client.rpc("hybrid_venue_search", {
+            "query_embedding": query_embedding,
+            "user_lat": user_lat,
+            "user_lng": user_lng,
+            "radius_km": radius_km,
+            "sponsored_boost": settings.sponsored_boost_multiplier,
+            "result_limit": top_k,
+        }).execute().data or []
 
-        # Apply optional vibe filter on results
-        results = result.data or []
         if vibe_filter:
-            results = [
-                r for r in results
-                if any(tag in r.get("vibe_tags", []) for tag in vibe_filter)
-            ]
+            rows = [r for r in rows
+                    if any(t in (r.get("vibe_tags") or []) for t in vibe_filter)]
 
-        return results[:top_k]
+        results = []
+        for r in rows[:top_k]:
+            venue = VenueRAG(
+                venue_id=str(r.get("venue_id")),
+                name=r.get("name", ""),
+                description=r.get("description", ""),
+                micro_location=r.get("micro_location", ""),
+                lat=r.get("lat", user_lat),
+                lng=r.get("lng", user_lng),
+                vibe_tags=r.get("vibe_tags") or [],
+                opening_hours=r.get("opening_hours", "09:00-23:00"),
+            )
+            results.append(VenueSearchResult(
+                venue=venue,
+                similarity_score=float(r.get("similarity_score", 0.0)),
+                final_score=float(r.get("final_score", 0.0)),
+            ))
+        return results
 
     # =========================================================================
     # Semantic Cache Operations
@@ -375,7 +404,7 @@ class SupabaseService:
 
 
 ADDITIONAL_SQL_FUNCTIONS = """
--- Atomic reroute increment (avoids race conditions)
+-- Atomic reroute increment (unconditional; kept for compatibility)
 CREATE OR REPLACE FUNCTION increment_reroute(target_user_id UUID)
 RETURNS INTEGER AS $
 DECLARE
@@ -390,22 +419,36 @@ BEGIN
 END;
 $ LANGUAGE plpgsql;
 
+-- Atomic check-and-increment: increments only if under the cap.
+-- Returns the new count, or NULL if the user is already at the limit.
+-- Use this in the throttle path to avoid the check-then-increment race.
+CREATE OR REPLACE FUNCTION consume_reroute(target_user_id UUID)
+RETURNS INTEGER AS $
+DECLARE
+    new_count INTEGER;
+BEGIN
+    UPDATE user_tiers
+    SET daily_reroute_count = daily_reroute_count + 1,
+        updated_at = NOW()
+    WHERE user_id = target_user_id
+      AND daily_reroute_count < max_daily_reroutes
+    RETURNING daily_reroute_count INTO new_count;
+    RETURN new_count;  -- NULL when no row updated (over the cap)
+END;
+$ LANGUAGE plpgsql;
+
 -- Semantic cache similarity search
 CREATE OR REPLACE FUNCTION check_semantic_cache(
     query_embedding VECTOR(1536),
     similarity_threshold FLOAT DEFAULT 0.92
 )
 RETURNS TABLE (
-    cache_id UUID,
-    cached_response_text TEXT,
-    similarity_score FLOAT,
-    hit_count INTEGER
+    cache_id UUID, cached_response_text TEXT,
+    similarity_score FLOAT, hit_count INTEGER
 ) AS $
 BEGIN
     RETURN QUERY
-    SELECT
-        c.cache_id,
-        c.cached_response_text,
+    SELECT c.cache_id, c.cached_response_text,
         (1 - (c.query_embedding <=> query_embedding))::FLOAT AS similarity_score,
         c.hit_count
     FROM cached_responses c
