@@ -3,6 +3,8 @@
 
 > **Purpose**: This is the single source of truth for the entire Travel Buddy project.
 > Any AI coding agent, developer, or platform can ingest this document to resume work instantly.
+>
+> **See also**: [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md) for current status, pending tasks, and Flutter integration notes.
 
 ---
 
