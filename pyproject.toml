@@ -1,0 +1,24 @@
+[project]
+name = "travel-buddy"
+version = "0.1.0"
+description = "AI-powered travel companion backend - Dubai MVP"
+requires-python = ">=3.11"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+# Relaxed for MVP — tighten later
+select = ["E", "F", "W"]
+ignore = [
+    "E501",   # line too long (handled by formatter)
+    "F401",   # unused import (common during dev)
+    "E722",   # bare except
+    "W291",   # trailing whitespace
+    "W292",   # no newline at end of file
+    "W293",   # whitespace before ':'
+]
+
+[tool.ruff.format]
+quote-style = "double"
