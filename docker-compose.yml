@@ -1,0 +1,53 @@
+# Travel Buddy MVP - Local Development Stack
+# Run: docker-compose up -d
+# Access: http://localhost:8000/docs
+
+version: '3.8'
+
+services:
+  # FastAPI Application
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - TB_DATABASE_URL=postgresql://postgres:postgres@db:5432/travel_buddy
+      - TB_SUPABASE_URL=${TB_SUPABASE_URL}
+      - TB_SUPABASE_KEY=${TB_SUPABASE_KEY}
+      - TB_LITELLM_API_KEY=${TB_LITELLM_API_KEY}
+      - TB_GOOGLE_MAPS_API_KEY=${TB_GOOGLE_MAPS_API_KEY}
+      - TB_DEBUG=true
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/app  # Hot reload in development
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  # PostgreSQL with pgvector
+  db:
+    image: pgvector/pgvector:pg16
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=travel_buddy
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./models/database.py:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Redis for rate limiting and session cache (optional)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --maxmemory 100mb --maxmemory-policy allkeys-lru
+
+volumes:
+  pgdata:

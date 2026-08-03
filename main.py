@@ -1,0 +1,101 @@
+"""Travel Buddy MVP - FastAPI Application Entry Point
+
+Launch with: uvicorn main:app --reload --port 8000
+Docs available at: http://localhost:8000/docs
+"""
+
+import sys
+import os
+
+# Add project root to path for imports
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from config.settings import settings
+from routers.trip_router import router as trip_router
+from seed_data import seed_venues
+
+# ==============================================================================
+# App Initialization
+# ==============================================================================
+
+app = FastAPI(
+    title=settings.app_name,
+    version=settings.app_version,
+    description=(
+        "AI-powered travel companion backend. Dubai MVP.\n\n"
+        "Features:\n"
+        "- Continuous self-correcting itinerary state loop\n"
+        "- Asymmetric model routing (light vs heavy)\n"
+        "- Semantic caching to minimize LLM costs\n"
+        "- Hybrid RAG search with sponsored boost\n"
+        "- 5-reroute daily throttle for free users\n"
+        "- Circuit breaker for runaway agent loops"
+    ),
+    docs_url="/docs",
+    redoc_url="/redoc",
+)
+
+# CORS middleware for mobile app access
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Restrict in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Register routers
+app.include_router(trip_router)
+
+
+# ==============================================================================
+# Startup Events
+# ==============================================================================
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize the application on startup."""
+    print(f"\n{'='*60}")
+    print(f"  {settings.app_name} v{settings.app_version}")
+    print(f"  Geo-fence: {settings.geo_fence}")
+    print(f"  Debug mode: {settings.debug}")
+    print(f"{'='*60}")
+
+    # Seed venue data
+    venue_count = seed_venues()
+    print(f"  Loaded {venue_count} Dubai venues into RAG store")
+    print(f"  Guardrails active:")
+    print(f"    - Max reroutes (free): {settings.max_daily_reroutes_free}/day")
+    print(f"    - Cache threshold: {settings.semantic_cache_threshold}")
+    print(f"    - Circuit breaker: {settings.max_loop_depth} loops")
+    print(f"    - Sponsored boost: {settings.sponsored_boost_multiplier}")
+    print(f"{'='*60}\n")
+
+
+@app.get("/")
+async def root():
+    """Root endpoint with API info."""
+    return {
+        "app": settings.app_name,
+        "version": settings.app_version,
+        "docs": "/docs",
+        "health": "/api/v1/health",
+        "geo_fence": settings.geo_fence,
+    }
+
+
+# ==============================================================================
+# Run directly
+# ==============================================================================
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "main:app",
+        host=settings.host,
+        port=settings.port,
+        reload=settings.debug,
+    )
