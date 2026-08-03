@@ -29,3 +29,21 @@ def test_trip_ownership_enforced(client):
 def test_free_upgrade_endpoint_removed(client):
     r = client.post("/api/v1/user/u1/upgrade", headers=auth("u1"))
     assert r.status_code in (404, 405)
+
+
+def test_debug_header_cannot_override_real_jwt(client, monkeypatch):
+    """With a JWT secret configured, X-Debug-User-Id must be ignored (401),
+    never trusted. Guards against the auth-bypass regression where debug
+    header was checked BEFORE the JWT secret, allowing anyone to impersonate
+    any user by sending a single header."""
+    import sys
+    settings_module = sys.modules["config.settings"]
+    monkeypatch.setattr(settings_module.settings, "supabase_jwt_secret", "test-secret-value")
+    r = client.get(
+        "/api/v1/user/status",
+        headers={"X-Debug-User-Id": "attacker"},
+    )
+    # The debug header must NOT grant access when a JWT secret is set
+    assert r.status_code == 401, (
+        f"SECURITY BUG: X-Debug-User-Id bypassed JWT auth! Got {r.status_code}"
+    )

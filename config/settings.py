@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     app_name: str = "Travel Buddy AI"
     app_version: str = "0.1.0-mvp"
     geo_fence: str = "dubai_uae"
-    debug: bool = True
+    debug: bool = False  # Fail-closed: prod never trusts debug headers by default
 
     # --- Database (Supabase / PostgreSQL) ---
     database_url: str = "postgresql://localhost:5432/travel_buddy"

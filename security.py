@@ -68,11 +68,9 @@ async def get_current_user_id(
     real tokens. The fallback is refused whenever a JWT secret is configured or
     debug is off, so production always fails closed.
     """
-    # Debug mode: accept X-Debug-User-Id header for testing, even if JWT secret
-    # is configured. This lets tests and local dev work without real tokens.
-    if settings.debug and x_debug_user_id:
-        return x_debug_user_id
-
+    # Real auth takes precedence whenever a JWT secret is configured — the
+    # debug header must NEVER override a verified token, or production is
+    # trivially bypassable via X-Debug-User-Id.
     if settings.supabase_jwt_secret:
         if credentials is None or not credentials.credentials:
             raise HTTPException(
@@ -82,15 +80,18 @@ async def get_current_user_id(
             )
         return _decode_supabase_jwt(credentials.credentials)
 
-    # No JWT secret configured and no debug header.
+    # No JWT secret configured. Dev fallback only (never reachable in prod,
+    # which always has a secret set).
     if settings.debug:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=(
-                "Auth not configured. In debug mode, pass an 'X-Debug-User-Id' "
-                "header, or set TB_SUPABASE_JWT_SECRET to enable real auth."
-            ),
-        )
+        if not x_debug_user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=(
+                    "Auth not configured. In debug mode, pass an 'X-Debug-User-Id' "
+                    "header, or set TB_SUPABASE_JWT_SECRET to enable real auth."
+                ),
+            )
+        return x_debug_user_id
 
     # Misconfigured production: never serve unauthenticated traffic.
     raise HTTPException(
