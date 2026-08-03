@@ -188,7 +188,7 @@ async def process_trip_event(
             )
 
     # Levers 2-5 are handled inside the state machine / router agent / search.
-    result = state_machine.process_event(
+    result = await state_machine.process_event(
         trip_state=trip,
         event_type=request.event_type.value,
         message=request.message,

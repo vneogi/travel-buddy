@@ -27,6 +27,7 @@ from services.database_service import db_service
 from services.cache_service import cache_service
 from services.maps_service import maps_service
 from agents.router_agent import router_agent
+from services.llm_service import llm_service
 
 
 class TripStateMachine:
@@ -39,7 +40,7 @@ class TripStateMachine:
     def __init__(self):
         self.max_loop_depth = settings.max_loop_depth
 
-    def process_event(
+    async def process_event(
         self,
         trip_state: TripState,
         event_type: str,
@@ -47,16 +48,7 @@ class TripStateMachine:
         target_node_id: Optional[str] = None,
         preferences: Optional[dict] = None,
     ) -> Dict:
-        """Process a user event through the state machine.
-
-        Returns a dict with:
-          - updated_trip_state: The modified TripState
-          - response: Text response to user
-          - routing_tier_used: Which model tier was used
-          - from_cache: Whether response came from cache
-          - venues_found: Any venues retrieved from RAG
-        """
-        # Initialize graph state
+        """Process a user event through the state machine."""
         state = {
             "trip_state": trip_state,
             "event_type": event_type,
@@ -70,19 +62,18 @@ class TripStateMachine:
             "response": "",
         }
 
-        # Execute graph nodes in sequence
         state = self._node_classify_intent(state)
         state = self._node_check_cache(state)
 
         if not state["from_cache"]:
             state = self._node_venue_search(state)
-            state = self._node_generate_response(state)
+            state = await self._node_generate_response(state)
             state = self._node_update_state(state)
-            # Store in cache for future hits
-            cache_service.store_response(
-                state["message"],
-                state["response"],
-            )
+            # Only cache LIGHT (informational) responses. A structural/heavy
+            # response describes a one-off mutation and must never be replayed
+            # to a later, semantically-similar query.
+            if state["routing_tier"] == RoutingTier.LIGHT:
+                cache_service.store_response(state["message"], state["response"])
 
         return {
             "updated_trip_state": state["trip_state"],
@@ -167,27 +158,53 @@ class TripStateMachine:
         state["venues_found"] = venues[:3]  # Top 3 per BRD
         return state
 
-    def _node_generate_response(self, state: Dict) -> Dict:
-        """Node 4: Generate response using the appropriate model.
+    async def _node_generate_response(self, state: Dict) -> Dict:
+        """Node 4: Generate the user-facing response.
 
+        Uses the real LLM gateway when a provider key is configured; otherwise
+        falls back to deterministic canned responses (key-free dev mode).
         Includes Lever 3 (Circuit Breaker): tracks loop depth.
         """
-        # Circuit breaker check (Lever 3)
         state["loop_depth"] += 1
         if state["loop_depth"] > self.max_loop_depth:
             state["response"] = self._fallback_response(state)
             return state
+
+        if settings.litellm_api_key or settings.gemini_api_key:
+            try:
+                if state["routing_tier"] == RoutingTier.HEAVY:
+                    venues = [
+                        {
+                            "name": v.venue.name,
+                            "micro_location": v.venue.micro_location,
+                            "vibe_tags": v.venue.vibe_tags,
+                            "lat": v.venue.lat,
+                            "lng": v.venue.lng,
+                        }
+                        for v in state["venues_found"]
+                    ]
+                    state["response"] = await llm_service.generate_itinerary_response(
+                        user_message=state["message"],
+                        trip_state=state["trip_state"].model_dump(mode="json"),
+                        venues_found=venues,
+                        routing_tier="heavy",
+                    )
+                else:
+                    state["response"] = await llm_service.generate_info_response(
+                        state["message"]
+                    )
+                return state
+            except Exception as exc:
+                # Any provider/LLM failure -> deterministic fallback, never 500.
+                print(f"LLM generation failed, using canned fallback: {exc}")
 
         context = {
             "venues_found": state["venues_found"],
             "target_node_id": state.get("target_node_id", ""),
             "trip_state": state["trip_state"].model_dump(mode="json"),
         }
-
         state["response"] = router_agent.generate_response(
-            state["message"],
-            state["routing_tier"],
-            context,
+            state["message"], state["routing_tier"], context
         )
         return state
 
