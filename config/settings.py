@@ -22,8 +22,9 @@ class Settings(BaseSettings):
     supabase_url: Optional[str] = None
     supabase_key: Optional[str] = None
 
-    # --- Auth (JWT from Supabase) ---
-    supabase_jwt_secret: Optional[str] = None  # TB_SUPABASE_JWT_SECRET
+    # --- Auth (Supabase JWT verification) ---
+    # Project Settings -> API -> JWT Secret. Loaded from TB_SUPABASE_JWT_SECRET.
+    supabase_jwt_secret: Optional[str] = None
     jwt_audience: str = "authenticated"
 
     # --- Model Gateway (LiteLLM) ---
@@ -57,14 +58,12 @@ class Settings(BaseSettings):
     google_places_api_key: Optional[str] = None
 
     # --- Payments (Stripe + RevenueCat) ---
-    stripe_secret_key: Optional[str] = None        # TB_STRIPE_SECRET_KEY
-    stripe_webhook_secret: Optional[str] = None     # TB_STRIPE_WEBHOOK_SECRET
-    stripe_price_monthly: Optional[str] = None      # TB_STRIPE_PRICE_MONTHLY (price_...)
-    stripe_price_yearly: Optional[str] = None       # TB_STRIPE_PRICE_YEARLY  (price_...)
-    revenuecat_api_key: Optional[str] = None        # TB_REVENUECAT_API_KEY
-    # The exact string RevenueCat sends in the webhook Authorization header
-    # (Dashboard -> Integrations -> Webhooks -> Authorization header value).
-    revenuecat_webhook_auth: Optional[str] = None   # TB_REVENUECAT_WEBHOOK_AUTH
+    stripe_secret_key: Optional[str] = None
+    stripe_webhook_secret: Optional[str] = None
+    stripe_price_monthly: Optional[str] = None
+    stripe_price_yearly: Optional[str] = None
+    revenuecat_api_key: Optional[str] = None
+    revenuecat_webhook_auth: Optional[str] = None
     checkout_success_url: str = (
         "https://travelbuddy.app/upgrade/success?session_id={CHECKOUT_SESSION_ID}"
     )
@@ -75,6 +74,9 @@ class Settings(BaseSettings):
     transit_radius_km: float = 15.0
     hybrid_search_top_k: int = 10
 
+    # --- CORS ---
+    cors_allowed_origins: str = "*"  # TB_CORS_ALLOWED_ORIGINS (comma-separated for prod)
+
     # --- Server ---
     host: str = "0.0.0.0"
     port: int = 8000
@@ -82,6 +84,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         env_prefix = "TB_"
+        extra = "ignore"
 
 
 # Singleton instance
@@ -89,11 +92,7 @@ settings = Settings()
 
 
 def configure_provider_keys() -> None:
-    """Export provider API keys to the env vars litellm/OpenAI expect.
-
-    litellm resolves credentials per-model from these standard env vars, so we
-    set them once from our TB_-prefixed settings.
-    """
+    """Export provider API keys to the env vars litellm/OpenAI expect."""
     import os
     if settings.litellm_api_key:
         os.environ.setdefault("OPENAI_API_KEY", settings.litellm_api_key)

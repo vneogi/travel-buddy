@@ -15,7 +15,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from config.settings import settings
 from routers.trip_router import router as trip_router
-from routers.payment_router import router as payment_router
+try:
+    from routers.payment_router import router as payment_router
+except ImportError:
+    payment_router = None
 from seed_data import seed_venues
 
 # ==============================================================================
@@ -40,17 +43,23 @@ app = FastAPI(
 )
 
 # CORS middleware for mobile app access
+_origins = [o.strip() for o in settings.cors_allowed_origins.split(",") if o.strip()]
+_allow_all = _origins == ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Restrict in production
-    allow_credentials=True,
+    allow_origins=_origins,
+    # "*" + credentials is an invalid/unsafe combo. The API authenticates via
+    # a Bearer header (not cookies), so credentials aren't needed for "*".
+    allow_credentials=not _allow_all,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # Register routers
 app.include_router(trip_router)
-app.include_router(payment_router)
+if payment_router:
+    app.include_router(payment_router)
 
 
 # ==============================================================================

@@ -66,18 +66,21 @@ class DatabaseService:
         remaining = user.max_daily_reroutes - user.daily_reroute_count
         return (remaining > 0, max(0, remaining), user.max_daily_reroutes)
 
+    def consume_reroute(self, user_id: str):
+        """Atomically reserve one reroute. Returns remaining count, or None if
+        already at the daily cap. (Single-process in-memory: inherently atomic.)"""
+        self.get_or_create_user(user_id)  # applies daily reset
+        data = self._users[user_id]
+        if data["daily_reroute_count"] >= data["max_daily_reroutes"]:
+            return None
+        data["daily_reroute_count"] += 1
+        return data["max_daily_reroutes"] - data["daily_reroute_count"]
+
     def upgrade_user(self, user_id: str) -> UserTier:
         """Upgrade user to pro tier."""
         self.get_or_create_user(user_id)
         self._users[user_id]["tier_status"] = TierStatus.PRO
         self._users[user_id]["max_daily_reroutes"] = settings.max_daily_reroutes_pro
-        return UserTier(**self._users[user_id])
-
-    def downgrade_user(self, user_id: str) -> UserTier:
-        """Downgrade a user back to the free tier."""
-        self.get_or_create_user(user_id)
-        self._users[user_id]["tier_status"] = TierStatus.FREE
-        self._users[user_id]["max_daily_reroutes"] = settings.max_daily_reroutes_free
         return UserTier(**self._users[user_id])
 
     # =========================================================================

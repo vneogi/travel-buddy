@@ -139,6 +139,13 @@ class SupabaseService:
         remaining = user.max_daily_reroutes - user.daily_reroute_count
         return (remaining > 0, max(0, remaining), user.max_daily_reroutes)
 
+    def consume_reroute(self, user_id: str):
+        """Atomically reserve one reroute via the consume_reroute() SQL function.
+        Returns the new count (truthy) if granted, or None if over the cap."""
+        self.get_or_create_user(user_id)  # ensures row exists + daily reset
+        result = self.client.rpc("consume_reroute", {"target_user_id": user_id}).execute()
+        return result.data  # new count, or None when over the limit
+
     def upgrade_user(self, user_id: str) -> UserTier:
         """Upgrade user to pro tier."""
         self.client.table("user_tiers").update({

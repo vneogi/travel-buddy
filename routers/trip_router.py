@@ -173,8 +173,11 @@ async def process_trip_event(
     }
 
     if request.event_type in structural_events:
-        allowed, remaining, max_reroutes = db_service.check_reroute_allowed(user_id)
-        if not allowed:
+        # Atomic reserve -- closes the check-then-increment race. Structural
+        # events are always HEAVY and never served from cache, so reserving
+        # up front never over-charges a cache hit.
+        if db_service.consume_reroute(user_id) is None:
+            _, _, max_reroutes = db_service.check_reroute_allowed(user_id)
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail={
@@ -195,9 +198,6 @@ async def process_trip_event(
         target_node_id=request.target_node_id,
         preferences=request.preferences,
     )
-
-    if request.event_type in structural_events and not result["from_cache"]:
-        db_service.increment_reroute_count(user_id)
 
     updated_trip = result["updated_trip_state"]
     db_service.save_trip(updated_trip)
