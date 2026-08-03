@@ -73,6 +73,13 @@ class DatabaseService:
         self._users[user_id]["max_daily_reroutes"] = settings.max_daily_reroutes_pro
         return UserTier(**self._users[user_id])
 
+    def downgrade_user(self, user_id: str) -> UserTier:
+        """Downgrade a user back to the free tier."""
+        self.get_or_create_user(user_id)
+        self._users[user_id]["tier_status"] = TierStatus.FREE
+        self._users[user_id]["max_daily_reroutes"] = settings.max_daily_reroutes_free
+        return UserTier(**self._users[user_id])
+
     # =========================================================================
     # Trip State Operations
     # =========================================================================

@@ -15,6 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from config.settings import settings
 from routers.trip_router import router as trip_router
+from routers.payment_router import router as payment_router
 from seed_data import seed_venues
 
 # ==============================================================================
@@ -49,6 +50,7 @@ app.add_middleware(
 
 # Register routers
 app.include_router(trip_router)
+app.include_router(payment_router)
 
 
 # ==============================================================================

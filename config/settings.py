@@ -56,6 +56,20 @@ class Settings(BaseSettings):
     google_maps_api_key: Optional[str] = None
     google_places_api_key: Optional[str] = None
 
+    # --- Payments (Stripe + RevenueCat) ---
+    stripe_secret_key: Optional[str] = None        # TB_STRIPE_SECRET_KEY
+    stripe_webhook_secret: Optional[str] = None     # TB_STRIPE_WEBHOOK_SECRET
+    stripe_price_monthly: Optional[str] = None      # TB_STRIPE_PRICE_MONTHLY (price_...)
+    stripe_price_yearly: Optional[str] = None       # TB_STRIPE_PRICE_YEARLY  (price_...)
+    revenuecat_api_key: Optional[str] = None        # TB_REVENUECAT_API_KEY
+    # The exact string RevenueCat sends in the webhook Authorization header
+    # (Dashboard -> Integrations -> Webhooks -> Authorization header value).
+    revenuecat_webhook_auth: Optional[str] = None   # TB_REVENUECAT_WEBHOOK_AUTH
+    checkout_success_url: str = (
+        "https://travelbuddy.app/upgrade/success?session_id={CHECKOUT_SESSION_ID}"
+    )
+    checkout_cancel_url: str = "https://travelbuddy.app/upgrade/cancel"
+
     # --- RAG Pipeline ---
     max_venue_results: int = 5
     transit_radius_km: float = 15.0
