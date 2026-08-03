@@ -22,7 +22,7 @@ import json
 import time
 from typing import AsyncGenerator, Dict, List, Optional, Tuple
 
-from config.settings import settings, configure_provider_keys
+from config.settings import settings
 
 
 class LLMService:
@@ -39,10 +39,9 @@ class LLMService:
 
     # Fallback chains
     HEAVY_FALLBACK = ["gpt-4o", "claude-3-5-sonnet-20241022", "gemini/gemini-1.5-pro"]
-    LIGHT_FALLBACK = ["gemini/gemini-1.5-flash", "gpt-4o-mini"]
+    LIGHT_FALLBACK = ["gpt-4o-mini"]
 
     def __init__(self):
-        configure_provider_keys()
         self.heavy_model = settings.heavy_model
         self.light_model = settings.light_model
         self.embedding_model = settings.embedding_model
