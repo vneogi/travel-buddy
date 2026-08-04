@@ -162,7 +162,8 @@ class WeatherService:
             raw = response.json()
 
         forecasts = []
-        for item in raw.get("list", [])  # already limited by cnt param; return all fetched blocks:
+        # Already limited by cnt param; return all fetched blocks.
+        for item in raw.get("list", []):
             forecasts.append({
                 "datetime": item["dt_txt"],
                 "temp_c": item["main"]["temp"],
