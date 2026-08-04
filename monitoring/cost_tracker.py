@@ -1,5 +1,10 @@
 """Travel Buddy MVP - Cost Monitoring & Analytics
 
+⚠️  STATUS: SCAFFOLDED — NOT WIRED INTO THE REQUEST PATH.
+    This module is not imported by any router/agent/main.py.
+    Cost data is not surfaced by any endpoint (/stats reports
+    cache/event counts from db_service, not cost).
+
 Tracks LLM token usage, API costs, and user-level attribution.
 Provides:
   - Real-time cost dashboards
@@ -70,6 +75,8 @@ class CostEvent:
 class CostTracker:
     """Tracks and analyzes costs across the system."""
 
+    MAX_EVENTS = 10_000  # Cap to prevent unbounded memory growth
+
     def __init__(self):
         self._events: List[CostEvent] = []
         self._daily_budget_usd = 50.0  # Alert threshold
@@ -100,6 +107,10 @@ class CostTracker:
             tokens_used=input_tokens + output_tokens,
         ))
 
+        # Rotate: keep only recent events to prevent memory leak
+        if len(self._events) > self.MAX_EVENTS:
+            cutoff = datetime.utcnow() - timedelta(days=2)
+            self._events = [e for e in self._events if e.timestamp > cutoff]
         self._check_budget_alert()
         return total_cost
 
@@ -233,15 +244,16 @@ class CostTracker:
         self._daily_budget_usd = budget_usd
 
     def _check_budget_alert(self) -> None:
-        """Check if daily budget is exceeded."""
-        summary = self.get_daily_summary()
-        if summary["total_cost_usd"] >= self._daily_budget_usd * 0.8:
+        """Check if daily budget is exceeded (efficient: today's events only)."""
+        today = datetime.utcnow().date()
+        daily_cost = sum(e.cost_usd for e in self._events if e.timestamp.date() == today)
+        if daily_cost >= self._daily_budget_usd * 0.8:
             # 80% threshold warning
             for callback in self._alert_callbacks:
                 callback({
                     "type": "budget_warning",
-                    "utilization": summary["budget_utilization"],
-                    "cost": summary["total_cost_usd"],
+                    "utilization": daily_cost / self._daily_budget_usd,
+                    "cost": daily_cost,
                     "budget": self._daily_budget_usd,
                 })
 

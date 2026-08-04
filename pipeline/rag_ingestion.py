@@ -1,5 +1,11 @@
 """Travel Buddy MVP - RAG Ingestion Pipeline
 
+⚠️  STATUS: SCAFFOLDED — NOT WIRED INTO THE REQUEST PATH.
+    This module is dead code in the current MVP. Venues come from
+    seed_data.py (in-memory) or seed_supabase.py (Supabase).
+    The scraping targets (TimeOut, Reddit) have ToS/legal exposure
+    that must be cleared before running this for real.
+
 The "Local Vibe" Engine (BRD Section 3).
 Transforms unstructured local web data into searchable vector embeddings.
 

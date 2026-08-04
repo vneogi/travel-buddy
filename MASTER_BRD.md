@@ -65,7 +65,7 @@ travel-buddy/
 │   ├── cache_service.py             # Semantic cache (Lever 2, cosine 0.92)
 │   ├── maps_service.py              # Synthetic distance + check_venue_open()
 │   ├── google_maps_real.py          # PRODUCTION: Real Distance Matrix + Places
-│   ├── weather_service.py           # PRODUCTION: OpenWeatherMap + Dubai alerts
+│   ├── weather_service.py           # SCAFFOLDED: OpenWeatherMap (not wired into request path)
 │   ├── payment_service.py           # RevenueCat + Stripe (real integration)
 │   └── scheduler.py                 # Transit-aware rescheduling + hours validation
 │
@@ -83,7 +83,7 @@ travel-buddy/
 │   └── rag_ingestion.py             # Full scrape->chunk->embed->store pipeline
 │
 ├── monitoring/
-│   └── cost_tracker.py              # LLM cost tracking + budget alerts
+│   └── cost_tracker.py              # SCAFFOLDED: LLM cost tracking (not wired into request path)
 │
 └── tests/                           # pytest suite (21 tests + 5 supabase-guarded)
     ├── __init__.py

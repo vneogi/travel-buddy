@@ -56,6 +56,7 @@ class Settings(BaseSettings):
     # --- External APIs ---
     google_maps_api_key: Optional[str] = None
     google_places_api_key: Optional[str] = None
+    openweather_api_key: Optional[str] = None
 
     # --- Payments (Stripe + RevenueCat) ---
     stripe_secret_key: Optional[str] = None

@@ -142,6 +142,15 @@ Supabase (local prod run, Railway, Cloud Run).
 - `weather_alert` / `change_mood` events route to the LLM but do NOT auto-swap
   the itinerary (needs indoor/outdoor venue metadata).
 
+
+**Scaffolded but NOT wired (dead code in current request path):**
+- `weather_service.py` — API key bug fixed, but not called by any endpoint.
+  `weather_alert` events route to LLM without real weather data.
+- `cost_tracker.py` — Memory leak fixed, but not imported by any module.
+  `/stats` reports cache/event counts, not cost.
+- `pipeline/rag_ingestion.py` — Scrape→chunk→embed pipeline, but never stores
+  results. Venues come from `seed_data.py` only. Scraping targets have ToS risk.
+
 **Nice-to-have / low priority:**
 - Deprecation warnings: Pydantic `class Config` → `ConfigDict`,
   `@app.on_event` → lifespan handlers, `datetime.utcnow()` → `datetime.now(UTC)`.

@@ -1,5 +1,10 @@
 """Travel Buddy MVP - Weather Service
 
+⚠️  STATUS: SCAFFOLDED — NOT WIRED INTO THE REQUEST PATH.
+    weather_alert events route to the LLM but never call this service.
+    Real weather fetching + auto-swap is a future milestone.
+    Requires: TB_OPENWEATHER_API_KEY in .env.
+
 Integrates with OpenWeatherMap API for Dubai-specific weather data.
 Triggers proactive itinerary adjustments when conditions change:
   - Extreme heat (>45C) -> suggest indoor alternatives
@@ -62,8 +67,7 @@ class WeatherService:
     DUBAI_LNG = 55.2708
 
     def __init__(self):
-        self.api_key = settings.google_maps_api_key  # Reuse env pattern
-        # In production, use dedicated: settings.openweather_api_key
+        self.api_key = settings.openweather_api_key  # TB_OPENWEATHER_API_KEY
         self._cache: Dict[str, Tuple[Dict, float]] = {}  # Simple TTL cache
         self._cache_ttl = 600  # 10 minutes
 
@@ -146,7 +150,8 @@ class WeatherService:
             "lon": lng,
             "appid": self.api_key,
             "units": "metric",
-            "cnt": min(hours_ahead, 40),  # API returns 3-hour blocks
+            # cnt counts 3-hour blocks; to cover N hours we need ceil(N/3)
+            "cnt": min((hours_ahead + 2) // 3, 40),
         }
 
         async with httpx.AsyncClient() as client:
@@ -157,7 +162,7 @@ class WeatherService:
             raw = response.json()
 
         forecasts = []
-        for item in raw.get("list", [])[:hours_ahead]:
+        for item in raw.get("list", [])  # already limited by cnt param; return all fetched blocks:
             forecasts.append({
                 "datetime": item["dt_txt"],
                 "temp_c": item["main"]["temp"],
