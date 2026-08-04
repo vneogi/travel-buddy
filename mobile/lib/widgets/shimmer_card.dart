@@ -28,15 +28,18 @@ class ShimmerCard extends StatelessWidget {
   }
 }
 
-/// Multiple shimmer cards for list loading.
+/// Multiple shimmer cards for list loading. Uses ListView (not Column) so it
+/// scrolls / stays bounded instead of overflowing on short viewports.
 class ShimmerList extends StatelessWidget {
   final int count;
   const ShimmerList({super.key, this.count = 4});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: List.generate(count, (_) => const ShimmerCard()),
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+      itemCount: count,
+      itemBuilder: (_, __) => const ShimmerCard(),
     );
   }
 }
