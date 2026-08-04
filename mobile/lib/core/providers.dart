@@ -1,12 +1,22 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'api_client.dart';
+import 'env.dart';
 import '../data/repositories.dart';
 import '../data/models.dart';
 
-/// Supabase access token provider (null in dev -> falls back to X-Debug-User-Id).
+/// Supabase access token provider (null in dev → ApiClient falls back to
+/// X-Debug-User-Id). Guarded because Supabase.instance throws if initialize()
+/// was skipped (dev mode with no TB_SUPABASE_URL) — mirrors main.dart's guard.
 final tokenProvider = Provider<TokenProvider>((ref) {
-  return () async => Supabase.instance.client.auth.currentSession?.accessToken;
+  return () async {
+    if (Env.supabaseUrl.isEmpty || Env.supabaseAnonKey.isEmpty) return null;
+    try {
+      return Supabase.instance.client.auth.currentSession?.accessToken;
+    } catch (_) {
+      return null; // not initialized / no session → fall back to debug header
+    }
+  };
 });
 
 /// Central API client.
