@@ -144,6 +144,64 @@ class _ThinkingBubble extends StatelessWidget {
   }
 }
 
+
+class _InputBar extends StatelessWidget {
+  final TextEditingController controller;
+  final bool enabled;
+  final VoidCallback onSend;
+  const _InputBar({
+    required this.controller,
+    required this.enabled,
+    required this.onSend,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.base,
+        vertical: AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        border: Border(top: BorderSide(color: AppColors.divider)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: controller,
+                enabled: enabled,
+                textInputAction: TextInputAction.send,
+                onSubmitted: (_) => onSend(),
+                decoration: InputDecoration(
+                  hintText: 'Ask anything about your trip...',
+                  hintStyle: AppTypography.body.copyWith(color: AppColors.muted),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.sm,
+                  ),
+                ),
+                style: AppTypography.body,
+              ),
+            ),
+            IconButton(
+              onPressed: enabled ? onSend : null,
+              icon: Icon(
+                Icons.send_rounded,
+                color: enabled ? AppColors.primary : AppColors.muted,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _AnimatedDot extends StatefulWidget {
   final int delay;
   const _AnimatedDot({required this.delay});

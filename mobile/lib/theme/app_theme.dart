@@ -19,7 +19,7 @@ class AppTheme {
           error: AppColors.danger,
         ),
         scaffoldBackgroundColor: AppColors.surface,
-        cardTheme: CardTheme(
+        cardTheme: CardThemeData(
           color: AppColors.card,
           elevation: 1,
           shadowColor: Colors.black.withOpacity(0.05),
@@ -77,7 +77,7 @@ class AppTheme {
           error: AppColors.danger,
         ),
         scaffoldBackgroundColor: AppColors.darkSurface,
-        cardTheme: CardTheme(
+        cardTheme: CardThemeData(
           color: AppColors.darkCard,
           elevation: 0,
           shape: RoundedRectangleBorder(
