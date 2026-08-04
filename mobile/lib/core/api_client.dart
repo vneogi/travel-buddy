@@ -11,7 +11,7 @@ class ApiClient {
 
   ApiClient(TokenProvider tokenProvider)
       : _dio = Dio(BaseOptions(
-          baseUrl: '\${Env.apiBaseUrl}/api/v1',
+          baseUrl: '${Env.apiBaseUrl}/api/v1',
           connectTimeout: const Duration(seconds: 10),
           receiveTimeout: const Duration(seconds: 30), // heavy LLM calls
           contentType: 'application/json',
@@ -20,7 +20,7 @@ class ApiClient {
       onRequest: (options, handler) async {
         final token = await tokenProvider();
         if (token != null && token.isNotEmpty) {
-          options.headers['Authorization'] = 'Bearer \$token';
+          options.headers['Authorization'] = 'Bearer $token';
         } else if (Env.debugUserId.isNotEmpty) {
           options.headers['X-Debug-User-Id'] = Env.debugUserId;
         }

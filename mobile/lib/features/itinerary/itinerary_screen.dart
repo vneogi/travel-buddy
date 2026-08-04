@@ -30,7 +30,7 @@ class ItineraryScreen extends ConsumerWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push('/trip/\$tripId/chat'),
+        onPressed: () => context.push('/trip/$tripId/chat'),
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.chat_bubble_outline, color: Colors.white),
       ),

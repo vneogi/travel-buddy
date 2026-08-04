@@ -18,7 +18,7 @@ class TripRepository {
   }
 
   Future<TripState> getTrip(String tripId) async => TripState.fromJson(
-        await _api.get('/trip/\$tripId') as Map<String, dynamic>,
+        await _api.get('/trip/$tripId') as Map<String, dynamic>,
       );
 
   /// The one endpoint for cancel/swap/add/reroute/translate/ask_info/etc.
@@ -41,15 +41,23 @@ class TripRepository {
   }
 
   /// RAG venue search for swap suggestions.
+  /// Backend param is `query` (NOT `q`). Vibe filtering is NOT a param here —
+  /// it's applied via the /trip/event `preferences.vibe_tags` path.
   Future<List<VenueSearchResult>> searchVenues({
     required String query,
-    List<String>? vibeTags,
+    double lat = 25.1972,
+    double lng = 55.2744,
+    int topK = 8,
   }) async {
     final data = await _api.get('/venues/search', query: {
-      'q': query,
-      if (vibeTags != null && vibeTags.isNotEmpty) 'vibe_tags': vibeTags.join(','),
+      'query': query,
+      'lat': lat,
+      'lng': lng,
+      'top_k': topK,
     });
-    return (data as List)
+    // Endpoint returns {query, results_count, results: [...]}.
+    final results = (data as Map)['results'] as List? ?? const [];
+    return results
         .map((v) => VenueSearchResult.fromJson(v as Map<String, dynamic>))
         .toList();
   }
@@ -70,16 +78,19 @@ class PaymentRepository {
   final ApiClient _api;
   PaymentRepository(this._api);
 
+  /// Backend returns {"plans": [...]}, not a bare list.
   Future<List<Map<String, dynamic>>> getPlans() async {
     final data = await _api.get('/payment/plans');
-    return (data as List).cast<Map<String, dynamic>>();
+    return ((data as Map)['plans'] as List).cast<Map<String, dynamic>>();
   }
 
   Future<Map<String, dynamic>> getStatus() async =>
       await _api.get('/payment/status') as Map<String, dynamic>;
 
-  Future<String> createCheckout({required String priceId}) async {
-    final data = await _api.post('/payment/checkout', body: {'price_id': priceId});
+  /// Backend expects `plan_id` ("pro_monthly" | "pro_yearly"); it resolves the
+  /// Stripe price id server-side.
+  Future<String> createCheckout({required String planId}) async {
+    final data = await _api.post('/payment/checkout', body: {'plan_id': planId});
     return data['checkout_url'] as String;
   }
 }

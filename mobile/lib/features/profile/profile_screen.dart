@@ -81,11 +81,11 @@ class _UsageCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.md),
           Text(
-            '\${status.remaining} reroutes remaining',
+            '${status.remaining} reroutes remaining',
             style: AppTypography.body,
           ),
           Text(
-            '\${status.used} / \${status.max} used today',
+            '${status.used} / ${status.max} used today',
             style: AppTypography.caption,
           ),
         ],

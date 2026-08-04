@@ -79,7 +79,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     } catch (e) {
       setState(() {
         _isThinking = false;
-        _messages.add(_ChatMessage(text: 'Error: \$e', isUser: false));
+        _messages.add(_ChatMessage(text: 'Error: $e', isUser: false));
       });
     }
   }

@@ -32,7 +32,7 @@ class ActivityDetailScreen extends StatelessWidget {
               Text(node.microLocation!, style: AppTypography.caption),
             const SizedBox(height: AppSpacing.sm),
             if (node.openingHours != null)
-              Text('Hours: \${node.openingHours}', style: AppTypography.body),
+              Text('Hours: ${node.openingHours}', style: AppTypography.body),
             const SizedBox(height: AppSpacing.base),
             Wrap(
               spacing: AppSpacing.sm,

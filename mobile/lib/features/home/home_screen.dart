@@ -28,7 +28,7 @@ class HomeScreen extends ConsumerWidget {
                 onTap: () async {
                   final repo = ref.read(tripRepoProvider);
                   final trip = await repo.create(startDate: DateTime.now());
-                  if (context.mounted) context.push('/trip/\${trip.tripId}');
+                  if (context.mounted) context.push('/trip/${trip.tripId}');
                 },
               ),
               const SizedBox(height: AppSpacing.xl),

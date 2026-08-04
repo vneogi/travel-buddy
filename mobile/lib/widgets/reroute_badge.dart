@@ -55,7 +55,7 @@ class RerouteBadge extends ConsumerWidget {
             borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
           ),
           child: Text(
-            '\$remaining left today',
+            '$remaining left today',
             style: AppTypography.counter.copyWith(color: color),
           ),
         );

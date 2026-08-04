@@ -19,7 +19,7 @@ dependencies:
   flutter_svg: ^2.0.10
   intl: ^0.19.0
   shared_preferences: ^2.3.2
-  flutter_haptics: ^1.0.1
+  # HapticFeedback uses built-in flutter/services.dart
 
   # Enable when keys are ready:
   # google_maps_flutter: ^2.9.0
