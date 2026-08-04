@@ -74,7 +74,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       );
       setState(() {
         _isThinking = false;
-        _messages.add(_ChatMessage(text: result.message, isUser: false));
+        if (result != null) {
+          _messages.add(_ChatMessage(text: result.message, isUser: false));
+        }
       });
     } catch (e) {
       setState(() {
