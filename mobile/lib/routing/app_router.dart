@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../core/env.dart';
 import '../features/onboarding/onboarding_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/itinerary/itinerary_screen.dart';
@@ -8,16 +9,22 @@ import '../features/chat/chat_screen.dart';
 import '../features/profile/profile_screen.dart';
 import '../features/upgrade/upgrade_screen.dart';
 
+/// True only when Supabase was actually initialized (real creds configured).
+bool get _supabaseReady =>
+    Env.supabaseUrl.isNotEmpty && Env.supabaseAnonKey.isNotEmpty;
+
 final appRouter = GoRouter(
   initialLocation: '/',
   redirect: (context, state) {
+    // Dev mode: Supabase not initialized → no auth gate. Let the app render so
+    // it can run against the backend using the X-Debug-User-Id header.
+    if (!_supabaseReady) return null;
+
     final session = Supabase.instance.client.auth.currentSession;
     final isAuth = session != null;
     final isOnboarding = state.matchedLocation == '/onboarding';
 
-    // If not authenticated and not on onboarding, redirect there.
     if (!isAuth && !isOnboarding) return '/onboarding';
-    // If authenticated and on onboarding, go home.
     if (isAuth && isOnboarding) return '/';
     return null;
   },
