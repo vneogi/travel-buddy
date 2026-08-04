@@ -23,16 +23,13 @@ TripNode _node(String id, String name) => TripNode(
     );
 
 void main() {
-  setUpAll(() {
-    registerFallbackValue(EventType.askInfo);
-  });
+  setUpAll(() => registerFallbackValue(EventType.askInfo));
 
   late MockTripRepository repo;
   late ProviderContainer container;
 
   setUp(() {
     repo = MockTripRepository();
-    // Initial load for the controller's constructor.
     when(() => repo.getTrip('t1'))
         .thenAnswer((_) async => _trip([_node('n1', 'Old')]));
     container = ProviderContainer(
@@ -41,10 +38,17 @@ void main() {
     addTearDown(container.dispose);
   });
 
-  Future<ItineraryController> ready() async {
-    final c = container.read(itineraryControllerProvider('t1').notifier);
-    // Wait for the constructor's load() to settle.
-    await Future<void>.delayed(Duration.zero);
+  /// Keep a subscription open so autoDispose does NOT tear the controller down
+  /// mid-test, then let the constructor's load() future settle.
+  Future<ItineraryController> ready([String tripId = 't1']) async {
+    final sub = container.listen(
+      itineraryControllerProvider(tripId),
+      (_, __) {},
+      fireImmediately: true,
+    );
+    addTearDown(sub.close);
+    final c = container.read(itineraryControllerProvider(tripId).notifier);
+    await Future<void>.delayed(const Duration(milliseconds: 10)); // let load() finish
     return c;
   }
 
@@ -91,13 +95,13 @@ void main() {
         )).thenThrow(const RerouteLimitException());
 
     final c = await ready();
-    final result = await c.applyEvent(
-        type: EventType.reroute, message: 'reroute everything');
+    final result =
+        await c.applyEvent(type: EventType.reroute, message: 'reroute everything');
 
     final s = container.read(itineraryControllerProvider('t1'));
     expect(result, isNull);
     expect(s.rerouteLimitHit, true);
-    expect(s.nodes.single.venueName, 'Old'); // unchanged
+    expect(s.nodes.single.venueName, 'Old');
   });
 
   test('generic error surfaces a banner, keeps nodes', () async {
@@ -119,8 +123,7 @@ void main() {
 
   test('load error populates error state', () async {
     when(() => repo.getTrip('t2')).thenThrow(const NetworkException());
-    final c = container.read(itineraryControllerProvider('t2').notifier);
-    await Future<void>.delayed(Duration.zero);
+    await ready('t2'); // holds a listener + lets load() settle
     final s = container.read(itineraryControllerProvider('t2'));
     expect(s.error, isA<NetworkException>());
     expect(s.loading, false);

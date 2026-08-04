@@ -52,8 +52,10 @@ class ItineraryController extends StateNotifier<ItineraryState> {
     state = const ItineraryState(loading: true);
     try {
       final trip = await _ref.read(tripRepoProvider).getTrip(tripId);
+      if (!mounted) return;
       state = ItineraryState(nodes: trip.nodes, loading: false);
     } catch (e) {
+      if (!mounted) return;
       state = ItineraryState(loading: false, error: e);
     }
   }
@@ -75,6 +77,7 @@ class ItineraryController extends StateNotifier<ItineraryState> {
             targetNodeId: targetNodeId,
             preferences: preferences,
           );
+      if (!mounted) return null;
       state = state.copyWith(
         // For light/info events the server returns the unchanged node list, so
         // this is always safe; the screen's diff produces no animation then.
