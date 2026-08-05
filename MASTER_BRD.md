@@ -1,3 +1,5 @@
+> **Product vision & strategy: see [docs/VISION.md](docs/VISION.md). This BRD covers technical spec.**
+
 # TRAVEL BUDDY AI - MASTER BRD & TECHNICAL SPECIFICATION
 ## Version 4.0 | August 2026 | Dubai MVP
 
