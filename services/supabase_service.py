@@ -19,7 +19,7 @@ Requires:
 
 import json
 import uuid
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import Dict, List, Optional, Tuple
 
 import httpx
@@ -129,7 +129,7 @@ class SupabaseService:
         new_count = user.daily_reroute_count + 1
         self.client.table("user_tiers").update({
             "daily_reroute_count": new_count,
-            "updated_at": datetime.utcnow().isoformat(),
+            "updated_at": datetime.now(tz=timezone.utc).isoformat(),
         }).eq("user_id", user_id).execute()
         return new_count
 
@@ -151,7 +151,7 @@ class SupabaseService:
         self.client.table("user_tiers").update({
             "tier_status": "pro",
             "max_daily_reroutes": settings.max_daily_reroutes_pro,
-            "updated_at": datetime.utcnow().isoformat(),
+            "updated_at": datetime.now(tz=timezone.utc).isoformat(),
         }).eq("user_id", user_id).execute()
         return self.get_or_create_user(user_id)
 
@@ -160,7 +160,7 @@ class SupabaseService:
         self.client.table("user_tiers").update({
             "tier_status": "free",
             "max_daily_reroutes": settings.max_daily_reroutes_free,
-            "updated_at": datetime.utcnow().isoformat(),
+            "updated_at": datetime.now(tz=timezone.utc).isoformat(),
         }).eq("user_id", user_id).execute()
         return self.get_or_create_user(user_id)
 
@@ -179,7 +179,7 @@ class SupabaseService:
             "user_id": trip_state.user_id,
             "state_json": trip_state.model_dump(mode="json"),
             "is_active": True,
-            "updated_at": datetime.utcnow().isoformat(),
+            "updated_at": datetime.now(tz=timezone.utc).isoformat(),
         }
         self.client.table("trip_states").upsert(trip_data).execute()
         return trip_state.trip_id
@@ -344,7 +344,7 @@ class SupabaseService:
             "geo_fence_center": f"({geo_lat},{geo_lng})",
             "hit_count": 0,
             "expires_at": (
-                datetime.utcnow() + timedelta(hours=settings.cache_ttl_hours)
+                datetime.now(tz=timezone.utc) + timedelta(hours=settings.cache_ttl_hours)
             ).isoformat(),
         }
         self.client.table("cached_responses").insert(cache_entry).execute()
@@ -354,7 +354,7 @@ class SupabaseService:
         result = (
             self.client.table("cached_responses")
             .delete()
-            .lt("expires_at", datetime.utcnow().isoformat())
+            .lt("expires_at", datetime.now(tz=timezone.utc).isoformat())
             .execute()
         )
         return len(result.data) if result.data else 0

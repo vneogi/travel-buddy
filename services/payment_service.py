@@ -222,7 +222,7 @@ class PaymentService:
             return {
                 "action": "grace_period",
                 "user_id": user_id,
-                "grace_until": (datetime.utcnow() + timedelta(days=3)).isoformat(),
+                "grace_until": (datetime.now(tz=timezone.utc) + timedelta(days=3)).isoformat(),
             }
 
         return {"action": "ignored", "event_type": event_type}

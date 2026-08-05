@@ -5,7 +5,7 @@ All data is stored in Python dicts for MVP testing without external deps.
 In production, swap with actual Supabase client calls.
 """
 
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from typing import Dict, List, Optional
 import uuid
 
@@ -220,7 +220,7 @@ class DatabaseService:
             "routing_tier_used": routing_tier,
             "from_cache": from_cache,
             "payload": payload or {},
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(tz=timezone.utc).isoformat(),
         })
 
     def get_event_stats(self) -> dict:
@@ -274,8 +274,8 @@ class DatabaseService:
             "value_text": value_text,
             "value_numeric": value_numeric,
             "value_json": value_json,
-            "captured_at": (captured_at or datetime.utcnow()).isoformat(),
-            "ingested_at": datetime.utcnow().isoformat(),
+            "captured_at": (captured_at or datetime.now(tz=timezone.utc)).isoformat(),
+            "ingested_at": datetime.now(tz=timezone.utc).isoformat(),
         }
         return True
 

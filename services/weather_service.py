@@ -18,7 +18,7 @@ Requires:
 """
 
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
 
 import httpx
@@ -54,7 +54,7 @@ class WeatherAlert:
         self.message = message
         self.swap_to_indoor = swap_to_indoor
         self.cancel_outdoor = cancel_outdoor
-        self.timestamp = datetime.utcnow()
+        self.timestamp = datetime.now(tz=timezone.utc)
 
 
 class WeatherService:

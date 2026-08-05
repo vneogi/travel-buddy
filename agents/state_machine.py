@@ -13,7 +13,7 @@ unreachable, the next candidate is tried, up to max_loop_depth attempts, after
 which we fall back deterministically and leave the itinerary unchanged.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 from config.settings import settings
@@ -201,7 +201,7 @@ class TripStateMachine:
                 "Couldn\'t find a change that keeps your locked reservations reachable in time."
             ]
 
-        trip_state.updated_at = datetime.utcnow()
+        trip_state.updated_at = datetime.now(tz=timezone.utc)
         state["trip_state"] = trip_state
         return state
 
@@ -251,7 +251,7 @@ class TripStateMachine:
             anchor = (
                 nodes[insert_at - 1].scheduled_start
                 if insert_at > 0 and nodes
-                else datetime.utcnow()
+                else datetime.now(tz=timezone.utc)
             )
             nodes.insert(
                 insert_at,
@@ -286,7 +286,7 @@ class TripStateMachine:
         kwargs = dict(
             venue_name=venue.name,
             venue_id=venue.venue_id,
-            scheduled_start=scheduled_start or datetime.utcnow(),
+            scheduled_start=scheduled_start or datetime.now(tz=timezone.utc),
             duration_minutes=duration_minutes,
             is_locked=False,
             status=NodeStatus.PENDING,

@@ -7,7 +7,7 @@ all data structures used across the application.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import List, Optional, TypedDict
 
@@ -90,8 +90,8 @@ class TripState(BaseModel):
     current_context: CurrentContext = CurrentContext()
     execution_control: ExecutionControl = ExecutionControl()
     nodes: List[TripNode] = []
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
 
 
 # TypedDict version for LangGraph state

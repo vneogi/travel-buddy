@@ -5,7 +5,7 @@ Before routing to an LLM, checks if a semantically similar query
 has been answered recently. Threshold: 0.92 cosine similarity.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Tuple
 
 from config.settings import settings
@@ -28,13 +28,13 @@ class CacheEntry:
         self.embedding = embedding
         self.geo_lat = geo_lat
         self.geo_lng = geo_lng
-        self.created_at = datetime.utcnow()
+        self.created_at = datetime.now(tz=timezone.utc)
         self.hit_count = 0
         self.expires_at = self.created_at + timedelta(hours=settings.cache_ttl_hours)
 
     @property
     def is_expired(self) -> bool:
-        return datetime.utcnow() > self.expires_at
+        return datetime.now(tz=timezone.utc) > self.expires_at
 
 
 class SemanticCacheService:

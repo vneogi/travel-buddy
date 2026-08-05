@@ -18,7 +18,7 @@ Designed to answer: "Are we spending more per user than they pay us?"
 
 import time
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional
 
 from config.settings import settings
@@ -69,7 +69,7 @@ class CostEvent:
         self.cost_usd = cost_usd
         self.tokens_used = tokens_used
         self.from_cache = from_cache
-        self.timestamp = datetime.utcnow()
+        self.timestamp = datetime.now(tz=timezone.utc)
 
 
 class CostTracker:
@@ -109,7 +109,7 @@ class CostTracker:
 
         # Rotate: keep only recent events to prevent memory leak
         if len(self._events) > self.MAX_EVENTS:
-            cutoff = datetime.utcnow() - timedelta(days=2)
+            cutoff = datetime.now(tz=timezone.utc) - timedelta(days=2)
             self._events = [e for e in self._events if e.timestamp > cutoff]
         self._check_budget_alert()
         return total_cost
@@ -161,7 +161,7 @@ class CostTracker:
     def get_daily_summary(self, target_date: datetime = None) -> Dict:
         """Get cost summary for a specific day."""
         if target_date is None:
-            target_date = datetime.utcnow()
+            target_date = datetime.now(tz=timezone.utc)
 
         day_start = target_date.replace(hour=0, minute=0, second=0)
         day_end = day_start + timedelta(days=1)
@@ -196,7 +196,7 @@ class CostTracker:
 
     def get_user_cost(self, user_id: str, days: int = 30) -> Dict:
         """Get cost attribution for a specific user."""
-        cutoff = datetime.utcnow() - timedelta(days=days)
+        cutoff = datetime.now(tz=timezone.utc) - timedelta(days=days)
         user_events = [
             e for e in self._events
             if e.user_id == user_id and e.timestamp >= cutoff
@@ -245,7 +245,7 @@ class CostTracker:
 
     def _check_budget_alert(self) -> None:
         """Check if daily budget is exceeded (efficient: today's events only)."""
-        today = datetime.utcnow().date()
+        today = datetime.now(tz=timezone.utc).date()
         daily_cost = sum(e.cost_usd for e in self._events if e.timestamp.date() == today)
         if daily_cost >= self._daily_budget_usd * 0.8:
             # 80% threshold warning

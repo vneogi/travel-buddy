@@ -32,7 +32,7 @@ import json
 import re
 import time
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional
 from urllib.parse import urljoin
 
@@ -53,7 +53,7 @@ class ScrapedVenue:
     raw_text: str
     source_url: str
     source_name: str  # "timeout_dubai", "whats_on", "reddit"
-    scraped_at: datetime = field(default_factory=datetime.utcnow)
+    scraped_at: datetime = field(default_factory=lambda: datetime.now(tz=timezone.utc))
     raw_metadata: Dict = field(default_factory=dict)
 
 
@@ -324,7 +324,7 @@ class RAGIngestionPipeline:
 
     async def run_full_ingestion(self) -> Dict:
         """Execute the complete pipeline."""
-        print(f"[{datetime.utcnow()}] Starting RAG ingestion pipeline...")
+        print(f"[{datetime.now(tz=timezone.utc)}] Starting RAG ingestion pipeline...")
 
         # Step 1: Scrape
         all_venues = []
