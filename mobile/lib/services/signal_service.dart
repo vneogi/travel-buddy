@@ -1,25 +1,39 @@
+import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
 import '../data/signal.dart';
-import '../core/api_client.dart';
+import '../offline/offline_database.dart';
+import '../offline/sync_engine.dart';
 
-/// The signal-emission abstraction (THE OFFLINE SEAM).
+/// Signal service — THE OFFLINE SEAM (SPEC-02 Part A.3).
 ///
-/// All UI code emits signals through this service — never directly via the
-/// repository/API client. This lets SPEC-02 swap the implementation from
-/// "send immediately" to "enqueue locally, sync later" without touching
-/// any UI code. One-place change.
+/// UI call sites do NOT change from SPEC-01. The only change is internal:
+/// emit() now persists to SQLite outbox BEFORE any network attempt, then
+/// triggers a background sync. The UI never awaits network.
 ///
-/// Current implementation: fire-and-forget POST to /signals.
-/// SPEC-02 implementation: enqueue to local SQLite/Hive, sync on reconnect.
+/// Non-negotiable invariants (SPEC-02):
+/// 1. A tap is persisted to local disk BEFORE any network attempt.
+/// 2. emit() never throws and never blocks on network.
+/// 3. If the app is killed, the event survives (SQLite durability).
 class SignalService {
-  final ApiClient _api;
-  static const _uuid = Uuid();
+  final OfflineDatabase _db;
+  final SyncEngine _syncEngine;
+  final _uuid = const Uuid();
 
-  SignalService(this._api);
+  static const int _queueCap = 5000;
 
-  /// Emit a signal. Fire-and-forget — errors are swallowed (SPEC-02 adds
-  /// retry via offline queue).
+  SignalService({
+    required OfflineDatabase db,
+    required SyncEngine syncEngine,
+  })  : _db = db,
+        _syncEngine = syncEngine;
+
+  /// Emit a signal. Persists locally, then triggers background sync.
+  ///
+  /// NEVER throws. NEVER awaits network. Returns immediately after
+  /// local persistence. This is the contract UI code depends on.
   Future<void> emit({
     required String signalType,
     required String placeRef,
@@ -28,32 +42,42 @@ class SignalService {
     Map<String, dynamic>? valueJson,
     String? tripId,
   }) async {
-    final signal = Signal(
-      signalId: _uuid.v4(),
-      signalType: signalType,
-      placeRef: placeRef,
-      valueText: valueText,
-      valueNumeric: valueNumeric,
-      valueJson: valueJson,
-      capturedAt: DateTime.now(),
-      tripId: tripId,
-    );
-
     try {
-      await _sendSignals([signal]);
-    } catch (_) {
-      // Swallow errors for now — SPEC-02 replaces this with enqueue
-    }
-  }
+      // Queue cap check (SPEC-02 B.3): protect unbounded growth
+      final size = await _db.getOutboxSize();
+      if (size >= _queueCap) {
+        debugPrint('[SignalService] Queue at capacity ($size) — signal throttled');
+        return;
+      }
 
-  /// Send a batch of signals to the server.
-  /// Extracted so SPEC-02 can reuse for sync flush.
-  Future<void> _sendSignals(List<Signal> signals) async {
-    await _api.post(
-      '/signals',
-      body: {
-        'signals': signals.map((s) => s.toJson()).toList(),
-      },
-    );
+      // Build signal with client-generated UUID (idempotency key)
+      final signalId = _uuid.v4();
+      final capturedAt = DateTime.now().toUtc();
+
+      final signal = Signal(
+        signalId: signalId,
+        signalType: signalType,
+        placeRef: placeRef,
+        valueText: valueText,
+        valueNumeric: valueNumeric,
+        valueJson: valueJson,
+        capturedAt: capturedAt,
+        tripId: tripId,
+      );
+
+      // STEP 1: Persist to outbox BEFORE any network (durability guarantee)
+      final payloadJson = jsonEncode(signal.toJson());
+      await _db.enqueue(
+        signalId,
+        payloadJson,
+        capturedAt.toIso8601String(),
+      );
+
+      // STEP 2: Trigger background sync (non-awaited — never block UI)
+      _syncEngine.triggerSync();
+    } catch (e) {
+      // NEVER throw from emit — fire-and-forget with local persistence
+      debugPrint('[SignalService] emit error (signal may be lost): $e');
+    }
   }
 }
