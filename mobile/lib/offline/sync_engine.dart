@@ -5,6 +5,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 
 import '../core/api_client.dart';
+import '../core/api_exception.dart';
 import 'offline_database.dart';
 
 /// Sync engine for offline-first signal delivery (SPEC-02 Part B).
@@ -16,6 +17,11 @@ import 'offline_database.dart';
 /// - Exponential backoff with jitter on transient failures
 /// - Crash recovery: inflight rows reset to pending on startup
 /// - Queue cap enforcement (5000 rows)
+///
+/// Error classification uses TYPED exceptions from ApiClient (not string-matching):
+/// - UnauthorizedException → halt sync, preserve events
+/// - ServerException / NetworkException → backoff + retry
+/// - Other ApiException (403, 404) → permanent failure
 class SyncEngine {
   final OfflineDatabase _db;
   final ApiClient _api;
@@ -113,12 +119,12 @@ class SyncEngine {
           body: {'signals': signals},
         );
 
-        // Success (2xx): delete synced rows from outbox
+        // Success (2xx): process the response
         final accepted = (response['accepted'] as int?) ?? 0;
         final duplicates = (response['duplicates'] as int?) ?? 0;
         final rejected = (response['rejected'] as List?) ?? [];
 
-        // Collect IDs that were accepted or duplicated (server has them)
+        // Collect IDs that were rejected by the server (permanent failures)
         final rejectedIds = rejected
             .map((r) => (r as Map<String, dynamic>)['signal_id'] as String)
             .toSet();
@@ -143,34 +149,48 @@ class SyncEngine {
         _lastError = null;
         debugPrint('[SyncEngine] Synced: accepted=$accepted duplicates=$duplicates rejected=${rejected.length}');
         return true;
-      } catch (e) {
-        // Handle specific HTTP error codes
-        final errorStr = e.toString();
-        _lastError = errorStr;
 
-        if (errorStr.contains('401') || errorStr.contains('Unauthorized')) {
-          // 401: do NOT drop events — mark pending, stop sync
-          // SPEC-02 B.2: surface re-auth (never lose data on auth failure)
-          await _db.markInflight([]); // no-op, but reset below handles it
-          debugPrint('[SyncEngine] 401 — halting sync, events preserved');
-        } else if (errorStr.contains('422') || errorStr.contains('Unprocessable')) {
-          // 422 without per-item detail: mark all as permanent failure
-          await _db.markFailed(signalIds, 'validation_error: $errorStr');
-          debugPrint('[SyncEngine] 422 — batch marked failed_permanent');
-        } else {
-          // 5xx / timeout / network error: retry with backoff
-          await _db.markRetry(signalIds, errorStr);
-          debugPrint('[SyncEngine] Transient error — will retry with backoff');
-        }
+      } on UnauthorizedException catch (e) {
+        // 401: do NOT drop events — halt sync, preserve for re-auth.
+        // SPEC-02 B.2: 'surface re-auth (do NOT drop events)'
+        // Rows reset to pending in finally block.
+        _lastError = 'Auth expired: ${e.message}';
+        debugPrint('[SyncEngine] 401 — halting sync, events preserved');
+        return false;
+
+      } on ServerException catch (e) {
+        // 5xx: transient — retry with backoff
+        _lastError = 'Server error: ${e.message}';
+        await _db.markRetry(signalIds, e.message);
+        debugPrint('[SyncEngine] 5xx — will retry with backoff');
+        return false;
+
+      } on NetworkException catch (e) {
+        // No connection: transient — retry with backoff
+        _lastError = 'Network: ${e.message}';
+        await _db.markRetry(signalIds, e.message);
+        debugPrint('[SyncEngine] Network error — will retry with backoff');
+        return false;
+
+      } on ApiException catch (e) {
+        // Any other API error (403, 404, 422 without per-item detail):
+        // These are permanent failures — mark and stop retrying.
+        _lastError = 'Permanent: ${e.message}';
+        await _db.markFailed(signalIds, 'permanent: ${e.message}');
+        debugPrint('[SyncEngine] Permanent failure (${e.runtimeType}) — marked failed');
         return false;
       }
+
     } catch (e) {
-      // Catch-all: NEVER leave rows stuck 'inflight' (SPEC-02 B.2 finally)
-      _lastError = e.toString();
+      // Catch-all for unexpected errors (e.g. JSON parse, DB errors).
+      // NEVER leave rows stuck 'inflight' — finally handles recovery.
+      _lastError = 'Unexpected: $e';
       debugPrint('[SyncEngine] Unexpected error: $e');
       return false;
     } finally {
-      // SPEC-02 B.2: reset any lingering 'inflight' in this pass to 'pending'
+      // SPEC-02 B.2: reset any lingering 'inflight' in this pass to 'pending'.
+      // This is the single-flight pass's cleanup — safe because the guard
+      // prevents concurrent syncs from interfering.
       await _db.recoverInflight();
       _isSyncing = false;
     }

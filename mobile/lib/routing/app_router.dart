@@ -8,6 +8,7 @@ import '../features/itinerary/itinerary_screen.dart';
 import '../features/chat/chat_screen.dart';
 import '../features/profile/profile_screen.dart';
 import '../features/upgrade/upgrade_screen.dart';
+import '../features/debug/sync_status_screen.dart';
 
 /// True only when Supabase was actually initialized (real creds configured).
 bool get _supabaseReady =>
@@ -59,6 +60,10 @@ final appRouter = GoRouter(
         GoRoute(
           path: '/upgrade',
           builder: (_, __) => const UpgradeScreen(),
+        ),
+        GoRoute(
+          path: '/profile/sync',
+          builder: (_, __) => const SyncStatusScreen(),
         ),
       ],
     ),

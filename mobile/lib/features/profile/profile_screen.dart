@@ -34,6 +34,15 @@ class ProfileScreen extends ConsumerWidget {
                 child: const Text('Upgrade to Pro'),
               ),
             ),
+            const SizedBox(height: AppSpacing.lg),
+            // Hidden debug: sync status (SPEC-02 B.5)
+            ListTile(
+              leading: const Icon(Icons.sync),
+              title: const Text('Sync Status'),
+              subtitle: const Text('Queue & connectivity debug'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/profile/sync'),
+            ),
             const Spacer(),
             TextButton(
               onPressed: () {

@@ -5,10 +5,11 @@ import 'package:mocktail/mocktail.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:sqflite/sqflite.dart';
 
+import 'package:travel_buddy/core/api_client.dart';
+import 'package:travel_buddy/core/api_exception.dart';
 import 'package:travel_buddy/offline/offline_database.dart';
 import 'package:travel_buddy/offline/sync_engine.dart';
 import 'package:travel_buddy/services/signal_service.dart';
-import 'package:travel_buddy/core/api_client.dart';
 
 // Mocks
 class MockApiClient extends Mock implements ApiClient {}
@@ -21,6 +22,10 @@ class MockApiClient extends Mock implements ApiClient {}
 /// 3. Never block UI on network
 /// 4. Crash recovery (inflight rows retried)
 /// 5. Backoff with jitter (no thundering herd)
+///
+/// NOTE: Tests throw REAL typed exceptions (UnauthorizedException,
+/// ServerException, etc.) — not raw Exception strings — to match what
+/// ApiClient actually throws in production.
 void main() {
   // Use in-memory SQLite for tests
   sqfliteFfiInit();
@@ -71,7 +76,6 @@ void main() {
   // Test 2: connectivity restored -> sync posts batch -> outbox empty
   // ============================================================
   test('2. sync posts batch and clears outbox on success', () async {
-    // Enqueue a signal
     await db.enqueue('sig-001', jsonEncode({
       'signal_id': 'sig-001',
       'signal_type': 'user_loved',
@@ -79,15 +83,12 @@ void main() {
       'captured_at': DateTime.now().toUtc().toIso8601String(),
     }), DateTime.now().toUtc().toIso8601String());
 
-    // Mock successful response
     when(() => mockApi.post('/signals', body: any(named: 'body')))
         .thenAnswer((_) async => {'accepted': 1, 'duplicates': 0, 'rejected': []});
 
-    // Sync
     final worked = await syncEngine.syncOnce();
     expect(worked, true);
 
-    // Outbox should be empty
     final remaining = await db.getPendingBatch();
     expect(remaining, isEmpty);
   });
@@ -103,14 +104,12 @@ void main() {
       'captured_at': DateTime.now().toUtc().toIso8601String(),
     }), DateTime.now().toUtc().toIso8601String());
 
-    // Server says it's a duplicate (already has it)
     when(() => mockApi.post('/signals', body: any(named: 'body')))
         .thenAnswer((_) async => {'accepted': 0, 'duplicates': 1, 'rejected': []});
 
     final worked = await syncEngine.syncOnce();
     expect(worked, true);
 
-    // Row still cleared from outbox (server has it = safe to delete)
     final remaining = await db.getPendingBatch();
     expect(remaining, isEmpty);
   });
@@ -119,7 +118,6 @@ void main() {
   // Test 4: crash recovery — inflight rows reset to pending on startup
   // ============================================================
   test('4. crash recovery: inflight rows reset to pending', () async {
-    // Simulate crash: row stuck in 'inflight'
     await db.enqueue('sig-crash', jsonEncode({
       'signal_id': 'sig-crash',
       'signal_type': 'user_loved',
@@ -128,24 +126,21 @@ void main() {
     }), DateTime.now().toUtc().toIso8601String());
     await db.markInflight(['sig-crash']);
 
-    // Verify it's inflight (would be stuck without recovery)
     final before = await db.getPendingBatch();
-    expect(before, isEmpty); // not visible as 'pending'
+    expect(before, isEmpty);
 
-    // Crash recovery (called on startup)
     final recovered = await db.recoverInflight();
     expect(recovered, 1);
 
-    // Now it's pending again and will be retried
     final after = await db.getPendingBatch();
     expect(after.length, 1);
     expect(after.first['signal_id'], 'sig-crash');
   });
 
   // ============================================================
-  // Test 5: backoff — 5xx increments attempts, sets next_retry_at
+  // Test 5: backoff — ServerException increments attempts, row not lost
   // ============================================================
-  test('5. transient failure: attempts increment, row not lost', () async {
+  test('5. transient failure (ServerException): attempts increment, row not lost', () async {
     await db.enqueue('sig-retry', jsonEncode({
       'signal_id': 'sig-retry',
       'signal_type': 'user_loved',
@@ -153,13 +148,12 @@ void main() {
       'captured_at': DateTime.now().toUtc().toIso8601String(),
     }), DateTime.now().toUtc().toIso8601String());
 
-    // Mock 500 error
+    // Throw REAL typed exception (not raw string)
     when(() => mockApi.post('/signals', body: any(named: 'body')))
-        .thenThrow(Exception('500 Internal Server Error'));
+        .thenThrow(const ServerException());
 
     await syncEngine.syncOnce();
 
-    // Row should still exist (not lost) but with backoff
     final database = await db.db;
     final rows = await database.query('outbox', where: "signal_id = 'sig-retry'");
     expect(rows.length, 1);
@@ -169,9 +163,9 @@ void main() {
   });
 
   // ============================================================
-  // Test 6: permanent failure — 422 -> failed_permanent, not retried
+  // Test 6: permanent failure — ForbiddenException -> failed_permanent
   // ============================================================
-  test('6. permanent failure (422): marked failed_permanent, retained', () async {
+  test('6. permanent failure (ForbiddenException): marked failed_permanent', () async {
     await db.enqueue('sig-bad', jsonEncode({
       'signal_id': 'sig-bad',
       'signal_type': 'user_loved',
@@ -179,19 +173,17 @@ void main() {
       'captured_at': DateTime.now().toUtc().toIso8601String(),
     }), DateTime.now().toUtc().toIso8601String());
 
-    // Mock 422 Unprocessable Entity (whole-batch error without per-item detail)
+    // Throw REAL typed exception — ForbiddenException is a permanent failure
     when(() => mockApi.post('/signals', body: any(named: 'body')))
-        .thenThrow(Exception('422 Unprocessable Entity'));
+        .thenThrow(const ForbiddenException());
 
     await syncEngine.syncOnce();
 
-    // Row still exists (retained for diagnostics) but marked permanent
     final database = await db.db;
     final rows = await database.query('outbox', where: "signal_id = 'sig-bad'");
     expect(rows.length, 1);
     expect(rows.first['state'], 'failed_permanent');
 
-    // Not in pending batch (won't be retried)
     final pending = await db.getPendingBatch();
     expect(pending, isEmpty);
   });
@@ -199,7 +191,7 @@ void main() {
   // ============================================================
   // Test 7: 401 — events NOT dropped, sync halts
   // ============================================================
-  test('7. auth failure (401): events preserved, sync halts', () async {
+  test('7. auth failure (UnauthorizedException): events preserved, not retried', () async {
     await db.enqueue('sig-auth', jsonEncode({
       'signal_id': 'sig-auth',
       'signal_type': 'user_loved',
@@ -207,35 +199,34 @@ void main() {
       'captured_at': DateTime.now().toUtc().toIso8601String(),
     }), DateTime.now().toUtc().toIso8601String());
 
-    // Mock 401 Unauthorized
+    // Throw REAL typed exception
     when(() => mockApi.post('/signals', body: any(named: 'body')))
-        .thenThrow(Exception('401 Unauthorized'));
+        .thenThrow(const UnauthorizedException());
 
     await syncEngine.syncOnce();
 
-    // Event must NOT be deleted — it's preserved for re-auth retry
+    // Event must NOT be deleted — preserved for re-auth retry
     final database = await db.db;
     final rows = await database.query('outbox', where: "signal_id = 'sig-auth'");
     expect(rows.length, 1);
-    // Should be back to pending (not stuck inflight, not deleted)
+    // Should be back to pending (not stuck inflight, not deleted, not failed)
     expect(rows.first['state'], 'pending');
+    // Attempts should NOT increment (it's not a transient failure)
+    expect(rows.first['attempts'], 0);
   });
 
   // ============================================================
-  // Test 8: offline read — cached trip returned with fromCache marker
+  // Test 8: offline read — cached trip returned
   // ============================================================
   test('8. offline read: cached trip available', () async {
-    // Cache a trip
     await db.cacheTrip('trip-123', jsonEncode({'id': 'trip-123', 'status': 'active'}));
 
-    // Read it back
     final cached = await db.getCachedTrip('trip-123');
     expect(cached, isNotNull);
     final data = jsonDecode(cached!);
     expect(data['id'], 'trip-123');
     expect(data['status'], 'active');
 
-    // Non-existent trip returns null
     final missing = await db.getCachedTrip('trip-999');
     expect(missing, isNull);
   });
@@ -244,7 +235,6 @@ void main() {
   // Test 9: ordering — batch sent oldest-captured_at first
   // ============================================================
   test('9. batch is ordered oldest-captured_at first', () async {
-    // Enqueue in reverse chronological order
     await db.enqueue('sig-new', jsonEncode({
       'signal_id': 'sig-new',
       'signal_type': 'user_loved',
@@ -261,7 +251,6 @@ void main() {
 
     final batch = await db.getPendingBatch();
     expect(batch.length, 2);
-    // Oldest first
     expect(batch[0]['signal_id'], 'sig-old');
     expect(batch[1]['signal_id'], 'sig-new');
   });
@@ -277,24 +266,44 @@ void main() {
       'captured_at': DateTime.now().toUtc().toIso8601String(),
     }), DateTime.now().toUtc().toIso8601String());
 
-    // Mock slow response
     when(() => mockApi.post('/signals', body: any(named: 'body')))
         .thenAnswer((_) async {
       await Future.delayed(const Duration(milliseconds: 100));
       return {'accepted': 1, 'duplicates': 0, 'rejected': []};
     });
 
-    // Fire two concurrent syncs
     final results = await Future.wait([
       syncEngine.syncOnce(),
       syncEngine.syncOnce(),
     ]);
 
-    // One should have worked, one should have been rejected (single-flight)
     expect(results.where((r) => r == true).length, 1);
     expect(results.where((r) => r == false).length, 1);
 
-    // Only one POST call was made
     verify(() => mockApi.post('/signals', body: any(named: 'body'))).called(1);
+  });
+
+  // ============================================================
+  // Test 11: NetworkException is transient (not permanent)
+  // ============================================================
+  test('11. network failure (NetworkException): backoff, not permanent', () async {
+    await db.enqueue('sig-net', jsonEncode({
+      'signal_id': 'sig-net',
+      'signal_type': 'user_loved',
+      'place_ref': 'marina',
+      'captured_at': DateTime.now().toUtc().toIso8601String(),
+    }), DateTime.now().toUtc().toIso8601String());
+
+    when(() => mockApi.post('/signals', body: any(named: 'body')))
+        .thenThrow(const NetworkException());
+
+    await syncEngine.syncOnce();
+
+    // Row should be pending with backoff (NOT failed_permanent)
+    final database = await db.db;
+    final rows = await database.query('outbox', where: "signal_id = 'sig-net'");
+    expect(rows.length, 1);
+    expect(rows.first['state'], 'pending');
+    expect(rows.first['attempts'] as int, greaterThan(0));
   });
 }
