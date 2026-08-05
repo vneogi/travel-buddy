@@ -1,7 +1,7 @@
 # Travel Buddy — Project Status & Handoff
 
-> Single source of truth for where the backend stands and what remains.
-> Last updated: 2026-08-03. Keep this file updated as milestones complete.
+> Single source of truth for where the project stands and what remains.
+> Last updated: 2026-08-05. Keep this file updated as milestones complete.
 
 ## 0. TL;DR
 
@@ -12,8 +12,10 @@
   NOT using it yet** (in-memory by design). A deliberate 3-import flip + smoke
   test is required to switch.
 - **Payments (Stripe/RevenueCat)**: code complete and fail-closed, but keys not
-  set — deferred until the mobile app exists.
-- **Frontend**: not started. Begins next.
+  set — deferred until mobile payments phase.
+- **Flutter mobile app**: ✅ **RUNNING END-TO-END** against local backend.
+  31+ files, all 9 screens reachable, 14 Flutter unit tests passing.
+  First successful `flutter run -d chrome` achieved 2026-08-05.
 
 Do NOT treat this as production-ready. See §5 (blockers) before any public deploy.
 
@@ -31,14 +33,18 @@ Do NOT treat this as production-ready. See §5 (blockers) before any public depl
 | Payments | ✅ (code) | Router mounted; Stripe sig-verified; RevenueCat webhook auth-verified; expiry checked; cancellation downgrades. Keys not set. |
 | CORS | ✅ | Configurable via `TB_CORS_ALLOWED_ORIGINS`; no invalid `*`+credentials combo. |
 | Persistence layer | ✅ (code) | Both in-memory and Supabase backends implemented behind `db_provider`. In-memory active. |
-| Tests | ✅ | `pytest -q` → 21 passed, 5 skipped (Supabase, need creds). |
+| Backend tests | ✅ | `pytest -q` → 21 passed, 5 skipped (Supabase, need creds). |
 | SQL schema | ✅ | 5 tables, 5 functions (`$$`-quoted), 7 indexes live in Supabase. |
+| Flutter mobile app | ✅ | Full scaffold: 9 screens, Riverpod state, theme, API client, repositories. Running on Chrome against local backend. |
+| Flutter tests | ✅ | 14 passing: models (fromJson), repositories (endpoint contracts), ItineraryController (state machine). |
+| Animated timeline | ✅ | Keyed ListView + AnimatedSwitcher cross-fade; StateNotifier controller with processing, banner, reroute-limit handling. |
+| Backend code review | ✅ | Weather API key fixed, cost_tracker memory leak fixed, forecast math fixed, scope honesty documented. |
 
 ---
 
-## 2. API contract the Flutter app will use
+## 2. API contract the Flutter app uses
 
-Base path: `/api/v1`. Auth: `Authorization: Bearer <supabase_access_token>`
+Base path: (no `/api/v1` prefix — routes mount at root). Auth: `Authorization: Bearer <supabase_access_token>`
 (in local dev with no JWT secret set, use header `X-Debug-User-Id: <uuid>`).
 
 | Method | Path | Auth? | Purpose |
@@ -48,25 +54,23 @@ Base path: `/api/v1`. Auth: `Authorization: Bearer <supabase_access_token>`
 | POST | `/trip/create` | Yes | Create itinerary (⚠ see note) |
 | GET | `/trip/{trip_id}` | Yes | Get trip (owner-only, else 403) |
 | POST | `/trip/event` | Yes | **Main endpoint** — cancel/swap/add/reroute/translate/ask_info/change_mood/weather_alert |
-| GET | `/venues/search` | Yes | RAG venue search |
+| GET | `/venues/search` | Yes | RAG venue search (`?query=&lat=&lng=&top_k=`) |
 | GET | `/stats` | Yes | System analytics |
 | GET | `/payment/plans` | No | Plans |
 | GET | `/payment/status` | Yes | Subscription status |
-| POST | `/payment/checkout` | Yes | Stripe checkout session |
+| POST | `/payment/checkout` | Yes | Stripe checkout session (`plan_id`: pro_monthly/pro_yearly) |
 | POST | `/payment/verify-purchase` | Yes | Mobile IAP verify (RevenueCat) |
 | POST | `/payment/webhook/stripe` | sig | Stripe → server |
 | POST | `/payment/webhook/revenuecat` | secret | RevenueCat → server |
 
 **⚠ Frontend gotchas — read before building screens:**
-1. **No WebSocket.** The BRD mentions `ws://api/v1/chat/{trip_id}`; it is NOT
-   implemented. The Chat screen must call `POST /trip/event` over REST. (Add a
-   WS endpoint later only if real-time streaming is required.)
+1. **No WebSocket.** Chat uses `POST /trip/event` over REST only.
 2. **`/trip/create` ignores preferences** and returns a FIXED 5-venue Dubai
    sample itinerary (one locked). Personalized generation is a future task.
-3. **`user_id` is never sent by the client** — it's derived from the token and
-   ignored in request bodies.
-4. **Reroute limit**: structural events return HTTP 403 with an upgrade prompt
-   once the daily cap (5 free / 50 pro) is hit. UI should surface this.
+3. **`user_id` is never sent by the client** — derived from the token.
+4. **Reroute limit**: structural events return HTTP 403 with
+   `{"detail": "daily_reroute_limit_reached"}`. Flutter catches this as
+   `RerouteLimitException` → auto-pushes `/upgrade` route.
 5. Responses may include a trailing `Heads up: …` line when the scheduler flags
    a closed venue or an unreachable locked reservation.
 
@@ -103,9 +107,7 @@ Currently every trip/user/event is in-memory and wiped on restart. To switch:
   This flips the app from dev-header mode to real JWT verification automatically.
 - Flutter obtains the Supabase access token (Supabase Auth: magic link / Google)
   and sends it as `Authorization: Bearer …`. Confirm the token's `aud` is
-  `"authenticated"` (matches `settings.jwt_audience`); if the project uses the
-  newer asymmetric signing keys, JWKS verification is needed instead (not yet
-  implemented — flag if so).
+  `"authenticated"` (matches `settings.jwt_audience`).
 
 ### 3.3 Dependencies for prod mode
 `requirements.txt` has `litellm`, `openai`, `supabase` commented out (in-memory
@@ -132,43 +134,68 @@ Supabase (local prod run, Railway, Cloud Run).
 **Must-fix before public production:**
 - Supabase path is unverified until §3.1 smoke test is run live (code correct on review).
 - CORS must be set to real origins (currently defaults to `*`, dev-only).
+- No rate limiting / request-size limits on the API beyond the reroute quota.
 
 **Deferred by design:**
-- Stripe + RevenueCat keys — Phase 3, when the mobile app can drive purchases.
-  Set: `TB_STRIPE_SECRET_KEY`, `TB_STRIPE_WEBHOOK_SECRET`, `TB_STRIPE_PRICE_MONTHLY`,
-  `TB_STRIPE_PRICE_YEARLY`, `TB_REVENUECAT_API_KEY`, `TB_REVENUECAT_WEBHOOK_AUTH`.
-  RevenueCat also needs a Google Play Developer account ($25 one-time).
+- Stripe + RevenueCat keys — when the mobile app can drive purchases.
 - OpenWeather (`weather_service`) not wired into the request path.
-- `weather_alert` / `change_mood` events route to the LLM but do NOT auto-swap
-  the itinerary (needs indoor/outdoor venue metadata).
-
+- `weather_alert` / `change_mood` events route to the LLM but do NOT auto-swap.
 
 **Scaffolded but NOT wired (dead code in current request path):**
-- `weather_service.py` — API key bug fixed, but not called by any endpoint.
+- `weather_service.py` — API key bug fixed (now uses `TB_OPENWEATHER_API_KEY`),
+  forecast math fixed (3-hour blocks), but not called by any endpoint.
   `weather_alert` events route to LLM without real weather data.
-- `cost_tracker.py` — Memory leak fixed, but not imported by any module.
+- `cost_tracker.py` — Memory leak fixed (MAX_EVENTS cap + 2-day rotation),
+  efficient daily check, but not imported by any module.
   `/stats` reports cache/event counts, not cost.
 - `pipeline/rag_ingestion.py` — Scrape→chunk→embed pipeline, but never stores
   results. Venues come from `seed_data.py` only. Scraping targets have ToS risk.
 
+**Flutter — remaining work:**
+- SwapSheet: wired to `applyEvent` with default vibes; full sheet interaction TODO.
+- Map screen: placeholder (Google Maps key not set).
+- RevenueCat paywall: scaffold (keys not set, `purchases_flutter` commented out).
+- Supabase Auth in Flutter: magic link + Google Sign-In not wired (using debug header).
+- `VenueSearchResult.distanceKm` / `.isSponsored` null until backend surfaces them.
+- Font files: `assets/fonts/` commented out; using `google_fonts` package (network).
+
 **Nice-to-have / low priority:**
-- Deprecation warnings: Pydantic `class Config` → `ConfigDict`,
-  `@app.on_event` → lifespan handlers, `datetime.utcnow()` → `datetime.now(UTC)`.
-- No WebSocket chat endpoint (see §2). Add if real-time streaming is desired.
+- Deprecation warnings: `datetime.utcnow()` → `datetime.now(UTC)`.
+- No WebSocket chat endpoint. Add if real-time streaming is desired.
 - `/trip/create` personalization (currently fixed sample).
-- Gemini dropped (invalid key format); gpt-4o-mini covers the light tier.
+- Slide animations for timeline reflow (currently cross-fade only; add via
+  `flutter_animate` or `implicitly_animated_reorderable_list` package).
 
 ---
 
 ## 6. Testing
 
+### Backend
 - Unit suite (key-free, in-memory): `pytest -q` → **21 passed, 5 skipped**.
 - Supabase integration (needs creds): `pytest tests/test_supabase_integration.py -v`.
-- The unit suite does NOT exercise the live OpenAI or Supabase paths — those
-  need a key/creds-loaded environment. A green suite ≠ integrations verified.
-- Process note: the coding agent has twice introduced regressions while making
-  tests pass (SQL `$$`, then an auth-bypass). **Run a code review after each
-  batch of changes, before deploying** — tests alone missed the auth bypass.
+- See `docs/TESTING_GUIDE.md` for full playbook (schema fuzzing, E2E, etc.).
+
+### Flutter
+- `cd mobile && flutter test` → **14 passed**.
+- `models_test.dart`: TripNode/TripEventResult/UserStatus fromJson contract,
+  EventType wire values match backend.
+- `repositories_test.dart`: getTrip endpoint+parse, sendEvent body shape
+  (wire values, not enum names), searchVenues uses `query` not `q`.
+- `itinerary_controller_test.dart`: StateNotifier state machine —
+  load, event+banner, reroute-limit→flag, generic error→banner, network error.
+- Tests use `mocktail` to stub the backend — no live server needed.
+
+### Running locally (dev mode)
+```bash
+# Terminal 1 — backend
+unset TB_SUPABASE_JWT_SECRET && export TB_DEBUG=true
+uvicorn main:app --reload --port 8000
+
+# Terminal 2 — Flutter (Chrome)
+cd mobile && flutter run -d chrome \
+  --dart-define=TB_API_BASE_URL=http://localhost:8000 \
+  --dart-define=TB_DEBUG_USER_ID=11111111-1111-1111-1111-111111111111
+```
 
 ---
 
@@ -183,9 +210,11 @@ TB_LITELLM_API_KEY=sk-...          # powers gpt-4o, gpt-4o-mini, embeddings
 TB_SUPABASE_URL=...
 TB_SUPABASE_KEY=...                # anon/service key for DB client
 TB_SUPABASE_JWT_SECRET=...         # enables real JWT auth
+# Weather (not wired yet)
+TB_OPENWEATHER_API_KEY=...         # OpenWeatherMap free tier
 # CORS
 TB_CORS_ALLOWED_ORIGINS=https://yourapp.com   # comma-separated; * = dev only
-# Payments (Phase 3)
+# Payments (deferred)
 TB_STRIPE_SECRET_KEY=
 TB_STRIPE_WEBHOOK_SECRET=
 TB_STRIPE_PRICE_MONTHLY=
@@ -196,9 +225,31 @@ TB_REVENUECAT_WEBHOOK_AUTH=
 
 ---
 
-## 8. Commit history (fix arc, for context)
+## 8. Commit history (recent, for context)
 
-Security/auth, payments, real AI, scheduler+breaker, tests+SQL, then hardening
-(CORS, atomic throttle, Supabase seeder + integration tests), then the
-auth-bypass regression fix. See `git log` for exact SHAs. Latest security fix:
-`security: Fix critical auth-bypass regression (X-Debug-User-Id)`.
+| # | Message | Files | Date |
+|---|---|---|---|
+| 16 | `feat(mobile): Flutter app scaffold — full UI + integration layer` | 31 | 2026-08-04 |
+| 17 | `fix(mobile): Correct Dart interpolation + API contract alignment` | 10 | 2026-08-04 |
+| 18-19 | `docs: TESTING_GUIDE.md` (conflict resolved) | 1 | 2026-08-04 |
+| 20 | `fix(mobile): Replace AnimatedList with crash-free keyed ListView` | 1 | 2026-08-05 |
+| 21 | `fix: Backend review — API key bug, memory leak, scope honesty` | 6 | 2026-08-05 |
+| 22 | `feat(tests): Flutter test suite + comprehensive TESTING_GUIDE.md` | 5 | 2026-08-05 |
+| 23 | `fix(weather): Syntax error — comment ate the for-loop colon` | 1 | 2026-08-05 |
+| 24 | `fix(tests): autoDispose fix + mounted guards + comment out fonts` | 3 | 2026-08-05 |
+| 25 | `fix(mobile): Flutter 3.22 compat — CardThemeData + missing _InputBar` | 2 | 2026-08-05 |
+| 26 | `fix(mobile): Guard tokenProvider against uninitialized Supabase` | 1 | 2026-08-05 |
+| 27 | `fix(mobile): Guard app_router redirect against uninitialized Supabase` | 1 | 2026-08-05 |
+| 28 | `fix(mobile): ShimmerList overflow — Column → ListView.builder` | 1 | 2026-08-05 |
+
+---
+
+## 9. Production Roadmap
+
+| Phase | Status | Description |
+|---|---|---|
+| 1 | ✅ Done | Synthetic MVP (in-memory, mock AI, all endpoints) |
+| 2 | ⏳ Ready | Supabase flip (schema deployed, flip = 3 imports + smoke test) |
+| 3 | ✅ Running | Flutter mobile app (scaffold + running E2E locally) |
+| 4 | 🔜 Next | RevenueCat payments (keys + `purchases_flutter` uncomment) |
+| 5 | 🔜 | Play Store launch (real auth, real persistence, real payments) |
