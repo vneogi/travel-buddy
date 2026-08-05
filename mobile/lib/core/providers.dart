@@ -4,6 +4,7 @@ import 'api_client.dart';
 import 'env.dart';
 import '../data/repositories.dart';
 import '../data/models.dart';
+import '../services/signal_service.dart';
 
 /// Supabase access token provider (null in dev → ApiClient falls back to
 /// X-Debug-User-Id). Guarded because Supabase.instance throws if initialize()
@@ -35,4 +36,10 @@ final userRepoProvider = Provider<UserRepository>(
 /// Live reroute counter for the badge; invalidate after each structural event.
 final userStatusProvider = FutureProvider<UserStatus>(
   (ref) => ref.watch(userRepoProvider).status(),
+);
+
+/// Signal service (the offline seam — SPEC-01 B.3).
+/// All signal emissions go through this; SPEC-02 swaps implementation.
+final signalServiceProvider = Provider<SignalService>(
+  (ref) => SignalService(ref.watch(apiClientProvider)),
 );

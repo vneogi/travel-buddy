@@ -19,6 +19,7 @@ try:
     from routers.payment_router import router as payment_router
 except ImportError:
     payment_router = None
+from routers.signal_router import router as signal_router
 from seed_data import seed_venues
 
 # ==============================================================================
@@ -60,6 +61,7 @@ app.add_middleware(
 app.include_router(trip_router)
 if payment_router:
     app.include_router(payment_router)
+app.include_router(signal_router)
 
 
 # ==============================================================================

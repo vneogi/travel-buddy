@@ -29,6 +29,8 @@ class DatabaseService:
         self._trips: Dict[str, dict] = {}
         self._venues: List[dict] = []
         self._event_log: List[dict] = []
+        self._signals: Dict[str, dict] = {}  # keyed by signal_id (idempotency)
+        self._valid_signal_types = {"user_loved"}  # seed; mirrors signal_type table
 
     # =========================================================================
     # User Tier Operations
@@ -232,6 +234,58 @@ class DatabaseService:
             "heavy_model_calls": heavy,
             "light_model_calls": total - cached - heavy,
         }
+
+
+    # =========================================================================
+    # Signal Capture (SPEC-01 Part B — data flywheel)
+    # =========================================================================
+
+    def get_valid_signal_types(self) -> set:
+        """Return the set of known signal type keys."""
+        return self._valid_signal_types
+
+    def record_signal(
+        self,
+        user_id: str,
+        signal_id: str,
+        signal_type: str,
+        place_ref: str,
+        value_text: Optional[str] = None,
+        value_numeric: Optional[float] = None,
+        value_json: Optional[dict] = None,
+        captured_at: datetime = None,
+        trip_id: Optional[str] = None,
+    ) -> bool:
+        """Record a signal. Returns True if new, False if duplicate (idempotent).
+
+        signal_id is the client-generated UUID — the idempotency key.
+        Re-recording the same signal_id is a no-op (returns False).
+        """
+        if signal_id in self._signals:
+            return False  # duplicate — idempotent no-op
+
+        self._signals[signal_id] = {
+            "signal_id": signal_id,
+            "place_ref": place_ref,
+            "source": "first_party",
+            "signal_type": signal_type,
+            "user_id": user_id,
+            "trip_id": trip_id,
+            "value_text": value_text,
+            "value_numeric": value_numeric,
+            "value_json": value_json,
+            "captured_at": (captured_at or datetime.utcnow()).isoformat(),
+            "ingested_at": datetime.utcnow().isoformat(),
+        }
+        return True
+
+    def get_signals_count(self) -> int:
+        """Get total signals stored (for testing)."""
+        return len(self._signals)
+
+    def get_signal(self, signal_id: str) -> Optional[dict]:
+        """Get a signal by ID (for testing)."""
+        return self._signals.get(signal_id)
 
 
 # Singleton instance

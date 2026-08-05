@@ -10,6 +10,7 @@ import '../../widgets/reroute_badge.dart';
 import '../../widgets/shimmer_card.dart';
 import '../../widgets/error_view.dart';
 import 'itinerary_notifier.dart';
+import '../../core/providers.dart';
 
 /// The hero screen — live timeline of activity cards.
 ///
@@ -126,6 +127,12 @@ class ItineraryScreen extends ConsumerWidget {
                                     nextNode: next,
                                     onTapSwap: () => _swap(ref, node),
                                     onTapCancel: () => _cancel(ref, node),
+                                    onTapLoved: () => ref.read(signalServiceProvider).emit(
+                                      signalType: 'user_loved',
+                                      placeRef: node.venueId ?? node.venueName,
+                                      valueText: 'loved',
+                                      tripId: tripId,
+                                    ),
                                   ),
                                 );
                               },

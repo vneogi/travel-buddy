@@ -12,6 +12,7 @@ class ActivityCard extends StatelessWidget {
   final TripNode? nextNode;
   final VoidCallback? onTapSwap;
   final VoidCallback? onTapCancel;
+  final VoidCallback? onTapLoved;
   final bool isThinking; // show shimmer for heavy model calls
 
   const ActivityCard({
@@ -20,6 +21,7 @@ class ActivityCard extends StatelessWidget {
     this.nextNode,
     this.onTapSwap,
     this.onTapCancel,
+    this.onTapLoved,
     this.isThinking = false,
   });
 
@@ -129,6 +131,18 @@ class ActivityCard extends StatelessWidget {
                           ),
                           if (node.isLocked)
                             Icon(Icons.lock, size: 16, color: AppColors.accent),
+                          if (onTapLoved != null && !isCompleted && !isSkipped)
+                            GestureDetector(
+                              onTap: onTapLoved,
+                              child: Padding(
+                                padding: const EdgeInsets.only(left: AppSpacing.sm),
+                                child: Icon(
+                                  Icons.favorite_border,
+                                  size: 20,
+                                  color: AppColors.muted,
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                       if (node.microLocation != null) ...[
