@@ -72,3 +72,45 @@ Freemium. Assume no paying users for the first ~6 months — that's fine and exp
 - **Deep > wide.** Retention in one city beats presence in ten.
 - **Trust is the product.** We're the anti-tourist-trap local friend; never sacrifice that for a sponsor dollar.
 - **Compound the moat monthly.** Traction, unique tech, or unique data — every month, one of them.
+
+## 11. In-trip capabilities & how they compound into the moat
+
+Principle: **any single capability is copyable in a sprint; the moat is that they all
+emit and consume the same accumulating behavioral data asset.** Competitors can't replay
+our users' real on-trip behavior across our destinations. We prioritize the capabilities
+whose *data* is proprietary and outcome-linked, not the ones that are generic glue.
+
+| # | Capability | How it's built | Signal it feeds/consumes | Moat strength |
+|---|---|---|---|---|
+| 1 | Reads the group, adjusts silently | Audience model (profile + per-trip party) as recommender input | audience-segmented accept/reject | segmented data |
+| 2 | Owns "what now?" — **proactive** reroute | Context watcher (weather/hours/popular_times) surfaces plan-B before pain | reroute_suggested/accepted/rejected | acceptance-rate data (capture pre-Laos) |
+| 3 | Invisible logistics (food/toilet/fare) | Micro-intent handlers on location+time, ranked by fused score | acted-on micro-suggestions | table-stakes glue |
+| 4 | Right *time*, not just place | Time as first-class ranking dim; scheduler slots optimal time | arrival_delta, dwell, timed crowding | outcome-linked timing |
+| 5 | Protects against regret (anti-trap) | Fused quality + trap-score + user disappointment signals steer gently | not_as_described, disliked | on-brand, core |
+| 6 | Reconciles split group desires | Multi-preference optimizer over party + schedule + transit | group-compromise acceptance | flagship, ~nobody has it |
+| 7 | Calm in the unexpected — offline | Offline-first cache + curated "help me now" pack per city | offline usage patterns | structural (incumbents won't) |
+| 8 | Remembers you across trips | Persistent per-user preference model, improves each trip | full cross-trip signal history | retention -> lock-in |
+
+**Why it's uncopyable over time:** (a) the signals are **behavioral, not scrapable**
+("which alternative a tired family accepted at 3pm in 41C" only exists via on-trip use);
+(b) they're **segmented + outcome-linked** (not "4.2 stars" but "loved by daddy-kiddo trips
+at golden hour when rerouted-to"); (c) cross-trip memory (#8) turns the data moat into
+personal **switching cost**. Build priority concentrates in #2/#4/#5/#6/#7.
+
+## 12. Audience-aware recommendations (extends §3)
+
+Recommendations, pacing, food, and reroute logic MUST key off **who is travelling**, held in
+two places: the persistent **user profile** (traveller type, dietary, mobility, interests) and
+the **per-trip party** (this trip's companions + ages: solo/couple/friends/family-young-kids/
+family-teens/multigen/daddy-kiddo/accessibility). Same person travels differently each trip.
+This is both a UX differentiator (incumbents recommend generically) and the source of the
+segmented behavioral data in §11.
+
+## 13. Monetization — services & lodging (extends §9)
+
+- **Future — local services marketplace (Phase 3+):** guides (~$100/day freelancers), private
+  car+driver, and *cheaper local tours that bypass the GetYourGuide/Viator markup*. This is
+  **supply** (strongest moat type) and the eventual take-rate business. Timing: after retention
+  is proven; requires per-partner ops, so sequence it deliberately, one flagship city first.
+- **Lodging (hotel/BnB/homestay/hostel):** capture stay experiences as a signal category; earn
+  via affiliate/commission. Lower urgency than services.
