@@ -312,3 +312,147 @@ Rationale: the field trip's value is the *behavioral* data — that's the part y
 ## 15. Non-goals restated
 No connectors, no LLM summarization, no sale-export in this phase. This BRD delivers the *model* and
 the *first-party capture* that must exist before Oct 2.
+
+## 16. Audience model & capability signals (adds to §3-§4)
+
+*Operationalizes VISION §11 (in-trip capabilities -> moat) and the audience-aware principle.
+Everything here obeys §2: new signals are `signal_type` rows, not new tables, except the two
+genuinely new *entities* below (traveler profile + trip party), which the signals reference.*
+
+### 16.1 New entities
+
+#### `traveler_profile` — persistent "who this user is as a traveler"
+One per `app_user`; slow-changing preferences that carry across trips (feeds capability #8 memory).
+
+```
+traveler_profile
+  profile_id          UUID PK
+  user_id             FK -> app_user (unique)
+  traveler_types      TEXT[]    -- self-declared defaults: solo|couple|friends|family_*|...
+  dietary             TEXT[]    -- veg|vegan|halal|allergy:nuts|...
+  mobility            TEXT[]    -- stairs_ok|wheelchair|low_stamina|stroller|...
+  interest_vector     JSONB     -- learned + declared: {art:0.8, nightlife:0.2, food:0.9,...}
+  pace_preference     TEXT      -- packed | balanced | relaxed
+  budget_band         TEXT      -- shoestring | mid | premium
+  updated_at
+```
+
+`interest_vector` is *learned* over time from behavioral signals (§16.3) — declared values seed it.
+
+#### `trip_party` & `party_member` — "who is on THIS trip"
+Per-trip composition. The same user has different parties on different trips (daddy-kiddo vs solo).
+This is the key input that makes recommendations audience-aware per-trip.
+
+```
+trip_party
+  party_id            UUID PK
+  trip_id             FK -> trip_state (unique)
+  party_type          TEXT      -- solo|couple|friends|family_young_kids|family_teens|
+                                -- multigen|daddy_kiddo|accessibility_focused|mixed
+  size                INT
+  notes               TEXT NULL
+```
+
+```
+party_member
+  member_id           UUID PK
+  party_id            FK -> trip_party
+  role                TEXT      -- self|partner|child|teen|parent|friend|...
+  age_band            TEXT      -- infant|toddler|child|teen|adult|senior (NOT exact age — privacy)
+  needs               TEXT[]    -- nap_schedule|stroller|dietary:*|low_stamina|...
+  preference_vector   JSONB NULL -- optional per-member interests (drives capability #6)
+```
+
+Design notes: **age_band not birth date** (minimize sensitive data on minors). `preference_vector`
+per member is what the multi-preference optimizer (capability #6) reconciles.
+
+### 16.2 New `signal_type` rows (explicit — capability #1, #5, audience-segmented)
+Insert-only; no schema change. Each row also carries the **party context** at capture time via
+`signal.value_json.party_context` (see §16.5), so every opinion is segmentable by who was travelling.
+
+| key | category | value_kind | decay | notes |
+|---|---|---|---|---|
+| `user_loved` / `user_liked` / `user_disliked` | explicit_user | enum | exp_180d | already in §4.1 |
+| `user_rating` | explicit_user | numeric(1-5) | exp_365d | |
+| `user_not_as_described` | explicit_user | boolean | exp_180d | feeds anti-trap (#5) |
+| `user_kid_verdict` | explicit_user | enum | exp_180d | kids_loved/ok/hated — **audience-segmented** (#1) |
+| `user_accessibility_ok` | explicit_user | enum | exp_365d | stairs/stroller/wheelchair reality vs listing |
+
+### 16.3 New `signal_type` rows (behavioral — the crown jewels, capabilities #2/#4/#6)
+These are the *outcome-linked, segmented, unscrapable* signals that are the actual moat. **Highest
+capture priority before Laos.**
+
+| key | category | value_kind | decay | powers |
+|---|---|---|---|---|
+| `reroute_suggested` | behavioral | json | none(event) | #2 — {from_node, candidate, trigger:weather/closure/fatigue, confidence} |
+| `reroute_accepted` | behavioral | json | none(event) | #2 — training signal for suggestion quality |
+| `reroute_rejected` | behavioral | json | none(event) | #2 — negative signal + reason if given |
+| `visited_confirmed` | behavioral | json | none(event) | validates recs — {planned_vs_swapped, dwell_min} (consented location) |
+| `node_skipped` | behavioral | boolean | none(event) | negative signal |
+| `node_reordered` | behavioral | json | none(event) | pacing signal |
+| `arrival_delta` | behavioral | numeric(min) | none(event) | #4 — planned vs actual arrival -> real timing |
+| `dwell_minutes` | behavioral | numeric | none(event) | #4 — engagement + real visit duration |
+| `search_then_ignore` | behavioral | boolean | exp_30d | surfaced-but-not-chosen (negative rank signal) |
+| `group_compromise_accepted` | behavioral | json | none(event) | #6 — {members[], chosen_option, alternatives} |
+| `proactive_suggestion_shown` / `_actioned` | behavioral | json | none(event) | #2 — nag-avoidance tuning |
+
+### 16.4 New `signal_type` rows (derived/time — capability #4, placeholder for LLM)
+
+| key | category | value_kind | notes |
+|---|---|---|---|
+| `observed_best_time` | derived | json | #4 — computed from timed `arrival_delta`+`dwell`+`too_crowded`+ratings -> {venue, window, confidence}. **This is proprietary timing data** incumbents lack. |
+| `llm_audience_fit` | derived | json | placeholder — LLM scores venue fit per party_type from fused signals |
+| (existing) `llm_summary`, `llm_sentiment`, `llm_tourist_trap_score` | derived | json | §4.4 |
+
+### 16.5 Party context on every signal (the segmentation lever)
+To make the moat *segmented* (VISION §11: "loved by daddy-kiddo trips at golden hour"), first-party
+signals stamp the party context at capture time — denormalized into `signal.value_json`:
+
+```
+value_json.party_context = {
+  party_type,
+  size,
+  age_bands[],
+  time_of_day,
+  weather_bucket,
+  day_index
+}
+```
+
+Rationale: parties/profiles change over time; freezing context on the signal keeps historical
+segmentation correct (don't join to mutable current profile). This is what lets the fused
+place-quality view (§5.2) produce *audience-and-condition-specific* scores rather than a flat rating.
+
+### 16.6 Fusion additions (extends §5)
+- The place-quality read model (§5.2) gains **segment dimensions**: fused score can be sliced by
+  `party_type`, `time_window`, `weather_bucket`. Engine reads the slice matching the current trip.
+- **Preference learning:** `traveler_profile.interest_vector` and `party_member.preference_vector`
+  are updated asynchronously from behavioral signals (accepted/loved/dwell -> up; rejected/skipped ->
+  down). This is capability #8 (cross-trip memory) made concrete.
+- **Multi-preference optimizer (#6)** consumes party member vectors + schedule + transit; its
+  chosen option and the alternatives it weighed are logged as `group_compromise_accepted` -> the
+  optimizer trains on its own outcomes.
+
+### 16.7 Privacy additions (extends §8)
+- **Minors:** store `age_band`, never birth date or name for child members. `party_member` for
+  children holds no PII beyond band + needs.
+- **Behavioral + location signals** (`visited_confirmed`, `dwell_minutes`, `arrival_delta`) require
+  granted `consent` scope `behavioral_capture` / `location_capture` (§3.6) — enforced at ingest.
+- Right-to-delete cascades to `traveler_profile`, `trip_party`, `party_member`, and all first-party
+  `signal` rows for the user.
+
+### 16.8 Laos-critical subset (extends §13)
+Must exist before Oct 2 to capture the moat signals (cannot be backfilled):
+- `trip_party` + `party_member` (so signals are segmentable from day one).
+- Behavioral signal_types: `reroute_suggested/accepted/rejected`, `visited_confirmed`,
+  `node_skipped`, `arrival_delta`, `dwell_minutes`, `group_compromise_accepted`.
+- `party_context` stamping on all first-party signals.
+- Consent scopes wired (`behavioral_capture`, `location_capture`).
+Fast-follow (post-trip): `observed_best_time` computation, segment-sliced fusion, LLM `llm_audience_fit`.
+
+### 16.9 Open questions (adds to §14)
+8. Multi-preference optimizer (#6): build as constraint solver vs. LLM-planner vs. hybrid? (Affects
+   what we log as "alternatives weighed".)
+9. `interest_vector` representation — fixed taxonomy vs. embedding? (Extensibility vs. interpretability.)
+10. How much location granularity for `visited_confirmed`/`dwell` to prove a visit without over-collecting?
+11. Do child `party_member` rows need their own (guardian-granted) consent handling?
