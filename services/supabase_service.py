@@ -405,6 +405,110 @@ class SupabaseService:
             ),
         }
 
+
+    # =========================================================================
+    # Signal Capture (SPEC-01 Part B — data flywheel)
+    # =========================================================================
+
+    _signal_type_cache: Dict[str, str] = {}
+    _first_party_source_id: Optional[str] = None
+
+    def get_valid_signal_types(self) -> set:
+        """Fetch valid signal type keys from the signal_type table.
+
+        Caches the key -> signal_type_id mapping for efficient batch inserts.
+        """
+        rows = (
+            self.client.table("signal_type")
+            .select("signal_type_id,key")
+            .execute()
+            .data or []
+        )
+        self._signal_type_cache = {r["key"]: r["signal_type_id"] for r in rows}
+        return set(self._signal_type_cache.keys())
+
+    def _ensure_first_party_source_id(self) -> Optional[str]:
+        """Lazy-load the first_party source_id (cached after first call)."""
+        if self._first_party_source_id is None:
+            src = (
+                self.client.table("source")
+                .select("source_id")
+                .eq("key", "first_party")
+                .execute()
+                .data
+            )
+            self._first_party_source_id = src[0]["source_id"] if src else None
+        return self._first_party_source_id
+
+    def record_signal(
+        self,
+        user_id: str,
+        signal_id: str,
+        signal_type: str,
+        place_ref: str,
+        value_text: Optional[str] = None,
+        value_numeric: Optional[float] = None,
+        value_json: Optional[dict] = None,
+        captured_at: datetime = None,
+        trip_id: Optional[str] = None,
+    ) -> bool:
+        """Idempotent signal insert. Returns True if new, False if duplicate.
+
+        Uses PostgREST upsert with on_conflict='signal_id' and
+        ignore_duplicates=True to achieve ON CONFLICT (signal_id) DO NOTHING.
+        When the row already existed, result.data is empty -> return False.
+        """
+        # Ensure caches are populated
+        if signal_type not in self._signal_type_cache:
+            self.get_valid_signal_types()
+        type_id = self._signal_type_cache.get(signal_type)
+        if not type_id:
+            return False  # unknown type — should have been caught by router
+
+        source_id = self._ensure_first_party_source_id()
+
+        row = {
+            "signal_id": signal_id,
+            "place_ref": place_ref,
+            "source_id": source_id,
+            "signal_type_id": type_id,
+            "user_id": user_id,
+            "trip_id": trip_id,
+            "value_text": value_text,
+            "value_numeric": value_numeric,
+            "value_json": value_json,
+            "captured_at": captured_at.isoformat() if captured_at else None,
+            "provenance": {"method": "client_emit"},
+        }
+        # Remove None values to let Postgres defaults apply
+        row = {k: v for k, v in row.items() if v is not None}
+
+        # PostgREST: on_conflict + ignore_duplicates => ON CONFLICT DO NOTHING.
+        # Returns [] when the row already existed -> False (duplicate).
+        result = self.client.table("signal").upsert(
+            row, on_conflict="signal_id", ignore_duplicates=True
+        ).execute()
+        return bool(result.data)
+
+    def get_signals_count(self) -> int:
+        """Get total signals stored (for diagnostics)."""
+        result = (
+            self.client.table("signal")
+            .select("signal_id", count="exact")
+            .execute()
+        )
+        return result.count or 0
+
+    def get_signal(self, signal_id: str) -> Optional[dict]:
+        """Get a signal by ID (for diagnostics/testing)."""
+        result = (
+            self.client.table("signal")
+            .select("*")
+            .eq("signal_id", signal_id)
+            .execute()
+        )
+        return result.data[0] if result.data else None
+
     # =========================================================================
     # Additional SQL Functions (to be created via migration)
     # =========================================================================
