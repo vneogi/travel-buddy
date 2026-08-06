@@ -1,20 +1,39 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:sqflite/sqflite.dart';
 
-import '../lib/core/api_client.dart';
-import '../lib/data/signal.dart';
-import '../lib/services/signal_service.dart';
+import 'package:travel_buddy/core/api_client.dart';
+import 'package:travel_buddy/data/signal.dart';
+import 'package:travel_buddy/offline/offline_database.dart';
+import 'package:travel_buddy/offline/sync_engine.dart';
+import 'package:travel_buddy/services/signal_service.dart';
 
-// Mock the ApiClient
+// Mocks
 class MockApiClient extends Mock implements ApiClient {}
 
 void main() {
+  // Use in-memory SQLite for tests
+  sqfliteFfiInit();
+  databaseFactory = databaseFactoryFfi;
+
+  late OfflineDatabase db;
   late MockApiClient mockApi;
+  late SyncEngine syncEngine;
   late SignalService service;
 
-  setUp(() {
+  setUp(() async {
+    db = OfflineDatabase();
     mockApi = MockApiClient();
-    service = SignalService(mockApi);
+    syncEngine = SyncEngine(db: db, api: mockApi);
+    service = SignalService(db: db, syncEngine: syncEngine);
+  });
+
+  tearDown(() async {
+    syncEngine.stop();
+    await db.close();
   });
 
   group('Signal model', () {
@@ -53,13 +72,8 @@ void main() {
     });
   });
 
-  group('SignalService.emit', () {
-    test('calls POST /signals with batch body shape', () async {
-      when(() => mockApi.post(
-            '/signals',
-            body: any(named: 'body'),
-          )).thenAnswer((_) async => {'accepted': 1, 'duplicates': 0});
-
+  group('SignalService.emit (queue-backed — SPEC-02)', () {
+    test('emit enqueues to outbox with correct payload shape', () async {
       await service.emit(
         signalType: 'user_loved',
         placeRef: 'dubai-mall',
@@ -67,37 +81,29 @@ void main() {
         tripId: 'trip-001',
       );
 
-      final captured = verify(() => mockApi.post(
-            '/signals',
-            body: captureAny(named: 'body'),
-          )).captured.single as Map<String, dynamic>;
+      // Verify persisted to outbox
+      final batch = await db.getPendingBatch();
+      expect(batch.length, 1);
+      expect(batch.first['state'], 'pending');
 
-      // Batch wrapper
-      expect(captured.containsKey('signals'), true);
-      expect(captured['signals'], isA<List>());
-      expect(captured['signals'].length, 1);
-
-      // Signal shape
-      final sig = captured['signals'][0] as Map<String, dynamic>;
-      expect(sig['signal_type'], 'user_loved');
-      expect(sig['place_ref'], 'dubai-mall');
-      expect(sig['value_text'], 'loved');
-      expect(sig['trip_id'], 'trip-001');
-      expect(sig['signal_id'], isNotEmpty); // UUID generated
-      expect(sig['captured_at'], isNotEmpty); // timestamp set
+      // Verify payload shape
+      final payload = jsonDecode(batch.first['payload_json'] as String);
+      expect(payload['signal_type'], 'user_loved');
+      expect(payload['place_ref'], 'dubai-mall');
+      expect(payload['value_text'], 'loved');
+      expect(payload['trip_id'], 'trip-001');
+      expect(payload['signal_id'], isNotEmpty);
+      expect(payload['captured_at'], isNotEmpty);
     });
 
-    test('swallows errors (fire-and-forget for now)', () async {
-      when(() => mockApi.post(
-            '/signals',
-            body: any(named: 'body'),
-          )).thenThrow(Exception('Network error'));
-
-      // Should not throw
+    test('emit never throws (fire-and-forget with local persistence)', () async {
+      // Even without any mock setup, emit should not throw
+      // because it persists locally and triggers sync in background
       await service.emit(
         signalType: 'user_loved',
         placeRef: 'some-place',
       );
+      // If we get here without exception, test passes
     });
   });
 }
