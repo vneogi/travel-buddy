@@ -86,16 +86,21 @@ void main() {
         tripId: 'trip-001',
       );
 
-      // Let background triggerSync settle
-      await Future.delayed(const Duration(milliseconds: 50));
+      // Let background triggerSync settle (it may mark row for retry)
+      await Future.delayed(const Duration(milliseconds: 100));
 
-      // Verify persisted to outbox
-      final batch = await db.getPendingBatch();
-      expect(batch.length, 1);
-      expect(batch.first['state'], 'pending');
+      // Verify row exists in outbox (use getOutboxSize — counts all states,
+      // unlike getPendingBatch which skips rows with future next_retry_at)
+      final size = await db.getOutboxSize();
+      expect(size, 1);
+
+      // Query raw DB to verify payload regardless of state
+      final database = await db.db;
+      final rows = await database.query('outbox');
+      expect(rows.length, 1);
 
       // Verify payload shape
-      final payload = jsonDecode(batch.first['payload_json'] as String);
+      final payload = jsonDecode(rows.first['payload_json'] as String);
       expect(payload['signal_type'], 'user_loved');
       expect(payload['place_ref'], 'dubai-mall');
       expect(payload['value_text'], 'loved');
