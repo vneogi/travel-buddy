@@ -16,18 +16,9 @@ class MockApiClient extends Mock implements ApiClient {}
 
 /// SPEC-02 Part D — Offline queue tests.
 ///
-/// These tests verify the non-negotiable invariants:
-/// 1. Never lose a user action (persist before network)
-/// 2. Exactly-once server effect (idempotent retry)
-/// 3. Never block UI on network
-/// 4. Crash recovery (inflight rows retried)
-/// 5. Backoff with jitter (no thundering herd)
-///
-/// NOTE: Tests throw REAL typed exceptions (UnauthorizedException,
-/// ServerException, etc.) — not raw Exception strings — to match what
-/// ApiClient actually throws in production.
+/// Uses in-memory SQLite (`:memory:`) for full test isolation —
+/// each test gets a fresh empty database.
 void main() {
-  // Use in-memory SQLite for tests
   sqfliteFfiInit();
   databaseFactory = databaseFactoryFfi;
 
@@ -37,7 +28,7 @@ void main() {
   late SignalService signalService;
 
   setUp(() async {
-    db = OfflineDatabase();
+    db = OfflineDatabase(testPath: inMemoryDatabasePath);
     mockApi = MockApiClient();
     syncEngine = SyncEngine(db: db, api: mockApi);
     signalService = SignalService(db: db, syncEngine: syncEngine);
@@ -45,6 +36,8 @@ void main() {
 
   tearDown(() async {
     syncEngine.stop();
+    // Let any fire-and-forget triggerSync() settle before closing DB
+    await Future.delayed(const Duration(milliseconds: 50));
     await db.close();
   });
 
@@ -52,7 +45,10 @@ void main() {
   // Test 1: emit with network DOWN -> row in outbox, no throw
   // ============================================================
   test('1. emit persists to outbox before network (durability guarantee)', () async {
-    // Don't set up any mock response — emit should NOT call network
+    // Stub API to simulate offline (triggerSync runs in background)
+    when(() => mockApi.post(any(), body: any(named: 'body')))
+        .thenThrow(const NetworkException());
+
     await signalService.emit(
       signalType: 'user_loved',
       placeRef: 'dubai-mall',
@@ -148,7 +144,6 @@ void main() {
       'captured_at': DateTime.now().toUtc().toIso8601String(),
     }), DateTime.now().toUtc().toIso8601String());
 
-    // Throw REAL typed exception (not raw string)
     when(() => mockApi.post('/signals', body: any(named: 'body')))
         .thenThrow(const ServerException());
 
@@ -173,7 +168,6 @@ void main() {
       'captured_at': DateTime.now().toUtc().toIso8601String(),
     }), DateTime.now().toUtc().toIso8601String());
 
-    // Throw REAL typed exception — ForbiddenException is a permanent failure
     when(() => mockApi.post('/signals', body: any(named: 'body')))
         .thenThrow(const ForbiddenException());
 
@@ -199,7 +193,6 @@ void main() {
       'captured_at': DateTime.now().toUtc().toIso8601String(),
     }), DateTime.now().toUtc().toIso8601String());
 
-    // Throw REAL typed exception
     when(() => mockApi.post('/signals', body: any(named: 'body')))
         .thenThrow(const UnauthorizedException());
 

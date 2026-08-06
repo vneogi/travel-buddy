@@ -6,6 +6,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:sqflite/sqflite.dart';
 
 import 'package:travel_buddy/core/api_client.dart';
+import 'package:travel_buddy/core/api_exception.dart';
 import 'package:travel_buddy/data/signal.dart';
 import 'package:travel_buddy/offline/offline_database.dart';
 import 'package:travel_buddy/offline/sync_engine.dart';
@@ -15,7 +16,6 @@ import 'package:travel_buddy/services/signal_service.dart';
 class MockApiClient extends Mock implements ApiClient {}
 
 void main() {
-  // Use in-memory SQLite for tests
   sqfliteFfiInit();
   databaseFactory = databaseFactoryFfi;
 
@@ -25,14 +25,19 @@ void main() {
   late SignalService service;
 
   setUp(() async {
-    db = OfflineDatabase();
+    db = OfflineDatabase(testPath: inMemoryDatabasePath);
     mockApi = MockApiClient();
     syncEngine = SyncEngine(db: db, api: mockApi);
     service = SignalService(db: db, syncEngine: syncEngine);
+
+    // Default stub: simulate offline so background triggerSync doesn't crash
+    when(() => mockApi.post(any(), body: any(named: 'body')))
+        .thenThrow(const NetworkException());
   });
 
   tearDown(() async {
     syncEngine.stop();
+    await Future.delayed(const Duration(milliseconds: 50));
     await db.close();
   });
 
@@ -81,6 +86,9 @@ void main() {
         tripId: 'trip-001',
       );
 
+      // Let background triggerSync settle
+      await Future.delayed(const Duration(milliseconds: 50));
+
       // Verify persisted to outbox
       final batch = await db.getPendingBatch();
       expect(batch.length, 1);
@@ -97,8 +105,7 @@ void main() {
     });
 
     test('emit never throws (fire-and-forget with local persistence)', () async {
-      // Even without any mock setup, emit should not throw
-      // because it persists locally and triggers sync in background
+      // Even with network errors, emit should not throw
       await service.emit(
         signalType: 'user_loved',
         placeRef: 'some-place',

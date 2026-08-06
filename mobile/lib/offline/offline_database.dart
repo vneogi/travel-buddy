@@ -14,7 +14,14 @@ class OfflineDatabase {
   static const _dbName = 'travel_buddy_offline.db';
   static const _dbVersion = 1;
 
+  /// Optional path override for testing (pass inMemoryDatabasePath for isolation).
+  final String? _testPath;
+
   Database? _db;
+
+  /// Creates an OfflineDatabase. Pass [testPath] in unit tests to use an
+  /// in-memory database (`:memory:`) for full test isolation.
+  OfflineDatabase({String? testPath}) : _testPath = testPath;
 
   /// Lazy-open the database (creates tables on first run).
   Future<Database> get db async {
@@ -23,8 +30,7 @@ class OfflineDatabase {
   }
 
   Future<Database> _open() async {
-    final dbPath = await getDatabasesPath();
-    final path = join(dbPath, _dbName);
+    final path = _testPath ?? join(await getDatabasesPath(), _dbName);
     return openDatabase(
       path,
       version: _dbVersion,
