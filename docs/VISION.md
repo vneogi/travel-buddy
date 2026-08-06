@@ -114,3 +114,59 @@ segmented behavioral data in §11.
   is proven; requires per-partner ops, so sequence it deliberately, one flagship city first.
 - **Lodging (hotel/BnB/homestay/hostel):** capture stay experiences as a signal category; earn
   via affiliate/commission. Lower urgency than services.
+
+
+## 14. The Travelogue: reciprocity that powers the flywheel
+
+**Problem it solves:** signal capture is otherwise *extractive* — the user taps ❤ or "closed" and
+gets nothing back. Weak incentive → thin signal volume → starved flywheel (§4).
+
+**The mechanic:** captured signals (`visited_confirmed`, `dwell_minutes`, `arrival_delta`, ratings,
+photos, the itinerary timeline) automatically assemble into a trip diary the user actually wants.
+**It is a *rendering* of data we already capture** — near-zero marginal instrumentation cost.
+
+**Why it's high-ROI:**
+- **Reciprocal, not extractive:** users get something they value for the signals we need.
+- **It answers the consent question** (DATA_MODEL §14 Q3): the ask becomes *"allow location so your
+  trip diary builds itself"* — a benefit framing for exactly the permission the moat requires.
+- **Retention + re-engagement:** post-trip the diary pulls users back; cross-trip it makes trip #2
+  feel continuous with #1, reinforcing capability #8 (memory → switching cost).
+- **More on-trip opens** (north star, §7) → more signal. Virtuous.
+
+**Explicitly NOT a social feature.** No feed, no following, no creator economy. Sharing is optional
+export, never the point. We are a utility with a memory, not a network.
+
+**Timing:** post-Laos. It renders captured data, so as long as SPEC-01/02 capture signals during the
+field trip, it can be built afterward — designed against *real* trip data.
+
+## 15. Distribution: the tourism-board option (Phase 3+)
+
+Competitor signal (Explurger's "NiVU", 2026): QR codes at heritage sites via an Indian state tourism
+department partnership. Their *features* (on-site insights, translation, recommendations) are
+commodity; the **partnership is the real asset** — it owns the physical point of intent and is
+plausibly exclusive per state.
+
+**Assessment:** a QR scan is a single-moment content lookup — no behavioral data, no cross-trip
+memory, doesn't serve the "my day just broke" moment. Our wedge is untouched. But it confirms the
+on-site frontier is contested, and makes India a harder market.
+
+**Our version (later):** tourism-ministry partnerships across our footprint (Laos, Cambodia,
+Uzbekistan, Kyrgyzstan, Azerbaijan) — *supply + distribution + credibility* in one deal, arguably a
+better fit than the guides/drivers marketplace (§13).
+
+**Sequencing rule:** approach **from strength, post-retention** — offering "we can show your ministry
+what independent travelers actually do in your country." Pre-retention we have no leverage and B2G
+cycles would consume the company. **Do not chase this in 2026.**
+
+## 16. UX direction & the Offline Vault
+
+UI/UX ideas are tracked in `docs/UX_BACKLOG.md`, mapped to the §11 capabilities. **Architecture is
+frozen** — see UX_BACKLOG §0 for what we are deliberately NOT changing (no Isar migration, no
+provider rewrite, no folder restructure, no optimistic offline reflow, no background GPS polling).
+
+**Elevated to P1: the Offline Vault / Rescue Pack** (`docs/specs/SPEC-04-offline-vault.md`). It fills
+a real gap in our thinking: we specified offline **data sync** thoroughly but never *"what does the
+user need to DO when stranded?"* — no signal, lost, in a country whose script they can't read. The
+native-script address card (show the taxi driver your hotel, offline) is the emblematic feature.
+This is capability #7 made concrete and a **structural** advantage: online-only incumbents cannot
+serve this moment.

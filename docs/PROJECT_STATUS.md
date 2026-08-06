@@ -141,6 +141,16 @@ Key components:
 | 7 | Later | Play Store launch (real auth, real persistence, real payments) |
 | 8 | Oct 2 | Laos field test (airplane-mode drill must pass first) |
 
+
+### UX & Vault (new, P1)
+- `docs/UX_BACKLOG.md` — adopted UX ideas, prioritized; **§0 lists frozen architecture decisions**
+- `docs/specs/SPEC-04-offline-vault.md` — Offline Vault / Rescue Pack (P1, capability #7)
+- VISION §14 (Travelogue reciprocity), §15 (tourism-board distribution), §16 (UX direction)
+- DATA_MODEL §17 (vault cache tables + pre-caching rule)
+
+**Priority remains moat-first:** airplane-mode drill → Supabase flip → SPEC-03 `party_context` →
+behavioral signal types → **then** SPEC-04 Vault + map-first shell if time before Oct 2.
+
 ## 7. What's Next (priority order)
 
 1. **`flutter pub get && flutter test`** on real device — confirm 29 tests pass

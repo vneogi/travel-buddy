@@ -456,3 +456,23 @@ Fast-follow (post-trip): `observed_best_time` computation, segment-sliced fusion
 9. `interest_vector` representation — fixed taxonomy vs. embedding? (Extensibility vs. interpretability.)
 10. How much location granularity for `visited_confirmed`/`dwell` to prove a visit without over-collecting?
 11. Do child `party_member` rows need their own (guardian-granted) consent handling?
+
+
+## 17. Vault cache (extends §6 pipeline; supports SPEC-04)
+
+The Offline Vault requires *survival* data cached ahead of need. This is **client-side cache only** —
+it is NOT part of the signal/flywheel asset and carries no provenance or trust weighting.
+
+- `cache_vault` — per-trip JSON payload: accommodation (local-script + romanized address), emergency
+  contacts, essential phrases, pass metadata.
+- `cache_asset` — binary blobs (pass QR images, map thumbnails, document pages).
+
+**Pre-caching rule:** populate whenever online (trip create, accommodation set, successful trip
+fetch). Assume the user is offline exactly when they need it.
+
+**Server-side additions needed:** accommodation must store the address in **both** local script and
+romanized form; local-script translation is generated/fetched **online** and cached — never attempted
+offline. Per-city emergency numbers and phrase packs are curated static content served with the city.
+
+**Answer to open question #3 (consent UX):** the travelogue (VISION §14) is the benefit framing for
+the location/behavioral consent ask — *"allow location so your trip diary builds itself."*
