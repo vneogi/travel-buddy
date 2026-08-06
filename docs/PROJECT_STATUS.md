@@ -1,91 +1,88 @@
 # Travel Buddy — Project Status & Handoff
 
 > Single source of truth for where the project stands and what remains.
-> Last updated: 2026-08-05 (v7.0). Keep this file updated as milestones complete.
+> Last updated: 2026-08-06 (v8.0). Keep this file updated as milestones complete.
 
 ## 0. TL;DR
 
-- **Backend**: functionally complete, hardened, **27 unit tests passing** + 5 skipped
-  (Supabase integration). Signal capture endpoint live (`POST /signals`).
+- **Backend**: functionally complete, hardened, **33 unit tests passing** + 5 skipped
+  (Supabase integration). Signal capture + offline-sync server support live.
 - **AI**: live via OpenAI (gpt-4o heavy, gpt-4o-mini light, text-embedding-3-small).
 - **Supabase**: schema + functions deployed, signal tables ready (migration 0002).
   Venues NOT seeded. Backend still uses in-memory datastore (flip = 3 imports).
-- **Flutter**: running end-to-end on Chrome + Android. 14 unit tests passing.
-  Heart tap emits `user_loved` signal via `SignalService` seam.
-- **Signal capture (SPEC-01)**: fully implemented — migration, server, Flutter, tests.
-  Idempotent, auth-safe, both backends. Reviewed and gap-fixed (commit #38).
-- **Offline queue (SPEC-02)**: spec written, NOT implemented. Awaiting review.
-- **Migrations**: versioned tooling in place (`supabase/migrations/`). No more console SQL.
+- **Flutter**: running end-to-end on Chrome + Android. **29 unit tests expected**
+  (14 core + 4 signal + 11 offline). Offline-first queue fully implemented.
+- **Signal capture (SPEC-01)**: fully implemented + reviewed. All backends.
+- **Offline queue (SPEC-02)**: **IMPLEMENTED** — SQLite outbox, sync engine, typed
+  exception handling, crash recovery, debug view, app-resume lifecycle.
+  Two reviewer-found blocking bugs fixed (commits #41–42).
+- **Migrations**: versioned tooling in place (`supabase/migrations/`).
 
 ## 1. Commit History (all pushed to main)
 
 | # | Message | Key files |
 |---|---------|-----------|
-| 1 | `feat: Initial Travel Buddy MVP` | Full backend scaffold |
-| 2 | `fix(security): Add real auth + close IDOR holes` | security.py |
-| 3 | `fix(payments): Wire payment router, close webhook holes` | routers/payment_router.py |
-| 4 | `feat(ai): Auto-detect real vs synthetic AI, wire LLM` | agents/state_machine.py |
-| 5 | `feat(tests): Real pytest suite + fix $$ SQL` | tests/ |
-| 6 | `fix(settings): Restore missing auth fields` | config/settings.py |
-| 7 | `fix(sql): Replace single $ with $$ dollar-quoting` | models/database.py |
-| 8 | `docs: Update MASTER_BRD.md to v3.0` | MASTER_BRD.md |
-| 9 | `fix(config): Switch light model to gpt-4o-mini` | config/settings.py |
-| 10 | `fix(llm): Remove dead Gemini from LIGHT_FALLBACK` | agents/ |
-| 11 | `feat: Supabase seeder, integration tests, CORS, throttle` | seed_supabase.py |
-| 12 | `fix(ci): Add pyproject.toml for Ruff` | pyproject.toml |
-| 13 | `security: Fix critical auth-bypass regression` | security.py |
-| 14 | `docs: Update MASTER_BRD.md to v4.0` | MASTER_BRD.md |
-| 15 | `docs: Add PROJECT_STATUS.md handoff document` | docs/ |
-| 16 | `feat(mobile): Flutter app scaffold — full UI + integration` | mobile/ (31 files) |
-| 17 | `fix(mobile): Correct Dart interpolation + API contract` | mobile/ (10 files) |
-| 18 | `docs: Add comprehensive TESTING_GUIDE.md` | docs/ |
-| 19 | `docs: Replace short TESTING_GUIDE.md with full version` | docs/ |
-| 20 | `feat(mobile): Animated timeline reflow + StateNotifier` | 3 files |
-| 21 | `fix(mobile): Replace AnimatedList with keyed ListView` | itinerary_screen.dart |
-| 22 | `fix: Backend review — API key bug, memory leak, scope` | 6 files |
-| 23 | `feat(tests): Flutter test suite + TESTING_GUIDE.md` | 5 files |
-| 24 | `fix(weather): Syntax error — comment ate the colon` | weather_service.py |
-| 25 | `fix(tests): autoDispose fix + mounted guards + fonts` | 3 files |
-| 26 | `fix(mobile): Flutter 3.22 compat — CardThemeData` | 2 files |
-| 27 | `fix(mobile): Guard tokenProvider against uninitialized Supabase` | providers.dart |
-| 28 | `fix(mobile): Guard app_router redirect` | app_router.dart |
-| 29 | `fix(mobile): ShimmerList overflow — Column to ListView` | shimmer_card.dart |
-| 30 | `docs: Add VISION.md — product positioning, moat, strategy` | docs/VISION.md, MASTER_BRD.md |
-| 31 | `docs: Add user research surveys (short + deep)` | docs/research/ |
-| 32 | `docs: Extend VISION.md — capabilities matrix, audience, services` | docs/VISION.md |
-| 33 | `docs: Extend DATA_MODEL_BRD.md §16 — audience + signals` | docs/DATA_MODEL_BRD.md |
-| 34 | `docs: Add SPEC-01 — migration tooling + first signal slice` | docs/specs/ |
-| 35 | `feat(migrations): SPEC-01 Part A — versioned migration tooling` | supabase/migrations/ |
-| 36 | `feat(signals): SPEC-01 Part B — first signal slice (user_loved)` | 12 files |
-| 37 | `docs: Add SPEC-02 — offline-first event queue + sync` | docs/specs/ |
+| 1–29 | (Flutter phase — see v6.0 summary) | Full backend + mobile scaffold |
+| 30 | `docs: Add VISION.md` | docs/VISION.md |
+| 31 | `docs: Add user research surveys` | docs/research/ |
+| 32 | `docs: Extend VISION.md — capabilities matrix` | docs/VISION.md |
+| 33 | `docs: Extend DATA_MODEL_BRD.md §16` | docs/DATA_MODEL_BRD.md |
+| 34 | `docs: Add SPEC-01` | docs/specs/ |
+| 35 | `feat(migrations): SPEC-01 Part A` | supabase/migrations/ |
+| 36 | `feat(signals): SPEC-01 Part B` | 12 files |
+| 37 | `docs: Add SPEC-02` | docs/specs/ |
 | 38 | `fix(signals): Add record_signal to SupabaseService` | supabase_service.py |
 | 39 | `fix: Replace datetime.utcnow() with timezone-aware` | 9 files |
+| 40 | `docs: Update PROJECT_STATUS.md to v7.0` | docs/ |
+| 41 | `feat(offline): SPEC-02 — offline-first queue + sync` | 9 files |
+| 42 | `fix(offline): Address SPEC-02 review — lifecycle + exceptions` | 5 files |
+
+### Commit #41 — SPEC-02 Implementation
+- `mobile/lib/offline/offline_database.dart`: SQLite outbox + cache tables
+- `mobile/lib/offline/sync_engine.dart`: sync algorithm with backoff
+- `mobile/lib/services/signal_service.dart`: rewritten — queue-backed emit()
+- `mobile/lib/core/providers.dart`: wires OfflineDatabase + SyncEngine
+- `mobile/lib/features/debug/sync_status_screen.dart`: debug view
+- `mobile/test/offline_sync_test.dart`: 10 offline tests
+- `routers/signal_router.py`: Part C (per-item rejection, skew tolerance)
+- `tests/test_signals.py`: 12 tests (6 new Part C)
+- `mobile/pubspec.yaml`: sqflite, path, connectivity_plus
+
+### Commit #42 — Review Fixes (two blocking bugs)
+- `mobile/lib/main.dart`: ProviderContainer + SyncEngine.start() + app-resume
+- `mobile/lib/offline/sync_engine.dart`: typed exception catching (not string-matching)
+- `mobile/test/offline_sync_test.dart`: tests throw real exception types + test 11
+- `mobile/lib/routing/app_router.dart`: /profile/sync route
+- `mobile/lib/features/profile/profile_screen.dart`: sync status nav link
 
 ## 2. Test Results
 
-**Backend (pytest):** `27 passed, 5 skipped, 4 warnings`
+**Backend (pytest):** `33 passed, 5 skipped, 3 warnings`
+- 12 signal tests (6 SPEC-01 + 6 SPEC-02 Part C)
 - 5 skipped = Supabase integration tests (need live DB)
-- 4 warnings = third-party (FastAPI on_event deprecation, HTTP_422 rename)
-- 0 utcnow deprecation warnings (fixed in #39)
+- 3 warnings = third-party (FastAPI on_event deprecation)
 
-**Flutter:** `14 passed` (+ 4 signal tests = 18 expected after `flutter pub get`)
-- models, repositories, itinerary controller, signal service
+**Flutter (expected):** `29 tests`
+- 14 core (models, repositories, itinerary controller)
+- 4 signal service (wire format, error swallow)
+- 11 offline (durability, sync, crash recovery, backoff, typed errors)
 
 ## 3. Architecture
 
 ```
 Flutter App (mobile/)
-  └─ SignalService (THE offline seam — SPEC-02 swaps here)
-  └─ ApiClient (Dio + auth injection)
+  └─ SignalService (queue-backed — SPEC-02)
+       └─ OfflineDatabase (SQLite outbox + cache)
+       └─ SyncEngine (single-flight, typed exceptions, backoff)
+            └─ POST /api/v1/signals (batch, idempotent)
+  └─ ApiClient (Dio + typed exceptions)
   └─ StateNotifier controllers (Riverpod)
-       └─ POST /api/v1/signals (batch, idempotent)
-       └─ POST /api/v1/trip/event
-       └─ GET /api/v1/trip/{id}
+  └─ WidgetsBindingObserver (app-resume → triggerSync)
 
 FastAPI Backend
+  ├─ routers/signal_router.py     (SPEC-02 Part C: per-item, skew, rejected[])
   ├─ routers/trip_router.py       (trip CRUD + events)
   ├─ routers/payment_router.py    (RevenueCat webhooks)
-  ├─ routers/signal_router.py     (signal ingest — SPEC-01)
   ├─ security.py                  (JWT + debug auth)
   ├─ agents/state_machine.py      (LangGraph orchestrator)
   ├─ services/database_service.py (in-memory — active)
@@ -97,35 +94,74 @@ Supabase (PostgreSQL + pgvector)
   └─ 0002_signals_core.sql        (source, signal_type, signal)
 ```
 
-## 4. Signal Capture (SPEC-01) — IMPLEMENTED
+## 4. SPEC-02 Implementation (Offline Queue + Sync)
 
-The first vertical slice of the data flywheel is live:
-- **Migration 0002**: `source`, `signal_type`, `signal` tables with seeds
-- **Server**: `POST /api/v1/signals` — batch, idempotent (client UUID = dedup key),
-  auth from token (never body), consent stub seam, 422 on unknown types
-- **Flutter**: `SignalService.emit()` → heart tap on ActivityCard → fire-and-forget
-- **Both backends**: in-memory + Supabase have `record_signal()` + `get_valid_signal_types()`
-- **Tests**: 6 pytest (idempotency proven) + 4 Flutter (wire format + error swallow)
-- **Reviewer-identified gap fixed**: SupabaseService signal methods added (commit #38)
+**Status: IMPLEMENTED + REVIEWED (commits #41–42)**
 
-## 5. Scaffolded but NOT Wired (dead code — documented)
+Key components:
+- **OfflineDatabase** (`sqflite`): outbox table (signal_id PK, state machine), cache tables
+- **SignalService**: emit() persists to outbox BEFORE network; never throws/blocks
+- **SyncEngine**: single-flight, batch POST, exponential backoff + jitter (cap 15min)
+  - Typed exception handling: `UnauthorizedException` → preserve; `ServerException`/`NetworkException` → retry; other → permanent
+  - Crash recovery on startup (inflight → pending)
+  - Triggers: app start, resume, connectivity regained, post-emit, 60s timer
+- **Sync Status Screen**: `/profile/sync` — pending/inflight/failed counts, force-sync
+- **Server Part C**: per-item rejection, 30d captured_at skew tolerance, `rejected[]` response
 
-| Module | What it does | Why not wired |
-|--------|-------------|---------------|
-| `services/weather_service.py` | OpenWeather forecast | Needs `TB_OPENWEATHER_API_KEY` + route integration |
-| `monitoring/cost_tracker.py` | LLM spend tracking | In-process only, needs persistence |
-| `pipeline/rag_ingestion.py` | Venue embedding pipeline | Needs real embedding calls + Supabase |
+**Review findings fixed:**
+1. ~~SyncEngine.start() never called~~ → wired in main.dart with ProviderContainer
+2. ~~String-matching exception text~~ → typed catch clauses matching ApiClient's hierarchy
+3. ~~Dead markInflight([])~~ → removed
+4. ~~Sync status unreachable~~ → route + profile link added
 
-## 6. Running Locally
+## 5. Documentation Map
+
+| File | Purpose |
+|------|---------|
+| `docs/VISION.md` | Product vision, strategy, moat thesis (§1–§13) |
+| `docs/DATA_MODEL_BRD.md` | Signal & data-model design spec (§1–§16) |
+| `docs/PROJECT_STATUS.md` | This file — current state |
+| `docs/TESTING_GUIDE.md` | Full testing playbook |
+| `docs/specs/SPEC-01-migrations-and-first-signal.md` | IMPLEMENTED |
+| `docs/specs/SPEC-02-offline-queue-and-sync.md` | IMPLEMENTED |
+| `docs/research/survey_short.md` | 3-min user research survey |
+| `docs/research/survey_deep.md` | 8-min deep user research survey |
+| `MASTER_BRD.md` | Technical BRD (points to VISION.md for strategy) |
+
+## 6. Production Roadmap
+
+| Phase | Status | Description |
+|---|---|---|
+| 1 | Done | Synthetic MVP (in-memory, all endpoints, all guardrails) |
+| 2 | Ready | Supabase flip (3 imports + smoke test) |
+| 3 | Done | Flutter mobile app (running E2E locally) |
+| 4 | **Done** | Signal capture (SPEC-01 — migration + endpoint + emitter) |
+| 5 | **Done** | Offline queue + sync (SPEC-02 — implemented + review-fixed) |
+| 6 | Next | RevenueCat payments (keys + purchases_flutter) |
+| 7 | Later | Play Store launch (real auth, real persistence, real payments) |
+| 8 | Oct 2 | Laos field test (airplane-mode drill must pass first) |
+
+## 7. What's Next (priority order)
+
+1. **`flutter pub get && flutter test`** on real device — confirm 29 tests pass
+2. **Airplane-mode drill** (must pass before Laos):
+   - Airplane mode → tap loved on 5 venues → force-kill app → reopen →
+     still 5 pending → enable network → all sync → outbox empty → 5 rows in Supabase
+3. **Supabase flip** — 3 import changes to switch to real persistence
+4. **Seed venues** — `python seed_supabase.py` (16 Dubai venues)
+5. **RevenueCat** — uncomment purchases_flutter, add keys
+6. **Real auth** — Supabase Auth (magic link + Google Sign-In)
+7. **Laos prep** — behavioral signal types, trip_party, consent UX
+
+## 8. Running Locally
 
 **Backend:**
 ```bash
 cd travel-buddy
-pip install -r requirements.txt  # or: pip install fastapi uvicorn pydantic-settings litellm PyJWT httpx
+pip install -r requirements.txt
 export TB_DEBUG=true
-# UNSET TB_SUPABASE_JWT_SECRET for debug auth
 uvicorn main:app --reload --port 8000
-# Tests: pytest -q (expect 27 passed, 5 skipped)
+# Tests: pytest -q (expect 33 passed, 5 skipped)
 ```
 
 **Flutter:**
@@ -135,55 +171,5 @@ flutter pub get
 flutter run -d chrome \
   --dart-define=TB_API_BASE_URL=http://localhost:8000 \
   --dart-define=TB_DEBUG_USER_ID=11111111-1111-1111-1111-111111111111
-# Tests: flutter test (expect 18 passed)
-# Android emulator: use http://10.0.2.2:8000 as API base
+# Tests: flutter test (expect 29 passed)
 ```
-
-## 7. Environment Variables
-
-| Variable | Purpose | Required? |
-|----------|---------|-----------|
-| `TB_DEBUG` | Enable debug auth (X-Debug-User-Id) | Dev only |
-| `TB_LITELLM_API_KEY` | OpenAI API key for LLM routing | Yes (production) |
-| `TB_SUPABASE_URL` | Supabase project URL | For Supabase backend |
-| `TB_SUPABASE_KEY` | Supabase service role key | For Supabase backend |
-| `TB_SUPABASE_JWT_SECRET` | JWT verification (MUST be unset for debug) | Production only |
-| `TB_OPENWEATHER_API_KEY` | OpenWeather API key | weather_service only |
-| `TB_CORS_ALLOWED_ORIGINS` | CORS origins (default `*`) | Production |
-
-## 8. Documentation Map
-
-| File | Purpose |
-|------|---------|
-| `docs/VISION.md` | Product vision, strategy, moat thesis (§1–§13) |
-| `docs/DATA_MODEL_BRD.md` | Signal & data-model design spec (§1–§16) |
-| `docs/PROJECT_STATUS.md` | This file — current state |
-| `docs/TESTING_GUIDE.md` | Full testing playbook (8 sections) |
-| `docs/specs/SPEC-01-migrations-and-first-signal.md` | Migration + signal slice (IMPLEMENTED) |
-| `docs/specs/SPEC-02-offline-queue-and-sync.md` | Offline queue spec (NOT YET BUILT) |
-| `docs/research/survey_short.md` | 3-min user research survey |
-| `docs/research/survey_deep.md` | 8-min deep user research survey |
-| `MASTER_BRD.md` | Technical BRD (points to VISION.md for strategy) |
-
-## 9. Production Roadmap
-
-| Phase | Status | Description |
-|---|---|---|
-| 1 | Done | Synthetic MVP (in-memory, all endpoints, all guardrails) |
-| 2 | Ready | Supabase flip (3 imports + smoke test) |
-| 3 | Done | Flutter mobile app (running E2E locally) |
-| 4 | **Done** | Signal capture (SPEC-01 — migration + endpoint + emitter) |
-| 5 | Spec written | Offline queue + sync (SPEC-02 — highest risk, pre-Laos) |
-| 6 | Next | RevenueCat payments (keys + purchases_flutter) |
-| 7 | Later | Play Store launch (real auth, real persistence, real payments) |
-| 8 | Oct 2 | Laos field test (the moat-data capture trip) |
-
-## 10. What's Next (priority order)
-
-1. **SPEC-01 review complete** — reviewer confirmed contracts correct, gap fixed
-2. **SPEC-02 implementation** — the hardest item; offline queue + sync (pre-Laos critical)
-3. **Supabase flip** — 3 import changes to switch from in-memory to real persistence
-4. **Seed venues** — `python seed_supabase.py` (16 Dubai venues into live DB)
-5. **RevenueCat** — uncomment purchases_flutter, add keys
-6. **Real auth** — Supabase Auth (magic link + Google Sign-In)
-7. **Laos prep** — behavioral signal types, trip_party, consent UX
