@@ -104,7 +104,12 @@ class SupabaseService:
                 "last_reset_date": date.today().isoformat(),
             }
             self.client.table("user_tiers").insert(new_user).execute()
-            return UserTier(**new_user)
+            return UserTier(
+                user_id=new_user["user_id"],
+                tier_status=new_user["tier_status"],
+                daily_reroute_count=new_user["daily_reroute_count"],
+                max_daily_reroutes=new_user["max_daily_reroutes"],
+            )
 
     def _reset_daily_reroutes(self, user_id: str) -> None:
         """Reset daily reroute count for a user."""
