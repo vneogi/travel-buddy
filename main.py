@@ -4,14 +4,20 @@ Launch with: uvicorn main:app --reload --port 8000
 Docs available at: http://localhost:8000/docs
 """
 
+import logging
 import sys
 import os
+import time
+import traceback as tb_module
+import uuid
 
 # Add project root to path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from config.settings import settings
 from routers.trip_router import router as trip_router
@@ -20,7 +26,19 @@ try:
 except ImportError:
     payment_router = None
 from routers.signal_router import router as signal_router
+from routers.debug_router import router as debug_router
+from monitoring.error_log import error_log
 from seed_data import seed_venues
+
+# ==============================================================================
+# Logging Configuration (SPEC-05: use logging, not print)
+# ==============================================================================
+
+logging.basicConfig(
+    level=logging.DEBUG if settings.debug else logging.INFO,
+    format="%(asctime)s %(levelname)-8s %(name)s %(message)s",
+)
+logger = logging.getLogger("travelbuddy")
 
 # ==============================================================================
 # App Initialization
@@ -62,6 +80,84 @@ app.include_router(trip_router)
 if payment_router:
     app.include_router(payment_router)
 app.include_router(signal_router)
+app.include_router(debug_router)
+
+
+# ==============================================================================
+# Observability (SPEC-05)
+# ==============================================================================
+
+@app.middleware("http")
+async def request_context_middleware(request: Request, call_next):
+    """Attach a request_id and log method/path/status/duration for every request."""
+    request_id = uuid.uuid4().hex[:12]
+    request.state.request_id = request_id
+    started = time.perf_counter()
+    try:
+        response = await call_next(request)
+    except Exception:
+        # The exception handler below records details; log timing and re-raise.
+        duration_ms = int((time.perf_counter() - started) * 1000)
+        logger.error(
+            "%s %s -> EXCEPTION in %dms request_id=%s",
+            request.method, request.url.path, duration_ms, request_id,
+        )
+        raise
+    duration_ms = int((time.perf_counter() - started) * 1000)
+    logger.info(
+        "%s %s -> %d in %dms request_id=%s",
+        request.method, request.url.path, response.status_code, duration_ms, request_id,
+    )
+    response.headers["X-Request-ID"] = request_id
+    return response
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    """Log the FULL traceback for any unhandled exception. No silent 500s."""
+    request_id = getattr(request.state, "request_id", "unknown")
+    tb = tb_module.format_exception(type(exc), exc, exc.__traceback__)
+    tb_str = "".join(tb)
+    logger.error(
+        "Unhandled %s on %s %s request_id=%s\n%s",
+        type(exc).__name__, request.method, request.url.path, request_id, tb_str,
+    )
+    error_log.record(
+        request_id=request_id,
+        method=request.method,
+        path=request.url.path,
+        status=500,
+        exc_type=type(exc).__name__,
+        message=str(exc),
+        traceback_str=tb_str,
+    )
+    # Response carries only the request_id — never internal details.
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error", "request_id": request_id},
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Log validation failures — this bug class (Pydantic extra field) cost hours."""
+    request_id = getattr(request.state, "request_id", "unknown")
+    logger.warning(
+        "Validation error on %s %s request_id=%s: %s",
+        request.method, request.url.path, request_id, exc.errors(),
+    )
+    error_log.record(
+        request_id=request_id,
+        method=request.method,
+        path=request.url.path,
+        status=422,
+        exc_type="RequestValidationError",
+        message=str(exc.errors()),
+    )
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors(), "request_id": request_id},
+    )
 
 
 # ==============================================================================
@@ -71,21 +167,27 @@ app.include_router(signal_router)
 @app.on_event("startup")
 async def startup_event():
     """Initialize the application on startup."""
-    print(f"\n{'='*60}")
-    print(f"  {settings.app_name} v{settings.app_version}")
-    print(f"  Geo-fence: {settings.geo_fence}")
-    print(f"  Debug mode: {settings.debug}")
-    print(f"{'='*60}")
-
-    # Seed venue data
     venue_count = seed_venues()
-    print(f"  Loaded {venue_count} Dubai venues into RAG store")
-    print(f"  Guardrails active:")
-    print(f"    - Max reroutes (free): {settings.max_daily_reroutes_free}/day")
-    print(f"    - Cache threshold: {settings.semantic_cache_threshold}")
-    print(f"    - Circuit breaker: {settings.max_loop_depth} loops")
-    print(f"    - Sponsored boost: {settings.sponsored_boost_multiplier}")
-    print(f"{'='*60}\n")
+    logger.info("=" * 60)
+    logger.info("%s v%s", settings.app_name, settings.app_version)
+    logger.info("Geo-fence: %s | Debug: %s", settings.geo_fence, settings.debug)
+    logger.info("Venues loaded: %d", venue_count)
+    # Booleans only — NEVER log key values.
+    logger.info(
+        "Config: llm_key_present=%s supabase_configured=%s jwt_auth=%s cors=%s",
+        bool(settings.litellm_api_key),
+        bool(getattr(settings, "supabase_url", None) and getattr(settings, "supabase_key", None)),
+        bool(getattr(settings, "supabase_jwt_secret", None)),
+        settings.cors_allowed_origins,
+    )
+    logger.info(
+        "Guardrails: reroutes=%d/day cache=%.2f breaker=%d boost=%.2f",
+        settings.max_daily_reroutes_free,
+        settings.semantic_cache_threshold,
+        settings.max_loop_depth,
+        settings.sponsored_boost_multiplier,
+    )
+    logger.info("=" * 60)
 
 
 @app.get("/")
