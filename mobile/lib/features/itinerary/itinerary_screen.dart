@@ -125,7 +125,7 @@ class ItineraryScreen extends ConsumerWidget {
                                     // Key includes loved flag — without it the
                                     // AnimatedSwitcher won't rebuild when only
                                     // isLoved changes, and the heart stays unfilled.
-                                    key: ValueKey('\${_sig(node)}|\${state.lovedPlaceRefs.contains(node.venueId ?? node.venueName)}'),
+                                    key: ValueKey('${_sig(node)}|${state.lovedPlaceRefs.contains(node.venueId ?? node.venueName)}'),
                                     node: node,
                                     nextNode: next,
                                     isLoved: state.lovedPlaceRefs
