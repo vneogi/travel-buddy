@@ -151,6 +151,19 @@ Key components:
 **Priority remains moat-first:** airplane-mode drill → Supabase flip → SPEC-03 `party_context` →
 behavioral signal types → **then** SPEC-04 Vault + map-first shell if time before Oct 2.
 
+### Observability & UI feedback (commits #48–54)
+- **SPEC-05 implemented** (`monitoring/error_log.py`, `routers/debug_router.py`, `main.py`):
+  - Global exception handler logs full tracebacks — no silent 500s
+  - Request middleware adds `X-Request-ID` + timing to every response
+  - Ring buffer (capped at 100) readable via `GET /api/v1/debug/errors`
+  - Debug endpoint 404s when `settings.debug` is off (production-safe)
+  - Startup config log uses booleans only — never secret values
+  - All `print()` replaced with structured `logging`
+- **UI fixes**: filled heart (isLoved), visible swap button, keyed rebuild for AnimatedSwitcher
+- **Dev scripts**: `scripts/dev.ps1` (check/backend/app/tunnel/verify modes)
+- **Regression tests**: `tests/test_user.py` — locks in the UserTier fix
+- **Test count: 45 passed, 5 skipped** (was 33+5 at start of session)
+
 ## 7. What's Next (priority order)
 
 1. **`flutter pub get && flutter test`** on real device — confirm 29 tests pass
