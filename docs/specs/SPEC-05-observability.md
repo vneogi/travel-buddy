@@ -43,6 +43,15 @@ whether an LLM key is present (boolean only — never the key), CORS origins.
 ## Out of scope
 External APM (Sentry), log shipping, persistent log storage.
 
+## Security note (pre-deploy)
+`/debug/errors` is gated only on `settings.debug` (no auth token required). This is fine for
+local/field use where the endpoint is only reachable from localhost or a USB tunnel. **Before any
+public deployment:** either add an auth requirement to the debug router, or enforce that
+`TB_DEBUG=true` is never set on a deployed instance. If you need to troubleshoot a live instance,
+the structured `logger` output (which goes to stdout/CloudWatch/etc.) already has full tracebacks —
+the ring buffer endpoint is a convenience for terminal-free field debugging, not a production
+monitoring tool.
+
 ## Review checklist
 - [ ] Traceback logged for every unhandled exception
 - [ ] Response body contains no internal detail beyond `request_id`
