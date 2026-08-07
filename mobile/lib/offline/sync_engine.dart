@@ -61,10 +61,14 @@ class SyncEngine {
     _periodicTimer = Timer.periodic(_periodicInterval, (_) => syncOnce());
 
     // Listen for connectivity changes
-    _connectivitySub = _connectivity.onConnectivityChanged.listen((results) {
+    _connectivitySub = _connectivity.onConnectivityChanged.listen((results) async {
       final hasConnection = results.any((r) => r != ConnectivityResult.none);
       if (hasConnection) {
-        debugPrint('[SyncEngine] Connectivity regained — triggering sync');
+        debugPrint('[SyncEngine] Connectivity regained — resetting backoff, syncing');
+        // A new connection invalidates prior backoff (which can grow to ~15min
+        // after a long offline stretch and would delay sync unnecessarily).
+        final reset = await _db.resetBackoff();
+        if (reset > 0) debugPrint('[SyncEngine] Backoff cleared on $reset row(s)');
         syncOnce();
       }
     });

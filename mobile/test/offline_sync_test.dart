@@ -299,4 +299,34 @@ void main() {
     expect(rows.first['state'], 'pending');
     expect(rows.first['attempts'] as int, greaterThan(0));
   });
+
+  // ============================================================
+  // Test 12: resetBackoff clears attempts/next_retry_at for pending rows
+  // ============================================================
+  test('12. resetBackoff clears backoff so pending rows are immediately eligible', () async {
+    await db.enqueue('sig-backoff', jsonEncode({
+      'signal_id': 'sig-backoff',
+      'signal_type': 'user_loved',
+      'place_ref': 'jumeirah',
+      'captured_at': DateTime.now().toUtc().toIso8601String(),
+    }), DateTime.now().toUtc().toIso8601String());
+
+    // Simulate a failed retry (sets attempts + future next_retry_at)
+    await db.markRetry(['sig-backoff'], 'transient network error');
+
+    // Verify the row is NOT immediately eligible (backoff is in the future)
+    final before = await db.getPendingBatch(limit: 10);
+    expect(before.length, 0, reason: 'Should be backing off');
+
+    // Reset backoff (simulates connectivity regained)
+    final reset = await db.resetBackoff();
+    expect(reset, 1);
+
+    // Now the row should be immediately eligible
+    final after = await db.getPendingBatch(limit: 10);
+    expect(after.length, 1);
+    expect(after.first['signal_id'], 'sig-backoff');
+    expect(after.first['attempts'], 0);
+    expect(after.first['next_retry_at'], isNull);
+  });
 }

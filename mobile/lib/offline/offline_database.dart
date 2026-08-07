@@ -167,6 +167,17 @@ class OfflineDatabase {
     );
   }
 
+  /// Clear accumulated backoff so pending rows are eligible immediately.
+  /// Called when connectivity is regained: a fresh connection invalidates the
+  /// reason we were backing off, so users shouldn't wait minutes to sync.
+  Future<int> resetBackoff() async {
+    final database = await db;
+    return database.rawUpdate(
+      "UPDATE outbox SET next_retry_at = NULL, attempts = 0 "
+      "WHERE state = 'pending'",
+    );
+  }
+
   /// Get counts by state (for sync status debug view).
   Future<Map<String, int>> getOutboxCounts() async {
     final database = await db;
