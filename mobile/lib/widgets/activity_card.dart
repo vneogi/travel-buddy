@@ -14,6 +14,7 @@ class ActivityCard extends StatelessWidget {
   final VoidCallback? onTapCancel;
   final VoidCallback? onTapLoved;
   final bool isThinking; // show shimmer for heavy model calls
+  final bool isLoved; // filled heart once the user has loved this venue
 
   const ActivityCard({
     super.key,
@@ -23,6 +24,7 @@ class ActivityCard extends StatelessWidget {
     this.onTapCancel,
     this.onTapLoved,
     this.isThinking = false,
+    this.isLoved = false,
   });
 
   @override
@@ -131,17 +133,36 @@ class ActivityCard extends StatelessWidget {
                           ),
                           if (node.isLocked)
                             Icon(Icons.lock, size: 16, color: AppColors.accent),
+                          // Visible swap affordance — swipe still works, but the
+                          // gesture alone was undiscoverable.
+                          if (onTapSwap != null && !node.isLocked && !isCompleted && !isSkipped)
+                            IconButton(
+                              icon: const Icon(Icons.swap_horiz, size: 20),
+                              color: AppColors.primary,
+                              tooltip: 'Swap this activity',
+                              visualDensity: VisualDensity.compact,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                              onPressed: () {
+                                HapticFeedback.lightImpact();
+                                onTapSwap!.call();
+                              },
+                            ),
                           if (onTapLoved != null && !isCompleted && !isSkipped)
-                            GestureDetector(
-                              onTap: onTapLoved,
-                              child: Padding(
-                                padding: const EdgeInsets.only(left: AppSpacing.sm),
-                                child: Icon(
-                                  Icons.favorite_border,
-                                  size: 20,
-                                  color: AppColors.muted,
-                                ),
+                            IconButton(
+                              icon: Icon(
+                                isLoved ? Icons.favorite : Icons.favorite_border,
+                                size: 20,
                               ),
+                              color: isLoved ? AppColors.danger : AppColors.muted,
+                              tooltip: isLoved ? 'Loved' : 'Love this place',
+                              visualDensity: VisualDensity.compact,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                              onPressed: () {
+                                HapticFeedback.lightImpact();
+                                onTapLoved!.call();
+                              },
                             ),
                         ],
                       ),

@@ -12,6 +12,7 @@ class ItineraryState {
   final String? banner;        // "Heads up: ..." note from last event
   final Object? error;         // load error → ErrorView
   final bool rerouteLimitHit;  // screen shows upgrade, then clears
+  final Set<String> lovedPlaceRefs; // local-only: which venues the user loved
 
   const ItineraryState({
     this.nodes = const [],
@@ -20,6 +21,7 @@ class ItineraryState {
     this.banner,
     this.error,
     this.rerouteLimitHit = false,
+    this.lovedPlaceRefs = const {},
   });
 
   static const _keep = Object();
@@ -30,6 +32,7 @@ class ItineraryState {
     Object? banner = _keep,
     Object? error = _keep,
     bool? rerouteLimitHit,
+    Set<String>? lovedPlaceRefs,
   }) =>
       ItineraryState(
         nodes: nodes ?? this.nodes,
@@ -38,6 +41,7 @@ class ItineraryState {
         banner: identical(banner, _keep) ? this.banner : banner as String?,
         error: identical(error, _keep) ? this.error : error,
         rerouteLimitHit: rerouteLimitHit ?? this.rerouteLimitHit,
+        lovedPlaceRefs: lovedPlaceRefs ?? this.lovedPlaceRefs,
       );
 }
 
@@ -99,6 +103,16 @@ class ItineraryController extends StateNotifier<ItineraryState> {
 
   void clearRerouteLimit() => state = state.copyWith(rerouteLimitHit: false);
   void clearBanner() => state = state.copyWith(banner: null);
+
+  /// Mark a venue as loved (local UI state — the signal itself goes through
+  /// SignalService/outbox). The backend doesn't return love state, so we track
+  /// it client-side for the filled-heart affordance.
+  void markLoved(String placeRef) {
+    if (!mounted) return;
+    state = state.copyWith(
+      lovedPlaceRefs: {...state.lovedPlaceRefs, placeRef},
+    );
+  }
 
   String? _headsUp(String msg) {
     final i = msg.indexOf('Heads up:');

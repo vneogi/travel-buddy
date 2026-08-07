@@ -122,17 +122,28 @@ class ItineraryScreen extends ConsumerWidget {
                                   transitionBuilder: (child, anim) =>
                                       FadeTransition(opacity: anim, child: child),
                                   child: ActivityCard(
-                                    key: ValueKey(_sig(node)),
+                                    // Key includes loved flag — without it the
+                                    // AnimatedSwitcher won't rebuild when only
+                                    // isLoved changes, and the heart stays unfilled.
+                                    key: ValueKey('\${_sig(node)}|\${state.lovedPlaceRefs.contains(node.venueId ?? node.venueName)}'),
                                     node: node,
                                     nextNode: next,
+                                    isLoved: state.lovedPlaceRefs
+                                        .contains(node.venueId ?? node.venueName),
                                     onTapSwap: () => _swap(ref, node),
                                     onTapCancel: () => _cancel(ref, node),
-                                    onTapLoved: () => ref.read(signalServiceProvider).emit(
-                                      signalType: 'user_loved',
-                                      placeRef: node.venueId ?? node.venueName,
-                                      valueText: 'loved',
-                                      tripId: tripId,
-                                    ),
+                                    onTapLoved: () {
+                                      final placeRef = node.venueId ?? node.venueName;
+                                      ref.read(signalServiceProvider).emit(
+                                            signalType: 'user_loved',
+                                            placeRef: placeRef,
+                                            valueText: 'loved',
+                                            tripId: tripId,
+                                          );
+                                      ref
+                                          .read(itineraryControllerProvider(tripId).notifier)
+                                          .markLoved(placeRef);
+                                    },
                                   ),
                                 );
                               },
