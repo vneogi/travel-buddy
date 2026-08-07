@@ -125,6 +125,40 @@ def _compute_provenance(captured_at: datetime) -> dict:
 # Endpoints
 # ==============================================================================
 
+
+def _build_party_context(trip_id: str, captured_at: datetime) -> Optional[Dict]:
+    """Build the party_context dict for stamping onto a signal.
+
+    SPEC-03 design: server-side at ingest, authoritative. If trip or party
+    not found, returns None (never fail ingest). The context is frozen at
+    ingest time — later party edits don't retroactively change old signals.
+    """
+    party = db_service.get_trip_party(trip_id)
+    if not party:
+        return None
+
+    # Make captured_at tz-aware for computation
+    if captured_at.tzinfo is None:
+        captured_at = captured_at.replace(tzinfo=timezone.utc)
+
+    context: Dict = {
+        "party_type": party.party_type,
+        "size": party.size,
+        "age_bands": sorted({m.age_band for m in party.members}) if party.members else [],
+        "time_of_day": captured_at.strftime("%H:%M"),
+    }
+
+    # day_index: days since trip start (if we can look it up)
+    trip = db_service.get_trip(trip_id)
+    if trip:
+        trip_start = trip.created_at
+        if trip_start.tzinfo is None:
+            trip_start = trip_start.replace(tzinfo=timezone.utc)
+        context["day_index"] = (captured_at.date() - trip_start.date()).days
+
+    return context
+
+
 @router.post(
     "/signals",
     response_model=SignalBatchResponse,
@@ -180,6 +214,15 @@ async def ingest_signals(
         # Build provenance (notes extreme skew for analytics)
         provenance = _compute_provenance(sig.captured_at)
 
+        # SPEC-03: stamp party_context server-side at ingest.
+        # Merged INTO value_json (not overwriting). If trip unknown, omit —
+        # never fail ingest due to missing party data.
+        value_json = dict(sig.value_json) if sig.value_json else {}
+        if sig.trip_id:
+            party_context = _build_party_context(sig.trip_id, sig.captured_at)
+            if party_context:
+                value_json["party_context"] = party_context
+
         # Record signal (idempotent — duplicates counted, not errors)
         was_new = db_service.record_signal(
             user_id=user_id,
@@ -188,7 +231,7 @@ async def ingest_signals(
             place_ref=sig.place_ref,
             value_text=sig.value_text,
             value_numeric=sig.value_numeric,
-            value_json=sig.value_json,
+            value_json=value_json if value_json else None,
             captured_at=sig.captured_at,
             trip_id=sig.trip_id,
         )

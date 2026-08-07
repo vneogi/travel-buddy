@@ -141,6 +141,7 @@ class CreateTripRequest(BaseModel):
     start_date: datetime
     preferences: dict = {}
     initial_mood: Optional[str] = "exploratory"
+    party: Optional[TripPartyIn] = None  # SPEC-03: defaults to solo if absent
 
 
 class UserTier(BaseModel):
@@ -150,6 +151,39 @@ class UserTier(BaseModel):
     daily_reroute_count: int = 0
     max_daily_reroutes: int = 5
 
+
+
+
+# ==============================================================================
+# Trip Party (SPEC-03 — party_context stamping)
+# ==============================================================================
+
+class PartyMemberIn(BaseModel):
+    """A member of the travel party (input model)."""
+    role: str = Field(..., description="self|partner|child|teen|parent|friend")
+    age_band: str = Field(..., description="infant|toddler|child|teen|adult|senior (NEVER a birth date)")
+    needs: List[str] = Field(default_factory=list, description="nap_schedule|stroller|dietary:*|low_stamina")
+
+
+class TripPartyIn(BaseModel):
+    """Trip party composition (input model for create-trip)."""
+    party_type: str = Field(
+        default="solo",
+        description="solo|couple|friends|family_young_kids|family_teens|multigen|daddy_kiddo|accessibility_focused|mixed",
+    )
+    size: int = Field(default=1, ge=1)
+    members: List[PartyMemberIn] = Field(default_factory=list)
+    notes: Optional[str] = None
+
+
+class TripParty(BaseModel):
+    """Stored trip party (response model)."""
+    party_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    trip_id: str
+    party_type: str
+    size: int = 1
+    members: List[PartyMemberIn] = Field(default_factory=list)
+    notes: Optional[str] = None
 
 # ==============================================================================
 # Venue / RAG Models

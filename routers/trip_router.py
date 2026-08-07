@@ -21,6 +21,7 @@ from models.schemas import (
     TripEventRequest,
     TripEventResponse,
     CreateTripRequest,
+    TripPartyIn,
     CurrentContext,
     EventType,
 )
@@ -132,12 +133,17 @@ async def create_trip(
     )
     db_service.save_trip(trip)
 
+    # SPEC-03: persist party (defaults to solo if absent)
+    party_in = request.party or TripPartyIn(party_type="solo", size=1)
+    party = db_service.save_trip_party(trip.trip_id, party_in)
+
     return {
         "trip_id": trip.trip_id,
         "status": "created",
         "message": f"Dubai itinerary created with {len(nodes)} activities",
         "nodes": [n.model_dump(mode="json") for n in nodes],
         "locked_count": sum(1 for n in nodes if n.is_locked),
+        "party": party.model_dump(mode="json"),
     }
 
 
@@ -145,7 +151,12 @@ async def create_trip(
 async def get_trip(trip_id: str, user_id: str = Depends(get_current_user_id)):
     """Get the current state of a trip the caller owns."""
     trip = require_trip_owner(db_service.get_trip(trip_id), user_id)
-    return trip.model_dump(mode="json")
+    result = trip.model_dump(mode="json")
+    # SPEC-03: include party so client can display AudienceBadge
+    party = db_service.get_trip_party(trip_id)
+    if party:
+        result["party"] = party.model_dump(mode="json")
+    return result
 
 
 # ==============================================================================

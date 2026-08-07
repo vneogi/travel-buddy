@@ -27,6 +27,8 @@ import httpx
 from config.settings import settings
 from models.schemas import (
     TierStatus,
+    TripParty,
+    TripPartyIn,
     TripState,
     UserTier,
     VenueRAG,
@@ -213,6 +215,77 @@ class SupabaseService:
             .execute()
         )
         return [TripState(**row["state_json"]) for row in result.data]
+
+    # =========================================================================
+    # Trip Party (SPEC-03 — party_context stamping)
+    # =========================================================================
+
+    def save_trip_party(self, trip_id: str, party: TripPartyIn) -> TripParty:
+        """Save trip party to Supabase trip_party + party_member tables."""
+        import uuid as _uuid
+
+        party_id = str(_uuid.uuid4())
+        # Insert trip_party row
+        self.client.table("trip_party").insert({
+            "party_id": party_id,
+            "trip_id": trip_id,
+            "party_type": party.party_type,
+            "size": party.size,
+            "notes": party.notes,
+        }).execute()
+
+        # Insert party_member rows
+        for member in party.members:
+            self.client.table("party_member").insert({
+                "party_id": party_id,
+                "role": member.role,
+                "age_band": member.age_band,
+                "needs": member.needs,
+            }).execute()
+
+        return TripParty(
+            party_id=party_id,
+            trip_id=trip_id,
+            party_type=party.party_type,
+            size=party.size,
+            members=party.members,
+            notes=party.notes,
+        )
+
+    def get_trip_party(self, trip_id: str) -> Optional[TripParty]:
+        """Get trip party from Supabase."""
+        from models.schemas import PartyMemberIn
+
+        result = (
+            self.client.table("trip_party")
+            .select("*")
+            .eq("trip_id", trip_id)
+            .execute()
+        )
+        if not result.data:
+            return None
+
+        row = result.data[0]
+        # Fetch members
+        members_result = (
+            self.client.table("party_member")
+            .select("role, age_band, needs")
+            .eq("party_id", row["party_id"])
+            .execute()
+        )
+        members = [
+            PartyMemberIn(role=m["role"], age_band=m["age_band"], needs=m.get("needs", []))
+            for m in members_result.data
+        ]
+
+        return TripParty(
+            party_id=row["party_id"],
+            trip_id=trip_id,
+            party_type=row["party_type"],
+            size=row["size"],
+            members=members,
+            notes=row.get("notes"),
+        )
 
     # =========================================================================
     # Venue RAG Operations (pgvector)

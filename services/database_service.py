@@ -14,6 +14,8 @@ from models.schemas import (
     TripState,
     UserTier,
     TierStatus,
+    TripParty,
+    TripPartyIn,
     VenueRAG,
     VenueSearchResult,
 )
@@ -30,6 +32,7 @@ class DatabaseService:
         self._venues: List[dict] = []
         self._event_log: List[dict] = []
         self._signals: Dict[str, dict] = {}  # keyed by signal_id (idempotency)
+        self._parties: Dict[str, dict] = {}  # keyed by trip_id (SPEC-03)
         self._valid_signal_types = {"user_loved"}  # seed; mirrors signal_type table
 
     # =========================================================================
@@ -120,6 +123,29 @@ class DatabaseService:
             for t in self._trips.values()
             if t["user_id"] == user_id
         ]
+
+
+    # =========================================================================
+    # Trip Party (SPEC-03 — party_context stamping)
+    # =========================================================================
+
+    def save_trip_party(self, trip_id: str, party: TripPartyIn) -> TripParty:
+        """Save a trip party. Defaults to solo if None passed."""
+        stored = TripParty(
+            trip_id=trip_id,
+            party_type=party.party_type,
+            size=party.size,
+            members=party.members,
+            notes=party.notes,
+        )
+        self._parties[trip_id] = stored.model_dump(mode="json")
+        return stored
+
+    def get_trip_party(self, trip_id: str) -> Optional[TripParty]:
+        """Get the party for a trip. Returns None if not found."""
+        if trip_id in self._parties:
+            return TripParty(**self._parties[trip_id])
+        return None
 
     # =========================================================================
     # Venue RAG Operations
