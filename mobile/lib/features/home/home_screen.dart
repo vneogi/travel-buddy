@@ -28,8 +28,23 @@ class HomeScreen extends ConsumerWidget {
               _CreateTripCard(
                 onTap: () async {
                   final repo = ref.read(tripRepoProvider);
-                  final trip = await repo.create(startDate: DateTime.now());
-                  if (context.mounted) context.push('/trip/${trip.tripId}');
+                  try {
+                    final trip = await repo.create(startDate: DateTime.now());
+                    if (context.mounted) context.push('/trip/${trip.tripId}');
+                  } on ApiException catch (e) {
+                    // Trip creation needs the server (it generates the itinerary),
+                    // so offline we can't fake it — say so instead of throwing.
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(e is NetworkException
+                              ? "You're offline — connect to create a new trip."
+                              : e.message),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  }
                 },
               ),
               const SizedBox(height: AppSpacing.xl),
