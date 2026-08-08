@@ -170,3 +170,212 @@ user need to DO when stranded?"* — no signal, lost, in a country whose script 
 native-script address card (show the taxi driver your hotel, offline) is the emblematic feature.
 This is capability #7 made concrete and a **structural** advantage: online-only incumbents cannot
 serve this moment.
+
+
+## 17. Thesis upgrade: from on-trip companion to full-trip operating system
+*Added Aug 2026 after user research + competitive analysis. This reframes the product scope.*
+
+**Before:** "AI companion that works *while you're on the trip* — the friend on the ground who
+reflows your day when plans change."
+
+**After:** "AI travel operating system that knows your ENTIRE trip context — flights, hotels,
+trains, group composition, budget, dietary needs, and personal preferences — and uses that full
+context to orchestrate each day in real-time."
+
+The original thesis (§1) is correct but too narrow. A "friend on the ground" who doesn't know your
+flight departs at 09:00 tomorrow, that your hotel is 40 minutes from the old town, or that your
+toddler needs a nap at 14:00 — isn't actually a friend. A real local friend knows your *whole day*,
+not just "which café is good." The upgrade: we are the **operating system for the trip**, not merely
+the activity layer.
+
+**Why this is defensible and not scope creep:**
+1. **Data compounds faster** with full context — a ❤ on a venue PLUS "they had a 6am flight next
+   day and a toddler" is an *orders of magnitude* richer training signal than a bare ❤.
+2. **Switching cost becomes massive** — your full trip history + preferences + booking data +
+   cross-trip memory = painful to leave.
+3. **Integration depth = technical moat** — MCP connections to 20+ services, LLM extraction
+   of booking confirmations, calendar sync. Months of work competitors must replicate.
+4. **The "one-stop-shop" positioning** — travelers currently juggle 8-12 apps (flights, hotels,
+   transit, activities, reviews, maps, translate, currency). Consolidation is the unmet desire.
+
+**What changes:** The scheduler now reads *constraints* (flights, check-in/out, inter-city
+transport) in addition to *preferences*. Recommendations factor in transit-to-airport, hotel
+location as daily anchor, and available time windows — not just venue quality.
+
+**What doesn't change:** On-trip intelligence is still the wedge. Offline-first is still core.
+Behavioral signals are still the moat. We just give the engine *much more context* to be smart
+with.
+
+## 18. The Travel Calendar (Layer 4 — full trip context)
+
+Today the engine knows: "you have 5 activity nodes today." Tomorrow it knows: "you land at 14:00,
+check in at 16:00 at a hotel in District 3, have a bus at 09:00 on Day 4 from the Northern
+terminal, and fly home at 15:30 on Day 9 from the international airport." That context transforms
+every recommendation.
+
+**Entities (new — SPEC-06 will formalize):**
+```
+trip_leg {leg_id, trip_id, leg_type, origin, destination,
+          depart_at, arrive_at, carrier, reference, status}
+  leg_type: flight | train | bus | ferry | car_rental | drive
+
+trip_stay {stay_id, trip_id, accommodation_name, address,
+           address_local_script, lat, lng, check_in, check_out,
+           confirmation_ref, notes}
+```
+
+**Engine impact:**
+- Scheduler computes AVAILABLE WINDOWS per day from legs + stays
+- Departure buffer: 2h domestic flights, 3h international, 1h trains/buses
+- Check-out day: morning activities must be near hotel (bags!)
+- Transit day: activities only at origin AM + destination PM
+- Jet-lag awareness: first day after long-haul = gentle schedule
+- Last day: "morning only" with airport transit time baked in
+- Hotel location = daily anchor → radius-filter activities from there
+
+**Input methods (phased):**
+- Phase 1 (Laos): manual form at trip creation (flight number, hotel name, dates)
+- Phase 2: "Paste your confirmation email/text" → LLM extracts structured data
+- Phase 3: Forward confirmation to `trips@travelbuddy.app` → server-side parsing
+- Phase 4: MCP integration (Gmail, Google Calendar, Apple Calendar) → auto-import
+
+**Competitive context:** TripIt does email-parsing well but has ZERO intelligence. We do
+email-parsing (later) AND use the data to make *smart decisions*. That's the combined wedge.
+
+## 19. Food & dining as a first-class moment
+
+**Survey insight:** "Best unplanned trip moment" = finding a great authentic family restaurant
+serendipitously. This is not a minor signal — it's the *highest-delight on-trip moment* our users
+report. Food must be elevated from "just another venue category" to a first-class concern.
+
+**What changes:**
+- **Meal slots** are first-class itinerary nodes (breakfast / lunch / dinner / snack). The scheduler
+  places them intelligently — not just activities back-to-back with no food.
+- **"I'm hungry NOW" micro-intent:** location + time + party + dietary → immediate recommendation.
+  This is capability #3 (invisible logistics) made concrete for the highest-frequency need.
+- **Cuisine diversity:** the engine tracks what you've eaten this trip and avoids repeating the same
+  cuisine type 3x in a row (unless that's the point — food tour).
+- **Party-aware food:** `party_member.needs[]` drives dietary filtering (halal, vegetarian, nut
+  allergy, kid-friendly with high chairs / kids menu / not-too-long waits).
+- **Price-level awareness:** budget lunch near the activity, splurge dinner pre-planned. Cost is
+  the #1 criterion from the survey — food recommendations must respect it.
+
+**New signal types:** `food_loved`, `food_disliked`, `waited_too_long`, `meal_skipped`. These help
+the engine pace meals correctly and learn cuisine preferences.
+
+**Moat contribution:** food choices are high-frequency, segmented (family vs solo vs friends), and
+contextual (time, location, mood, budget). They're also extremely local — "where locals eat" is
+exactly the anti-tourist-trap positioning (§10 principle) that builds trust.
+
+## 20. Currency, money & cost intelligence
+
+**Survey validation:** "money" cited as a small thing that ruined a day. "Cost" ranked #1 criterion
+by both respondents when picking a place. Yet no travel app provides *contextual* cost awareness.
+
+**Features:**
+- Per-destination **currency + exchange rate** (cached for offline use in the Vault)
+- **Tipping norms** per country (no-tip / 10% / round-up / service-charge-included)
+- **"Expensive or cheap for here?"** — contextual pricing. A $15 meal is cheap in Dubai, expensive
+  in Laos. The engine knows this and flags when something is atypical.
+- **ATM / money exchange** locations (cached in Vault for the offline moment you need cash)
+- **Daily spending estimate** per itinerary (transport + meals + entries + tips). Before the day
+  starts, you know roughly what it costs.
+- **Budget mode:** when daily spend approaches a cap, prefer free/cheap alternatives automatically.
+
+**Moat contribution:** cost signals compound — "this venue was perceived as overpriced by budget
+travelers" vs. "great value for families." That's segmented, behavioral, and unscrapable data.
+
+## 21. Local transport intelligence
+
+**Survey validation:** "transit/distance affects choices" scored 5/5 (maximum). "Transport" cited
+as a mid-trip change cause. Transit isn't a side concern — it's the *connective tissue* of every
+on-trip decision.
+
+**Features:**
+- Per-city **transport mode map** — what exists here (metro / bus / grab / tuk-tuk / taxi / ferry /
+  bicycle / walking). Many emerging-market cities have transport options that don't appear in Google
+  Maps (songthaews in Thailand, marshrutkas in Central Asia, xe om in Vietnam).
+- **Typical fares** per common route — so "is this driver ripping me off?" is answered before you
+  get in. (Survey: "money" as day-ruiner. Overpaying for transport is a subset.)
+- **Scam warnings** — common taxi/tuk-tuk scams per city, pre-cached (e.g., "Bangkok: meter off,
+  'temple is closed,' flat rate = 3x"). This is anti-tourist-trap for transport.
+- **"How do I get from X to Y?"** that knows LOCAL options (not just what Google shows). In many
+  SE-Asian cities, the fastest/cheapest option isn't on any map app.
+- **Airport transfer options** with realistic time estimates (traffic at departure hour).
+
+**Moat contribution:** transit intelligence for non-Western cities is *extremely* hard to get right
+and nearly impossible to scrape. It comes from user observations and local knowledge. A user who
+reports "took the river ferry from Sathorn to Saphan Taksin in 8 mins, 20 baht — much faster than
+Grab" creates a signal no database has. This is the "emerging markets + off-beaten-path" focus of
+§3 made operational.
+
+## 22. Agent memory & cross-trip intelligence (extends §11 capability #8)
+
+**The switching-cost moat.** After 3 trips, the app *knows you*: you like slow mornings, you always
+want coffee by 10am, your kid gets cranky after 3pm without a nap, you prefer street food to
+restaurants, you walk fast but your partner doesn't. A new app starts from zero.
+
+**Data model (new — needs formal BRD section):**
+```
+user_preference {pref_id, user_id, pref_type, value, confidence,
+                 source_signals[], last_updated}
+  pref_type: pace | wake_time | cuisine_preference | budget_level |
+             activity_preference | transport_preference | nap_time |
+             walking_speed | dietary | ...
+```
+
+**How it accumulates:**
+- Signal history → LLM periodically extracts preferences ("across 12 signals, this user prefers
+  outdoor activities before noon and indoor after 2pm")
+- Explicit: user sets preferences directly (secondary — supplements observed behavior)
+- Decay: preferences from 2+ years ago weight less (people change)
+- Context-dependent: "prefers slow pace" only applies when `party_type = family`
+
+**MCP / Agent Memory integration:**
+- Agent memory stores the preference model + trip summaries as persistent context
+- Each new trip starts with "what I know about this traveler" injected into the planner prompt
+- Engine uses preferences as **soft weights** (never hard filters unless explicitly set — surprise
+  and serendipity are valuable; over-personalisation creates a filter bubble)
+
+**Timing:** post-Laos. Requires accumulated signal data to derive preferences from. The Laos trip
+*generates* the data; cross-trip memory *consumes* it on the second trip.
+
+## 23. Competitive positioning — why we win
+
+The "most popular travel app in the world" requires combining three things no incumbent has:
+
+| | TripIt | Wanderlog | AI Planners | Booking.com | **Travel Buddy** |
+|---|---|---|---|---|---|
+| Full trip context | ✅ | Partial | ❌ | ❌ | ✅ (building) |
+| Live on-trip intelligence | ❌ | ❌ | ❌ | ❌ | ✅ (built) |
+| Offline resilience | ❌ | ❌ | ❌ | ❌ | ✅ (built) |
+| Behavioral data moat | ❌ | ❌ | ❌ | ❌ | ✅ (pipe built) |
+| Cross-trip memory | ❌ | ❌ | ❌ | ❌ | ✅ (designed) |
+| Works in emerging markets | ❌ | ❌ | ❌ | Partial | ✅ (focus) |
+
+- **1 without 2** = TripIt (passive calendar, no intelligence)
+- **2 without 1** = current Travel Buddy pre-§17 (smart but blind to constraints)
+- **2 without 3** = Mindtrip/Layla (useless when you need it most)
+- **1+2+3 together** = nobody. That's the gap. That's why we win.
+
+**Updated flywheel:**
+Full context → better recommendations → users do MORE in-app → more behavioral signals →
+engine improves → more context shared → switching cost grows → retention compounds →
+more users → more signal → ...
+
+**What could kill us:**
+- Google launches "Google Travel 2.0" with Gemini on-trip → Mitigation: they optimize for
+  booking revenue; we optimize for trust. Different incentives = different product. Also: offline.
+- Apple launches a travel layer in iOS → Mitigation: Apple doesn't serve emerging markets or
+  Android (our segment).
+- We spread too thin (10 cities, no depth) → Mitigation: DEEP > WIDE rule (§6). Retention first.
+- Never enough users to compound data → Mitigation: make non-AI features (Vault, Calendar, Food)
+  valuable enough standalone, pre-flywheel.
+
+**Monthly gut-check (updated from §8):** "Which of the four did I compound this month?"
+1. Traction (retained users)
+2. Unique tech (demonstrably better on-trip intelligence)
+3. Unique data (behavioral signals no competitor has)
+4. **Full context** (integration depth that creates switching cost) ← NEW
+
+If the answer is "I added a city" or "I polished the UI" — stop and refocus.
