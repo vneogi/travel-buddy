@@ -36,6 +36,9 @@ SIGNAL_TYPES: dict[str, str] = {
     # Schedule realism. Derived server-side from visited_confirmed
     # vs. planned start time; never sent by the client.
     "arrival_delta": "numeric",
+    # Dish-level signals. Requires entity_type='dish' (migration 0005).
+    "dish_loved": "enum",
+    "dish_ordered": "boolean",
 }
 
 # Closed enum for node_skipped reasons. Client must present a picker,
@@ -51,6 +54,10 @@ NODE_SKIPPED_REASONS = frozenset({
 })
 
 SERVER_DERIVED_TYPES = frozenset({"arrival_delta"})
+
+# Signal types that require entity_type='dish'. Emitting these with
+# entity_type='venue' (or without entity_id) is a schema error.
+DISH_SIGNAL_TYPES = frozenset({"dish_loved", "dish_ordered"})
 
 
 def is_valid(signal_type: str) -> bool:

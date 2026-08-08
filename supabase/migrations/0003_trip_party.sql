@@ -31,7 +31,13 @@ CREATE TABLE IF NOT EXISTS party_member (
     party_id    UUID NOT NULL REFERENCES trip_party(party_id) ON DELETE CASCADE,
     role        TEXT NOT NULL,       -- self|partner|child|teen|parent|friend
     age_band    TEXT NOT NULL,       -- infant|toddler|child|teen|adult|senior
-    needs       TEXT[] DEFAULT '{}', -- nap_schedule|stroller|dietary:*|low_stamina
+    needs       TEXT[] DEFAULT '{}', -- nap_schedule|stroller|low_stamina
+    dietary_constraints TEXT[] NOT NULL DEFAULT '{}',
+                                     -- Vocabulary: halal|vegetarian|vegan|gluten_free|
+                                     -- nut_allergy|shellfish_allergy|dairy_free
+                                     -- This is a safety feature (allergens kill). Kept as
+                                     -- TEXT[] not ENUM because dietary needs grow; a wrong
+                                     -- value here is a safety issue, not a data-quality one.
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

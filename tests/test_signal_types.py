@@ -20,6 +20,7 @@ from models.signal_types import (
     SIGNAL_TYPES,
     SERVER_DERIVED_TYPES,
     NODE_SKIPPED_REASONS,
+    DISH_SIGNAL_TYPES,
     client_emittable_types,
     is_valid,
 )
@@ -74,15 +75,18 @@ def test_drift_guard_migrations_match_python():
 def test_client_emittable_types_accepted(signal_type):
     """Each type in client_emittable_types() should be accepted (not rejected)."""
     signal_id = str(uuid.uuid4())
-    payload = {
-        "signals": [{
-            "signal_id": signal_id,
-            "signal_type": signal_type,
-            "place_ref": "test-place-001",
-            "trip_id": "test-trip-001",
-            "captured_at": datetime.now(timezone.utc).isoformat(),
-        }]
+    sig = {
+        "signal_id": signal_id,
+        "signal_type": signal_type,
+        "place_ref": "test-place-001",
+        "trip_id": "test-trip-001",
+        "captured_at": datetime.now(timezone.utc).isoformat(),
     }
+    # Dish signal types require entity_type='dish' + entity_id (section 29)
+    if signal_type in DISH_SIGNAL_TYPES:
+        sig["entity_type"] = "dish"
+        sig["entity_id"] = "test-dish-001"
+    payload = {"signals": [sig]}
     resp = client.post("/api/v1/signals", json=payload, headers=HEADERS)
     assert resp.status_code == 200
     data = resp.json()
@@ -233,3 +237,96 @@ def test_node_skipped_reasons_enum_matches_migration():
         f"  Migration only: {migration_reasons - NODE_SKIPPED_REASONS}\n"
         f"  Python only: {NODE_SKIPPED_REASONS - migration_reasons}"
     )
+
+
+# ==============================================================================
+# Test 8: Dish signal types require entity_type='dish' + entity_id (section 29)
+# ==============================================================================
+
+def test_dish_loved_with_venue_entity_type_rejected():
+    """dish_loved with entity_type='venue' (default) is rejected."""
+    signal_id = str(uuid.uuid4())
+    payload = {
+        "signals": [{
+            "signal_id": signal_id,
+            "signal_type": "dish_loved",
+            "place_ref": "some-restaurant",
+            "entity_type": "venue",
+            "captured_at": datetime.now(timezone.utc).isoformat(),
+        }]
+    }
+    resp = client.post("/api/v1/signals", json=payload, headers=HEADERS)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["accepted"] == 0
+    assert len(data["rejected"]) == 1
+    assert "entity_type='dish'" in data["rejected"][0]["reason"]
+
+
+def test_dish_loved_without_entity_id_rejected():
+    """dish_loved with entity_type='dish' but no entity_id is rejected."""
+    signal_id = str(uuid.uuid4())
+    payload = {
+        "signals": [{
+            "signal_id": signal_id,
+            "signal_type": "dish_loved",
+            "place_ref": "some-restaurant",
+            "entity_type": "dish",
+            "captured_at": datetime.now(timezone.utc).isoformat(),
+        }]
+    }
+    resp = client.post("/api/v1/signals", json=payload, headers=HEADERS)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["accepted"] == 0
+    assert "entity_id" in data["rejected"][0]["reason"]
+
+
+def test_dish_loved_valid_accepted():
+    """dish_loved with entity_type='dish' + entity_id is accepted."""
+    signal_id = str(uuid.uuid4())
+    payload = {
+        "signals": [{
+            "signal_id": signal_id,
+            "signal_type": "dish_loved",
+            "place_ref": "some-restaurant",
+            "entity_type": "dish",
+            "entity_id": "dish-khao-piak-001",
+            "captured_at": datetime.now(timezone.utc).isoformat(),
+        }]
+    }
+    resp = client.post("/api/v1/signals", json=payload, headers=HEADERS)
+    assert resp.status_code == 200
+    assert resp.json()["accepted"] == 1
+
+
+def test_dish_rejected_batch_mates_still_accepted():
+    """A bad dish_loved in a batch doesn't kill other valid signals."""
+    payload = {
+        "signals": [
+            {
+                "signal_id": str(uuid.uuid4()),
+                "signal_type": "dish_loved",
+                "place_ref": "restaurant",
+                "entity_type": "venue",
+                "captured_at": datetime.now(timezone.utc).isoformat(),
+            },
+            {
+                "signal_id": str(uuid.uuid4()),
+                "signal_type": "user_loved",
+                "place_ref": "dubai-aquarium",
+                "captured_at": datetime.now(timezone.utc).isoformat(),
+            },
+        ]
+    }
+    resp = client.post("/api/v1/signals", json=payload, headers=HEADERS)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["accepted"] == 1
+    assert len(data["rejected"]) == 1
+    assert "dish_loved" in data["rejected"][0]["reason"]
+
+
+def test_dish_signal_types_subset_of_signal_types():
+    """DISH_SIGNAL_TYPES must be a subset of SIGNAL_TYPES keys."""
+    assert DISH_SIGNAL_TYPES.issubset(SIGNAL_TYPES.keys())

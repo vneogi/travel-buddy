@@ -21,7 +21,7 @@ from pydantic import BaseModel, Field
 
 from security import get_current_user_id
 from services.database_service import db_service
-from models.signal_types import SERVER_DERIVED_TYPES, NODE_SKIPPED_REASONS
+from models.signal_types import SERVER_DERIVED_TYPES, NODE_SKIPPED_REASONS, DISH_SIGNAL_TYPES
 
 router = APIRouter(prefix="/api/v1", tags=["signals"])
 
@@ -43,6 +43,8 @@ class SignalIn(BaseModel):
     signal_id: str = Field(..., description="Client-generated UUID (idempotency key)")
     signal_type: str = Field(..., description="Signal type key (e.g. 'user_loved')")
     place_ref: str = Field(..., description="Venue ID or name from the itinerary")
+    entity_type: str = Field(default="venue", description="Subject type: venue|dish|area|transit_leg (§29)")
+    entity_id: Optional[str] = Field(default=None, description="Subject ID (required for dish signals)")
     value_text: Optional[str] = None
     value_numeric: Optional[float] = None
     value_json: Optional[dict] = None
@@ -218,6 +220,21 @@ async def ingest_signals(
                 rejected.append(RejectedSignal(
                     signal_id=sig.signal_id,
                     reason=f"node_skipped reason '{reason}' not in allowed set: {sorted(NODE_SKIPPED_REASONS)}"
+                ))
+                continue
+
+        # §29: dish signal types require entity_type='dish' + entity_id
+        if sig.signal_type in DISH_SIGNAL_TYPES:
+            if sig.entity_type != "dish":
+                rejected.append(RejectedSignal(
+                    signal_id=sig.signal_id,
+                    reason=f"'{sig.signal_type}' requires entity_type='dish', got '{sig.entity_type}'"
+                ))
+                continue
+            if not sig.entity_id:
+                rejected.append(RejectedSignal(
+                    signal_id=sig.signal_id,
+                    reason=f"'{sig.signal_type}' requires entity_id (dish reference)"
                 ))
                 continue
 
