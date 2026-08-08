@@ -1,28 +1,41 @@
-"""Live Supabase integration tests. Skipped unless TB_SUPABASE_URL is set.
+"""Live Supabase integration tests.
+
+Skipped when the user's .env has no TB_SUPABASE_URL (i.e., on CI or a
+machine without Supabase configured). On a developer machine with a
+populated .env, these run against the real project.
+
+The conftest.py `real_supabase_env` fixture restores the creds that were
+scrubbed at test-session startup (to keep test_auth.py isolated).
 
 Run against a real Supabase project (schema + functions created, venues seeded):
     pytest tests/test_supabase_integration.py -v
 Requires: pip install supabase
 """
 
-import os
 import uuid
 from datetime import datetime
 
 import pytest
 
-pytestmark = pytest.mark.skipif(
-    not os.getenv("TB_SUPABASE_URL"),
-    reason="Supabase creds not configured (TB_SUPABASE_URL unset)",
-)
+from tests.conftest import _SAVED_SUPABASE_URL
 
-from services.supabase_service import get_supabase_service
-from models.schemas import TripState, TripNode
+# Skip the entire module if the .env never had Supabase creds to begin with.
+# This check uses the SAVED value (captured before conftest cleared the env).
+pytestmark = pytest.mark.skipif(
+    not _SAVED_SUPABASE_URL,
+    reason="Supabase creds not configured (TB_SUPABASE_URL unset in .env)",
+)
 
 
 @pytest.fixture()
-def db():
-    svc = get_supabase_service()
+def db(real_supabase_env):
+    """Get a live SupabaseService with real credentials restored."""
+    # real_supabase_env fixture restores os.environ before this runs.
+    # Re-import to get a fresh service with the restored URL/key.
+    import importlib
+    import services.supabase_service as svc_mod
+    importlib.reload(svc_mod)
+    svc = svc_mod.get_supabase_service()
     assert svc is not None, "get_supabase_service() returned None despite creds"
     return svc
 
@@ -37,6 +50,7 @@ def test_user_create_roundtrip(db):
 def test_trip_persists_across_fetch(db):
     uid = str(uuid.uuid4())
     db.get_or_create_user(uid)  # FK: trip_states.user_id -> user_tiers
+    from models.schemas import TripState, TripNode
     trip = TripState(
         user_id=uid,
         nodes=[TripNode(venue_name="Test Venue",

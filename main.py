@@ -10,6 +10,7 @@ import os
 import time
 import traceback as tb_module
 import uuid
+from contextlib import asynccontextmanager
 
 # Add project root to path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -41,12 +42,45 @@ logging.basicConfig(
 logger = logging.getLogger("travelbuddy")
 
 # ==============================================================================
+# Lifespan (replaces deprecated @app.on_event("startup"))
+# ==============================================================================
+
+@asynccontextmanager
+async def _lifespan(app):
+    """Application lifespan: startup logic runs before yield, shutdown after."""
+    venue_count = seed_venues()
+    logger.info("=" * 60)
+    logger.info("%s v%s", settings.app_name, settings.app_version)
+    logger.info("Geo-fence: %s | Debug: %s", settings.geo_fence, settings.debug)
+    logger.info("Venues loaded: %d", venue_count)
+    # Booleans only — NEVER log key values.
+    logger.info(
+        "Config: llm_key_present=%s supabase_configured=%s jwt_auth=%s cors=%s",
+        bool(settings.litellm_api_key),
+        bool(getattr(settings, "supabase_url", None) and getattr(settings, "supabase_key", None)),
+        bool(getattr(settings, "supabase_jwt_secret", None)),
+        settings.cors_allowed_origins,
+    )
+    logger.info(
+        "Guardrails: reroutes=%d/day cache=%.2f breaker=%d boost=%.2f",
+        settings.max_daily_reroutes_free,
+        settings.semantic_cache_threshold,
+        settings.max_loop_depth,
+        settings.sponsored_boost_multiplier,
+    )
+    logger.info("=" * 60)
+    yield
+    # Shutdown: nothing to clean up currently.
+
+
+# ==============================================================================
 # App Initialization
 # ==============================================================================
 
 app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
+    lifespan=_lifespan,
     description=(
         "AI-powered travel companion backend. Dubai MVP.\n\n"
         "Features:\n"
@@ -160,34 +194,9 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 
 
-# ==============================================================================
-# Startup Events
-# ==============================================================================
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialize the application on startup."""
-    venue_count = seed_venues()
-    logger.info("=" * 60)
-    logger.info("%s v%s", settings.app_name, settings.app_version)
-    logger.info("Geo-fence: %s | Debug: %s", settings.geo_fence, settings.debug)
-    logger.info("Venues loaded: %d", venue_count)
-    # Booleans only — NEVER log key values.
-    logger.info(
-        "Config: llm_key_present=%s supabase_configured=%s jwt_auth=%s cors=%s",
-        bool(settings.litellm_api_key),
-        bool(getattr(settings, "supabase_url", None) and getattr(settings, "supabase_key", None)),
-        bool(getattr(settings, "supabase_jwt_secret", None)),
-        settings.cors_allowed_origins,
-    )
-    logger.info(
-        "Guardrails: reroutes=%d/day cache=%.2f breaker=%d boost=%.2f",
-        settings.max_daily_reroutes_free,
-        settings.semantic_cache_threshold,
-        settings.max_loop_depth,
-        settings.sponsored_boost_multiplier,
-    )
-    logger.info("=" * 60)
+
+
 
 
 @app.get("/")
