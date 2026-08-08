@@ -34,36 +34,58 @@ HEADERS = {"X-Debug-User-Id": "test-user-signal-types"}
 # Test 1: Drift guard — migrations agree with SIGNAL_TYPES
 # ==============================================================================
 
-def _extract_signal_type_keys_from_migrations() -> set:
-    """Parse all migration SQL files and extract keys inserted into signal_type."""
+def _extract_signal_types_from_migrations() -> dict[str, str]:
+    """Parse all migration SQL files and extract (key, value_kind) from signal_type INSERTs.
+
+    Returns dict mapping signal type key to its SQL value_kind.
+    """
     migration_dir = "supabase/migrations"
-    keys = set()
-    # Match patterns like: ('user_loved', ...) or ('reroute_accepted', ...)
-    # in INSERT INTO signal_type statements
-    pattern = re.compile(r"INSERT INTO signal_type.*?;", re.DOTALL | re.IGNORECASE)
-    key_pattern = re.compile(r"\('([a-z_]+)',")
+    types = {}
+    insert_pattern = re.compile(r"INSERT INTO signal_type.*?;", re.DOTALL | re.IGNORECASE)
+    # Each VALUES row: ('key', 'category', 'value_kind', ...)
+    row_pattern = re.compile(
+        r"\('([a-z_]+)',\s*'([a-z_]+)',\s*'([a-z_]+)'"
+    )
 
     for path in sorted(glob.glob(f"{migration_dir}/*.sql")):
         with open(path) as f:
             sql = f.read()
-        for insert_match in pattern.finditer(sql):
+        for insert_match in insert_pattern.finditer(sql):
             insert_sql = insert_match.group(0)
-            for key_match in key_pattern.finditer(insert_sql):
-                keys.add(key_match.group(1))
-    return keys
+            for row_match in row_pattern.finditer(insert_sql):
+                key = row_match.group(1)
+                value_kind = row_match.group(3)  # skip category (group 2)
+                types[key] = value_kind
+    return types
 
 
 def test_drift_guard_migrations_match_python():
-    """SPEC-06 core invariant: the set of keys in migrations == SIGNAL_TYPES keys.
+    """SPEC-06 core invariant: keys AND value_kind in migrations == SIGNAL_TYPES.
 
-    If this fails, someone added a type to only one place. Fix BOTH.
+    If this fails, someone added a type to only one place, or changed value_kind
+    in one without updating the other. Fix BOTH.
     """
-    migration_keys = _extract_signal_type_keys_from_migrations()
+    migration_types = _extract_signal_types_from_migrations()
+    migration_keys = set(migration_types.keys())
     python_keys = set(SIGNAL_TYPES.keys())
+
+    # First: key sets must match
     assert migration_keys == python_keys, (
-        f"Registry drift detected!\n"
+        f"Registry KEY drift detected!\n"
         f"  In migrations only: {migration_keys - python_keys}\n"
         f"  In Python only: {python_keys - migration_keys}"
+    )
+
+    # Second: value_kind must agree for every key
+    mismatches = []
+    for key in python_keys:
+        py_vk = SIGNAL_TYPES[key]
+        sql_vk = migration_types[key]
+        if py_vk != sql_vk:
+            mismatches.append(f"  {key}: Python=\'{py_vk}\' vs SQL=\'{sql_vk}\'")
+
+    assert not mismatches, (
+        f"Registry VALUE_KIND drift detected!\n" + "\n".join(mismatches)
     )
 
 

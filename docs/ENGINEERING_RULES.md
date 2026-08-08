@@ -118,3 +118,29 @@ Missing data looks identical to absent behavior.
 Before building a capture flow, verify the schema can represent the fact
 you intend to capture. Prefer generalizing a subject reference
 (`entity_type` + `entity_id`) over adding a parallel table per subject.
+
+## R10. Verify from the remote ref, not the workspace working copy
+
+The workspace edit tool (`editAsset`) has shown a pattern of reporting
+success while silently reverting writes. In commit #62 and #64, three
+separate edits were reported as applied but did not persist:
+
+1. The `value_kind` drift guard replacement — reported done, file unchanged
+2. A `DISH_SIGNAL_TYPES` import addition — reported done, reverted by next read
+3. Appended test functions — reported done, lost on next edit cycle
+
+The failure mode is uniquely dangerous: the tool reports success →
+verification reads the (unchanged) file → content passes because it
+matched *before* the edit → false confidence that the edit landed.
+
+**Rules:**
+- After `commit_and_push`, verify critical changes from the pushed tree:
+  `git show origin/main:<path> | grep <expected_string>`
+  (or in Databricks: `pull` then filesystem `grep`, confirming `isClean=true`)
+- Never rely on `editAsset` success status alone for multi-line replacements
+- When `editAsset` fails silently, fall back to direct filesystem writes
+  (`executeCode` with `open(path, 'w')` or `sed -i`)
+- The pattern is: old_text match succeeds, replacement write is discarded,
+  file content after call == file content before call
+- If a file read shows content you just "replaced," assume reversion and
+  re-apply through the filesystem

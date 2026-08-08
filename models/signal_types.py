@@ -41,6 +41,21 @@ SIGNAL_TYPES: dict[str, str] = {
     "dish_ordered": "boolean",
 }
 
+# What value_json carries for each type. This is DOCUMENTATION — not validated
+# at ingest (yet). The drift guard checks value_kind; this describes the shape
+# within that kind. Keep in sync manually when adding types.
+PAYLOAD_SHAPES: dict[str, str] = {
+    "user_loved": "enum value from ARRAY['loved'] — currently single-valued",
+    "reroute_accepted": "json: {replacement_ref: str} — the venue that replaced the original",
+    "reroute_rejected": "json: {rejected_refs: list[str]} — venues offered but declined",
+    "visited_confirmed": "boolean: true (presence = confirmation)",
+    "node_skipped": "json: {reason: str} — value from NODE_SKIPPED_REASONS enum",
+    "arrival_delta": "numeric: minutes (positive = late, negative = early)",
+    "dish_loved": "enum value from ARRAY['loved'] — same as user_loved but entity_type='dish'",
+    "dish_ordered": "boolean: true (presence = ordered/consumed)",
+}
+
+
 # Closed enum for node_skipped reasons. Client must present a picker,
 # not a free-text field. Unanalyzable free-text defeats the purpose.
 NODE_SKIPPED_REASONS = frozenset({
