@@ -216,3 +216,23 @@ flutter run -d chrome \
   --dart-define=TB_DEBUG_USER_ID=11111111-1111-1111-1111-111111111111
 # Tests: flutter test (expect 29 passed)
 ```
+
+
+---
+
+## Committed Roadmap (Part II, §24–30)
+
+Reviewed and accepted 2026-08-08. These build on existing backend code.
+
+| § | Capability | Status | Depends on |
+|---|---|---|---|
+| 24 | Deterministic Scheduling Core (CSP) | Not started | scheduler.py exists as stub |
+| 25 | Fatigue as First-Class Input | Not started | §24 solver |
+| 26 | Show Driver Cards (Offline) | Not started | Offline Vault |
+| 27 | Bookings as Hard Anchors | Not started | §24 locked-node support |
+| 28 | Food & Local Intelligence substrate | Not started | **§29** (entity generalization) |
+| 29 | Generalized Signal Subject | Not started | 0005 migration |
+| 30 | Deferred register | Done (documentation) | — |
+
+**Dependency chain:** §29 → §28. Food substrate cannot land until the signal
+table can reference dishes. §29 is the critical path for food intelligence.

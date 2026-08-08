@@ -108,3 +108,13 @@ healthy, and the affected tests covered the riskiest code in the repo
 - Use `-ra` to always print skip/xfail reasons in the summary.
 - Pin test deps in `requirements-dev.txt` so ephemeral computes
   reproduce the same environment.
+
+## R9. A schema that cannot express a fact will never error
+
+The `signal` table referenced venues only. A dish-level observation was
+not "unsupported" — it was unrepresentable, and nothing failed to say so.
+Missing data looks identical to absent behavior.
+
+Before building a capture flow, verify the schema can represent the fact
+you intend to capture. Prefer generalizing a subject reference
+(`entity_type` + `entity_id`) over adding a parallel table per subject.

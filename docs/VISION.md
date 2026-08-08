@@ -174,6 +174,112 @@ serve this moment.
 
 ---
 
+---
+
+# PART II — COMMITTED ROADMAP ADDITIONS
+
+Reviewed and accepted 2026-08-08. These build on existing code and are
+committed, unlike Part III.
+
+## 24. Deterministic Scheduling Core (CSP), LLM as Explainer
+
+`services/scheduler.py` becomes the authority for all schedule decisions.
+The LLM never computes a schedule — it only explains one the solver produced.
+
+Rationale: an LLM-computed schedule is 2-5s, costs per reroute, is
+non-deterministic, hallucinates opening hours, and **cannot run offline.**
+The Offline Vault and LLM-based rerouting are architecturally incompatible.
+A deterministic solver runs on-device in milliseconds.
+
+Cost function: maximize preference match, minus fatigue penalty, minus
+transit friction, minus heat exposure. Hard constraints: locked bookings,
+opening hours, party constraints.
+
+## 25. Fatigue as a First-Class Scheduling Input
+
+A 3-state selector (Exhausted / Hungry / Energised) feeds the solver's
+fatigue penalty directly. **Manual input only — no HealthKit/Google Fit.**
+Biometrics add two platform permission flows and a privacy review for a
+signal the user can give in one tap.
+
+Evidence: "Tired/sick" is the only mid-trip-change cause BOTH survey
+respondents selected. Both rated over-packed schedules 2-3/5.
+
+## 26. Show Driver Cards (Offline)
+
+Full-screen card: venue name in large native script, nearest landmark,
+GPS pin, fair-fare band. Works fully offline; lives in the Offline Vault.
+
+Evidence: the one respondent who answered Q33 named "Money & language"
+and "No internet" as the biggest struggles in an unfamiliar place.
+
+## 27. Bookings as Hard Anchors
+
+External reservations (flight, hotel, Klook slot) ingest as **locked nodes**,
+which `scheduler.py` already treats as fixed anchors. The hotel is the daily
+geographic anchor: departure, mid-day rest, and return are computed relative
+to transit time from it.
+
+Evidence: Q30 is the survey's ONLY unanimous free-text signal — both
+respondents said accommodation location disrupted their daily plans.
+
+**Ingestion is a forward-to address (`trips@...`), NOT Gmail OAuth.**
+Gmail restricted-scope verification requires a third-party security
+assessment ($15k-75k/yr, multi-month) and grants read access to the user's
+entire inbox. A forwarded email is one message the user explicitly sent us:
+~95% of the value, none of the liability. This is the permanent design, not
+a stopgap.
+
+## 28. Food & Local Intelligence — Substrate Now, Engine Later
+
+Local food intelligence is expensive to acquire and cannot be retrofitted,
+so the **data substrate ships before Laos** even though the ranking engine
+does not.
+
+Substrate (now):
+- Signals can reference a dish, not just a venue (see §29)
+- `venue_dish` entity: local script, romanization, English, price band,
+  signature flag
+- `party_member.dietary_constraints` — allergen/dietary is a safety
+  feature and belongs in the party profile, not the food engine
+
+Engine (post-Laos, needs data volume): two-tier rescue-vs-destination
+ranking, trap-score weighting, dish-level recommendation.
+
+Acquisition strategy: dish data is per-venue manual curation. Laos is the
+first ingest — capture dishes on the ground as contributor #1, then extend
+via user signals. Being second-best at food is acceptable; being unable to
+*represent* food is not.
+
+## 29. Generalized Signal Subject — `(entity_type, entity_id)`
+
+**The load-bearing schema decision.** Signals currently reference venues
+only, so a dish-level, neighborhood-level, or transit-leg-level fact is
+not merely unsupported — it is unrepresentable, and the schema raises no
+error to tell you so.
+
+Generalizing the subject to `(entity_type, entity_id)` where
+`entity_type ∈ {venue, dish, area, transit_leg}` is near-free now
+(negligible production data) and requires migrating a live signal table
+later. Everything in §28 depends on it.
+
+## 30. Explicitly Deferred, With Rationale
+
+Recorded so these are not re-proposed without new information.
+
+| Capability | Status | Rationale |
+|---|---|---|
+| Isar migration | **Declined** | Working, tested `sqflite` outbox passed the airplane-mode drill. Rewriting persistence 8 weeks pre-Laos risks the one thing proven to work. |
+| PostGIS / graph DB | **Deferred** | ~16 seed venues. pgvector + lat/lng index is sufficient below ~500. Adopt when venue count forces it. |
+| Gmail OAuth | **Declined permanently** | Restricted-scope assessment $15k-75k/yr; full-inbox read access. Forwarding address supersedes. |
+| HealthKit / Google Fit | **Declined** | Two permission flows + privacy review for a signal one tap provides. |
+| Tiered SLM routing | **Deferred** | `llm_key_present=False` today. Get one model working before a 3-tier router. `light_model=gpt-4o-mini` is already the cheap tier. |
+| Trap score computation | **Deferred; column now** | Needs post-Laos volume. Ship the unpopulated column so data has somewhere to land. |
+| Silent Veto | **Needs design review** | "The app hid my partner's preference from me" is an unpatchable trust problem. Consent design first. |
+| Street utility index | **Post-Laos** | Loses to Google Maps without differentiation; revisit with real data. |
+| Flight delay cascade | **Post-Laos** | Depends on §27 anchors landing first. |
+
+
 # PART III — PHASE 2+ DIRECTIONAL HYPOTHESES
 
 **Status: NOT COMMITTED. Do not build against Part III.**
