@@ -144,3 +144,23 @@ matched *before* the edit → false confidence that the edit landed.
   file content after call == file content before call
 - If a file read shows content you just "replaced," assume reversion and
   re-apply through the filesystem
+
+**Amendment: local working copy is the execution surface, not origin/main.**
+
+Verifying from `origin/main` proves the remote tree is correct. But
+`supabase db push`, `python`, `flutter build`, and every other local
+command reads the user's working copy — not the remote. A correct remote
+and a stale local produce the same failure as never having fixed the bug.
+
+Any instruction to run a local command must begin with:
+
+    git pull origin main
+    # Then confirm the specific fix is present:
+    grep -n "venues_rag" supabase/migrations/0005_entity_ref_generalization.sql
+    # or on Windows:
+    findstr /n "venues_rag" supabase\migrations\0005_entity_ref_generalization.sql
+
+Only after the grep confirms the expected content should the command run.
+This is not paranoia — it closes the gap between "verified on remote" and
+"executing locally" that cost us the `venue` → `venues_rag` fix arriving
+on GitHub but potentially not being pulled before `db push`.
