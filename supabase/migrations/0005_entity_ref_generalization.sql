@@ -3,8 +3,8 @@
 -- Description: VISION §29 — generalize signal subject from venue-only to
 --              (entity_type, entity_id). Additive only: no DROP, no RENAME.
 --              Also creates venue_dish (§28 substrate) and adds trap_score
---              to venue (§30 deferred column).
--- Depends on: 0002_signals_core.sql (signal table), 0001 (venue table)
+--              to venues_rag (§30 deferred column).
+-- Depends on: 0002_signals_core.sql (signal table), 0001 (venues_rag table)
 -- =============================================================================
 
 -- =============================================================================
@@ -28,7 +28,7 @@ CREATE INDEX IF NOT EXISTS idx_signal_entity ON signal(entity_type, entity_id);
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS venue_dish (
     dish_id       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    venue_id      UUID NOT NULL,     -- FK to venue table (once it uses UUID PKs)
+    venue_id      UUID NOT NULL REFERENCES venues_rag(venue_id),
     name_local    TEXT NOT NULL,      -- name in native script (e.g. Lao, Thai, Arabic)
     name_roman    TEXT,               -- romanization for pronunciation
     name_en       TEXT,               -- English translation (may be NULL for local-only items)
@@ -44,7 +44,7 @@ CREATE INDEX IF NOT EXISTS idx_venue_dish_venue ON venue_dish(venue_id);
 -- =============================================================================
 -- 3. trap_score on venue (§30 — deferred computation, column now)
 -- =============================================================================
-ALTER TABLE venue
+ALTER TABLE venues_rag
     ADD COLUMN IF NOT EXISTS trap_score NUMERIC;
 
 -- NULL means "not yet computed". Post-Laos: populate from signal volume +
@@ -53,7 +53,7 @@ ALTER TABLE venue
 
 -- =============================================================================
 -- ROLLBACK (manual):
--- ALTER TABLE venue DROP COLUMN IF EXISTS trap_score;
+-- ALTER TABLE venues_rag DROP COLUMN IF EXISTS trap_score;
 -- DROP INDEX IF EXISTS idx_venue_dish_venue;
 -- DROP TABLE IF EXISTS venue_dish;
 -- DROP INDEX IF EXISTS idx_signal_entity;
