@@ -178,17 +178,19 @@ signal volume.
 | Signal type | Specified | Registered server-side | Emitted by client |
 |---|---|---|---|
 | `user_loved` | Yes | **Yes** | **Yes** |
-| `reroute_accepted` | Yes | No | No |
-| `reroute_rejected` | Yes | No | No |
-| `visited_confirmed` | Yes | No | No |
-| `node_skipped` | Yes | No | No |
-| `arrival_delta` | Yes | No | No (server-derived) |
-| `dwell_minutes` | Yes | No | No |
+| `reroute_accepted` | Yes | **Yes** (SPEC-06) | No (SPEC-07) |
+| `reroute_rejected` | Yes | **Yes** (SPEC-06) | No (SPEC-07) |
+| `visited_confirmed` | Yes | **Yes** (SPEC-06) | No (SPEC-07) |
+| `node_skipped` | Yes | **Yes** (SPEC-06) | No (SPEC-07) |
+| `arrival_delta` | Yes | **Yes** (client POST rejected 422) | Not yet derived (SPEC-07) |
+| `dwell_minutes` | Yes | No (needs background location — post-Laos) | No |
 
-A type must appear in BOTH the `signal_type` table (Supabase) and
-`models/signal_types.py` (in-memory) before ingest will accept it.
-Until then `POST /api/v1/signals` returns 422 for that type.
-Tracked in SPEC-06.
+A type must appear in BOTH the `signal_type` table (Supabase migration) and
+`models/signal_types.py` before ingest will accept it. `models/signal_types.py`
+is the single source of truth; `tests/test_signal_types.py` enforces that the
+migrations agree. `arrival_delta` is registered but cannot be POSTed by clients
+— it will be derived server-side from `visited_confirmed` timestamps (SPEC-07).
+`dwell_minutes` requires background location permission and is deferred post-Laos.
 
 The signals **only an on-trip app can capture**, and the core of the moat:
 - `reroute_suggested` / `reroute_accepted` / `reroute_rejected` — engine offered alternative X for
