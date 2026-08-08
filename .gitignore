@@ -39,3 +39,23 @@ htmlcov/
 # Logs
 *.log
 logs/
+
+# Database dumps -- may contain data. Never commit.
+*.sql.bak
+backup_*.sql
+*_backup.sql
+supabase/.temp/
+
+# Flutter platform folders not targeted for this project
+mobile/linux/
+mobile/macos/
+mobile/windows/
+mobile/web/
+
+# Flutter/Gradle secrets that must never be committed
+mobile/android/local.properties
+mobile/android/key.properties
+mobile/android/*.keystore
+mobile/android/*.jks
+mobile/android/app/google-services.json
+mobile/ios/Runner/GoogleService-Info.plist

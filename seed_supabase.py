@@ -12,6 +12,12 @@ packages installed. Run once after the schema exists:
 """
 
 import sys
+from pathlib import Path
+
+# Ensure .env is loaded regardless of CWD (pydantic-settings reads env_file
+# relative to CWD, which fails when invoked from outside the project root).
+from dotenv import load_dotenv
+load_dotenv(Path(__file__).resolve().parent / ".env")
 
 from seed_data import DUBAI_VENUES
 from services.embedding_service import embedding_service
