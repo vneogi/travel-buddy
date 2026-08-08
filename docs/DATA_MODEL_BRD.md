@@ -172,6 +172,24 @@ Cheap taps, captured in-context on the itinerary/venue card. **Design for one-ta
 signal volume.
 
 ### 4.2 First-party — behavioral / implicit (the proprietary gold)
+
+#### 4.2.0 Registry status (verified 2026-08-08)
+
+| Signal type | Specified | Registered server-side | Emitted by client |
+|---|---|---|---|
+| `user_loved` | Yes | **Yes** | **Yes** |
+| `reroute_accepted` | Yes | No | No |
+| `reroute_rejected` | Yes | No | No |
+| `visited_confirmed` | Yes | No | No |
+| `node_skipped` | Yes | No | No |
+| `arrival_delta` | Yes | No | No (server-derived) |
+| `dwell_minutes` | Yes | No | No |
+
+A type must appear in BOTH the `signal_type` table (Supabase) and
+`models/signal_types.py` (in-memory) before ingest will accept it.
+Until then `POST /api/v1/signals` returns 422 for that type.
+Tracked in SPEC-06.
+
 The signals **only an on-trip app can capture**, and the core of the moat:
 - `reroute_suggested` / `reroute_accepted` / `reroute_rejected` — engine offered alternative X for
   node Y; user accepted/rejected. Ranking training data + venue quality signal + preference model.

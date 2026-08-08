@@ -93,3 +93,17 @@ than fail the ingest.
 - [ ] `age_band` only — no birth dates
 - [ ] Works on both backends behind `db_provider`
 - [ ] Offline-queued signals still stamp correctly on later ingest (they're stamped at ingest, so yes — verify)
+
+
+## Outstanding (added 2026-08-08)
+
+Acceptance criteria are NOT fully met. The application code is complete
+and correct, but the Supabase migration was never written:
+
+- [ ] `supabase/migrations/0003_trip_party.sql` creating `trip_party`
+      and `party_member`
+- [ ] Migration applied to the Supabase project
+- [ ] `save_trip_party` exercised against real Supabase, not just in-memory
+
+`supabase_service.save_trip_party` will raise at runtime until this
+lands. Do not flip `db_provider` to Supabase before then.

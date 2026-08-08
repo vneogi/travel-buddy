@@ -172,6 +172,28 @@ This is capability #7 made concrete and a **structural** advantage: online-only 
 serve this moment.
 
 
+---
+
+# PART III — PHASE 2+ DIRECTIONAL HYPOTHESES
+
+**Status: NOT COMMITTED. Do not build against Part III.**
+
+Sections 17–23 explore expanding beyond the on-trip wedge into pre-trip
+planning, booking, and full-trip management. They are recorded so the
+thinking is not lost — they are NOT the current roadmap.
+
+Where Part III conflicts with §6 (on-trip wedge), **§6 wins.**
+
+Evidence status: the expansion in Part III was drafted partly from a
+user survey with **n=2 respondents, one of whom is a family member**.
+Every directional claim in Part III currently rests on one or two
+responses. Part III may be promoted only after the survey reaches
+n>=20 with independent respondents and the claims survive.
+
+Revisit: after the Laos field test (Oct 2026).
+
+---
+
 ## 17. Thesis upgrade: from on-trip companion to full-trip operating system
 *Added Aug 2026 after user research + competitive analysis. This reframes the product scope.*
 
