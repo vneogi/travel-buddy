@@ -21,6 +21,7 @@ from models.signal_types import (
     SERVER_DERIVED_TYPES,
     NODE_SKIPPED_REASONS,
     DISH_SIGNAL_TYPES,
+    PAYLOAD_SHAPES,
     client_emittable_types,
     is_valid,
 )
@@ -352,3 +353,26 @@ def test_dish_rejected_batch_mates_still_accepted():
 def test_dish_signal_types_subset_of_signal_types():
     """DISH_SIGNAL_TYPES must be a subset of SIGNAL_TYPES keys."""
     assert DISH_SIGNAL_TYPES.issubset(SIGNAL_TYPES.keys())
+
+
+# ==============================================================================
+# Test 9: PAYLOAD_SHAPES documents every signal type
+# ==============================================================================
+
+def test_payload_shapes_completeness():
+    """Every key in SIGNAL_TYPES must have a PAYLOAD_SHAPES entry.
+
+    Without this, a new signal type can be added to SIGNAL_TYPES + migrations
+    and pass the drift guard while silently having no payload documentation.
+    """
+    missing = set(SIGNAL_TYPES.keys()) - set(PAYLOAD_SHAPES.keys())
+    assert not missing, (
+        f"PAYLOAD_SHAPES missing documentation for: {sorted(missing)}\n"
+        f"Add an entry describing what value_json carries for each."
+    )
+
+    extra = set(PAYLOAD_SHAPES.keys()) - set(SIGNAL_TYPES.keys())
+    assert not extra, (
+        f"PAYLOAD_SHAPES has entries for non-existent types: {sorted(extra)}\n"
+        f"Remove stale entries or add the type to SIGNAL_TYPES."
+    )

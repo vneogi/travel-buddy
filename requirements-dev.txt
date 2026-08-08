@@ -1,0 +1,29 @@
+# Travel Buddy — development/test dependencies
+# Install with: pip install -r requirements-dev.txt
+#
+# This file exists because of R8: ephemeral compute resets silently
+# shrink the test suite when deps vanish. Pin everything that tests
+# import or depend on.
+
+# Core application deps (needed for import at test collection time)
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+pydantic>=2.9.0
+pydantic-settings>=2.5.0
+httpx>=0.27.0
+python-dotenv>=1.0.1
+PyJWT>=2.9.0
+stripe>=10.10.0
+
+# AI/ML (imported by services — needed for test collection even if mocked)
+litellm>=1.45.0
+langchain>=0.2.0
+langgraph>=0.2.0
+
+# Test framework
+pytest>=8.3.0
+pytest-asyncio>=0.24.0
+
+# NOTE: pytest-asyncio is listed but should NOT be needed if all tests
+# use sync TestClient. It's pinned because --strict-markers will error
+# if any test accidentally uses @pytest.mark.asyncio without the plugin.
