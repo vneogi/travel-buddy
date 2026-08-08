@@ -21,6 +21,7 @@ from pydantic import BaseModel, Field
 
 from security import get_current_user_id
 from services.database_service import db_service
+from models.signal_types import SERVER_DERIVED_TYPES
 
 router = APIRouter(prefix="/api/v1", tags=["signals"])
 
@@ -199,6 +200,14 @@ async def ingest_signals(
             rejected.append(RejectedSignal(
                 signal_id=sig.signal_id,
                 reason=f"unknown signal_type: '{sig.signal_type}'"
+            ))
+            continue
+
+        # SPEC-06: server-derived types cannot be submitted by clients
+        if sig.signal_type in SERVER_DERIVED_TYPES:
+            rejected.append(RejectedSignal(
+                signal_id=sig.signal_id,
+                reason=f"'{sig.signal_type}' is derived server-side and cannot be submitted"
             ))
             continue
 

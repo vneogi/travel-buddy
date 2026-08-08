@@ -10,6 +10,7 @@ from typing import Dict, List, Optional
 import uuid
 
 from config.settings import settings
+from models.signal_types import SIGNAL_TYPES
 from models.schemas import (
     TripState,
     UserTier,
@@ -33,7 +34,7 @@ class DatabaseService:
         self._event_log: List[dict] = []
         self._signals: Dict[str, dict] = {}  # keyed by signal_id (idempotency)
         self._parties: Dict[str, dict] = {}  # keyed by trip_id (SPEC-03)
-        self._valid_signal_types = {"user_loved"}  # seed; mirrors signal_type table
+        self._valid_signal_types = set(SIGNAL_TYPES)  # from models.signal_types (single source of truth)
 
     # =========================================================================
     # User Tier Operations
