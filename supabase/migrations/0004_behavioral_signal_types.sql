@@ -13,8 +13,10 @@ INSERT INTO signal_type (key, category, value_kind, enum_values, decay_policy, d
      'User opened swap suggestions and declined all'),
     ('visited_confirmed', 'behavioral', 'boolean', NULL, 'none',
      'User confirmed they visited a planned node'),
-    ('node_skipped', 'behavioral', 'json', NULL, 'none',
-     'User skipped a planned node'),
+    ('node_skipped', 'behavioral', 'json',
+     ARRAY['too_far', 'too_tired', 'closed', 'crowded', 'not_interested', 'ran_out_of_time', 'weather'],
+     'none',
+     'User skipped a planned node — reason from closed enum'),
     ('arrival_delta', 'behavioral', 'numeric', NULL, 'none',
      'Minutes between planned and actual arrival (server-derived)')
 ON CONFLICT (key) DO NOTHING;

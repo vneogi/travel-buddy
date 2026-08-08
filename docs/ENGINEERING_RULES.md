@@ -89,3 +89,22 @@ became valid after rebuilding against the laptop's LAN IP.
 
 **For any offline/failure drill, first confirm the failure mode is real** —
 e.g. see requests actually stop — before trusting a pass.
+
+## R8. Report passed AND skipped, with a reason per skip
+
+A skip asserts nothing. "All green" is only true when the skip count is
+expected and every skip has a named `skipif`. Eight tests once degraded
+from passing to skipped because a test dependency (`pytest-asyncio`)
+vanished from the ephemeral environment — the summary line still read as
+healthy, and the affected tests covered the riskiest code in the repo
+(SPEC-03 party_context stamping).
+
+**Rules:**
+- Never report "all green" without stating the skip count and reason.
+- Use `--strict-markers` so unknown markers error instead of silently
+  becoming no-ops.
+- Set `filterwarnings = error::pytest.PytestUnhandledCoroutineWarning`
+  so an async test without a runner fails loudly.
+- Use `-ra` to always print skip/xfail reasons in the summary.
+- Pin test deps in `requirements-dev.txt` so ephemeral computes
+  reproduce the same environment.

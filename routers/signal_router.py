@@ -21,7 +21,7 @@ from pydantic import BaseModel, Field
 
 from security import get_current_user_id
 from services.database_service import db_service
-from models.signal_types import SERVER_DERIVED_TYPES
+from models.signal_types import SERVER_DERIVED_TYPES, NODE_SKIPPED_REASONS
 
 router = APIRouter(prefix="/api/v1", tags=["signals"])
 
@@ -210,6 +210,16 @@ async def ingest_signals(
                 reason=f"'{sig.signal_type}' is derived server-side and cannot be submitted"
             ))
             continue
+
+        # SPEC-06: node_skipped reason must be from the closed enum
+        if sig.signal_type == "node_skipped":
+            reason = (sig.value_json or {}).get("reason")
+            if reason and reason not in NODE_SKIPPED_REASONS:
+                rejected.append(RejectedSignal(
+                    signal_id=sig.signal_id,
+                    reason=f"node_skipped reason '{reason}' not in allowed set: {sorted(NODE_SKIPPED_REASONS)}"
+                ))
+                continue
 
         # Per-item validation: captured_at skew
         skew_error = _validate_captured_at(sig.captured_at)

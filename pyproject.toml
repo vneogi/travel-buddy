@@ -22,3 +22,12 @@ ignore = [
 
 [tool.ruff.format]
 quote-style = "double"
+
+[tool.pytest.ini_options]
+addopts = "--strict-markers -ra"
+markers = [
+    "asyncio: marks tests as async (should not exist — use sync TestClient instead)",
+]
+filterwarnings = [
+    "error::pytest.PytestUnhandledCoroutineWarning",
+]

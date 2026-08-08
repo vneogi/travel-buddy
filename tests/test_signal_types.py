@@ -19,6 +19,7 @@ from main import app
 from models.signal_types import (
     SIGNAL_TYPES,
     SERVER_DERIVED_TYPES,
+    NODE_SKIPPED_REASONS,
     client_emittable_types,
     is_valid,
 )
@@ -167,3 +168,68 @@ def test_server_derived_not_in_client_emittable():
     for t in SERVER_DERIVED_TYPES:
         assert t not in emittable, f"{t} should not be client-emittable"
         assert t in SIGNAL_TYPES, f"{t} must still be in SIGNAL_TYPES"
+
+
+# ==============================================================================
+# Test 7: node_skipped reason must be from closed enum
+# ==============================================================================
+
+def test_node_skipped_valid_reason_accepted():
+    """node_skipped with a valid reason from the closed enum is accepted."""
+    import uuid
+    signal_id = str(uuid.uuid4())
+    payload = {
+        "signals": [{
+            "signal_id": signal_id,
+            "signal_type": "node_skipped",
+            "place_ref": "test-place-001",
+            "trip_id": "test-trip-001",
+            "captured_at": datetime.now(timezone.utc).isoformat(),
+            "value_json": {"reason": "too_tired"},
+        }]
+    }
+    resp = client.post("/api/v1/signals", json=payload, headers=HEADERS)
+    assert resp.status_code == 200
+    assert resp.json()["accepted"] == 1
+
+
+def test_node_skipped_invalid_reason_rejected():
+    """node_skipped with a free-text reason not in the closed enum is rejected."""
+    import uuid
+    signal_id = str(uuid.uuid4())
+    payload = {
+        "signals": [{
+            "signal_id": signal_id,
+            "signal_type": "node_skipped",
+            "place_ref": "test-place-001",
+            "trip_id": "test-trip-001",
+            "captured_at": datetime.now(timezone.utc).isoformat(),
+            "value_json": {"reason": "was tired lol"},
+        }]
+    }
+    resp = client.post("/api/v1/signals", json=payload, headers=HEADERS)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["accepted"] == 0
+    assert len(data["rejected"]) == 1
+    assert "reason" in data["rejected"][0]["reason"].lower()
+
+
+def test_node_skipped_reasons_enum_matches_migration():
+    """NODE_SKIPPED_REASONS in Python matches enum_values in migration 0004."""
+    import re, glob
+    # Extract the ARRAY[...] from 0004
+    migration_reasons = set()
+    for path in sorted(glob.glob("supabase/migrations/0004*.sql")):
+        with open(path) as f:
+            sql = f.read()
+        array_match = re.search(r"ARRAY\[([^\]]+)\]", sql)
+        if array_match:
+            values = re.findall(r"'([a-z_]+)'", array_match.group(1))
+            migration_reasons = set(values)
+
+    assert migration_reasons == NODE_SKIPPED_REASONS, (
+        f"node_skipped enum drift!\n"
+        f"  Migration only: {migration_reasons - NODE_SKIPPED_REASONS}\n"
+        f"  Python only: {NODE_SKIPPED_REASONS - migration_reasons}"
+    )
