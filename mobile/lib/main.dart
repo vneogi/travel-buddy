@@ -39,8 +39,14 @@ class TravelBuddyApp extends StatefulWidget {
 
 /// SPEC-02 B.1: sync on app resume (foreground).
 /// WidgetsBindingObserver detects lifecycle transitions.
+///
+/// Debounce: Pixel 9 Pro Fold fires didChangeAppLifecycleState ~3-5 times
+/// on fold/unfold (surface recreation). Skip if last sync was <30s ago.
 class _TravelBuddyAppState extends State<TravelBuddyApp>
     with WidgetsBindingObserver {
+  DateTime? _lastResumeSync;
+  static const _resumeDebounce = Duration(seconds: 30);
+
   @override
   void initState() {
     super.initState();
@@ -56,7 +62,13 @@ class _TravelBuddyAppState extends State<TravelBuddyApp>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // App returned to foreground — trigger sync (SPEC-02 B.1)
+      final now = DateTime.now();
+      if (_lastResumeSync != null &&
+          now.difference(_lastResumeSync!) < _resumeDebounce) {
+        debugPrint('[App] Resumed — debounced (last sync ${now.difference(_lastResumeSync!).inSeconds}s ago)');
+        return;
+      }
+      _lastResumeSync = now;
       debugPrint('[App] Resumed — triggering sync');
       ProviderScope.containerOf(context).read(syncEngineProvider).triggerSync();
     }

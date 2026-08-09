@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+
+import '../core/connectivity_helper.dart';
 import 'package:flutter/foundation.dart';
 
 import '../core/api_client.dart';
@@ -62,7 +64,7 @@ class SyncEngine {
 
     // Listen for connectivity changes
     _connectivitySub = _connectivity.onConnectivityChanged.listen((results) async {
-      final hasConnection = results.any((r) => r != ConnectivityResult.none);
+      final hasConnection = ConnectivityHelper.isOnline(results);
       if (hasConnection) {
         debugPrint('[SyncEngine] Connectivity regained — resetting backoff, syncing');
         // A new connection invalidates prior backoff (which can grow to ~15min

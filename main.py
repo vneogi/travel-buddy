@@ -76,11 +76,11 @@ except ImportError:
 @asynccontextmanager
 async def _lifespan(app):
     """Application lifespan: startup logic runs before yield, shutdown after."""
-    venue_count = seed_venues()
+    venue_count, venue_source = seed_venues()
     logger.info("=" * 60)
     logger.info("%s v%s", settings.app_name, settings.app_version)
     logger.info("Geo-fence: %s | Debug: %s", settings.geo_fence, settings.debug)
-    logger.info("Venues loaded: %d", venue_count)
+    logger.info("Venues loaded: %d (%s)", venue_count, venue_source)
     # Booleans only — NEVER log key values.
     logger.info(
         "Config: llm_key_present=%s supabase_configured=%s jwt_auth=%s cors=%s",

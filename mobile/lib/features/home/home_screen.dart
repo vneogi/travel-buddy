@@ -33,12 +33,12 @@ class HomeScreen extends ConsumerWidget {
                     if (context.mounted) context.push('/trip/${trip.tripId}');
                   } on ApiException catch (e) {
                     // Trip creation needs the server (it generates the itinerary),
-                    // so offline we can't fake it — say so instead of throwing.
+                    // so we can't fake it locally — show a contextual message.
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(e is NetworkException
-                              ? "You're offline — connect to create a new trip."
+                              ? "Can't reach Travel Buddy \u2014 check your connection."
                               : e.message),
                           behavior: SnackBarBehavior.floating,
                         ),

@@ -183,18 +183,19 @@ def seed_venues() -> int:
     (seeded once via seed_supabase.py with real embeddings). Skip the seed
     and report the existing count instead.
     """
-    from services.db_provider import _BACKEND_NAME
-    if "SUPABASE" in _BACKEND_NAME:
+    from services.db_provider import IS_SUPABASE
+    if IS_SUPABASE:
         # Venues live in venues_rag, seeded by seed_supabase.py.
         # Don't call add_venue() — it requires an embedding argument
         # that the in-memory seed path doesn't compute.
         try:
-            return db_service.get_venue_count()
+            count = db_service.get_venue_count()
+            return count, "from venues_rag"
         except Exception:
-            return 0  # Supabase not reachable at startup — non-fatal
+            return 0, "venues_rag unreachable"
     for venue in DUBAI_VENUES:
         db_service.add_venue(venue)
-    return len(DUBAI_VENUES)
+    return len(DUBAI_VENUES), "seeded in-memory"
 
 
 if __name__ == "__main__":

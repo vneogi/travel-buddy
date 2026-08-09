@@ -59,6 +59,9 @@ def _resolve_backend():
 
 db_service = _resolve_backend()
 
+# Behavioural branch — never use _BACKEND_NAME for logic decisions (R13).
+IS_SUPABASE: bool = "SUPABASE" in _BACKEND_NAME
+
 # ─── LOUD startup log ─────────────────────────────────────────────────────────
 # This line must be unmissable. If you see "IN-MEMORY" in production, signals
 # are going to a volatile dict that vanishes on restart.

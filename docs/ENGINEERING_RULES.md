@@ -164,3 +164,28 @@ Only after the grep confirms the expected content should the command run.
 This is not paranoia — it closes the gap between "verified on remote" and
 "executing locally" that cost us the `venue` → `venues_rag` fix arriving
 on GitHub but potentially not being pulled before `db push`.
+
+
+## R11. A success response is not proof of persistence
+
+`SyncEngine` logged `accepted=1 duplicates=0` for five signals while
+`db_provider` pointed at the in-memory backend — every one was discarded
+on restart. Confirm writes by querying the destination store, never by
+trusting an API acknowledgement or an adjacent success signal.
+
+## R12. Never widen the root log level for a debug flag
+
+`logging.basicConfig(level=DEBUG if settings.debug else INFO)` set the
+ROOT logger to DEBUG, so `TB_DEBUG=true` made LiteLLM, `openai`, and
+`httpx` dump full request bodies, 1536-float embedding arrays, and the
+masked `Authorization` header to stdout. Raise the level on your own
+loggers only; pin third-party loggers explicitly.
+
+## R13. Both backends must satisfy one interface
+
+`DatabaseService` and `SupabaseService` are independent implementations of
+the same contract, and divergence is only caught at runtime:
+`record_signal` and `get_valid_signal_types` were each missing from
+`supabase_service`, and `add_venue` differed in arity — crashing startup
+once the provider resolved to Supabase. `tests/test_backend_parity.py`
+asserts signature compatibility so divergence fails in CI.
