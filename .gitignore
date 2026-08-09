@@ -45,6 +45,7 @@ logs/
 backup_*.sql
 *_backup.sql
 supabase/.temp/
+backups/
 
 # Flutter platform folders not targeted for this project
 mobile/linux/

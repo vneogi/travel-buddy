@@ -35,38 +35,28 @@ from seed_data import seed_venues
 # Logging Configuration (SPEC-05: use logging, not print)
 # ==============================================================================
 
+# ─── Logging (R12 compliant) ──────────────────────────────────────────────────
+# Root logger at WARNING: any new third-party dependency is silent by default.
+# Only our own "travelbuddy" logger is raised. This eliminates the whack-a-mole
+# of enumerating hpack/h2/httpcore/litellm/openai one by one.
+#
+# TB_LLM_DEBUG=true opts in verbose LLM payloads by raising LiteLLM + openai.
 logging.basicConfig(
-    level=logging.DEBUG if settings.debug else logging.INFO,
+    level=logging.WARNING,
     format="%(asctime)s %(levelname)-8s %(name)s %(message)s",
 )
 logger = logging.getLogger("travelbuddy")
+logger.setLevel(logging.DEBUG if settings.debug else logging.INFO)
 
-# ─── Silence third-party loggers ─────────────────────────────────────────────
-# LiteLLM, OpenAI, and httpx/httpcore log full request bodies (including
-# embedding arrays, system prompts, and Authorization headers) at DEBUG.
-# TB_DEBUG=true is needed for the debug user header and must NOT enable this.
-# Gate verbose LLM logging behind a separate TB_LLM_DEBUG flag.
-_llm_log_level = logging.DEBUG if settings.llm_debug else logging.WARNING
-for _noisy in (
-    "LiteLLM",
-    "litellm",
-    "LiteLLM Proxy",
-    "LiteLLM Router",
-    "openai",
-    "openai._base_client",
-    "httpx",
-    "httpcore",
-    "httpcore.connection",
-    "httpcore.http11",
-    "httpcore.http2",
-    "hpack",
-    "hpack.hpack",
-    "hpack.table",
-    "h2",
-    "h2.connection",
-    "h2.stream",
-):
-    logging.getLogger(_noisy).setLevel(_llm_log_level)
+# uvicorn's own loggers need INFO to show startup/request lines.
+logging.getLogger("uvicorn").setLevel(logging.INFO)
+logging.getLogger("uvicorn.access").setLevel(logging.INFO)
+logging.getLogger("uvicorn.error").setLevel(logging.INFO)
+
+# Opt-in: TB_LLM_DEBUG raises LLM loggers from WARNING to DEBUG.
+if settings.llm_debug:
+    for _llm_logger in ("LiteLLM", "litellm", "openai", "openai._base_client"):
+        logging.getLogger(_llm_logger).setLevel(logging.DEBUG)
 
 # Also suppress litellm's own verbose flag (separate from Python logging).
 try:
