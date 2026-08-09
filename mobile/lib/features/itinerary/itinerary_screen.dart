@@ -163,7 +163,7 @@ class _HeadsUpBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
         width: double.infinity,
-        color: AppColors.accent.withOpacity(0.12),
+        color: AppColors.accent.withValues(alpha: 0.12),
         padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.base, vertical: AppSpacing.sm),
         child: Row(

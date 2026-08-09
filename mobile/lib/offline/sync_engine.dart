@@ -145,7 +145,10 @@ class SyncEngine {
 
         // Mark permanently-rejected rows (never retry)
         if (failedIds.isNotEmpty) {
-          final reasons = {for (final r in rejected) (r as Map)['signal_id']: (r as Map)['reason']};
+          final reasons = {
+            for (final r in rejected.cast<Map<String, dynamic>>())
+              r['signal_id']: r['reason'],
+          };
           for (final id in failedIds) {
             await _db.markFailed([id], reasons[id]?.toString() ?? 'rejected by server');
           }

@@ -49,7 +49,7 @@ class ActivityCard extends StatelessWidget {
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: AppSpacing.lg),
-        color: AppColors.primary.withOpacity(0.1),
+        color: AppColors.primary.withValues(alpha: 0.1),
         child: const Icon(Icons.swap_horiz, color: AppColors.primary),
       ),
       child: Container(
@@ -63,11 +63,11 @@ class ActivityCard extends StatelessWidget {
           border: isActive
               ? Border(left: BorderSide(color: AppColors.accent, width: 4))
               : node.isLocked
-                  ? Border.all(color: AppColors.accent.withOpacity(0.3))
+                  ? Border.all(color: AppColors.accent.withValues(alpha: 0.3))
                   : null,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),

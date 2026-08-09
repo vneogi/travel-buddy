@@ -13,7 +13,7 @@ Future<void> main() async {
   if (Env.supabaseUrl.isNotEmpty && Env.supabaseAnonKey.isNotEmpty) {
     await Supabase.initialize(
       url: Env.supabaseUrl,
-      anonKey: Env.supabaseAnonKey,
+      publishableKey: Env.supabaseAnonKey,
     );
   }
 

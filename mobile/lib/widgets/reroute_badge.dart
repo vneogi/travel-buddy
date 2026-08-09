@@ -33,9 +33,9 @@ class RerouteBadge extends ConsumerWidget {
                 vertical: AppSpacing.sm,
               ),
               decoration: BoxDecoration(
-                color: AppColors.danger.withOpacity(0.1),
+                color: AppColors.danger.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
-                border: Border.all(color: AppColors.danger.withOpacity(0.3)),
+                border: Border.all(color: AppColors.danger.withValues(alpha: 0.3)),
               ),
               child: Text(
                 'Upgrade',
@@ -51,7 +51,7 @@ class RerouteBadge extends ConsumerWidget {
             vertical: AppSpacing.sm,
           ),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
           ),
           child: Text(

@@ -57,7 +57,7 @@ class _PlanCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: isPrimary ? AppColors.primary.withOpacity(0.05) : AppColors.card,
+        color: isPrimary ? AppColors.primary.withValues(alpha: 0.05) : AppColors.card,
         borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
         border: Border.all(
           color: isPrimary ? AppColors.primary : AppColors.divider,
