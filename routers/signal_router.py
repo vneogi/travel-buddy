@@ -310,6 +310,16 @@ async def ingest_signals(
         )
         if was_new:
             accepted += 1
+            # SPEC-07: derive arrival_delta from visited_confirmed
+            if sig.signal_type == "visited_confirmed":
+                from services.arrival_delta_service import derive_arrival_delta
+                derive_arrival_delta(
+                    source_signal_id=sig.signal_id,
+                    user_id=user_id,
+                    place_ref=sig.place_ref,
+                    captured_at=sig.captured_at,
+                    trip_id=sig.trip_id,
+                )
         else:
             duplicates += 1
 
