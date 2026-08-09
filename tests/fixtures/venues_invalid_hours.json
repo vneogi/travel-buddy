@@ -1,0 +1,39 @@
+[
+  {
+    "name": "Bad Hours Venue",
+    "description": "Popular French-Lao bakery with air conditioning and reliable wifi. Pastries, sandwiches, and good coffee.",
+    "micro_location": "Sisavangvong Road",
+    "lat": 19.8892,
+    "lng": 102.135,
+    "vibe_tags": [
+      "familiar",
+      "air_conditioned"
+    ],
+    "audience": [
+      "digital_nomad",
+      "solo_traveler"
+    ],
+    "category": "cafe",
+    "is_sponsored": false,
+    "bid_weight": 0.0,
+    "typical_dwell_minutes": 60,
+    "indoor_outdoor": "indoor",
+    "price_band": "moderate",
+    "opening_hours_structured": {
+      "mon": [
+        [
+          "09:00",
+          "22:00"
+        ]
+      ]
+    },
+    "dishes": [
+      {
+        "dish_name": "Croissant",
+        "cuisine": "french",
+        "price_local": 25000,
+        "is_signature": true
+      }
+    ]
+  }
+]

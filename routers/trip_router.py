@@ -12,6 +12,7 @@ authenticated user_id is the source of truth and trip ownership is enforced.
 """
 
 from datetime import timedelta
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from config.settings import settings

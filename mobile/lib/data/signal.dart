@@ -12,6 +12,8 @@ class Signal {
   final Map<String, dynamic>? valueJson;
   final DateTime capturedAt;
   final String? tripId;
+  final String entityType; // 'venue' | 'dish' | 'area' | 'transit_leg'
+  final String? entityId;  // FK to the entity (dish_id for dish signals)
 
   Signal({
     required this.signalId,
@@ -22,12 +24,16 @@ class Signal {
     this.valueJson,
     required this.capturedAt,
     this.tripId,
+    this.entityType = 'venue',
+    this.entityId,
   });
 
   Map<String, dynamic> toJson() => {
         'signal_id': signalId,
         'signal_type': signalType,
         'place_ref': placeRef,
+        'entity_type': entityType,
+        if (entityId != null) 'entity_id': entityId,
         if (valueText != null) 'value_text': valueText,
         if (valueNumeric != null) 'value_numeric': valueNumeric,
         if (valueJson != null) 'value_json': valueJson,

@@ -1,0 +1,75 @@
+[
+  {
+    "name": "Bad Lat Venue",
+    "description": "Popular French-Lao bakery with air conditioning and reliable wifi. Pastries, sandwiches, and good coffee.",
+    "micro_location": "Sisavangvong Road",
+    "lat": 5.0,
+    "lng": 102.135,
+    "vibe_tags": [
+      "familiar",
+      "air_conditioned"
+    ],
+    "audience": [
+      "digital_nomad",
+      "solo_traveler"
+    ],
+    "category": "cafe",
+    "is_sponsored": false,
+    "bid_weight": 0.0,
+    "typical_dwell_minutes": 60,
+    "indoor_outdoor": "indoor",
+    "price_band": "moderate",
+    "opening_hours_structured": {
+      "mon": [
+        [
+          "07:00",
+          "21:00"
+        ]
+      ],
+      "tue": [
+        [
+          "07:00",
+          "21:00"
+        ]
+      ],
+      "wed": [
+        [
+          "07:00",
+          "21:00"
+        ]
+      ],
+      "thu": [
+        [
+          "07:00",
+          "21:00"
+        ]
+      ],
+      "fri": [
+        [
+          "07:00",
+          "21:00"
+        ]
+      ],
+      "sat": [
+        [
+          "07:00",
+          "21:00"
+        ]
+      ],
+      "sun": [
+        [
+          "07:00",
+          "21:00"
+        ]
+      ]
+    },
+    "dishes": [
+      {
+        "dish_name": "Croissant",
+        "cuisine": "french",
+        "price_local": 25000,
+        "is_signature": true
+      }
+    ]
+  }
+]

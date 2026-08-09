@@ -65,6 +65,7 @@ class TripNode(BaseModel):
     lat: Optional[float] = None
     lng: Optional[float] = None
     opening_hours: Optional[str] = None  # "HH:MM-HH:MM"; used for re-validation
+    geo_region: Optional[str] = None  # Per-node region; overrides trip's default for multi-city
 
 
 class CurrentContext(BaseModel):

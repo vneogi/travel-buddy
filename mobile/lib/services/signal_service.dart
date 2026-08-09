@@ -153,9 +153,11 @@ class SignalService {
   }
 
   /// User loved a specific dish at a venue.
+  /// Sets entityType='dish' so server accepts it (DISH_SIGNAL_TYPES guard).
   Future<void> emitDishLoved({
     required String placeRef,
     required String dishName,
+    required String dishId,
     String? tripId,
   }) =>
       emit(
@@ -164,12 +166,16 @@ class SignalService {
         tripId: tripId,
         valueText: 'loved',
         valueJson: {'dish_name': dishName},
+        entityType: 'dish',
+        entityId: dishId,
       );
 
   /// User ordered/consumed a dish.
+  /// Sets entityType='dish' so server accepts it (DISH_SIGNAL_TYPES guard).
   Future<void> emitDishOrdered({
     required String placeRef,
     required String dishName,
+    required String dishId,
     String? tripId,
   }) =>
       emit(
@@ -178,6 +184,8 @@ class SignalService {
         tripId: tripId,
         valueText: 'true',
         valueJson: {'dish_name': dishName},
+        entityType: 'dish',
+        entityId: dishId,
       );
 
   // ===========================================================

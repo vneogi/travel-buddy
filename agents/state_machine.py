@@ -131,12 +131,21 @@ class TripStateMachine:
         if state["preferences"].get("vibe"):
             search_query += f" {state['preferences']['vibe']}"
 
+        # Per-node geo_region for multi-city trips; fall back to trip's region
+        # Use the last node's geo_region as proxy for "current city"
+        current_node = trip_state.nodes[-1] if trip_state.nodes else None
+        geo_region = (
+            (current_node.geo_region if current_node else None)
+            or trip_state.geo_region
+        )
+
         venues = db_service.hybrid_venue_search(
             query=search_query,
             user_lat=user_lat,
             user_lng=user_lng,
             vibe_filter=state["preferences"].get("vibe_tags"),
             audience_filter=state["preferences"].get("audience"),
+            geo_region=geo_region,
         )
 
         if venues:

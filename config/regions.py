@@ -46,6 +46,26 @@ REGIONS: Dict[str, Region] = {
         language_hint="Lao; limited English outside tourist areas; French sometimes understood",
         timezone="Asia/Vientiane",
     ),
+    "vang_vieng_laos": Region(
+        code="vang_vieng_laos",
+        display_name="Vang Vieng",
+        country="Laos",
+        default_lat=18.9220,
+        default_lng=102.4474,
+        currency="LAK",
+        language_hint="Lao; tourist English common on main strip; limited elsewhere",
+        timezone="Asia/Vientiane",
+    ),
+    "vientiane_laos": Region(
+        code="vientiane_laos",
+        display_name="Vientiane",
+        country="Laos",
+        default_lat=17.9757,
+        default_lng=102.6331,
+        currency="LAK",
+        language_hint="Lao; French heritage; more English in expat areas",
+        timezone="Asia/Vientiane",
+    ),
 }
 
 DEFAULT_REGION = "dubai_uae"
@@ -54,3 +74,8 @@ DEFAULT_REGION = "dubai_uae"
 def get_region(code: str) -> Region:
     """Look up region by code, falling back to default."""
     return REGIONS.get(code, REGIONS[DEFAULT_REGION])
+
+
+def get_all_region_codes() -> frozenset:
+    """Return all registered region codes (for loader validation)."""
+    return frozenset(REGIONS.keys())
