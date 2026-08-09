@@ -80,4 +80,119 @@ class SignalService {
       debugPrint('[SignalService] emit error (signal may be lost): $e');
     }
   }
+
+  // ===========================================================
+  // SPEC-07: Typed emission methods (one per client-emittable type)
+  // ===========================================================
+
+  /// User loved a venue. Emitted on heart-tap.
+  Future<void> emitUserLoved({
+    required String placeRef,
+    String? tripId,
+  }) =>
+      emit(
+        signalType: 'user_loved',
+        placeRef: placeRef,
+        tripId: tripId,
+        valueText: 'loved',
+      );
+
+  /// User accepted a reroute suggestion. Records what replaced it.
+  Future<void> emitRerouteAccepted({
+    required String placeRef,
+    required String replacementRef,
+    String? tripId,
+  }) =>
+      emit(
+        signalType: 'reroute_accepted',
+        placeRef: placeRef,
+        tripId: tripId,
+        valueJson: {'replacement_ref': replacementRef},
+      );
+
+  /// User rejected all offered reroute alternatives.
+  Future<void> emitRerouteRejected({
+    required String placeRef,
+    required List<String> rejectedRefs,
+    String? tripId,
+  }) =>
+      emit(
+        signalType: 'reroute_rejected',
+        placeRef: placeRef,
+        tripId: tripId,
+        valueJson: {'rejected_refs': rejectedRefs},
+      );
+
+  /// User confirmed they visited a venue (ground truth).
+  Future<void> emitVisitedConfirmed({
+    required String placeRef,
+    String? tripId,
+  }) =>
+      emit(
+        signalType: 'visited_confirmed',
+        placeRef: placeRef,
+        tripId: tripId,
+        valueText: 'true',
+      );
+
+  /// User skipped a node. Reason MUST be from the closed set.
+  /// UI must present a picker, never free-text.
+  Future<void> emitNodeSkipped({
+    required String placeRef,
+    required String reason,
+    String? tripId,
+  }) {
+    assert(validSkipReasons.contains(reason),
+        'Invalid skip reason: $reason. Must be one of: $validSkipReasons');
+    return emit(
+      signalType: 'node_skipped',
+      placeRef: placeRef,
+      tripId: tripId,
+      valueJson: {'reason': reason},
+    );
+  }
+
+  /// User loved a specific dish at a venue.
+  Future<void> emitDishLoved({
+    required String placeRef,
+    required String dishName,
+    String? tripId,
+  }) =>
+      emit(
+        signalType: 'dish_loved',
+        placeRef: placeRef,
+        tripId: tripId,
+        valueText: 'loved',
+        valueJson: {'dish_name': dishName},
+      );
+
+  /// User ordered/consumed a dish.
+  Future<void> emitDishOrdered({
+    required String placeRef,
+    required String dishName,
+    String? tripId,
+  }) =>
+      emit(
+        signalType: 'dish_ordered',
+        placeRef: placeRef,
+        tripId: tripId,
+        valueText: 'true',
+        valueJson: {'dish_name': dishName},
+      );
+
+  // ===========================================================
+  // Constants
+  // ===========================================================
+
+  /// Closed set of valid node_skipped reasons. The UI picker
+  /// must present exactly these options.
+  static const validSkipReasons = {
+    'too_far',
+    'too_tired',
+    'closed',
+    'crowded',
+    'not_interested',
+    'ran_out_of_time',
+    'weather',
+  };
 }
