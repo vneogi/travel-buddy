@@ -190,7 +190,7 @@ def validate_venue(venue: dict, idx: int, geo_region: str,
             errors.append(f"{prefix}: lng {lng} outside bounds [{lng_min}, {lng_max}]")
 
     # Opening hours validation
-    hours = venue.get("opening_hours_structured")
+    hours = venue.get("opening_hours_structured") or venue.get("opening_hours")
     if hours is not None:
         if not isinstance(hours, dict):
             errors.append(f"{prefix}: opening_hours_structured must be a dict")
@@ -274,7 +274,7 @@ def collect_warnings(venues: list[dict], geo_region: str) -> list[str]:
     if len(venues) < 15:
         warnings.append(f"Region '{geo_region}' has only {len(venues)} venues (< 15)")
 
-    cats = {v.get("category") for v in venues}
+    cats = {v.get("opening_hours_structured") is None and v.get("opening_hours") is None}
     if "massage_spa" not in cats:
         warnings.append(f"Region '{geo_region}' has zero massage_spa venues")
 
@@ -365,7 +365,7 @@ def upsert_venues(venues: list[dict], geo_region: str, embeddings: list[list[flo
                 "category": venue.get("category"),
                 "is_sponsored": venue.get("is_sponsored", False),
                 "bid_weight": venue.get("bid_weight", 0.0),
-                "opening_hours_structured": venue.get("opening_hours_structured"),
+                "opening_hours_structured": venue.get("opening_hours_structured") or venue.get("opening_hours"),
                 "geo_region": geo_region,
                 "embedding": embeddings[i],
                 "typical_dwell_minutes": venue.get("typical_dwell_minutes"),
@@ -386,7 +386,7 @@ def upsert_venues(venues: list[dict], geo_region: str, embeddings: list[list[flo
                 "category": venue.get("category"),
                 "is_sponsored": venue.get("is_sponsored", False),
                 "bid_weight": venue.get("bid_weight", 0.0),
-                "opening_hours_structured": venue.get("opening_hours_structured"),
+                "opening_hours_structured": venue.get("opening_hours_structured") or venue.get("opening_hours"),
                 "geo_region": geo_region,
                 "embedding": embeddings[i],
                 "typical_dwell_minutes": venue.get("typical_dwell_minutes"),
