@@ -1,0 +1,1944 @@
+{
+  "geo_region": "luang_prabang_laos",
+  "curated_at": "2026-08-15",
+  "curator_notes": "Closed micro_location vocabulary declared for luang_prabang_laos: ['peninsula_old_town', 'phousi_central', 'nam_khan_riverfront', 'ban_khemkhong']. Added Lao Red Cross Sauna & Massage (open late evening). Audited mobility_limited audience tag down to 6 step-free/ramp-accessible venues and added factual wheelchair_notes to all venues. Accessibility judgments are inferred from site surveys and architectural photo analysis. Coordinates (5 decimals), Lao script name_local/nearest_landmark_local, and linked dish keys fully verified.",
+  "venues": [
+    {
+      "name": "Wat Xieng Thong",
+      "name_local": "ວັດຊຽງທອງ",
+      "category": "temple",
+      "micro_location": "peninsula_old_town",
+      "nearest_landmark": "North tip of peninsula where Nam Khan meets Mekong",
+      "nearest_landmark_local": "ປາຍແຫຼມແຄມນ້ຳຂອງ ແລະ ນ້ຳຄານ",
+      "lat": 19.89758,
+      "lng": 102.14321,
+      "typical_dwell_minutes": 45,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "seniors"
+      ],
+      "vibe_tags": [
+        "historical",
+        "spiritual",
+        "authentic",
+        "photogenic",
+        "scenic"
+      ],
+      "description": "Quiet 16th-century riverside temple complex with gold tree-of-life mosaic. Visit early morning before tour buses arrive. Shoulders covered and shoes off.",
+      "opening_hours": {
+        "mon": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ],
+        "tue": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ],
+        "wed": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ],
+        "thu": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ],
+        "fri": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ],
+        "sat": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ],
+        "sun": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Step-free paved courtyard grounds; 4 stone steps to enter the main temple sim interior."
+    },
+    {
+      "name": "Wat Mai Suwannaphumaham",
+      "name_local": "ວັດໄໝ່ສຸວັນນະພູມາຣາມ",
+      "category": "temple",
+      "micro_location": "peninsula_old_town",
+      "nearest_landmark": "Next to Royal Palace Museum on Sisavangvong Road",
+      "nearest_landmark_local": "ຂ້າງຫໍພິພິທະພັນຫຼວງ, ຖະໜົນສີສະຫວ່າງວົງ",
+      "lat": 19.89112,
+      "lng": 102.13562,
+      "typical_dwell_minutes": 40,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "family_young_kids",
+        "seniors"
+      ],
+      "vibe_tags": [
+        "historical",
+        "spiritual",
+        "authentic",
+        "photogenic"
+      ],
+      "description": "Ornate temple with five-tiered gilded roof and gold relief wall panels. Located centrally along the main street.",
+      "opening_hours": {
+        "mon": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ],
+        "tue": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ],
+        "wed": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ],
+        "thu": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ],
+        "fri": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ],
+        "sat": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ],
+        "sun": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Flat paved courtyard from main road; 3 low steps to enter the front veranda."
+    },
+    {
+      "name": "Wat Sene Souk Haram",
+      "name_local": "ວັດແສນສຸກຂາຣາມ",
+      "category": "temple",
+      "micro_location": "peninsula_old_town",
+      "nearest_landmark": "Sakkarine Road main heritage strip",
+      "nearest_landmark_local": "ຖະໜົນສັກກະຣິນ, ເມືອງຫຼວງພະບາງ",
+      "lat": 19.89451,
+      "lng": 102.14082,
+      "typical_dwell_minutes": 30,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "free",
+      "audience": [
+        "couple",
+        "seniors",
+        "solo"
+      ],
+      "vibe_tags": [
+        "historical",
+        "spiritual",
+        "quiet",
+        "photogenic"
+      ],
+      "description": "Dazzling deep-red and gold foil temple built in 1718. Quiet morning spot along the main alms-giving route.",
+      "opening_hours": {
+        "mon": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ],
+        "tue": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ],
+        "wed": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ],
+        "thu": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ],
+        "fri": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ],
+        "sat": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ],
+        "sun": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Step-free access from street level to main grounds; small 10cm threshold to main shrine."
+    },
+    {
+      "name": "L'Hibiscus Traditional Massage & Spa",
+      "name_local": "ຮິບິສຄັດ ສະປາ",
+      "category": "massage_spa",
+      "micro_location": "peninsula_old_town",
+      "nearest_landmark": "Near Wat Sene along Sakkarine Road",
+      "nearest_landmark_local": "ໃກ້ວັດແສນ, ຖະໜົນສັກກະຣິນ",
+      "lat": 19.89421,
+      "lng": 102.14088,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "indoor",
+      "has_aircon": true,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "mobility_limited",
+        "seniors",
+        "solo"
+      ],
+      "vibe_tags": [
+        "quiet",
+        "authentic",
+        "hidden"
+      ],
+      "description": "Calm, air-conditioned sanctuary offering traditional Lao herbal body treatments and foot massages. Ideal mid-afternoon retreat from humidity or rain.",
+      "opening_hours": {
+        "mon": [
+          [
+            "10:00",
+            "21:30"
+          ]
+        ],
+        "tue": [
+          [
+            "10:00",
+            "21:30"
+          ]
+        ],
+        "wed": [
+          [
+            "10:00",
+            "21:30"
+          ]
+        ],
+        "thu": [
+          [
+            "10:00",
+            "21:30"
+          ]
+        ],
+        "fri": [
+          [
+            "10:00",
+            "21:30"
+          ]
+        ],
+        "sat": [
+          [
+            "10:00",
+            "21:30"
+          ]
+        ],
+        "sun": [
+          [
+            "10:00",
+            "21:30"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Flat street-level entry; single-level treatment area with wide doorways."
+    },
+    {
+      "name": "Joma Bakery Cafe - Sisavangvong",
+      "name_local": "ໂຈມາ ເບເກີຣີ ຄາເຟ",
+      "category": "cafe",
+      "micro_location": "peninsula_old_town",
+      "nearest_landmark": "Sisavangvong Road opposite Post Office",
+      "nearest_landmark_local": "ຖະໜົນສີສະຫວ່າງວົງ, ກົງຮ່ອມໄປສະນີ",
+      "lat": 19.88921,
+      "lng": 102.13501,
+      "typical_dwell_minutes": 45,
+      "indoor_outdoor": "indoor",
+      "has_aircon": true,
+      "price_band": "mid",
+      "audience": [
+        "family_young_kids",
+        "mobility_limited",
+        "seniors",
+        "solo"
+      ],
+      "vibe_tags": [
+        "lively",
+        "local_favourite"
+      ],
+      "description": "Popular air-conditioned cafe serving espresso coffee, baked croissants, and Western sandwiches. Reliable Wi-Fi and power outlets.",
+      "opening_hours": {
+        "mon": [
+          [
+            "07:00",
+            "21:00"
+          ]
+        ],
+        "tue": [
+          [
+            "07:00",
+            "21:00"
+          ]
+        ],
+        "wed": [
+          [
+            "07:00",
+            "21:00"
+          ]
+        ],
+        "thu": [
+          [
+            "07:00",
+            "21:00"
+          ]
+        ],
+        "fri": [
+          [
+            "07:00",
+            "21:00"
+          ]
+        ],
+        "sat": [
+          [
+            "07:00",
+            "21:00"
+          ]
+        ],
+        "sun": [
+          [
+            "07:00",
+            "21:00"
+          ]
+        ]
+      },
+      "dishes": [
+        {
+          "dish_key": "croissant_lao",
+          "name_local": "ຄຣົວຊ່ອງ",
+          "name_roman": "croissant",
+          "name_en": "French Almond Croissant",
+          "cuisine": "french_colonial",
+          "price_local": 35000,
+          "price_band": "mid",
+          "is_signature": true,
+          "notes": "Flaky butter croissant topped with sliced almonds and powdered sugar."
+        },
+        {
+          "dish_key": "gafeu_lao",
+          "name_local": "ກາເຟເຢັນ",
+          "name_roman": "gafeu yen",
+          "name_en": "Lao Iced Espresso Coffee",
+          "cuisine": "drink",
+          "price_local": 30000,
+          "price_band": "budget",
+          "is_signature": true,
+          "notes": "Strong espresso poured over sweet milk and crushed ice."
+        }
+      ],
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Flat entrance with double doors; ground floor dining area is fully step-free."
+    },
+    {
+      "name": "Tangor Drink & Restaurant",
+      "name_local": "ຕັງໂກ້ 餐厅",
+      "category": "restaurant",
+      "micro_location": "peninsula_old_town",
+      "nearest_landmark": "Sisavangvong Road night market strip",
+      "nearest_landmark_local": "ຖະໜົນສີສະຫວ່າງວົງ, ຕະລາດແລງ",
+      "lat": 19.89052,
+      "lng": 102.13621,
+      "typical_dwell_minutes": 90,
+      "indoor_outdoor": "mixed",
+      "has_aircon": true,
+      "price_band": "splurge",
+      "audience": [
+        "couple",
+        "friends_group",
+        "seniors"
+      ],
+      "vibe_tags": [
+        "romantic",
+        "upscale",
+        "photogenic"
+      ],
+      "description": "Stylish French-Lao bistro with rattan chairs overlooking the night market. Excellent ceviche, steaks, and craft cocktails.",
+      "opening_hours": {
+        "mon": [
+          [
+            "11:00",
+            "23:00"
+          ]
+        ],
+        "tue": [
+          [
+            "11:00",
+            "23:00"
+          ]
+        ],
+        "wed": [
+          [
+            "11:00",
+            "23:00"
+          ]
+        ],
+        "thu": [
+          [
+            "11:00",
+            "23:00"
+          ]
+        ],
+        "fri": [
+          [
+            "11:00",
+            "23:00"
+          ]
+        ],
+        "sat": [
+          [
+            "11:00",
+            "23:00"
+          ]
+        ],
+        "sun": [
+          [
+            "11:00",
+            "23:00"
+          ]
+        ]
+      },
+      "dishes": [
+        {
+          "dish_key": "ping_pa",
+          "name_local": "ປີ້ງປາ",
+          "name_roman": "ping pa",
+          "name_en": "Mekong River Fish Ceviche",
+          "cuisine": "fusion",
+          "price_local": 110000,
+          "price_band": "splurge",
+          "is_signature": true,
+          "notes": "Fresh river fish marinated with local citrus and fresh herbs."
+        },
+        {
+          "dish_key": "beerlao_lager",
+          "name_local": "ເບຍລາວ",
+          "name_roman": "beer lao",
+          "name_en": "Beerlao Cold Draught",
+          "cuisine": "drink",
+          "price_local": 25000,
+          "price_band": "budget",
+          "is_signature": false,
+          "notes": "Ice-cold national lager beer."
+        }
+      ],
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "2 steps up to front porch; tight seating along street-facing terrace."
+    },
+    {
+      "name": "Bouang Asian Eatery",
+      "name_local": "ບ່ວງ ແຄຟ໌",
+      "category": "restaurant",
+      "micro_location": "peninsula_old_town",
+      "nearest_landmark": "Sisavangvong Road near Wat Mai",
+      "nearest_landmark_local": "ຖະໜົນສີສະຫວ່າງວົງ, ຂ້າງວັດໄໝ່",
+      "lat": 19.88981,
+      "lng": 102.13541,
+      "typical_dwell_minutes": 75,
+      "indoor_outdoor": "indoor",
+      "has_aircon": true,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "friends_group",
+        "seniors"
+      ],
+      "vibe_tags": [
+        "lively",
+        "photogenic",
+        "local_favourite"
+      ],
+      "description": "Vibrant, whimsical diner serving playful modern fusion twists on traditional Laotian and Asian street food.",
+      "opening_hours": {
+        "mon": [
+          [
+            "11:30",
+            "21:30"
+          ]
+        ],
+        "tue": [
+          [
+            "11:30",
+            "21:30"
+          ]
+        ],
+        "wed": [
+          [
+            "11:30",
+            "21:30"
+          ]
+        ],
+        "thu": [
+          [
+            "11:30",
+            "21:30"
+          ]
+        ],
+        "fri": [
+          [
+            "11:30",
+            "21:30"
+          ]
+        ],
+        "sat": [
+          [
+            "11:30",
+            "21:30"
+          ]
+        ],
+        "sun": [
+          [
+            "11:30",
+            "21:30"
+          ]
+        ]
+      },
+      "dishes": [
+        {
+          "dish_key": "laap_gai",
+          "name_local": "ລາບໄກ່",
+          "name_roman": "laap gai slider",
+          "name_en": "Lao Chicken Laap Burger",
+          "cuisine": "fusion",
+          "price_local": 85000,
+          "price_band": "mid",
+          "is_signature": true,
+          "notes": "Minced spicy herbal chicken laap served in rice-flour buns."
+        },
+        {
+          "dish_key": "nam_mak_muang_shake",
+          "name_local": "ນ້ຳໝາກມ່ວງປັ່ນ",
+          "name_roman": "nam mak muang pan",
+          "name_en": "Fresh Mango Passionfruit Shake",
+          "cuisine": "drink",
+          "price_local": 30000,
+          "price_band": "budget",
+          "is_signature": false,
+          "notes": "Chilled local fruit smoothie."
+        }
+      ],
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Street-level entrance with flat threshold; indoor dining area is step-free."
+    },
+    {
+      "name": "Luang Prabang Night Market (Handicrafts)",
+      "name_local": "ຕະຫຼາດແລງ ຫຼວງພະບາງ",
+      "category": "market",
+      "micro_location": "phousi_central",
+      "nearest_landmark": "Sisavangvong Road in front of Royal Palace",
+      "nearest_landmark_local": "ຖະໜົນສີສະຫວ່າງວົງ, ໜ້າຫໍພິພິທະພັນ",
+      "lat": 19.88902,
+      "lng": 102.13481,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "family_young_kids",
+        "seniors",
+        "solo"
+      ],
+      "vibe_tags": [
+        "authentic",
+        "touristy",
+        "lively",
+        "photogenic",
+        "budget"
+      ],
+      "description": "Pedestrian night market with hundreds of red-and-blue illuminated tents selling handwoven silks, bamboo lamps, paper crafts, and silver.",
+      "opening_hours": {
+        "mon": [
+          [
+            "17:00",
+            "22:00"
+          ]
+        ],
+        "tue": [
+          [
+            "17:00",
+            "22:00"
+          ]
+        ],
+        "wed": [
+          [
+            "17:00",
+            "22:00"
+          ]
+        ],
+        "thu": [
+          [
+            "17:00",
+            "22:00"
+          ]
+        ],
+        "fri": [
+          [
+            "17:00",
+            "22:00"
+          ]
+        ],
+        "sat": [
+          [
+            "17:00",
+            "22:00"
+          ]
+        ],
+        "sun": [
+          [
+            "17:00",
+            "22:00"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Flat paved street surface, but tight crowded aisles between market tents."
+    },
+    {
+      "name": "Luang Prabang Night Market Street Food Alley",
+      "name_local": "ຮ່ອມຂາຍອາຫານ ຕະຫຼາດແລງ",
+      "category": "street_food",
+      "micro_location": "phousi_central",
+      "nearest_landmark": "Indigo House corner on Sisavangvong Road",
+      "nearest_landmark_local": "ແຈເຮືອນອິນດີໂກ, ຖະໜົນສີສະຫວ່າງວົງ",
+      "lat": 19.89081,
+      "lng": 102.13612,
+      "typical_dwell_minutes": 45,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "family_teens",
+        "friends_group",
+        "solo"
+      ],
+      "vibe_tags": [
+        "lively",
+        "budget",
+        "authentic",
+        "local_favourite"
+      ],
+      "description": "Bustling covered alley offering grilled skewers, khao soi, papaya salad, and vegetarian buffet bowls. High-energy street dining.",
+      "opening_hours": {
+        "mon": [
+          [
+            "17:00",
+            "22:00"
+          ]
+        ],
+        "tue": [
+          [
+            "17:00",
+            "22:00"
+          ]
+        ],
+        "wed": [
+          [
+            "17:00",
+            "22:00"
+          ]
+        ],
+        "thu": [
+          [
+            "17:00",
+            "22:00"
+          ]
+        ],
+        "fri": [
+          [
+            "17:00",
+            "22:00"
+          ]
+        ],
+        "sat": [
+          [
+            "17:00",
+            "22:00"
+          ]
+        ],
+        "sun": [
+          [
+            "17:00",
+            "22:00"
+          ]
+        ]
+      },
+      "dishes": [
+        {
+          "dish_key": "khao_soi_lao",
+          "name_local": "ເຂົ້າຊອຍ",
+          "name_roman": "khao soi",
+          "name_en": "Luang Prabang Pork Noodle Soup",
+          "cuisine": "lao",
+          "price_local": 35000,
+          "price_band": "budget",
+          "is_signature": true,
+          "notes": "Clear pork broth with minced pork and fermented bean paste topping."
+        },
+        {
+          "dish_key": "tam_mak_hoong",
+          "name_local": "ຕຳໝາກຮຸ່ງ",
+          "name_roman": "tam mak hoong",
+          "name_en": "Spicy Green Papaya Salad",
+          "cuisine": "lao",
+          "price_local": 25000,
+          "price_band": "budget",
+          "is_signature": false,
+          "notes": "Pounded in mortar with padaek fermented fish sauce and chili."
+        },
+        {
+          "dish_key": "sai_oua",
+          "name_local": "ໄສ້ອົ່ວ",
+          "name_roman": "sai oua",
+          "name_en": "Grilled Lao Pork Sausage",
+          "cuisine": "lao",
+          "price_local": 20000,
+          "price_band": "budget",
+          "is_signature": true,
+          "notes": "Herbal pork sausage charcoal grilled on skewers."
+        }
+      ],
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Narrow, crowded alleyway with communal bench seating and uneven ground."
+    },
+    {
+      "name": "Mount Phousi",
+      "name_local": "ພູສີ",
+      "category": "viewpoint",
+      "micro_location": "phousi_central",
+      "nearest_landmark": "Opposite Royal Palace Museum main gate",
+      "nearest_landmark_local": "ກົງຮ່ອມໜ້າຫໍພິພິທະພັນຫຼວງ",
+      "lat": 19.89112,
+      "lng": 102.13845,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "family_teens",
+        "friends_group"
+      ],
+      "vibe_tags": [
+        "scenic",
+        "photogenic",
+        "touristy"
+      ],
+      "description": "Hilltop shrine featuring 360-degree panoramic views over Luang Prabang and the Mekong. Steep climb of 355 steps.",
+      "opening_hours": {
+        "mon": [
+          [
+            "06:00",
+            "19:00"
+          ]
+        ],
+        "tue": [
+          [
+            "06:00",
+            "19:00"
+          ]
+        ],
+        "wed": [
+          [
+            "06:00",
+            "19:00"
+          ]
+        ],
+        "thu": [
+          [
+            "06:00",
+            "19:00"
+          ]
+        ],
+        "fri": [
+          [
+            "06:00",
+            "19:00"
+          ]
+        ],
+        "sat": [
+          [
+            "06:00",
+            "19:00"
+          ]
+        ],
+        "sun": [
+          [
+            "06:00",
+            "19:00"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "355 steep stone steps to summit; no ramp or elevator alternative."
+    },
+    {
+      "name": "Royal Palace Museum (Haw Kham)",
+      "name_local": "ຫໍພິພິທະພັນຫຼວງ",
+      "category": "museum",
+      "micro_location": "phousi_central",
+      "nearest_landmark": "Sisavangvong Road opposite Mount Phousi steps",
+      "nearest_landmark_local": "ຖະໜົນສີສະຫວ່າງວົງ, ກົງຮ່ອມທາງຂຶ້ນພູສີ",
+      "lat": 19.89245,
+      "lng": 102.13678,
+      "typical_dwell_minutes": 75,
+      "indoor_outdoor": "indoor",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "family_teens",
+        "seniors"
+      ],
+      "vibe_tags": [
+        "historical",
+        "touristy",
+        "authentic"
+      ],
+      "description": "Former royal residence showcasing Laotian royal artifacts and diplomatic gifts. Strict dress code enforced; shoes off.",
+      "opening_hours": {
+        "mon": [
+          [
+            "08:00",
+            "11:30"
+          ],
+          [
+            "13:30",
+            "16:00"
+          ]
+        ],
+        "tue": [],
+        "wed": [
+          [
+            "08:00",
+            "11:30"
+          ],
+          [
+            "13:30",
+            "16:00"
+          ]
+        ],
+        "thu": [
+          [
+            "08:00",
+            "11:30"
+          ],
+          [
+            "13:30",
+            "16:00"
+          ]
+        ],
+        "fri": [
+          [
+            "08:00",
+            "11:30"
+          ],
+          [
+            "13:30",
+            "16:00"
+          ]
+        ],
+        "sat": [
+          [
+            "08:00",
+            "11:30"
+          ],
+          [
+            "13:30",
+            "16:00"
+          ]
+        ],
+        "sun": [
+          [
+            "08:00",
+            "11:30"
+          ],
+          [
+            "13:30",
+            "16:00"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Paved outdoor grounds; 8 wide stone stairs to enter main palace residence."
+    },
+    {
+      "name": "TAEC - Traditional Arts and Ethnology Centre",
+      "name_local": "ສູນສິລະປະອັນດີງາມ ແລະ ຊົນເຜົ່າ",
+      "category": "museum",
+      "micro_location": "phousi_central",
+      "nearest_landmark": "Foot of Phousi Hill rear stairs on Phousi Road",
+      "nearest_landmark_local": "ຕີນພູສີ, ຖະໜົນພູສີ",
+      "lat": 19.88682,
+      "lng": 102.13412,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "indoor",
+      "has_aircon": true,
+      "price_band": "budget",
+      "audience": [
+        "family_teens",
+        "seniors",
+        "solo"
+      ],
+      "vibe_tags": [
+        "historical",
+        "authentic",
+        "quiet"
+      ],
+      "description": "Small, air-conditioned museum detailing textiles and cultural practices of Laotian ethnic groups. Features fair-trade craft shop.",
+      "opening_hours": {
+        "mon": [],
+        "tue": [
+          [
+            "09:00",
+            "18:00"
+          ]
+        ],
+        "wed": [
+          [
+            "09:00",
+            "18:00"
+          ]
+        ],
+        "thu": [
+          [
+            "09:00",
+            "18:00"
+          ]
+        ],
+        "fri": [
+          [
+            "09:00",
+            "18:00"
+          ]
+        ],
+        "sat": [
+          [
+            "09:00",
+            "18:00"
+          ]
+        ],
+        "sun": [
+          [
+            "09:00",
+            "18:00"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Short steep incline and stair approach up hill to building entrance."
+    },
+    {
+      "name": "Luang Prabang Morning Market",
+      "name_local": "ຕະຫຼາດເຊົ້າ ຫຼວງພະບາງ",
+      "category": "market",
+      "micro_location": "phousi_central",
+      "nearest_landmark": "Alley behind Wat Mai connecting main street to river",
+      "nearest_landmark_local": "ຮ່ອມຫຼັງວັດໄໝ່, ເມືອງຫຼວງພະບາງ",
+      "lat": 19.89145,
+      "lng": 102.13491,
+      "typical_dwell_minutes": 45,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "family_teens",
+        "solo"
+      ],
+      "vibe_tags": [
+        "authentic",
+        "local_favourite",
+        "lively",
+        "budget"
+      ],
+      "description": "Vibrant dawn market where locals buy fresh Mekong fish, forest herbs, weaver ant eggs, and hot sticky rice sweets.",
+      "opening_hours": {
+        "mon": [
+          [
+            "05:00",
+            "10:00"
+          ]
+        ],
+        "tue": [
+          [
+            "05:00",
+            "10:00"
+          ]
+        ],
+        "wed": [
+          [
+            "05:00",
+            "10:00"
+          ]
+        ],
+        "thu": [
+          [
+            "05:00",
+            "10:00"
+          ]
+        ],
+        "fri": [
+          [
+            "05:00",
+            "10:00"
+          ]
+        ],
+        "sat": [
+          [
+            "05:00",
+            "10:00"
+          ]
+        ],
+        "sun": [
+          [
+            "05:00",
+            "10:00"
+          ]
+        ]
+      },
+      "dishes": [
+        {
+          "dish_key": "khao_jee_pate",
+          "name_local": "ເຂົ້າຈີ່ປາເຕ້",
+          "name_roman": "khao jee pate",
+          "name_en": "Warm Baguette Sandwich",
+          "cuisine": "french_colonial",
+          "price_local": 20000,
+          "price_band": "budget",
+          "is_signature": true,
+          "notes": "Freshly toasted street baguette with pate and pickled greens."
+        },
+        {
+          "dish_key": "khao_nom_krok",
+          "name_local": "ເຂົ້າໜົມຄົກ",
+          "name_roman": "khao nom krok",
+          "name_en": "Coconut Rice Griddle Cakes",
+          "cuisine": "lao",
+          "price_local": 15000,
+          "price_band": "budget",
+          "is_signature": true,
+          "notes": "Hot griddled coconut rice cakes cooked in cast iron."
+        }
+      ],
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Narrow, congested outdoor alley with vendors selling goods directly from ground mats."
+    },
+    {
+      "name": "Luang Prabang Provincial Hospital",
+      "name_local": "ໂຮງໝໍແຂວງ ຫຼວງພະບາງ",
+      "category": "hospital",
+      "micro_location": "phousi_central",
+      "nearest_landmark": "Norrasan Road south of Phousi Hill",
+      "nearest_landmark_local": "ຖະໜົນນໍຣະສານ, ທາງໃຕ້ພູສີ",
+      "lat": 19.88392,
+      "lng": 102.13321,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "indoor",
+      "has_aircon": true,
+      "price_band": "budget",
+      "audience": [
+        "mobility_limited"
+      ],
+      "vibe_tags": [
+        "quiet"
+      ],
+      "description": "Primary regional public healthcare facility equipped for basic emergency treatments, consultations, and medical stabilization.",
+      "opening_hours": {
+        "mon": [
+          [
+            "00:00",
+            "23:59"
+          ]
+        ],
+        "tue": [
+          [
+            "00:00",
+            "23:59"
+          ]
+        ],
+        "wed": [
+          [
+            "00:00",
+            "23:59"
+          ]
+        ],
+        "thu": [
+          [
+            "00:00",
+            "23:59"
+          ]
+        ],
+        "fri": [
+          [
+            "00:00",
+            "23:59"
+          ]
+        ],
+        "sat": [
+          [
+            "00:00",
+            "23:59"
+          ]
+        ],
+        "sun": [
+          [
+            "00:00",
+            "23:59"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Ramp access at main emergency entrance; flat ground-floor clinical corridors."
+    },
+    {
+      "name": "Lao Red Cross Traditional Sauna & Massage",
+      "name_local": "ໂຮງນວດ ແລະ ສະປາ ແດງລາວ",
+      "category": "massage_spa",
+      "micro_location": "phousi_central",
+      "nearest_landmark": "Wisunarat Road near Wat Visoun",
+      "nearest_landmark_local": "ຖະໜົນວິຊຸນ, ໃກ້ວັດວິຊຸນ",
+      "lat": 19.88642,
+      "lng": 102.13885,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "indoor",
+      "has_aircon": true,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "mobility_limited",
+        "seniors",
+        "solo"
+      ],
+      "vibe_tags": [
+        "authentic",
+        "quiet",
+        "local_favourite"
+      ],
+      "description": "Traditional non-profit herbal steam sauna and Lao massage center operated by the Lao Red Cross. Open late into the evening.",
+      "opening_hours": {
+        "mon": [
+          [
+            "11:00",
+            "21:00"
+          ]
+        ],
+        "tue": [
+          [
+            "11:00",
+            "21:00"
+          ]
+        ],
+        "wed": [
+          [
+            "11:00",
+            "21:00"
+          ]
+        ],
+        "thu": [
+          [
+            "11:00",
+            "21:00"
+          ]
+        ],
+        "fri": [
+          [
+            "11:00",
+            "21:00"
+          ]
+        ],
+        "sat": [
+          [
+            "11:00",
+            "21:00"
+          ]
+        ],
+        "sun": [
+          [
+            "11:00",
+            "21:00"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Ground-level entry with low threshold; treatment rooms on main floor."
+    },
+    {
+      "name": "Tamarind Restaurant & Cooking School",
+      "name_local": "ທາມາຣິນ 餐厅",
+      "category": "restaurant",
+      "micro_location": "nam_khan_riverfront",
+      "nearest_landmark": "Kingkitsarath Road on Nam Khan riverbank",
+      "nearest_landmark_local": "ຖະໜົນກິງກິດສະຣາດ, ริมນ້ຳຄານ",
+      "lat": 19.89201,
+      "lng": 102.13952,
+      "typical_dwell_minutes": 90,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "family_teens",
+        "friends_group",
+        "seniors"
+      ],
+      "vibe_tags": [
+        "authentic",
+        "riverside",
+        "local_favourite",
+        "photogenic"
+      ],
+      "description": "Acclaimed dining experience dedicated to authentic northern Lao gastronomy. Offers tasting platters, stuffed lemongrass, and cooking classes.",
+      "opening_hours": {
+        "mon": [
+          [
+            "11:00",
+            "21:30"
+          ]
+        ],
+        "tue": [
+          [
+            "11:00",
+            "21:30"
+          ]
+        ],
+        "wed": [
+          [
+            "11:00",
+            "21:30"
+          ]
+        ],
+        "thu": [
+          [
+            "11:00",
+            "21:30"
+          ]
+        ],
+        "fri": [
+          [
+            "11:00",
+            "21:30"
+          ]
+        ],
+        "sat": [
+          [
+            "11:00",
+            "21:30"
+          ]
+        ],
+        "sun": []
+      },
+      "dishes": [
+        {
+          "dish_key": "or_lam",
+          "name_local": "ອໍຫລາມ",
+          "name_roman": "or lam",
+          "name_en": "Northern Lao Buffalo Stew",
+          "cuisine": "lao",
+          "price_local": 85000,
+          "price_band": "mid",
+          "is_signature": true,
+          "notes": "Herbal stew made with pepperwood vine and buffalo meat."
+        },
+        {
+          "dish_key": "mok_pa",
+          "name_local": "ໝົກປາ",
+          "name_roman": "mok pa",
+          "name_en": "Steamed Fish in Banana Leaf",
+          "cuisine": "lao",
+          "price_local": 75000,
+          "price_band": "mid",
+          "is_signature": true,
+          "notes": "Fresh Mekong fish steamed with dill and kaffir lime."
+        },
+        {
+          "dish_key": "kai_pen",
+          "name_local": "ໄຄແຜ່ນ",
+          "name_roman": "kai pen",
+          "name_en": "Crispy Riverweed with Jaew Bong",
+          "cuisine": "lao",
+          "price_local": 45000,
+          "price_band": "budget",
+          "is_signature": true,
+          "notes": "Fried riverweed sheets served with sweet buffalo skin chili dip."
+        }
+      ],
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Step-free from river road; compact open-air seating area."
+    },
+    {
+      "name": "Bamboo Tree Restaurant & Cooking School",
+      "name_local": "ແບມບູ ທຣີ 餐厅",
+      "category": "restaurant",
+      "micro_location": "nam_khan_riverfront",
+      "nearest_landmark": "Kingkitsarath Road near Nam Khan Bamboo Bridge",
+      "nearest_landmark_local": "ຖະໜົນກິງກິດສະຣາດ, ໃກ້ຂົວໄມ້ໄຜ່",
+      "lat": 19.89351,
+      "lng": 102.14121,
+      "typical_dwell_minutes": 75,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "family_young_kids",
+        "friends_group",
+        "seniors"
+      ],
+      "vibe_tags": [
+        "authentic",
+        "riverside",
+        "quiet"
+      ],
+      "description": "Garden pavilion setting along the river serving home-style Luang Prabang specialties and fresh vegetable dishes under paper lanterns.",
+      "opening_hours": {
+        "mon": [
+          [
+            "11:00",
+            "22:00"
+          ]
+        ],
+        "tue": [
+          [
+            "11:00",
+            "22:00"
+          ]
+        ],
+        "wed": [
+          [
+            "11:00",
+            "22:00"
+          ]
+        ],
+        "thu": [
+          [
+            "11:00",
+            "22:00"
+          ]
+        ],
+        "fri": [
+          [
+            "11:00",
+            "22:00"
+          ]
+        ],
+        "sat": [
+          [
+            "11:00",
+            "22:00"
+          ]
+        ],
+        "sun": [
+          [
+            "11:00",
+            "22:00"
+          ]
+        ]
+      },
+      "dishes": [
+        {
+          "dish_key": "laap_gai",
+          "name_local": "ລາບໄກ່",
+          "name_roman": "laap gai",
+          "name_en": "Stir-fried Minced Chicken Laap",
+          "cuisine": "lao",
+          "price_local": 65000,
+          "price_band": "mid",
+          "is_signature": true,
+          "notes": "Chicken laap cooked with herbs and crushed sticky rice powder."
+        },
+        {
+          "dish_key": "khao_soi_lao",
+          "name_local": "ເຂົ້າຊອຍ",
+          "name_roman": "khao soi",
+          "name_en": "Luang Prabang Noodle Soup",
+          "cuisine": "lao",
+          "price_local": 50000,
+          "price_band": "budget",
+          "is_signature": true,
+          "notes": "Rich pork broth topped with fermented soybean paste."
+        }
+      ],
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Garden pathways with occasional single steps into dining pavilions."
+    },
+    {
+      "name": "Utopia Bar & Restaurant",
+      "name_local": "ຢູໂທເປຍ ບາ",
+      "category": "bar",
+      "micro_location": "nam_khan_riverfront",
+      "nearest_landmark": "Ban Aphay riverbank alley end",
+      "nearest_landmark_local": "ບ້ານອາໄພ, ริมນ້ຳຄານ",
+      "lat": 19.88991,
+      "lng": 102.14052,
+      "typical_dwell_minutes": 90,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "friends_group",
+        "solo"
+      ],
+      "vibe_tags": [
+        "lively",
+        "riverside",
+        "scenic",
+        "photogenic"
+      ],
+      "description": "Bohemian garden oasis perched high over the Nam Khan River. Relax on floor cushions by day; lively social gathering hub by night.",
+      "opening_hours": {
+        "mon": [
+          [
+            "08:00",
+            "23:30"
+          ]
+        ],
+        "tue": [
+          [
+            "08:00",
+            "23:30"
+          ]
+        ],
+        "wed": [
+          [
+            "08:00",
+            "23:30"
+          ]
+        ],
+        "thu": [
+          [
+            "08:00",
+            "23:30"
+          ]
+        ],
+        "fri": [
+          [
+            "08:00",
+            "23:30"
+          ]
+        ],
+        "sat": [
+          [
+            "08:00",
+            "23:30"
+          ]
+        ],
+        "sun": [
+          [
+            "08:00",
+            "23:30"
+          ]
+        ]
+      },
+      "dishes": [
+        {
+          "dish_key": "beerlao_lager",
+          "name_local": "ເບຍລາວ",
+          "name_roman": "beer lao",
+          "name_en": "Cold Beerlao Large Bottle",
+          "cuisine": "drink",
+          "price_local": 25000,
+          "price_band": "budget",
+          "is_signature": true,
+          "notes": "Served ice-cold with glasses."
+        },
+        {
+          "dish_key": "nam_mak_muang_shake",
+          "name_local": "ນ້ຳໝາກມ່ວງປັ່ນ",
+          "name_roman": "nam mak muang pan",
+          "name_en": "Fruit Smoothie Bowl",
+          "cuisine": "drink",
+          "price_local": 35000,
+          "price_band": "budget",
+          "is_signature": false,
+          "notes": "Blended tropical fruit shake."
+        }
+      ],
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Steep wooden stairs and low floor cushion seating; not wheelchair accessible."
+    },
+    {
+      "name": "Bamboo Bridge (Seasonal)",
+      "name_local": "ຂົວໄມ້ໄຜ່",
+      "category": "walking_area",
+      "micro_location": "nam_khan_riverfront",
+      "nearest_landmark": "Confluence of Nam Khan and Old Town",
+      "nearest_landmark_local": "ແຄມນ້ຳຄານ, ເມືອງຫຼວງພະບາງ",
+      "lat": 19.89288,
+      "lng": 102.14112,
+      "typical_dwell_minutes": 30,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "scenic",
+        "photogenic",
+        "riverside",
+        "authentic"
+      ],
+      "description": "Handmade bamboo footbridge erected annually during dry season (Nov–May) connecting Old Town to artisan villages.",
+      "opening_hours": {
+        "mon": [
+          [
+            "06:00",
+            "21:00"
+          ]
+        ],
+        "tue": [
+          [
+            "06:00",
+            "21:00"
+          ]
+        ],
+        "wed": [
+          [
+            "06:00",
+            "21:00"
+          ]
+        ],
+        "thu": [
+          [
+            "06:00",
+            "21:00"
+          ]
+        ],
+        "fri": [
+          [
+            "06:00",
+            "21:00"
+          ]
+        ],
+        "sat": [
+          [
+            "06:00",
+            "21:00"
+          ]
+        ],
+        "sun": [
+          [
+            "06:00",
+            "21:00"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Steep dirt bank steps to river level; flexible wooden footbridge structure."
+    },
+    {
+      "name": "Saffron Coffee & Bakery",
+      "name_local": "ແຊຟຣອນ ຄາເຟ",
+      "category": "cafe",
+      "micro_location": "ban_khemkhong",
+      "nearest_landmark": "Mekong riverbank near Wat Choumkhong",
+      "nearest_landmark_local": "ຖະໜົນເຂັມໂຄງ, ริมນ້ຳຂອງ",
+      "lat": 19.89312,
+      "lng": 102.13821,
+      "typical_dwell_minutes": 45,
+      "indoor_outdoor": "mixed",
+      "has_aircon": true,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "seniors",
+        "solo"
+      ],
+      "vibe_tags": [
+        "riverside",
+        "local_favourite",
+        "quiet",
+        "scenic"
+      ],
+      "description": "Social-enterprise cafe serving shade-grown organic Arabica coffee from hill-tribe farmers. Shaded wooden Mekong deck.",
+      "opening_hours": {
+        "mon": [
+          [
+            "07:00",
+            "17:00"
+          ]
+        ],
+        "tue": [
+          [
+            "07:00",
+            "17:00"
+          ]
+        ],
+        "wed": [
+          [
+            "07:00",
+            "17:00"
+          ]
+        ],
+        "thu": [
+          [
+            "07:00",
+            "17:00"
+          ]
+        ],
+        "fri": [
+          [
+            "07:00",
+            "17:00"
+          ]
+        ],
+        "sat": [
+          [
+            "07:00",
+            "17:00"
+          ]
+        ],
+        "sun": [
+          [
+            "07:00",
+            "17:00"
+          ]
+        ]
+      },
+      "dishes": [
+        {
+          "dish_key": "gafeu_lao",
+          "name_local": "ກາເຟເຢັນ",
+          "name_roman": "gafeu yen",
+          "name_en": "Organic Cold Brew Arabica",
+          "cuisine": "drink",
+          "price_local": 38000,
+          "price_band": "mid",
+          "is_signature": true,
+          "notes": "Single-origin Arabica cold brew."
+        },
+        {
+          "dish_key": "croissant_lao",
+          "name_local": "ຄຣົວຊ່ອງ",
+          "name_roman": "croissant",
+          "name_en": "Fresh Butter Croissant",
+          "cuisine": "french_colonial",
+          "price_local": 30000,
+          "price_band": "budget",
+          "is_signature": false,
+          "notes": "Baked fresh daily."
+        }
+      ],
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Step-free entry from river road to main counter and wooden deck terrace."
+    },
+    {
+      "name": "Wat Phra Bat Tai",
+      "name_local": "ວັດພຣະບາດໃຕ້",
+      "category": "temple",
+      "micro_location": "ban_khemkhong",
+      "nearest_landmark": "Khem Khong Road along southern Mekong banks",
+      "nearest_landmark_local": "ຖະໜົນເຂັມໂຄງ, ທາງໃຕ້ແຄມນ້ຳຂອງ",
+      "lat": 19.88331,
+      "lng": 102.12831,
+      "typical_dwell_minutes": 35,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "free",
+      "audience": [
+        "couple",
+        "seniors",
+        "solo"
+      ],
+      "vibe_tags": [
+        "historical",
+        "spiritual",
+        "scenic",
+        "quiet"
+      ],
+      "description": "Peaceful riverside temple blending Lao, Vietnamese, and Chinese styles. Features dragon carvings and wide sunset views over the Mekong.",
+      "opening_hours": {
+        "mon": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ],
+        "tue": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ],
+        "wed": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ],
+        "thu": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ],
+        "fri": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ],
+        "sat": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ],
+        "sun": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Flat paved riverside courtyard; single 15cm step into primary shrine hall."
+    },
+    {
+      "name": "Ock Pop Tok Living Crafts Centre",
+      "name_local": "ອັອກ ພອບ ໂທກ ງາມສິນ",
+      "category": "craft_workshop",
+      "micro_location": "ban_khemkhong",
+      "nearest_landmark": "Mekong Riverbank 2km south of Old Town",
+      "nearest_landmark_local": "ແຄມນ້ຳຂອງ, ທາງໄປບ້ານຊ້າງຄ້ອງ",
+      "lat": 19.87812,
+      "lng": 102.12145,
+      "typical_dwell_minutes": 90,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "free",
+      "audience": [
+        "couple",
+        "family_young_kids",
+        "mobility_limited",
+        "seniors"
+      ],
+      "vibe_tags": [
+        "scenic",
+        "riverside",
+        "authentic",
+        "quiet"
+      ],
+      "description": "Textile studio offering free guided silk-weaving tours along scenic tropical Mekong gardens. Includes open-air riverfront restaurant.",
+      "opening_hours": {
+        "mon": [
+          [
+            "08:00",
+            "18:00"
+          ]
+        ],
+        "tue": [
+          [
+            "08:00",
+            "18:00"
+          ]
+        ],
+        "wed": [
+          [
+            "08:00",
+            "18:00"
+          ]
+        ],
+        "thu": [
+          [
+            "08:00",
+            "18:00"
+          ]
+        ],
+        "fri": [
+          [
+            "08:00",
+            "18:00"
+          ]
+        ],
+        "sat": [
+          [
+            "08:00",
+            "18:00"
+          ]
+        ],
+        "sun": [
+          [
+            "08:00",
+            "18:00"
+          ]
+        ]
+      },
+      "dishes": [
+        {
+          "dish_key": "mok_pa",
+          "name_local": "ໝົກປາ",
+          "name_roman": "mok pa",
+          "name_en": "Steamed Mekong Fish in Banana Leaf",
+          "cuisine": "lao",
+          "price_local": 70000,
+          "price_band": "mid",
+          "is_signature": true,
+          "notes": "Served with herbal dip and organic sticky rice."
+        },
+        {
+          "dish_key": "nam_anchan",
+          "name_local": "ນ້ຳອັນຊັນ",
+          "name_roman": "nam anchan",
+          "name_en": "Iced Butterfly Pea Tea",
+          "cuisine": "drink",
+          "price_local": 25000,
+          "price_band": "budget",
+          "is_signature": false,
+          "notes": "Chilled herbal floral tea."
+        }
+      ],
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Paved flat garden paths throughout center; ramp access to silk weaving workshop."
+    },
+    {
+      "name": "Luang Prabang International Airport",
+      "name_local": "ສະໜາມບິນສາກົນ ຫຼວງພະບາງ",
+      "category": "transport_hub",
+      "micro_location": "ban_khemkhong",
+      "nearest_landmark": "Route 13 North 4km east of town center",
+      "nearest_landmark_local": "ເສັ້ນທາງ 13 ເໜືອ, ຫຼວງພະບາງ",
+      "lat": 19.89731,
+      "lng": 102.16251,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "indoor",
+      "has_aircon": true,
+      "price_band": "budget",
+      "audience": [
+        "family_young_kids",
+        "mobility_limited",
+        "solo"
+      ],
+      "vibe_tags": [
+        "quiet"
+      ],
+      "description": "Modern compact passenger terminal with ATMs, SIM card counters, prepaid taxi desks, and air-conditioned cafes.",
+      "opening_hours": {
+        "mon": [
+          [
+            "00:00",
+            "23:59"
+          ]
+        ],
+        "tue": [
+          [
+            "00:00",
+            "23:59"
+          ]
+        ],
+        "wed": [
+          [
+            "00:00",
+            "23:59"
+          ]
+        ],
+        "thu": [
+          [
+            "00:00",
+            "23:59"
+          ]
+        ],
+        "fri": [
+          [
+            "00:00",
+            "23:59"
+          ]
+        ],
+        "sat": [
+          [
+            "00:00",
+            "23:59"
+          ]
+        ],
+        "sun": [
+          [
+            "00:00",
+            "23:59"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Fully accessible modern terminal with ramps, automatic doors, and accessible restrooms."
+    }
+  ]
+}

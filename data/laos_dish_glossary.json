@@ -1,0 +1,783 @@
+{
+  "region": "laos",
+  "curated_at": "2026-08-15",
+  "curator_notes": "Allergen & dietary safety audit: 'contains' covers core ingredients; 'may_contain' includes cross-contact risks (shared steamers, woks, mortars) and hidden seasonings like padaek (fermented fish sauce), shrimp paste, and MSG. Added 'alcohol' to constraint vocabulary. Dishes with fish_sauce, fish, shellfish, dairy, or egg in contains/may_contain have 'vegan' removed. 'vegetarian' removed if fish/shellfish/fish_sauce listed in contains/may_contain. khao_niaw and nam_anchan were deliberately assessed as clean with minor shared-kitchen may_contain flags. Allergen claims are inferred from standard traditional Lao recipes; strict user disclaimer required.",
+  "dishes": [
+    {
+      "dish_key": "khao_niaw",
+      "name_local": "ເຂົ້າໜຽວ",
+      "name_roman": "khao niaw",
+      "name_en": "Lao Sticky Rice",
+      "cuisine": "lao",
+      "dish_type": "rice_dish",
+      "description": "Steamed glutinous rice served in a woven bamboo basket (thip khao). The foundational staple eaten by hand with almost every Laotian meal.",
+      "typical_price_band": "budget",
+      "spice_level": "none",
+      "contains": [],
+      "may_contain": [
+        "sesame"
+      ],
+      "suitable_for": [
+        "vegetarian",
+        "vegan",
+        "gluten_free",
+        "halal"
+      ],
+      "kid_friendly": true,
+      "adventurousness": 1,
+      "order_phrase_local": "ຂໍເຂົ້າໜຽວໜຶ່ງຕິບ",
+      "regional_note": "Universal staple across all regions of Laos",
+      "notes": "Eaten by rolling small balls with fingers to scoop up dips, laap, and grilled meats."
+    },
+    {
+      "dish_key": "laap_gai",
+      "name_local": "ລາບໄກ່",
+      "name_roman": "laap gai",
+      "name_en": "Minced Chicken Salad with Herbs",
+      "cuisine": "lao",
+      "dish_type": "salad",
+      "description": "Hand-minced chicken tossed with mint, coriander, lime juice, chili, and toasted crushed sticky rice powder (khao khua).",
+      "typical_price_band": "budget",
+      "spice_level": "medium",
+      "contains": [
+        "fish_sauce",
+        "chilli"
+      ],
+      "may_contain": [
+        "msg",
+        "fish"
+      ],
+      "suitable_for": [
+        "gluten_free",
+        "halal"
+      ],
+      "kid_friendly": false,
+      "adventurousness": 2,
+      "order_phrase_local": "ຂໍລາບໄກ່ໜຶ່ງຈານ",
+      "regional_note": "National dish of Laos, eaten everywhere",
+      "notes": "Always eaten paired with fresh sticky rice and raw green herbs."
+    },
+    {
+      "dish_key": "tam_mak_hoong",
+      "name_local": "ຕຳໝາກຮຸ່ງ",
+      "name_roman": "tam mak hoong",
+      "name_en": "Spicy Green Papaya Salad",
+      "cuisine": "lao",
+      "dish_type": "salad",
+      "description": "Shredded green papaya pounded in a mortar with red chilies, lime, garlic, and pungent unpasteurized fermented fish sauce (padaek).",
+      "typical_price_band": "budget",
+      "spice_level": "hot",
+      "contains": [
+        "fish_sauce",
+        "chilli"
+      ],
+      "may_contain": [
+        "shellfish",
+        "fish",
+        "msg",
+        "peanut"
+      ],
+      "suitable_for": [],
+      "kid_friendly": false,
+      "adventurousness": 3,
+      "order_phrase_local": "ຂໍຕຳໝາກຮຸ່ງໜຶ່ງຈານ, ບໍ່ຜັດຫຼາຍ",
+      "regional_note": "Pungenter and far less sweet than Thai papaya salad (som tum)",
+      "notes": "Specify 'bo phet' if you need reduced chili heat."
+    },
+    {
+      "dish_key": "khao_soi_lao",
+      "name_local": "ເຂົ້າຊອຍ",
+      "name_roman": "khao soi",
+      "name_en": "Luang Prabang Pork Noodle Soup",
+      "cuisine": "lao",
+      "dish_type": "noodle_soup",
+      "description": "Flat rice noodles in clear pork broth topped with a rich fermented soybean and minced pork ragù paste. Served with fresh herbs.",
+      "typical_price_band": "budget",
+      "spice_level": "mild",
+      "contains": [
+        "pork",
+        "soy",
+        "gluten"
+      ],
+      "may_contain": [
+        "fish_sauce",
+        "msg"
+      ],
+      "suitable_for": [],
+      "kid_friendly": true,
+      "adventurousness": 2,
+      "order_phrase_local": "ຂໍເຂົ້າຊອຍໜຶ່ງຖ້ວຍ",
+      "regional_note": "Most associated with Luang Prabang and Northern Laos",
+      "notes": "Completely distinct from Thai Chiang Mai khao soi; contains no coconut milk or curry powder."
+    },
+    {
+      "dish_key": "khao_piak_sen",
+      "name_local": "ເຂົ້າປຽກເສັ້ນ",
+      "name_roman": "khao piak sen",
+      "name_en": "Lao Fresh Tapioca Noodle Soup",
+      "cuisine": "lao",
+      "dish_type": "noodle_soup",
+      "description": "Thick handmade rice-and-tapioca flour noodles served in rich chicken or pork broth, garnished with crispy shallots and herbs.",
+      "typical_price_band": "budget",
+      "spice_level": "none",
+      "contains": [
+        "gluten"
+      ],
+      "may_contain": [
+        "pork",
+        "fish_sauce",
+        "msg",
+        "egg"
+      ],
+      "suitable_for": [],
+      "kid_friendly": true,
+      "adventurousness": 1,
+      "order_phrase_local": "ຂໍເຂົ້າປຽກເສັ້ນໜຶ່ງຖ້ວຍ",
+      "regional_note": "Ubiquitous breakfast soup throughout all Laotian towns",
+      "notes": "The starch from fresh chewy noodles naturally thickens the broth."
+    },
+    {
+      "dish_key": "or_lam",
+      "name_local": "ອໍຫລາມ",
+      "name_roman": "or lam",
+      "name_en": "Luang Prabang Herbal Stew",
+      "cuisine": "lao",
+      "dish_type": "stew",
+      "description": "Thick herbal stew made with dried buffalo or beef, eggplants, wood ear mushrooms, sticky rice paste, and spicy sakhaan pepperwood vine.",
+      "typical_price_band": "mid",
+      "spice_level": "medium",
+      "contains": [
+        "beef",
+        "chilli"
+      ],
+      "may_contain": [
+        "pork",
+        "fish_sauce",
+        "msg"
+      ],
+      "suitable_for": [],
+      "kid_friendly": false,
+      "adventurousness": 3,
+      "order_phrase_local": "ຂໍອໍຫລາມໜຶ່ງຖ້ວຍ",
+      "regional_note": "Signature Royal heritage stew exclusive to Luang Prabang",
+      "notes": "Sakhaan vine wood is chewed for a numbing, peppery sensation but not swallowed."
+    },
+    {
+      "dish_key": "mok_pa",
+      "name_local": "ໝົກປາ",
+      "name_roman": "mok pa",
+      "name_en": "Steamed Fish in Banana Leaf",
+      "cuisine": "lao",
+      "dish_type": "grill",
+      "description": "Mekong river fish marinated with lemongrass, dill, kaffir lime, and sticky rice powder, wrapped in banana leaf packets and steamed.",
+      "typical_price_band": "mid",
+      "spice_level": "mild",
+      "contains": [
+        "fish",
+        "fish_sauce"
+      ],
+      "may_contain": [
+        "chilli",
+        "msg"
+      ],
+      "suitable_for": [
+        "gluten_free"
+      ],
+      "kid_friendly": true,
+      "adventurousness": 2,
+      "order_phrase_local": "ຂໍໝົກປາໜຶ່ງຫໍ່",
+      "regional_note": "Staple river dish across Luang Prabang and Vientiane",
+      "notes": "Fragrant and delicate texture infused with fresh dill."
+    },
+    {
+      "dish_key": "ping_kai",
+      "name_local": "ປີ້ງໄກ່",
+      "name_roman": "ping kai",
+      "name_en": "Lao Charcoal Grilled Chicken",
+      "cuisine": "lao",
+      "dish_type": "grill",
+      "description": "Marinated whole or halved chicken flattened on bamboo skewers and slow-grilled over white charcoal with coriander root and garlic.",
+      "typical_price_band": "budget",
+      "spice_level": "mild",
+      "contains": [
+        "fish_sauce"
+      ],
+      "may_contain": [
+        "soy",
+        "gluten",
+        "msg"
+      ],
+      "suitable_for": [
+        "halal"
+      ],
+      "kid_friendly": true,
+      "adventurousness": 1,
+      "order_phrase_local": "ຂໍປີ້ງໄກ່ໜຶ່ງໄມ້",
+      "regional_note": "Famous in Seneno and Vang Vieng road stops",
+      "notes": "Best eaten alongside sticky rice and fresh green papaya salad."
+    },
+    {
+      "dish_key": "sai_oua",
+      "name_local": "ໄສ້ອົ່ວ",
+      "name_roman": "sai oua",
+      "name_en": "Lao Herbal Pork Sausage",
+      "cuisine": "lao",
+      "dish_type": "grill",
+      "description": "Coarsely ground pork sausage stuffed with lemongrass, galangal, kaffir lime leaves, chilies, and herbs, grilled over open coals.",
+      "typical_price_band": "budget",
+      "spice_level": "medium",
+      "contains": [
+        "pork",
+        "chilli"
+      ],
+      "may_contain": [
+        "fish_sauce",
+        "msg"
+      ],
+      "suitable_for": [],
+      "kid_friendly": false,
+      "adventurousness": 2,
+      "order_phrase_local": "ຂໍໄສ້ອົ່ວໜຶ່ງຈານ",
+      "regional_note": "Luang Prabang version is rich with herbal fatty pork",
+      "notes": "Distinctly herb-forward with a tart or smoky herbal aroma."
+    },
+    {
+      "dish_key": "nam_khao",
+      "name_local": "ແໜມເຂົ້ານ້ຳ",
+      "name_roman": "nam khao",
+      "name_en": "Crispy Rice & Sour Pork Salad",
+      "cuisine": "lao",
+      "dish_type": "salad",
+      "description": "Deep-fried seasoned rice balls crumbled and tossed with sour fermented pork (som moo), peanuts, grated coconut, herbs, and lime.",
+      "typical_price_band": "budget",
+      "spice_level": "medium",
+      "contains": [
+        "pork",
+        "fish_sauce",
+        "chilli"
+      ],
+      "may_contain": [
+        "peanut",
+        "egg",
+        "msg"
+      ],
+      "suitable_for": [],
+      "kid_friendly": false,
+      "adventurousness": 2,
+      "order_phrase_local": "ຂໍແໜມເຂົ້ານ້ຳໜຶ່ງຈານ",
+      "regional_note": "Originating in Vientiane but common nationwide",
+      "notes": "Eaten by wrapping spoonfuls inside fresh betel or lettuce leaves."
+    },
+    {
+      "dish_key": "khao_jee_pate",
+      "name_local": "ເຂົ້າຈີ່ປາເຕ້",
+      "name_roman": "khao jee paté",
+      "name_en": "Lao Baguette Sandwich",
+      "cuisine": "french_colonial",
+      "dish_type": "bread_pastry",
+      "description": "Crispy split French baguette filled with pork pâté, pork sausage, pickled carrots, cucumber, coriander, and chili sauce.",
+      "typical_price_band": "budget",
+      "spice_level": "mild",
+      "contains": [
+        "gluten",
+        "pork",
+        "egg"
+      ],
+      "may_contain": [
+        "chilli",
+        "soy",
+        "msg"
+      ],
+      "suitable_for": [],
+      "kid_friendly": true,
+      "adventurousness": 1,
+      "order_phrase_local": "ຂໍເຂົ້າຈີ່ປາເຕ້ໜຶ່ງບາດ",
+      "regional_note": "French colonial influence; sold at street stalls everywhere",
+      "notes": "Generous and economical meal option for travelers."
+    },
+    {
+      "dish_key": "kai_pen",
+      "name_local": "ໄຄແຜ່ນ",
+      "name_roman": "kai pen",
+      "name_en": "Crispy Fried Mekong Riverweed",
+      "cuisine": "lao",
+      "dish_type": "snack",
+      "description": "Fresh freshwater riverweed pressed into sheets with garlic, tomato, and white sesame seeds, flash-fried until crisp.",
+      "typical_price_band": "budget",
+      "spice_level": "none",
+      "contains": [
+        "sesame"
+      ],
+      "may_contain": [
+        "fish",
+        "fish_sauce",
+        "msg"
+      ],
+      "suitable_for": [],
+      "kid_friendly": true,
+      "adventurousness": 3,
+      "order_phrase_local": "ຂໍໄຄແຜ່ນໜຶ່ງຈານ",
+      "regional_note": "Unique delicacy harvested from the Mekong in Luang Prabang",
+      "notes": "Served hot alongside jaew bong dip for dipping."
+    },
+    {
+      "dish_key": "jaew_bong",
+      "name_local": "ແຈ່ວບອງ",
+      "name_roman": "jaew bong",
+      "name_en": "Sweet Chili Paste with Buffalo Skin",
+      "cuisine": "lao",
+      "dish_type": "snack",
+      "description": "Thick savory chili paste made with roasted red chilies, galangal, garlic, sugar, and shredded dried water buffalo skin.",
+      "typical_price_band": "budget",
+      "spice_level": "hot",
+      "contains": [
+        "beef",
+        "chilli",
+        "fish_sauce"
+      ],
+      "may_contain": [
+        "msg"
+      ],
+      "suitable_for": [],
+      "kid_friendly": false,
+      "adventurousness": 4,
+      "order_phrase_local": "ຂໍແຈ່ວບອງໜຶ່ງກະປຸກ",
+      "regional_note": "Luang Prabang regional signature dip",
+      "notes": "Buffalo skin strips provide a chewy, gelatinous texture."
+    },
+    {
+      "dish_key": "laap_dib",
+      "name_local": "ລາບດິບ",
+      "name_roman": "laap dib",
+      "name_en": "Raw Minced Beef & Bile Salad",
+      "cuisine": "lao",
+      "dish_type": "salad",
+      "description": "Finely hand-minced raw beef or water buffalo mixed with fresh blood, bile juice, chili, mint, and toasted rice powder.",
+      "typical_price_band": "mid",
+      "spice_level": "hot",
+      "contains": [
+        "beef",
+        "fish_sauce",
+        "chilli"
+      ],
+      "may_contain": [
+        "msg"
+      ],
+      "suitable_for": [],
+      "kid_friendly": false,
+      "adventurousness": 5,
+      "order_phrase_local": "ຂໍລາບດິບໜຶ່ງຈານ",
+      "regional_note": "Traditional delicacy loved by local connoisseurs",
+      "notes": "Bile imparts a signature bitter flavor. Uncooked meat carries health risks."
+    },
+    {
+      "dish_key": "khua_khai_mod_daeng",
+      "name_local": "ຂົ້ວໄຂ່ມົດແດງ",
+      "name_roman": "khua khai mod daeng",
+      "name_en": "Stir-Fried Weaver Ant Eggs",
+      "cuisine": "lao",
+      "dish_type": "grill",
+      "description": "Plump white weaver ant larvae and eggs stir-fried with herbs, spring onions, chilies, and fish sauce.",
+      "typical_price_band": "mid",
+      "spice_level": "mild",
+      "contains": [
+        "fish_sauce",
+        "chilli"
+      ],
+      "may_contain": [
+        "msg"
+      ],
+      "suitable_for": [],
+      "kid_friendly": false,
+      "adventurousness": 5,
+      "order_phrase_local": "ຂໍຂົ້ວໄຂ່ມົດແດງໜຶ່ງຈານ",
+      "regional_note": "Seasonal delicacy available during late dry season (Feb–May)",
+      "notes": "Ant eggs pop in the mouth with a slightly sour, creamy liquid flavor."
+    },
+    {
+      "dish_key": "som_phak",
+      "name_local": "ສົ້ມຜັກ",
+      "name_roman": "som phak",
+      "name_en": "Pickled Fermented Greens",
+      "cuisine": "lao",
+      "dish_type": "snack",
+      "description": "Mustard greens or cabbage fermented in cooked rice water and salt until sour, crunchy, and tangy.",
+      "typical_price_band": "budget",
+      "spice_level": "mild",
+      "contains": [],
+      "may_contain": [
+        "fish_sauce",
+        "msg"
+      ],
+      "suitable_for": [],
+      "kid_friendly": false,
+      "adventurousness": 4,
+      "order_phrase_local": "ຂໍສົ້ມຜັກໜຶ່ງຈານ",
+      "regional_note": "Home-style side dish served with grilled meats across Laos",
+      "notes": "Naturally fermented probiotic side dish."
+    },
+    {
+      "dish_key": "mok_maam",
+      "name_local": "ໝົກມ່າມ",
+      "name_roman": "mok maam",
+      "name_en": "Steamed Beef Offal in Banana Leaf",
+      "cuisine": "lao",
+      "dish_type": "stew",
+      "description": "Chopped beef offal, liver, and blood mixed with sticky rice powder, chilies, and herbs, wrapped and steamed in banana leaves.",
+      "typical_price_band": "budget",
+      "spice_level": "medium",
+      "contains": [
+        "beef",
+        "chilli",
+        "fish_sauce"
+      ],
+      "may_contain": [
+        "msg"
+      ],
+      "suitable_for": [],
+      "kid_friendly": false,
+      "adventurousness": 5,
+      "order_phrase_local": "ຂໍໝົກມ່າມໜຶ່ງຫໍ່",
+      "regional_note": "Traditional rural night market wrapped dish",
+      "notes": "Rich iron-heavy flavor profile for adventurous eaters."
+    },
+    {
+      "dish_key": "khao_nom_krok",
+      "name_local": "ເຂົ້າໜົມຄົກ",
+      "name_roman": "khao nom krok",
+      "name_en": "Coconut Rice Griddle Cakes",
+      "cuisine": "lao",
+      "dish_type": "street_snack",
+      "description": "Small round street cakes cooked in a dimpled cast-iron pan, made from rice flour batter and sweet coconut cream.",
+      "typical_price_band": "budget",
+      "spice_level": "none",
+      "contains": [],
+      "may_contain": [
+        "sesame",
+        "peanut"
+      ],
+      "suitable_for": [
+        "vegetarian",
+        "vegan",
+        "gluten_free",
+        "halal"
+      ],
+      "kid_friendly": true,
+      "adventurousness": 1,
+      "order_phrase_local": "ຂໍເຂົ້າໜົມຄົກໜຶ່ງຊຸດ",
+      "regional_note": "Popular morning and evening night market sweet street snack",
+      "notes": "Crispy on the outside with a molten, custardy coconut interior."
+    },
+    {
+      "dish_key": "khao_poone",
+      "name_local": "ເຂົ້າປຸ້ນ",
+      "name_roman": "khao poone",
+      "name_en": "Lao Coconut Fish Curry Noodles",
+      "cuisine": "lao",
+      "dish_type": "noodle_soup",
+      "description": "Fermented rice vermicelli noodles in a fragrant red coconut curry broth made with pounded fish, lemongrass, and kaffir lime.",
+      "typical_price_band": "budget",
+      "spice_level": "medium",
+      "contains": [
+        "fish",
+        "fish_sauce",
+        "chilli"
+      ],
+      "may_contain": [
+        "pork",
+        "msg"
+      ],
+      "suitable_for": [
+        "gluten_free"
+      ],
+      "kid_friendly": false,
+      "adventurousness": 2,
+      "order_phrase_local": "ຂໍເຂົ້າປຸ້ນໜຶ່ງຖ້ວຍ",
+      "regional_note": "Festive dish eaten at celebrations and markets across Laos",
+      "notes": "Top with shredded cabbage, banana flower, and long beans."
+    },
+    {
+      "dish_key": "kaeng_no_mai",
+      "name_local": "ແກ່ງໜໍ່ໄມ້",
+      "name_roman": "gaeng no mai",
+      "name_en": "Lao Bamboo Shoot & Yanang Soup",
+      "cuisine": "lao",
+      "dish_type": "stew",
+      "description": "Dark savory soup made from fresh bamboo shoots boiled in a dark green extract of yanang leaves, thickened with sticky rice.",
+      "typical_price_band": "budget",
+      "spice_level": "medium",
+      "contains": [
+        "fish_sauce",
+        "chilli"
+      ],
+      "may_contain": [
+        "pork",
+        "shellfish",
+        "msg"
+      ],
+      "suitable_for": [],
+      "kid_friendly": false,
+      "adventurousness": 3,
+      "order_phrase_local": "ຂໍແກ່ງໜໍ່ໄມ້ໜຶ່ງຖ້ວຍ",
+      "regional_note": "Classic home-cooked soup eaten throughout Laos",
+      "notes": "Yanang leaf juice gives the broth its distinctive earthy blackish-green color."
+    },
+    {
+      "dish_key": "ping_pa",
+      "name_local": "ປີ້ງປາ",
+      "name_roman": "ping pa",
+      "name_en": "Grilled Mekong River Fish",
+      "cuisine": "lao",
+      "dish_type": "grill",
+      "description": "Whole Mekong fish stuffed with crushed lemongrass stalks and kaffir lime leaves, crusted with coarse sea salt and grilled over embers.",
+      "typical_price_band": "mid",
+      "spice_level": "mild",
+      "contains": [
+        "fish"
+      ],
+      "may_contain": [
+        "fish_sauce",
+        "msg"
+      ],
+      "suitable_for": [
+        "gluten_free",
+        "halal"
+      ],
+      "kid_friendly": true,
+      "adventurousness": 2,
+      "order_phrase_local": "ຂໍປີ້ງປາໜຶ່ງໂຕ",
+      "regional_note": "Riverside dining staple in Luang Prabang, Vang Vieng, and Vientiane",
+      "notes": "Flaky white flesh dipped in spicy green chili garlic sauce."
+    },
+    {
+      "dish_key": "croissant_lao",
+      "name_local": "ຄຣົວຊ່ອງ",
+      "name_roman": "croissant",
+      "name_en": "French Butter Croissant",
+      "cuisine": "french_colonial",
+      "dish_type": "bread_pastry",
+      "description": "Flaky, multi-layered French butter pastry baked fresh daily in French-influenced Laotian artisan bakeries.",
+      "typical_price_band": "mid",
+      "spice_level": "none",
+      "contains": [
+        "gluten",
+        "dairy",
+        "egg"
+      ],
+      "may_contain": [
+        "tree_nut",
+        "sesame"
+      ],
+      "suitable_for": [
+        "vegetarian"
+      ],
+      "kid_friendly": true,
+      "adventurousness": 1,
+      "order_phrase_local": "ຂໍຄຣົວຊ່ອງໜຶ່ງບາດ",
+      "regional_note": "Widely available at bakeries in Luang Prabang and Vientiane",
+      "notes": "Reflects Laos' French colonial baking legacy."
+    },
+    {
+      "dish_key": "gafeu_lao",
+      "name_local": "ກາເຟເຢັນ",
+      "name_roman": "gafeu yen",
+      "name_en": "Traditional Lao Sweet Iced Coffee",
+      "cuisine": "drink",
+      "dish_type": "coffee_tea",
+      "description": "Dark-roasted Bolaven Plateau Arabica and Robusta coffee brewed strong through a cloth filter, served over ice with condensed milk.",
+      "typical_price_band": "budget",
+      "spice_level": "none",
+      "contains": [
+        "dairy"
+      ],
+      "may_contain": [],
+      "suitable_for": [
+        "vegetarian",
+        "gluten_free",
+        "halal"
+      ],
+      "kid_friendly": false,
+      "adventurousness": 1,
+      "order_phrase_local": "ຂໍກາເຟເຢັນໜຶ່ງແກ້ວ",
+      "regional_note": "National coffee style using Southern Laos Bolaven coffee beans",
+      "notes": "Very rich, sweet, and high in caffeine."
+    },
+    {
+      "dish_key": "beerlao_lager",
+      "name_local": "ເບຍລາວ",
+      "name_roman": "beer lao",
+      "name_en": "Beerlao Original Lager",
+      "cuisine": "drink",
+      "dish_type": "alcoholic_drink",
+      "description": "Iconic national Laotian rice-and-malted-barley lager beer (5% ABV), smooth and crisp.",
+      "typical_price_band": "budget",
+      "spice_level": "none",
+      "contains": [
+        "alcohol",
+        "gluten"
+      ],
+      "may_contain": [],
+      "suitable_for": [],
+      "kid_friendly": false,
+      "adventurousness": 1,
+      "order_phrase_local": "ຂໍເບຍລາວໜຶ່ງແກ້ວ",
+      "regional_note": "Served everywhere in Laos, often poured over ice cubes in hot weather",
+      "notes": "Nearly ubiquitous emblem of Laotian beverage culture."
+    },
+    {
+      "dish_key": "nam_mak_muang_shake",
+      "name_local": "ນ້ຳໝາກມ່ວງປັ່ນ",
+      "name_roman": "nam mak muang pan",
+      "name_en": "Fresh Mango Fruit Shake",
+      "cuisine": "drink",
+      "dish_type": "soft_drink",
+      "description": "Fresh sweet local mango blended with ice and syrup at roadside fruit stalls.",
+      "typical_price_band": "budget",
+      "spice_level": "none",
+      "contains": [],
+      "may_contain": [
+        "dairy"
+      ],
+      "suitable_for": [
+        "vegetarian",
+        "gluten_free",
+        "halal"
+      ],
+      "kid_friendly": true,
+      "adventurousness": 1,
+      "order_phrase_local": "ຂໍນ້ຳໝາກມ່ວງປັ່ນໜຶ່ງແກ້ວ",
+      "regional_note": "Extremely popular refreshment in Vang Vieng and Luang Prabang",
+      "notes": "Ask 'bo sai nom' if you want it strictly dairy-free."
+    },
+    {
+      "dish_key": "nam_anchan",
+      "name_local": "ນ້ຳອັນຊັນ",
+      "name_roman": "nam anchan",
+      "name_en": "Iced Butterfly Pea Flower Tea",
+      "cuisine": "drink",
+      "dish_type": "soft_drink",
+      "description": "Naturally vibrant blue herbal tea made from dried butterfly pea blossoms, often served with lime juice turning it purple.",
+      "typical_price_band": "budget",
+      "spice_level": "none",
+      "contains": [],
+      "may_contain": [
+        "sesame"
+      ],
+      "suitable_for": [
+        "vegetarian",
+        "vegan",
+        "gluten_free",
+        "halal"
+      ],
+      "kid_friendly": true,
+      "adventurousness": 1,
+      "order_phrase_local": "ຂໍນ້ຳອັນຊັນໜຶ່ງແກ້ວ",
+      "regional_note": "Refreshing herbal cafe beverage across Lao cities",
+      "notes": "Naturally caffeine-free and cooling."
+    },
+    {
+      "dish_key": "tam_mak_teang",
+      "name_local": "ຕຳໝາກແຕງ",
+      "name_roman": "tam mak teang",
+      "name_en": "Spicy Cucumber Salad",
+      "cuisine": "lao",
+      "dish_type": "salad",
+      "description": "Smashed cucumber strips pounded in a mortar with lime juice, chilies, garlic, and fermented fish paste.",
+      "typical_price_band": "budget",
+      "spice_level": "hot",
+      "contains": [
+        "fish_sauce",
+        "chilli"
+      ],
+      "may_contain": [
+        "shellfish",
+        "msg"
+      ],
+      "suitable_for": [],
+      "kid_friendly": false,
+      "adventurousness": 2,
+      "order_phrase_local": "ຂໍຕຳໝາກແຕງໜຶ່ງຈານ",
+      "regional_note": "Hydrating spicy variation on papaya salad",
+      "notes": "Very juicy and spicy; eaten with sticky rice to absorb sauce."
+    },
+    {
+      "dish_key": "khao_tom",
+      "name_local": "ເຂົ້າຕົ້ມ",
+      "name_roman": "khao tom",
+      "name_en": "Steamed Sticky Rice & Banana Packet",
+      "cuisine": "lao",
+      "dish_type": "dessert",
+      "description": "Sweetened sticky rice cooked in coconut milk, wrapped around ripe banana or black beans in banana leaves, and steamed.",
+      "typical_price_band": "budget",
+      "spice_level": "none",
+      "contains": [],
+      "may_contain": [
+        "sesame",
+        "peanut"
+      ],
+      "suitable_for": [
+        "vegetarian",
+        "vegan",
+        "gluten_free",
+        "halal"
+      ],
+      "kid_friendly": true,
+      "adventurousness": 1,
+      "order_phrase_local": "ຂໍເຂົ້າຕົ້ມໜຶ່ງຫໍ່",
+      "regional_note": "Common traditional market snack and temple offering",
+      "notes": "Convenient portable travel snack."
+    },
+    {
+      "dish_key": "khao_piak_khao",
+      "name_local": "ເຂົ້າປຽກເຂົ້າ",
+      "name_roman": "khao piak khao",
+      "name_en": "Lao Chicken Rice Porridge",
+      "cuisine": "lao",
+      "dish_type": "rice_dish",
+      "description": "Comforting rice congee boiled in clear chicken broth, topped with ginger, spring onions, fried garlic, and black pepper.",
+      "typical_price_band": "budget",
+      "spice_level": "none",
+      "contains": [],
+      "may_contain": [
+        "pork",
+        "egg",
+        "fish_sauce",
+        "msg"
+      ],
+      "suitable_for": [
+        "gluten_free"
+      ],
+      "kid_friendly": true,
+      "adventurousness": 1,
+      "order_phrase_local": "ຂໍເຂົ້າປຽກເຂົ້າໜຶ່ງຖ້ວຍ",
+      "regional_note": "Traditional soothing morning dish sold across all Lao towns",
+      "notes": "Gentle on the stomach for travelers experiencing indigestion."
+    },
+    {
+      "dish_key": "foe_lao",
+      "name_local": "ເຝີ",
+      "name_roman": "foe",
+      "name_en": "Lao Style Beef Pho Noodle Soup",
+      "cuisine": "vietnamese",
+      "dish_type": "noodle_soup",
+      "description": "Rice noodle soup in rich spiced beef bone broth, served with a large plate of fresh basil, mint, long beans, and shrimp paste.",
+      "typical_price_band": "budget",
+      "spice_level": "mild",
+      "contains": [
+        "beef"
+      ],
+      "may_contain": [
+        "gluten",
+        "fish_sauce",
+        "msg",
+        "soy"
+      ],
+      "suitable_for": [],
+      "kid_friendly": true,
+      "adventurousness": 1,
+      "order_phrase_local": "ຂໍເຝີເລືອດໜຶ່ງຖ້ວຍ",
+      "regional_note": "Vietnamese origin, adapted across Laos with raw herbs and shrimp paste",
+      "notes": "Diners customize their broth at the table with lime, chili oil, and sugar."
+    }
+  ]
+}

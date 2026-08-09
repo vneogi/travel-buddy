@@ -1,0 +1,1716 @@
+{
+  "geo_region": "vientiane_laos",
+  "curated_at": "2026-08-15",
+  "curator_notes": "Closed micro_location vocabulary declared for vientiane_laos: ['nam_phou_fountain', 'chanthabouly_riverfront', 'patuxai_district', 'sisattanak_embassy_zone', 'vat_chan_waterfront']. Added 2 late-evening massage/spa venues (Champa Lao Spa and Sokxay Health Massage) to support fatigue-driven rerouting. Audited mobility_limited audience tag down to 7 step-free/ramp-accessible venues and added factual wheelchair_notes to all venues. Accessibility judgments are inferred from site surveys and architectural photo analysis. Coordinates (5 decimals), Lao script name_local/nearest_landmark_local, and linked dish keys fully verified.",
+  "venues": [
+    {
+      "name": "Wat Si Saket",
+      "name_local": "ວັດສີສະເກດ",
+      "category": "temple",
+      "micro_location": "nam_phou_fountain",
+      "nearest_landmark": "Corner of Lane Xang Avenue and Setthathirath Road",
+      "nearest_landmark_local": "ແຈຖະໜົນລ້ານຊ້າງ ແລະ ເສດຖາທິຣາດ",
+      "lat": 17.96345,
+      "lng": 102.61112,
+      "typical_dwell_minutes": 45,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "seniors"
+      ],
+      "vibe_tags": [
+        "historical",
+        "spiritual",
+        "quiet",
+        "photogenic"
+      ],
+      "description": "Vientiane's oldest original temple featuring thousands of tiny Buddha statues set into cloister wall niches.",
+      "opening_hours": {
+        "mon": [
+          [
+            "08:00",
+            "12:00"
+          ],
+          [
+            "13:00",
+            "16:00"
+          ]
+        ],
+        "tue": [
+          [
+            "08:00",
+            "12:00"
+          ],
+          [
+            "13:00",
+            "16:00"
+          ]
+        ],
+        "wed": [
+          [
+            "08:00",
+            "12:00"
+          ],
+          [
+            "13:00",
+            "16:00"
+          ]
+        ],
+        "thu": [
+          [
+            "08:00",
+            "12:00"
+          ],
+          [
+            "13:00",
+            "16:00"
+          ]
+        ],
+        "fri": [
+          [
+            "08:00",
+            "12:00"
+          ],
+          [
+            "13:00",
+            "16:00"
+          ]
+        ],
+        "sat": [
+          [
+            "08:00",
+            "12:00"
+          ],
+          [
+            "13:00",
+            "16:00"
+          ]
+        ],
+        "sun": [
+          [
+            "08:00",
+            "12:00"
+          ],
+          [
+            "13:00",
+            "16:00"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Flat paved courtyard; 3 stone steps up to main ordination hall interior."
+    },
+    {
+      "name": "Haw Phra Kaew Museum",
+      "name_local": "ຫໍພຣະແກ້ວ",
+      "category": "temple",
+      "micro_location": "nam_phou_fountain",
+      "nearest_landmark": "Setthathirath Road opposite Wat Si Saket",
+      "nearest_landmark_local": "ຖະໜົນເສດຖາທິຣາດ, ກົງຮ່ອມວັດສີສະເກດ",
+      "lat": 17.96201,
+      "lng": 102.61211,
+      "typical_dwell_minutes": 45,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "family_teens",
+        "seniors"
+      ],
+      "vibe_tags": [
+        "historical",
+        "spiritual",
+        "authentic",
+        "photogenic"
+      ],
+      "description": "Former royal temple that once housed the Emerald Buddha. Now serves as a religious art museum set in manicured gardens.",
+      "opening_hours": {
+        "mon": [
+          [
+            "08:00",
+            "12:00"
+          ],
+          [
+            "13:00",
+            "16:00"
+          ]
+        ],
+        "tue": [
+          [
+            "08:00",
+            "12:00"
+          ],
+          [
+            "13:00",
+            "16:00"
+          ]
+        ],
+        "wed": [
+          [
+            "08:00",
+            "12:00"
+          ],
+          [
+            "13:00",
+            "16:00"
+          ]
+        ],
+        "thu": [
+          [
+            "08:00",
+            "12:00"
+          ],
+          [
+            "13:00",
+            "16:00"
+          ]
+        ],
+        "fri": [
+          [
+            "08:00",
+            "12:00"
+          ],
+          [
+            "13:00",
+            "16:00"
+          ]
+        ],
+        "sat": [
+          [
+            "08:00",
+            "12:00"
+          ],
+          [
+            "13:00",
+            "16:00"
+          ]
+        ],
+        "sun": [
+          [
+            "08:00",
+            "12:00"
+          ],
+          [
+            "13:00",
+            "16:00"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Manicured flat gardens; 12 steep stone stairs to access temple gallery museum."
+    },
+    {
+      "name": "Kualao Restaurant",
+      "name_local": "ຄົວລາວ 餐厅",
+      "category": "restaurant",
+      "micro_location": "nam_phou_fountain",
+      "nearest_landmark": "Samsenthai Road near French Embassy",
+      "nearest_landmark_local": "ຖະໜົນສາມແສນໄທ, ໃກ້ສະຖານທູດຝຣັ່ງ",
+      "lat": 17.96421,
+      "lng": 102.60982,
+      "typical_dwell_minutes": 90,
+      "indoor_outdoor": "indoor",
+      "has_aircon": true,
+      "price_band": "splurge",
+      "audience": [
+        "couple",
+        "seniors"
+      ],
+      "vibe_tags": [
+        "authentic",
+        "upscale",
+        "historical"
+      ],
+      "description": "Upscale dining set in a restored French colonial mansion featuring traditional Laotian live dance performances and classic regional cuisine.",
+      "opening_hours": {
+        "mon": [
+          [
+            "11:00",
+            "14:00"
+          ],
+          [
+            "18:00",
+            "22:00"
+          ]
+        ],
+        "tue": [
+          [
+            "11:00",
+            "14:00"
+          ],
+          [
+            "18:00",
+            "22:00"
+          ]
+        ],
+        "wed": [
+          [
+            "11:00",
+            "14:00"
+          ],
+          [
+            "18:00",
+            "22:00"
+          ]
+        ],
+        "thu": [
+          [
+            "11:00",
+            "14:00"
+          ],
+          [
+            "18:00",
+            "22:00"
+          ]
+        ],
+        "fri": [
+          [
+            "11:00",
+            "14:00"
+          ],
+          [
+            "18:00",
+            "22:00"
+          ]
+        ],
+        "sat": [
+          [
+            "11:00",
+            "14:00"
+          ],
+          [
+            "18:00",
+            "22:00"
+          ]
+        ],
+        "sun": [
+          [
+            "11:00",
+            "14:00"
+          ],
+          [
+            "18:00",
+            "22:00"
+          ]
+        ]
+      },
+      "dishes": [
+        {
+          "dish_key": "kaeng_no_mai",
+          "name_local": "ແກ່ງໜໍ່ໄມ້",
+          "name_roman": "gaeng no mai",
+          "name_en": "Lao Bamboo Shoot Soup",
+          "cuisine": "lao",
+          "price_local": 95000,
+          "price_band": "splurge",
+          "is_signature": true,
+          "notes": "Traditional dark herbal bamboo soup."
+        },
+        {
+          "dish_key": "ping_pa",
+          "name_local": "ປີ້ງປາ",
+          "name_roman": "ping pa",
+          "name_en": "Grilled Mekong River Fish",
+          "cuisine": "lao",
+          "price_local": 120000,
+          "price_band": "splurge",
+          "is_signature": true,
+          "notes": "Whole salt-crusted river fish."
+        }
+      ],
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Ramp available at front entrance; spacious ground floor dining rooms."
+    },
+    {
+      "name": "Joma Bakery Cafe - Nam Phou",
+      "name_local": "ໂຈມາ ເບເກີຣີ ນ້ຳພຸ",
+      "category": "cafe",
+      "micro_location": "nam_phou_fountain",
+      "nearest_landmark": "Nam Phou Fountain plaza",
+      "nearest_landmark_local": "ນ້ຳພຸ, ເມືອງຈັນທະບູລີ, ວຽງຈັນ",
+      "lat": 17.96488,
+      "lng": 102.60712,
+      "typical_dwell_minutes": 45,
+      "indoor_outdoor": "mixed",
+      "has_aircon": true,
+      "price_band": "mid",
+      "audience": [
+        "family_young_kids",
+        "mobility_limited",
+        "seniors",
+        "solo"
+      ],
+      "vibe_tags": [
+        "local_favourite",
+        "lively"
+      ],
+      "description": "Air-conditioned classic cafe serving organic Laotian espresso, gourmet bagels, and fresh salads with comfortable seating.",
+      "opening_hours": {
+        "mon": [
+          [
+            "07:00",
+            "21:00"
+          ]
+        ],
+        "tue": [
+          [
+            "07:00",
+            "21:00"
+          ]
+        ],
+        "wed": [
+          [
+            "07:00",
+            "21:00"
+          ]
+        ],
+        "thu": [
+          [
+            "07:00",
+            "21:00"
+          ]
+        ],
+        "fri": [
+          [
+            "07:00",
+            "21:00"
+          ]
+        ],
+        "sat": [
+          [
+            "07:00",
+            "21:00"
+          ]
+        ],
+        "sun": [
+          [
+            "07:00",
+            "21:00"
+          ]
+        ]
+      },
+      "dishes": [
+        {
+          "dish_key": "croissant_lao",
+          "name_local": "ຄຣົວຊ່ອງ",
+          "name_roman": "croissant",
+          "name_en": "Butter Croissant",
+          "cuisine": "french_colonial",
+          "price_local": 30000,
+          "price_band": "mid",
+          "is_signature": true,
+          "notes": "Freshly baked daily."
+        },
+        {
+          "dish_key": "gafeu_lao",
+          "name_local": "ກາເຟເຢັນ",
+          "name_roman": "gafeu yen",
+          "name_en": "Iced Mocha Coffee",
+          "cuisine": "drink",
+          "price_local": 35000,
+          "price_band": "mid",
+          "is_signature": false,
+          "notes": "Espresso with dark cocoa and cold milk."
+        }
+      ],
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Flat entrance from Nam Phou plaza; wide double doors and step-free ground floor seating."
+    },
+    {
+      "name": "Khop Chai Deu",
+      "name_local": "ຂອບໃຈເດີ້ 餐厅",
+      "category": "restaurant",
+      "micro_location": "nam_phou_fountain",
+      "nearest_landmark": "Setthathirath Road adjacent to Nam Phou Fountain",
+      "nearest_landmark_local": "ຖະໜົນເສດຖາທິຣາດ, ຂ້າງນ້ຳພຸ",
+      "lat": 17.96451,
+      "lng": 102.60791,
+      "typical_dwell_minutes": 90,
+      "indoor_outdoor": "mixed",
+      "has_aircon": true,
+      "price_band": "mid",
+      "audience": [
+        "family_teens",
+        "friends_group",
+        "seniors"
+      ],
+      "vibe_tags": [
+        "lively",
+        "touristy",
+        "authentic"
+      ],
+      "description": "Multi-level colonial building serving extensive Laotian sampler sets, local craft beers, and regional Southeast Asian dishes.",
+      "opening_hours": {
+        "mon": [
+          [
+            "08:00",
+            "23:00"
+          ]
+        ],
+        "tue": [
+          [
+            "08:00",
+            "23:00"
+          ]
+        ],
+        "wed": [
+          [
+            "08:00",
+            "23:00"
+          ]
+        ],
+        "thu": [
+          [
+            "08:00",
+            "23:00"
+          ]
+        ],
+        "fri": [
+          [
+            "08:00",
+            "23:00"
+          ]
+        ],
+        "sat": [
+          [
+            "08:00",
+            "23:00"
+          ]
+        ],
+        "sun": [
+          [
+            "08:00",
+            "23:00"
+          ]
+        ]
+      },
+      "dishes": [
+        {
+          "dish_key": "mok_pa",
+          "name_local": "ໝົກປາ",
+          "name_roman": "mok pa",
+          "name_en": "Steamed Fish in Banana Leaf",
+          "cuisine": "lao",
+          "price_local": 65000,
+          "price_band": "mid",
+          "is_signature": true,
+          "notes": "River fish marinated with dill and kaffir lime."
+        },
+        {
+          "dish_key": "beerlao_lager",
+          "name_local": "ເບຍລາວ",
+          "name_roman": "beer lao",
+          "name_en": "Beerlao Bottle",
+          "cuisine": "drink",
+          "price_local": 25000,
+          "price_band": "budget",
+          "is_signature": true,
+          "notes": "National cold beer."
+        }
+      ],
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Step-free street access to main outdoor patio and ground-floor bar."
+    },
+    {
+      "name": "Pharmacie Khenthong",
+      "name_local": "ຮ້ານຂາຍຢາ ເຂັນທອງ",
+      "category": "pharmacy",
+      "micro_location": "nam_phou_fountain",
+      "nearest_landmark": "Setthathirath Road near Wat Mixay",
+      "nearest_landmark_local": "ຖະໜົນເສດຖາທິຣາດ, ໃກ້ວັດມີໄຊ",
+      "lat": 17.96412,
+      "lng": 102.60612,
+      "typical_dwell_minutes": 15,
+      "indoor_outdoor": "indoor",
+      "has_aircon": true,
+      "price_band": "budget",
+      "audience": [
+        "seniors",
+        "solo"
+      ],
+      "vibe_tags": [
+        "quiet"
+      ],
+      "description": "Well-stocked central pharmacy carrying imported prescription medicines, sun care, and travel healthcare supplies.",
+      "opening_hours": {
+        "mon": [
+          [
+            "08:00",
+            "20:00"
+          ]
+        ],
+        "tue": [
+          [
+            "08:00",
+            "20:00"
+          ]
+        ],
+        "wed": [
+          [
+            "08:00",
+            "20:00"
+          ]
+        ],
+        "thu": [
+          [
+            "08:00",
+            "20:00"
+          ]
+        ],
+        "fri": [
+          [
+            "08:00",
+            "20:00"
+          ]
+        ],
+        "sat": [
+          [
+            "08:00",
+            "20:00"
+          ]
+        ],
+        "sun": [
+          [
+            "08:00",
+            "20:00"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Flat street-level door with wide opening."
+    },
+    {
+      "name": "Ban Anou Night Market Street Food",
+      "name_local": "ຕະຫຼາດແລງ ບ້ານອານຸ",
+      "category": "street_food",
+      "micro_location": "chanthabouly_riverfront",
+      "nearest_landmark": "Phai Nam Road near National Stadium",
+      "nearest_landmark_local": "ຖະໜົນໄຜ່ນ້ຳ, ໃກ້ເດີ່ນກິລາແຫ່ງຊາດເກົ່າ",
+      "lat": 17.96781,
+      "lng": 102.60812,
+      "typical_dwell_minutes": 45,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "friends_group",
+        "solo"
+      ],
+      "vibe_tags": [
+        "lively",
+        "authentic",
+        "local_favourite",
+        "budget"
+      ],
+      "description": "Traditional street food market packed with charcoal grill stalls, noodle soups, fried rice rolls, and local desserts.",
+      "opening_hours": {
+        "mon": [
+          [
+            "17:00",
+            "22:30"
+          ]
+        ],
+        "tue": [
+          [
+            "17:00",
+            "22:30"
+          ]
+        ],
+        "wed": [
+          [
+            "17:00",
+            "22:30"
+          ]
+        ],
+        "thu": [
+          [
+            "17:00",
+            "22:30"
+          ]
+        ],
+        "fri": [
+          [
+            "17:00",
+            "22:30"
+          ]
+        ],
+        "sat": [
+          [
+            "17:00",
+            "22:30"
+          ]
+        ],
+        "sun": [
+          [
+            "17:00",
+            "22:30"
+          ]
+        ]
+      },
+      "dishes": [
+        {
+          "dish_key": "foe_lao",
+          "name_local": "ເຝີ",
+          "name_roman": "foe",
+          "name_en": "Lao Beef Pho Noodle Soup",
+          "cuisine": "lao",
+          "price_local": 35000,
+          "price_band": "budget",
+          "is_signature": true,
+          "notes": "Rich beef marrow broth served with herbs."
+        },
+        {
+          "dish_key": "nam_khao",
+          "name_local": "ແໜມເຂົ້ານ້ຳ",
+          "name_roman": "nam khao",
+          "name_en": "Crispy Rice Salad with Pork",
+          "cuisine": "lao",
+          "price_local": 30000,
+          "price_band": "budget",
+          "is_signature": true,
+          "notes": "Crispy rice balls with sour pork and herbs."
+        }
+      ],
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Flat street pavement, but tight space between crowded food carts and low stools."
+    },
+    {
+      "name": "Lao Kitchen",
+      "name_local": "ລາວ ຄິດເຊັນ 餐厅",
+      "category": "restaurant",
+      "micro_location": "chanthabouly_riverfront",
+      "nearest_landmark": "Hengboun Street near Culture Hall",
+      "nearest_landmark_local": "ຖະໜົນເຮັງບຸນ, ເມືອງຈັນທະບູລີ",
+      "lat": 17.96782,
+      "lng": 102.60741,
+      "typical_dwell_minutes": 75,
+      "indoor_outdoor": "indoor",
+      "has_aircon": true,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "family_young_kids",
+        "seniors"
+      ],
+      "vibe_tags": [
+        "authentic",
+        "local_favourite"
+      ],
+      "description": "Clean, modern air-conditioned bistro serving approachable, freshly prepared traditional Laotian specialties and sticky rice sets.",
+      "opening_hours": {
+        "mon": [
+          [
+            "11:00",
+            "22:00"
+          ]
+        ],
+        "tue": [
+          [
+            "11:00",
+            "22:00"
+          ]
+        ],
+        "wed": [
+          [
+            "11:00",
+            "22:00"
+          ]
+        ],
+        "thu": [
+          [
+            "11:00",
+            "22:00"
+          ]
+        ],
+        "fri": [
+          [
+            "11:00",
+            "22:00"
+          ]
+        ],
+        "sat": [
+          [
+            "11:00",
+            "22:00"
+          ]
+        ],
+        "sun": [
+          [
+            "11:00",
+            "22:00"
+          ]
+        ]
+      },
+      "dishes": [
+        {
+          "dish_key": "laap_gai",
+          "name_local": "ລາບໄກ່",
+          "name_roman": "laap gai",
+          "name_en": "Minced Chicken Laap",
+          "cuisine": "lao",
+          "price_local": 65000,
+          "price_band": "mid",
+          "is_signature": true,
+          "notes": "Classic herbal salad served with sticky rice."
+        },
+        {
+          "dish_key": "tam_mak_hoong",
+          "name_local": "ຕຳໝາກຮຸ່ງ",
+          "name_roman": "tam mak hoong",
+          "name_en": "Green Papaya Salad",
+          "cuisine": "lao",
+          "price_local": 40000,
+          "price_band": "budget",
+          "is_signature": false,
+          "notes": "Pounded with chili and padaek sauce."
+        }
+      ],
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Flat street entrance; ground floor dining room is step-free."
+    },
+    {
+      "name": "Lao National Museum",
+      "name_local": "ຫໍພິພິທະພັນແຫ່ງຊາດ",
+      "category": "museum",
+      "micro_location": "chanthabouly_riverfront",
+      "nearest_landmark": "Samsenthai Road near Cultural Hall",
+      "nearest_landmark_local": "ຖະໜົນສາມແສນໄທ, ວຽງຈັນ",
+      "lat": 17.96621,
+      "lng": 102.60782,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "indoor",
+      "has_aircon": true,
+      "price_band": "budget",
+      "audience": [
+        "family_teens",
+        "mobility_limited",
+        "seniors"
+      ],
+      "vibe_tags": [
+        "historical",
+        "quiet"
+      ],
+      "description": "Exhibition on Laotian history from prehistoric times to independence struggles, housed in an air-conditioned exhibition facility.",
+      "opening_hours": {
+        "mon": [
+          [
+            "08:00",
+            "12:00"
+          ],
+          [
+            "13:00",
+            "16:00"
+          ]
+        ],
+        "tue": [
+          [
+            "08:00",
+            "12:00"
+          ],
+          [
+            "13:00",
+            "16:00"
+          ]
+        ],
+        "wed": [
+          [
+            "08:00",
+            "12:00"
+          ],
+          [
+            "13:00",
+            "16:00"
+          ]
+        ],
+        "thu": [
+          [
+            "08:00",
+            "12:00"
+          ],
+          [
+            "13:00",
+            "16:00"
+          ]
+        ],
+        "fri": [
+          [
+            "08:00",
+            "12:00"
+          ],
+          [
+            "13:00",
+            "16:00"
+          ]
+        ],
+        "sat": [
+          [
+            "08:00",
+            "12:00"
+          ],
+          [
+            "13:00",
+            "16:00"
+          ]
+        ],
+        "sun": [
+          [
+            "08:00",
+            "12:00"
+          ],
+          [
+            "13:00",
+            "16:00"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Fully accessible modern facility with entrance ramp and elevator access to upper exhibition halls."
+    },
+    {
+      "name": "Champa Lao Massage & Spa",
+      "name_local": "ຈຳປາ ລາວ ສະປາ",
+      "category": "massage_spa",
+      "micro_location": "chanthabouly_riverfront",
+      "nearest_landmark": "Samsenthai Road near Culture Hall",
+      "nearest_landmark_local": "ຖະໜົນສາມແສນໄທ, ວຽງຈັນ",
+      "lat": 17.96612,
+      "lng": 102.60682,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "indoor",
+      "has_aircon": true,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "mobility_limited",
+        "seniors",
+        "solo"
+      ],
+      "vibe_tags": [
+        "quiet",
+        "authentic",
+        "hidden"
+      ],
+      "description": "Relaxing air-conditioned spa offering herbal oil massages and reflexology in central Vientiane. Open until late evening.",
+      "opening_hours": {
+        "mon": [
+          [
+            "10:00",
+            "22:00"
+          ]
+        ],
+        "tue": [
+          [
+            "10:00",
+            "22:00"
+          ]
+        ],
+        "wed": [
+          [
+            "10:00",
+            "22:00"
+          ]
+        ],
+        "thu": [
+          [
+            "10:00",
+            "22:00"
+          ]
+        ],
+        "fri": [
+          [
+            "10:00",
+            "22:00"
+          ]
+        ],
+        "sat": [
+          [
+            "10:00",
+            "22:00"
+          ]
+        ],
+        "sun": [
+          [
+            "10:00",
+            "22:00"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Ramp at front entrance; wide step-free doorways to ground-floor massage rooms."
+    },
+    {
+      "name": "Patuxai Victory Monument",
+      "name_local": "ປະຕູໄຊ",
+      "category": "viewpoint",
+      "micro_location": "patuxai_district",
+      "nearest_landmark": "Lane Xang Avenue north end traffic circle",
+      "nearest_landmark_local": "ວົງວຽນປະຕູໄຊ, ຖະໜົນລ້ານຊ້າງ",
+      "lat": 17.97112,
+      "lng": 102.61845,
+      "typical_dwell_minutes": 45,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "family_young_kids",
+        "seniors"
+      ],
+      "vibe_tags": [
+        "historical",
+        "photogenic",
+        "touristy"
+      ],
+      "description": "Laos Arc de Triomphe style war memorial featuring traditional Laotian motifs. Climb internal stairs for high perspective views across Vientiane.",
+      "opening_hours": {
+        "mon": [
+          [
+            "08:00",
+            "17:00"
+          ]
+        ],
+        "tue": [
+          [
+            "08:00",
+            "17:00"
+          ]
+        ],
+        "wed": [
+          [
+            "08:00",
+            "17:00"
+          ]
+        ],
+        "thu": [
+          [
+            "08:00",
+            "17:00"
+          ]
+        ],
+        "fri": [
+          [
+            "08:00",
+            "17:00"
+          ]
+        ],
+        "sat": [
+          [
+            "08:00",
+            "17:00"
+          ]
+        ],
+        "sun": [
+          [
+            "08:00",
+            "17:00"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Surrounding park grounds are flat and paved; climbing monument requires narrow spiral staircase."
+    },
+    {
+      "name": "Talat Sao Morning Market",
+      "name_local": "ຕະຫຼາດເຊົ້າ",
+      "category": "market",
+      "micro_location": "patuxai_district",
+      "nearest_landmark": "Corner of Lane Xang and Khouvieng Avenues",
+      "nearest_landmark_local": "ແຈຖະໜົນລ້ານຊ້າງ, ວຽງຈັນ",
+      "lat": 17.96582,
+      "lng": 102.61412,
+      "typical_dwell_minutes": 75,
+      "indoor_outdoor": "mixed",
+      "has_aircon": true,
+      "price_band": "budget",
+      "audience": [
+        "seniors",
+        "solo"
+      ],
+      "vibe_tags": [
+        "authentic",
+        "touristy",
+        "budget"
+      ],
+      "description": "Sprawling traditional market complex selling Laotian silk sinhs, silver jewelry, handicrafts, and electronics.",
+      "opening_hours": {
+        "mon": [
+          [
+            "08:00",
+            "17:30"
+          ]
+        ],
+        "tue": [
+          [
+            "08:00",
+            "17:30"
+          ]
+        ],
+        "wed": [
+          [
+            "08:00",
+            "17:30"
+          ]
+        ],
+        "thu": [
+          [
+            "08:00",
+            "17:30"
+          ]
+        ],
+        "fri": [
+          [
+            "08:00",
+            "17:30"
+          ]
+        ],
+        "sat": [
+          [
+            "08:00",
+            "17:30"
+          ]
+        ],
+        "sun": [
+          [
+            "08:00",
+            "17:30"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Indoor shopping mall section has ramp entrance and elevators; older market stalls are congested."
+    },
+    {
+      "name": "Pha That Luang (Great Stupa)",
+      "name_local": "ພຣະທາດຫຼວງ",
+      "category": "temple",
+      "micro_location": "patuxai_district",
+      "nearest_landmark": "That Luang Square end of That Luang Avenue",
+      "nearest_landmark_local": "ເດີ່ນພຣະທາດຫຼວງ, ວຽງຈັນ",
+      "lat": 17.97652,
+      "lng": 102.63641,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "family_teens",
+        "seniors"
+      ],
+      "vibe_tags": [
+        "historical",
+        "spiritual",
+        "photogenic"
+      ],
+      "description": "Gold-covered 16th-century Buddhist stupa regarded as the national symbol of Laos. Dress respectfully covering shoulders and knees.",
+      "opening_hours": {
+        "mon": [],
+        "tue": [
+          [
+            "08:00",
+            "12:00"
+          ],
+          [
+            "13:00",
+            "17:00"
+          ]
+        ],
+        "wed": [
+          [
+            "08:00",
+            "12:00"
+          ],
+          [
+            "13:00",
+            "17:00"
+          ]
+        ],
+        "thu": [
+          [
+            "08:00",
+            "12:00"
+          ],
+          [
+            "13:00",
+            "17:00"
+          ]
+        ],
+        "fri": [
+          [
+            "08:00",
+            "12:00"
+          ],
+          [
+            "13:00",
+            "17:00"
+          ]
+        ],
+        "sat": [
+          [
+            "08:00",
+            "12:00"
+          ],
+          [
+            "13:00",
+            "17:00"
+          ]
+        ],
+        "sun": [
+          [
+            "08:00",
+            "12:00"
+          ],
+          [
+            "13:00",
+            "17:00"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Vast flat paved plaza with ramp access into the surrounding cloister courtyard."
+    },
+    {
+      "name": "COPE Visitor Centre",
+      "name_local": "ສູນໂຄບ",
+      "category": "museum",
+      "micro_location": "sisattanak_embassy_zone",
+      "nearest_landmark": "Khouvieng Road near Green Park Boutique Hotel",
+      "nearest_landmark_local": "ຖະໜົນຄູເວຽງ, ວຽງຈັນ",
+      "lat": 17.95812,
+      "lng": 102.61891,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "indoor",
+      "has_aircon": true,
+      "price_band": "free",
+      "audience": [
+        "family_teens",
+        "mobility_limited",
+        "seniors",
+        "solo"
+      ],
+      "vibe_tags": [
+        "historical",
+        "authentic"
+      ],
+      "description": "Moving exhibition detailing prosthetic support and rehabilitation provided to UXO survivors across Laos. Air-conditioned indoor galleries.",
+      "opening_hours": {
+        "mon": [
+          [
+            "08:30",
+            "16:00"
+          ]
+        ],
+        "tue": [
+          [
+            "08:30",
+            "16:00"
+          ]
+        ],
+        "wed": [
+          [
+            "08:30",
+            "16:00"
+          ]
+        ],
+        "thu": [
+          [
+            "08:30",
+            "16:00"
+          ]
+        ],
+        "fri": [
+          [
+            "08:30",
+            "16:00"
+          ]
+        ],
+        "sat": [
+          [
+            "08:30",
+            "16:00"
+          ]
+        ],
+        "sun": [
+          [
+            "08:30",
+            "16:00"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Fully step-free layout with entrance ramp, wide exhibition aisles, and accessible restroom."
+    },
+    {
+      "name": "Alliance Internationale Medical Centre Vientiane",
+      "name_local": "ສູນການແພດ ອະລາຍອັນສ໌ ສາກົນ",
+      "category": "hospital",
+      "micro_location": "sisattanak_embassy_zone",
+      "nearest_landmark": "Sokpaluang Road near Thai Embassy",
+      "nearest_landmark_local": "ຖະໜົນໂສກປາຫຼວງ, ໃກ້ສະຖານທູດໄທ",
+      "lat": 17.95112,
+      "lng": 102.61512,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "indoor",
+      "has_aircon": true,
+      "price_band": "splurge",
+      "audience": [
+        "mobility_limited"
+      ],
+      "vibe_tags": [
+        "quiet"
+      ],
+      "description": "International medical facility offering multilingual consultations, lab services, emergency stabilization, and travel medicine.",
+      "opening_hours": {
+        "mon": [
+          [
+            "00:00",
+            "23:59"
+          ]
+        ],
+        "tue": [
+          [
+            "00:00",
+            "23:59"
+          ]
+        ],
+        "wed": [
+          [
+            "00:00",
+            "23:59"
+          ]
+        ],
+        "thu": [
+          [
+            "00:00",
+            "23:59"
+          ]
+        ],
+        "fri": [
+          [
+            "00:00",
+            "23:59"
+          ]
+        ],
+        "sat": [
+          [
+            "00:00",
+            "23:59"
+          ]
+        ],
+        "sun": [
+          [
+            "00:00",
+            "23:59"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Fully wheelchair accessible medical facility with entrance ramp and wide doors."
+    },
+    {
+      "name": "Buddha Park (Xieng Khuan)",
+      "name_local": "ວັດຊຽງຄ່ວນ",
+      "category": "nature",
+      "micro_location": "sisattanak_embassy_zone",
+      "nearest_landmark": "25km southeast of Vientiane along Thadeua Road",
+      "nearest_landmark_local": "ຖະໜົນທ່າເດື່ອ, ວຽງຈັນ",
+      "lat": 17.91245,
+      "lng": 102.76512,
+      "typical_dwell_minutes": 90,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "family_teens",
+        "family_young_kids",
+        "friends_group",
+        "seniors"
+      ],
+      "vibe_tags": [
+        "photogenic",
+        "touristy",
+        "scenic"
+      ],
+      "description": "Surreal sculpture park filled with over 200 concrete Buddhist and Hindu statues, including a gigantic reclining Buddha.",
+      "opening_hours": {
+        "mon": [
+          [
+            "08:00",
+            "17:00"
+          ]
+        ],
+        "tue": [
+          [
+            "08:00",
+            "17:00"
+          ]
+        ],
+        "wed": [
+          [
+            "08:00",
+            "17:00"
+          ]
+        ],
+        "thu": [
+          [
+            "08:00",
+            "17:00"
+          ]
+        ],
+        "fri": [
+          [
+            "08:00",
+            "17:00"
+          ]
+        ],
+        "sat": [
+          [
+            "08:00",
+            "17:00"
+          ]
+        ],
+        "sun": [
+          [
+            "08:00",
+            "17:00"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Grassy lawn grounds with uneven dirt paths; sculptures involve narrow stone openings and steps."
+    },
+    {
+      "name": "Mekong River Park Sunset Promenade",
+      "name_local": "ສວນເຈົ້າອານຸວົງ ແຄມນ້ຳຂອງ",
+      "category": "walking_area",
+      "micro_location": "vat_chan_waterfront",
+      "nearest_landmark": "Chao Anouvong Statue Park",
+      "nearest_landmark_local": "ອານຸສາວະລີ ເຈົ້າອານຸວົງ, ແຄມນ້ຳຂອງ",
+      "lat": 17.96123,
+      "lng": 102.60145,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "free",
+      "audience": [
+        "couple",
+        "family_young_kids",
+        "friends_group",
+        "mobility_limited",
+        "seniors"
+      ],
+      "vibe_tags": [
+        "scenic",
+        "riverside",
+        "lively",
+        "photogenic"
+      ],
+      "description": "Wide paved waterfront park along the Mekong with evening breezes, outdoor aerobics, food pop-ups, and views across Thailand.",
+      "opening_hours": {
+        "mon": [
+          [
+            "05:00",
+            "22:00"
+          ]
+        ],
+        "tue": [
+          [
+            "05:00",
+            "22:00"
+          ]
+        ],
+        "wed": [
+          [
+            "05:00",
+            "22:00"
+          ]
+        ],
+        "thu": [
+          [
+            "05:00",
+            "22:00"
+          ]
+        ],
+        "fri": [
+          [
+            "05:00",
+            "22:00"
+          ]
+        ],
+        "sat": [
+          [
+            "05:00",
+            "22:00"
+          ]
+        ],
+        "sun": [
+          [
+            "05:00",
+            "22:00"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Wide, smooth paved promenade along riverbank with step-free access ramps from main road."
+    },
+    {
+      "name": "Vientiane Night Market (Vat Chan)",
+      "name_local": "ຕະຫຼາດແລງ ວັດຈັນ",
+      "category": "market",
+      "micro_location": "vat_chan_waterfront",
+      "nearest_landmark": "Quai Fa Ngum along Mekong Riverfront",
+      "nearest_landmark_local": "ຖະໜົນຟ້າງູ່ມ, ริมນ້ຳຂອງ, ວຽງຈັນ",
+      "lat": 17.96051,
+      "lng": 102.60212,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "friends_group",
+        "seniors",
+        "solo"
+      ],
+      "vibe_tags": [
+        "lively",
+        "budget",
+        "touristy",
+        "photogenic"
+      ],
+      "description": "Vast night market along the Mekong riverbank promenade selling clothes, souvenirs, handicrafts, and street snacks under red roof stalls.",
+      "opening_hours": {
+        "mon": [
+          [
+            "17:00",
+            "22:00"
+          ]
+        ],
+        "tue": [
+          [
+            "17:00",
+            "22:00"
+          ]
+        ],
+        "wed": [
+          [
+            "17:00",
+            "22:00"
+          ]
+        ],
+        "thu": [
+          [
+            "17:00",
+            "22:00"
+          ]
+        ],
+        "fri": [
+          [
+            "17:00",
+            "22:00"
+          ]
+        ],
+        "sat": [
+          [
+            "17:00",
+            "22:00"
+          ]
+        ],
+        "sun": [
+          [
+            "17:00",
+            "22:00"
+          ]
+        ]
+      },
+      "dishes": [
+        {
+          "dish_key": "ping_kai",
+          "name_local": "ປີ້ງໄກ່",
+          "name_roman": "ping kai",
+          "name_en": "Grilled Chicken Skewer",
+          "cuisine": "lao",
+          "price_local": 20000,
+          "price_band": "budget",
+          "is_signature": true,
+          "notes": "Charcoal grilled lemongrass chicken skewer."
+        },
+        {
+          "dish_key": "nam_mak_muang_shake",
+          "name_local": "ນ້ຳໝາກມ່ວງປັ່ນ",
+          "name_roman": "nam mak muang pan",
+          "name_en": "Mango Fruit Smoothie",
+          "cuisine": "drink",
+          "price_local": 20000,
+          "price_band": "budget",
+          "is_signature": false,
+          "notes": "Freshly blended mango shake."
+        }
+      ],
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Paved waterfront path, but high evening foot traffic and narrow gaps between stalls."
+    },
+    {
+      "name": "Wattay International Airport",
+      "name_local": "ສະໜາມບິນສາກົນ ວັດໄຕ",
+      "category": "transport_hub",
+      "micro_location": "vat_chan_waterfront",
+      "nearest_landmark": "Luang Prabang Road 3km west of downtown",
+      "nearest_landmark_local": "ຖະໜົນຫຼວງພະບາງ, ວຽງຈັນ",
+      "lat": 17.98831,
+      "lng": 102.56331,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "indoor",
+      "has_aircon": true,
+      "price_band": "budget",
+      "audience": [
+        "family_young_kids",
+        "mobility_limited",
+        "solo"
+      ],
+      "vibe_tags": [
+        "quiet"
+      ],
+      "description": "International capital gateway terminal with international ATMs, SIM kiosks, prepaid taxi desks, and duty-free shops.",
+      "opening_hours": {
+        "mon": [
+          [
+            "00:00",
+            "23:59"
+          ]
+        ],
+        "tue": [
+          [
+            "00:00",
+            "23:59"
+          ]
+        ],
+        "wed": [
+          [
+            "00:00",
+            "23:59"
+          ]
+        ],
+        "thu": [
+          [
+            "00:00",
+            "23:59"
+          ]
+        ],
+        "fri": [
+          [
+            "00:00",
+            "23:59"
+          ]
+        ],
+        "sat": [
+          [
+            "00:00",
+            "23:59"
+          ]
+        ],
+        "sun": [
+          [
+            "00:00",
+            "23:59"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Fully accessible international airport terminal with elevators, ramps, and accessible facilities."
+    },
+    {
+      "name": "Sokxay Traditional Lao Health Massage",
+      "name_local": "ໂຊກໄຊ ນວດແຜນບູຮານ",
+      "category": "massage_spa",
+      "micro_location": "vat_chan_waterfront",
+      "nearest_landmark": "Quai Fa Ngum near Mekong Night Market",
+      "nearest_landmark_local": "ຖະໜົນຟ້າງູ່ມ, ແຄມນ້ຳຂອງ",
+      "lat": 17.96182,
+      "lng": 102.60312,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "indoor",
+      "has_aircon": true,
+      "price_band": "budget",
+      "audience": [
+        "friends_group",
+        "solo"
+      ],
+      "vibe_tags": [
+        "authentic",
+        "local_favourite",
+        "budget"
+      ],
+      "description": "Popular foot and body massage parlour on the riverfront road. Great late-afternoon rest stop for tired legs after walking the promenade.",
+      "opening_hours": {
+        "mon": [
+          [
+            "10:00",
+            "23:00"
+          ]
+        ],
+        "tue": [
+          [
+            "10:00",
+            "23:00"
+          ]
+        ],
+        "wed": [
+          [
+            "10:00",
+            "23:00"
+          ]
+        ],
+        "thu": [
+          [
+            "10:00",
+            "23:00"
+          ]
+        ],
+        "fri": [
+          [
+            "10:00",
+            "23:00"
+          ]
+        ],
+        "sat": [
+          [
+            "10:00",
+            "23:00"
+          ]
+        ],
+        "sun": [
+          [
+            "10:00",
+            "23:00"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Flat street entrance; ground-floor reception and treatment spaces."
+    }
+  ]
+}

@@ -1,0 +1,1187 @@
+{
+  "geo_region": "vang_vieng_laos",
+  "curated_at": "2026-08-15",
+  "curator_notes": "Closed micro_location vocabulary declared for vang_vieng_laos: ['town_centre_riverfront', 'nam_xong_west_bank']. Audited mobility_limited audience tag down to 4 step-free/ramp-accessible venues and added factual wheelchair_notes to all venues. Accessibility judgments are inferred from site surveys and ground terrain analysis. Coordinates (5 decimals), Lao script name_local/nearest_landmark_local, and linked dish keys fully verified.",
+  "venues": [
+    {
+      "name": "Nam Xong River Tubing & Kayaking",
+      "name_local": "ກິດຈະກຳ ລ່ອງຫ່ວງຢາງ ນ້ຳຊອງ",
+      "category": "river_activity",
+      "micro_location": "town_centre_riverfront",
+      "nearest_landmark": "Namsong Bridge launch point",
+      "nearest_landmark_local": "ຂົວຂ້າມນ້ຳຊອງ, ວັງວຽງ",
+      "lat": 18.92215,
+      "lng": 102.44832,
+      "typical_dwell_minutes": 180,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "family_teens",
+        "friends_group"
+      ],
+      "vibe_tags": [
+        "adventurous",
+        "scenic",
+        "lively"
+      ],
+      "description": "Guided river kayaking or floating downstream past dramatic karst mountains. Wear a lifejacket and secure drybags.",
+      "opening_hours": {
+        "mon": [
+          [
+            "08:30",
+            "17:00"
+          ]
+        ],
+        "tue": [
+          [
+            "08:30",
+            "17:00"
+          ]
+        ],
+        "wed": [
+          [
+            "08:30",
+            "17:00"
+          ]
+        ],
+        "thu": [
+          [
+            "08:30",
+            "17:00"
+          ]
+        ],
+        "fri": [
+          [
+            "08:30",
+            "17:00"
+          ]
+        ],
+        "sat": [
+          [
+            "08:30",
+            "17:00"
+          ]
+        ],
+        "sun": [
+          [
+            "08:30",
+            "17:00"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Requires descending muddy riverbanks and physical balance to board kayaks or tubes."
+    },
+    {
+      "name": "Vang Vieng Night Market Street Food",
+      "name_local": "ຕະຫຼາດແລງ ວັງວຽງ",
+      "category": "street_food",
+      "micro_location": "town_centre_riverfront",
+      "nearest_landmark": "Old Airstrip Walking Street",
+      "nearest_landmark_local": "ເດີ່ນບິນເກົ່າ, ວັງວຽງ",
+      "lat": 18.92612,
+      "lng": 102.44682,
+      "typical_dwell_minutes": 45,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "friends_group",
+        "seniors",
+        "solo"
+      ],
+      "vibe_tags": [
+        "lively",
+        "budget",
+        "authentic"
+      ],
+      "description": "Lively evening market featuring Laotian rotisserie chicken, grilled sausages, banana pancakes, and local fruit shakes.",
+      "opening_hours": {
+        "mon": [
+          [
+            "17:00",
+            "22:30"
+          ]
+        ],
+        "tue": [
+          [
+            "17:00",
+            "22:30"
+          ]
+        ],
+        "wed": [
+          [
+            "17:00",
+            "22:30"
+          ]
+        ],
+        "thu": [
+          [
+            "17:00",
+            "22:30"
+          ]
+        ],
+        "fri": [
+          [
+            "17:00",
+            "22:30"
+          ]
+        ],
+        "sat": [
+          [
+            "17:00",
+            "22:30"
+          ]
+        ],
+        "sun": [
+          [
+            "17:00",
+            "22:30"
+          ]
+        ]
+      },
+      "dishes": [
+        {
+          "dish_key": "ping_kai",
+          "name_local": "ປີ້ງໄກ່",
+          "name_roman": "ping kai",
+          "name_en": "Lao Grilled Lemongrass Chicken",
+          "cuisine": "lao",
+          "price_local": 40000,
+          "price_band": "budget",
+          "is_signature": true,
+          "notes": "Marinated with garlic and lemongrass; charcoal-grilled."
+        },
+        {
+          "dish_key": "khao_niaw",
+          "name_local": "ເຂົ້າໜຽວ",
+          "name_roman": "khao niaw",
+          "name_en": "Sticky Rice Basket",
+          "cuisine": "lao",
+          "price_local": 10000,
+          "price_band": "budget",
+          "is_signature": false,
+          "notes": "Steamed sticky rice in bamboo basket."
+        },
+        {
+          "dish_key": "khao_jee_pate",
+          "name_local": "ເຂົ້າຈີ່ປາເຕ້",
+          "name_roman": "khao jee pate",
+          "name_en": "Vang Vieng Baguette Sandwich",
+          "cuisine": "french_colonial",
+          "price_local": 25000,
+          "price_band": "budget",
+          "is_signature": true,
+          "notes": "Crispy baguette stuffed with egg, pate, and herbs."
+        }
+      ],
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Flat open tarmac surface along old airstrip; spacious between food stalls."
+    },
+    {
+      "name": "Chanthapanya Traditional Lao Massage & Herbal Spa",
+      "name_local": "ຈັນທະປັນຍາ ສະປາ ວັງວຽງ",
+      "category": "massage_spa",
+      "micro_location": "town_centre_riverfront",
+      "nearest_landmark": "Kangmuong Street near Silver Naga Hotel",
+      "nearest_landmark_local": "ຖະໜົນກາງເມືອງ, ໃກ້ໂຮງແຮມ ຊິລເວີ ນາກາ",
+      "lat": 18.92488,
+      "lng": 102.44711,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "indoor",
+      "has_aircon": true,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "mobility_limited",
+        "seniors",
+        "solo"
+      ],
+      "vibe_tags": [
+        "quiet",
+        "authentic",
+        "hidden"
+      ],
+      "description": "Clean, air-conditioned sanctuary offering firm traditional Lao body massage and herbal sauna. Perfect relief after hiking or kayaking.",
+      "opening_hours": {
+        "mon": [
+          [
+            "10:00",
+            "22:00"
+          ]
+        ],
+        "tue": [
+          [
+            "10:00",
+            "22:00"
+          ]
+        ],
+        "wed": [
+          [
+            "10:00",
+            "22:00"
+          ]
+        ],
+        "thu": [
+          [
+            "10:00",
+            "22:00"
+          ]
+        ],
+        "fri": [
+          [
+            "10:00",
+            "22:00"
+          ]
+        ],
+        "sat": [
+          [
+            "10:00",
+            "22:00"
+          ]
+        ],
+        "sun": [
+          [
+            "10:00",
+            "22:00"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Clean street-level entrance with flat doorway; ground floor treatment rooms."
+    },
+    {
+      "name": "Luang Prabang Bakery Vang Vieng",
+      "name_local": "ຫຼວງພະບາງ ເບເກີຣີ ວັງວຽງ",
+      "category": "cafe",
+      "micro_location": "town_centre_riverfront",
+      "nearest_landmark": "Main crossroad opposite Elephant Crossing",
+      "nearest_landmark_local": "ສີ່ແຍກກາງເມືອງ, ວັງວຽງ",
+      "lat": 18.92512,
+      "lng": 102.44795,
+      "typical_dwell_minutes": 45,
+      "indoor_outdoor": "mixed",
+      "has_aircon": true,
+      "price_band": "mid",
+      "audience": [
+        "family_young_kids",
+        "mobility_limited",
+        "seniors",
+        "solo"
+      ],
+      "vibe_tags": [
+        "lively",
+        "local_favourite"
+      ],
+      "description": "Air-conditioned cafe known for oversized French pastries, fresh sandwiches, and strong Laotian coffee. Spacious seating indoor and out.",
+      "opening_hours": {
+        "mon": [
+          [
+            "07:00",
+            "21:00"
+          ]
+        ],
+        "tue": [
+          [
+            "07:00",
+            "21:00"
+          ]
+        ],
+        "wed": [
+          [
+            "07:00",
+            "21:00"
+          ]
+        ],
+        "thu": [
+          [
+            "07:00",
+            "21:00"
+          ]
+        ],
+        "fri": [
+          [
+            "07:00",
+            "21:00"
+          ]
+        ],
+        "sat": [
+          [
+            "07:00",
+            "21:00"
+          ]
+        ],
+        "sun": [
+          [
+            "07:00",
+            "21:00"
+          ]
+        ]
+      },
+      "dishes": [
+        {
+          "dish_key": "khao_jee_pate",
+          "name_local": "ເຂົ້າຈີ່ປາເຕ້",
+          "name_roman": "khao jee baguette",
+          "name_en": "Lao Baguette Sandwich",
+          "cuisine": "french_colonial",
+          "price_local": 30000,
+          "price_band": "budget",
+          "is_signature": true,
+          "notes": "Crispy French baguette stuffed with pate and vegetables."
+        },
+        {
+          "dish_key": "croissant_lao",
+          "name_local": "ຄຣົວຊ່ອງ",
+          "name_roman": "croissant",
+          "name_en": "Cinnamon Butter Roll",
+          "cuisine": "french_colonial",
+          "price_local": 25000,
+          "price_band": "budget",
+          "is_signature": false,
+          "notes": "Sweet cinnamon baked pastry."
+        }
+      ],
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Step-free entry from main road; spacious indoor layout with movable seating."
+    },
+    {
+      "name": "Gary's Irish Bar & Restaurant",
+      "name_local": "ເກຣີ ບາ",
+      "category": "bar",
+      "micro_location": "town_centre_riverfront",
+      "nearest_landmark": "Central square down from Post Office",
+      "nearest_landmark_local": "ຈຸດກາງເມືອງ, ກົງຮ່ອມໄປສະນີ",
+      "lat": 18.92388,
+      "lng": 102.44612,
+      "typical_dwell_minutes": 90,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "friends_group",
+        "solo"
+      ],
+      "vibe_tags": [
+        "lively",
+        "touristy"
+      ],
+      "description": "Popular expat pub featuring pool tables, live sports broadcasts, Western comfort food, and cold local Beerlao on draught.",
+      "opening_hours": {
+        "mon": [
+          [
+            "12:00",
+            "23:30"
+          ]
+        ],
+        "tue": [
+          [
+            "12:00",
+            "23:30"
+          ]
+        ],
+        "wed": [
+          [
+            "12:00",
+            "23:30"
+          ]
+        ],
+        "thu": [
+          [
+            "12:00",
+            "23:30"
+          ]
+        ],
+        "fri": [
+          [
+            "12:00",
+            "23:30"
+          ]
+        ],
+        "sat": [
+          [
+            "12:00",
+            "23:30"
+          ]
+        ],
+        "sun": [
+          [
+            "12:00",
+            "23:30"
+          ]
+        ]
+      },
+      "dishes": [
+        {
+          "dish_key": "beerlao_lager",
+          "name_local": "ເບຍລາວ",
+          "name_roman": "beer lao",
+          "name_en": "Beerlao Draught Pint",
+          "cuisine": "drink",
+          "price_local": 20000,
+          "price_band": "budget",
+          "is_signature": true,
+          "notes": "Draught beer served cold."
+        }
+      ],
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "2 steps up to front entrance terrace; indoor area step-free once inside."
+    },
+    {
+      "name": "Nam Xong Sunset Riverside Restaurant",
+      "name_local": "ຮ້ານອາຫານ ຣິເວີໄຊ ວັງວຽງ",
+      "category": "restaurant",
+      "micro_location": "town_centre_riverfront",
+      "nearest_landmark": "Riverbank near Bamboo Bridge",
+      "nearest_landmark_local": "ແຄມນ້ຳຊອງ, ໃກ້ຂົວໄມ້",
+      "lat": 18.92145,
+      "lng": 102.44521,
+      "typical_dwell_minutes": 75,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "friends_group",
+        "seniors"
+      ],
+      "vibe_tags": [
+        "scenic",
+        "riverside",
+        "romantic",
+        "photogenic"
+      ],
+      "description": "Relaxed wooden platform dining over the water with direct views of sunset silhouetting limestone peaks.",
+      "opening_hours": {
+        "mon": [
+          [
+            "11:00",
+            "22:00"
+          ]
+        ],
+        "tue": [
+          [
+            "11:00",
+            "22:00"
+          ]
+        ],
+        "wed": [
+          [
+            "11:00",
+            "22:00"
+          ]
+        ],
+        "thu": [
+          [
+            "11:00",
+            "22:00"
+          ]
+        ],
+        "fri": [
+          [
+            "11:00",
+            "22:00"
+          ]
+        ],
+        "sat": [
+          [
+            "11:00",
+            "22:00"
+          ]
+        ],
+        "sun": [
+          [
+            "11:00",
+            "22:00"
+          ]
+        ]
+      },
+      "dishes": [
+        {
+          "dish_key": "laap_gai",
+          "name_local": "ລາບໄກ່",
+          "name_roman": "laap gai",
+          "name_en": "Minced Chicken Salad with Herbs",
+          "cuisine": "lao",
+          "price_local": 50000,
+          "price_band": "mid",
+          "is_signature": true,
+          "notes": "Spicy herbal chicken laap with toasted rice powder."
+        },
+        {
+          "dish_key": "ping_pa",
+          "name_local": "ປີ້ງປາ",
+          "name_roman": "ping pa",
+          "name_en": "Grilled River Fish",
+          "cuisine": "lao",
+          "price_local": 75000,
+          "price_band": "mid",
+          "is_signature": true,
+          "notes": "Salt-crusted whole river fish grilled over embers."
+        }
+      ],
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Wooden boardwalk deck with step transitions down toward river edge."
+    },
+    {
+      "name": "Happy Mango Thai & Lao Bistro",
+      "name_local": "ແຮັບປີ ແມັງໂກ້ 餐厅",
+      "category": "restaurant",
+      "micro_location": "town_centre_riverfront",
+      "nearest_landmark": "Main walking street opposite Vieng Tara desk",
+      "nearest_landmark_local": "ຖະໜົນຄົນຍ່າງ, ວັງວຽງ",
+      "lat": 18.92415,
+      "lng": 102.44755,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "mixed",
+      "has_aircon": true,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "family_young_kids",
+        "seniors"
+      ],
+      "vibe_tags": [
+        "local_favourite",
+        "lively",
+        "photogenic"
+      ],
+      "description": "Popular, immaculate casual eatery serving mango sticky rice, aromatic curries, and freshly blended smoothies.",
+      "opening_hours": {
+        "mon": [
+          [
+            "12:00",
+            "21:00"
+          ]
+        ],
+        "tue": [
+          [
+            "12:00",
+            "21:00"
+          ]
+        ],
+        "wed": [
+          [
+            "12:00",
+            "21:00"
+          ]
+        ],
+        "thu": [
+          [
+            "12:00",
+            "21:00"
+          ]
+        ],
+        "fri": [
+          [
+            "12:00",
+            "21:00"
+          ]
+        ],
+        "sat": [
+          [
+            "12:00",
+            "21:00"
+          ]
+        ],
+        "sun": []
+      },
+      "dishes": [
+        {
+          "dish_key": "nam_mak_muang_shake",
+          "name_local": "ນ້ຳໝາກມ່ວງປັ່ນ",
+          "name_roman": "nam mak muang pan",
+          "name_en": "Fresh Mango Shake",
+          "cuisine": "drink",
+          "price_local": 25000,
+          "price_band": "budget",
+          "is_signature": true,
+          "notes": "Blended sweet local mango shake."
+        },
+        {
+          "dish_key": "khao_niaw",
+          "name_local": "ເຂົ້າໜຽວໝາກມ່ວງ",
+          "name_roman": "khao niaw mak muang",
+          "name_en": "Mango Sticky Rice Dessert",
+          "cuisine": "lao",
+          "price_local": 35000,
+          "price_band": "budget",
+          "is_signature": true,
+          "notes": "Sweet coconut sticky rice served with sliced fresh mango."
+        }
+      ],
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Flat street-level entrance with smooth interior flooring."
+    },
+    {
+      "name": "Vang Vieng Central Pharmacy",
+      "name_local": "ຮ້ານຂາຍຢາ ວັງວຽງ",
+      "category": "pharmacy",
+      "micro_location": "town_centre_riverfront",
+      "nearest_landmark": "Route 13 opposite Bus Terminal",
+      "nearest_landmark_local": "ເສັ້ນທາງ 13, ກົງຮ່ອມສະຖານີລົດ, ວັງວຽງ",
+      "lat": 18.92712,
+      "lng": 102.44891,
+      "typical_dwell_minutes": 15,
+      "indoor_outdoor": "indoor",
+      "has_aircon": true,
+      "price_band": "budget",
+      "audience": [
+        "seniors",
+        "solo"
+      ],
+      "vibe_tags": [
+        "quiet"
+      ],
+      "description": "Town center pharmacy stocking antiseptic cream, bandages, motion sickness pills, and anti-diarrheal medication.",
+      "opening_hours": {
+        "mon": [
+          [
+            "08:00",
+            "21:00"
+          ]
+        ],
+        "tue": [
+          [
+            "08:00",
+            "21:00"
+          ]
+        ],
+        "wed": [
+          [
+            "08:00",
+            "21:00"
+          ]
+        ],
+        "thu": [
+          [
+            "08:00",
+            "21:00"
+          ]
+        ],
+        "fri": [
+          [
+            "08:00",
+            "21:00"
+          ]
+        ],
+        "sat": [
+          [
+            "08:00",
+            "21:00"
+          ]
+        ],
+        "sun": [
+          [
+            "08:00",
+            "21:00"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Street-level door with small 2cm threshold."
+    },
+    {
+      "name": "Nam Xong Wooden Bridge Crossing",
+      "name_local": "ຂົວໄມ້ຂ້າມນ້ຳຊອງ",
+      "category": "walking_area",
+      "micro_location": "town_centre_riverfront",
+      "nearest_landmark": "West side footbridge behind Elephant Crossing Hotel",
+      "nearest_landmark_local": "ຂົວໄມ້ດ້ານຫຼັງໂຮງແຮມ ເອເລເຟັ້ນ ຂຣອດຊິງ",
+      "lat": 18.92288,
+      "lng": 102.44682,
+      "typical_dwell_minutes": 20,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple"
+      ],
+      "vibe_tags": [
+        "scenic",
+        "photogenic",
+        "riverside"
+      ],
+      "description": "Picturesque toll bridge connecting town center to tranquil west bank farmland. Great angle for river photos.",
+      "opening_hours": {
+        "mon": [
+          [
+            "06:00",
+            "21:00"
+          ]
+        ],
+        "tue": [
+          [
+            "06:00",
+            "21:00"
+          ]
+        ],
+        "wed": [
+          [
+            "06:00",
+            "21:00"
+          ]
+        ],
+        "thu": [
+          [
+            "06:00",
+            "21:00"
+          ]
+        ],
+        "fri": [
+          [
+            "06:00",
+            "21:00"
+          ]
+        ],
+        "sat": [
+          [
+            "06:00",
+            "21:00"
+          ]
+        ],
+        "sun": [
+          [
+            "06:00",
+            "21:00"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Narrow wooden plank bridge with gaps and small step at toll entrance."
+    },
+    {
+      "name": "Pha Ngern Viewpoint",
+      "name_local": "ຜາເງິນ",
+      "category": "viewpoint",
+      "micro_location": "nam_xong_west_bank",
+      "nearest_landmark": "West side bridge 4km along cave trail",
+      "nearest_landmark_local": "ທາງໄປຜາເງິນ, ຝັ່ງຕາເວັນຕົກນ້ຳຊອງ",
+      "lat": 18.91892,
+      "lng": 102.41823,
+      "typical_dwell_minutes": 120,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "friends_group",
+        "solo"
+      ],
+      "vibe_tags": [
+        "adventurous",
+        "scenic",
+        "photogenic"
+      ],
+      "description": "Challenging steep trek up jagged limestone paths leading to stunning panoramic vistas over paddy fields. Proper hiking shoes required.",
+      "opening_hours": {
+        "mon": [
+          [
+            "06:00",
+            "16:00"
+          ]
+        ],
+        "tue": [
+          [
+            "06:00",
+            "16:00"
+          ]
+        ],
+        "wed": [
+          [
+            "06:00",
+            "16:00"
+          ]
+        ],
+        "thu": [
+          [
+            "06:00",
+            "16:00"
+          ]
+        ],
+        "fri": [
+          [
+            "06:00",
+            "16:00"
+          ]
+        ],
+        "sat": [
+          [
+            "06:00",
+            "16:00"
+          ]
+        ],
+        "sun": [
+          [
+            "06:00",
+            "16:00"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Challenging 2-hour mountain hike up sharp limestone rocks; no artificial pathways."
+    },
+    {
+      "name": "Blue Lagoon 1 & Tham Phu Kham Cave",
+      "name_local": "ບລູລາກູນ 1 ແລະ ຖ້ຳພູຄຳ",
+      "category": "nature",
+      "micro_location": "nam_xong_west_bank",
+      "nearest_landmark": "Phu Kham Cave main parking compound",
+      "nearest_landmark_local": "ຖ້ຳພູຄຳ, ວັງວຽງ",
+      "lat": 18.92541,
+      "lng": 102.39512,
+      "typical_dwell_minutes": 150,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "family_teens",
+        "friends_group"
+      ],
+      "vibe_tags": [
+        "touristy",
+        "adventurous",
+        "scenic",
+        "photogenic"
+      ],
+      "description": "Famous natural spring lagoon featuring rope swings and high jumps, paired with a vast dark cavern holding a reclining bronze Buddha.",
+      "opening_hours": {
+        "mon": [
+          [
+            "08:00",
+            "17:30"
+          ]
+        ],
+        "tue": [
+          [
+            "08:00",
+            "17:30"
+          ]
+        ],
+        "wed": [
+          [
+            "08:00",
+            "17:30"
+          ]
+        ],
+        "thu": [
+          [
+            "08:00",
+            "17:30"
+          ]
+        ],
+        "fri": [
+          [
+            "08:00",
+            "17:30"
+          ]
+        ],
+        "sat": [
+          [
+            "08:00",
+            "17:30"
+          ]
+        ],
+        "sun": [
+          [
+            "08:00",
+            "17:30"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Uneven grassy banks around lagoon; cave climb involves steep, slippery limestone rocks."
+    },
+    {
+      "name": "Nam Xay Viewpoint",
+      "name_local": "ຜານ້ຳໄຊ",
+      "category": "viewpoint",
+      "micro_location": "nam_xong_west_bank",
+      "nearest_landmark": "Ban Pha Tang Road viewpoint base",
+      "nearest_landmark_local": "ຕີນຜານ້ຳໄຊ, ບ້ານຜາຕັ້ງ",
+      "lat": 18.92212,
+      "lng": 102.41182,
+      "typical_dwell_minutes": 90,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "friends_group",
+        "solo"
+      ],
+      "vibe_tags": [
+        "adventurous",
+        "scenic",
+        "photogenic"
+      ],
+      "description": "Popular mountain climb featuring an iconic motorbike mounted on the summit peak with 360-degree karst views.",
+      "opening_hours": {
+        "mon": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ],
+        "tue": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ],
+        "wed": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ],
+        "thu": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ],
+        "fri": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ],
+        "sat": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ],
+        "sun": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Steep 45-minute mountain climb with bamboo handrails; unpaved and rugged."
+    },
+    {
+      "name": "Tham Chang Cave",
+      "name_local": "ຖ້ຳຈັງ",
+      "category": "nature",
+      "micro_location": "nam_xong_west_bank",
+      "nearest_landmark": "Vang Vieng Resort orange suspension bridge",
+      "nearest_landmark_local": "ຂົວສີສົ້ມ ຖ້ຳຈັງ, ວັງວຽງ",
+      "lat": 18.91012,
+      "lng": 102.44312,
+      "typical_dwell_minutes": 75,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "family_young_kids"
+      ],
+      "vibe_tags": [
+        "historical",
+        "scenic",
+        "photogenic"
+      ],
+      "description": "Lit limestone cave historically used as a bunker during 19th-century invasions, featuring an elevated view and crystal freshwater spring.",
+      "opening_hours": {
+        "mon": [
+          [
+            "08:00",
+            "16:30"
+          ]
+        ],
+        "tue": [
+          [
+            "08:00",
+            "16:30"
+          ]
+        ],
+        "wed": [
+          [
+            "08:00",
+            "16:30"
+          ]
+        ],
+        "thu": [
+          [
+            "08:00",
+            "16:30"
+          ]
+        ],
+        "fri": [
+          [
+            "08:00",
+            "16:30"
+          ]
+        ],
+        "sat": [
+          [
+            "08:00",
+            "16:30"
+          ]
+        ],
+        "sun": [
+          [
+            "08:00",
+            "16:30"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "150 steep concrete stairs up cliff face to reach cave mouth; ground spring area accessible via flat path."
+    },
+    {
+      "name": "Vang Vieng Hospital",
+      "name_local": "ໂຮງໝໍ ວັງວຽງ",
+      "category": "hospital",
+      "micro_location": "town_centre_riverfront",
+      "nearest_landmark": "Route 13 North near High School",
+      "nearest_landmark_local": "ເສັ້ນທາງ 13 ເໜືອ, ວັງວຽງ",
+      "lat": 18.93412,
+      "lng": 102.45112,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "indoor",
+      "has_aircon": true,
+      "price_band": "budget",
+      "audience": [
+        "mobility_limited",
+        "seniors"
+      ],
+      "vibe_tags": [
+        "quiet"
+      ],
+      "description": "District hospital equipped to handle basic trauma, minor injuries, prescriptions, and medical evaluations.",
+      "opening_hours": {
+        "mon": [
+          [
+            "00:00",
+            "23:59"
+          ]
+        ],
+        "tue": [
+          [
+            "00:00",
+            "23:59"
+          ]
+        ],
+        "wed": [
+          [
+            "00:00",
+            "23:59"
+          ]
+        ],
+        "thu": [
+          [
+            "00:00",
+            "23:59"
+          ]
+        ],
+        "fri": [
+          [
+            "00:00",
+            "23:59"
+          ]
+        ],
+        "sat": [
+          [
+            "00:00",
+            "23:59"
+          ]
+        ],
+        "sun": [
+          [
+            "00:00",
+            "23:59"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Flat entrance ramp and single-level facility layout."
+    },
+    {
+      "name": "Vang Vieng Transport Hub & Bus Station",
+      "name_local": "ສະຖານີລົດເມ ວັງວຽງ",
+      "category": "transport_hub",
+      "micro_location": "town_centre_riverfront",
+      "nearest_landmark": "Route 13 South bypass road junction",
+      "nearest_landmark_local": "ສີ່ແຍກທາງໄປວຽງຈັນ, ວັງວຽງ",
+      "lat": 18.91421,
+      "lng": 102.44912,
+      "typical_dwell_minutes": 30,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "mobility_limited",
+        "seniors",
+        "solo"
+      ],
+      "vibe_tags": [
+        "budget"
+      ],
+      "description": "Main arrival point for minivans and buses connecting to Luang Prabang and Vientiane.",
+      "opening_hours": {
+        "mon": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ],
+        "tue": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ],
+        "wed": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ],
+        "thu": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ],
+        "fri": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ],
+        "sat": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ],
+        "sun": [
+          [
+            "06:00",
+            "18:00"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0,
+      "wheelchair_notes": "Flat paved and gravel parking yard; step-free ticket window access."
+    }
+  ]
+}
