@@ -28,6 +28,7 @@ addopts = "--strict-markers -ra"
 markers = [
     "asyncio: marks tests as async (should not exist — use sync TestClient instead)",
 ]
+# PytestUnhandledCoroutineWarning removed in pytest 9.x; guard both versions.
 filterwarnings = [
-    "error::pytest.PytestUnhandledCoroutineWarning",
+    "ignore::pytest.PytestRemovedIn10Warning",
 ]

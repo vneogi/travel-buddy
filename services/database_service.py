@@ -184,12 +184,16 @@ class DatabaseService:
         vibe_filter: Optional[List[str]] = None,
         audience_filter: Optional[List[str]] = None,
         top_k: int = None,
+        geo_region: Optional[str] = None,
     ) -> List[VenueSearchResult]:
         """Perform hybrid search: vector similarity + hard filters + sponsored boost.
 
         Implements BRD Section 3.3:
         Step 1: Dense vector search
         Step 2: Hard filtering & monetization boost
+
+        geo_region filters venues to those belonging to the trip's city.
+        When None, all venues are searched (backward compat).
         """
         if radius_km is None:
             radius_km = settings.transit_radius_km
@@ -200,6 +204,10 @@ class DatabaseService:
         results = []
 
         for venue in self._venues:
+            # Step 0: Geo-region filter (multi-city support)
+            if geo_region and venue.get("geo_region", "dubai_uae") != geo_region:
+                continue
+
             # Step 2a: Distance filter
             from services.maps_service import maps_service
             distance = maps_service.calculate_distance_km(
@@ -316,13 +324,11 @@ class DatabaseService:
         value_json: Optional[dict] = None,
         captured_at: datetime = None,
         trip_id: Optional[str] = None,
-        venue_id: Optional[str] = None,
     ) -> bool:
         """Record a signal. Returns True if new, False if duplicate (idempotent).
 
         signal_id is the client-generated UUID — the idempotency key.
         Re-recording the same signal_id is a no-op (returns False).
-        venue_id is resolved from place_ref at ingest (may be None if unresolved).
         """
         if signal_id in self._signals:
             return False  # duplicate — idempotent no-op
@@ -330,7 +336,6 @@ class DatabaseService:
         self._signals[signal_id] = {
             "signal_id": signal_id,
             "place_ref": place_ref,
-            "venue_id": venue_id,
             "source": "first_party",
             "signal_type": signal_type,
             "user_id": user_id,

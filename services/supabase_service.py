@@ -334,12 +334,16 @@ class SupabaseService:
         audience_filter: Optional[List[str]] = None,
         top_k: int = None,
         query_embedding: Optional[List[float]] = None,
+        geo_region: Optional[str] = None,
     ) -> List[VenueSearchResult]:
         """Perform hybrid search using the database function.
 
         Interface-compatible with the in-memory backend: accepts a text `query`,
         embeds it, calls the pgvector function, and returns VenueSearchResult
         objects with coordinates (needed by the scheduler).
+
+        geo_region filters venues to those belonging to the trip's city.
+        When None, all venues are searched (backward compat).
         """
         from services.embedding_service import embedding_service
         if radius_km is None:
@@ -351,14 +355,23 @@ class SupabaseService:
                 raise ValueError("hybrid_venue_search needs `query` or `query_embedding`")
             query_embedding = embedding_service.generate_embedding(query)
 
-        rows = self.client.rpc("hybrid_venue_search", {
+        rpc_params = {
             "query_embedding": query_embedding,
             "user_lat": user_lat,
             "user_lng": user_lng,
             "radius_km": radius_km,
             "sponsored_boost": settings.sponsored_boost_multiplier,
             "result_limit": top_k,
-        }).execute().data or []
+        }
+        # Pass geo_region to RPC if the SQL function supports it (post-0008)
+        if geo_region:
+            rpc_params["filter_geo_region"] = geo_region
+        rows = self.client.rpc("hybrid_venue_search", rpc_params).execute().data or []
+
+        # Post-filter: geo_region safety net (if SQL function doesn't filter)
+        if geo_region:
+            rows = [r for r in rows
+                    if r.get("geo_region", "dubai_uae") == geo_region]
 
         if vibe_filter:
             rows = [r for r in rows
@@ -542,7 +555,6 @@ class SupabaseService:
         value_json: Optional[dict] = None,
         captured_at: datetime = None,
         trip_id: Optional[str] = None,
-        venue_id: Optional[str] = None,
     ) -> bool:
         """Idempotent signal insert. Returns True if new, False if duplicate.
 
@@ -569,7 +581,6 @@ class SupabaseService:
             "value_text": value_text,
             "value_numeric": value_numeric,
             "value_json": value_json,
-            "venue_id": venue_id,
             "captured_at": captured_at.isoformat() if captured_at else None,
             "provenance": {"method": "client_emit"},
         }
