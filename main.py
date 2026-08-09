@@ -58,6 +58,13 @@ for _noisy in (
     "httpcore",
     "httpcore.connection",
     "httpcore.http11",
+    "httpcore.http2",
+    "hpack",
+    "hpack.hpack",
+    "hpack.table",
+    "h2",
+    "h2.connection",
+    "h2.stream",
 ):
     logging.getLogger(_noisy).setLevel(_llm_log_level)
 
