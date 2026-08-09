@@ -1,8 +1,11 @@
 """Live Supabase integration tests.
 
-Skipped when the user's .env has no TB_SUPABASE_URL (i.e., on CI or a
-machine without Supabase configured). On a developer machine with a
-populated .env, these run against the real project.
+Skipped when:
+1. The `supabase` pip package is not installed, OR
+2. The .env has no TB_SUPABASE_URL (i.e., on CI or a machine without Supabase).
+
+On a developer machine with `pip install supabase` and a populated .env, these
+run against the real project.
 
 The conftest.py `real_supabase_env` fixture restores the creds that were
 scrubbed at test-session startup (to keep test_auth.py isolated).
@@ -17,9 +20,17 @@ from datetime import datetime
 
 import pytest
 
+# Gate 1: skip if the real supabase client library is not installed.
+# Note: a stub `supabase` module may exist on some compute; we check for
+# the actual symbol the service needs.
+try:
+    from supabase import create_client  # noqa: F401
+except ImportError:
+    pytest.skip("supabase client library not installed", allow_module_level=True)
+
 from tests.conftest import _SAVED_SUPABASE_URL
 
-# Skip the entire module if the .env never had Supabase creds to begin with.
+# Gate 2: skip if the .env never had Supabase creds to begin with.
 # This check uses the SAVED value (captured before conftest cleared the env).
 pytestmark = pytest.mark.skipif(
     not _SAVED_SUPABASE_URL,

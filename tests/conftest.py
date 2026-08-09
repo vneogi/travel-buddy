@@ -17,6 +17,15 @@ debug bypass. Do NOT remove the scrubbing — scope it instead.
 """
 import os
 import sys
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+# ─── Load .env into os.environ FIRST ─────────────────────────────────────────
+# Without this, os.environ only has shell-exported vars. On most dev machines,
+# TB_SUPABASE_URL lives in .env (not exported) — so os.environ.get() would
+# return "" and the integration tests would always skip.
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 # ─── Save real values BEFORE clearing (needed by integration tests) ──────────
 _SAVED_SUPABASE_URL = os.environ.get("TB_SUPABASE_URL", "")
