@@ -99,15 +99,24 @@ class TestBackendParity:
         """
         db_methods, supa_methods = method_maps
         extra = set(supa_methods.keys()) - set(db_methods.keys())
-        # Known gaps: SupabaseService has these that DatabaseService lacks.
-        # Each should be backfilled — tracked here so they don't mask NEW gaps.
+        # ──────────────────────────────────────────────────────────────────────
+        # KNOWN GAPS — each entry is DEBT, not a permanent exemption.
+        # When you fix one, REMOVE it from here so the test catches regression.
+        # ──────────────────────────────────────────────────────────────────────
         allowed_extras = {
-            "get_signal",          # diagnostic — Supabase-only
-            "get_signals_count",   # diagnostic — Supabase-only
-            "check_cache",         # TODO: add to DatabaseService
-            "store_cache",         # TODO: add to DatabaseService
-            "clear_expired_cache", # TODO: add to DatabaseService
-            "downgrade_user",      # TODO: add to DatabaseService
+            # Diagnostics: Supabase-only helpers not needed in-memory.
+            "get_signal",          # read single signal row by ID
+            "get_signals_count",   # SELECT count(*) — in-memory uses len()
+
+            # Cache methods: SupabaseService has these for pgvector-backed
+            # semantic cache, but nothing calls them through db_provider yet.
+            # cache_service is a separate singleton (SemanticCacheService).
+            # Target: when cache_service is unified under db_provider, these
+            # must be added to DatabaseService OR the allowlist shrinks to zero.
+            "check_cache",         # DEBT: unused via db_provider (cache_service is separate)
+            "store_cache",         # DEBT: unused via db_provider (cache_service is separate)
+            "clear_expired_cache", # DEBT: unused via db_provider (cache_service is separate)
+
         }
         unexpected = extra - allowed_extras
         assert not unexpected, (
@@ -119,9 +128,19 @@ class TestBackendParity:
         db_methods, supa_methods = method_maps
         shared = set(db_methods.keys()) & set(supa_methods.keys())
 
-        # Known arity mismatches — tracked here; won't mask new ones.
-        # add_venue: SupabaseService requires `embedding` (pgvector needs the
-        # vector at insert time; in-memory computes mock embeddings lazily).
+        # ──────────────────────────────────────────────────────────────────────
+        # KNOWN ARITY MISMATCHES — each is DEBT, not a permanent exemption.
+        # The test catches this morning's startup crash (commit #74). When the
+        # arity is unified, REMOVE from here so the test guards against regression.
+        # ──────────────────────────────────────────────────────────────────────
+        # add_venue: SupabaseService requires `embedding` because pgvector
+        # needs the vector at insert time. DatabaseService computes mock
+        # embeddings internally. Resolution options:
+        #   A) DatabaseService.add_venue(venue, embedding=None) — optional param
+        #   B) Both take embedding; in-memory ignores it
+        #   C) seed path always provides embedding (preferred — uniform contract)
+        # Target: unify before any code path calls add_venue through db_provider
+        # with a real embedding (currently only seed_supabase.py does, directly).
         known_mismatches = {"add_venue"}
 
         mismatches = []

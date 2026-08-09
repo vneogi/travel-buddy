@@ -102,6 +102,19 @@ class DatabaseService:
             max_daily_reroutes=ud["max_daily_reroutes"],
         )
 
+    def downgrade_user(self, user_id: str) -> UserTier:
+        """Downgrade user to free tier (subscription cancelled)."""
+        self.get_or_create_user(user_id)
+        self._users[user_id]["tier_status"] = TierStatus.FREE
+        self._users[user_id]["max_daily_reroutes"] = settings.max_daily_reroutes_free
+        ud = self._users[user_id]
+        return UserTier(
+            user_id=ud["user_id"],
+            tier_status=ud["tier_status"],
+            daily_reroute_count=ud["daily_reroute_count"],
+            max_daily_reroutes=ud["max_daily_reroutes"],
+        )
+
     # =========================================================================
     # Trip State Operations
     # =========================================================================
