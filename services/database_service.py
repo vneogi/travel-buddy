@@ -247,6 +247,14 @@ class DatabaseService:
         results.sort(key=lambda x: x.final_score, reverse=True)
         return results[:top_k]
 
+    def resolve_venue_by_name(self, place_ref: str) -> Optional[str]:
+        """Resolve a venue name to venue_id. Case-insensitive exact match."""
+        place_lower = place_ref.lower().strip()
+        for venue in self._venues:
+            if venue.get("venue_name", "").lower().strip() == place_lower:
+                return venue.get("venue_id")
+        return None
+
     def get_venue_count(self) -> int:
         """Get total number of venues in store."""
         return len(self._venues)
@@ -308,11 +316,13 @@ class DatabaseService:
         value_json: Optional[dict] = None,
         captured_at: datetime = None,
         trip_id: Optional[str] = None,
+        venue_id: Optional[str] = None,
     ) -> bool:
         """Record a signal. Returns True if new, False if duplicate (idempotent).
 
         signal_id is the client-generated UUID — the idempotency key.
         Re-recording the same signal_id is a no-op (returns False).
+        venue_id is resolved from place_ref at ingest (may be None if unresolved).
         """
         if signal_id in self._signals:
             return False  # duplicate — idempotent no-op
@@ -320,6 +330,7 @@ class DatabaseService:
         self._signals[signal_id] = {
             "signal_id": signal_id,
             "place_ref": place_ref,
+            "venue_id": venue_id,
             "source": "first_party",
             "signal_type": signal_type,
             "user_id": user_id,

@@ -128,6 +128,7 @@ async def create_trip(
 
     trip = TripState(
         user_id=user_id,
+        geo_region=settings.geo_fence,  # per-trip; unlocks multi-city
         current_context=CurrentContext(mood=request.initial_mood or "exploratory"),
         nodes=nodes,
     )
@@ -140,7 +141,7 @@ async def create_trip(
     return {
         "trip_id": trip.trip_id,
         "status": "created",
-        "message": f"Dubai itinerary created with {len(nodes)} activities",
+        "message": f"Itinerary created with {len(nodes)} activities",
         "nodes": [n.model_dump(mode="json") for n in nodes],
         "locked_count": sum(1 for n in nodes if n.is_locked),
         "party": party.model_dump(mode="json"),

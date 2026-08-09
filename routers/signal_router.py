@@ -29,6 +29,43 @@ router = APIRouter(prefix="/api/v1", tags=["signals"])
 _MAX_AGE = timedelta(days=30)
 _MAX_FUTURE = timedelta(minutes=5)
 
+# Entity resolution metrics
+_resolve_hits = 0
+_resolve_misses = 0
+
+
+def _resolve_venue_id(place_ref: str) -> Optional[str]:
+    """Resolve place_ref (human name) to a venue_id FK.
+
+    Looks up venues_rag by exact name match (case-insensitive).
+    Returns venue_id if found, None otherwise.
+
+    NULL venue_id is a VALID state - the signal still ingests. This
+    means we can collect data for places not yet in our database.
+    Miss rate is logged periodically for coverage monitoring.
+    """
+    global _resolve_hits, _resolve_misses
+    if not place_ref:
+        return None
+    try:
+        venue_id = db_service.resolve_venue_by_name(place_ref)
+        if venue_id:
+            _resolve_hits += 1
+            return venue_id
+        _resolve_misses += 1
+        total = _resolve_hits + _resolve_misses
+        if total % 50 == 0 and total > 0:
+            miss_pct = (_resolve_misses / total) * 100
+            logger.info(
+                "Entity resolution: %d/%d hits (%.0f%% miss rate)",
+                _resolve_hits, total, miss_pct,
+            )
+        return None
+    except Exception:
+        # Resolution failure must NEVER block signal ingest
+        _resolve_misses += 1
+        return None
+
 
 # ==============================================================================
 # Request / Response Models

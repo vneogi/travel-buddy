@@ -7,9 +7,10 @@ Classifies user intent to determine whether to route to the heavy
 Also handles the mock LLM response generation for MVP testing.
 """
 
-from typing import Dict, Tuple
+from typing import Dict, Optional, Tuple
 
 from config.settings import settings
+from config.regions import get_region, Region
 from models.schemas import EventType, RoutingTier
 
 
@@ -95,35 +96,41 @@ class RouterAgent:
             return self._heavy_response(message, context or {})
 
     def _light_response(self, message: str, context: Dict) -> str:
-        """Generate a light-model response (info, translations, etc.)"""
+        """Generate a light-model response (info, translations, etc.)
+
+        Region-aware: uses trip's geo_region to provide contextual answers.
+        Falls back to settings.geo_fence when no trip context available.
+        """
+        geo_code = context.get("geo_region") or settings.geo_fence
+        region = get_region(geo_code)
         message_lower = message.lower()
 
         if "translate" in message_lower:
             return (
-                "Translation: In Arabic, common phrases include: "
-                "'Shukran' (Thank you), 'Marhaba' (Hello), "
-                "'La shukran' (No thank you), 'Kam hatha?' (How much?). "
-                "Most Dubai venues have English-speaking staff."
+                f"Translation tip for {region.display_name}: "
+                f"{region.language_hint}. "
+                "Pointing at menus and using simple English usually works too."
             )
         elif "dress code" in message_lower:
             return (
-                "Dubai Dress Code: Smart casual is standard for most venues. "
-                "For mosques and government buildings, cover shoulders and knees. "
-                "Beach clubs allow swimwear poolside only. Fine dining typically "
-                "requires smart attire - no shorts or flip-flops."
+                f"{region.display_name} Dress Code: Smart casual is standard "
+                "for most venues. For temples and religious sites, cover "
+                "shoulders and knees. Fine dining typically requires smart "
+                "attire - no shorts or flip-flops."
             )
         elif "price" in message_lower or "cost" in message_lower:
             return (
-                "Pricing Guide: Average meal at a mid-range restaurant: AED 80-150. "
-                "Coffee at specialty cafe: AED 25-40. Taxi ride across Dubai: AED 40-80. "
-                "Metro single trip: AED 4-8.50. Museum entry: AED 50-85."
+                f"Pricing in {region.display_name} ({region.currency}): "
+                "Check with venues directly for current pricing. "
+                "Prices vary significantly between local eateries and "
+                "tourist-oriented establishments."
             )
         else:
             return (
                 f"Based on your query about '{message[:50]}...': "
                 "I'd recommend checking with the venue directly for the most "
-                "current information. Dubai venues are generally very accommodating "
-                "to tourists and most staff speak English fluently."
+                f"current information. {region.display_name} venues are generally "
+                "accommodating to tourists."
             )
 
     def _heavy_response(self, message: str, context: Dict) -> str:

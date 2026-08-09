@@ -175,6 +175,19 @@ class SupabaseService:
         result = self.client.table("venues_rag").select("venue_id", count="exact").execute()
         return result.count or 0
 
+    def resolve_venue_by_name(self, place_ref: str) -> Optional[str]:
+        """Resolve a venue name to venue_id via Supabase. Case-insensitive."""
+        result = (
+            self.client.table("venues_rag")
+            .select("venue_id")
+            .ilike("venue_name", place_ref.strip())
+            .limit(1)
+            .execute()
+        )
+        if result.data:
+            return result.data[0]["venue_id"]
+        return None
+
     # =========================================================================
     # Trip State Operations
     # =========================================================================
@@ -529,6 +542,7 @@ class SupabaseService:
         value_json: Optional[dict] = None,
         captured_at: datetime = None,
         trip_id: Optional[str] = None,
+        venue_id: Optional[str] = None,
     ) -> bool:
         """Idempotent signal insert. Returns True if new, False if duplicate.
 
@@ -555,6 +569,7 @@ class SupabaseService:
             "value_text": value_text,
             "value_numeric": value_numeric,
             "value_json": value_json,
+            "venue_id": venue_id,
             "captured_at": captured_at.isoformat() if captured_at else None,
             "provenance": {"method": "client_emit"},
         }

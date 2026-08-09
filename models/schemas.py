@@ -87,6 +87,7 @@ class TripState(BaseModel):
     """The live, mutable trip state object."""
     trip_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: str
+    geo_region: str = "dubai_uae"  # Per-trip geo-fence; unlocks multi-city
     current_context: CurrentContext = CurrentContext()
     execution_control: ExecutionControl = ExecutionControl()
     nodes: List[TripNode] = []
