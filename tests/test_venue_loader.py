@@ -139,3 +139,75 @@ class TestTripNodeBackwardCompat:
             geo_region="vang_vieng_laos",
         )
         assert node.geo_region == "vang_vieng_laos"
+
+
+
+class TestAllergenSafetyViolation:
+    """SAFETY INVARIANT: suitable_for must not conflict with contains/may_contain."""
+
+    def test_rejects_vegan_with_dairy(self):
+        result = run_loader("venues_invalid_allergen_conflict.json")
+        assert result.returncode != 0
+        assert "ALLERGEN SAFETY VIOLATION" in result.stderr
+        assert "dairy" in result.stderr
+
+
+class TestAllergenVocab:
+    def test_rejects_unknown_allergen(self):
+        result = run_loader("venues_invalid_allergen_vocab.json")
+        assert result.returncode != 0
+        assert "unicorn_dust" in result.stderr
+        assert "not in valid set" in result.stderr
+
+
+class TestCoordinateArray:
+    def test_rejects_lat_as_array(self):
+        result = run_loader("venues_invalid_coord_array.json")
+        assert result.returncode != 0
+        assert "array" in result.stderr.lower()
+        assert "expected a float" in result.stderr
+
+
+class TestJsonComment:
+    def test_rejects_file_with_double_slash_comment(self):
+        result = run_loader("venues_invalid_comment.json")
+        assert result.returncode != 0
+        assert "// comment" in result.stderr.lower() or "does not support" in result.stderr.lower()
+
+
+class TestDietaryVocabShared:
+    """R5: dietary vocab is defined once and shared between loader + party_member."""
+
+    def test_vocab_comes_from_config_dietary(self):
+        from config.dietary import (
+            VALID_ALLERGENS,
+            VALID_DIETARY_LABELS,
+            VALID_DIETARY_CONSTRAINTS,
+        )
+        # Sanity: these are frozensets with real content
+        assert len(VALID_ALLERGENS) >= 14  # EU-14 minimum
+        assert "dairy" in VALID_ALLERGENS
+        assert "gluten" in VALID_ALLERGENS
+        assert "vegan" in VALID_DIETARY_LABELS
+        assert "halal" in VALID_DIETARY_LABELS
+        # Constraints are a superset of labels
+        assert VALID_DIETARY_LABELS <= VALID_DIETARY_CONSTRAINTS
+
+    def test_cross_field_check_catches_conflict(self):
+        from config.dietary import check_allergen_conflicts
+        conflicts = check_allergen_conflicts(
+            suitable_for=["vegan"],
+            contains=["dairy"],
+            may_contain=[],
+        )
+        assert len(conflicts) == 1
+        assert "dairy" in conflicts[0]
+
+    def test_cross_field_check_passes_valid(self):
+        from config.dietary import check_allergen_conflicts
+        conflicts = check_allergen_conflicts(
+            suitable_for=["vegan", "gluten_free"],
+            contains=[],
+            may_contain=["sesame"],  # sesame does not conflict with vegan or gluten_free
+        )
+        assert conflicts == []

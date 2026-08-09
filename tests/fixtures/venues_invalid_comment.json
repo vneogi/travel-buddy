@@ -1,0 +1,6 @@
+// This is a comment that should be rejected
+[
+  {
+    "name": "Commented Venue"
+  }
+]

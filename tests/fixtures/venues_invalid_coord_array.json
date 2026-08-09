@@ -1,0 +1,68 @@
+[
+  {
+    "name": "Array Coords Venue",
+    "description": "A test venue for validation",
+    "micro_location": "Sisavangvong Road",
+    "lat": [
+      19.8892,
+      102.135
+    ],
+    "lng": 102.135,
+    "vibe_tags": [
+      "familiar"
+    ],
+    "audience": [
+      "solo_traveler"
+    ],
+    "category": "cafe",
+    "is_sponsored": false,
+    "bid_weight": 0.0,
+    "typical_dwell_minutes": 60,
+    "indoor_outdoor": "indoor",
+    "price_band": "moderate",
+    "opening_hours_structured": {
+      "mon": [
+        [
+          "07:00",
+          "21:00"
+        ]
+      ],
+      "tue": [
+        [
+          "07:00",
+          "21:00"
+        ]
+      ],
+      "wed": [
+        [
+          "07:00",
+          "21:00"
+        ]
+      ],
+      "thu": [
+        [
+          "07:00",
+          "21:00"
+        ]
+      ],
+      "fri": [
+        [
+          "07:00",
+          "21:00"
+        ]
+      ],
+      "sat": [
+        [
+          "07:00",
+          "21:00"
+        ]
+      ],
+      "sun": [
+        [
+          "07:00",
+          "21:00"
+        ]
+      ]
+    }
+  }
+]

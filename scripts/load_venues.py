@@ -27,6 +27,11 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from config.regions import get_all_region_codes
+from config.dietary import (
+    VALID_ALLERGENS,
+    VALID_DIETARY_LABELS,
+    check_allergen_conflicts,
+)
 
 # ===========================================================================
 # Vocabulary (SINGLE SOURCE OF TRUTH for validation)
@@ -160,9 +165,17 @@ def validate_venue(venue: dict, idx: int, geo_region: str,
     if pb and pb not in VALID_PRICE_BANDS:
         errors.append(f"{prefix}: price_band '{pb}' not in valid set")
 
+    # Coordinate type check (reject arrays like [lat, lng])
+    lat_raw = venue.get("lat")
+    lng_raw = venue.get("lng")
+    if isinstance(lat_raw, (list, tuple)):
+        errors.append(f"{prefix}: 'lat' is an array {lat_raw} -- expected a float (e.g. 19.8856)")
+    if isinstance(lng_raw, (list, tuple)):
+        errors.append(f"{prefix}: 'lng' is an array {lng_raw} -- expected a float (e.g. 102.1350)")
+
     # Lat/lng bounds
-    lat = venue.get("lat")
-    lng = venue.get("lng")
+    lat = lat_raw if isinstance(lat_raw, (int, float)) else None
+    lng = lng_raw if isinstance(lng_raw, (int, float)) else None
     if lat is not None and lng is not None:
         lat_min, lat_max, lng_min, lng_max = get_bounding_box(v_region)
         if not (lat_min <= lat <= lat_max):
@@ -211,6 +224,28 @@ def validate_venue(venue: dict, idx: int, geo_region: str,
         cuisine = dish.get("cuisine")
         if cuisine and cuisine not in VALID_CUISINES:
             errors.append(f"{prefix} > dish '{d_name}': cuisine '{cuisine}' not in valid set")
+
+        # Allergen vocabulary check
+        for allergen in dish.get("contains", []):
+            if allergen not in VALID_ALLERGENS:
+                errors.append(f"{prefix} > dish '{d_name}': contains allergen '{allergen}' not in valid set")
+        for allergen in dish.get("may_contain", []):
+            if allergen not in VALID_ALLERGENS:
+                errors.append(f"{prefix} > dish '{d_name}': may_contain allergen '{allergen}' not in valid set")
+
+        # Dietary label vocabulary check
+        for label in dish.get("suitable_for", []):
+            if label not in VALID_DIETARY_LABELS:
+                errors.append(f"{prefix} > dish '{d_name}': suitable_for '{label}' not in valid set")
+
+        # SAFETY INVARIANT: cross-field allergen assertion
+        suitable = dish.get("suitable_for", [])
+        contains_list = dish.get("contains", [])
+        may_contain_list = dish.get("may_contain", [])
+        if suitable:
+            conflicts = check_allergen_conflicts(suitable, contains_list, may_contain_list)
+            for conflict in conflicts:
+                errors.append(f"{prefix} > dish '{d_name}': ALLERGEN SAFETY VIOLATION -- {conflict}")
 
     return errors
 
@@ -394,11 +429,26 @@ def main():
             continue
 
         with open(filepath) as f:
-            try:
-                venues = json.load(f)
-            except json.JSONDecodeError as e:
-                all_errors.append(f"{filepath}: Invalid JSON - {e}")
-                continue
+            raw_text = f.read()
+
+        # Reject // comments (JSON doesn't support them)
+        for line_num, line in enumerate(raw_text.splitlines(), 1):
+            stripped = line.lstrip()
+            if stripped.startswith("//"):
+                all_errors.append(
+                    f"{filepath}:{line_num}: JSON does not support // comments. "
+                    f"Remove: {stripped[:60]}"
+                )
+                break
+
+        if any(filepath in e for e in all_errors):
+            continue
+
+        try:
+            venues = json.loads(raw_text)
+        except json.JSONDecodeError as e:
+            all_errors.append(f"{filepath}: Invalid JSON - {e}")
+            continue
 
         if not isinstance(venues, list):
             all_errors.append(f"{filepath}: Expected JSON array, got {type(venues).__name__}")
