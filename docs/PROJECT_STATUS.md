@@ -236,3 +236,12 @@ Reviewed and accepted 2026-08-08. These build on existing backend code.
 
 **Dependency chain:** §29 → §28. Food substrate cannot land until the signal
 table can reference dishes. §29 is the critical path for food intelligence.
+
+
+## Deferred: Low Priority
+
+### App lifecycle debounce (Pixel 9 Pro Fold)
+`didChangeAppLifecycleState` fires ~5 times on fold/unfold (surface recreation).
+Each triggers a full sync. Harmless with an empty outbox, but on a real trip it's
+needless battery and requests. Fix: skip sync if last sync was <30s ago.
+Target: SPEC-07 or post-MVP.

@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     app_version: str = "0.1.0-mvp"
     geo_fence: str = "dubai_uae"
     debug: bool = False  # Fail-closed: prod never trusts debug headers by default
+    llm_debug: bool = False  # TB_LLM_DEBUG: verbose LiteLLM/OpenAI/httpx logging (separate from TB_DEBUG)
 
     # --- Database (Supabase / PostgreSQL) ---
     database_url: str = "postgresql://localhost:5432/travel_buddy"

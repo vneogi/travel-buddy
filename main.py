@@ -41,6 +41,34 @@ logging.basicConfig(
 )
 logger = logging.getLogger("travelbuddy")
 
+# ─── Silence third-party loggers ─────────────────────────────────────────────
+# LiteLLM, OpenAI, and httpx/httpcore log full request bodies (including
+# embedding arrays, system prompts, and Authorization headers) at DEBUG.
+# TB_DEBUG=true is needed for the debug user header and must NOT enable this.
+# Gate verbose LLM logging behind a separate TB_LLM_DEBUG flag.
+_llm_log_level = logging.DEBUG if settings.llm_debug else logging.WARNING
+for _noisy in (
+    "LiteLLM",
+    "litellm",
+    "LiteLLM Proxy",
+    "LiteLLM Router",
+    "openai",
+    "openai._base_client",
+    "httpx",
+    "httpcore",
+    "httpcore.connection",
+    "httpcore.http11",
+):
+    logging.getLogger(_noisy).setLevel(_llm_log_level)
+
+# Also suppress litellm's own verbose flag (separate from Python logging).
+try:
+    import litellm
+    litellm.set_verbose = bool(settings.llm_debug)
+    litellm.suppress_debug_info = not settings.llm_debug
+except ImportError:
+    pass
+
 # ==============================================================================
 # Lifespan (replaces deprecated @app.on_event("startup"))
 # ==============================================================================
