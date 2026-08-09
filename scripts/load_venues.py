@@ -428,7 +428,7 @@ def main():
             all_errors.append(f"File not found: {filepath}")
             continue
 
-        with open(filepath) as f:
+        with open(filepath, encoding='utf-8') as f:
             raw_text = f.read()
 
         # Reject // comments (JSON doesn't support them)
