@@ -177,7 +177,21 @@ DUBAI_VENUES = [
 
 
 def seed_venues() -> int:
-    """Seed the venue database with Dubai venues. Returns count."""
+    """Seed the in-memory venue database with Dubai venues. Returns count.
+
+    When the backend is SupabaseService, venues are already in the database
+    (seeded once via seed_supabase.py with real embeddings). Skip the seed
+    and report the existing count instead.
+    """
+    from services.db_provider import _BACKEND_NAME
+    if "SUPABASE" in _BACKEND_NAME:
+        # Venues live in venues_rag, seeded by seed_supabase.py.
+        # Don't call add_venue() — it requires an embedding argument
+        # that the in-memory seed path doesn't compute.
+        try:
+            return db_service.get_venue_count()
+        except Exception:
+            return 0  # Supabase not reachable at startup — non-fatal
     for venue in DUBAI_VENUES:
         db_service.add_venue(venue)
     return len(DUBAI_VENUES)
