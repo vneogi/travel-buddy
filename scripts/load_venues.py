@@ -402,7 +402,10 @@ def upsert_venues(venues: list[dict], geo_region: str, embeddings: list[list[flo
                 client.table("venue_dish").insert({
                     "dish_id": str(uuid.uuid4()),
                     "venue_id": venue_id,
-                    "name_en": dish.get("dish_name"),
+                    "dish_key": dish.get("dish_key"),
+                    "name_en": dish.get("dish_name") or dish.get("name_en"),
+                    "name_local": dish.get("name_local"),
+                    "name_roman": dish.get("name_roman"),
                     "is_signature": dish.get("is_signature", False),
                     "cuisine": dish.get("cuisine"),
                     "price_local": dish.get("price_local"),
