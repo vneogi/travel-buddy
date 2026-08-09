@@ -29,15 +29,25 @@ class ItineraryScreen extends ConsumerWidget {
   String _sig(TripNode n) =>
       '${n.nodeId}|${n.venueId}|${n.venueName}|${n.scheduledStart.toIso8601String()}|${n.status.name}|${n.isLocked}';
 
-  void _swap(WidgetRef ref, TripNode node) {
-    // TODO(swap-sheet): open SwapSheet and pass the user's chosen vibe_tags.
-    // Until then, re-search with the node's own vibes as a sensible default.
-    ref.read(itineraryControllerProvider(tripId).notifier).applyEvent(
+  Future<void> _swap(WidgetRef ref, TripNode node) async {
+    final placeRef = node.venueId ?? node.venueName;
+    final result = await ref.read(itineraryControllerProvider(tripId).notifier).applyEvent(
           type: EventType.swapActivity,
           message: 'Swap ${node.venueName} for something similar nearby',
           targetNodeId: node.nodeId,
           preferences: {'vibe_tags': node.vibeTags},
         );
+    // SPEC-07: emit reroute_accepted with the replacement ref
+    if (result != null && result.updatedNodes.isNotEmpty) {
+      final replacement = result.updatedNodes
+          .where((n) => n.nodeId != node.nodeId)
+          .firstOrNull;
+      ref.read(signalServiceProvider).emitRerouteAccepted(
+            placeRef: placeRef,
+            replacementRef: replacement?.venueId ?? replacement?.venueName ?? 'unknown',
+            tripId: tripId,
+          );
+    }
   }
 
   void _cancel(WidgetRef ref, TripNode node) {
@@ -45,6 +55,36 @@ class ItineraryScreen extends ConsumerWidget {
           type: EventType.cancelActivity,
           message: 'Cancel ${node.venueName}',
           targetNodeId: node.nodeId,
+        );
+  }
+
+  /// SPEC-07: show skip-reason picker, emit node_skipped signal, then cancel.
+  void _showSkipReasonPicker(BuildContext context, WidgetRef ref, TripNode node) {
+    final placeRef = node.venueId ?? node.venueName;
+    showModalBottomSheet<String>(
+      context: context,
+      builder: (_) => const _SkipReasonSheet(),
+    ).then((reason) {
+      if (reason != null) {
+        ref.read(signalServiceProvider).emitNodeSkipped(
+              placeRef: placeRef,
+              reason: reason,
+              tripId: tripId,
+            );
+        ref.read(itineraryControllerProvider(tripId).notifier).applyEvent(
+              type: EventType.cancelActivity,
+              message: 'Skip ${node.venueName} ($reason)',
+              targetNodeId: node.nodeId,
+            );
+      }
+    });
+  }
+
+  /// SPEC-07: confirm user visited the active node.
+  void _confirmVisited(WidgetRef ref, TripNode node) {
+    ref.read(signalServiceProvider).emitVisitedConfirmed(
+          placeRef: node.venueId ?? node.venueName,
+          tripId: tripId,
         );
   }
 
@@ -132,12 +172,12 @@ class ItineraryScreen extends ConsumerWidget {
                                         .contains(node.venueId ?? node.venueName),
                                     onTapSwap: () => _swap(ref, node),
                                     onTapCancel: () => _cancel(ref, node),
+                                    onTapVisited: () => _confirmVisited(ref, node),
+                                    onTapSkip: () => _showSkipReasonPicker(context, ref, node),
                                     onTapLoved: () {
                                       final placeRef = node.venueId ?? node.venueName;
-                                      ref.read(signalServiceProvider).emit(
-                                            signalType: 'user_loved',
+                                      ref.read(signalServiceProvider).emitUserLoved(
                                             placeRef: placeRef,
-                                            valueText: 'loved',
                                             tripId: tripId,
                                           );
                                       ref
@@ -179,4 +219,41 @@ class _HeadsUpBanner extends StatelessWidget {
           ],
         ),
       );
+}
+
+/// SPEC-07: Bottom sheet presenting the closed set of skip reasons.
+/// Returns the selected reason string or null if dismissed.
+class _SkipReasonSheet extends StatelessWidget {
+  const _SkipReasonSheet();
+
+  static const _reasons = {
+    'too_far': 'Too far away',
+    'too_tired': 'Too tired',
+    'closed': 'Place is closed',
+    'crowded': 'Too crowded',
+    'not_interested': 'Not interested',
+    'ran_out_of_time': 'Ran out of time',
+    'weather': 'Bad weather',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.base),
+            child: Text('Why are you skipping?', style: AppTypography.h2),
+          ),
+          ..._reasons.entries.map((e) => ListTile(
+                leading: const Icon(Icons.arrow_forward_ios, size: 14),
+                title: Text(e.value),
+                onTap: () => Navigator.pop(context, e.key),
+              )),
+          const SizedBox(height: AppSpacing.base),
+        ],
+      ),
+    );
+  }
 }

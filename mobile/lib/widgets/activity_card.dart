@@ -13,6 +13,8 @@ class ActivityCard extends StatelessWidget {
   final VoidCallback? onTapSwap;
   final VoidCallback? onTapCancel;
   final VoidCallback? onTapLoved;
+  final VoidCallback? onTapVisited;
+  final VoidCallback? onTapSkip;
   final bool isThinking; // show shimmer for heavy model calls
   final bool isLoved; // filled heart once the user has loved this venue
 
@@ -23,6 +25,8 @@ class ActivityCard extends StatelessWidget {
     this.onTapSwap,
     this.onTapCancel,
     this.onTapLoved,
+    this.onTapVisited,
+    this.onTapSkip,
     this.isThinking = false,
     this.isLoved = false,
   });
@@ -162,6 +166,34 @@ class ActivityCard extends StatelessWidget {
                               onPressed: () {
                                 HapticFeedback.lightImpact();
                                 onTapLoved!.call();
+                              },
+                            ),
+                          // SPEC-07: visited_confirmed (active node only)
+                          if (onTapVisited != null && isActive)
+                            IconButton(
+                              icon: const Icon(Icons.check_circle_outline, size: 20),
+                              color: AppColors.accent,
+                              tooltip: "I'm here",
+                              visualDensity: VisualDensity.compact,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                              onPressed: () {
+                                HapticFeedback.lightImpact();
+                                onTapVisited!.call();
+                              },
+                            ),
+                          // SPEC-07: node_skipped reason picker
+                          if (onTapSkip != null && !isCompleted && !isSkipped && !node.isLocked)
+                            IconButton(
+                              icon: const Icon(Icons.skip_next, size: 20),
+                              color: AppColors.muted,
+                              tooltip: 'Skip',
+                              visualDensity: VisualDensity.compact,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                              onPressed: () {
+                                HapticFeedback.lightImpact();
+                                onTapSkip!.call();
                               },
                             ),
                         ],
