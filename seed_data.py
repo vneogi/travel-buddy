@@ -6,7 +6,7 @@ Bypasses generic tourist spots in favor of locally-revered spaces.
 """
 
 from models.schemas import VenueRAG
-from services.database_service import db_service
+from services.db_provider import db_service
 
 
 DUBAI_VENUES = [

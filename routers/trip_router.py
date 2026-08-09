@@ -25,7 +25,7 @@ from models.schemas import (
     CurrentContext,
     EventType,
 )
-from services.database_service import db_service
+from services.db_provider import db_service
 from services.cache_service import cache_service
 from agents.state_machine import state_machine
 from security import get_current_user_id, require_trip_owner

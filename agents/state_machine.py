@@ -25,7 +25,7 @@ from models.schemas import (
     EventType,
     VenueSearchResult,
 )
-from services.database_service import db_service
+from services.db_provider import db_service
 from services.cache_service import cache_service
 from services.maps_service import maps_service
 from services.scheduler import reschedule_and_validate

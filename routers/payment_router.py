@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
 
 from services.payment_service import payment_service, PLANS
-from services.database_service import db_service
+from services.db_provider import db_service
 from security import get_current_user_id
 
 router = APIRouter(prefix="/api/v1/payment", tags=["payment"])
