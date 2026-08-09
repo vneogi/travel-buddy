@@ -1,4 +1,4 @@
-# scripts/setup-path.ps1 — Run ONCE to permanently add Android SDK to PATH
+﻿# scripts/setup-path.ps1 -- Run ONCE to permanently add Android SDK to PATH
 # After this, `adb` and `flutter devices` work in every new terminal forever.
 # Requires: restart terminal after running.
 

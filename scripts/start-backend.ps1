@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Start the Travel Buddy backend (PowerShell 5.1 compatible).
 .DESCRIPTION
@@ -10,7 +10,7 @@ Set-StrictMode -Version Latest
 
 Write-Host "`n========== Travel Buddy: Backend Start ==========" -ForegroundColor Cyan
 
-# ─── 1. Git pull ──────────────────────────────────────────────────────────────
+# --- 1. Git pull --------------------------------------------------------------
 Write-Host "`n[1/6] git pull origin main..." -ForegroundColor Yellow
 git pull origin main
 if ($LASTEXITCODE -ne 0) {
@@ -18,7 +18,7 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-# ─── 2. Assert .env exists ────────────────────────────────────────────────────
+# --- 2. Assert .env exists ----------------------------------------------------
 Write-Host "[2/6] Checking .env..." -ForegroundColor Yellow
 $envPath = Join-Path $PSScriptRoot '..\.env'
 if (-not (Test-Path $envPath)) {
@@ -34,7 +34,7 @@ Copy .env.example to .env and fill in:
     exit 1
 }
 
-# ─── 3. Assert required keys are present and non-placeholder ──────────────────
+# --- 3. Assert required keys are present and non-placeholder ------------------
 Write-Host "[3/6] Validating .env keys..." -ForegroundColor Yellow
 $requiredKeys = @('TB_SUPABASE_URL', 'TB_SUPABASE_KEY', 'TB_LITELLM_API_KEY', 'TB_SUPABASE_JWT_SECRET')
 $envContent = Get-Content $envPath -Raw
@@ -57,7 +57,7 @@ if ($missing.Count -gt 0) {
 }
 Write-Host "  All 4 keys present and non-placeholder." -ForegroundColor Green
 
-# ─── 4. Assert Python deps importable ─────────────────────────────────────────
+# --- 4. Assert Python deps importable -----------------------------------------
 Write-Host "[4/6] Checking Python dependencies..." -ForegroundColor Yellow
 $checkImport = python -c "import supabase, pytest_asyncio" 2>&1
 if ($LASTEXITCODE -ne 0) {
@@ -73,7 +73,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host "  Dependencies OK." -ForegroundColor Green
 
-# ─── 5. Detect and display LAN IP ─────────────────────────────────────────────
+# --- 5. Detect and display LAN IP ---------------------------------------------
 Write-Host "[5/6] Detecting LAN IP..." -ForegroundColor Yellow
 $lanIp = $null
 $adapters = Get-NetIPAddress -AddressFamily IPv4 -InterfaceAlias 'Wi-Fi*' -ErrorAction SilentlyContinue
@@ -88,15 +88,15 @@ if (-not $lanIp) {
     }
 }
 if ($lanIp) {
-    Write-Host "`n  ┌──────────────────────────────────────────┐" -ForegroundColor Cyan
-    Write-Host "  │  LAN IP:  $lanIp              │" -ForegroundColor Cyan
-    Write-Host "  │  Phone URL: http://${lanIp}:8000       │" -ForegroundColor Cyan
-    Write-Host "  └──────────────────────────────────────────┘`n" -ForegroundColor Cyan
+    Write-Host "`n  +------------------------------------------+" -ForegroundColor Cyan
+    Write-Host "  |  LAN IP:  $lanIp              |" -ForegroundColor Cyan
+    Write-Host "  |  Phone URL: http://${lanIp}:8000       |" -ForegroundColor Cyan
+    Write-Host "  +------------------------------------------+`n" -ForegroundColor Cyan
 } else {
     Write-Host "  WARNING: Could not detect LAN IP. Check ipconfig manually." -ForegroundColor Yellow
 }
 
-# ─── 6. Start uvicorn ─────────────────────────────────────────────────────────
+# --- 6. Start uvicorn ---------------------------------------------------------
 Write-Host "[6/6] Starting uvicorn (0.0.0.0:8000)..." -ForegroundColor Yellow
 Write-Host "  Ctrl+C to stop.`n" -ForegroundColor DarkGray
 

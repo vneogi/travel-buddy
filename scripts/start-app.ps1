@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Start the Travel Buddy Flutter app on a connected device (PowerShell 5.1).
 .DESCRIPTION
@@ -10,7 +10,7 @@ Set-StrictMode -Version Latest
 
 Write-Host "`n========== Travel Buddy: App Start ==========" -ForegroundColor Cyan
 
-# ─── 1. Git pull ──────────────────────────────────────────────────────────────
+# --- 1. Git pull --------------------------------------------------------------
 Write-Host "`n[1/4] git pull origin main..." -ForegroundColor Yellow
 Set-Location (Join-Path $PSScriptRoot '..')
 git pull origin main
@@ -19,7 +19,7 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-# ─── 2. Assert ADB device connected ──────────────────────────────────────────
+# --- 2. Assert ADB device connected ------------------------------------------
 Write-Host "[2/4] Checking for connected device..." -ForegroundColor Yellow
 $adbOutput = adb devices 2>&1 | Select-String 'device
 if (-not $adbOutput) {
@@ -36,7 +36,7 @@ FATAL: No device found.
 $deviceId = ($adbOutput -split "`t")[0]
 Write-Host "  Device: $deviceId" -ForegroundColor Green
 
-# ─── 3. Detect LAN IP and assert backend reachable ─────────────────────────
+# --- 3. Detect LAN IP and assert backend reachable -------------------------
 Write-Host "[3/4] Detecting LAN IP and checking backend..." -ForegroundColor Yellow
 $lanIp = $null
 $adapters = Get-NetIPAddress -AddressFamily IPv4 -InterfaceAlias 'Wi-Fi*' -ErrorAction SilentlyContinue
@@ -72,7 +72,7 @@ FATAL: Backend not reachable at $healthUrl
 }
 Write-Host "  Backend healthy." -ForegroundColor Green
 
-# ─── 4. Flutter run ───────────────────────────────────────────────────────────
+# --- 4. Flutter run -----------------------------------------------------------
 Write-Host "`n[4/4] Launching Flutter app..." -ForegroundColor Yellow
 Write-Host "  API: http://${lanIp}:8000" -ForegroundColor Green
 Write-Host "  User: 11111111-1111-1111-1111-111111111111 (debug)" -ForegroundColor Green

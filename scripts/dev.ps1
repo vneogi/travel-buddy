@@ -1,7 +1,7 @@
-# scripts/dev.ps1 — one-command dev environment for Travel Buddy
+﻿# scripts/dev.ps1 -- one-command dev environment for Travel Buddy
 # Usage:  .\scripts\dev.ps1 backend    (terminal 1)
-#         .\scripts\dev.ps1 app        (terminal 2 — USB tunnel, always works)
-#         .\scripts\dev.ps1 app-lan    (terminal 2 — LAN mode for real offline drill)
+#         .\scripts\dev.ps1 app        (terminal 2 -- USB tunnel, always works)
+#         .\scripts\dev.ps1 app-lan    (terminal 2 -- LAN mode for real offline drill)
 #         .\scripts\dev.ps1 check      (verify environment)
 #         .\scripts\dev.ps1 tunnel     (re-establish adb reverse after disconnect)
 #         .\scripts\dev.ps1 verify     (check backend health + recent errors)
@@ -91,8 +91,8 @@ switch ($Mode) {
 
     Write-Host "--- Quick reference ---" -ForegroundColor Yellow
     Write-Host "  Terminal 1:  .\scripts\dev.ps1 backend"
-    Write-Host "  Terminal 2:  .\scripts\dev.ps1 app          (USB tunnel — always works)"
-    Write-Host "  Terminal 2:  .\scripts\dev.ps1 app-lan      (Wi-Fi — for real offline drill)"
+    Write-Host "  Terminal 2:  .\scripts\dev.ps1 app          (USB tunnel -- always works)"
+    Write-Host "  Terminal 2:  .\scripts\dev.ps1 app-lan      (Wi-Fi -- for real offline drill)"
     Write-Host "  USB tunnel:  .\scripts\dev.ps1 tunnel"
     Write-Host "  Check drill: .\scripts\dev.ps1 verify"
     Write-Host ""
@@ -137,7 +137,7 @@ switch ($Mode) {
     & adb devices
     Write-Host ""
 
-    # Use localhost (via USB tunnel) — reliable for general dev
+    # Use localhost (via USB tunnel) -- reliable for general dev
     Write-Host "Launching app against http://localhost:8000 (via USB tunnel) ..." -ForegroundColor Green
     Write-Host "Debug user: $DebugUserId" -ForegroundColor Green
     Write-Host ""
@@ -149,7 +149,7 @@ switch ($Mode) {
   'app-lan' {
     Set-Location "$RepoRoot\mobile"
     # LAN mode: API traffic goes over Wi-Fi, so airplane mode ACTUALLY cuts it.
-    # (adb reverse tunnels over USB, which airplane mode does not disable —
+    # (adb reverse tunnels over USB, which airplane mode does not disable --
     #  that made the first offline drill attempt meaningless.)
     & adb reverse --remove-all 2>&1 | Out-Null
     Write-Host "USB tunnel removed. Using LAN IP $LanIp (your laptop Wi-Fi)." -ForegroundColor Green

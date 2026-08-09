@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Export behavioural data from Supabase to timestamped JSON (PowerShell 5.1).
 .DESCRIPTION
@@ -13,7 +13,7 @@ Set-StrictMode -Version Latest
 
 Write-Host "`n========== Travel Buddy: Export Signals ==========" -ForegroundColor Cyan
 
-# ─── Load .env ───────────────────────────────────────────────────────────────
+# --- Load .env ---------------------------------------------------------------
 $envPath = Join-Path $PSScriptRoot '..\.env'
 if (-not (Test-Path $envPath)) {
     Write-Host "FATAL: .env not found. Run start-backend.ps1 first." -ForegroundColor Red
@@ -31,13 +31,13 @@ if (-not $supaUrl -or -not $supaKey) {
     exit 1
 }
 
-# ─── Create backups dir ──────────────────────────────────────────────────────
+# --- Create backups dir ------------------------------------------------------
 $timestamp = Get-Date -Format 'yyyy-MM-dd_HHmmss'
 $backupDir = Join-Path $PSScriptRoot "..\backups\$timestamp"
 New-Item -ItemType Directory -Path $backupDir -Force | Out-Null
 Write-Host "  Backup dir: backups\$timestamp\" -ForegroundColor Green
 
-# ─── Export tables ───────────────────────────────────────────────────────────
+# --- Export tables -----------------------------------------------------------
 $tables = @('signal', 'venue_dish', 'trip_party', 'party_member')
 
 foreach ($table in $tables) {
@@ -58,4 +58,4 @@ foreach ($table in $tables) {
 }
 
 Write-Host "`n  Done. Files in: backups\$timestamp\" -ForegroundColor Cyan
-Write-Host "  (gitignored — commit manually if you want them in source control)`n" -ForegroundColor DarkGray
+Write-Host "  (gitignored -- commit manually if you want them in source control)`n" -ForegroundColor DarkGray
