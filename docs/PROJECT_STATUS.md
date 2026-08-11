@@ -1,15 +1,25 @@
 # Travel Buddy — Project Status & Handoff
 
-> Single source of truth for where the project stands and what remains.
-> Last updated: 2026-08-06 (v8.0). Keep this file updated as milestones complete.
+> Current state of the codebase. For commit history use `git log`.
+> For device-verification queue see docs/AWAITING_VERIFICATION.md.
+> For engineering rules see docs/ENGINEERING_RULES.md.
 
-## 0. TL;DR (verified 2026-08-08)
+## TL;DR
 
-- **Backend**: functionally complete, hardened, **53 unit tests passing** + 5 skipped
-  (Supabase integration). Signal capture + offline-sync server support live.
-- **AI**: live via OpenAI (gpt-4o heavy, gpt-4o-mini light, text-embedding-3-small).
-- **Supabase**: schema + functions deployed, signal tables ready (migration 0002).
-  Venues NOT seeded. Backend still uses in-memory datastore (flip = 3 imports).
+- Backend: FastAPI on Supabase (pgvector). db_provider resolves backend at
+  import time -- Supabase when creds present, in-memory otherwise.
+- Orchestrator: hand-rolled sequential pipeline in agents/state_machine.py
+  (classify_intent -> check_cache -> venue_search -> apply_structural ->
+  generate_response). NOT LangGraph -- langgraph is commented out in
+  requirements.txt and GraphState TypedDict is unused.
+- AI: live via LiteLLM gateway (gpt-4o heavy, gpt-4o-mini light,
+  text-embedding-3-small embeddings).
+- Data: 74 venues total (16 Dubai, 23 Luang Prabang, 15 Vang Vieng,
+  20 Vientiane). 44 venue dishes. 30 dish-glossary entries.
+- Signals: 8 types registered in models/signal_types.py.
+- Flutter: offline-first with SQLite outbox, sync engine, typed exception
+  hierarchy. Behavioral signal emission wired for 5 of 8 types.
+- Test health: run `pytest -q` (do not hardcode counts here -- R16).
   **Migration 0003 (trip_party) NOT YET WRITTEN — blocks Supabase flip for SPEC-03.**
 - **Flutter**: running end-to-end on Android (real device). **29+ unit tests**.
   Offline-first queue fully implemented. Offline create-trip crash fixed.

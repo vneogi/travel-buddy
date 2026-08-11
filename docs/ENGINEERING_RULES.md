@@ -189,3 +189,65 @@ the same contract, and divergence is only caught at runtime:
 `supabase_service`, and `add_venue` differed in arity — crashing startup
 once the provider resolved to Supabase. `tests/test_backend_parity.py`
 asserts signature compatibility so divergence fails in CI.
+
+## R14. Non-ASCII content silently blocks editAsset
+
+Any file containing an em-dash (U+2014), emoji, or box-drawing character
+will reject edits while reporting success. The failure signature:
+
+- `editAsset` returns `changed: true`
+- `git diff` is empty -- the write was silently discarded
+- Subsequent `readAssetById` shows the file unchanged
+
+The tool matches the `old_text` correctly (proving it found the content)
+but the write-back fails when the file's byte stream includes non-ASCII.
+
+**Workaround:** create the new content at a temporary path with
+`createAsset` (e.g. `docs/FOO.new.md`), then `git rm` the original and
+`git mv` the temp file into place.
+
+**Prevention:** all new source files and documentation must be pure ASCII.
+Use `--` instead of em-dash, `->` instead of arrows, and never use emoji
+or box-drawing characters. Run the ASCII guard in `test_docs_hygiene.py`
+before committing.
+
+## R15. Workspace writes are blocked outside the asset tools
+
+The safety filter denies all direct filesystem mutations to `/Workspace`
+paths:
+
+- `open(path, 'w')` / `open(path, 'wb')` -- denied
+- `shutil.copy2(src, workspace_path)` -- denied
+- `sed -i` on workspace paths -- denied
+- `subprocess` writing to workspace -- denied
+- `os.remove`, `os.rename`, `pathlib.write_text` -- denied
+
+Only the Databricks-managed tools (`createAsset`, `editAsset`, `runGit`)
+can mutate workspace files.
+
+**Consequence:** new-file work (via `createAsset`) is cheap; edits to
+existing files are expensive. Bias the queue toward new modules over
+refactors of existing ones. When an existing file blocks edits due to
+non-ASCII content (R14), rebuild it from scratch at a temp path.
+
+## R16. A document that duplicates derivable state will drift
+
+`PROJECT_STATUS.md` mirrored `git log` and test counts by hand and was
+wrong in six ways within five days, while claiming to be the single source
+of truth:
+
+- Reported 53 tests when the suite had 117
+- Claimed behavioral signals "NOT STARTED" when 8 were registered
+- Said the backend "still uses in-memory" after the Supabase flip shipped
+- Said migration 0003 was "unwritten and blocking" after it was applied
+- Marked SPEC-03 partial after it was complete
+- Marked entity generalization not started after 0005 landed it
+
+**Rule:** never hand-mirror something a command can produce. Write the
+command (e.g. `run pytest -q`) and let the reader execute it for a live
+answer. A stale number in a doc is worse than no number -- it erodes trust
+in the entire file.
+
+Dated observations and verification results belong in
+`docs/AWAITING_VERIFICATION.md`, which is a dated log by design and is
+expected to go stale.
