@@ -37,11 +37,13 @@
 | Observability (SPEC-05) | DONE | Ring buffer, request IDs, debug endpoint |
 | Signal registry (SPEC-06) | DONE | models/signal_types.py plus drift test |
 | Signal emission (SPEC-07) | PARTIAL | Missing in Dart: reroute_rejected, dish_loved, dish_ordered |
-| Laos curation (SPEC-08) | DONE | 58 venues loaded, validation rules enforced |
+| Laos curation (SPEC-08) | DONE, WITH GAPS | 58 venues loaded. See the spec for missed coverage targets |
 | arrival_delta derivation | DONE | Server-derived from visited_confirmed vs scheduled_start |
 | Offline vault (SPEC-04) | SPECIFIED | Not implemented |
-| Anonymous identity (SPEC-09) | SPECIFIED | Not implemented |
+| Anonymous identity (SPEC-09) | SPECIFIED | Not implemented. Gates any tester build |
 | Booking anchors (SPEC-10) | SPECIFIED | Not implemented. Chosen scope for the Oct 2 field test |
+| Forced-choice preferences (SPEC-11) | SPECIFIED | Not implemented. Cold-start preference capture |
+| Show driver cards (SPEC-12) | SPECIFIED | Blocked: venues_rag has no name_local or nearest_landmark |
 
 ## What is Next (Priority Order)
 
@@ -49,16 +51,24 @@
    the engine knows the real trip. Backend first, all pytest-verifiable.
 2. halal plus pork LABEL_EXCLUDES_ALLERGENS rule -- High-severity safety hole
 3. venues_rag missing-column migration -- latent break, and unblocks SPEC-12
-4. reroute_rejected plus swap sheet UI -- the last unwired behavioural signal
-5. SPEC-09 anonymous device identity -- prerequisite for any tester build
-6. Backfill opening_hours on the 58 Laos venues (loader fix landed, needs re-run)
-7. Relocate VALID_DISH_CONTAINS to config/dietary.py (R5 violation)
+4. Venue loader repair -- it cannot load the Laos files as committed
+5. reroute_rejected plus swap sheet UI -- the last unwired behavioural signal
+6. SPEC-09 anonymous device identity -- prerequisite for any tester build
+7. Backfill opening_hours on the 58 Laos venues (loader fix landed, needs re-run)
+8. Relocate VALID_DISH_CONTAINS to config/dietary.py (R5 violation)
+
+Lao-script curation for SPEC-12 runs in parallel with all of the above. It has
+no tooling dependency, cannot be done by an agent, and has the longest lead
+time of anything remaining.
 
 ## Known Risks and Open Issues
 
+Full detail, including three loader defects, is in docs/AWAITING_VERIFICATION.md.
+
 | Issue | Severity | Detail |
 |-------|----------|--------|
-| venues_rag schema drift | High | load_venues.py writes typical_dwell_minutes, indoor_outdoor and price_band; no migration defines them. name_local and nearest_landmark are also absent, which blocks SPEC-12 driver cards. A database rebuilt from migrations today fails on load |
+| Venue loader cannot load the Laos data | High | The vocabulary expansion was reverted by a merge, and an unassigned variable raises NameError without --geo-region |
+| venues_rag schema drift | High | The loader writes typical_dwell_minutes, indoor_outdoor and price_band; no migration defines them. name_local and nearest_landmark are also absent, which blocks SPEC-12. A database rebuilt from migrations today fails on load |
 | halal plus pork passes the allergen check | High | No LABEL_EXCLUDES_ALLERGENS rule for halal. Safety hole for Muslim travellers |
 | opening_hours null on all Laos venues | Medium | Loader field-name fix committed but the data was never re-loaded |
 | hybrid_venue_search geo_region param | Medium | supabase_service passes a geo_region filter the RPC in 0001 does not declare. Verify against the live function |
@@ -77,13 +87,19 @@
 
 ### Tests
 
-    pytest -q --tb=short
+    pytest -q -ra
 
 ### Load venues (Laos)
 
-    # Set OPENAI_API_KEY and TB_SUPABASE_URL / TB_SUPABASE_SERVICE_KEY
-    python scripts/load_dish_glossary.py data/laos_dish_glossary.json
-    python scripts/load_venues.py data/laos_luang_prabang.json data/laos_vang_vieng.json data/laos_vientiane.json
+Read docs/AWAITING_VERIFICATION.md first. The loader has open defects and
+`--geo-region` is mandatory in practice, because without it an unassigned
+variable raises NameError.
+
+    # Requires OPENAI_API_KEY, TB_SUPABASE_URL, TB_SUPABASE_KEY
+    python scripts/load_dish_glossary.py data/laos_dish_glossary.json --dry-run
+    python scripts/load_venues.py data/laos_luang_prabang.json --geo-region <region> --dry-run
+
+Drop `--dry-run` only once the dry run reports zero errors.
 
 ### Flutter
 
