@@ -22,8 +22,10 @@
 - Flutter: offline-first with a SQLite outbox, sync engine, and typed exception
   hierarchy. Signal emission is wired for most but not all registered types --
   see the SPEC-07 row below.
-- Test health: run `pytest -q`. Counts are deliberately not recorded here (R16).
-  One test skips when the supabase client library is absent.
+- Test health: run `pytest -q -ra`. Counts are deliberately not recorded here
+  (R16). The expected skips are the live-database tests in
+  tests/test_supabase_integration.py, which skip when TB_SUPABASE_URL is unset.
+  Any other skip is a finding, not a pass (R8).
 
 ## Component Status
 
@@ -70,6 +72,7 @@ Full detail, including three loader defects, is in docs/AWAITING_VERIFICATION.md
 | Venue loader cannot load the Laos data | High | The vocabulary expansion was reverted by a merge, and an unassigned variable raises NameError without --geo-region |
 | venues_rag schema drift | High | The loader writes typical_dwell_minutes, indoor_outdoor and price_band; no migration defines them. name_local and nearest_landmark are also absent, which blocks SPEC-12. A database rebuilt from migrations today fails on load |
 | halal plus pork passes the allergen check | High | No LABEL_EXCLUDES_ALLERGENS rule for halal. Safety hole for Muslim travellers |
+| pytest config names a warning class that does not exist | Medium | pyproject filterwarnings references PytestRemovedIn10Warning; the installed pytest only has In9, so `pytest -q -ra` errors without a command-line override |
 | opening_hours null on all Laos venues | Medium | Loader field-name fix committed but the data was never re-loaded |
 | hybrid_venue_search geo_region param | Medium | supabase_service passes a geo_region filter the RPC in 0001 does not declare. Verify against the live function |
 | mobility_limited overcorrected | Low | Set on roughly two thirds of venues -- too loose to be a useful filter |

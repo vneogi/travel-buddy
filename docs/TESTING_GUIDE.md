@@ -23,8 +23,13 @@
 No expected count is recorded here on purpose -- a mirrored number goes stale
 and erodes trust in the whole document (R16). What matters is that `-ra` prints
 a named reason for every skip, and that the reasons are ones you expect.
-`tests/test_supabase_integration.py` skips unless `TB_SUPABASE_URL` is set, and
-one test skips when the `supabase` client library is not installed.
+
+The expected skips are the live-database tests in
+`tests/test_supabase_integration.py`, which skip with the reason "Supabase creds
+not configured" when `TB_SUPABASE_URL` is unset. A skip anywhere else is a
+finding: eight tests once degraded from passing to skipped when `pytest-asyncio`
+vanished from an ephemeral environment, and the summary line still read as
+healthy (R8).
 
 Passing tests are not verification (R3). Two of the worst defects in this repo
 shipped green: an auth bypass, and a sync engine that string-matched on error
@@ -142,7 +147,8 @@ The backend already resolves to Supabase whenever credentials are present;
 there is no pending flip. `services/db_provider.py` decides at import time.
 
 - Set `TB_SUPABASE_URL` and the service key, then run
-  `pytest tests/test_supabase_integration.py -v`.
+  `pytest tests/test_supabase_integration.py -v`. Those are the tests that skip
+  by default.
 - Loaders: `python scripts/load_dish_glossary.py data/laos_dish_glossary.json`
   and `python scripts/load_venues.py <files> --geo-region <region>`. Check
   `docs/AWAITING_VERIFICATION.md` first; the venue loader has open defects that
@@ -164,5 +170,6 @@ same failure as never having fixed the bug (R10):
   startup log to see which backend resolved.
 - `weather_service`, `cost_tracker` and `rag_ingestion` are scaffolding and are
   not wired into the request path.
-- Current open defects, including the venue loader ones, are listed in
-  `docs/AWAITING_VERIFICATION.md`.
+- Current open defects, including the venue loader ones and the pytest
+  `filterwarnings` config naming a warning class that does not exist in the
+  installed pytest, are listed in `docs/AWAITING_VERIFICATION.md`.
