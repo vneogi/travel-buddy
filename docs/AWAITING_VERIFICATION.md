@@ -182,17 +182,45 @@ Documentation and whole-file rewrites go through the GitHub API from the
 planning side. The Databricks compute is reserved for code plus pytest.
 This keeps documentation out of the R14 and R15 failure modes entirely.
 
-## Files known to contain non-ASCII
+## ASCII status of the documentation set
 
-These cannot be patched with `editAsset` and must be rebuilt (R14):
+Measured byte-wise against the pushed tree on Aug 12 2026. Counts are
+non-ASCII bytes per file.
 
-- `scripts/load_venues.py` (warning glyphs and an em-dash in output strings)
+Pure ASCII, editable in place with `editAsset`:
+
+- `README.md`, `MASTER_BRD.md`
+- `docs/PROJECT_STATUS.md`, `docs/AWAITING_VERIFICATION.md`,
+  `docs/ENGINEERING_RULES.md`, `docs/TESTING_GUIDE.md`
+- `docs/specs/SPEC-08-laos-venue-curation.md`,
+  `docs/specs/SPEC-11-forced-choice-preferences.md`,
+  `docs/specs/SPEC-12-show-driver-cards.md`
+
+Non-ASCII. These must be rebuilt rather than patched (R14), and they are
+the seed allowlist for `tests/test_docs_hygiene.py`. The allowlist may
+only shrink:
+
+| File | Non-ASCII bytes |
+|------|-----------------|
+| `docs/VISION.md` | 428 |
+| `docs/DATA_MODEL_BRD.md` | 316 |
+| `docs/research/survey_deep.md` | 137 |
+| `docs/UX_BACKLOG.md` | 111 |
+| `docs/specs/SPEC-04-offline-vault.md` | 78 |
+| `docs/specs/SPEC-01-migrations-and-first-signal.md` | 65 |
+| `docs/specs/SPEC-03-party-context.md` | 60 |
+| `docs/specs/SPEC-07-signal-emission.md` | 48 |
+| `docs/specs/SPEC-02-offline-queue-and-sync.md` | 47 |
+| `docs/specs/SPEC-09-anonymous-identity.md` | 42 |
+| `docs/research/survey_short.md` | 40 |
+| `docs/specs/SPEC-06-behavioral-signals.md` | 38 |
+| `docs/specs/SPEC-05-observability.md` | 24 |
+| `docs/specs/SPEC-10-booking-anchors.md` | 6 |
+
+Source files known to contain non-ASCII, same constraint:
+
+- `scripts/load_venues.py` (warning glyphs and an em-dash in output)
 - `config/dietary.py` (em-dashes in comments)
 - `config/regions.py` (box-drawing characters)
 - `mobile/lib/features/itinerary/itinerary_screen.dart` (em-dash)
-- All Lao venue JSON files (Lao script, expected and correct)
-
-`README.md`, `MASTER_BRD.md`, `docs/PROJECT_STATUS.md`,
-`docs/AWAITING_VERIFICATION.md`, `docs/ENGINEERING_RULES.md`,
-`docs/TESTING_GUIDE.md` and every file in `docs/specs/` are now pure
-ASCII and editable in place, verified byte-wise from the pushed tree.
+- All Lao venue and glossary JSON files (Lao script, expected and correct)
