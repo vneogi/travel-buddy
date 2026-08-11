@@ -1,106 +1,168 @@
-# Travel Buddy — Testing Guide
+# Travel Buddy -- Testing Guide
 
-> Complete testing playbook for backend + Flutter app + end-to-end. Intended for
-> a personal machine (no corporate VPN / registry restrictions). Keep updated as
-> the app grows.
+> Testing playbook for the backend, the Flutter app, and end-to-end. Written for
+> a personal machine with no corporate VPN or registry restrictions.
 
 ## 0. Prerequisites (one-time)
 
-- **Python 3.11+** and the prod deps for live mode:
-  `pip install -r requirements.txt` then uncomment/install: `litellm openai supabase stripe`
-- **Flutter 3.2+**: install Flutter SDK, then `flutter doctor` and fix anything red.
-- For device testing: **Android Studio** (SDK + an AVD emulator) or a physical
-  phone with USB debugging. Web (Chrome) needs no emulator.
-- Optional tools: `pip install pytest-cov schemathesis`, `dart pub global activate` not needed.
+- Python 3.11+ and the production deps: `pip install -r requirements.txt`.
+  Live mode additionally needs `litellm openai supabase`.
+- Test deps are pinned in `requirements-dev.txt`. Install them, because an
+  ephemeral environment that silently loses `pytest-asyncio` turns eight real
+  tests into skips while the summary still looks healthy (R8).
+- Flutter 3.2+: install the SDK, run `flutter doctor`, fix anything red.
+- For device testing: Android Studio with an AVD, or a physical phone with USB
+  debugging. Chrome needs no emulator.
+- Optional: `pip install pytest-cov schemathesis`.
 
-## 1. Backend — unit tests
+## 1. Backend unit tests
 
-```bash
-pytest -q                      # expect: 21 passed, 5 skipped (Supabase, needs creds)
-pytest --cov=. --cov-report=term-missing   # coverage (needs pytest-cov)
-```
-The 5 skips are `tests/test_supabase_integration.py` — they run only when
-`TB_SUPABASE_URL` is set (see §8).
+    pytest -q -ra
+    pytest --cov=. --cov-report=term-missing    # needs pytest-cov
 
-## 2. Backend — run it locally
+No expected count is recorded here on purpose -- a mirrored number goes stale
+and erodes trust in the whole document (R16). What matters is that `-ra` prints
+a named reason for every skip, and that the reasons are ones you expect.
+`tests/test_supabase_integration.py` skips unless `TB_SUPABASE_URL` is set, and
+one test skips when the `supabase` client library is not installed.
 
-```bash
-# Dev auth (no JWT secret) — the app accepts an X-Debug-User-Id header.
-# IMPORTANT: unset any real Supabase JWT secret so debug auth is active.
-unset TB_SUPABASE_JWT_SECRET
-export TB_DEBUG=true
-uvicorn main:app --reload --port 8000
-```
-- Swagger UI: http://localhost:8000/docs — click-test every endpoint. Add header
-  `X-Debug-User-Id: <uuid>` (use a real UUID, e.g. `11111111-1111-1111-1111-111111111111`).
-- Smoke sequence: `GET /api/v1/health` → `POST /api/v1/trip/create` →
-  `GET /api/v1/trip/{id}` → `POST /api/v1/trip/event` (event_type `ask_info`).
+Passing tests are not verification (R3). Two of the worst defects in this repo
+shipped green: an auth bypass, and a sync engine that string-matched on error
+text and therefore retried 401s forever.
 
-## 3. Backend — schema fuzzing (catch contract bugs before the app does)
+## 2. Run the backend locally
 
-```bash
-schemathesis run http://localhost:8000/openapi.json \
-  -H "X-Debug-User-Id: 11111111-1111-1111-1111-111111111111"
-```
-Property-tests every endpoint against its OpenAPI schema. Great for finding
-serialization/validation mismatches the Flutter app would otherwise hit.
+    # Dev auth: the app accepts an X-Debug-User-Id header.
+    # Unset any real JWT secret or debug auth stays inactive.
+    unset TB_SUPABASE_JWT_SECRET
+    export TB_DEBUG=true
+    uvicorn main:app --reload --port 8000
 
-## 4. Flutter — fastest UI feel (Chrome, no emulator)
+Swagger UI is at http://localhost:8000/docs. Add the header
+`X-Debug-User-Id: 11111111-1111-1111-1111-111111111111` (it must be a real UUID).
 
-```bash
-cd mobile
-flutter pub get
-flutter run -d chrome \
-  --dart-define=TB_API_BASE_URL=http://localhost:8000 \
-  --dart-define=TB_DEBUG_USER_ID=11111111-1111-1111-1111-111111111111
-```
-Click through all 9 screens. (Maps + RevenueCat are stubbed — web is fine.)
-Run the backend (§2) in another terminal first.
+Smoke sequence: `GET /api/v1/health`, then `POST /api/v1/trip/create`, then
+`GET /api/v1/trip/{id}`, then `POST /api/v1/trip/event` with `event_type`
+`ask_info`.
 
-### Mobile feel (emulator / device)
-```bash
-flutter devices                 # list emulator/phone
-flutter run -d <deviceId> \
-  --dart-define=TB_API_BASE_URL=http://10.0.2.2:8000 \
-  --dart-define=TB_DEBUG_USER_ID=11111111-1111-1111-1111-111111111111
-```
-Real device gives the true feel: haptics, gestures, timeline reflow.
+Watch the startup log. It prints booleans for `llm_key_present`,
+`supabase_configured` and `jwt_auth`, never values. If `supabase_configured` is
+false you are on the in-memory backend and nothing you write will survive a
+restart, no matter what the API returns (R11).
 
-## 5. Flutter — unit + widget tests
+## 3. Schema fuzzing
 
-```bash
-cd mobile
-flutter test                    # runs everything under test/
-flutter test --coverage         # → coverage/lcov.info
-genhtml coverage/lcov.info -o coverage/html   # view (needs lcov)
-```
-Tests use `mocktail` to stub the backend — no live server needed. Current
-coverage: models (fromJson contract), repositories (parse + endpoint contract),
-ItineraryController (403→upgrade, heads-up banner, error handling).
+    schemathesis run http://localhost:8000/openapi.json \
+      -H "X-Debug-User-Id: 11111111-1111-1111-1111-111111111111"
 
-## 6. Flutter — end-to-end on a device (optional, higher fidelity)
+Property-tests every endpoint against its OpenAPI schema. Good at finding the
+serialization mismatches the Flutter client would otherwise hit first.
 
-- Add `integration_test` (official) or `patrol` (nicer selectors, handles native
-  auth/permission dialogs) to `dev_dependencies`.
-- Write a flow: launch → create trip → swap a card → assert the timeline updates.
-- Run: `flutter test integration_test/`.
+## 4. Flutter, fastest loop (Chrome)
 
-## 7. Visual regression (once the design stabilizes)
+    cd mobile
+    flutter pub get
+    flutter analyze
+    flutter run -d chrome \
+      --dart-define=TB_API_BASE_URL=http://localhost:8000 \
+      --dart-define=TB_DEBUG_USER_ID=11111111-1111-1111-1111-111111111111
 
-- `golden_toolkit` — snapshot each screen; CI fails if pixels drift.
-- Flutter **DevTools** (bundled) — widget inspector + performance profiler
-  (check the timeline animation for jank).
+Run `flutter analyze` before anything else; it catches the compile errors that
+have repeatedly reached commits. Maps and RevenueCat are stubbed, so web is fine
+for UI work. Start the backend from section 2 in another terminal first.
 
-## 8. Live-integration gates (when you flip to Supabase / real keys)
+After any edit to a `.dart` file, run:
 
-- Supabase path: set `TB_SUPABASE_URL`/`TB_SUPABASE_KEY`, run
-  `python seed_supabase.py`, then `pytest tests/test_supabase_integration.py -v`.
-  Full flip steps: see `docs/PROJECT_STATUS.md §3`.
-- Real auth: set `TB_SUPABASE_JWT_SECRET`; the app switches from X-Debug-User-Id
-  to verified JWTs. Use a real Supabase access token from the app's auth flow.
+    grep -rn '\\$' mobile/lib
+
+Only the two price strings in `upgrade_screen.dart` should match. An escaped
+interpolation has silently broken the base URL, the Bearer token and a ValueKey
+on three separate occasions (R1).
+
+### On a device
+
+    flutter devices
+    flutter run -d <deviceId> \
+      --dart-define=TB_API_BASE_URL=http://10.0.2.2:8000 \
+      --dart-define=TB_DEBUG_USER_ID=11111111-1111-1111-1111-111111111111
+
+`10.0.2.2` is the emulator's route to the host. A physical device needs the
+laptop's LAN IP instead, which also matters for section 6.
+
+## 5. Flutter unit and widget tests
+
+    cd mobile
+    flutter test
+    flutter test --coverage
+    genhtml coverage/lcov.info -o coverage/html    # needs lcov
+
+Tests stub the backend with `mocktail`, so no live server is needed. They must
+throw the same exception types production throws -- a test that threw
+`Exception('401 ...')` instead of `UnauthorizedException` is precisely why the
+retry bug survived a green suite (R3).
+
+## 6. Airplane-mode durability drill (gates the Laos field test)
+
+This is the drill that must pass before the trip, and the first attempt was
+meaningless. The build was talking to the laptop over `adb reverse` on USB, and
+airplane mode does not disable USB, so four hearts posted instantly to a
+supposedly disconnected server (R7).
+
+Build against the laptop's LAN IP, not `10.0.2.2` and not a USB tunnel:
+
+    flutter run -d <deviceId> \
+      --dart-define=TB_API_BASE_URL=http://<laptop-lan-ip>:8000 \
+      --dart-define=TB_DEBUG_USER_ID=11111111-1111-1111-1111-111111111111
+
+Then:
+
+1. Confirm the failure mode is real. Enable airplane mode and watch the server
+   log show no incoming requests. If requests still arrive, stop -- the drill is
+   invalid.
+2. Tap loved on five venues.
+3. Force-kill the app. Reopen it. The sync screen at `/profile/sync` must still
+   show five pending.
+4. Re-enable the network. All five must sync.
+5. Query the destination store for five rows. An `accepted=1` log line is not
+   proof of persistence -- the sync engine once reported exactly that while
+   `db_provider` pointed at the in-memory backend and every signal was discarded
+   on restart (R11).
+
+## 7. End-to-end and visual regression (later)
+
+- `integration_test` or `patrol` for a full flow: launch, create trip, swap a
+  card, assert the timeline reflows.
+- `golden_toolkit` for per-screen snapshots once the design settles.
+- Flutter DevTools for the widget inspector and for checking timeline animation
+  jank.
+
+## 8. Supabase and live-integration gates
+
+The backend already resolves to Supabase whenever credentials are present;
+there is no pending flip. `services/db_provider.py` decides at import time.
+
+- Set `TB_SUPABASE_URL` and the service key, then run
+  `pytest tests/test_supabase_integration.py -v`.
+- Loaders: `python scripts/load_dish_glossary.py data/laos_dish_glossary.json`
+  and `python scripts/load_venues.py <files> --geo-region <region>`. Check
+  `docs/AWAITING_VERIFICATION.md` first; the venue loader has open defects that
+  make an unqualified run fail.
+- Real auth: set `TB_SUPABASE_JWT_SECRET` and the app switches from
+  `X-Debug-User-Id` to verified JWTs. Use a real access token from the app's
+  auth flow.
+
+Before running any of these locally, pull and confirm the fix you expect is
+actually in your working copy. A correct remote plus a stale local produces the
+same failure as never having fixed the bug (R10):
+
+    git pull origin main
+    grep -n "<expected string>" <path>
 
 ## Known caveats
-- Backend runs on **in-memory** storage until the Supabase flip — state resets
-  on restart, not shared across processes.
-- `weather_service`, `cost_tracker`, `rag_ingestion` are scaffolding, not wired
-  into the request path (see PROJECT_STATUS.md).
+
+- In-memory mode resets on restart and is not shared across processes. Check the
+  startup log to see which backend resolved.
+- `weather_service`, `cost_tracker` and `rag_ingestion` are scaffolding and are
+  not wired into the request path.
+- Current open defects, including the venue loader ones, are listed in
+  `docs/AWAITING_VERIFICATION.md`.

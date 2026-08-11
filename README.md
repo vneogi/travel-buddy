@@ -1,117 +1,138 @@
-# Travel Buddy AI - Dubai MVP Backend
+# Travel Buddy
 
-An AI-powered travel companion backend that maintains a continuous, self-correcting itinerary state loop. The system accepts real-time user interruptions, intelligently replaces affected activities using local venue knowledge (RAG), and dynamically shifts the remaining schedule without altering locked reservations.
+An AI travel companion: a FastAPI backend and a Flutter client that together
+maintain a continuous, self-correcting itinerary. The traveller interrupts the
+plan ("too tired for the gallery walk, find me a quiet cafe"), the system
+replaces the affected activity using curated local venue knowledge (RAG), and
+reschedules everything downstream without moving locked reservations.
 
-## Architecture Overview
+Two regions are loaded: Dubai (16 synthetic venues) and Laos (58 hand-curated
+venues across Luang Prabang, Vang Vieng and Vientiane) for a field test on
+Oct 2 2026.
 
-```
-┌────────────────────────────────────────────────────────────┐
-│                    FastAPI Router Layer                       │
-│  ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌──────────┐ │
-│  │  Reroute   │ │  Semantic  │ │  Circuit   │ │ Async    │ │
-│  │  Throttle  │ │  Cache     │ │  Breaker   │ │ Router   │ │
-│  └────────────┘ └────────────┘ └────────────┘ └──────────┘ │
-└────────────────────────────────────────────────────────────┘
-                              │
-┌────────────────────────────────────────────────────────────┐
-│              LangGraph State Machine                         │
-│  classify_intent -> cache_check -> venue_search ->           │
-│  generate_response -> update_state -> respond                │
-└────────────────────────────────────────────────────────────┘
-                              │
-┌────────────────────────────────────────────────────────────┐
-│                  Services Layer                              │
-│  ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌──────────┐ │
-│  │  Database  │ │  Embedding │ │  Cache     │ │ Maps     │ │
-│  │  Service   │ │  Service   │ │  Service   │ │ Service  │ │
-│  └────────────┘ └────────────┘ └────────────┘ └──────────┘ │
-└────────────────────────────────────────────────────────────┘
-```
+| Read this | For |
+|-----------|-----|
+| `docs/PROJECT_STATUS.md` | What is built, what is next, known risks |
+| `docs/ENGINEERING_RULES.md` | Rules earned from real bugs. Read before contributing |
+| `docs/VISION.md` | Product strategy and the data moat thesis |
+| `docs/AWAITING_VERIFICATION.md` | Dated log of what is not yet verified on device |
+| `docs/specs/` | Numbered specifications, SPEC-01 onward |
 
-## Project Structure
+## Architecture
 
-```
-travel-buddy-mvp/
-├── main.py                  # FastAPI app entry point
-├── seed_data.py             # 16 curated Dubai venues (synthetic)
-├── requirements.txt         # Python dependencies
-├── config/
-│   └── settings.py          # All configuration & guardrail levers
-├── models/
-│   ├── schemas.py           # Pydantic models & TypedDicts
-│   └── database.py          # PostgreSQL schema (SQL)
-├── services/
-│   ├── database_service.py  # In-memory DB (swap for Supabase)
-│   ├── embedding_service.py # Vector embedding generation
-│   ├── cache_service.py     # Semantic cache (Lever 2)
-│   └── maps_service.py      # Google Maps mock (transit/places)
-├── agents/
-│   ├── state_machine.py     # LangGraph state machine
-│   └── router_agent.py      # Intent classifier & model router
-└── routers/
-    └── trip_router.py       # FastAPI endpoints + guardrails
-```
+    Flutter app (mobile/)
+      SignalService -> SQLite outbox -> SyncEngine -> POST /api/v1/signals
+      ApiClient (Dio, typed exception hierarchy)
+      Riverpod controllers, offline-first cache
 
-## 5 Cost-Control Guardrails (from BRD)
+    FastAPI backend
+      routers/trip_router.py      trip CRUD, events, reroutes, guardrails
+      routers/signal_router.py    behavioural signal ingest (batch, idempotent)
+      routers/debug_router.py     error ring buffer, debug builds only
+      routers/payment_router.py   RevenueCat webhooks (optional import)
+      agents/state_machine.py     sequential orchestration pipeline
+      agents/router_agent.py      intent classifier and model router
+      services/db_provider.py     resolves in-memory vs Supabase at import
+      services/scheduler.py       opening hours, transit, locked nodes
+      services/cache_service.py   semantic cache
+      monitoring/error_log.py     request IDs and traceback capture
+
+    Supabase (PostgreSQL + pgvector)
+      supabase/migrations/0001 .. 0010
+
+The orchestrator is **not** LangGraph, despite what older revisions of this file
+and the BRD claimed. `langgraph` is commented out in `requirements.txt` and the
+`GraphState` TypedDict is unused. `agents/state_machine.py` runs a hand-rolled
+sequence:
+
+    classify_intent -> check_cache -> venue_search -> apply_structural -> generate_response
+
+`weather_service`, `cost_tracker` and `rag_ingestion` exist as scaffolding and
+are not wired into the request path.
+
+## Persistence
+
+`services/db_provider.py` picks the backend at import time: Supabase when
+`TB_SUPABASE_URL` and the service key are present, in-memory otherwise.
+In-memory state resets on restart and is not shared across processes, so it is
+for tests and quick local work only.
+
+`DatabaseService` and `SupabaseService` are independent implementations of one
+interface. `tests/test_backend_parity.py` fails if their signatures diverge,
+because that divergence has crashed startup before (R13). A green suite against
+in-memory proves nothing about the Supabase path (R4).
+
+## Cost-control guardrails
 
 | Lever | Name | Implementation |
 |-------|------|----------------|
-| 1 | Reroute Throttle | Free users: 5 reroutes/day. Pro: 50/day |
-| 2 | Semantic Cache | Cosine similarity > 0.92 = cached response (zero LLM cost) |
-| 3 | Circuit Breaker | Max 3 internal graph transitions before fallback |
-| 4 | Asymmetric Router | Light model for info queries, heavy for restructuring |
-| 5 | Ad-Injection Boost | Sponsored venues get score boost in RAG results |
+| 1 | Reroute throttle | Free users 5 reroutes/day, Pro 50/day |
+| 2 | Semantic cache | Cosine similarity above 0.92 serves a cached response at zero LLM cost |
+| 3 | Circuit breaker | At most 3 internal transitions before falling back |
+| 4 | Asymmetric router | Light model for info queries, heavy model for restructuring |
+| 5 | Ad-injection boost | Sponsored venues receive a score boost in RAG results |
 
-## Quick Start (MVP with Synthetic Data)
+All five levers are configured in `config/settings.py`.
 
-```bash
-# Install dependencies
-pip install -r requirements.txt
+## Quick start
 
-# Run the server
-python main.py
-# OR
-uvicorn main:app --reload --port 8000
+    pip install -r requirements.txt
+    cp .env.example .env          # Supabase and OpenAI creds, optional for in-memory
+    uvicorn main:app --reload --port 8000
 
-# Open API docs
-open http://localhost:8000/docs
-```
+Then open http://localhost:8000/docs
 
-## API Endpoints
+For local development without Supabase Auth, set `TB_DEBUG=true` and send an
+`X-Debug-User-Id` header with a real UUID. Never run that way anywhere reachable
+from the internet -- one header impersonates any user.
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/health` | Health check + system stats |
-| POST | `/api/v1/trip/create` | Create new Dubai itinerary |
-| GET | `/api/v1/trip/{trip_id}` | Get trip state |
-| POST | `/api/v1/trip/event` | Process user event (main endpoint) |
-| GET | `/api/v1/user/{user_id}/status` | User tier & reroute info |
-| POST | `/api/v1/user/{user_id}/upgrade` | Upgrade to Pro |
-| GET | `/api/v1/venues/search` | Search venues via RAG |
-| GET | `/api/v1/stats` | System analytics |
+## API
 
-## Example: Process a Trip Event
+`/docs` is the contract. It is generated from the code, so it cannot go stale;
+a table here would (R16). The routes cluster as `/api/v1/health`,
+`/api/v1/trip/*`, `/api/v1/signals`, `/api/v1/venues/search` and
+`/api/v1/debug/*`.
 
-```json
-POST /api/v1/trip/event
-{
-  "user_id": "user-123",
-  "trip_id": "<trip_id_from_create>",
-  "event_type": "swap_activity",
-  "message": "I'm too tired for the gallery walk, find me a quiet cafe with great interiors",
-  "target_node_id": "<node_id_to_replace>",
-  "preferences": {
-    "vibe_tags": ["leisurely", "premium_interiors"],
-    "mood": "relaxed"
-  }
-}
-```
+Example event:
 
-## Production Roadmap
+    POST /api/v1/trip/event
+    {
+      "user_id": "user-123",
+      "trip_id": "<from trip/create>",
+      "event_type": "swap_activity",
+      "message": "I'm too tired for the gallery walk, find me a quiet cafe",
+      "target_node_id": "<node to replace>",
+      "preferences": {"vibe_tags": ["leisurely"], "mood": "relaxed"}
+    }
 
-1. **Phase 1 (Current)**: Synthetic MVP - all services in-memory
-2. **Phase 2**: Connect Supabase (PostgreSQL + pgvector)
-3. **Phase 3**: Integrate LiteLLM with real models (GPT-4o + Gemini Flash)
-4. **Phase 4**: Real Google Maps/Places API integration
-5. **Phase 5**: Mobile app (Flutter/React Native) + Play Store deployment
-6. **Phase 6**: RAG pipeline with real venue ingestion from TimeOut, What's On
+## Project layout
+
+    main.py                     FastAPI entry point
+    seed_data.py                Dubai seed venues
+    config/                     settings, regions, dietary vocabularies
+    models/                     Pydantic schemas, signal type registry
+    services/                   persistence, embeddings, cache, scheduler, maps
+    agents/                     orchestration pipeline and intent router
+    routers/                    HTTP layer
+    monitoring/                 error ring buffer
+    scripts/                    venue and glossary loaders, dev and smoke scripts
+    supabase/migrations/        versioned SQL
+    data/                       curated venue and dish datasets
+    tests/                      pytest suite
+    mobile/                     Flutter client
+    docs/                       status, rules, vision, specs
+
+## Tests
+
+    pytest -q -ra
+
+`-ra` prints a reason for every skip. A skip asserts nothing, so treat an
+unexplained skip as a failure (R8). Flutter: `cd mobile && flutter analyze && flutter test`.
+
+See `docs/TESTING_GUIDE.md` for the full playbook, including the airplane-mode
+durability drill that gates the Laos field test.
+
+## Status
+
+`docs/PROJECT_STATUS.md` is the single source of truth for what works, what is
+next and what is broken. This file deliberately does not duplicate it.
