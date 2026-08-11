@@ -10,6 +10,10 @@
 - Test deps are pinned in `requirements-dev.txt`. Install them, because an
   ephemeral environment that silently loses `pytest-asyncio` turns eight real
   tests into skips while the summary still looks healthy (R8).
+- The pytest config names a pytest 9 warning class in `filterwarnings`, which
+  makes pytest 9 a hard floor. If pytest dies instantly complaining about an
+  unknown warning class, you are running some other interpreter's pytest and
+  have not installed the dev requirements.
 - Flutter 3.2+: install the SDK, run `flutter doctor`, fix anything red.
 - For device testing: Android Studio with an AVD, or a physical phone with USB
   debugging. Chrome needs no emulator.
@@ -30,6 +34,13 @@ not configured" when `TB_SUPABASE_URL` is unset. A skip anywhere else is a
 finding: eight tests once degraded from passing to skipped when `pytest-asyncio`
 vanished from an ephemeral environment, and the summary line still read as
 healthy (R8).
+
+`tests/test_docs_hygiene.py` tests the documentation rather than the code. It
+fails on non-ASCII bytes outside its allowlist, on a mirrored test count in a
+load-bearing document, on architecture claims known to be false, and on a
+`SPEC-NN` reference with no matching file. If it fails after you edit a
+document, the document is wrong, not the test. The allowlist is permitted to
+shrink and never to grow.
 
 Passing tests are not verification (R3). Two of the worst defects in this repo
 shipped green: an auth bypass, and a sync engine that string-matched on error
@@ -170,6 +181,5 @@ same failure as never having fixed the bug (R10):
   startup log to see which backend resolved.
 - `weather_service`, `cost_tracker` and `rag_ingestion` are scaffolding and are
   not wired into the request path.
-- Current open defects, including the venue loader ones and the pytest
-  `filterwarnings` config naming a warning class that does not exist in the
-  installed pytest, are listed in `docs/AWAITING_VERIFICATION.md`.
+- Current open defects, including the venue loader ones, are listed in
+  `docs/AWAITING_VERIFICATION.md`.

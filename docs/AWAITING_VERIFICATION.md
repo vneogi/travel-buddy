@@ -17,10 +17,10 @@ drifted, so they are dropped. Commits are identified by SHA only.
 
 ## Baseline, Aug 12 2026
 
-A fresh clone on the Databricks compute reports 117 passed and 5 skipped.
-All five skips are in `tests/test_supabase_integration.py` with the reason
-"Supabase creds not configured (TB_SUPABASE_URL unset)". Those are the
-expected skips. A skip anywhere else is a finding (R8).
+A fresh clone on the Databricks compute at `8b71949` reports 122 passed
+and 5 skipped. All five skips are in `tests/test_supabase_integration.py`
+with the reason "Supabase creds not configured (TB_SUPABASE_URL unset)".
+Those are the expected skips. A skip anywhere else is a finding (R8).
 
 ## Verified via pytest
 
@@ -31,6 +31,17 @@ Derives `arrival_delta` from `visited_confirmed.captured_at` against
 `services/arrival_delta_service.py` and `tests/test_arrival_delta.py`.
 This is DONE. Earlier revisions of PROJECT_STATUS.md listed it as the
 next task, contradicting this file.
+
+### Documentation hygiene guard -- 8b71949
+
+`tests/test_docs_hygiene.py`, five tests: non-ASCII outside an allowlist,
+stale allowlist entries, mirrored test counts in load-bearing documents,
+known-false architecture claims, and unresolvable `SPEC-NN` references.
+
+The guard was proven to fail before it was accepted. A probe file
+containing an em-dash was committed, the non-ASCII test failed naming that
+file, the probe was removed, and the suite went green. A guard that has
+never failed proves nothing (R3).
 
 ## Awaiting device verification
 
@@ -101,19 +112,6 @@ The loader writes `typical_dwell_minutes`, `indoor_outdoor` and
 SPEC-12 driver cards. A database rebuilt from `supabase/migrations/`
 today fails on load.
 
-### Medium -- pytest config names a warning class that does not exist
-
-`filterwarnings` references `PytestRemovedIn10Warning`. The installed
-pytest defines only `PytestRemovedIn9Warning`, so `pytest -q -ra` errors
-out until the filter is overridden on the command line. R8 asked for that
-filter so an async test without a runner fails loudly rather than becoming
-a silent no-op, so the fix is to make the entry version-tolerant, not to
-delete it.
-
-Related: `__pycache__` writes into the workspace are denied on the
-Databricks compute by the same filter that blocks all workspace writes
-(R15). Run pytest there with `PYTHONDONTWRITEBYTECODE=1`.
-
 ### Medium -- hybrid_venue_search geo_region parameter
 
 `supabase_service` passes a `geo_region` filter to the RPC, and the
@@ -132,6 +130,14 @@ name the settings layer expects and make all three agree.
 The loader field-name fix is committed but the data was never re-loaded,
 so the scheduler has no hours to respect for any Laos venue.
 
+### Low -- three nested READMEs are outside the hygiene guard
+
+The guard walks the root `README.md`, `MASTER_BRD.md` and `docs/`. It does
+not see `mobile/README.md` (204 non-ASCII bytes, the second largest
+offender in the repo), `scripts/README.md` (33) or
+`supabase/migrations/README.md` (24). Nothing stops those three drifting
+further. Widen the walk and allowlist them.
+
 ### Low -- mobility_limited overcorrected
 
 Flagged on roughly two thirds of venues, which makes it useless as a
@@ -144,6 +150,43 @@ It sits in `scripts/load_dish_glossary.py` and belongs in
 `config/dietary.py` contains em-dashes. It is no longer blocked: R14
 documents the delete-and-recreate procedure, so `config/dietary.py` gets
 rebuilt as pure ASCII with the constant moved in.
+
+## Retracted findings
+
+### The pytest filterwarnings entry was not broken
+
+A previous revision of this file recorded, as a Medium open issue, that
+`pyproject.toml` referenced `PytestRemovedIn10Warning`, a class that does
+not exist. That was wrong. pytest 9.1.1 defines it. The startup error came
+from invoking the base compute's system pytest before installing the
+project requirements, so it was an environment mistake reported as a repo
+defect.
+
+What survives is smaller and worth keeping. The config had:
+
+    # PytestUnhandledCoroutineWarning removed in pytest 9.x; guard both versions.
+    filterwarnings = [
+        "ignore::pytest.PytestRemovedIn10Warning",
+    ]
+
+That comment describes the opposite of what the code does. Naming a class
+in an ini `filterwarnings` entry is a hard dependency on the class
+existing, so the entry written to guard both pytest versions was the sole
+reason the older one could not start. It also only ever suppressed a
+warning; it never enforced anything, so the R8 protection against an async
+test silently becoming a no-op was never in this file. pytest itself fails
+unhandled coroutines from 8.4 onwards, which is where that guarantee
+actually comes from.
+
+The replacement at `8b71949` errors on `PytestReturnNotNoneWarning`, which
+catches a test that returns instead of asserting. Useful, but unrelated to
+async detection, and the comment above it claims otherwise. Correct the
+comment and pin a pytest floor in `requirements-dev.txt` so the version
+dependency is declared rather than discovered.
+
+Cost of the misdiagnosis: one unnecessary config change, made because a
+brief asserted a filter that was not there and the executing agent matched
+the brief instead of contradicting it.
 
 ## Tooling incidents
 
@@ -167,6 +210,12 @@ Repair was a re-clone, not a retry. Notes for next time:
 The re-clone also discarded six uncommitted files left by the dead
 session, which was the intended outcome.
 
+### __pycache__ writes are denied on the compute
+
+The same filter that blocks all workspace writes (R15) also blocks
+bytecode caching, so pytest fails on import until caching is disabled.
+Run it there with `PYTHONDONTWRITEBYTECODE=1`.
+
 ### Half-landed documentation commit, 9fbe2f6
 
 That commit rebuilt `PROJECT_STATUS.md` only partially, because R14
@@ -184,8 +233,11 @@ This keeps documentation out of the R14 and R15 failure modes entirely.
 
 ## ASCII status of the documentation set
 
-Measured byte-wise against the pushed tree on Aug 12 2026. Counts are
-non-ASCII bytes per file.
+Enumerated from the full tree at `8b71949`, not from a hand-written list.
+The previous revision of this table was built by listing files from memory
+and missed `docs/research/SURVEY_FINDINGS.md`, which the hygiene guard
+caught on its first run. There are 27 markdown files in the repo and 18
+contain non-ASCII bytes.
 
 Pure ASCII, editable in place with `editAsset`:
 
@@ -196,9 +248,8 @@ Pure ASCII, editable in place with `editAsset`:
   `docs/specs/SPEC-11-forced-choice-preferences.md`,
   `docs/specs/SPEC-12-show-driver-cards.md`
 
-Non-ASCII. These must be rebuilt rather than patched (R14), and they are
-the seed allowlist for `tests/test_docs_hygiene.py`. The allowlist may
-only shrink:
+Non-ASCII, inside the guard's scan path. These 15 are the seed allowlist in
+`tests/test_docs_hygiene.py`, and it may only shrink:
 
 | File | Non-ASCII bytes |
 |------|-----------------|
@@ -215,9 +266,19 @@ only shrink:
 | `docs/research/survey_short.md` | 40 |
 | `docs/specs/SPEC-06-behavioral-signals.md` | 38 |
 | `docs/specs/SPEC-05-observability.md` | 24 |
+| `docs/research/SURVEY_FINDINGS.md` | 6 |
 | `docs/specs/SPEC-10-booking-anchors.md` | 6 |
 
-Source files known to contain non-ASCII, same constraint:
+Non-ASCII, outside the guard's scan path. Unprotected until the walk is
+widened:
+
+| File | Non-ASCII bytes |
+|------|-----------------|
+| `mobile/README.md` | 204 |
+| `scripts/README.md` | 33 |
+| `supabase/migrations/README.md` | 24 |
+
+Source files known to contain non-ASCII, same R14 constraint:
 
 - `scripts/load_venues.py` (warning glyphs and an em-dash in output)
 - `config/dietary.py` (em-dashes in comments)
