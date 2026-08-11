@@ -1,257 +1,97 @@
-# Travel Buddy — Project Status & Handoff
+# Travel Buddy -- Project Status
 
 > Current state of the codebase. For commit history use `git log`.
-> For device-verification queue see docs/AWAITING_VERIFICATION.md.
+> For the device-verification queue see docs/AWAITING_VERIFICATION.md.
 > For engineering rules see docs/ENGINEERING_RULES.md.
 
 ## TL;DR
 
-- Backend: FastAPI on Supabase (pgvector). db_provider resolves backend at
-  import time -- Supabase when creds present, in-memory otherwise.
+- Backend: FastAPI on Supabase (pgvector). db_provider resolves the backend at
+  import time -- Supabase when creds are present, in-memory otherwise.
 - Orchestrator: hand-rolled sequential pipeline in agents/state_machine.py
   (classify_intent -> check_cache -> venue_search -> apply_structural ->
   generate_response). NOT LangGraph -- langgraph is commented out in
-  requirements.txt and GraphState TypedDict is unused.
-- AI: live via LiteLLM gateway (gpt-4o heavy, gpt-4o-mini light,
+  requirements.txt and the GraphState TypedDict is unused.
+- AI: live via the LiteLLM gateway (gpt-4o heavy, gpt-4o-mini light,
   text-embedding-3-small embeddings).
-- Data: 74 venues total (16 Dubai, 23 Luang Prabang, 15 Vang Vieng,
-  20 Vientiane). 44 venue dishes. 30 dish-glossary entries.
-- Signals: 8 types registered in models/signal_types.py.
-- Flutter: offline-first with SQLite outbox, sync engine, typed exception
-  hierarchy. Behavioral signal emission wired for 5 of 8 types.
-- Test health: run `pytest -q` (do not hardcode counts here -- R16).
-  **Migration 0003 (trip_party) NOT YET WRITTEN — blocks Supabase flip for SPEC-03.**
-- **Flutter**: running end-to-end on Android (real device). **29+ unit tests**.
-  Offline-first queue fully implemented. Offline create-trip crash fixed.
-- **Signal capture (SPEC-01)**: fully implemented + reviewed. All backends.
-- **Offline queue (SPEC-02)**: **IMPLEMENTED** — SQLite outbox, sync engine, typed
-  exception handling, crash recovery, debug view, app-resume lifecycle.
-- **Party context (SPEC-03)**: **PARTIAL** — Python backend complete (server-side stamping
-  at ingest, both backends have save/get_trip_party, 8 tests pass). BUT: Supabase
-  migration 0003 never written. `supabase_service.save_trip_party` will raise at runtime.
-  Do not flip `db_provider` to Supabase before migration lands.
-- **Behavioral signals**: **NOT STARTED**. Only `user_loved` registered in
-  `_valid_signal_types`. The 6 other types specified in DATA_MODEL §4.2 would be
-  rejected 422 today. This is the #1 moat gap.
-- **Observability (SPEC-05)**: IMPLEMENTED — ring buffer, request IDs, debug endpoint.
-- **Migrations**: versioned tooling in place (`supabase/migrations/`).
+- Data as last loaded: 74 venues (16 Dubai, 23 Luang Prabang, 15 Vang Vieng,
+  20 Vientiane), 44 venue dishes, 30 dish-glossary entries. Confirm with a
+  count query against venues_rag rather than trusting these numbers.
+- Signals: the registry in models/signal_types.py is the source of truth for
+  which types exist. A drift guard test enforces it.
+- Flutter: offline-first with a SQLite outbox, sync engine, and typed exception
+  hierarchy. Signal emission is wired for most but not all registered types --
+  see the SPEC-07 row below.
+- Test health: run `pytest -q`. Counts are deliberately not recorded here (R16).
+  One test skips when the supabase client library is absent.
 
-### Known risks
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| **Registry drift** | `_valid_signal_types` hardcoded in database_service.py with comment "mirrors signal_type table" — two sources of truth for one registry | SPEC-06 replaces with single `models/signal_types.py` + drift test |
-| **SPEC-03 incomplete** | Supabase flip blocked until 0003 migration lands | Write migration before flipping |
-| **Thin signal data** | Laos trip captures only ❤ taps without behavioral types | SPEC-06 registers types; SPEC-07 wires client emission |
+## Component Status
 
-## 1. Commit History (all pushed to main)
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Supabase persistence | LIVE | db_provider auto-resolves; falls back to in-memory |
+| Migrations 0001-0010 | APPLIED, WITH DRIFT | 0007 RLS, 0008 hours JSONB, 0009 dish price, 0010 glossary. venues_rag lacks five columns the loader writes -- see Known Risks |
+| Signal capture (SPEC-01) | DONE | All registered types accepted, both backends |
+| Offline queue (SPEC-02) | DONE | SQLite outbox, sync engine, crash recovery |
+| Party context (SPEC-03) | DONE | Server-side stamping, both backends, migration 0003 applied |
+| Observability (SPEC-05) | DONE | Ring buffer, request IDs, debug endpoint |
+| Signal registry (SPEC-06) | DONE | models/signal_types.py plus drift test |
+| Signal emission (SPEC-07) | PARTIAL | Missing in Dart: reroute_rejected, dish_loved, dish_ordered |
+| Laos curation (SPEC-08) | DONE | 58 venues loaded, validation rules enforced |
+| arrival_delta derivation | DONE | Server-derived from visited_confirmed vs scheduled_start |
+| Offline vault (SPEC-04) | SPECIFIED | Not implemented |
+| Anonymous identity (SPEC-09) | SPECIFIED | Not implemented |
+| Booking anchors (SPEC-10) | SPECIFIED | Not implemented. Chosen scope for the Oct 2 field test |
 
-| # | Message | Key files |
-|---|---------|-----------|
-| 1–29 | (Flutter phase — see v6.0 summary) | Full backend + mobile scaffold |
-| 30 | `docs: Add VISION.md` | docs/VISION.md |
-| 31 | `docs: Add user research surveys` | docs/research/ |
-| 32 | `docs: Extend VISION.md — capabilities matrix` | docs/VISION.md |
-| 33 | `docs: Extend DATA_MODEL_BRD.md §16` | docs/DATA_MODEL_BRD.md |
-| 34 | `docs: Add SPEC-01` | docs/specs/ |
-| 35 | `feat(migrations): SPEC-01 Part A` | supabase/migrations/ |
-| 36 | `feat(signals): SPEC-01 Part B` | 12 files |
-| 37 | `docs: Add SPEC-02` | docs/specs/ |
-| 38 | `fix(signals): Add record_signal to SupabaseService` | supabase_service.py |
-| 39 | `fix: Replace datetime.utcnow() with timezone-aware` | 9 files |
-| 40 | `docs: Update PROJECT_STATUS.md to v7.0` | docs/ |
-| 41 | `feat(offline): SPEC-02 — offline-first queue + sync` | 9 files |
-| 42 | `fix(offline): Address SPEC-02 review — lifecycle + exceptions` | 5 files |
+## What is Next (Priority Order)
 
-### Commit #41 — SPEC-02 Implementation
-- `mobile/lib/offline/offline_database.dart`: SQLite outbox + cache tables
-- `mobile/lib/offline/sync_engine.dart`: sync algorithm with backoff
-- `mobile/lib/services/signal_service.dart`: rewritten — queue-backed emit()
-- `mobile/lib/core/providers.dart`: wires OfflineDatabase + SyncEngine
-- `mobile/lib/features/debug/sync_status_screen.dart`: debug view
-- `mobile/test/offline_sync_test.dart`: 10 offline tests
-- `routers/signal_router.py`: Part C (per-item rejection, skew tolerance)
-- `tests/test_signals.py`: 12 tests (6 new Part C)
-- `mobile/pubspec.yaml`: sqflite, path, connectivity_plus
+1. SPEC-10 booking anchors -- chosen scope for the Oct 2 Laos field test, so
+   the engine knows the real trip. Backend first, all pytest-verifiable.
+2. halal plus pork LABEL_EXCLUDES_ALLERGENS rule -- High-severity safety hole
+3. venues_rag missing-column migration -- latent break, and unblocks SPEC-12
+4. reroute_rejected plus swap sheet UI -- the last unwired behavioural signal
+5. SPEC-09 anonymous device identity -- prerequisite for any tester build
+6. Backfill opening_hours on the 58 Laos venues (loader fix landed, needs re-run)
+7. Relocate VALID_DISH_CONTAINS to config/dietary.py (R5 violation)
 
-### Commit #42 — Review Fixes (two blocking bugs)
-- `mobile/lib/main.dart`: ProviderContainer + SyncEngine.start() + app-resume
-- `mobile/lib/offline/sync_engine.dart`: typed exception catching (not string-matching)
-- `mobile/test/offline_sync_test.dart`: tests throw real exception types + test 11
-- `mobile/lib/routing/app_router.dart`: /profile/sync route
-- `mobile/lib/features/profile/profile_screen.dart`: sync status nav link
+## Known Risks and Open Issues
 
-## 2. Test Results
+| Issue | Severity | Detail |
+|-------|----------|--------|
+| venues_rag schema drift | High | load_venues.py writes typical_dwell_minutes, indoor_outdoor and price_band; no migration defines them. name_local and nearest_landmark are also absent, which blocks SPEC-12 driver cards. A database rebuilt from migrations today fails on load |
+| halal plus pork passes the allergen check | High | No LABEL_EXCLUDES_ALLERGENS rule for halal. Safety hole for Muslim travellers |
+| opening_hours null on all Laos venues | Medium | Loader field-name fix committed but the data was never re-loaded |
+| hybrid_venue_search geo_region param | Medium | supabase_service passes a geo_region filter the RPC in 0001 does not declare. Verify against the live function |
+| mobility_limited overcorrected | Low | Set on roughly two thirds of venues -- too loose to be a useful filter |
+| Vientiane has zero massage_spa | Low | A natural fatigue-reroute target is missing in one region |
+| VALID_DISH_CONTAINS in the wrong file | Low | Lives in load_dish_glossary.py, belongs in config/dietary.py (R5) |
 
-**Backend (pytest):** `53 passed, 5 skipped`
-- 12 signal tests (6 SPEC-01 + 6 SPEC-02 Part C)
-- 8 party/SPEC-03 tests
-- 7 observability/SPEC-05 tests
-- 5 skipped = Supabase integration tests (need live DB)
+## How to Run
 
-**Flutter (expected):** `29 tests`
-- 14 core (models, repositories, itinerary controller)
-- 4 signal service (wire format, error swallow)
-- 11 offline (durability, sync, crash recovery, backoff, typed errors)
+### Backend (local)
 
-## 3. Architecture
+    git pull origin main
+    pip install -r requirements.txt
+    cp .env.example .env   # fill in Supabase and OpenAI creds
+    uvicorn main:app --reload
 
-```
-Flutter App (mobile/)
-  └─ SignalService (queue-backed — SPEC-02)
-       └─ OfflineDatabase (SQLite outbox + cache)
-       └─ SyncEngine (single-flight, typed exceptions, backoff)
-            └─ POST /api/v1/signals (batch, idempotent)
-  └─ ApiClient (Dio + typed exceptions)
-  └─ StateNotifier controllers (Riverpod)
-  └─ WidgetsBindingObserver (app-resume → triggerSync)
+### Tests
 
-FastAPI Backend
-  ├─ routers/signal_router.py     (SPEC-02 Part C: per-item, skew, rejected[])
-  ├─ routers/trip_router.py       (trip CRUD + events)
-  ├─ routers/payment_router.py    (RevenueCat webhooks)
-  ├─ security.py                  (JWT + debug auth)
-  ├─ agents/state_machine.py      (LangGraph orchestrator)
-  ├─ services/database_service.py (in-memory — active)
-  ├─ services/supabase_service.py (production — ready, not flipped)
-  └─ services/cache_service.py    (semantic cache)
+    pytest -q --tb=short
 
-Supabase (PostgreSQL + pgvector)
-  ├─ 0001_initial_schema.sql      (5 tables, 5 functions)
-  └─ 0002_signals_core.sql        (source, signal_type, signal)
-```
+### Load venues (Laos)
 
-## 4. SPEC-02 Implementation (Offline Queue + Sync)
+    # Set OPENAI_API_KEY and TB_SUPABASE_URL / TB_SUPABASE_SERVICE_KEY
+    python scripts/load_dish_glossary.py data/laos_dish_glossary.json
+    python scripts/load_venues.py data/laos_luang_prabang.json data/laos_vang_vieng.json data/laos_vientiane.json
 
-**Status: IMPLEMENTED + REVIEWED (commits #41–42)**
+### Flutter
 
-Key components:
-- **OfflineDatabase** (`sqflite`): outbox table (signal_id PK, state machine), cache tables
-- **SignalService**: emit() persists to outbox BEFORE network; never throws/blocks
-- **SyncEngine**: single-flight, batch POST, exponential backoff + jitter (cap 15min)
-  - Typed exception handling: `UnauthorizedException` → preserve; `ServerException`/`NetworkException` → retry; other → permanent
-  - Crash recovery on startup (inflight → pending)
-  - Triggers: app start, resume, connectivity regained, post-emit, 60s timer
-- **Sync Status Screen**: `/profile/sync` — pending/inflight/failed counts, force-sync
-- **Server Part C**: per-item rejection, 30d captured_at skew tolerance, `rejected[]` response
+    cd mobile
+    flutter pub get
+    flutter analyze
+    flutter test
 
-**Review findings fixed:**
-1. ~~SyncEngine.start() never called~~ → wired in main.dart with ProviderContainer
-2. ~~String-matching exception text~~ → typed catch clauses matching ApiClient's hierarchy
-3. ~~Dead markInflight([])~~ → removed
-4. ~~Sync status unreachable~~ → route + profile link added
+### PowerShell smoke test (Windows only)
 
-## 5. Documentation Map
-
-| File | Purpose |
-|------|---------|
-| `docs/VISION.md` | Product vision, strategy, moat thesis (§1–§13) |
-| `docs/DATA_MODEL_BRD.md` | Signal & data-model design spec (§1–§16) |
-| `docs/PROJECT_STATUS.md` | This file — current state |
-| `docs/TESTING_GUIDE.md` | Full testing playbook |
-| `docs/specs/SPEC-01-migrations-and-first-signal.md` | IMPLEMENTED |
-| `docs/specs/SPEC-02-offline-queue-and-sync.md` | IMPLEMENTED |
-| `docs/research/survey_short.md` | 3-min user research survey |
-| `docs/research/survey_deep.md` | 8-min deep user research survey |
-| `MASTER_BRD.md` | Technical BRD (points to VISION.md for strategy) |
-
-## 6. Production Roadmap
-
-| Phase | Status | Description |
-|---|---|---|
-| 1 | Done | Synthetic MVP (in-memory, all endpoints, all guardrails) |
-| 2 | **Blocked** | Supabase flip (3 imports — blocked by missing 0003 migration) |
-| 3 | Done | Flutter mobile app (running E2E on real device) |
-| 4 | **Done** | Signal capture (SPEC-01 — migration + endpoint + emitter) |
-| 5 | **Done** | Offline queue + sync (SPEC-02 — implemented + review-fixed) |
-| 5b | **Done** | Observability (SPEC-05 — ring buffer, request IDs, debug endpoint) |
-| 5c | **Partial** | Party context (SPEC-03 — backend code complete, migration missing) |
-| 6 | **Next** | Behavioral signal types (SPEC-06 — #1 moat priority) |
-| 7 | Later | RevenueCat payments (keys + purchases_flutter) |
-| 8 | Later | Play Store launch (real auth, real persistence, real payments) |
-| 9 | Oct 2 | Laos field test (airplane-mode drill must pass first) |
-
-
-### UX & Vault (new, P1)
-- `docs/UX_BACKLOG.md` — adopted UX ideas, prioritized; **§0 lists frozen architecture decisions**
-- `docs/specs/SPEC-04-offline-vault.md` — Offline Vault / Rescue Pack (P1, capability #7)
-- VISION §14 (Travelogue reciprocity), §15 (tourism-board distribution), §16 (UX direction)
-- DATA_MODEL §17 (vault cache tables + pre-caching rule)
-
-**Priority remains moat-first:** airplane-mode drill → Supabase flip → SPEC-03 `party_context` →
-behavioral signal types → **then** SPEC-04 Vault + map-first shell if time before Oct 2.
-
-### Observability & UI feedback (commits #48–54)
-- **SPEC-05 implemented** (`monitoring/error_log.py`, `routers/debug_router.py`, `main.py`):
-  - Global exception handler logs full tracebacks — no silent 500s
-  - Request middleware adds `X-Request-ID` + timing to every response
-  - Ring buffer (capped at 100) readable via `GET /api/v1/debug/errors`
-  - Debug endpoint 404s when `settings.debug` is off (production-safe)
-  - Startup config log uses booleans only — never secret values
-  - All `print()` replaced with structured `logging`
-- **UI fixes**: filled heart (isLoved), visible swap button, keyed rebuild for AnimatedSwitcher
-- **Dev scripts**: `scripts/dev.ps1` (check/backend/app/tunnel/verify modes)
-- **Regression tests**: `tests/test_user.py` — locks in the UserTier fix
-- **Test count: 45 passed, 5 skipped** (was 33+5 at start of session)
-
-## 7. What's Next (priority order, verified 2026-08-08)
-
-1. **SPEC-06: Behavioral signal types** — register 5 types server-side. #1 moat gap.
-2. **Migration 0003** — trip_party + party_member tables (completes SPEC-03, unblocks Supabase flip)
-3. **Airplane-mode drill** (must pass before Laos):
-   - Use `app-lan` mode (not USB tunnel). Airplane mode → tap loved on 5 venues →
-     force-kill app → reopen → still 5 pending → enable network → all sync → 5 rows in Supabase
-4. **Supabase flip** — 3 import changes to switch to real persistence (after 0003 lands)
-5. **Seed venues** — real Laos venues for the field test
-6. **SPEC-07: Client signal emission** — swap-accept → reroute_accepted, manual confirm → visited_confirmed
-7. **Real auth** — Supabase Auth (magic link + Google Sign-In)
-8. **Laos prep** — consent UX, offline vault if time
-
-## 8. Running Locally
-
-**Backend:**
-```bash
-cd travel-buddy
-pip install -r requirements.txt
-export TB_DEBUG=true
-uvicorn main:app --reload --port 8000
-# Tests: pytest -q (expect 33 passed, 5 skipped)
-```
-
-**Flutter:**
-```bash
-cd mobile
-flutter pub get
-flutter run -d chrome \
-  --dart-define=TB_API_BASE_URL=http://localhost:8000 \
-  --dart-define=TB_DEBUG_USER_ID=11111111-1111-1111-1111-111111111111
-# Tests: flutter test (expect 29 passed)
-```
-
-
----
-
-## Committed Roadmap (Part II, §24–30)
-
-Reviewed and accepted 2026-08-08. These build on existing backend code.
-
-| § | Capability | Status | Depends on |
-|---|---|---|---|
-| 24 | Deterministic Scheduling Core (CSP) | Not started | scheduler.py exists as stub |
-| 25 | Fatigue as First-Class Input | Not started | §24 solver |
-| 26 | Show Driver Cards (Offline) | Not started | Offline Vault |
-| 27 | Bookings as Hard Anchors | Not started | §24 locked-node support |
-| 28 | Food & Local Intelligence substrate | Not started | **§29** (entity generalization) |
-| 29 | Generalized Signal Subject | Not started | 0005 migration |
-| 30 | Deferred register | Done (documentation) | — |
-
-**Dependency chain:** §29 → §28. Food substrate cannot land until the signal
-table can reference dishes. §29 is the critical path for food intelligence.
-
-
-## Deferred: Low Priority
-
-### App lifecycle debounce (Pixel 9 Pro Fold)
-`didChangeAppLifecycleState` fires ~5 times on fold/unfold (surface recreation).
-Each triggers a full sync. Harmless with an empty outbox, but on a real trip it's
-needless battery and requests. Fix: skip sync if last sync was <30s ago.
-Target: SPEC-07 or post-MVP.
+    .\scripts\smoke-test.ps1
