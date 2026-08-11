@@ -8,18 +8,18 @@ Writing `\$variable` instead of `$variable` inside a Dart string produces a
 literal `$variable` and silently breaks the value. This has happened THREE
 times in this repo:
 
-1. `core/api_client.dart` — broke the base URL and the `Bearer` token.
+1. `core/api_client.dart` -- broke the base URL and the `Bearer` token.
    Every authenticated API call failed.
-2. `features/itinerary/itinerary_screen.dart:128` — broke the `ValueKey`,
+2. `features/itinerary/itinerary_screen.dart:128` -- broke the `ValueKey`,
    so every row got an identical key and the heart never filled in.
-3. `offline/sync_engine.dart` — caught pre-commit.
+3. `offline/sync_engine.dart` -- caught pre-commit.
 
 **After ANY write to a `.dart` file, run:**
 
-    grep -rn '\\\$' mobile/lib
+    grep -rn '\\$' mobile/lib
 
 Expected output: only the two price strings in `upgrade_screen.dart`.
-Anything else is a bug — fix before committing.
+Anything else is a bug -- fix before committing.
 
 **The Python tell:** if a tool emits `SyntaxWarning: invalid escape
 sequence '\$'` while writing Dart, you have already introduced this bug.
@@ -44,7 +44,7 @@ small is a red flag, not a coincidence.
 Two of the worst defects in this repo shipped with a green test suite:
 
 - **Auth bypass:** `get_current_user_id` checked `X-Debug-User-Id` before
-  the JWT secret, with `debug=True` by default — one header impersonated
+  the JWT secret, with `debug=True` by default -- one header impersonated
   any user. Tests passed.
 - **Error classification:** `sync_engine` matched on `errorStr.contains('401')`,
   which never matched `ApiClient`'s typed exceptions, so 401/422 retried
@@ -87,15 +87,15 @@ using `adb reverse` over USB, and airplane mode does not disable USB.
 Four hearts posted instantly to a "disconnected" server. The drill only
 became valid after rebuilding against the laptop's LAN IP.
 
-**For any offline/failure drill, first confirm the failure mode is real** —
-e.g. see requests actually stop — before trusting a pass.
+**For any offline/failure drill, first confirm the failure mode is real** --
+e.g. see requests actually stop -- before trusting a pass.
 
 ## R8. Report passed AND skipped, with a reason per skip
 
 A skip asserts nothing. "All green" is only true when the skip count is
 expected and every skip has a named `skipif`. Eight tests once degraded
 from passing to skipped because a test dependency (`pytest-asyncio`)
-vanished from the ephemeral environment — the summary line still read as
+vanished from the ephemeral environment -- the summary line still read as
 healthy, and the affected tests covered the riskiest code in the repo
 (SPEC-03 party_context stamping).
 
@@ -112,7 +112,7 @@ healthy, and the affected tests covered the riskiest code in the repo
 ## R9. A schema that cannot express a fact will never error
 
 The `signal` table referenced venues only. A dish-level observation was
-not "unsupported" — it was unrepresentable, and nothing failed to say so.
+not "unsupported" -- it was unrepresentable, and nothing failed to say so.
 Missing data looks identical to absent behavior.
 
 Before building a capture flow, verify the schema can represent the fact
@@ -125,31 +125,31 @@ The workspace edit tool (`editAsset`) has shown a pattern of reporting
 success while silently reverting writes. In commit #62 and #64, three
 separate edits were reported as applied but did not persist:
 
-1. The `value_kind` drift guard replacement — reported done, file unchanged
-2. A `DISH_SIGNAL_TYPES` import addition — reported done, reverted by next read
-3. Appended test functions — reported done, lost on next edit cycle
+1. The `value_kind` drift guard replacement -- reported done, file unchanged
+2. A `DISH_SIGNAL_TYPES` import addition -- reported done, reverted by next read
+3. Appended test functions -- reported done, lost on next edit cycle
 
-The failure mode is uniquely dangerous: the tool reports success →
-verification reads the (unchanged) file → content passes because it
-matched *before* the edit → false confidence that the edit landed.
+The failure mode is uniquely dangerous: the tool reports success ->
+verification reads the (unchanged) file -> content passes because it
+matched *before* the edit -> false confidence that the edit landed.
 
 **Rules:**
 - After `commit_and_push`, verify critical changes from the pushed tree:
   `git show origin/main:<path> | grep <expected_string>`
   (or in Databricks: `pull` then filesystem `grep`, confirming `isClean=true`)
 - Never rely on `editAsset` success status alone for multi-line replacements
-- When `editAsset` fails silently, fall back to direct filesystem writes
-  (`executeCode` with `open(path, 'w')` or `sed -i`)
 - The pattern is: old_text match succeeds, replacement write is discarded,
   file content after call == file content before call
-- If a file read shows content you just "replaced," assume reversion and
-  re-apply through the filesystem
+- If a file read shows content you just "replaced," assume reversion. Do
+  NOT re-apply through the filesystem -- those writes are denied (R15).
+  Switch to the delete-and-recreate procedure in R14 instead, and do not
+  retry `editAsset` a second time.
 
 **Amendment: local working copy is the execution surface, not origin/main.**
 
 Verifying from `origin/main` proves the remote tree is correct. But
 `supabase db push`, `python`, `flutter build`, and every other local
-command reads the user's working copy — not the remote. A correct remote
+command reads the user's working copy -- not the remote. A correct remote
 and a stale local produce the same failure as never having fixed the bug.
 
 Any instruction to run a local command must begin with:
@@ -161,15 +161,15 @@ Any instruction to run a local command must begin with:
     findstr /n "venues_rag" supabase\migrations\0005_entity_ref_generalization.sql
 
 Only after the grep confirms the expected content should the command run.
-This is not paranoia — it closes the gap between "verified on remote" and
-"executing locally" that cost us the `venue` → `venues_rag` fix arriving
+This is not paranoia -- it closes the gap between "verified on remote" and
+"executing locally" that cost us the `venue` -> `venues_rag` fix arriving
 on GitHub but potentially not being pulled before `db push`.
 
 
 ## R11. A success response is not proof of persistence
 
 `SyncEngine` logged `accepted=1 duplicates=0` for five signals while
-`db_provider` pointed at the in-memory backend — every one was discarded
+`db_provider` pointed at the in-memory backend -- every one was discarded
 on restart. Confirm writes by querying the destination store, never by
 trusting an API acknowledgement or an adjacent success signal.
 
@@ -186,7 +186,7 @@ loggers only; pin third-party loggers explicitly.
 `DatabaseService` and `SupabaseService` are independent implementations of
 the same contract, and divergence is only caught at runtime:
 `record_signal` and `get_valid_signal_types` were each missing from
-`supabase_service`, and `add_venue` differed in arity — crashing startup
+`supabase_service`, and `add_venue` differed in arity -- crashing startup
 once the provider resolved to Supabase. `tests/test_backend_parity.py`
 asserts signature compatibility so divergence fails in CI.
 
@@ -204,12 +204,13 @@ but the write-back fails when the file's byte stream includes non-ASCII.
 
 **Workaround:** create the new content at a temporary path with
 `createAsset` (e.g. `docs/FOO.new.md`), then `git rm` the original and
-`git mv` the temp file into place.
+`git mv` the temp file into place. Never leave both files committed --
+that is how the repo briefly carried two contradictory status documents.
 
 **Prevention:** all new source files and documentation must be pure ASCII.
 Use `--` instead of em-dash, `->` instead of arrows, and never use emoji
-or box-drawing characters. Run the ASCII guard in `test_docs_hygiene.py`
-before committing.
+or box-drawing characters. `tests/test_docs_hygiene.py` enforces this for
+documentation.
 
 ## R15. Workspace writes are blocked outside the asset tools
 
@@ -229,6 +230,14 @@ can mutate workspace files.
 existing files are expensive. Bias the queue toward new modules over
 refactors of existing ones. When an existing file blocks edits due to
 non-ASCII content (R14), rebuild it from scratch at a temp path.
+
+**When runGit itself is unavailable, the workspace cannot be mutated at
+all.** `runGit` has failed with `Git folder (Repo) has invalid type`
+(`RESOURCE_DOES_NOT_EXIST`) after a session died mid-task, leaving the
+compute able to create files but unable to delete, move, or commit them.
+Repair is a re-clone of the Git folder, not a retry. Because of this,
+documentation and whole-file rewrites are pushed through the GitHub API
+by the planning agent, and the compute is reserved for code plus pytest.
 
 ## R16. A document that duplicates derivable state will drift
 
