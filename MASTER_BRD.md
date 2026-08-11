@@ -1,525 +1,460 @@
-> **Product vision & strategy: see [docs/VISION.md](docs/VISION.md). This BRD covers technical spec.**
+> Product vision and strategy live in [docs/VISION.md](docs/VISION.md).
+> This document is the technical specification.
 
-# TRAVEL BUDDY AI - MASTER BRD & TECHNICAL SPECIFICATION
-## Version 4.0 | August 2026 | Dubai MVP
+# TRAVEL BUDDY -- MASTER BRD AND TECHNICAL SPECIFICATION
 
-> **Purpose**: This is the single source of truth for the entire Travel Buddy project.
-> Any AI coding agent, developer, or platform can ingest this document to resume work instantly.
+## Version 5.0
+
+> This document describes how the system is designed to work. It deliberately
+> records no status, no test counts and no commit history, because every earlier
+> revision that tried to do so was wrong within days (R16).
 >
-> **See also**: [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md) for current status, pending tasks, and Flutter integration notes.
+> - Current state, priorities and known risks: `docs/PROJECT_STATUS.md`
+> - Unverified work and open defects: `docs/AWAITING_VERIFICATION.md`
+> - Rules earned from real bugs: `docs/ENGINEERING_RULES.md`
+> - Repository layout: `README.md`
 
 ---
 
-## 1. PROJECT OVERVIEW
+## 1. Project overview
 
-**What**: AI-powered travel companion backend with a continuous, self-correcting itinerary state loop.
+**What:** an AI travel companion with a continuous, self-correcting itinerary
+state loop.
 
-**Core Problem**: Standard AI itineraries are static. When context changes (fatigue, weather, mood), regenerating breaks the timeline and erases locked reservations.
+**Core problem:** AI itineraries are static. When context changes -- fatigue,
+weather, a closed venue, a mood shift -- regenerating the plan destroys the
+timeline and erases locked reservations.
 
-**Solution**: A state machine that maintains a live itinerary in memory, accepts real-time interruptions, intelligently replaces activities via RAG, and shifts the schedule while preserving locked items.
+**Solution:** hold a live itinerary as state, accept real-time interruptions,
+replace only the affected activity using curated local venue knowledge, and
+reschedule what follows while preserving anything locked.
 
-**Geo-fence**: Dubai, UAE (MVP). Expand globally after validation.
+**Regions:** Dubai (16 synthetic venues) and Laos across Luang Prabang, Vang
+Vieng and Vientiane (58 hand-curated venues). `geo_region` is per trip, set from
+`settings.geo_fence` at creation, which is what makes multi-city possible.
 
-**Target**: Play Store deployment (Android first, iOS to follow).
+**Near-term goal:** a real field test in Laos on Oct 2 2026. That date is the
+forcing function for everything prioritized in `docs/PROJECT_STATUS.md`.
 
-**Repository**: `github.com/vneogi/travel-buddy` (branch: `main`)
+**Target platform:** Android first via the Play Store, iOS to follow.
 
----
-
-## 2. WHAT'S ALREADY BUILT (Full Inventory)
-
-### 2.1 Project Structure
-
-```
-travel-buddy/
-├── main.py                          # FastAPI entry point (mounts trip + payment routers)
-├── security.py                      # JWT auth (secret-first) + dev-mode fallback + ownership guard
-├── seed_data.py                     # 16 curated Dubai venues (synthetic, for in-memory)
-├── seed_supabase.py                 # Idempotent venue seeder for Supabase (real embeddings)
-├── pyproject.toml                   # Ruff linter config + project metadata
-├── requirements.txt                 # All dependencies (PyJWT, stripe, litellm, supabase, etc.)
-├── requirements-prod.txt            # Full production dependencies
-├── Dockerfile.py                    # Multi-stage production container
-├── docker-compose.yml               # Local dev stack (app + pgvector + redis)
-├── .env.example                     # All required environment variables
-├── .github/workflows/ci.yml         # Lint (Ruff) -> Test -> Build -> Deploy
-├── MASTER_BRD.md                    # THIS FILE
-├── README.md                        # Quick start guide
-│
-├── config/
-│   └── settings.py                  # All guardrail levers + env config (TB_ prefix)
-│                                    # debug=False by default (fail-closed)
-│                                    # cors_allowed_origins configurable
-│                                    # extra="ignore" (tolerates unknown .env vars)
-│
-├── models/
-│   ├── schemas.py                   # Pydantic models (TripState, TripNode w/ opening_hours)
-│   └── database.py                  # PostgreSQL + pgvector schema SQL ($$-quoting fixed)
-│
-├── services/
-│   ├── database_service.py          # In-memory DB (active backend for key-free testing)
-│   │                                # Has consume_reroute() for atomic throttle
-│   ├── supabase_service.py          # Supabase + pgvector (interface-compatible, OFF by default)
-│   │                                # Has consume_reroute() via SQL RPC
-│   ├── db_provider.py               # Provider seam: selects in-memory vs Supabase
-│   ├── embedding_service.py         # Auto-detects real (LiteLLM) vs synthetic embeddings
-│   ├── llm_service.py               # LiteLLM gateway + provider key wiring
-│   ├── cache_service.py             # Semantic cache (Lever 2, cosine 0.92)
-│   ├── maps_service.py              # Synthetic distance + check_venue_open()
-│   ├── google_maps_real.py          # PRODUCTION: Real Distance Matrix + Places
-│   ├── weather_service.py           # SCAFFOLDED: OpenWeatherMap (not wired into request path)
-│   ├── payment_service.py           # RevenueCat + Stripe (real integration)
-│   └── scheduler.py                 # Transit-aware rescheduling + hours validation
-│
-├── agents/
-│   ├── state_machine.py             # Async LangGraph loop + circuit breaker (3 attempts)
-│   └── router_agent.py              # Intent classifier + model router
-│
-├── routers/
-│   ├── trip_router.py               # Trip CRUD + events (auth-gated, async)
-│   │                                # Uses consume_reroute() (atomic, no TOCTOU race)
-│   └── payment_router.py            # 6 payment endpoints (auth-gated)
-│
-├── pipeline/
-│   ├── chunker.py                   # Semantic chunking (venue-aware)
-│   └── rag_ingestion.py             # Full scrape->chunk->embed->store pipeline
-│
-├── monitoring/
-│   └── cost_tracker.py              # SCAFFOLDED: LLM cost tracking (not wired into request path)
-│
-└── tests/                           # pytest suite (21 tests + 5 supabase-guarded)
-    ├── __init__.py
-    ├── conftest.py                  # Env isolation (clears JWT secret), TestClient, seed, reset
-    ├── test_auth.py                 # 5 tests: public/401/403/ownership + auth-bypass regression
-    ├── test_trip_flow.py            # 3 tests: create, get, light event, 404
-    ├── test_throttle.py             # 1 test: 5/day limit, 403 on 6th (atomic)
-    ├── test_payments.py             # 5 tests: plans, webhooks, expiry logic
-    ├── test_scheduler.py            # 3 tests: deterministic scheduler (monkeypatched)
-    ├── test_embedding.py            # 2 tests: synthetic determinism, cosine self-similarity
-    └── test_supabase_integration.py # 5 tests: SKIPPED unless TB_SUPABASE_URL set
-```
-
-### 2.2 Component Status
-
-| Component | Status | Notes |
-|-----------|--------|-------|
-| FastAPI app + routing | ✅ COMPLETE | Auth-gated, async, tested with pytest |
-| Security (JWT + dev auth) | ✅ HARDENED | Secret-first ordering, debug=False default, regression-tested |
-| State machine (async) | ✅ COMPLETE | Circuit breaker + transit-aware scheduler |
-| Scheduler (transit-aware) | ✅ COMPLETE | Locked anchors, push-later logic, hours validation |
-| Guardrail Lever 1 (throttle) | ✅ HARDENED | Atomic consume_reroute() closes TOCTOU race |
-| Guardrail Lever 2 (cache) | ✅ COMPLETE | Cosine similarity 0.92 threshold |
-| Guardrail Lever 3 (breaker) | ✅ COMPLETE | Max 3 attempts with candidate rotation |
-| Guardrail Lever 4 (routing) | ✅ COMPLETE | Light/heavy classification |
-| Guardrail Lever 5 (ads) | ✅ COMPLETE | Sponsored boost 0.15 in hybrid search |
-| Venue seed data (16) | ✅ COMPLETE | Dubai venues with coordinates + opening_hours |
-| Embedding service | ✅ COMPLETE | Auto-detects real (LiteLLM) vs synthetic |
-| LLM service (LiteLLM) | ✅ VERIFIED | GPT-4o + gpt-4o-mini working (real keys active) |
-| Supabase DB schema | ✅ DEPLOYED | 5 tables + 5 functions live in Supabase cloud |
-| Supabase service | ✅ COMPLETE | Interface-compatible, OFF until import swap |
-| Payment service | ✅ COMPLETE | RevenueCat + Stripe, webhooks fail-closed |
-| CORS | ✅ HARDENED | Configurable origins, no invalid *+credentials combo |
-| Docker deployment | ✅ COMPLETE | Multi-stage build + docker-compose |
-| CI/CD (GitHub Actions) | ✅ COMPLETE | Ruff lint + pyproject.toml -> Test -> Build -> Deploy |
-| Test suite (pytest) | ✅ COMPLETE | 21 passed + 5 skipped, env-isolated, ~18s |
+**Repository:** `github.com/vneogi/travel-buddy`, branch `main`.
 
 ---
 
-## 3. ARCHITECTURE
+## 2. Architecture
 
-### 3.1 Request Flow
+### 2.1 Request flow
 
-```
-Mobile App (Flutter)
-    │
-    ▼
-[FastAPI Router] ─── Auth: JWT verify (prod) / X-Debug-User-Id (dev, only when no secret)
-    │                 Lever 1: Atomic consume_reroute() (reserve-first)
-    ▼
-[State Machine (async)]
-    ├─ Node 1: Classify Intent (Lever 4: light vs heavy)
-    ├─ Node 2: Check Semantic Cache (Lever 2)
-    ├─ Node 3: Hybrid Venue Search (Lever 5: sponsored boost)
-    ├─ Node 4: Apply Structural Edit (Lever 3: circuit breaker, 3 attempts)
-    │          └─ Scheduler: transit-aware, respects locked anchors + hours
-    └─ Node 5: Update Trip State
-    │
-    ▼
-[In-Memory DB (dev) / Supabase PostgreSQL + pgvector (prod)]
-```
+    Flutter app
+        |
+        v
+    FastAPI router
+        |    Auth: JWT verification, or X-Debug-User-Id only when no secret is set
+        |    Lever 1: atomic consume_reroute() before any work is done
+        v
+    Orchestration pipeline (agents/state_machine.py)
+        |-- classify_intent        Lever 4: light vs heavy model
+        |-- check_cache            Lever 2: semantic cache
+        |-- venue_search           Lever 5: sponsored boost in hybrid RAG
+        |-- apply_structural       Lever 3: circuit breaker, 3 attempts
+        |     `-- scheduler: transit-aware, respects locked anchors and hours
+        `-- generate_response and update trip state
+        |
+        v
+    Supabase (PostgreSQL + pgvector), or in-memory when no credentials
 
-### 3.2 Model Routing
+### 2.2 The orchestrator is not LangGraph
 
-| Intent Type | Model | Cost/1K tokens | Use Case |
-|-------------|-------|----------------|----------|
-| Structural (reroute, swap, cancel, add) | GPT-4o | $0.0025 in / $0.01 out | Itinerary rewrites |
-| Informational (translate, info) | gpt-4o-mini | $0.00015 in / $0.0006 out | Simple QA (16x cheaper) |
-| Embedding | text-embedding-3-small | $0.00002 | Vector search |
+Earlier revisions of this document and the README described an "async LangGraph
+loop". That is false and has misled several agents. `langgraph` is commented out
+in `requirements.txt`, the `GraphState` TypedDict is unused, and
+`agents/state_machine.py` is a hand-rolled sequential pipeline. Adopting a graph
+framework is a legitimate future choice, but it must not be documented as though
+it already happened.
 
-**Fallback chains**:
-- LIGHT: `["gpt-4o-mini"]` (Gemini removed — wrong key type, VertexAI routing issue)
+### 2.3 Model routing
+
+| Intent type | Model | Cost per 1K tokens | Use case |
+|-------------|-------|--------------------|----------|
+| Structural (reroute, swap, cancel, add) | gpt-4o | 0.0025 in / 0.01 out | Itinerary rewrites |
+| Informational (translate, info) | gpt-4o-mini | 0.00015 in / 0.0006 out | Simple QA, ~16x cheaper |
+| Embedding | text-embedding-3-small | 0.00002 | Vector search |
+
+Fallback chains:
+
+- LIGHT: `["gpt-4o-mini"]`. Gemini was removed after a key-type and VertexAI
+  routing problem.
 - HEAVY: `["gpt-4o", "claude-3-5-sonnet-20241022", "gemini/gemini-1.5-pro"]`
 
-### 3.3 Auth Contract
-
-- **All endpoints except** `GET /health` and `GET /api/v1/payment/plans` **require auth**
-- **Production**: `Authorization: Bearer <supabase_jwt>` — verified against `TB_SUPABASE_JWT_SECRET`
-- **Dev mode** (`TB_DEBUG=true` AND no JWT secret configured): `X-Debug-User-Id: <user_id>` header
-- **CRITICAL**: When JWT secret IS configured, debug header is IGNORED (fail-closed). This prevents the auth-bypass where an attacker sends `X-Debug-User-Id` to impersonate users.
-- `user_id` in request bodies is `Optional[str] = None` and ignored (extracted from token/header)
-- Trip endpoints enforce ownership: requesting another user's trip returns 403
+All traffic goes through the LiteLLM gateway in `services/llm_service.py`.
 
 ---
 
-## 4. API CONTRACT
+## 3. Persistence
 
-### Endpoints
+`services/db_provider.py` resolves the backend once, at import time: Supabase
+when `TB_SUPABASE_URL` and the key are present, in-memory otherwise. Callers
+import `db_service` from `db_provider` and never from a concrete backend.
+
+There is no manual flip to perform. Earlier revisions of this document
+instructed the reader to swap three imports to enable Supabase; that work is
+done and the instructions were actively harmful.
+
+`DatabaseService` (in-memory) and `SupabaseService` are independent
+implementations of one contract. Two consequences, both learned the hard way:
+
+- A green suite against in-memory proves nothing about the Supabase path.
+  Any change touching persistence changes both backends, and any new table
+  ships its migration in the same commit (R4).
+- Divergence surfaces only at runtime. `record_signal` and
+  `get_valid_signal_types` were each missing from `supabase_service`, and
+  `add_venue` differed in arity, which crashed startup once the provider
+  resolved to Supabase. `tests/test_backend_parity.py` now asserts signature
+  compatibility (R13).
+
+In-memory state resets on restart and is not shared across processes. The
+startup log prints `supabase_configured` as a boolean, which is the only
+reliable way to know which backend you are talking to. An API success response
+is not proof of persistence -- the sync engine once reported `accepted=1` for
+five signals that were all discarded on restart (R11).
+
+---
+
+## 4. Auth contract
+
+- Every endpoint requires auth except `GET /`, `GET /api/v1/health` and
+  `GET /api/v1/payment/plans`.
+- Production: `Authorization: Bearer <supabase_jwt>`, verified HS256 against
+  `TB_SUPABASE_JWT_SECRET`.
+- Local development, only when `TB_DEBUG=true` **and** no JWT secret is
+  configured: `X-Debug-User-Id: <uuid>`.
+- When a JWT secret is configured the debug header is ignored. This ordering is
+  load-bearing; see section 10.
+- `user_id` in a request body is optional and ignored. Identity comes from the
+  token or header only.
+- Trip endpoints enforce ownership. Requesting another user's trip returns 403.
+
+The shared `TB_DEBUG_USER_ID` used by tester builds is not an identity system.
+SPEC-09 replaces it with a per-device UUID, and no build should be distributed
+to testers before that lands.
+
+---
+
+## 5. API contract
+
+`/docs` is generated from the code and is the authoritative contract. The table
+below is a map, not a source of truth.
 
 | Method | Path | Auth | Purpose |
 |--------|------|------|---------|
 | GET | `/` | Public | App info |
-| GET | `/api/v1/health` | Public | Health check |
-| GET | `/api/v1/user/status` | Required | Tier + reroute info |
-| POST | `/api/v1/trip/create` | Required | Create Dubai itinerary |
-| GET | `/api/v1/trip/{trip_id}` | Required + Owner | Get trip state |
-| POST | `/api/v1/trip/event` | Required + Owner | **Main endpoint** - process events |
-| GET | `/api/v1/venues/search` | Required | RAG venue search |
-| GET | `/api/v1/stats` | Required | System analytics |
-| GET | `/api/v1/payment/plans` | Public | Available subscription plans |
-| GET | `/api/v1/payment/status` | Required | User subscription status |
+| GET | `/api/v1/health` | Public | Health, venue count, cache stats |
+| GET | `/api/v1/user/status` | Required | Tier and remaining reroutes |
+| POST | `/api/v1/trip/create` | Required | Create an itinerary, with party context |
+| GET | `/api/v1/trip/{trip_id}` | Required, owner | Trip state plus party |
+| POST | `/api/v1/trip/event` | Required, owner | Main endpoint: process an event |
+| GET | `/api/v1/venues/search` | Required | Hybrid RAG venue search |
+| GET | `/api/v1/stats` | Required | Cache, event and venue analytics |
+| POST | `/api/v1/signals` | Required | Behavioural signal ingest, batch |
+| GET | `/api/v1/debug/errors` | Required, debug only | Error ring buffer, 404 in production |
+| GET | `/api/v1/payment/plans` | Public | Subscription plans |
+| GET | `/api/v1/payment/status` | Required | Subscription status |
 | POST | `/api/v1/payment/checkout` | Required | Stripe checkout session |
-| POST | `/api/v1/payment/verify-purchase` | Required | Mobile IAP verify (RevenueCat) |
-| POST | `/api/v1/payment/webhook/stripe` | Signature-verified | Stripe webhook events |
-| POST | `/api/v1/payment/webhook/revenuecat` | Auth-verified | RevenueCat webhook events |
+| POST | `/api/v1/payment/verify-purchase` | Required | RevenueCat IAP verification |
+| POST | `/api/v1/payment/webhook/stripe` | Signature | Stripe webhooks |
+| POST | `/api/v1/payment/webhook/revenuecat` | Auth header | RevenueCat webhooks |
 
-### Main Event Request (POST /api/v1/trip/event)
+`POST /api/v1/user/{user_id}/upgrade` was deleted from the code. It granted Pro
+with no payment and no auth. Tier changes happen only through verified payments.
 
-```json
-{
-  "trip_id": "uuid",
-  "event_type": "cancel_activity|swap_activity|add_activity|change_mood|weather_alert|translate|ask_info|reroute",
-  "message": "natural language input",
-  "target_node_id": "optional - node to modify",
-  "preferences": {"vibe_tags": [], "mood": "", "audience": []}
-}
-```
+### Main event request
 
-**Note**: `user_id` is NOT passed in the body — it's extracted from the auth token/header.
+    POST /api/v1/trip/event
+    {
+      "trip_id": "uuid",
+      "event_type": "cancel_activity|swap_activity|add_activity|change_mood|weather_alert|translate|ask_info|reroute",
+      "message": "natural language input",
+      "target_node_id": "optional, node to modify",
+      "preferences": {"vibe_tags": [], "mood": "", "audience": []}
+    }
 
-### Event Classification
+### Event classification
 
-| Category | Events | Model Used |
-|----------|--------|------------|
-| Structural (VENUE_REQUIRED) | swap_activity, add_activity, reroute | Heavy (GPT-4o) |
-| Structural (no venue) | cancel_activity | Heavy (GPT-4o) |
-| Informational | ask_info, translate, change_mood, weather_alert | Light (gpt-4o-mini) |
+| Category | Events | Model |
+|----------|--------|-------|
+| Structural, venue required | swap_activity, add_activity, reroute | Heavy |
+| Structural, no venue | cancel_activity | Heavy |
+| Informational | ask_info, translate, change_mood, weather_alert | Light |
+
+Quota note: `change_mood` and `weather_alert` are classified informational for
+model routing but still consume reroute quota, because they can restructure the
+itinerary.
 
 ---
 
-## 5. DATABASE SCHEMA
+## 6. Behavioural signals
 
-Full SQL in `models/database.py` + `services/supabase_service.py`. Key tables:
+Signals are the product's actual asset. Everything else is a means of collecting
+them: what the traveller accepted, rejected, skipped, loved, or arrived late to.
 
-- **user_tiers**: user_id, tier_status, daily_reroute_count, max_daily_reroutes, last_reset_date
+- `models/signal_types.py` is the single registry of signal types, their
+  `value_kind`, and their payload shapes. A drift guard test fails if the
+  registry and its consumers disagree. Never mirror this list anywhere (R5).
+- `POST /api/v1/signals` ingests batches idempotently, rejects per item rather
+  than per batch, and tolerates clock skew on `captured_at`.
+- The client never blocks on the network. `SignalService` writes to a SQLite
+  outbox first, and `SyncEngine` drains it with single-flight batching and
+  exponential backoff. It recovers in-flight rows on startup after a crash.
+- Some signals are server-derived rather than client-sent. `arrival_delta` is
+  computed from `visited_confirmed.captured_at` against `node.scheduled_start`,
+  so one tap yields two data points. Derivation is idempotent and never blocks
+  ingest.
+- A schema that cannot express a fact will never complain. Dish-level
+  observations were not unsupported, they were unrepresentable, and missing data
+  looked exactly like absent behaviour. Prefer generalizing a subject reference
+  (`entity_type` plus `entity_id`) over adding a table per subject (R9).
+
+---
+
+## 7. Database schema
+
+Versioned SQL lives in `supabase/migrations/`, applied in numeric order.
+`models/database.py` holds the original schema SQL. Core tables:
+
+- **user_tiers**: user_id, tier_status, daily_reroute_count, max_daily_reroutes,
+  last_reset_date
 - **trip_states**: trip_id, user_id, state_json (JSONB), is_active
-- **venues_rag**: name, description, lat/lng, vibe_tags[], opening_hours, embedding VECTOR(1536), is_sponsored, bid_weight
-- **cached_responses**: query_embedding VECTOR(1536), cached_response_text, expires_at, hit_count
-- **event_log**: user_id, event_type, routing_tier, from_cache, token_cost_estimate
+- **trip_party** and party members: party type and size, stamped server-side
+- **venues_rag**: name, description, lat, lng, vibe_tags[], audience[],
+  category, micro_location, opening_hours_structured (JSONB), geo_region,
+  is_sponsored, bid_weight, embedding VECTOR(1536)
+- **venue_dish** and **dish_glossary**: dish_key, name_en, name_local,
+  name_roman, cuisine, allergens, dietary labels
+- **signal**, **signal_type**, **source**: behavioural capture
+- **cached_responses**: query_embedding VECTOR(1536), cached_response_text,
+  expires_at, hit_count
+- **event_log**: user_id, event_type, routing_tier, from_cache,
+  token_cost_estimate
 
-### SQL Functions (all use valid `$$` dollar-quoting):
+SQL functions:
 
 | Function | Purpose |
 |----------|---------|
-| `reset_daily_reroutes()` | Cron: resets all user counts at midnight |
-| `hybrid_venue_search(...)` | pgvector cosine + distance filter + sponsored boost; returns lat, lng, opening_hours |
-| `increment_reroute(user_id)` | Atomic counter increment (kept for compatibility) |
-| `consume_reroute(user_id)` | Atomic check-and-increment (closes quota race condition) — **used by throttle** |
-| `check_semantic_cache(...)` | Vector similarity search on cache table |
+| `reset_daily_reroutes()` | Cron, resets all counters at midnight |
+| `hybrid_venue_search(...)` | pgvector cosine plus distance filter plus sponsored boost |
+| `increment_reroute(user_id)` | Atomic increment, retained for compatibility |
+| `consume_reroute(user_id)` | Atomic check-and-increment, used by the throttle |
+| `check_semantic_cache(...)` | Vector similarity search over the cache table |
 
-### Supabase Status
-
-| Item | Status |
-|------|--------|
-| Schema (5 tables) | ✅ Deployed to `xqpcuakugxmcrollablz.supabase.co` |
-| Functions (5) | ✅ Deployed |
-| Indexes (7) | ✅ Deployed |
-| Extensions (vector, postgis) | ✅ Enabled |
-| Venue data (16 Dubai venues) | ⏳ Not yet seeded (run `python seed_supabase.py` after import swap) |
-| Backend flip (3 import swaps) | ⏳ Not done — app still uses in-memory |
+**Known drift.** `scripts/load_venues.py` writes `typical_dwell_minutes`,
+`indoor_outdoor` and `price_band` to `venues_rag`, and no migration defines
+those columns. `name_local` and `nearest_landmark` are also absent, which blocks
+driver cards. A database rebuilt from `supabase/migrations/` today fails on
+load. `supabase_service` also passes a `geo_region` filter that the RPC in
+`0001_initial_schema.sql` does not declare. Both are tracked in
+`docs/AWAITING_VERIFICATION.md`.
 
 ---
 
-## 6. ENVIRONMENT VARIABLES
+## 8. Environment variables
 
-All prefixed with `TB_`. See `.env.example` for full list.
+All are prefixed `TB_`. See `.env.example` for the full list.
 
-```bash
-# --- Database ---
-TB_SUPABASE_URL=              # Supabase project URL
-TB_SUPABASE_KEY=              # Supabase service role key (sb_secret_...)
+    # Database
+    TB_SUPABASE_URL=              # Supabase project URL
+    TB_SUPABASE_KEY=              # service role key
 
-# --- Auth ---
-TB_SUPABASE_JWT_SECRET=       # JWT verification secret (HS256, from Supabase dashboard)
-TB_DEBUG=false                # DEFAULT IS FALSE. Set true only for local dev.
+    # Auth
+    TB_SUPABASE_JWT_SECRET=       # HS256 verification secret
+    TB_DEBUG=false                # defaults to false, fail-closed
 
-# --- AI Models ---
-TB_LITELLM_API_KEY=           # OpenAI API key (enables real GPT-4o + embeddings)
-TB_GEMINI_API_KEY=            # Google Gemini API key (not currently used)
+    # Models
+    TB_LITELLM_API_KEY=           # OpenAI key: gpt-4o, gpt-4o-mini, embeddings
+    TB_LLM_DEBUG=false            # opt-in verbose LLM logging, see R12
 
-# --- CORS ---
-TB_CORS_ALLOWED_ORIGINS=*     # Comma-separated origins for prod (e.g. https://travelbuddy.app)
+    # CORS
+    TB_CORS_ALLOWED_ORIGINS=*     # comma-separated in production
 
-# --- External APIs ---
-TB_GOOGLE_MAPS_API_KEY=       # Google Maps Distance Matrix + Places
-TB_OPENWEATHER_API_KEY=       # OpenWeatherMap (free tier, no card)
+    # External APIs
+    TB_GOOGLE_MAPS_API_KEY=
+    TB_OPENWEATHER_API_KEY=
 
-# --- Payments ---
-TB_STRIPE_SECRET_KEY=         # Stripe secret key
-TB_STRIPE_WEBHOOK_SECRET=     # Stripe webhook signing secret
-TB_STRIPE_PRICE_MONTHLY=      # Stripe Price ID for monthly plan
-TB_STRIPE_PRICE_YEARLY=       # Stripe Price ID for yearly plan
-TB_REVENUECAT_API_KEY=        # RevenueCat API key
-TB_REVENUECAT_WEBHOOK_AUTH=   # Exact Authorization header value from RC webhooks
-```
+    # Payments
+    TB_STRIPE_SECRET_KEY=
+    TB_STRIPE_WEBHOOK_SECRET=
+    TB_STRIPE_PRICE_MONTHLY=
+    TB_STRIPE_PRICE_YEARLY=
+    TB_REVENUECAT_API_KEY=
+    TB_REVENUECAT_WEBHOOK_AUTH=
 
-### Key Status (What's Active)
+`TB_DEBUG` must never be true on a deployment reachable from the internet. Which
+keys are currently populated is environment state, not specification, so it is
+not recorded here.
 
-| Key | Status | Notes |
-|-----|--------|-------|
-| TB_LITELLM_API_KEY | ✅ Working | OpenAI sk-proj-... (billing active, GPT-4o + mini + embeddings) |
-| TB_GEMINI_API_KEY | ❌ Invalid | Wrong format (not AIza...). Not blocking — removed from fallback |
-| TB_SUPABASE_URL | ✅ Configured | https://xqpcuakugxmcrollablz.supabase.co |
-| TB_SUPABASE_KEY | ✅ Configured | sb_secret_... (service role) |
-| TB_SUPABASE_JWT_SECRET | ✅ Configured | HS256 shared secret (legacy mode) |
-| TB_DEBUG | ✅ Set | true (in .env for local dev) |
+`TB_LLM_DEBUG` exists because raising the root log level for a debug flag once
+dumped full request bodies, 1536-float embedding arrays and a masked
+Authorization header to stdout. Raise your own loggers, never the root (R12).
+
+The venue loader reads `TB_SUPABASE_KEY`. Some documentation has referred to
+`TB_SUPABASE_SERVICE_KEY`; reconcile the names before trusting either.
 
 ---
 
-## 7. MOBILE APP SPECIFICATION (For Flutter Agent)
+## 9. Mobile application
 
-### Tech Stack
-- **Framework**: Flutter 3.x (Dart)
-- **State Management**: Riverpod
-- **Navigation**: GoRouter
-- **HTTP**: Dio or http package
-- **Maps**: google_maps_flutter
-- **Auth**: Supabase Auth (magic link + Google Sign-In)
-- **Payments**: RevenueCat Flutter SDK
-- **Push**: Firebase Cloud Messaging
+### Stack
 
-### Screens Required
-1. **Onboarding** - Mood selection, travel style quiz (3 screens)
-2. **Home/Trip List** - Active trips, create new trip
-3. **Live Itinerary** - Timeline view with draggable/lockable activity cards
-4. **Activity Detail** - Venue info, swap button, transit time
-5. **Swap Sheet** - Bottom sheet with RAG suggestions, filter by vibe
-6. **Map View** - Google Maps with venue pins, transit polylines
-7. **Chat** - Natural language input (WebSocket real-time)
-8. **Profile** - Settings, tier status, upgrade CTA
-9. **Upgrade** - Plan comparison, RevenueCat paywall
+Flutter 3.x with Riverpod for state, GoRouter for navigation, Dio for HTTP,
+`google_maps_flutter` for maps, Supabase Auth for identity, the RevenueCat
+Flutter SDK for payments, `sqflite` for the offline outbox and cache, and
+Firebase Cloud Messaging for push.
 
-### Key UX Patterns
-- Locked activities show a padlock icon and cannot be swiped
-- Weather alerts appear as a banner with one-tap "swap to indoor"
-- Remaining reroutes shown as a counter badge ("3 left today")
-- Cache hits should feel instant (no loading spinner)
-- Heavy model responses show a brief "thinking" animation
+### Screens
 
-### API Integration
-- Base URL: configurable via environment (dev/staging/prod)
-- Auth: Bearer token (Supabase JWT) in Authorization header
-- WebSocket for real-time chat: `ws://api/v1/chat/{trip_id}`
+1. Onboarding: mood selection and travel-style questions
+2. Home and trip list
+3. Live itinerary: timeline of draggable, lockable activity cards
+4. Activity detail: venue info, swap, transit time
+5. Swap sheet: RAG suggestions filtered by vibe
+6. Map view: venue pins and transit polylines
+7. Chat: natural language input
+8. Profile: settings, tier, sync status
+9. Upgrade: plan comparison and paywall
 
----
+### UX invariants
 
-## 8. DEPLOYMENT PLAYBOOK
+- Locked activities show a padlock and cannot be swiped away.
+- Weather alerts appear as a banner offering a one-tap indoor swap.
+- Remaining reroutes appear as a counter badge.
+- Cache hits must feel instant, with no spinner.
+- Every accept, reject, skip and confirm emits a signal. A UI affordance that
+  captures no signal is a missed observation and should be treated as a bug.
 
-### Option A: Railway (Recommended for MVP)
-```bash
-# 1. Push to GitHub
-# 2. Connect Railway to repo
-# 3. Set env vars in Railway dashboard (copy from .env, set TB_DEBUG=false)
-# 4. Railway auto-deploys from Dockerfile on push to main
-```
+### Offline behaviour
 
-### Option B: Docker Compose (Local Dev)
-```bash
-docker-compose up -d  # Starts app + pgvector + redis
-open http://localhost:8000/docs
-```
+Offline is the default assumption, not an error path. The traveller will be on a
+foreign SIM in a tuk-tuk. Writes go to the outbox first and sync opportunistically
+on app start, resume, connectivity regained, after each emit, and on a timer.
 
-### Option C: Google Cloud Run
-```bash
-gcloud run deploy travel-buddy --source . --region me-central1
-```
+Any durability drill must first prove the failure mode is real. The first
+airplane-mode test was meaningless because the build was talking to the laptop
+over USB, which airplane mode does not disable (R7).
+
+### Dart hazard
+
+Writing `\$variable` instead of `$variable` inside a Dart string silently
+produces a literal. It has broken the base URL, the Bearer token and a ValueKey
+on three separate occasions. Grep after every Dart edit (R1).
 
 ---
 
-## 9. MONETIZATION MODEL
+## 10. Security
 
-| Tier | Price | Features |
+### The auth-bypass incident
+
+A change moved the `X-Debug-User-Id` check ahead of JWT verification while
+`debug` defaulted to true. Any client could impersonate any user with one
+header. The entire test suite was green.
+
+Root cause: the suite failed when a developer's `.env` contained
+`TB_SUPABASE_JWT_SECRET`, which correctly enables JWT mode. The fix was applied
+to the application's auth logic instead of to the test environment.
+
+What closed it:
+
+1. `security.py`: the JWT secret check always comes first. The debug header
+   works only when no secret is configured.
+2. `settings.py`: `debug` defaults to false.
+3. `tests/conftest.py`: environment isolation, clearing the JWT secret before
+   the app is imported.
+4. `tests/test_auth.py`: a regression test proving `X-Debug-User-Id` returns 401
+   when a secret is set.
+
+The lesson generalizes beyond auth: never weaken production behaviour to satisfy
+a failing test. When a test fails against real configuration, suspect the test
+(R3).
+
+### Other standing rules
+
+- Webhooks fail closed. An unverifiable signature is a rejection.
+- `/api/v1/debug/errors` returns 404 when debug is off.
+- Error responses carry a `request_id` and nothing internal. Full tracebacks go
+  to the log and the ring buffer.
+- Startup logs booleans for credential presence, never values.
+- Halal is not currently enforced against pork in the dietary checker. That is a
+  safety defect, tracked as high severity, not a missing feature.
+
+---
+
+## 11. Deployment
+
+### Railway, the default for now
+
+Push to GitHub, connect Railway to the repository, set environment variables in
+the dashboard with `TB_DEBUG=false`, and Railway builds from the Dockerfile on
+push to `main`. CI runs Ruff, then tests, then build, then deploy.
+
+### Docker Compose, local
+
+    docker-compose up -d      # app, pgvector, redis
+    open http://localhost:8000/docs
+
+### Google Cloud Run
+
+    gcloud run deploy travel-buddy --source . --region me-central1
+
+---
+
+## 12. Monetization
+
+| Tier | Price | Includes |
 |------|-------|----------|
-| Free | $0 | 5 reroutes/day, light model only, sponsored results |
-| Pro Monthly | $4.99/mo | 50 reroutes/day, GPT-4o, no sponsored, priority |
-| Pro Yearly | $39.99/yr | Same as monthly, 2 months free |
+| Free | 0 | 5 reroutes/day, light model, sponsored results |
+| Pro monthly | 4.99/mo | 50 reroutes/day, heavy model, no sponsored results |
+| Pro yearly | 39.99/yr | As monthly, two months free |
 
-**Revenue streams**:
-- Subscriptions (RevenueCat/Stripe)
-- Sponsored venues (bid_weight * 0.15 boost in RAG results)
-- Affiliate links (future: hotel/restaurant bookings)
+Revenue streams: subscriptions through RevenueCat and Stripe, sponsored venue
+placement as a bounded score boost in RAG results, and affiliate booking links
+later.
 
----
-
-## 10. TEST SUITE
-
-```bash
-# Run all tests (no API keys needed, uses dev-auth + synthetic data)
-pip install -r requirements.txt
-pytest -q
-
-# Expected output:
-# .....................                              [100%]
-# 21 passed, 5 skipped, 10 warnings in ~18s
-```
-
-### Test Coverage
-
-| File | Tests | What's Verified |
-|------|-------|-----------------|
-| test_auth.py | 5 | Health public, 401 w/o auth, dev-auth works, ownership (403), **auth-bypass regression** |
-| test_trip_flow.py | 3 | Event requires auth, create+light event, unknown trip 404 |
-| test_throttle.py | 1 | 5 reroutes succeed (atomic), 6th returns 403 |
-| test_payments.py | 5 | Plans public, webhook auth, RC upgrade, Stripe sig, expiry |
-| test_scheduler.py | 3 | Unreachable-lock conflict, feasible preserves times, skipped excluded |
-| test_embedding.py | 2 | Synthetic determinism + normalized, cosine self-similarity |
-| test_supabase_integration.py | 5 (skipped) | User CRUD, trip persist, atomic quota, venue count, hybrid search |
-
-### Test Environment Isolation
-
-`tests/conftest.py` overrides `TB_SUPABASE_JWT_SECRET`, `TB_SUPABASE_URL`, `TB_SUPABASE_KEY` to empty strings and sets `TB_DEBUG=true` before importing the app. This ensures tests always run in dev-auth mode regardless of what's in the developer's `.env` file.
+The sponsored boost is capped deliberately. A recommendation engine that can be
+bought loses the trust that makes the signal data worth anything.
 
 ---
 
-## 11. IMPLEMENTATION HISTORY
+## 13. Testing
 
-| # | Commit | What Changed |
-|---|--------|--------------|
-| 1 | `feat: Initial Travel Buddy MVP` | Full synthetic MVP backend |
-| 2 | `fix(security)` | JWT auth + dev fallback, trip ownership, closed IDOR holes |
-| 3 | `fix(payments)` | Wired payment_router, 6 auth-gated endpoints, webhooks fail-closed |
-| 4 | `feat(ai)` | Auto-detect embeddings, async state machine, LLM wired into loop |
-| 5 | `feat(tests)` | 20-test pytest suite, $$-quoting fix, Supabase parity |
-| 6 | `fix(settings)` | Restored supabase_jwt_secret + jwt_audience |
-| 7 | `fix(sql)` | All 5 PL/pgSQL functions confirmed valid $$ |
-| 8 | `docs: BRD v3.0` | Full documentation update |
-| 9 | `fix(config)` | Light model → gpt-4o-mini |
-| 10 | `fix(llm)` | Removed dead Gemini from LIGHT_FALLBACK |
-| 11 | `feat: Supabase seeder + CORS + atomic throttle` | seed_supabase.py, integration tests, configurable CORS, consume_reroute() |
-| 12 | `fix(ci)` | Added pyproject.toml for Ruff linter |
-| 13 | `security: Fix auth-bypass regression` | **CRITICAL** — reverted debug-header-first ordering, debug=False default, env isolation, regression test |
+    pytest -q -ra
 
----
+No expected counts are recorded here. `-ra` prints a reason for every skip, and
+a skip asserts nothing: eight tests once silently degraded from passing to
+skipped when `pytest-asyncio` vanished from an ephemeral environment, and the
+summary still looked healthy (R8).
 
-## 12. SECURITY NOTES
+`tests/conftest.py` clears `TB_SUPABASE_JWT_SECRET`, `TB_SUPABASE_URL` and
+`TB_SUPABASE_KEY` and sets `TB_DEBUG=true` before importing the app, so tests
+run in dev-auth mode regardless of the developer's `.env`.
 
-### Auth-Bypass Incident (Commit #13)
+Tests must construct the same exception types production raises. A test that
+threw `Exception('401 ...')` instead of `UnauthorizedException` is why a retry
+bug survived a green suite (R3).
 
-A code change during commit #11 inadvertently moved the `X-Debug-User-Id` check BEFORE the JWT verification. Combined with `debug=True` as the default, this meant any client could impersonate any user by sending a single header — bypassing all authentication.
-
-**Root cause**: The test suite failed when `.env` contained `TB_SUPABASE_JWT_SECRET` (which correctly enables JWT mode). The fix was applied to the app's auth logic instead of the test environment.
-
-**Correct fix applied**:
-1. `security.py`: JWT secret check ALWAYS comes first. Debug header only works when no secret is configured.
-2. `settings.py`: `debug` defaults to `False` (fail-closed).
-3. `tests/conftest.py`: Env isolation — overrides JWT secret to empty before app import.
-4. `tests/test_auth.py`: Regression test proving `X-Debug-User-Id` returns 401 when secret is set.
-
-**Lesson**: Never weaken production security to fix test failures. Fix the test environment instead.
+The full playbook, including the airplane-mode durability drill that gates the
+Laos field test, is in `docs/TESTING_GUIDE.md`.
 
 ---
 
-## 13. REMAINING WORK
+## 14. Where everything else lives
 
-### Immediate (Before Supabase Flip)
-| Task | Priority | Notes |
-|------|----------|-------|
-| Seed venues to Supabase (`python seed_supabase.py`) | HIGH | Requires running locally with real API key |
-| Flip imports (3 files) to Supabase backend | HIGH | The 3 import swaps in trip_router, payment_router, state_machine |
-| Run `pytest tests/test_supabase_integration.py` with creds | HIGH | Verify live Supabase path |
-| Deploy to Railway / Cloud Run | HIGH | First live deployment |
+| Question | Answer |
+|----------|--------|
+| What is built and what is next | `docs/PROJECT_STATUS.md` |
+| What is unverified or broken | `docs/AWAITING_VERIFICATION.md` |
+| Why we are building it | `docs/VISION.md` |
+| Signal and data-model design | `docs/DATA_MODEL_BRD.md` |
+| Numbered specifications | `docs/specs/` |
+| Rules from past bugs | `docs/ENGINEERING_RULES.md` |
+| What changed and when | `git log` |
 
-### Deferred (Post-Deploy)
-| Task | Priority | Notes |
-|------|----------|-------|
-| Replace datetime.utcnow() with datetime.now(UTC) | LOW | Deprecation warnings (cosmetic) |
-| Regenerate Gemini key (AIza... format from aistudio.google.com) | LOW | Currently unused |
-| Add weather_alert / change_mood auto-swap | LOW | Currently informational only |
-
-### Future Phases
-| Phase | Task | Owner | Priority |
-|-------|------|-------|----------|
-| 3 | Flutter mobile app | Coding Agent | HIGH |
-| 3 | UX/UI Design (Figma) | Human Designer | HIGH |
-| 4 | RevenueCat + Stripe integration testing | Dev | HIGH |
-| 5 | Security audit | Human Security Eng | MEDIUM |
-| 5 | Legal (Privacy Policy, ToS) | Lawyer | MEDIUM |
-| 5 | Play Store listing + ASO | Human | MEDIUM |
-| 6 | Venue partnerships (Dubai) | Business Dev | LOW (post-launch) |
-| 6 | Load testing (k6) | Either | LOW |
-
----
-
-## 14. QUICK START (For Any Developer/Agent)
-
-```bash
-# 1. Clone
-git clone https://github.com/vneogi/travel-buddy.git
-cd travel-buddy
-
-# 2. Install
-pip install -r requirements.txt
-
-# 3. Run tests (no external deps needed — .env vars are overridden by conftest)
-pytest -q
-# -> 21 passed, 5 skipped in ~18s
-
-# 4. Run server with synthetic data
-TB_DEBUG=true python main.py
-# -> http://localhost:8000/docs
-
-# 5. Test an endpoint (dev-mode auth — only works when NO JWT secret is set)
-curl -H "X-Debug-User-Id: test-user-1" http://localhost:8000/api/v1/user/status
-
-# 6. For Supabase integration:
-#    a. Copy .env.example to .env, fill in Supabase + OpenAI keys
-#    b. Run schema SQL in Supabase SQL Editor (from models/database.py + services/supabase_service.py)
-#    c. python seed_supabase.py  (seeds 16 venues with real embeddings)
-#    d. Swap 3 imports: database_service -> db_provider (see Section 15)
-#    e. pytest tests/test_supabase_integration.py -v
-
-# 7. For production deployment:
-docker-compose up -d
-# OR: Railway / Cloud Run (set TB_DEBUG=false, provide all keys)
-```
-
----
-
-## 15. PERSISTENCE BACKEND SWITCHING
-
-The app defaults to **in-memory** (no external deps). To switch to Supabase:
-
-1. Set `TB_SUPABASE_URL`, `TB_SUPABASE_KEY`, `TB_SUPABASE_JWT_SECRET` in .env
-2. Run the SQL from `models/database.py` (`SCHEMA_SQL`) against your Supabase database ✅ DONE
-3. Run the SQL from `services/supabase_service.py` (`ADDITIONAL_SQL_FUNCTIONS`) ✅ DONE
-4. Run `python seed_supabase.py` to populate venues with real embeddings
-5. Change imports in `routers/trip_router.py`, `routers/payment_router.py`, `agents/state_machine.py`:
-   - FROM: `from services.database_service import db_service`
-   - TO: `from services.db_provider import db as db_service`
-6. Run `pytest tests/test_supabase_integration.py -v` to verify
-7. Run full suite to confirm nothing regressed
-
----
-
-*Last updated: August 4, 2026*
-*Built by: Vikrant Neogi + Genie Code*
-*Version: 4.0 (Supabase schema deployed, security hardened, atomic throttle, 21 tests green)*
+Built by Vikrant Neogi with AI coding agents.
