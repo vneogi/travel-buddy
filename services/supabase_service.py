@@ -180,7 +180,7 @@ class SupabaseService:
         result = (
             self.client.table("venues_rag")
             .select("venue_id")
-            .ilike("venue_name", place_ref.strip())
+            .ilike("name", place_ref.strip())
             .limit(1)
             .execute()
         )

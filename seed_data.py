@@ -176,7 +176,7 @@ DUBAI_VENUES = [
 ]
 
 
-def seed_venues() -> int:
+def seed_venues() -> tuple:
     """Seed the in-memory venue database with Dubai venues. Returns count.
 
     When the backend is SupabaseService, venues are already in the database

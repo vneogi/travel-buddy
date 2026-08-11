@@ -42,7 +42,6 @@ VALID_CATEGORIES = frozenset({
     "museum", "bar", "hotel_lobby", "hospital", "pharmacy",
     "transport_hub", "embassy", "essential_service", "massage_spa",
     "night_market", "waterfall", "viewpoint", "cooking_class",
-    "street_food", "walking_area", "river_activity", "craft_workshop",
 })
 
 VALID_VIBE_TAGS = frozenset({
@@ -51,32 +50,27 @@ VALID_VIBE_TAGS = frozenset({
     "air_conditioned", "outdoor", "romantic", "spiritual", "scenic",
     "lively", "quiet", "historic", "modern", "cozy", "luxurious",
     "family_friendly", "instagram_worthy", "hidden_gem",
-    "photogenic", "local_favourite", "touristy", "budget",
-    "riverside", "hidden", "upscale", "historical",
 })
 
 VALID_AUDIENCES = frozenset({
     "solo_traveler", "couple", "family_with_kids", "family_with_teens",
     "executive", "backpacker", "digital_nomad", "group",
-    "solo", "friends_group", "seniors",
-    "family_young_kids", "family_teens", "mobility_limited",
 })
 
-VALID_INDOOR_OUTDOOR = frozenset({"indoor", "outdoor", "both", "mixed"})
+VALID_INDOOR_OUTDOOR = frozenset({"indoor", "outdoor", "both"})
 
-VALID_PRICE_BANDS = frozenset({"budget", "moderate", "mid", "premium", "luxury", "splurge", "free"})
+VALID_PRICE_BANDS = frozenset({"budget", "moderate", "premium", "luxury"})
 
 VALID_CUISINES = frozenset({
     "lao", "thai", "french", "fusion", "international", "vietnamese",
     "emirati", "indian", "chinese", "japanese", "korean", "italian",
     "american", "middle_eastern", "african", "bakery", "dessert",
-    "coffee", "smoothie", "street_food", "french_colonial", "drink",
+    "coffee", "smoothie", "street_food",
 })
 
 # Food categories that may have dishes
 FOOD_CATEGORIES = frozenset({
     "restaurant", "cafe", "bar", "night_market", "street_food",
-    "market", "craft_workshop",
 })
 
 # Laos bounding box (generous)
@@ -224,8 +218,8 @@ def validate_venue(venue: dict, idx: int, geo_region: str,
 
     # Validate each dish
     for d_idx, dish in enumerate(dishes):
-        d_name = dish.get("dish_name") or dish.get("name_en") or f"<dish #{d_idx}>"
-        if not dish.get("dish_name") and not dish.get("name_en"):
+        d_name = dish.get("dish_name", f"<dish #{d_idx}>")
+        if not dish.get("dish_name"):
             errors.append(f"{prefix} > dish #{d_idx}: missing 'dish_name'")
         cuisine = dish.get("cuisine")
         if cuisine and cuisine not in VALID_CUISINES:
@@ -450,7 +444,7 @@ def main():
                 )
                 break
 
-        if any(filepath in e for e in all_errors):
+        if any(e.startswith(f"{filepath}:") or e.startswith(f"\n--- {filepath}") for e in all_errors):
             continue
 
         try:
@@ -459,10 +453,8 @@ def main():
             all_errors.append(f"{filepath}: Invalid JSON - {e}")
             continue
 
-        file_geo_region = None  # geo_region from dict wrapper (if present)
         if isinstance(venues, dict):
-            # Unwrap dict format: {"geo_region": ..., "venues": [...]}
-            file_geo_region = venues.get("geo_region") or venues.get("region")
+            # Unwrap dict format: {"region": ..., "venues": [...]}
             array_key = next(
                 (k for k in ("venues", "data", "items") if isinstance(venues.get(k), list)),
                 None,
@@ -479,13 +471,12 @@ def main():
             all_errors.append(f"{filepath}: Expected JSON array or dict with venues key, got {type(venues).__name__}")
             continue
 
-        # Determine geo_region: CLI override > file-level field > infer from filename
+        # Determine geo_region: CLI override > file wrapper > filename > first venue
         geo_region = args.geo_region
         if not geo_region:
             if file_geo_region and file_geo_region in registered_regions:
                 geo_region = file_geo_region
             else:
-                # Try to infer from filename (e.g. venues_luang_prabang_laos.json)
                 stem = Path(filepath).stem.replace("venues_", "")
                 if stem in registered_regions:
                     geo_region = stem

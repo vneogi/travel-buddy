@@ -259,7 +259,7 @@ class DatabaseService:
         """Resolve a venue name to venue_id. Case-insensitive exact match."""
         place_lower = place_ref.lower().strip()
         for venue in self._venues:
-            if venue.get("venue_name", "").lower().strip() == place_lower:
+            if venue.get("name", "").lower().strip() == place_lower:
                 return venue.get("venue_id")
         return None
 
