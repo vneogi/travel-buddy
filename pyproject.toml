@@ -9,7 +9,7 @@ target-version = "py311"
 line-length = 100
 
 [tool.ruff.lint]
-# Relaxed for MVP — tighten later
+# Relaxed for MVP -- tighten later
 select = ["E", "F", "W"]
 ignore = [
     "E501",   # line too long (handled by formatter)
@@ -26,9 +26,10 @@ quote-style = "double"
 [tool.pytest.ini_options]
 addopts = "--strict-markers -ra"
 markers = [
-    "asyncio: marks tests as async (should not exist — use sync TestClient instead)",
+    "asyncio: marks tests as async (should not exist -- use sync TestClient instead)",
 ]
-# PytestUnhandledCoroutineWarning removed in pytest 9.x; guard both versions.
+# An async test without a runner returns a coroutine object (non-None).
+# This makes it an error instead of a silent no-op (R8).
 filterwarnings = [
-    "ignore::pytest.PytestRemovedIn10Warning",
+    "error::pytest.PytestReturnNotNoneWarning",
 ]
