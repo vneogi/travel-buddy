@@ -17,7 +17,7 @@ drifted, so they are dropped. Commits are identified by SHA only.
 
 ## Baseline, Aug 12 2026
 
-A fresh clone on the Databricks compute at `8b71949` reports 122 passed
+A fresh clone on the Databricks compute at `0053cb7` reports 122 passed
 and 5 skipped. All five skips are in `tests/test_supabase_integration.py`
 with the reason "Supabase creds not configured (TB_SUPABASE_URL unset)".
 Those are the expected skips. A skip anywhere else is a finding (R8).
@@ -32,16 +32,23 @@ Derives `arrival_delta` from `visited_confirmed.captured_at` against
 This is DONE. Earlier revisions of PROJECT_STATUS.md listed it as the
 next task, contradicting this file.
 
-### Documentation hygiene guard -- 8b71949
+### Documentation hygiene guard -- 8b71949, widened in 0053cb7
 
 `tests/test_docs_hygiene.py`, five tests: non-ASCII outside an allowlist,
 stale allowlist entries, mirrored test counts in load-bearing documents,
 known-false architecture claims, and unresolvable `SPEC-NN` references.
+It walks every markdown file in the repo except those under build and
+vendor directories.
 
-The guard was proven to fail before it was accepted. A probe file
-containing an em-dash was committed, the non-ASCII test failed naming that
-file, the probe was removed, and the suite went green. A guard that has
-never failed proves nothing (R3).
+Both commits proved the guard could fail before it was accepted. The first
+committed a probe containing an em-dash and showed the non-ASCII test
+failing by name; the second put the probe under `mobile/`, which the
+original walk could not see, and showed the widened walk catching it. A
+guard that has never failed proves nothing, and a scope change that is
+never exercised is indistinguishable from no change (R3).
+
+The guard found `docs/research/SURVEY_FINDINGS.md` on its first run -- a
+non-ASCII file that a hand-written audit of this repo had missed.
 
 ## Awaiting device verification
 
@@ -130,13 +137,21 @@ name the settings layer expects and make all three agree.
 The loader field-name fix is committed but the data was never re-loaded,
 so the scheduler has no hours to respect for any Laos venue.
 
-### Low -- three nested READMEs are outside the hygiene guard
+### Low -- pytest floor is stricter than the code requires
 
-The guard walks the root `README.md`, `MASTER_BRD.md` and `docs/`. It does
-not see `mobile/README.md` (204 non-ASCII bytes, the second largest
-offender in the repo), `scripts/README.md` (33) or
-`supabase/migrations/README.md` (24). Nothing stops those three drifting
-further. Widen the walk and allowlist them.
+`requirements-dev.txt` pins `pytest>=9.0.0`. That number came from a
+misdiagnosis recorded below, not from the code. The only class the config
+names is `PytestReturnNotNoneWarning`, which per the pytest changelog
+exists from 7.2, was removed by accident in 8.4.0, and was reintroduced in
+8.4.1. So exactly one release cannot parse the config and the accurate
+floor is `>=8.4.1`. Harmless today, wrong tomorrow when it collides with
+another pin.
+
+### Low -- the guard walks .pytest_cache
+
+`EXCLUDED_PARTS` does not list `.pytest_cache`, so a generated directory is
+in scope. Its README is ASCII today and nothing fails, but a transient
+artifact should not be able to redden the suite. Add it to the exclusions.
 
 ### Low -- mobility_limited overcorrected
 
@@ -150,6 +165,14 @@ It sits in `scripts/load_dish_glossary.py` and belongs in
 `config/dietary.py` contains em-dashes. It is no longer blocked: R14
 documents the delete-and-recreate procedure, so `config/dietary.py` gets
 rebuilt as pure ASCII with the constant moved in.
+
+## Resolved
+
+### Three nested READMEs were outside the guard -- fixed in 0053cb7
+
+`mobile/README.md` (204 non-ASCII bytes), `scripts/README.md` (33) and
+`supabase/migrations/README.md` (24) were invisible to the original walk.
+The walk now covers the whole tree and all three are allowlisted.
 
 ## Retracted findings
 
@@ -174,19 +197,22 @@ in an ini `filterwarnings` entry is a hard dependency on the class
 existing, so the entry written to guard both pytest versions was the sole
 reason the older one could not start. It also only ever suppressed a
 warning; it never enforced anything, so the R8 protection against an async
-test silently becoming a no-op was never in this file. pytest itself fails
-unhandled coroutines from 8.4 onwards, which is where that guarantee
-actually comes from.
+test silently becoming a no-op was never in this file.
 
-The replacement at `8b71949` errors on `PytestReturnNotNoneWarning`, which
-catches a test that returns instead of asserting. Useful, but unrelated to
-async detection, and the comment above it claims otherwise. Correct the
-comment and pin a pytest floor in `requirements-dev.txt` so the version
-dependency is declared rather than discovered.
+The pytest changelog settles where that protection actually comes from.
+Async tests without a handling plugin always fail, from 8.4 onward, with
+no configuration required. Separately,
+`PytestReturnNotNoneWarning` is a permanent warning that the maintainers
+have explicitly decided will never become an error by default. The
+replacement entry at `8b71949` promotes it to an error, which is worth
+keeping on its own merits -- a test that returns instead of asserting
+passes while proving nothing -- but it has nothing to do with coroutines.
+The comment was corrected in `0053cb7`.
 
-Cost of the misdiagnosis: one unnecessary config change, made because a
-brief asserted a filter that was not there and the executing agent matched
-the brief instead of contradicting it.
+Cost of the misdiagnosis: one unnecessary config change and one
+over-strict version pin, both made because a brief asserted a filter that
+was not there and the executing agent matched the brief instead of
+contradicting it.
 
 ## Tooling incidents
 
@@ -233,11 +259,12 @@ This keeps documentation out of the R14 and R15 failure modes entirely.
 
 ## ASCII status of the documentation set
 
-Enumerated from the full tree at `8b71949`, not from a hand-written list.
-The previous revision of this table was built by listing files from memory
-and missed `docs/research/SURVEY_FINDINGS.md`, which the hygiene guard
-caught on its first run. There are 27 markdown files in the repo and 18
-contain non-ASCII bytes.
+Enumerated from the full tree, not from a hand-written list. The earlier
+version of this table was built by listing files from memory and missed
+`docs/research/SURVEY_FINDINGS.md`. There are 27 tracked markdown files
+and 18 contain non-ASCII bytes. All 18 are inside the guard's scan path
+and allowlisted in `tests/test_docs_hygiene.py`. The allowlist may only
+shrink.
 
 Pure ASCII, editable in place with `editAsset`:
 
@@ -248,13 +275,13 @@ Pure ASCII, editable in place with `editAsset`:
   `docs/specs/SPEC-11-forced-choice-preferences.md`,
   `docs/specs/SPEC-12-show-driver-cards.md`
 
-Non-ASCII, inside the guard's scan path. These 15 are the seed allowlist in
-`tests/test_docs_hygiene.py`, and it may only shrink:
+Non-ASCII. Each must be rebuilt rather than patched (R14):
 
 | File | Non-ASCII bytes |
 |------|-----------------|
 | `docs/VISION.md` | 428 |
 | `docs/DATA_MODEL_BRD.md` | 316 |
+| `mobile/README.md` | 204 |
 | `docs/research/survey_deep.md` | 137 |
 | `docs/UX_BACKLOG.md` | 111 |
 | `docs/specs/SPEC-04-offline-vault.md` | 78 |
@@ -265,18 +292,11 @@ Non-ASCII, inside the guard's scan path. These 15 are the seed allowlist in
 | `docs/specs/SPEC-09-anonymous-identity.md` | 42 |
 | `docs/research/survey_short.md` | 40 |
 | `docs/specs/SPEC-06-behavioral-signals.md` | 38 |
+| `scripts/README.md` | 33 |
 | `docs/specs/SPEC-05-observability.md` | 24 |
+| `supabase/migrations/README.md` | 24 |
 | `docs/research/SURVEY_FINDINGS.md` | 6 |
 | `docs/specs/SPEC-10-booking-anchors.md` | 6 |
-
-Non-ASCII, outside the guard's scan path. Unprotected until the walk is
-widened:
-
-| File | Non-ASCII bytes |
-|------|-----------------|
-| `mobile/README.md` | 204 |
-| `scripts/README.md` | 33 |
-| `supabase/migrations/README.md` | 24 |
 
 Source files known to contain non-ASCII, same R14 constraint:
 

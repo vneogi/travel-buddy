@@ -10,10 +10,11 @@
 - Test deps are pinned in `requirements-dev.txt`. Install them, because an
   ephemeral environment that silently loses `pytest-asyncio` turns eight real
   tests into skips while the summary still looks healthy (R8).
-- The pytest config names a pytest 9 warning class in `filterwarnings`, which
-  makes pytest 9 a hard floor. If pytest dies instantly complaining about an
-  unknown warning class, you are running some other interpreter's pytest and
-  have not installed the dev requirements.
+- If pytest dies instantly complaining about an unknown warning class, you are
+  running some other interpreter's pytest and have not installed the dev
+  requirements. Naming a class in a `filterwarnings` entry requires that class
+  to exist, and `PytestReturnNotNoneWarning` is absent from pytest 8.4.0 --
+  present in 7.2 through 8.3, deleted by accident in 8.4.0, restored in 8.4.1.
 - Flutter 3.2+: install the SDK, run `flutter doctor`, fix anything red.
 - For device testing: Android Studio with an AVD, or a physical phone with USB
   debugging. Chrome needs no emulator.
@@ -35,8 +36,16 @@ finding: eight tests once degraded from passing to skipped when `pytest-asyncio`
 vanished from an ephemeral environment, and the summary line still read as
 healthy (R8).
 
+Two config-level guards back that rule up, and they cover different failures.
+An async test with no plugin installed fails outright -- that is pytest's own
+behaviour from 8.4 onward and needs no configuration. A test that returns a
+value instead of asserting is turned into an error by the `filterwarnings`
+entry in `pyproject.toml`, because such a test passes while proving nothing and
+pytest will never make it an error by default.
+
 `tests/test_docs_hygiene.py` tests the documentation rather than the code. It
-fails on non-ASCII bytes outside its allowlist, on a mirrored test count in a
+walks every markdown file outside build and vendor directories and fails on
+non-ASCII bytes outside its allowlist, on a mirrored test count in a
 load-bearing document, on architecture claims known to be false, and on a
 `SPEC-NN` reference with no matching file. If it fails after you edit a
 document, the document is wrong, not the test. The allowlist is permitted to
