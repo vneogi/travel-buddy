@@ -15,12 +15,26 @@ Earlier revisions of this file tracked work as `#84`, `#85`, `#86` and so
 on. Those numbers cannot be reconciled against `git log` and had already
 drifted, so they are dropped. Commits are identified by SHA only.
 
-## Baseline, Aug 12 2026
+## Baseline, Aug 13 2026
 
-A fresh clone on the Databricks compute at `0053cb7` reports 122 passed
+A fresh clone on the Databricks compute at `8dfc412` reports 124 passed
 and 5 skipped. All five skips are in `tests/test_supabase_integration.py`
 with the reason "Supabase creds not configured (TB_SUPABASE_URL unset)".
 Those are the expected skips. A skip anywhere else is a finding (R8).
+
+## First tasks when the laptop returns
+
+In this order. The first one is a data-durability fix and should not wait.
+
+1. **Export the Dubai venues to a file.** They exist only as rows in the
+   hosted database. Write them out as `data/dubai_venues.json` in the same
+   shape as the Laos files, commit, and confirm the loader can dry-run it.
+   Until that exists, the database cannot be rebuilt without data loss.
+2. **Re-load the three Laos files.** One run settles the null
+   `opening_hours`, the curated fields the loader is being taught to write,
+   and the script corrections. Sequence it after those code changes land,
+   not before.
+3. Then the Dart, PowerShell and live-RPC items in the table below.
 
 ## Verified via pytest
 
@@ -29,16 +43,13 @@ Those are the expected skips. A skip anywhere else is a finding (R8).
 Derives `arrival_delta` from `visited_confirmed.captured_at` against
 `node.scheduled_start`, so one tap yields two data points. Covered by
 `services/arrival_delta_service.py` and `tests/test_arrival_delta.py`.
-This is DONE. Earlier revisions of PROJECT_STATUS.md listed it as the
-next task, contradicting this file.
 
 ### Documentation hygiene guard -- 8b71949, widened in 0053cb7
 
-`tests/test_docs_hygiene.py`, five tests: non-ASCII outside an allowlist,
-stale allowlist entries, mirrored test counts in load-bearing documents,
-known-false architecture claims, and unresolvable `SPEC-NN` references.
-It walks every markdown file in the repo except those under build and
-vendor directories.
+Five tests: non-ASCII outside an allowlist, stale allowlist entries,
+mirrored test counts in load-bearing documents, known-false architecture
+claims, and unresolvable `SPEC-NN` references. It walks every markdown
+file in the repo except those under build and vendor directories.
 
 Both commits proved the guard could fail before it was accepted. The first
 committed a probe containing an em-dash and showed the non-ASCII test
@@ -50,6 +61,22 @@ never exercised is indistinguishable from no change (R3).
 The guard found `docs/research/SURVEY_FINDINGS.md` on its first run -- a
 non-ASCII file that a hand-written audit of this repo had missed.
 
+### venues_rag schema drift guard -- 0aef5b0
+
+`tests/test_venue_schema.py` parses `supabase/migrations/*.sql` for the
+`venues_rag` column set and asserts the loader's write set is a subset.
+Proven by deleting one `ADD COLUMN` line and watching the test name the
+missing column. Since `8dfc412` it imports `VENUES_RAG_WRITE_COLUMNS` from
+the loader instead of mirroring the list, so the two cannot diverge.
+
+### Venue loader repair -- 8dfc412
+
+The acceptance was a dry run over all three Laos files with no
+`--geo-region` flag and no credentials: validation passed, 58 venues, zero
+errors. This is the first evidence that the committed loader can load the
+committed data. The loader test module passing was never sufficient -- it
+passed throughout the period the loader was broken.
+
 ## Awaiting device verification
 
 | SHA | Date | What | Verify with |
@@ -59,51 +86,35 @@ non-ASCII file that a hand-written audit of this repo had missed.
 | c6712bb | Aug 9 | fix(scripts): purge non-ASCII from all .ps1, add UTF-8 BOM | `.\scripts\smoke-test.ps1` |
 | f778d8f | Aug 9 | feat(glossary): scripts/load_dish_glossary.py | run against live Supabase, then `--report-fk` |
 | 1e0d999 | Aug 9 | fix(scripts): open data files as utf-8 | re-run the loaders on Windows |
-| 10d27dd | Aug 9 | fix(venues): dict-wrapped JSON plus Laos vocabulary | see finding 1 below -- partly reverted |
+| 0aef5b0 | Aug 13 | migration 0011, unapplied | apply after the amendment, then re-load |
 
 `b47bce6` is documentation only and needs no verification.
 
 ## Known open issues
 
-### High -- the venue loader cannot load the Laos data
+### High -- the Dubai venues have no source file
 
-The vocabulary expansion committed in `10d27dd` was reverted by the merge
-`c5f64f3` twenty minutes later. On `main` today the VALID_* sets are back
-to their pre-Laos state, so validating the three Laos files fails on
-vocabulary for a large share of the 58 venues. Missing values include:
+`data/` contains `laos_luang_prabang.json`, `laos_vang_vieng.json`,
+`laos_vientiane.json` and `laos_dish_glossary.json`. There is no Dubai
+file. The 16 Dubai venues exist only as rows in the hosted database, so
+they cannot be re-loaded, diffed, reviewed, or restored, and a database
+rebuilt from `supabase/migrations/` would not contain them.
 
-- categories: `street_food`, `walking_area`, `river_activity`, `craft_workshop`
-- vibe tags: `photogenic`, `local_favourite`, `touristy`
-- audiences: `solo`, `friends_group`, `seniors`, `mobility_limited`
-- indoor_outdoor: `mixed`
-- price bands: `mid`, `splurge`, `free`
-- cuisines: `french_colonial`, `drink`
+This undercuts the point of the schema work in this sprint. The migrations
+were made complete so the database could be rebuilt; rebuilding it today
+would still lose the original MVP dataset. Export is the first device task.
 
-`FOOD_CATEGORIES` still lists `street_food`, which is no longer in
-`VALID_CATEGORIES` -- the two sets disagree.
+### High -- the loader discards curated fields
 
-The data currently in Supabase was loaded before the revert, so the
-database is fine and the script is not. Restoring the vocabulary is part
-of the loader rewrite.
+Every venue JSON carries `name_local`, `nearest_landmark`,
+`nearest_landmark_local`, `micro_location` and `wheelchair_notes`. The
+loader writes none of them, and it ignores any key outside its write set
+without comment, so five curated fields per venue are lost on every load
+and nothing errors.
 
-### High -- load_venues.py raises NameError without --geo-region
-
-`file_geo_region` is read in the geo_region inference chain but is never
-assigned. Every invocation that does not pass `--geo-region` explicitly
-crashes, including the command printed in PROJECT_STATUS.md.
-
-### High -- 145849d claim 2 did not land
-
-That commit states `collect_warnings` was restored to
-`{v.get("category") for v in venues}`. On `main` the line is still:
-
-    cats = {v.get("opening_hours_structured") is None and v.get("opening_hours") is None}
-
-So `"massage_spa" not in cats` is always true and every region is warned
-as having zero massage_spa venues. The sibling fix in the same commit
-(`startswith(f"{filepath}:")` instead of a substring match) did land.
-A partial hunk landing on a non-ASCII file, the same failure mode that
-left PROJECT_STATUS.md half-rebuilt. Do not trust that commit message.
+`wheelchair_notes` is the only real evidence behind the `mobility_limited`
+audience filter, which is separately recorded as too loose to be useful.
+It has never had data to be useful with.
 
 ### High -- halal plus pork passes the allergen check
 
@@ -111,13 +122,41 @@ There is no `LABEL_EXCLUDES_ALLERGENS` rule for halal, so a dish labelled
 halal that contains pork validates cleanly. Safety hole for Muslim
 travellers. Needs a rule plus a test.
 
-### High -- venues_rag schema drift
+### Medium -- wrong script in Lao-language fields
 
-The loader writes `typical_dwell_minutes`, `indoor_outdoor` and
-`price_band` to `venues_rag`, and no migration defines those columns.
-`name_local` and `nearest_landmark` are also absent, which is what blocks
-SPEC-12 driver cards. A database rebuilt from `supabase/migrations/`
-today fails on load.
+Twelve fields across eleven venues contain script that is not Lao.
+
+Seven `name_local` values end in the Mandarin word for restaurant
+(U+9910 U+5385) rather than the Lao equivalent: Tangor Drink &
+Restaurant, Tamarind Restaurant & Cooking School, Bamboo Tree Restaurant &
+Cooking School, Happy Mango Thai & Lao Bistro, Kualao Restaurant, Khop
+Chai Deu, and Lao Kitchen.
+
+Five `nearest_landmark_local` values contain the Thai word for riverside
+(U+0E23 U+0E34 U+0E21) where the same dataset uses the Lao form elsewhere:
+Tamarind, Utopia Bar & Restaurant, Saffron Coffee & Bakery, and Vientiane
+Night Market (Vat Chan).
+
+Both are detectable by codepoint range, so this becomes a test rather than
+a proofreading exercise. The accented characters in the dish glossary are
+not defects -- they are French loanwords and are spelled correctly.
+
+Separately and not machine-detectable: several `name_local` values are
+phonetic transliterations of the English name rather than a Lao name, for
+example Lao Kitchen, Utopia Bar and L'Hibiscus. That may be exactly what
+the signage says, or it may be invented. Only someone who has seen the
+places can tell.
+
+### Medium -- opening_hours null on all 58 Laos venues
+
+Settled: `venues_rag` has both `opening_hours` (text, from `0001`) and
+`opening_hours_structured` (JSONB, added by `0008`, which never dropped the
+original). The loader writes only `opening_hours_structured`, reading the
+`opening_hours` key from the JSON via a fallback. The data files do carry
+hours for all 58 venues, so a re-load lands them.
+
+The legacy `opening_hours` column is dead. Do not "fix" the loader by
+writing to it.
 
 ### Medium -- hybrid_venue_search geo_region parameter
 
@@ -132,41 +171,53 @@ filter is silently ignored. Verify against the live database.
 Parts of the documentation say `TB_SUPABASE_SERVICE_KEY`. Confirm which
 name the settings layer expects and make all three agree.
 
-### Medium -- opening_hours null on all 58 Laos venues
+### Low -- pytest floor and the guard's scan of generated directories
 
-The loader field-name fix is committed but the data was never re-loaded,
-so the scheduler has no hours to respect for any Laos venue.
-
-### Low -- pytest floor is stricter than the code requires
-
-`requirements-dev.txt` pins `pytest>=9.0.0`. That number came from a
-misdiagnosis recorded below, not from the code. The only class the config
-names is `PytestReturnNotNoneWarning`, which per the pytest changelog
-exists from 7.2, was removed by accident in 8.4.0, and was reintroduced in
-8.4.1. So exactly one release cannot parse the config and the accurate
-floor is `>=8.4.1`. Harmless today, wrong tomorrow when it collides with
-another pin.
-
-### Low -- the guard walks .pytest_cache
-
-`EXCLUDED_PARTS` does not list `.pytest_cache`, so a generated directory is
-in scope. Its README is ASCII today and nothing fails, but a transient
-artifact should not be able to redden the suite. Add it to the exclusions.
+Both addressed in `0aef5b0`: the floor is now `pytest>=8.4.1`, matching the
+one release that cannot parse the config, and `.pytest_cache` is excluded
+from the documentation walk.
 
 ### Low -- mobility_limited overcorrected
 
 Flagged on roughly two thirds of venues, which makes it useless as a
-filter.
+filter. Revisit once `wheelchair_notes` actually reaches the database.
+
+### Low -- Vientiane massage_spa count is unconfirmed
+
+This was reported by `collect_warnings`, which was comparing against a set
+of booleans and therefore warned every region about every category. Re-check
+against the data before treating it as a curation gap.
 
 ### Low -- VALID_DISH_CONTAINS lives in the wrong file
 
 It sits in `scripts/load_dish_glossary.py` and belongs in
-`config/dietary.py` (R5). Previously marked BLOCKED because
-`config/dietary.py` contains em-dashes. It is no longer blocked: R14
-documents the delete-and-recreate procedure, so `config/dietary.py` gets
-rebuilt as pure ASCII with the constant moved in.
+`config/dietary.py` (R5). No longer blocked: R14 documents the
+delete-and-recreate procedure, so `config/dietary.py` gets rebuilt as pure
+ASCII with the constant moved in.
 
 ## Resolved
+
+### Venue loader could not load the Laos data -- fixed in 8dfc412
+
+Three defects, all closed and all proven by the dry run rather than by
+tests:
+
+- The vocabulary expansion added in `10d27dd` and reverted by the merge
+  `c5f64f3` is restored. Recovered from history rather than retyped, then
+  checked against the values actually present in the data. The recovered
+  set covers the data exactly, with no gaps in either direction.
+- `file_geo_region` is assigned again, from the `geo_region` key on the
+  file's dict wrapper. Its absence made every invocation without an
+  explicit `--geo-region` raise `NameError`, including the command printed
+  in our own documentation.
+- `collect_warnings` compares against `{v.get("category") for v in venues}`
+  instead of a one-element set of booleans, so category coverage warnings
+  mean something for the first time. Commit `145849d` claimed this fix and
+  did not land it.
+
+`FOOD_CATEGORIES` and `VALID_CATEGORIES` now agree on `street_food`, and
+`scripts/patch_venues_loader.py` -- a monkey-patching duplicate of the same
+four fixes -- is deleted.
 
 ### Three nested READMEs were outside the guard -- fixed in 0053cb7
 
@@ -178,41 +229,38 @@ The walk now covers the whole tree and all three are allowlisted.
 
 ### The pytest filterwarnings entry was not broken
 
-A previous revision of this file recorded, as a Medium open issue, that
-`pyproject.toml` referenced `PytestRemovedIn10Warning`, a class that does
-not exist. That was wrong. pytest 9.1.1 defines it. The startup error came
-from invoking the base compute's system pytest before installing the
-project requirements, so it was an environment mistake reported as a repo
-defect.
+A previous revision recorded, as a Medium open issue, that `pyproject.toml`
+referenced `PytestRemovedIn10Warning`, a class that does not exist. That
+was wrong; pytest 9.1.1 defines it. The startup error came from invoking
+the base compute's system pytest before installing the project
+requirements -- an environment mistake reported as a repo defect.
 
-What survives is smaller and worth keeping. The config had:
+What survives is smaller. The original comment claimed the entry guarded
+both pytest versions, when naming a class in an ini `filterwarnings` entry
+is a hard dependency on that class existing, so the entry was the sole
+reason the older version could not start. It also only ever suppressed a
+warning and never enforced anything.
 
-    # PytestUnhandledCoroutineWarning removed in pytest 9.x; guard both versions.
-    filterwarnings = [
-        "ignore::pytest.PytestRemovedIn10Warning",
-    ]
+Per the pytest changelog, async tests without a handling plugin always
+fail from 8.4 onward with no configuration, and
+`PytestReturnNotNoneWarning` is a permanent warning the maintainers have
+decided will never become an error by default. So the replacement entry
+earns its place on its own merits -- a test that returns instead of
+asserting passes while proving nothing -- and has nothing to do with
+coroutines.
 
-That comment describes the opposite of what the code does. Naming a class
-in an ini `filterwarnings` entry is a hard dependency on the class
-existing, so the entry written to guard both pytest versions was the sole
-reason the older one could not start. It also only ever suppressed a
-warning; it never enforced anything, so the R8 protection against an async
-test silently becoming a no-op was never in this file.
+Cost: one unnecessary config change and one over-strict version pin, both
+because a brief asserted a filter that was not there and the executing
+agent matched the brief instead of contradicting it.
 
-The pytest changelog settles where that protection actually comes from.
-Async tests without a handling plugin always fail, from 8.4 onward, with
-no configuration required. Separately,
-`PytestReturnNotNoneWarning` is a permanent warning that the maintainers
-have explicitly decided will never become an error by default. The
-replacement entry at `8b71949` promotes it to an error, which is worth
-keeping on its own merits -- a test that returns instead of asserting
-passes while proving nothing -- but it has nothing to do with coroutines.
-The comment was corrected in `0053cb7`.
+### SPEC-12 was never blocked on curation
 
-Cost of the misdiagnosis: one unnecessary config change and one
-over-strict version pin, both made because a brief asserted a filter that
-was not there and the executing agent matched the brief instead of
-contradicting it.
+The spec claimed no Laos venue carried Lao script and that curating 58 of
+them was the critical path. Both were wrong. All 58 already carry
+`name_local`, `nearest_landmark` and `nearest_landmark_local`. The blocker
+was always the loader discarding them, which is recorded above as an open
+issue. Cost: an instruction to the project owner to spend days on data
+entry that was already done.
 
 ## Tooling incidents
 
@@ -233,9 +281,6 @@ Repair was a re-clone, not a retry. Notes for next time:
 - The replacement clone reports `git_cli_enabled: true`, `isClean: true`
   and `GIT_STATE_NORMAL`.
 
-The re-clone also discarded six uncommitted files left by the dead
-session, which was the intended outcome.
-
 ### __pycache__ writes are denied on the compute
 
 The same filter that blocks all workspace writes (R15) also blocks
@@ -245,11 +290,10 @@ Run it there with `PYTHONDONTWRITEBYTECODE=1`.
 ### Half-landed documentation commit, 9fbe2f6
 
 That commit rebuilt `PROJECT_STATUS.md` only partially, because R14
-blocked the replacement of the em-dashed original. It left the new
-summary prepended to the entire stale document, so the file asserted both
-"8 signal types registered" and, further down, "Behavioral signals: NOT
-STARTED". It also committed `PROJECT_STATUS.new.md` alongside it. Both
-were resolved by rewriting the file through the GitHub API.
+blocked the replacement of the em-dashed original. It left the new summary
+prepended to the entire stale document, so the file asserted both "8 signal
+types registered" and, further down, "Behavioral signals: NOT STARTED".
+Resolved by rewriting the file through the GitHub API.
 
 ## Division of labour
 
@@ -257,14 +301,12 @@ Documentation and whole-file rewrites go through the GitHub API from the
 planning side. The Databricks compute is reserved for code plus pytest.
 This keeps documentation out of the R14 and R15 failure modes entirely.
 
-## ASCII status of the documentation set
+## ASCII status
 
-Enumerated from the full tree, not from a hand-written list. The earlier
-version of this table was built by listing files from memory and missed
-`docs/research/SURVEY_FINDINGS.md`. There are 27 tracked markdown files
-and 18 contain non-ASCII bytes. All 18 are inside the guard's scan path
-and allowlisted in `tests/test_docs_hygiene.py`. The allowlist may only
-shrink.
+Enumerated from the full tree, not from a hand-written list. There are 27
+tracked markdown files and 18 contain non-ASCII bytes. All 18 are inside
+the hygiene guard's scan path and allowlisted in
+`tests/test_docs_hygiene.py`. The allowlist may only shrink.
 
 Pure ASCII, editable in place with `editAsset`:
 
@@ -275,7 +317,7 @@ Pure ASCII, editable in place with `editAsset`:
   `docs/specs/SPEC-11-forced-choice-preferences.md`,
   `docs/specs/SPEC-12-show-driver-cards.md`
 
-Non-ASCII. Each must be rebuilt rather than patched (R14):
+Non-ASCII markdown. Each must be rebuilt rather than patched (R14):
 
 | File | Non-ASCII bytes |
 |------|-----------------|
@@ -298,10 +340,12 @@ Non-ASCII. Each must be rebuilt rather than patched (R14):
 | `docs/research/SURVEY_FINDINGS.md` | 6 |
 | `docs/specs/SPEC-10-booking-anchors.md` | 6 |
 
-Source files known to contain non-ASCII, same R14 constraint:
+Source files still containing non-ASCII, same R14 constraint:
 
-- `scripts/load_venues.py` (warning glyphs and an em-dash in output)
 - `config/dietary.py` (em-dashes in comments)
 - `config/regions.py` (box-drawing characters)
 - `mobile/lib/features/itinerary/itinerary_screen.dart` (em-dash)
-- All Lao venue and glossary JSON files (Lao script, expected and correct)
+- All Lao venue and glossary JSON files (Lao script, expected and correct
+  apart from the contamination recorded above)
+
+`scripts/load_venues.py` left this list at `8dfc412` and is now pure ASCII.

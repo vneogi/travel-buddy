@@ -32,15 +32,16 @@
 | Component | Status | Notes |
 |-----------|--------|-------|
 | Supabase persistence | LIVE | db_provider auto-resolves; falls back to in-memory |
-| Migrations 0001-0010 | APPLIED, WITH DRIFT | 0007 RLS, 0008 hours JSONB, 0009 dish price, 0010 glossary |
+| Migrations 0001-0010 | APPLIED | 0007 RLS, 0008 hours JSONB, 0009 dish price, 0010 glossary |
 | Migration 0011 | COMMITTED, UNAPPLIED, INCOMPLETE | Adds the three undeclared columns plus name_local and nearest_landmark. Needs nearest_landmark_local, micro_location and wheelchair_notes before it is applied |
+| Venue loader | REPAIRED | Pure ASCII, vocabulary restored, geo_region inferred from the file wrapper. Dry run clean over all 58 Laos venues with no flags |
 | Signal capture (SPEC-01) | DONE | All registered types accepted, both backends |
 | Offline queue (SPEC-02) | DONE | SQLite outbox, sync engine, crash recovery |
 | Party context (SPEC-03) | DONE | Server-side stamping, both backends, migration 0003 applied |
 | Observability (SPEC-05) | DONE | Ring buffer, request IDs, debug endpoint |
 | Signal registry (SPEC-06) | DONE | models/signal_types.py plus drift test |
 | Signal emission (SPEC-07) | PARTIAL | Missing in Dart: reroute_rejected, dish_loved, dish_ordered |
-| Laos curation (SPEC-08) | DONE, WITH GAPS | 58 venues curated, including Lao-script names and landmarks. See the spec for missed coverage targets |
+| Laos curation (SPEC-08) | DONE, WITH DEFECTS | 58 venues curated including Lao script. Twelve fields carry the wrong script -- see Known Risks |
 | arrival_delta derivation | DONE | Server-derived from visited_confirmed vs scheduled_start |
 | Docs hygiene guard | DONE | tests/test_docs_hygiene.py walks every markdown file outside build and vendor directories. 18 known non-ASCII files are allowlisted; the list may only shrink |
 | Offline vault (SPEC-04) | SPECIFIED | Not implemented |
@@ -51,36 +52,44 @@
 
 ## What is Next (Priority Order)
 
-1. SPEC-10 booking anchors -- chosen scope for the Oct 2 Laos field test, so
+1. Carry the curated fields end to end -- amend migration 0011 and extend the
+   loader write set, so name_local, nearest_landmark, nearest_landmark_local,
+   micro_location and wheelchair_notes stop being discarded.
+2. Fix the script contamination in the Laos data and add a guard test.
+3. SPEC-10 booking anchors -- chosen scope for the Oct 2 Laos field test, so
    the engine knows the real trip. Backend first, all pytest-verifiable.
-2. SPEC-12 driver cards -- reclassified from long-lead to ordinary. The data
-   exists; the loader and migration work is small.
-3. halal plus pork LABEL_EXCLUDES_ALLERGENS rule -- High-severity safety hole
-4. Venue loader repair -- it cannot load the Laos files as committed
-5. reroute_rejected plus swap sheet UI -- the last unwired behavioural signal
-6. SPEC-09 anonymous device identity -- prerequisite for any tester build
-7. Backfill opening_hours on the 58 Laos venues (loader fix landed, needs re-run)
+4. SPEC-12 driver cards -- reclassified from long-lead to ordinary once the
+   fields above reach the database.
+5. halal plus pork LABEL_EXCLUDES_ALLERGENS rule -- High-severity safety hole
+6. reroute_rejected plus swap sheet UI -- the last unwired behavioural signal
+7. SPEC-09 anonymous device identity -- prerequisite for any tester build
 8. Relocate VALID_DISH_CONTAINS to config/dietary.py (R5 violation)
 
-The one task that cannot be done by an agent is verifying a sample of the Lao
-script against an independent source. Generated Lao for small business names is
-where a transliteration can pass for a real name, and a wrong name on a driver
-card is worse than an English fallback.
+One re-load of the three Laos files, once the laptop and credentials are back,
+settles several of these at once: it lands the opening hours that are currently
+null, the curated fields the loader now discards, and the script corrections.
+Sequence the code changes before that re-load, not after.
+
+The one task that cannot be done by an agent is judging whether the
+transliterated venue names are what the signage actually says. A script test
+catches Chinese where Lao belongs; it cannot tell a real transliterated name
+from an invented one.
 
 ## Known Risks and Open Issues
 
-Full detail, including three loader defects, is in docs/AWAITING_VERIFICATION.md.
+Full detail is in docs/AWAITING_VERIFICATION.md.
 
 | Issue | Severity | Detail |
 |-------|----------|--------|
+| Dubai venue data has no source file | High | data/ holds only the Laos files. The 16 Dubai venues exist as rows in the hosted database and nowhere else, so a rebuild from migrations loses them. Export to version control before any rebuild |
 | Loader silently discards curated fields | High | name_local, nearest_landmark, nearest_landmark_local, micro_location and wheelchair_notes are present in every venue JSON and written by nothing. Any JSON key outside the write set is ignored without error |
-| Venue loader cannot load the Laos data | High | The vocabulary expansion was reverted by a merge, and an unassigned variable raises NameError without --geo-region |
-| venues_rag schema drift | High | The loader writes typical_dwell_minutes, indoor_outdoor and price_band; no applied migration defines them. 0011 fixes this once applied |
 | halal plus pork passes the allergen check | High | No LABEL_EXCLUDES_ALLERGENS rule for halal. Safety hole for Muslim travellers |
-| opening_hours null on all Laos venues | Medium | Loader field-name fix committed but the data was never re-loaded |
+| Wrong script in Lao-language fields | Medium | Seven name_local values contain Mandarin, five nearest_landmark_local values contain Thai. Machine-detectable by codepoint range |
+| venues_rag schema drift | Medium | Migration 0011 declares the three columns the loader writes, but is not yet applied to the live database |
+| opening_hours null on all Laos venues | Medium | The loader writes opening_hours_structured correctly; the data has simply never been re-loaded since |
 | hybrid_venue_search geo_region param | Medium | supabase_service passes a geo_region filter the RPC in 0001 does not declare. Verify against the live function |
 | mobility_limited overcorrected | Low | Set on roughly two thirds of venues. The wheelchair_notes field that would make it meaningful has never reached the database |
-| Vientiane has zero massage_spa | Low | A natural fatigue-reroute target is missing in one region |
+| Vientiane has zero massage_spa | Low | Suspect. This was reported by a warning function that was broken until recently, so re-check it against the data rather than trusting the earlier report |
 | VALID_DISH_CONTAINS in the wrong file | Low | Lives in load_dish_glossary.py, belongs in config/dietary.py (R5) |
 
 ## How to Run
@@ -103,15 +112,15 @@ release pytest errors before collecting anything.
 
 ### Load venues (Laos)
 
-Read docs/AWAITING_VERIFICATION.md first. The loader has open defects and
-`--geo-region` is mandatory in practice, because without it an unassigned
-variable raises NameError.
+The loader infers the region from the file wrapper, so `--geo-region` is
+optional. A dry run needs no credentials.
 
-    # Requires OPENAI_API_KEY, TB_SUPABASE_URL, TB_SUPABASE_KEY
+    python scripts/load_venues.py data/laos_luang_prabang.json data/laos_vang_vieng.json data/laos_vientiane.json --dry-run
+
+For a real load, set OPENAI_API_KEY, TB_SUPABASE_URL and TB_SUPABASE_KEY, then
+drop `--dry-run` once the dry run reports zero errors.
+
     python scripts/load_dish_glossary.py data/laos_dish_glossary.json --dry-run
-    python scripts/load_venues.py data/laos_luang_prabang.json --geo-region <region> --dry-run
-
-Drop `--dry-run` only once the dry run reports zero errors.
 
 ### Flutter
 
