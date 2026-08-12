@@ -58,7 +58,7 @@ SPEC_REF_RE = re.compile(r"SPEC-(\d{2})")
 
 EXCLUDED_PARTS = frozenset({
     ".git", ".dart_tool", "node_modules", "build", ".venv", "venv",
-    "__pycache__", "Pods", ".gradle",
+    "__pycache__", ".pytest_cache", "Pods", ".gradle",
 })
 
 

@@ -23,8 +23,9 @@ langgraph>=0.2.0
 # Test framework
 # pyproject.toml filterwarnings uses PytestReturnNotNoneWarning (available
 # from pytest 8.2) and the addopts depend on strict-markers behaviour that
-# stabilised in 9.x. Pin the floor to what we actually run.
-pytest>=9.0.0
+# PytestReturnNotNoneWarning existed since 7.2, was deleted by accident in
+# 8.4.0, and restored in 8.4.1. Pin to the first release that has it back.
+pytest>=8.4.1
 pytest-asyncio>=0.24.0
 
 # NOTE: pytest-asyncio is listed but should NOT be needed if all tests
