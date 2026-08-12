@@ -94,11 +94,27 @@ VENUES_RAG_WRITE_COLUMNS = frozenset({
     "lng",
     "micro_location",
     "name",
+    "name_local",
+    "nearest_landmark",
+    "nearest_landmark_local",
     "opening_hours_structured",
     "price_band",
     "typical_dwell_minutes",
     "venue_id",
     "vibe_tags",
+    "wheelchair_notes",
+})
+
+# Venue JSON keys intentionally NOT written to venues_rag.
+# A key that appears in data/*.json but is in neither this set nor
+# VENUES_RAG_WRITE_COLUMNS will fail test_no_silent_key_drop.
+INTENTIONALLY_NOT_PERSISTED = frozenset({
+    # Handled by the venue_dish table (separate upsert below)
+    "dishes",
+    # Boolean; derivable from air_conditioned vibe_tag. Deferred to SPEC-14.
+    "has_aircon",
+    # Mapped to opening_hours_structured via fallback in the insert dict
+    "opening_hours",
 })
 
 # Laos bounding box (generous)

@@ -31,10 +31,11 @@ ALTER TABLE venues_rag
 
 -- =============================================================================
 -- Section 2: SPEC-12 groundwork (show-driver-cards)
--- No writer exists yet.  Added now because this migration is applied by hand
--- and Lao-script venue curation is the longest-lead item remaining before
--- the Oct 2 field test.  When a writer lands (G3 or later), it will target
--- these columns.
+-- These columns carry curated data in the venue JSONs.  G3b adds the writer
+-- so they are no longer silently dropped on load.
+--
+-- Note: micro_location is intentionally absent here -- it is defined in 0001
+-- (TEXT NOT NULL) and has been written by the loader since day one.
 -- =============================================================================
 
 ALTER TABLE venues_rag
@@ -42,3 +43,14 @@ ALTER TABLE venues_rag
 
 ALTER TABLE venues_rag
   ADD COLUMN IF NOT EXISTS nearest_landmark TEXT DEFAULT NULL;
+
+ALTER TABLE venues_rag
+  ADD COLUMN IF NOT EXISTS nearest_landmark_local TEXT DEFAULT NULL;
+
+-- wheelchair_notes: free-text description of accessibility (ramps, steps,
+-- narrow doorways, etc).  This is the only concrete evidence behind the
+-- mobility_limited audience flag, which is set on ~2/3 of venues and
+-- currently useless as a discriminator because the notes field has never
+-- been persisted.
+ALTER TABLE venues_rag
+  ADD COLUMN IF NOT EXISTS wheelchair_notes TEXT DEFAULT NULL;
