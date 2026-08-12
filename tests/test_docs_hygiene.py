@@ -138,10 +138,23 @@ def test_living_docs_make_no_false_architecture_claims():
     )
 
 
+def _tracked_code_files():
+    """Return .py and .sql files under the same EXCLUDED_PARTS filter."""
+    results = []
+    for ext in ("*.py", "*.sql"):
+        results.extend(
+            p for p in REPO_ROOT.rglob(ext)
+            if p.is_file()
+            and not EXCLUDED_PARTS & set(p.relative_to(REPO_ROOT).parts)
+        )
+    return sorted(results)
+
+
 def test_every_spec_reference_resolves():
     spec_dir = REPO_ROOT / "docs" / "specs"
     missing = {}
-    for path in _tracked_docs():
+    # Scan markdown docs AND code/sql files
+    for path in list(_tracked_docs()) + _tracked_code_files():
         text = path.read_text(encoding="utf-8")
         for num in sorted(set(SPEC_REF_RE.findall(text))):
             if not list(spec_dir.glob("SPEC-%s-*.md" % num)):

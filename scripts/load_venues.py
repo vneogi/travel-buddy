@@ -88,6 +88,7 @@ VENUES_RAG_WRITE_COLUMNS = frozenset({
     "description",
     "embedding",
     "geo_region",
+    "has_aircon",
     "indoor_outdoor",
     "is_sponsored",
     "lat",
@@ -111,8 +112,6 @@ VENUES_RAG_WRITE_COLUMNS = frozenset({
 INTENTIONALLY_NOT_PERSISTED = frozenset({
     # Handled by the venue_dish table (separate upsert below)
     "dishes",
-    # Boolean; derivable from air_conditioned vibe_tag. Deferred to SPEC-14.
-    "has_aircon",
     # Mapped to opening_hours_structured via fallback in the insert dict
     "opening_hours",
 })
@@ -409,6 +408,7 @@ def upsert_venues(venues: list[dict], geo_region: str, embeddings: list[list[flo
                 "typical_dwell_minutes": venue.get("typical_dwell_minutes"),
                 "indoor_outdoor": venue.get("indoor_outdoor"),
                 "price_band": venue.get("price_band"),
+                "has_aircon": venue.get("has_aircon"),
                 "name_local": venue.get("name_local"),
                 "nearest_landmark": venue.get("nearest_landmark"),
                 "nearest_landmark_local": venue.get("nearest_landmark_local"),
@@ -434,6 +434,7 @@ def upsert_venues(venues: list[dict], geo_region: str, embeddings: list[list[flo
                 "typical_dwell_minutes": venue.get("typical_dwell_minutes"),
                 "indoor_outdoor": venue.get("indoor_outdoor"),
                 "price_band": venue.get("price_band"),
+                "has_aircon": venue.get("has_aircon"),
                 "name_local": venue.get("name_local"),
                 "nearest_landmark": venue.get("nearest_landmark"),
                 "nearest_landmark_local": venue.get("nearest_landmark_local"),

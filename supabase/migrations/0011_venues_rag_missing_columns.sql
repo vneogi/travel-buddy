@@ -1,9 +1,11 @@
 -- Migration 0011: venues_rag missing columns
 -- Purpose: Close the schema drift between scripts/load_venues.py and the
---          migration-defined DDL.  The loader already writes these columns,
---          and the live database accepted them (Supabase allows writes to
---          undefined columns via the REST API), but a fresh database built
---          from 0001 upward would reject the load.
+--          migration-defined DDL.  The loader writes these columns, and the
+--          live database already has them -- likely added by hand via the
+--          Supabase dashboard, since PostgREST rejects writes to columns
+--          absent from its schema cache.  The exact origin is unknown; the
+--          live schema should be dumped and diffed against the migration set
+--          before this file is applied.
 --
 -- CHECK constraints are intentionally deferred.  The vocabulary sets in
 -- load_venues.py are mid-repair (task G3), and no one can inspect the
@@ -29,13 +31,17 @@ ALTER TABLE venues_rag
 ALTER TABLE venues_rag
   ADD COLUMN IF NOT EXISTS price_band TEXT DEFAULT NULL;
 
+-- has_aircon: whether the venue has air conditioning.  Used with indoor_outdoor
+-- to identify cooled-indoor reroute options during heat fatigue (Laos Oct).
+ALTER TABLE venues_rag
+  ADD COLUMN IF NOT EXISTS has_aircon BOOLEAN DEFAULT NULL;
+
 -- =============================================================================
 -- Section 2: SPEC-12 groundwork (show-driver-cards)
--- These columns carry curated data in the venue JSONs.  G3b adds the writer
--- so they are no longer silently dropped on load.
---
--- Note: micro_location is intentionally absent here -- it is defined in 0001
--- (TEXT NOT NULL) and has been written by the loader since day one.
+-- No writer exists yet.  Added now because this migration is applied by hand
+-- and Lao-script venue curation is the longest-lead item remaining before
+-- the Oct 2 field test.  When a writer lands (G3 or later), it will target
+-- these columns.
 -- =============================================================================
 
 ALTER TABLE venues_rag
@@ -47,10 +53,8 @@ ALTER TABLE venues_rag
 ALTER TABLE venues_rag
   ADD COLUMN IF NOT EXISTS nearest_landmark_local TEXT DEFAULT NULL;
 
--- wheelchair_notes: free-text description of accessibility (ramps, steps,
--- narrow doorways, etc).  This is the only concrete evidence behind the
--- mobility_limited audience flag, which is set on ~2/3 of venues and
--- currently useless as a discriminator because the notes field has never
--- been persisted.
+-- wheelchair_notes is the sole evidence behind the mobility_limited audience
+-- flag.  Without this column the reroute feature for wheelchair users is
+-- ungrounded.
 ALTER TABLE venues_rag
   ADD COLUMN IF NOT EXISTS wheelchair_notes TEXT DEFAULT NULL;
