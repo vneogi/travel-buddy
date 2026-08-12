@@ -409,6 +409,10 @@ def upsert_venues(venues: list[dict], geo_region: str, embeddings: list[list[flo
                 "typical_dwell_minutes": venue.get("typical_dwell_minutes"),
                 "indoor_outdoor": venue.get("indoor_outdoor"),
                 "price_band": venue.get("price_band"),
+                "name_local": venue.get("name_local"),
+                "nearest_landmark": venue.get("nearest_landmark"),
+                "nearest_landmark_local": venue.get("nearest_landmark_local"),
+                "wheelchair_notes": venue.get("wheelchair_notes"),
             }).eq("venue_id", venue_id).execute()
         else:
             # Insert
@@ -430,6 +434,10 @@ def upsert_venues(venues: list[dict], geo_region: str, embeddings: list[list[flo
                 "typical_dwell_minutes": venue.get("typical_dwell_minutes"),
                 "indoor_outdoor": venue.get("indoor_outdoor"),
                 "price_band": venue.get("price_band"),
+                "name_local": venue.get("name_local"),
+                "nearest_landmark": venue.get("nearest_landmark"),
+                "nearest_landmark_local": venue.get("nearest_landmark_local"),
+                "wheelchair_notes": venue.get("wheelchair_notes"),
             }).execute()
 
         # Dishes (delete + re-insert for idempotency)
