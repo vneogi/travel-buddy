@@ -28,8 +28,9 @@ addopts = "--strict-markers -ra"
 markers = [
     "asyncio: marks tests as async (should not exist -- use sync TestClient instead)",
 ]
-# An async test without a runner returns a coroutine object (non-None).
-# This makes it an error instead of a silent no-op (R8).
+# Fires when a test function returns a value instead of asserting -- usually
+# a sign the test proved nothing.  Unhandled coroutines (R8) are caught by
+# pytest itself from 8.4 onward and do not depend on this entry.
 filterwarnings = [
     "error::pytest.PytestReturnNotNoneWarning",
 ]

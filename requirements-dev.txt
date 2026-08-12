@@ -1,4 +1,4 @@
-# Travel Buddy — development/test dependencies
+# Travel Buddy -- development/test dependencies
 # Install with: pip install -r requirements-dev.txt
 #
 # This file exists because of R8: ephemeral compute resets silently
@@ -15,13 +15,16 @@ python-dotenv>=1.0.1
 PyJWT>=2.9.0
 stripe>=10.10.0
 
-# AI/ML (imported by services — needed for test collection even if mocked)
+# AI/ML (imported by services -- needed for test collection even if mocked)
 litellm>=1.45.0
 langchain>=0.2.0
 langgraph>=0.2.0
 
 # Test framework
-pytest>=8.3.0
+# pyproject.toml filterwarnings uses PytestReturnNotNoneWarning (available
+# from pytest 8.2) and the addopts depend on strict-markers behaviour that
+# stabilised in 9.x. Pin the floor to what we actually run.
+pytest>=9.0.0
 pytest-asyncio>=0.24.0
 
 # NOTE: pytest-asyncio is listed but should NOT be needed if all tests

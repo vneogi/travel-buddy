@@ -24,12 +24,12 @@ LIVING_DOCS = (
 
 # Measured Aug 12 2026. May only shrink.
 NON_ASCII_ALLOWLIST = frozenset({
-    "docs/VISION.md",
     "docs/DATA_MODEL_BRD.md",
     "docs/UX_BACKLOG.md",
+    "docs/VISION.md",
     "docs/research/SURVEY_FINDINGS.md",
-    "docs/research/survey_short.md",
     "docs/research/survey_deep.md",
+    "docs/research/survey_short.md",
     "docs/specs/SPEC-01-migrations-and-first-signal.md",
     "docs/specs/SPEC-02-offline-queue-and-sync.md",
     "docs/specs/SPEC-03-party-context.md",
@@ -39,6 +39,9 @@ NON_ASCII_ALLOWLIST = frozenset({
     "docs/specs/SPEC-07-signal-emission.md",
     "docs/specs/SPEC-09-anonymous-identity.md",
     "docs/specs/SPEC-10-booking-anchors.md",
+    "mobile/README.md",
+    "scripts/README.md",
+    "supabase/migrations/README.md",
 })
 
 FORBIDDEN_CLAIMS = (
@@ -53,15 +56,22 @@ FORBIDDEN_CLAIMS = (
 COUNT_RE = re.compile(r"\b\d+\s+(?:passed|failed|skipped)\b")
 SPEC_REF_RE = re.compile(r"SPEC-(\d{2})")
 
+EXCLUDED_PARTS = frozenset({
+    ".git", ".dart_tool", "node_modules", "build", ".venv", "venv",
+    "__pycache__", "Pods", ".gradle",
+})
+
 
 def _rel(path):
     return path.relative_to(REPO_ROOT).as_posix()
 
 
 def _tracked_docs():
-    docs = [REPO_ROOT / "README.md", REPO_ROOT / "MASTER_BRD.md"]
-    docs += sorted((REPO_ROOT / "docs").rglob("*.md"))
-    return [p for p in docs if p.is_file()]
+    return sorted(
+        p for p in REPO_ROOT.rglob("*.md")
+        if p.is_file()
+        and not EXCLUDED_PARTS & set(p.relative_to(REPO_ROOT).parts)
+    )
 
 
 def _living_docs():
