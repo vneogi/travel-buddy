@@ -143,6 +143,34 @@ VALID_LOCALIZED_SOURCES = frozenset({
     "field_verified",
 })
 
+# Closed vocabulary for venue_external_id.source (concern 2 in DATA_LAYER_ROADMAP).
+# Intentionally SEPARATE from VALID_LOCALIZED_SOURCES above -- they overlap
+# (both include wikidata, osm) but mean different things.
+EXTERNAL_ID_SOURCES = frozenset({"wikidata", "osm", "google", "foursquare"})
+
+# Taxonomy vocabularies (concern 6 in DATA_LAYER_ROADMAP).
+# The loader validates venue data against these at runtime.
+# A test asserts these match the taxonomy_term table exactly.
+TAXONOMY_TERMS = {
+    "category": frozenset({
+        "bar", "cafe", "craft_workshop", "hospital", "market",
+        "massage_spa", "museum", "nature", "pharmacy", "restaurant",
+        "river_activity", "street_food", "temple", "transport_hub",
+        "viewpoint", "walking_area",
+    }),
+    "vibe_tag": frozenset({
+        "adventurous", "authentic", "budget", "hidden", "historical",
+        "lively", "local_favourite", "photogenic", "quiet", "riverside",
+        "romantic", "scenic", "spiritual", "touristy", "upscale",
+    }),
+    "audience": frozenset({
+        "couple", "family_teens", "family_young_kids", "friends_group",
+        "mobility_limited", "seniors", "solo",
+    }),
+    "price_band": frozenset({"budget", "free", "mid", "splurge"}),
+    "indoor_outdoor": frozenset({"indoor", "mixed", "outdoor"}),
+}
+
 # Laos bounding box (generous)
 LAOS_LAT_MIN, LAOS_LAT_MAX = 13.9, 22.6
 LAOS_LNG_MIN, LAOS_LNG_MAX = 100.0, 107.8
