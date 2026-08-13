@@ -368,6 +368,40 @@ def estimate_embedding_cost(texts: list[str]) -> float:
 # Database operations
 # ===========================================================================
 
+def build_venue_record(venue: dict, venue_id: str, embedding: list[float],
+                       geo_region: str) -> dict:
+    """Build the venues_rag row dict from a venue JSON object.
+
+    Returns a dict whose keys exactly match VENUES_RAG_WRITE_COLUMNS.
+    Used by upsert_venues for both insert and update, and importable by
+    tests to assert payload-vs-declaration consistency.
+    """
+    return {
+        "venue_id": venue_id,
+        "name": venue["name"],
+        "description": venue.get("description"),
+        "micro_location": venue.get("micro_location"),
+        "lat": venue.get("lat"),
+        "lng": venue.get("lng"),
+        "vibe_tags": venue.get("vibe_tags", []),
+        "audience": venue.get("audience", []),
+        "category": venue.get("category"),
+        "is_sponsored": venue.get("is_sponsored", False),
+        "bid_weight": venue.get("bid_weight", 0.0),
+        "opening_hours_structured": venue.get("opening_hours_structured") or venue.get("opening_hours"),
+        "geo_region": geo_region,
+        "embedding": embedding,
+        "typical_dwell_minutes": venue.get("typical_dwell_minutes"),
+        "indoor_outdoor": venue.get("indoor_outdoor"),
+        "price_band": venue.get("price_band"),
+        "has_aircon": venue.get("has_aircon"),
+        "name_local": venue.get("name_local"),
+        "nearest_landmark": venue.get("nearest_landmark"),
+        "nearest_landmark_local": venue.get("nearest_landmark_local"),
+        "wheelchair_notes": venue.get("wheelchair_notes"),
+    }
+
+
 def upsert_venues(venues: list[dict], geo_region: str, embeddings: list[list[float]]):
     """Upsert venues + dishes to Supabase. Idempotent on (name, geo_region)."""
     from supabase import create_client
@@ -391,55 +425,19 @@ def upsert_venues(venues: list[dict], geo_region: str, embeddings: list[list[flo
 
         if existing.data:
             venue_id = existing.data[0]["venue_id"]
-            # Update
-            client.table("venues_rag").update({
-                "description": venue.get("description"),
-                "micro_location": venue.get("micro_location"),
-                "lat": venue.get("lat"),
-                "lng": venue.get("lng"),
-                "vibe_tags": venue.get("vibe_tags", []),
-                "audience": venue.get("audience", []),
-                "category": venue.get("category"),
-                "is_sponsored": venue.get("is_sponsored", False),
-                "bid_weight": venue.get("bid_weight", 0.0),
-                "opening_hours_structured": venue.get("opening_hours_structured") or venue.get("opening_hours"),
-                "geo_region": geo_region,
-                "embedding": embeddings[i],
-                "typical_dwell_minutes": venue.get("typical_dwell_minutes"),
-                "indoor_outdoor": venue.get("indoor_outdoor"),
-                "price_band": venue.get("price_band"),
-                "has_aircon": venue.get("has_aircon"),
-                "name_local": venue.get("name_local"),
-                "nearest_landmark": venue.get("nearest_landmark"),
-                "nearest_landmark_local": venue.get("nearest_landmark_local"),
-                "wheelchair_notes": venue.get("wheelchair_notes"),
-            }).eq("venue_id", venue_id).execute()
+
+        record = build_venue_record(venue, venue_id, embeddings[i], geo_region)
+
+        if existing.data:
+            # Update: strip identity columns used in the WHERE clause
+            update_payload = {k: v for k, v in record.items()
+                             if k not in ("venue_id", "name")}
+            client.table("venues_rag").update(
+                update_payload
+            ).eq("venue_id", venue_id).execute()
         else:
             # Insert
-            client.table("venues_rag").insert({
-                "venue_id": venue_id,
-                "name": venue_name,
-                "description": venue.get("description"),
-                "micro_location": venue.get("micro_location"),
-                "lat": venue.get("lat"),
-                "lng": venue.get("lng"),
-                "vibe_tags": venue.get("vibe_tags", []),
-                "audience": venue.get("audience", []),
-                "category": venue.get("category"),
-                "is_sponsored": venue.get("is_sponsored", False),
-                "bid_weight": venue.get("bid_weight", 0.0),
-                "opening_hours_structured": venue.get("opening_hours_structured") or venue.get("opening_hours"),
-                "geo_region": geo_region,
-                "embedding": embeddings[i],
-                "typical_dwell_minutes": venue.get("typical_dwell_minutes"),
-                "indoor_outdoor": venue.get("indoor_outdoor"),
-                "price_band": venue.get("price_band"),
-                "has_aircon": venue.get("has_aircon"),
-                "name_local": venue.get("name_local"),
-                "nearest_landmark": venue.get("nearest_landmark"),
-                "nearest_landmark_local": venue.get("nearest_landmark_local"),
-                "wheelchair_notes": venue.get("wheelchair_notes"),
-            }).execute()
+            client.table("venues_rag").insert(record).execute()
 
         # Dishes (delete + re-insert for idempotency)
         dishes = venue.get("dishes", [])

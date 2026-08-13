@@ -23,7 +23,11 @@ DATA_DIR = REPO_ROOT / "data"
 
 # Import constants from the loader module
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
-from load_venues import INTENTIONALLY_NOT_PERSISTED, VENUES_RAG_WRITE_COLUMNS  # noqa: E402
+from load_venues import (  # noqa: E402
+    INTENTIONALLY_NOT_PERSISTED,
+    VENUES_RAG_WRITE_COLUMNS,
+    build_venue_record,
+)
 
 sys.path.pop(0)
 
@@ -127,3 +131,55 @@ def test_no_silent_key_drop():
         "INTENTIONALLY_NOT_PERSISTED with a reason:\n"
         + "\n".join("  " + k for k in dropped)
     )
+
+
+def test_payload_keys_match_write_columns():
+    """build_venue_record must produce exactly VENUES_RAG_WRITE_COLUMNS.
+
+    The old guards watched the *declaration* (the constant) but never
+    the *behaviour* (the dict the loader actually builds).  A field
+    declared in the constant but absent from the payload silently
+    writes NULL.  Equality in both directions catches that.
+    """
+    # Load one real venue from data/ (skip non-venue files like dish_glossary)
+    venue_file = DATA_DIR / "laos_luang_prabang.json"
+    data = json.loads(venue_file.read_text(encoding="utf-8"))
+    if isinstance(data, dict):
+        venues = None
+        for k in ("venues", "data", "items"):
+            if isinstance(data.get(k), list):
+                venues = data[k]
+                break
+        assert venues, f"No venues array found in {venue_file.name}"
+    else:
+        venues = data
+    venue = venues[0]
+
+    # Build a record with a synthetic embedding and geo_region
+    record = build_venue_record(
+        venue,
+        venue_id="test-uuid-0000",
+        embedding=[0.0] * 1536,
+        geo_region="test_region",
+    )
+
+    payload_keys = set(record.keys())
+    declared_keys = VENUES_RAG_WRITE_COLUMNS
+
+    missing_from_payload = sorted(declared_keys - payload_keys)
+    extra_in_payload = sorted(payload_keys - declared_keys)
+
+    problems = []
+    if missing_from_payload:
+        problems.append(
+            "Declared in VENUES_RAG_WRITE_COLUMNS but MISSING from "
+            "build_venue_record payload (would write NULL silently):\n"
+            + "\n".join("  " + k for k in missing_from_payload)
+        )
+    if extra_in_payload:
+        problems.append(
+            "Present in build_venue_record payload but NOT declared in "
+            "VENUES_RAG_WRITE_COLUMNS:\n"
+            + "\n".join("  " + k for k in extra_in_payload)
+        )
+    assert not problems, "\n\n".join(problems)  # G3d
