@@ -1,8 +1,10 @@
 # SPEC-16: Itinerary Normalisation
 
-> Status: SPECIFIED. Not implemented.
+> Status: IMPLEMENTED in 9db053b, as migration 0014. Amended after the fact to
+> record the ID type and to state a requirement this spec originally left without
+> an owner. See the As built section.
 >
-> Migration number is taken at implementation time, not reserved here. See the
+> Migration number was taken at implementation time, not reserved here. See the
 > process rule in `docs/DATA_LAYER_ROADMAP.md`.
 >
 > Rationale and priority: `docs/DATA_LAYER_ROADMAP.md` concern 1.
@@ -129,6 +131,32 @@ Illustrative, not final DDL:
 Edges reference nodes rather than venues, so a trip can visit the same venue
 twice without ambiguity.
 
+## As built
+
+Two things were settled during implementation rather than here, and both belong
+in the spec rather than only in a commit message.
+
+**`node_id` and `edge_id` are TEXT, not UUID.** The application has always
+generated node IDs as an 8-character hex slice of a UUID. The first version of
+migration 0014 declared the columns UUID, which Postgres would have rejected on
+every insert, and the suite stayed green over it because the in-memory backend
+does not type-check and the Supabase tests skip without credentials. That is the
+more useful lesson than the fix: a green suite says nothing about a column type
+while the only backend that enforces types is never exercised. Both generators
+now live in `models/ids.py` so the format is declared once. Eight hex characters
+is 32 bits, which is an accepted limit for now rather than an oversight, and
+widening it is a one-file change plus a decision about existing rows.
+
+**`observed_duration_minutes` cannot be written when a trip is saved.** This spec
+named the column without naming who fills it, so the implementation reasonably
+wrote NULL and a comment claimed it would be populated from day one. It cannot
+be: the value is the gap between consecutive arrival signals, which is only known
+after the fact. It has to be derived on sync by a job that reads arrivals and
+updates the edge between the nodes they belong to. Until that job exists the
+column is honest but empty, and the convenience layer that depends on real
+transition cost has no input at all. This is an unmet requirement of this spec,
+not a future enhancement.
+
 ## Tests
 
 - **Round trip, over every trip in the database.** Compose the normalised rows
@@ -152,6 +180,8 @@ twice without ambiguity.
 - The same trip visited twice by the same venue produces two distinct nodes and
   unambiguous edges.
 - Deleting a trip removes its nodes and edges, with no orphans.
+- Two arrival signals on consecutive nodes produce an observed duration on the
+  edge between them, and re-running the sync does not double count it.
 
 ## Acceptance
 
@@ -172,3 +202,5 @@ twice without ambiguity.
 - [ ] Suite green with skip reasons named (R8); verified from `origin/main` (R10)
 - [ ] Phase three and the `state_json` drop explicitly deferred until after a
       full field test has run against rows
+- [ ] observed_duration_minutes populated by a sync-time derivation from arrival
+      signals, with a test that a second visit updates the edge. NOT MET
