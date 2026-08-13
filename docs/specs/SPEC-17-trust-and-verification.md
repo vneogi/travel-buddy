@@ -112,6 +112,27 @@ reviewers remembering.
     single photograph earns a small increment. Pricing a subscription at one
     photograph invites farming.
 
+14. **Confirmation decays; it does not last forever.** Every claim carries
+    `observed_at`, and every attribute declares a staleness horizon in the
+    attribute registry. Past its horizon a claim degrades by one tier -- `assert`
+    becomes `hedge`, `hedge` becomes `ask` -- rather than vanishing, because a
+    year-old confirmed name is still the best thing we have while a year-old
+    "closed on Mondays" is not. Horizons differ by attribute class, and identity
+    outlives operations by years: a name or a coordinate is stable, whether a
+    place still exists is a question of months, and anything about hours is weeks
+    and deferred anyway. Re-confirmation appends a new claim and resets freshness;
+    it never mutates the old one, or we lose the history that makes contributor
+    weight computable. Question card routing (decision 11) should prefer
+    attributes at or past their horizon, which produces a resurvey cadence for
+    free and stops us asking a traveller to re-verify what someone confirmed last
+    week.
+
+    Every Door, an OpenStreetMap survey app, expires a confirmation after two
+    months and then offers the place for resurvey again. Without a rule of this
+    kind the `field_verified` tier fills up with stale facts that still present
+    as authoritative, which is the failure this spec exists to prevent arriving
+    by a slower route.
+
 ## Shape
 
     attribute_claim(
@@ -125,6 +146,42 @@ The envelope, returned wherever a fact is exposed:
 
     { "value": ..., "source": "osm", "confidence": 0.8,
       "tier": "assert", "as_of": "2026-08-13" }
+
+The attribute registry is data, not code, and decisions 7, 8, 10 and 14 all read
+from it rather than each carrying their own list:
+
+    attribute_registry(
+      attribute, attribute_class, staleness_horizon_days,
+      is_safety_relevant, needed_at_arrival, deferral_target NULL
+    )
+
+An attribute with no registry entry cannot be displayed at all. That is the
+mechanism which forces a new field to be given a horizon and a safety judgement
+before it can reach a screen, rather than inheriting a permissive default because
+nobody thought about it.
+
+## Prior art
+
+Three open-source apps have already solved parts of this and are worth reading
+before implementing. Two are GPL-3.0, so the ideas can be taken and the code
+cannot -- a copied widget would relicense our client, which is a real constraint
+rather than a formality.
+
+- **Every Door** (GPL-3.0) treats confirmation as an action distinct from editing
+  and expires it after two months. It is the source of decision 14, and evidence
+  that a one-tap confirm works for people doing this in the street.
+- **OpenStop** (GPL-3.0) defines its entire question catalogue as data, at
+  `assets/advanced_question_catalog/definition.json` with per-question localised
+  strings alongside. Adding a question is a data change, not a release. Our
+  question cards should take that shape, versioned the way `taxonomy_term` is.
+- **Open Food Facts** (Apache-2.0, so reusable) is the closest analogue to this
+  whole spec in another domain: crowdsourced facts with per-field provenance,
+  photo evidence attached to claims, a completeness score that makes confidence
+  visible, and full revision history so a bad edit is attributable rather than
+  destructive. Their photo capture-and-upload pipeline is worth reusing outright,
+  because compression, retry over a poor connection and crop guidance are exactly
+  what will be quietly broken in our first attempt at asking somebody to
+  photograph a sign.
 
 ## Tests
 
@@ -144,6 +201,12 @@ The envelope, returned wherever a fact is exposed:
   submission happens and credit does not
 - Contributor weight falls when a past confirmation is contradicted
 - A `source` outside the closed vocabulary is rejected
+- A claim past its attribute's staleness horizon does not resolve to `assert`
+- Re-confirmation appends a claim and restores the tier, and the superseded claim
+  is still present afterwards
+- An attribute with no registry entry is refused rather than displayed with a
+  default horizon
+- Question card selection prefers an important stale attribute over a fresh one
 
 ## Acceptance
 
@@ -156,4 +219,7 @@ The envelope, returned wherever a fact is exposed:
 - [ ] Deferral builds maps links with no API key and no stored identifier
 - [ ] Question cards routed by value and bounded by the shared budget
 - [ ] Reward credit gated on asynchronous evidence validation
+- [ ] Attribute registry exists as data, carrying a staleness horizon and a safety
+      flag per attribute; an unregistered attribute cannot be displayed
+- [ ] Staleness degrades the tier by one step, with a test per attribute class
 - [ ] Suite green (R8); verified from `origin/main` (R10)

@@ -43,6 +43,28 @@ They are not "read this user's reservations" APIs. Integrating them is a revenue
 decision, not an import mechanism, and conflating the two has already cost one
 round of discussion. Record it here so it is not re-proposed.
 
+## Extraction runs on the device wherever it can
+
+A boarding pass, a hotel voucher and a train ticket are the most sensitive
+documents this app will ever handle. They carry names, codes and sometimes card
+or passport fragments, which is why the privacy rules below exist at all. So the
+preferred implementation of the email, PDF and screenshot paths is extraction on
+the device, with only the derived anchor fields leaving it.
+
+This is not aspirational. Shots Studio, an open-source Flutter app, already turns
+a folder of screenshots into a structured archive using a small on-device model,
+and this is an easier task than that one: a short document, a fixed vocabulary,
+and a handful of fields to find.
+
+Where on-device extraction is not viable, because the device is old or the format
+defeats the local model, server-side extraction requires explicit per-import
+consent, the document is deleted as soon as the fields are extracted, and it is
+never retained as training data. `import_source` records which path ran, not the
+document it read.
+
+This is the SPEC-15 rule applied to a higher-stakes document: keep the raw thing
+on the device, sync only what was derived from it.
+
 ## Data model: reuse the node
 
 A booking is a locked node with extra metadata:
@@ -93,6 +115,9 @@ that could identify an individual reservation.
 - A hotel affects first and last node times for each day it covers
 - Each import path yields a booking whose `import_source` is set correctly
 - A malformed import degrades to a partly filled manual form rather than raising
+- The on-device path extracts a booking with no network call, asserted by failing
+  the test if the import opens a socket
+- The server-side fallback refuses to run without recorded consent
 
 ## Acceptance
 
@@ -104,5 +129,8 @@ that could identify an individual reservation.
 - [ ] `confirmation_code` absent from all logs
 - [ ] `booking_added` in the registry and the seeding migration; drift guard green
 - [ ] At least one import path shipped end to end, degrading to manual entry
+- [ ] That path extracts on the device, proven by the no-network test
+- [ ] Server-side fallback gated on per-import consent, deleting the document once
+      the fields are out
 - [ ] UI: entry form plus visually distinct locked booking nodes
 - [ ] Suite green (R8); verified from `origin/main` (R10)
