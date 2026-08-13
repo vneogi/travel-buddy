@@ -25,6 +25,8 @@ DATA_DIR = REPO_ROOT / "data"
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 from load_venues import (  # noqa: E402
     INTENTIONALLY_NOT_PERSISTED,
+    JSON_KEY_TO_COLUMN,
+    VALID_LOCALIZED_SOURCES,
     VENUES_RAG_WRITE_COLUMNS,
     build_venue_record,
 )
@@ -93,13 +95,32 @@ def test_loader_constant_matches_source():
     )
 
 
+def _load_first_venue():
+    """Load the first venue from laos_luang_prabang.json for test use."""
+    venue_file = DATA_DIR / "laos_luang_prabang.json"
+    data = json.loads(venue_file.read_text(encoding="utf-8"))
+    if isinstance(data, dict):
+        venues = None
+        for k in ("venues", "data", "items"):
+            if isinstance(data.get(k), list):
+                venues = data[k]
+                break
+        assert venues, f"No venues array found in {venue_file.name}"
+    else:
+        venues = data
+    return venues[0], data.get("geo_region", "luang_prabang_laos")
+
+
 def test_no_silent_key_drop():
     """Every key present in any venue record must be accounted for.
 
-    A key is accounted for if it appears in VENUES_RAG_WRITE_COLUMNS
-    (written to the database) or in INTENTIONALLY_NOT_PERSISTED (with a
-    reason comment).  A key in neither set means the loader is silently
-    discarding curated data.
+    A key is accounted for if it:
+      - appears directly in VENUES_RAG_WRITE_COLUMNS, or
+      - maps to a column via JSON_KEY_TO_COLUMN (e.g. name_local -> names_local), or
+      - appears in INTENTIONALLY_NOT_PERSISTED (with a reason comment).
+
+    A key in none of these sets means the loader is silently discarding
+    curated data.
     """
     all_keys: set = set()
     for json_file in sorted(DATA_DIR.glob("*.json")):
@@ -122,12 +143,18 @@ def test_no_silent_key_drop():
 
     # Keys that the loader produces synthetically (not from JSON)
     synthetic_keys = {"embedding", "geo_region", "venue_id", "opening_hours_structured"}
-    accounted_for = VENUES_RAG_WRITE_COLUMNS | INTENTIONALLY_NOT_PERSISTED | synthetic_keys
+    # Keys consumed via JSON_KEY_TO_COLUMN (different name in DB)
+    mapped_keys = set(JSON_KEY_TO_COLUMN.keys())
+
+    accounted_for = (
+        VENUES_RAG_WRITE_COLUMNS | INTENTIONALLY_NOT_PERSISTED
+        | synthetic_keys | mapped_keys
+    )
 
     dropped = sorted(all_keys - accounted_for)
     assert not dropped, (
         "Venue JSON keys silently discarded by the loader -- add to "
-        "VENUES_RAG_WRITE_COLUMNS (and the insert dict) or to "
+        "VENUES_RAG_WRITE_COLUMNS, JSON_KEY_TO_COLUMN, or "
         "INTENTIONALLY_NOT_PERSISTED with a reason:\n"
         + "\n".join("  " + k for k in dropped)
     )
@@ -141,26 +168,13 @@ def test_payload_keys_match_write_columns():
     declared in the constant but absent from the payload silently
     writes NULL.  Equality in both directions catches that.
     """
-    # Load one real venue from data/ (skip non-venue files like dish_glossary)
-    venue_file = DATA_DIR / "laos_luang_prabang.json"
-    data = json.loads(venue_file.read_text(encoding="utf-8"))
-    if isinstance(data, dict):
-        venues = None
-        for k in ("venues", "data", "items"):
-            if isinstance(data.get(k), list):
-                venues = data[k]
-                break
-        assert venues, f"No venues array found in {venue_file.name}"
-    else:
-        venues = data
-    venue = venues[0]
+    venue, geo_region = _load_first_venue()
 
-    # Build a record with a synthetic embedding and geo_region
     record = build_venue_record(
         venue,
         venue_id="test-uuid-0000",
         embedding=[0.0] * 1536,
-        geo_region="test_region",
+        geo_region=geo_region,
     )
 
     payload_keys = set(record.keys())
@@ -182,4 +196,61 @@ def test_payload_keys_match_write_columns():
             "VENUES_RAG_WRITE_COLUMNS:\n"
             + "\n".join("  " + k for k in extra_in_payload)
         )
-    assert not problems, "\n\n".join(problems)  # G3d
+    assert not problems, "\n\n".join(problems)
+
+    # The update payload must equal the record minus exactly venue_id and name.
+    update_payload = {k: v for k, v in record.items()
+                     if k not in ("venue_id", "name")}
+    expected_update_keys = declared_keys - {"venue_id", "name"}
+    assert set(update_payload.keys()) == expected_update_keys, (
+        "Update payload key set does not equal record minus {venue_id, name}. "
+        f"Difference: {set(update_payload.keys()) ^ expected_update_keys}"
+    )
+
+
+def test_localized_jsonb_shape():
+    """names_local and landmarks_local must have correct JSONB shape.
+
+    Every entry must be keyed by a BCP-47 language tag and contain
+    exactly {"value": ..., "source": ...} where source is from the
+    closed vocabulary: wikidata, osm, official, manual, generated.
+    """
+    venue, geo_region = _load_first_venue()
+
+    record = build_venue_record(
+        venue,
+        venue_id="test-uuid-0000",
+        embedding=[0.0] * 1536,
+        geo_region=geo_region,
+    )
+
+    problems = []
+    for col in ("names_local", "landmarks_local"):
+        jsonb = record.get(col)
+        if jsonb is None:
+            problems.append(f"{col} is None for venue {venue['name']}")
+            continue
+        if not isinstance(jsonb, dict):
+            problems.append(f"{col} is not a dict: {type(jsonb)}")
+            continue
+        for lang, entry in jsonb.items():
+            if not isinstance(entry, dict):
+                problems.append(f"{col}[{lang}] is not a dict: {type(entry)}")
+                continue
+            missing_keys = {"value", "source"} - set(entry.keys())
+            if missing_keys:
+                problems.append(
+                    f"{col}[{lang}] missing keys: {sorted(missing_keys)}"
+                )
+            extra_keys = set(entry.keys()) - {"value", "source"}
+            if extra_keys:
+                problems.append(
+                    f"{col}[{lang}] has unexpected keys: {sorted(extra_keys)}"
+                )
+            source = entry.get("source")
+            if source and source not in VALID_LOCALIZED_SOURCES:
+                problems.append(
+                    f"{col}[{lang}] source {source!r} not in "
+                    f"VALID_LOCALIZED_SOURCES: {sorted(VALID_LOCALIZED_SOURCES)}"
+                )
+    assert not problems, "JSONB shape violations:\n" + "\n".join("  " + p for p in problems)  # G3d

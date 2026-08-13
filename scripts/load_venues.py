@@ -91,13 +91,13 @@ VENUES_RAG_WRITE_COLUMNS = frozenset({
     "has_aircon",
     "indoor_outdoor",
     "is_sponsored",
+    "landmarks_local",
     "lat",
     "lng",
     "micro_location",
     "name",
-    "name_local",
+    "names_local",
     "nearest_landmark",
-    "nearest_landmark_local",
     "opening_hours_structured",
     "price_band",
     "typical_dwell_minutes",
@@ -114,6 +114,27 @@ INTENTIONALLY_NOT_PERSISTED = frozenset({
     "dishes",
     # Mapped to opening_hours_structured via fallback in the insert dict
     "opening_hours",
+})
+
+# JSON keys in venue data that map to differently-named DB columns.
+# test_no_silent_key_drop uses this to avoid false-drop reports.
+JSON_KEY_TO_COLUMN = {
+    "name_local": "names_local",
+    "nearest_landmark_local": "landmarks_local",
+}
+
+# Interim region-to-language mapping.  Superseded by SPEC-13
+# (region-locale-registry); delete this constant when SPEC-13 lands.
+REGION_LANGUAGES = {
+    "luang_prabang_laos": "lo",
+    "vang_vieng_laos": "lo",
+    "vientiane_laos": "lo",
+    "dubai_uae": "ar",
+}
+
+# Valid provenance values for names_local / landmarks_local entries.
+VALID_LOCALIZED_SOURCES = frozenset({
+    "wikidata", "osm", "official", "manual", "generated",
 })
 
 # Laos bounding box (generous)
@@ -368,6 +389,23 @@ def estimate_embedding_cost(texts: list[str]) -> float:
 # Database operations
 # ===========================================================================
 
+def _build_localized_jsonb(raw_value, geo_region: str):
+    """Wrap a raw localized string into the SPEC-12 keyed JSONB shape.
+
+    Returns None if raw_value is falsy, otherwise:
+        {"<lang>": {"value": "<text>", "source": "generated"}}
+
+    The language tag comes from REGION_LANGUAGES (interim until SPEC-13).
+    All existing Laos values are model-generated.
+    """
+    if not raw_value:
+        return None
+    lang = REGION_LANGUAGES.get(geo_region)
+    if not lang:
+        return None
+    return {lang: {"value": raw_value, "source": "generated"}}
+
+
 def build_venue_record(venue: dict, venue_id: str, embedding: list[float],
                        geo_region: str) -> dict:
     """Build the venues_rag row dict from a venue JSON object.
@@ -395,9 +433,9 @@ def build_venue_record(venue: dict, venue_id: str, embedding: list[float],
         "indoor_outdoor": venue.get("indoor_outdoor"),
         "price_band": venue.get("price_band"),
         "has_aircon": venue.get("has_aircon"),
-        "name_local": venue.get("name_local"),
+        "names_local": _build_localized_jsonb(venue.get("name_local"), geo_region),
         "nearest_landmark": venue.get("nearest_landmark"),
-        "nearest_landmark_local": venue.get("nearest_landmark_local"),
+        "landmarks_local": _build_localized_jsonb(venue.get("nearest_landmark_local"), geo_region),
         "wheelchair_notes": venue.get("wheelchair_notes"),
     }
 
