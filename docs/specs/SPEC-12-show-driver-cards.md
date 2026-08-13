@@ -54,15 +54,41 @@ has been written by the loader since day one. Four fields were being discarded,
 not five: `name_local`, `nearest_landmark`, `nearest_landmark_local` and
 `wheelchair_notes`.
 
-The remaining human task is verification, not entry: confirm the Lao script
-against an independent source. Temples and landmarks are low risk. Small
-restaurants and tour operators are where a generated transliteration can
-masquerade as a real Lao name. Twelve fields in the curated data are already
-known to contain the wrong script entirely -- seven `name_local` values carrying
-Mandarin and five `nearest_landmark_local` values carrying Thai -- which is what
-this failure looks like when it is severe enough to be detectable by codepoint
-range. The ones that share a script with the target language are the dangerous
-ones, because no guard will catch them.
+The remaining human task is verification, not entry. That verification has now
+been run against Wikidata and OpenStreetMap, and the results are recorded in
+`data/laos_name_verification.json`. They are worse than this section previously
+assumed, in three ways.
+
+**Coverage is low.** Ten of 58 venues can be confirmed against an external
+source. Four more have a candidate that needs a human. The remaining 44 have no
+external record at all and stay `generated` indefinitely. The earlier assumption
+that temples and landmarks would be broadly present in Wikidata did not hold:
+Laos has only a few hundred items carrying paired English and Lao labels. OSM
+has better coverage but usually writes the `name` tag in Lao script, so there is
+no string to match against until you bridge through `name:en`.
+
+**Half of what can be checked is wrong.** Of the ten verifiable names, three
+were exactly right, two differed only in spacing, and five were genuinely
+incorrect. There is no reason to think the 44 unverifiable names are better than
+the ten that could be checked. This is the honest basis for the card's
+behaviour, and it is why decision 3 exists.
+
+**Three error classes, all the same disease.** The generator was leaking Thai
+and Chinese orthography into Lao:
+
+| Error | Count | Detectable by a script guard |
+|-------|-------|------------------------------|
+| `U+9910 U+5385` appended, Chinese for "restaurant", in Chinese word order | 7 | Yes |
+| Thai `rim` where Lao writes `him`, "beside" -- same word, wrong script | 4 | Yes |
+| Thai-style `phra` cluster where Lao writes `pha` | 4 | **No** |
+
+The corrected count for the first two is 11 fields, not the twelve previously
+recorded here. The third class is the important one and vindicates the warning
+this section already made: `ro` is a perfectly valid Lao letter, so the string
+sits entirely inside the Lao codepoint block and no range guard can ever flag
+it. It was found only by comparing against a real source, on `Haw Phra Kaew` and
+`Pha That Luang`, and then applied to `Wat Phra Bat Tai` on the same
+orthographic grounds. A script guard is necessary and is not sufficient.
 
 ## Design decisions
 
@@ -83,19 +109,38 @@ ones, because no guard will catch them.
    the English landmark for the traveller, not a localization.
 
 2. **Every localized name records where it came from.** `source` is one of
-   `wikidata`, `osm`, `official`, `manual`, `generated`. This exists because
-   nothing in the current schema distinguishes a verified name from one a model
-   invented, and the contamination above proves the distinction is real. All
+   `wikidata`, `osm`, `official`, `manual`, `field_verified`, `generated`. This
+   is a closed vocabulary and a test enforces it. `field_verified` means a human
+   stood in front of the place and confirmed the name against the signage, which
+   is the only source that outranks Wikidata for a small restaurant, because no
+   open dataset will ever carry one. The `source` field exists because nothing
+   else in the schema distinguishes a verified name from one a model invented,
+   and the contamination above proves the distinction is real. All
    existing Laos values load as `generated`, because they are: they came from a
    model, and recording them as anything else would launder their origin.
 
-3. **The card will not present a `generated` name as authoritative.** A verified
-   name renders large, in local script, as the primary element. A `generated`
-   name either degrades to English or renders with a visible caveat, never as the
+3. **The card will not present a `generated` name as authoritative, and it asks
+   the traveller to fix it.** A verified name renders large, in local script, as
+   the primary element. A `generated` name renders visibly marked as unconfirmed
+   -- smaller, with the roman name and coordinates alongside -- never as the
    confident headline. This is rule R6 applied to data: showing a driver a name a
    model made up is worse than showing English, because a wrong name burns the
-   interaction instead of degrading from it. The user can still see the generated
-   value; the card simply refuses to vouch for it.
+   interaction instead of degrading from it.
+
+   Refusing to vouch for 44 of 58 venues would leave the card mostly useless, so
+   the unconfirmed state carries a one-tap affordance: *does the sign say this?*
+   Confirm promotes the entry to `field_verified` with the confirming device
+   recorded. Reject drops the card to explicit degradation for that venue, which
+   is decision 8, without mutating the stored value -- see decision 11 for why.
+
+   This is deliberate. The Oct 2 Laos trip is the only occasion on which anyone
+   associated with this product will stand in front of these 58 places, and the
+   verification a traveller performs by looking up at a sign is stronger evidence
+   than any dataset. Verification is therefore a capture surface rather than a
+   blocking prerequisite, which is the same argument the product makes everywhere
+   else: observe what the traveller actually does instead of asking them to fill
+   in a form first. It also means the card improves through use rather than
+   waiting on a curation backlog that has no owner.
 
 4. **Language selection comes from the region.** SPEC-13 supplies an ordered
    language list per region, and the card walks it, taking the first entry
@@ -139,7 +184,21 @@ ones, because no guard will catch them.
     which is also a neat proof that offline capture works. Registry plus migration
     `0014` in the same commit (R5).
 
-11. **A disclaimer ships with the card**, consistent with SPEC-14. Venue data is
+11. **New signal type `name_confirmed`**, client-emittable, `value_json` of
+    `{place_ref, lang, shown_value, verdict}` where `verdict` is `confirmed` or
+    `rejected`. Emitted by the affordance in decision 3. It queues offline like
+    any other signal, which matters because the traveller is standing in the
+    street when they tap it. Registry plus migration `0014` in the same commit as
+    `driver_card_shown` (R5).
+
+    A confirmation promotes `source` to `field_verified` on sync. A rejection
+    must not silently delete curated data: it sets the entry aside for review
+    rather than dropping it, because one traveller misreading a sign should not
+    erase a name for everyone. Two independent rejections is a stronger rule than
+    one, but the Oct 2 trip has a single traveller, so for now record the
+    rejection and degrade the card locally without mutating the shared value.
+
+12. **A disclaimer ships with the card**, consistent with SPEC-14. Venue data is
     curated and partly model-generated, and the card is an aid rather than an
     authority.
 
@@ -166,7 +225,20 @@ ones, because no guard will catch them.
 - `driver_card_shown` persists to the outbox while offline and syncs on
   reconnect
 - Fare band resolves per region, with a named fallback for unregistered regions
-- Drift guard green for `driver_card_shown`
+- Drift guard green for `driver_card_shown` and `name_confirmed`
+- A `generated` name renders the unconfirmed treatment and the confirm
+  affordance; a `field_verified` name renders neither
+- Confirming emits `name_confirmed` with `verdict=confirmed` and promotes the
+  entry to `field_verified`; rejecting emits `verdict=rejected`, degrades that
+  card locally, and leaves the stored value unchanged
+- Both verdicts persist to the outbox while offline
+- The loader applies `data/laos_name_verification.json`: the ten verified names
+  land with their recorded source and ref, the three token corrections are
+  applied, and no token correction changes a `source` value
+- No `name_local` or `nearest_landmark_local` field contains a codepoint outside
+  the Lao block, asserted over every venue JSON. This guard cannot catch the
+  `phra` class, and a comment in the test says so, so that nobody later mistakes
+  a green run for verified data
 
 ## Acceptance
 
@@ -181,6 +253,11 @@ ones, because no guard will catch them.
       watching it fail
 - [ ] A count query proves zero venues without a usable local name across the
       three Laos regions after a re-load
+- [ ] `data/laos_name_verification.json` applied by the loader, with the ten
+      verified entries carrying source `wikidata` or `osm` and a resolvable ref
+- [ ] Lao-script guard test in place, with its blind spot documented in the test
+- [ ] The card ships the unconfirmed treatment and the confirm affordance, so the
+      Oct 2 trip returns `field_verified` names rather than only telemetry
 - [ ] A sample of Lao script verified against an independent source, with the
       sample size, the result, and the resulting `source` values recorded
 - [ ] Fare bands present for the three Laos regions
