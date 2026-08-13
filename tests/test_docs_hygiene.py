@@ -1,8 +1,11 @@
 """Documentation hygiene guard.
 Three failure modes have each cost real time here, and all three are
 statically detectable:
-- Non-ASCII bytes silently block editAsset, so an edit reports success and
-  does not land (R14).
+- Non-ASCII bytes have silently blocked edits in the workspace layer, so an
+  edit reported success and did not land (R14). The trigger turned out to be
+  narrower than first assumed and git plumbing bypasses it entirely, but ASCII
+  documents remain cheap insurance and keep diffs reviewable, so the guard
+  stays.
 - A document that mirrors a test count drifts, and a stale number is worse
   than no number (R16).
 - A SPEC reference that resolves to nothing hides a spec that was never
@@ -38,7 +41,6 @@ NON_ASCII_ALLOWLIST = frozenset({
     "docs/specs/SPEC-06-behavioral-signals.md",
     "docs/specs/SPEC-07-signal-emission.md",
     "docs/specs/SPEC-09-anonymous-identity.md",
-    "docs/specs/SPEC-10-booking-anchors.md",
     "mobile/README.md",
     "scripts/README.md",
     "supabase/migrations/README.md",
