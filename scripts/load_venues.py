@@ -114,6 +114,11 @@ INTENTIONALLY_NOT_PERSISTED = frozenset({
     "dishes",
     # Mapped to opening_hours_structured via fallback in the insert dict
     "opening_hours",
+    # Provenance metadata consumed by _build_localized_jsonb, not stored directly
+    "name_local_source",
+    "name_local_ref",
+    "nearest_landmark_local_source",
+    "nearest_landmark_local_ref",
 })
 
 # JSON keys in venue data that map to differently-named DB columns.
@@ -135,6 +140,7 @@ REGION_LANGUAGES = {
 # Valid provenance values for names_local / landmarks_local entries.
 VALID_LOCALIZED_SOURCES = frozenset({
     "wikidata", "osm", "official", "manual", "generated",
+    "field_verified",
 })
 
 # Laos bounding box (generous)
@@ -389,21 +395,25 @@ def estimate_embedding_cost(texts: list[str]) -> float:
 # Database operations
 # ===========================================================================
 
-def _build_localized_jsonb(raw_value, geo_region: str):
+def _build_localized_jsonb(raw_value, geo_region: str, source: str = "generated",
+                           ref: str = None):
     """Wrap a raw localized string into the SPEC-12 keyed JSONB shape.
 
     Returns None if raw_value is falsy, otherwise:
-        {"<lang>": {"value": "<text>", "source": "generated"}}
+        {"<lang>": {"value": "<text>", "source": "<provenance>"}}
+    If ref is provided, it is included as a sibling key.
 
     The language tag comes from REGION_LANGUAGES (interim until SPEC-13).
-    All existing Laos values are model-generated.
     """
     if not raw_value:
         return None
     lang = REGION_LANGUAGES.get(geo_region)
     if not lang:
         return None
-    return {lang: {"value": raw_value, "source": "generated"}}
+    entry = {"value": raw_value, "source": source}
+    if ref:
+        entry["ref"] = ref
+    return {lang: entry}
 
 
 def build_venue_record(venue: dict, venue_id: str, embedding: list[float],
@@ -433,9 +443,17 @@ def build_venue_record(venue: dict, venue_id: str, embedding: list[float],
         "indoor_outdoor": venue.get("indoor_outdoor"),
         "price_band": venue.get("price_band"),
         "has_aircon": venue.get("has_aircon"),
-        "names_local": _build_localized_jsonb(venue.get("name_local"), geo_region),
+        "names_local": _build_localized_jsonb(
+            venue.get("name_local"), geo_region,
+            source=venue.get("name_local_source", "generated"),
+            ref=venue.get("name_local_ref"),
+        ),
         "nearest_landmark": venue.get("nearest_landmark"),
-        "landmarks_local": _build_localized_jsonb(venue.get("nearest_landmark_local"), geo_region),
+        "landmarks_local": _build_localized_jsonb(
+            venue.get("nearest_landmark_local"), geo_region,
+            source=venue.get("nearest_landmark_local_source", "generated"),
+            ref=venue.get("nearest_landmark_local_ref"),
+        ),
         "wheelchair_notes": venue.get("wheelchair_notes"),
     }
 

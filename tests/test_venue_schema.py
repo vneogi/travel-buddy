@@ -13,6 +13,7 @@ venue JSON files and asserts it is either persisted or explicitly ignored.
 """
 import json
 import re
+import string
 import sys
 from pathlib import Path
 
@@ -109,6 +110,23 @@ def _load_first_venue():
     else:
         venues = data
     return venues[0], data.get("geo_region", "luang_prabang_laos")
+
+
+def _iter_laos_venues():
+    """Yield (json_file, geo_region, venue) for the three Laos venue files."""
+    for json_file in sorted(DATA_DIR.glob("laos_*.json")):
+        if json_file.name == "laos_dish_glossary.json":
+            continue
+        data = json.loads(json_file.read_text(encoding="utf-8"))
+        venues = data.get("venues", data if isinstance(data, list) else [])
+        geo_region = data.get("geo_region", json_file.stem)
+        for venue in venues:
+            yield json_file, geo_region, venue
+
+
+def _load_verification_artifact():
+    artifact_file = DATA_DIR / "laos_name_verification.json"
+    return json.loads(artifact_file.read_text(encoding="utf-8"))
 
 
 def test_no_silent_key_drop():
@@ -212,8 +230,8 @@ def test_localized_jsonb_shape():
     """names_local and landmarks_local must have correct JSONB shape.
 
     Every entry must be keyed by a BCP-47 language tag and contain
-    exactly {"value": ..., "source": ...} where source is from the
-    closed vocabulary: wikidata, osm, official, manual, generated.
+    {"value": ..., "source": ...} with optional "ref" when the value
+    is externally verified.
     """
     venue, geo_region = _load_first_venue()
 
@@ -242,7 +260,7 @@ def test_localized_jsonb_shape():
                 problems.append(
                     f"{col}[{lang}] missing keys: {sorted(missing_keys)}"
                 )
-            extra_keys = set(entry.keys()) - {"value", "source"}
+            extra_keys = set(entry.keys()) - {"value", "source", "ref"}
             if extra_keys:
                 problems.append(
                     f"{col}[{lang}] has unexpected keys: {sorted(extra_keys)}"
@@ -253,4 +271,76 @@ def test_localized_jsonb_shape():
                     f"{col}[{lang}] source {source!r} not in "
                     f"VALID_LOCALIZED_SOURCES: {sorted(VALID_LOCALIZED_SOURCES)}"
                 )
+            if "ref" in entry and not entry["ref"]:
+                problems.append(f"{col}[{lang}] has blank ref")
     assert not problems, "JSONB shape violations:\n" + "\n".join("  " + p for p in problems)  # G3d
+
+
+def test_lao_script_guard():
+    """Localized Lao fields should not contain non-Lao letters.
+
+    This guards against Thai/CJK contamination in curated Lao strings.
+    It cannot catch the PHRA/PHA class because both codepoints are in the
+    Lao block, so a green run is not proof that the values are verified.
+    """
+    allowed_ascii = set(string.whitespace + string.digits + string.punctuation)
+    problems = []
+
+    for json_file, _geo_region, venue in _iter_laos_venues():
+        for field in ("name_local", "nearest_landmark_local"):
+            value = venue.get(field)
+            if not value:
+                continue
+            for ch in value:
+                cp = ord(ch)
+                if 0x0E80 <= cp <= 0x0EFF:
+                    continue
+                if ch in allowed_ascii:
+                    continue
+                problems.append(
+                    f"{json_file.name}: {venue['name']}.{field} has non-Lao "
+                    f"codepoint U+{cp:04X}"
+                )
+                break
+
+    assert not problems, "Lao-script guard failures:\n" + "\n".join("  " + p for p in problems)
+
+
+
+def test_loader_applies_verification_artifact():
+    """Verified names must land with source/ref; token fixes must not upgrade source."""
+    artifact = _load_verification_artifact()
+    verified = {item["venue_name"]: item for item in artifact["verified_names"]}
+    verified_seen = set()
+    generated_non_verified = []
+
+    for json_file, geo_region, venue in _iter_laos_venues():
+        record = build_venue_record(
+            venue,
+            venue_id="test-uuid-0000",
+            embedding=[0.0] * 1536,
+            geo_region=geo_region,
+        )
+        names_local = record["names_local"]
+        assert names_local, f"names_local missing for {venue['name']}"
+        entry = next(iter(names_local.values()))
+
+        if venue["name"] in verified:
+            spec = verified[venue["name"]]
+            verified_seen.add(venue["name"])
+            assert venue["name_local"] == spec["verified_name_local"]
+            assert entry["value"] == spec["verified_name_local"]
+            assert entry["source"] == spec["source"]
+            assert entry["ref"] == spec["ref"]
+        else:
+            generated_non_verified.append((json_file.name, venue["name"], entry["source"]))
+            assert entry["source"] == "generated"
+            assert "ref" not in entry
+
+    assert verified_seen == set(verified), (
+        "Verified venues missing from loader output: "
+        f"{sorted(set(verified) - verified_seen)}"
+    )
+    assert len(verified_seen) == 10
+    assert generated_non_verified, "Expected at least one non-verified venue"
+    assert all(source == "generated" for _f, _n, source in generated_non_verified)

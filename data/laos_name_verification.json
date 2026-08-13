@@ -1,0 +1,169 @@
+{
+  "_comment": "Verified Lao names for SPEC-12 driver cards. This file stays ASCII-only by encoding Lao text as JSON \\uXXXX escapes.",
+  "generated_at": "2026-08-13",
+  "coverage": {
+    "venues_total": 58,
+    "verified": 10,
+    "human_review": 4,
+    "remain_generated": 48
+  },
+  "token_corrections": [
+    {
+      "find": "\u9910\u5385",
+      "replace": "",
+      "applies_to": ["name_local"],
+      "occurrences": 7,
+      "reason": "Chinese for restaurant, appended in Chinese word order. The preceding Lao text is the actual name.",
+      "upgrades_source": false
+    },
+    {
+      "find": "\u0e23\u0e34\u0e21",
+      "replace": "\u0eae\u0eb4\u0ea1",
+      "applies_to": ["nearest_landmark_local"],
+      "occurrences": 4,
+      "reason": "Thai spelling of the Lao word HIM (beside). Same word, wrong script.",
+      "upgrades_source": false
+    },
+    {
+      "find": "\u0e9e\u0ea3\u0eb0",
+      "replace": "\u0e9e\u0eb0",
+      "applies_to": ["name_local", "nearest_landmark_local"],
+      "occurrences": 4,
+      "reason": "Thai-style PHRA cluster. Lao writes PHA. A codepoint-range guard cannot detect this because RO is a valid Lao letter.",
+      "upgrades_source": false
+    }
+  ],
+  "verified_names": [
+    {
+      "venue_name": "Wat Xieng Thong",
+      "current_name_local": "\u0ea7\u0eb1\u0e94\u0e8a\u0ebd\u0e87\u0e97\u0ead\u0e87",
+      "verified_name_local": "\u0ea7\u0eb1\u0e94\u0e8a\u0ebd\u0e87\u0e97\u0ead\u0e87",
+      "source": "wikidata",
+      "ref": "Q2671118",
+      "corroborated_by": ["osm:way/272647001"],
+      "action": "keep",
+      "note": "Both sources return exactly the generated value."
+    },
+    {
+      "venue_name": "Wat Mai Suwannaphumaham",
+      "current_name_local": "\u0ea7\u0eb1\u0e94\u0ec4\u0edd\u0ec8\u0eaa\u0eb8\u0ea7\u0eb1\u0e99\u0e99\u0eb0\u0e9e\u0eb9\u0ea1\u0eb2\u0ea3\u0eb2\u0ea1",
+      "verified_name_local": "\u0ea7\u0eb1\u0e94\u0ec3\u0edd\u0ec8 \u0eaa\u0eb8\u0ea7\u0eb1\u0e99\u0e99\u0eb0\u0e9e\u0eb9\u0ea1\u0eb2\u0ea3\u0eb2\u0ea1",
+      "source": "osm",
+      "ref": "way/374233712",
+      "corroborated_by": ["wikidata:Q7972939"],
+      "action": "replace",
+      "note": "OSM carries the complete name."
+    },
+    {
+      "venue_name": "Wat Si Saket",
+      "current_name_local": "\u0ea7\u0eb1\u0e94\u0eaa\u0eb5\u0eaa\u0eb0\u0ec0\u0e81\u0e94",
+      "verified_name_local": "\u0ea7\u0eb1\u0e94\u0eaa\u0eb5\u0eaa\u0eb0\u0ec0\u0e81\u0e94",
+      "source": "wikidata",
+      "ref": "Q1442048",
+      "corroborated_by": [],
+      "action": "keep",
+      "note": "Exact match."
+    },
+    {
+      "venue_name": "Haw Phra Kaew Museum",
+      "current_name_local": "\u0eab\u0ecd\u0e9e\u0ea3\u0eb0\u0ec1\u0e81\u0ec9\u0ea7",
+      "verified_name_local": "\u0eab\u0ecd\u0e9e\u0eb0\u0ec1\u0e81\u0ec9\u0ea7",
+      "source": "wikidata",
+      "ref": "Q1442509",
+      "corroborated_by": ["osm:way/37886433"],
+      "action": "replace",
+      "note": "Both sources use the Lao form."
+    },
+    {
+      "venue_name": "Pha That Luang (Great Stupa)",
+      "current_name_local": "\u0e9e\u0ea3\u0eb0\u0e97\u0eb2\u0e94\u0eab\u0ebc\u0ea7\u0e87",
+      "verified_name_local": "\u0e9e\u0eb0\u0e97\u0eb2\u0e94\u0eab\u0ebc\u0ea7\u0e87",
+      "source": "wikidata",
+      "ref": "Q1059720",
+      "corroborated_by": ["osm:relation/273288"],
+      "action": "replace",
+      "note": "Wikidata's fuller form is preferred for a driver card."
+    },
+    {
+      "venue_name": "Patuxai Victory Monument",
+      "current_name_local": "\u0e9b\u0eb0\u0e95\u0eb9\u0ec4\u0e8a",
+      "verified_name_local": "\u0e9b\u0eb0\u0e95\u0eb9\u0ec4\u0e8a",
+      "source": "wikidata",
+      "ref": "Q1442518",
+      "corroborated_by": ["osm:way/41566774"],
+      "action": "keep",
+      "note": "Exact match in both sources."
+    },
+    {
+      "venue_name": "Kualao Restaurant",
+      "current_name_local": "\u0e84\u0ebb\u0ea7\u0ea5\u0eb2\u0ea7 \u9910\u5385",
+      "verified_name_local": "\u0eae\u0ec9\u0eb2\u0e99\u0ead\u0eb2\u0eab\u0eb2\u0e99\u0e84\u0ebb\u0ea7\u0ea5\u0eb2\u0ea7",
+      "source": "wikidata",
+      "ref": "Q19892978",
+      "corroborated_by": [],
+      "action": "replace",
+      "note": "Verified registered Lao name."
+    },
+    {
+      "venue_name": "Luang Prabang International Airport",
+      "current_name_local": "\u0eaa\u0eb0\u0edc\u0eb2\u0ea1\u0e9a\u0eb4\u0e99\u0eaa\u0eb2\u0e81\u0ebb\u0e99 \u0eab\u0ebc\u0ea7\u0e87\u0e9e\u0eb0\u0e9a\u0eb2\u0e87",
+      "verified_name_local": "\u0eaa\u0eb0\u0edc\u0eb2\u0ea1\u0e9a\u0eb4\u0e99\u0eaa\u0eb2\u0e81\u0ebb\u0e99\u0eab\u0ebc\u0ea7\u0e87\u0e9e\u0eb0\u0e9a\u0eb2\u0e87",
+      "source": "wikidata",
+      "ref": "Q1077327",
+      "corroborated_by": [],
+      "action": "replace",
+      "note": "Lao does not space within this compound."
+    },
+    {
+      "venue_name": "Wattay International Airport",
+      "current_name_local": "\u0eaa\u0eb0\u0edc\u0eb2\u0ea1\u0e9a\u0eb4\u0e99\u0eaa\u0eb2\u0e81\u0ebb\u0e99 \u0ea7\u0eb1\u0e94\u0ec4\u0e95",
+      "verified_name_local": "\u0eaa\u0eb0\u0edc\u0eb2\u0ea1\u0e9a\u0eb4\u0e99\u0eaa\u0eb2\u0e81\u0ebb\u0e99\u0ea7\u0eb1\u0e94\u0ec4\u0e95",
+      "source": "wikidata",
+      "ref": "Q221279",
+      "corroborated_by": [],
+      "action": "replace",
+      "note": "Differs only by an inserted space."
+    },
+    {
+      "venue_name": "Talat Sao Morning Market",
+      "current_name_local": "\u0e95\u0eb0\u0eab\u0ebc\u0eb2\u0e94\u0ec0\u0e8a\u0ebb\u0ec9\u0eb2",
+      "verified_name_local": "\u0e95\u0eb0\u0eab\u0ebc\u0eb2\u0e94\u0ec0\u0e8a\u0ebb\u0ec9\u0eb2",
+      "source": "osm",
+      "ref": "way/36195671",
+      "corroborated_by": [],
+      "action": "keep",
+      "note": "Generated value confirmed."
+    }
+  ],
+  "human_review": [
+    {
+      "venue_name": "Joma Bakery Cafe - Nam Phou",
+      "current_name_local": "\u0ec2\u0e88\u0ea1\u0eb2 \u0ec0\u0e9a\u0ec0\u0e81\u0eb5\u0ea3\u0eb5 \u0e99\u0ec9\u0eb3\u0e9e\u0eb8",
+      "candidate": "\u0ec2\u0e88\u0ea1\u0eb2",
+      "ref": "osm:node/367791311",
+      "question": "OSM confirms the brand token only. Does the signage name the Nam Phou branch, or just Joma?"
+    },
+    {
+      "venue_name": "Luang Prabang Morning Market",
+      "current_name_local": "\u0e95\u0eb0\u0eab\u0ebc\u0eb2\u0e94\u0ec0\u0e8a\u0ebb\u0ec9\u0eb2 \u0eab\u0ebc\u0ea7\u0e87\u0e9e\u0eb0\u0e9a\u0eb2\u0e87",
+      "candidate": "\u0e95\u0eb0\u0eab\u0ebc\u0eb2\u0e94\u0ead\u0eb2\u0eab\u0eb2\u0e99\u0ec0\u0e8a\u0ebb\u0ec9\u0eb2",
+      "ref": "osm:way/203194596",
+      "question": "OSM names it MORNING FOOD MARKET, 137m away. Same market or a neighbouring one?"
+    },
+    {
+      "venue_name": "Luang Prabang Night Market Street Food",
+      "current_name_local": "\u0eae\u0ec8\u0ead\u0ea1\u0e82\u0eb2\u0e8d\u0ead\u0eb2\u0eab\u0eb2\u0e99 \u0e95\u0eb0\u0eab\u0ebc\u0eb2\u0e94\u0ec1\u0ea5\u0e87",
+      "candidate": "\u0e95\u0eb0\u0eab\u0ebc\u0eb2\u0e94\u0e81\u0eb2\u0e87\u0e84\u0eb7\u0e99",
+      "ref": "osm:way/203194598",
+      "question": "OSM carries the generic term for night market. The generated value names the food lane specifically, which may be more useful to a driver."
+    },
+    {
+      "venue_name": "Buddha Park (Xieng Khuan)",
+      "current_name_local": "\u0ea7\u0eb1\u0e94\u0e8a\u0ebd\u0e87\u0e84\u0ec8\u0ea7\u0e99",
+      "candidate": "\u0eaa\u0ea7\u0e99\u0e9e\u0eb0\u0e9e\u0eb8\u0e94\u0e97\u0eb0\u0ec0\u0e88\u0ebb\u0ec9\u0eb2",
+      "ref": "wikidata:Q655853",
+      "question": "Both are real names for the site. Which one would a Vientiane driver recognise?"
+    }
+  ],
+  "_encoding_note": "Lao text is written as JSON \\uXXXX escapes so this file is pure ASCII. json.load() returns the identical Lao strings. This keeps the file editable by tooling that silently drops non-ASCII writes (see docs/ENGINEERING_RULES.md R14)."
+}
