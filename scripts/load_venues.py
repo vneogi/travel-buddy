@@ -86,7 +86,7 @@ VENUES_RAG_WRITE_COLUMNS = frozenset({
     "bid_weight",
     "category",
     "description",
-    "embedding",
+    "embedding", "embedding_model",
     "geo_region",
     "has_aircon",
     "indoor_outdoor",
@@ -109,6 +109,8 @@ VENUES_RAG_WRITE_COLUMNS = frozenset({
 # Venue JSON keys intentionally NOT written to venues_rag.
 # A key that appears in data/*.json but is in neither this set nor
 # VENUES_RAG_WRITE_COLUMNS will fail test_no_silent_key_drop.
+EMBEDDING_MODEL = "text-embedding-3-small"
+
 INTENTIONALLY_NOT_PERSISTED = frozenset({
     # Handled by the venue_dish table (separate upsert below)
     "dishes",
@@ -130,6 +132,13 @@ JSON_KEY_TO_COLUMN = {
 
 # Interim region-to-language mapping.  Superseded by SPEC-13
 # (region-locale-registry); delete this constant when SPEC-13 lands.
+REGION_CURRENCIES = {
+    "luang_prabang_laos": "LAK",
+    "vang_vieng_laos": "LAK",
+    "vientiane_laos": "LAK",
+    "dubai_uae": "AED",
+}
+
 REGION_LANGUAGES = {
     "luang_prabang_laos": "lo",
     "vang_vieng_laos": "lo",
@@ -489,6 +498,7 @@ def build_venue_record(venue: dict, venue_id: str, embedding: list[float],
         "opening_hours_structured": venue.get("opening_hours_structured") or venue.get("opening_hours"),
         "geo_region": geo_region,
         "embedding": embedding,
+        "embedding_model": EMBEDDING_MODEL,
         "typical_dwell_minutes": venue.get("typical_dwell_minutes"),
         "indoor_outdoor": venue.get("indoor_outdoor"),
         "price_band": venue.get("price_band"),
@@ -569,13 +579,25 @@ def upsert_venues(venues: list[dict], geo_region: str, embeddings: list[list[flo
         if dishes:
             client.table("venue_dish").delete().eq("venue_id", venue_id).execute()
             for dish in dishes:
+                dish_names_local = None
+                raw_name_local = dish.get("name_local")
+                if raw_name_local:
+                    lang = REGION_LANGUAGES.get(geo_region, "und")
+                    dish_names_local = {
+                        lang: {"value": raw_name_local, "source": "generated", "ref": None}
+                    }
+                dish_currency = REGION_CURRENCIES.get(geo_region) if dish.get("price_local") else None
                 client.table("venue_dish").insert({
                     "dish_id": str(uuid.uuid4()),
                     "venue_id": venue_id,
                     "name_en": dish.get("dish_name"),
+                    "name_local": dish.get("name_local"),
+                    "names_local": dish_names_local,
                     "is_signature": dish.get("is_signature", False),
                     "cuisine": dish.get("cuisine"),
                     "price_local": dish.get("price_local"),
+                    "price_band": dish.get("price_band"),
+                    "currency_code": dish_currency,
                 }).execute()
 
         # External IDs (idempotent: ON CONFLICT DO NOTHING)
