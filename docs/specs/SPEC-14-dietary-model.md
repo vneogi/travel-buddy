@@ -1,130 +1,113 @@
-# SPEC-14: Dietary model
+# SPEC-14: Dietary model -- decision record
 
-> Status: SPECIFIED. Not implemented. Post-Laos, except the safety fix in
-> section "The open safety hole", which is not gated on this spec.
+> Status: DECIDED, DESCOPED. This is not a feature specification. It records why
+> the app makes no dietary suitability claim, and what would have to change for
+> that to be revisited.
 >
-> Migration `0016`. Allocation: 0011 venues_rag columns, 0012 booking anchors,
-> 0013 preference_choice, 0014 driver_card_shown, 0015 region registry,
-> 0016 this.
->
-> Driver: `docs/MARKET_STRATEGY.md`. This is the sharpest differentiator for the
-> corridor's traveller and simultaneously an open safety hole.
+> Supersedes the earlier version of this spec, which specified dietary
+> constraints as a hard safety filter. Nothing from it is scheduled.
 
-## Goal
+## The decision
 
-Represent the dietary constraints that actually decide where a family eats, and
-enforce them as a safety property rather than a ranking preference.
+The app does not tell a traveller whether a venue suits their dietary
+constraint. It carries ingredient facts where it has them, presented as facts
+about a dish rather than as a judgement about a kitchen, with a disclaimer. It
+makes no halal, Jain, vegetarian or pure-veg claim, and it does not filter on
+one.
 
-## Why this is a safety spec and not a food feature
+## Why the earlier version was wrong
 
-Two facts, both already recorded elsewhere in this repo.
+Not wrong about the importance. Wrong about whether we can deliver it.
 
-**Halal is not enforced against pork in the dietary checker.** `MASTER_BRD.md`
-section 10 records this as a high-severity safety defect rather than a missing
-feature. It is the clearest possible demonstration that the current model treats
-dietary labels as tags to match rather than constraints to enforce.
+That version opened with two facts. Halal is not enforced against pork in the
+current checker. And the constraints that matter most to this corridor's
+traveller -- Jain, no onion or garlic, pure vegetarian with kitchen separation --
+are not representable at all. Both are true, and the conclusion drawn was to
+build a richer constraint model and enforce it as a filter.
 
-**The constraints that matter most are not representable at all.** Western
-allergy models cover vegan, gluten and nuts adequately. None of them model Jain,
-no beef, no onion or garlic, eggless, or pure vegetarian with kitchen separation.
-For a large share of the corridor's travellers, those are the constraints that
-decide the restaurant, and a constraint the schema cannot express produces a
-confident recommendation rather than an error. That is rule R9 in the case where
-the consequence is a person eating something they hold sacred.
+The step never checked was whether anything could populate it. Measured: in
+OpenStreetMap, `diet:halal` is tagged on 20 of 6611 central Bangkok points of
+interest. `diet:vegetarian` reaches about two percent. Dubai, the best case in
+the corridor, manages six and seven percent. Kitchen separation is not a tag that
+exists anywhere.
 
-The distinction that organises the whole spec: **an allergy is a medical hazard,
-a religious or ethical constraint is a trust hazard.** Both are absolute from the
-user's point of view, and neither is a preference to be traded off against venue
-quality. Rank on preferences; filter on constraints.
+So the choice was never between a weak dietary filter and a strong one. It was
+between making no claim and making one that rests on a model's guess. A dietary
+claim from a guess is worse than silence, because a traveller who is told a
+kitchen is halal stops checking. That converts their caution into our
+confidence, which is the one trade this product must never make.
 
-## The open safety hole
+The hole only exists if the app makes the claim. Retiring the claim closes it.
 
-The halal-versus-pork defect should be fixed as a standalone change and must not
-wait for this spec. It is a small fix to an existing checker with an obvious
-test, and leaving a known safety defect open while a larger model is specified is
-the wrong order. This spec then subsumes it.
+## Decisions
 
-## Design decisions
+1. **`suitable_for` is retired as a claim.** No dietary badge, no dietary filter,
+   no dietary ranking adjustment. Whatever code path presents or filters on it
+   comes out.
 
-1. **Constraints are filters, never score adjustments.** A venue that violates a
-   declared constraint is removed from the candidate set, not down-weighted. A
-   ranked-down violation still surfaces when the candidate set is thin, which is
-   precisely when a tired family is most likely to accept it.
+2. **Ingredient facts stay, as facts.** `contains` and `may_contain` on a dish
+   are useful and often verifiable from a menu. They stay, described as what a
+   dish is made of, never as what a person can safely eat. They are
+   informational and must never act as a silent filter. A traveller who reads an
+   ingredient list is making their own decision, which is exactly the point.
 
-2. **Constraint vocabulary is explicit and closed, and every value is
-   documented.** At minimum: `vegetarian`, `pure_veg_separate_kitchen`, `jain`,
-   `eggless`, `no_beef`, `no_pork`, `halal`, `no_onion_garlic`, `vegan`, plus
-   allergen entries kept distinct from the above. `pure_veg_separate_kitchen` is
-   separate from `vegetarian` because a vegetarian dish cooked in a shared
-   kitchen satisfies one and not the other, and conflating them is the single
-   most likely modelling error here.
+3. **The halal-versus-pork defect closes by retirement, not by a rule.** Adding
+   the missing `LABEL_EXCLUDES_ALLERGENS` entry would make a wrong answer look
+   considered: it fixes a symptom in a system whose input cannot support its
+   output. Remove the claim instead, then update the severity entry that records
+   the defect. Until the retirement lands the defect is live, so it stays on the
+   risk register.
 
-3. **Implication rules are data, not code comments.** `jain` implies
-   `no_onion_garlic` and `vegetarian`; `halal` implies `no_pork`. Encoding these
-   once, as data with a test per rule, is what prevents the current halal defect
-   from recurring in a new form.
+4. **A disclaimer ships with every food recommendation and every driver card.**
+   Dish data is partly model-generated, menus change, and no kitchen here is
+   audited. The disclaimer belongs at the point of the recommendation, not in
+   terms of service. This decision survives from the earlier version unchanged.
 
-4. **Constraints live on the party member, not the trip.** Vision section 28
-   already places `dietary_constraints` on `party_member`, and a group is
-   routinely mixed. The venue filter is the union of every member's constraints,
-   which means one Jain member constrains the group's dinner. That is the correct
-   behaviour and should be visible in the UI rather than silent, since an
-   unexplained absence of options reads as a broken app.
+5. **Under SPEC-17, dietary attributes sit on the safety list.** They can only be
+   asserted from an official source, deferred, or refused outright -- never
+   asserted from extraction or from generation. This spec is the reason that list
+   exists, and the list is what stops the claim being reintroduced quietly by a
+   later feature.
 
-5. **Evidence and confidence are recorded per venue.** A venue is
-   `verified_by_operator`, `signal_derived`, or `unverified`. The filter states
-   which it is rather than implying certainty. "No pork on the menu we have" is
-   not "this kitchen is halal", and presenting the former as the latter is the
-   failure mode this field exists to prevent.
+6. **Named conditions for reopening.** Operator self-certification with an audit
+   trail, or a licensed certification dataset with real corridor coverage. Model
+   inference over menus and reviews does not qualify at any confidence, and
+   neither does a lone OSM tag. If either arrives this becomes a feature spec
+   again, and the constraint-versus-preference distinction from the earlier
+   version is the right starting point: rank on preferences, filter on
+   constraints.
 
-6. **Degrade by refusing, with a reason.** When no venue satisfies the
-   constraint set, say so and name the binding constraint. Never relax a
-   constraint silently to fill a slot. This is R6, and it is the one place in the
-   product where an empty result is the correct and trustworthy answer.
+7. **The dish-glossary safety gaps are a data quality item, not a dietary
+   feature.** Three of four dishes marked hot carry no moderating phrase, and the
+   raw-meat laap has no phrase for asking that it be cooked. Those are missing
+   phrases in the glossary and belong with the Lao curation work. Retiring the
+   dietary claim does not retire them.
 
-7. **A disclaimer ships with every food recommendation and every driver card.**
-   Dish and venue data is curated and partly model-generated, menus change, and
-   kitchens are not audited. The disclaimer belongs in the UI at the point of
-   the recommendation, not buried in terms of service.
+## What this changes in the repo
 
-## Signals
-
-`dietary_constraint_violated` when a user reports that a recommended venue could
-not serve them, with the binding constraint in `value_json`. This is the only
-mechanism that will find modelling errors in production, and it feeds the
-evidence field in decision 5. Registry entry plus migration `0016` in the same
-commit, or the drift guard fails (R5).
+- The `suitable_for` presentation and filtering paths are removed
+- `VALID_DISH_CONTAINS` still belongs in `config/dietary.py` rather than in the
+  glossary loader; that relocation stands on its own merits (R5)
+- The severity entry recording the halal defect is updated when the retirement
+  lands, not before
+- No migration. Nothing here adds a column
 
 ## Tests
 
-- Halal filter excludes a pork-serving venue. This is the current defect, so the
-  test must be shown failing against the pre-fix checker before it passes.
-- Each implication rule has its own test: `jain` excludes onion and garlic;
-  `halal` excludes pork
-- `pure_veg_separate_kitchen` excludes a vegetarian-friendly venue with a shared
-  kitchen, proving the two values are not conflated
-- A constraint is never satisfied by ranking: with a violating venue as the only
-  candidate, the result is empty rather than the violating venue
-- Party union: a single constrained member constrains the whole group's results
-- An empty result names the binding constraint, asserted on the returned reason
-- Unverified evidence is surfaced as unverified, not as compliance
-- `dietary_constraint_violated` present in registry and migration `0016`; drift
-  guard green
+- No API response carries a dietary suitability claim for a venue
+- A request expressing a dietary constraint does not silently filter the
+  candidate set
+- Ingredient facts are returned with their disclaimer
+- A dish with no ingredient data returns absent rather than an empty list, since
+  an empty list reads as nothing-to-worry-about
+- A food recommendation and a driver card each carry the disclaimer
 
 ## Acceptance
 
-- [ ] Halal-versus-pork defect closed independently of this spec, with a
-      regression test, and the severity entry in `MASTER_BRD.md` section 10
-      updated only after the test passes
-- [ ] Constraint vocabulary closed and documented, with the rationale for
-      `pure_veg_separate_kitchen` being distinct from `vegetarian`
-- [ ] Implication rules encoded as data, one test per rule
-- [ ] Constraints filter rather than rank, proven by the thin-candidate-set test
-- [ ] Party-level union implemented and visible in the UI
-- [ ] Per-venue evidence level recorded and surfaced
-- [ ] Empty results name the binding constraint
-- [ ] Disclaimer present on food recommendations and driver cards
-- [ ] `dietary_constraint_violated` in registry plus migration `0016`; drift
-      guard green
-- [ ] Suite green with skip reasons named (R8); verified from `origin/main`
-      (R10); R1 grep clean after Dart writes
+- [ ] `suitable_for` no longer presented or filtered on anywhere
+- [ ] Ingredient facts retained, labelled as ingredients, never acting as a filter
+- [ ] Disclaimer on food recommendations and on driver cards
+- [ ] Dietary attributes on the SPEC-17 safety list
+- [ ] Risk register entry for halal-versus-pork closed by retirement, with the
+      reason recorded
+- [ ] Suite green (R8); verified from `origin/main` (R10)
