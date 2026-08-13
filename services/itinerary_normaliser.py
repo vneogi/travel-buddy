@@ -16,6 +16,10 @@ from typing import Any, Dict, List, Optional, Tuple
 # Sparse seq gap for inserts between nodes without rewriting
 _SEQ_GAP = 1000
 
+
+# Import from the single source of truth (models/ids.py)
+from models.ids import generate_edge_id, generate_node_id
+
 # Region -> IANA timezone mapping (application-level, not stored per-row)
 REGION_TIMEZONES: Dict[str, str] = {
     "dubai_uae": "Asia/Dubai",
@@ -44,7 +48,7 @@ def decompose_trip(
 
     nodes: List[Dict[str, Any]] = []
     for i, n in enumerate(raw_nodes):
-        node_id = n.get("node_id") or str(uuid.uuid4())[:8]
+        node_id = n.get("node_id") or generate_node_id()
         # Parse scheduled_start if it's a string
         sched_start = n.get("scheduled_start")
         if isinstance(sched_start, str):
@@ -105,13 +109,13 @@ def decompose_trip(
     edges: List[Dict[str, Any]] = []
     for i in range(len(nodes) - 1):
         edge_row = {
-            "edge_id": str(uuid.uuid4()),
+            "edge_id": generate_edge_id(),
             "trip_id": trip_id,
             "from_node_id": nodes[i]["node_id"],
             "to_node_id": nodes[i + 1]["node_id"],
             "transport_mode": None,
             "expected_duration_minutes": None,
-            "observed_duration_minutes": None,  # populated from day one
+            "observed_duration_minutes": None,
             "expected_cost_band": None,
             "notes": None,
         }

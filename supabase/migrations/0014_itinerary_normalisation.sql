@@ -11,19 +11,20 @@
 -- Rationale: a region reference is already present on both trip_states and
 -- venues_rag; reusing it here means no new concept for the app to learn.
 --
--- NODE_ID STABILITY: node_id is a UUID primary key generated once at node
+-- NODE_ID STABILITY: node_id is a TEXT primary key (8-char hex) generated once at node
 -- creation. Reschedules update day_index, seq, and times but never recreate
 -- the node_id. Signals reference nodes via (entity_type='trip_node', entity_id)
 -- and a regenerated ID would silently orphan collected signals.
 --
--- OBSERVED_DURATION: trip_edge.observed_duration_minutes is populated from
--- day one. The convenience layer depends on months of accumulated transition
--- data; delaying capture until the UI ships would leave the feature empty for
--- an additional six months.
+-- OBSERVED_DURATION: trip_edge.observed_duration_minutes exists from day one
+-- so the schema is ready when signal-driven writes arrive. The column is
+-- nullable and starts empty; a future derive_observed_durations() will
+-- populate it from visited_confirmed signal pairs once production data
+-- accumulates. No writer exists yet — this is an honest empty column.
 
 -- trip_node: one row per scheduled activity/stop in an itinerary.
 CREATE TABLE IF NOT EXISTS trip_node (
-    node_id         UUID PRIMARY KEY,
+    node_id         TEXT PRIMARY KEY,
     trip_id         UUID NOT NULL REFERENCES trip_states(trip_id) ON DELETE CASCADE,
     day_index       INTEGER NOT NULL DEFAULT 0,
     seq             INTEGER NOT NULL DEFAULT 1000,
@@ -59,10 +60,10 @@ CREATE INDEX IF NOT EXISTS idx_trip_node_venue
 
 -- trip_edge: one row per transition between consecutive nodes.
 CREATE TABLE IF NOT EXISTS trip_edge (
-    edge_id                     UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    edge_id                     TEXT PRIMARY KEY,
     trip_id                     UUID NOT NULL REFERENCES trip_states(trip_id) ON DELETE CASCADE,
-    from_node_id                UUID NOT NULL REFERENCES trip_node(node_id) ON DELETE CASCADE,
-    to_node_id                  UUID NOT NULL REFERENCES trip_node(node_id) ON DELETE CASCADE,
+    from_node_id                TEXT NOT NULL REFERENCES trip_node(node_id) ON DELETE CASCADE,
+    to_node_id                  TEXT NOT NULL REFERENCES trip_node(node_id) ON DELETE CASCADE,
     transport_mode              TEXT NULL,
     expected_duration_minutes   INTEGER NULL,
     observed_duration_minutes   INTEGER NULL,

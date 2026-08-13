@@ -340,6 +340,110 @@ class TestMigration:
 
 
 # ---------------------------------------------------------------------------
+# ID format versus column declaration (Task 1 guard)
+# ---------------------------------------------------------------------------
+
+class TestIdFormatVsDeclaration:
+    """The ID format models/schemas.py produces must be accepted by the
+    declared column type in migration 0014.
+
+    trip_node.node_id, trip_edge.edge_id, from_node_id, to_node_id are all
+    TEXT. If any is declared as UUID, this test catches it because the
+    application produces 8-char hex strings (not valid UUIDs).
+    """
+
+    @pytest.fixture
+    def migration_0014(self):
+        return (REPO_ROOT / "supabase" / "migrations"
+                / "0014_itinerary_normalisation.sql").read_text()
+
+    def _extract_column_type(self, migration_sql, col_name):
+        """Extract the declared type for a column from CREATE TABLE DDL."""
+        # Strip comments first, then match DDL: leading space + col_name + spaces + TYPE
+        stripped = re.sub(r"--[^\n]*", "", migration_sql)
+        pattern = rf"^\s+{col_name}\s+(\w+)"
+        match = re.search(pattern, stripped, re.MULTILINE)
+        return match.group(1) if match else None
+
+    def test_node_id_is_text(self, migration_0014):
+        """trip_node.node_id must be TEXT to accept 8-char hex IDs."""
+        col_type = self._extract_column_type(migration_0014, "node_id")
+        assert col_type == "TEXT", (
+            f"node_id declared as {col_type}, but application produces "
+            f"8-char hex (not valid UUID). Must be TEXT."
+        )
+
+    def test_edge_id_is_text(self, migration_0014):
+        """trip_edge.edge_id must be TEXT."""
+        col_type = self._extract_column_type(migration_0014, "edge_id")
+        assert col_type == "TEXT", (
+            f"edge_id declared as {col_type}, must be TEXT."
+        )
+
+    def test_from_node_id_is_text(self, migration_0014):
+        """trip_edge.from_node_id must be TEXT to match node_id."""
+        col_type = self._extract_column_type(migration_0014, "from_node_id")
+        assert col_type == "TEXT", (
+            f"from_node_id declared as {col_type}, must be TEXT."
+        )
+
+    def test_to_node_id_is_text(self, migration_0014):
+        """trip_edge.to_node_id must be TEXT to match node_id."""
+        col_type = self._extract_column_type(migration_0014, "to_node_id")
+        assert col_type == "TEXT", (
+            f"to_node_id declared as {col_type}, must be TEXT."
+        )
+
+    def test_generated_node_id_fits_text_column(self):
+        """The generated node_id format is a short string, not a full UUID."""
+        from models.ids import generate_node_id
+        nid = generate_node_id()
+        assert isinstance(nid, str)
+        assert len(nid) == 8, f"Expected 8-char ID, got {len(nid)}: {nid}"
+        # Must NOT be a valid UUID (would need 32+ hex chars)
+        assert len(nid) < 32
+
+    def test_generated_edge_id_fits_text_column(self):
+        """The generated edge_id is a full UUID string stored as TEXT."""
+        from models.ids import generate_edge_id
+        eid = generate_edge_id()
+        assert isinstance(eid, str)
+        assert len(eid) == 36  # UUID format: 8-4-4-4-12
+
+    def test_no_gen_random_uuid_in_migration(self, migration_0014):
+        """Migration must not use gen_random_uuid() since app generates IDs."""
+        assert "gen_random_uuid" not in migration_0014
+
+
+# ---------------------------------------------------------------------------
+# Shared ID helper (Task 2 guard)
+# ---------------------------------------------------------------------------
+
+class TestSharedIdHelper:
+    """The ID format must be defined in exactly one place (models/ids.py)."""
+
+    def test_schemas_uses_models_ids(self):
+        """models/schemas.py must import generate_node_id from models.ids."""
+        schemas_src = (REPO_ROOT / "models" / "schemas.py").read_text()
+        assert "from models.ids import generate_node_id" in schemas_src
+
+    def test_normaliser_uses_models_ids(self):
+        """services/itinerary_normaliser.py must import from models.ids."""
+        norm_src = (REPO_ROOT / "services" / "itinerary_normaliser.py").read_text()
+        assert "from models.ids import" in norm_src
+
+    def test_no_inline_uuid_slice_in_normaliser(self):
+        """The normaliser must not have inline uuid4()[:8] — use the helper."""
+        norm_src = (REPO_ROOT / "services" / "itinerary_normaliser.py").read_text()
+        assert "uuid.uuid4())[:8]" not in norm_src
+
+    def test_no_inline_uuid_slice_in_schemas(self):
+        """schemas.py must not have inline uuid4()[:8] — use the helper."""
+        schemas_src = (REPO_ROOT / "models" / "schemas.py").read_text()
+        assert "uuid.uuid4())[:8]" not in schemas_src
+
+
+# ---------------------------------------------------------------------------
 # REGION_TIMEZONES mapping
 # ---------------------------------------------------------------------------
 

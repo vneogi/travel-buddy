@@ -13,6 +13,8 @@ from typing import List, Optional, TypedDict
 
 from pydantic import BaseModel, Field
 
+from models.ids import generate_node_id
+
 
 # ==============================================================================
 # Enums
@@ -53,7 +55,7 @@ class EventType(str, Enum):
 
 class TripNode(BaseModel):
     """A single activity node in the itinerary graph."""
-    node_id: str = Field(default_factory=lambda: str(uuid.uuid4())[:8])
+    node_id: str = Field(default_factory=lambda: generate_node_id())
     venue_name: str
     venue_id: Optional[str] = None
     scheduled_start: datetime
