@@ -159,6 +159,11 @@ EXTERNAL_ID_SOURCES = frozenset({"wikidata", "osm", "google", "foursquare"})
 
 # Column names the loader writes to venue_external_id. Same guard pattern as
 # VENUES_RAG_WRITE_COLUMNS: a test asserts the payload keys equal this set.
+VENUE_DISH_WRITE_COLUMNS = frozenset({
+    "dish_id", "venue_id", "name_en", "name_local", "names_local",
+    "is_signature", "cuisine", "price_local", "price_band", "currency_code",
+})
+
 VENUE_EXTERNAL_ID_WRITE_COLUMNS = frozenset({
     "venue_id",
     "source",
@@ -518,6 +523,47 @@ def build_venue_record(venue: dict, venue_id: str, embedding: list[float],
     }
 
 
+def build_dish_record(
+    dish: dict, venue_id: str, geo_region: str,
+) -> dict:
+    """Build a venue_dish row dict from a dish entry in the venue JSON.
+
+    Applies the same payload guard as build_venue_record: the returned key set
+    must equal VENUE_DISH_WRITE_COLUMNS exactly.
+    """
+    dish_names_local = None
+    raw_name_local = dish.get("name_local")
+    if raw_name_local:
+        lang = REGION_LANGUAGES.get(geo_region, "und")
+        dish_names_local = {
+            lang: {"value": raw_name_local, "source": "generated", "ref": None}
+        }
+    dish_currency = REGION_CURRENCIES.get(geo_region) if dish.get("price_local") else None
+
+    record = {
+        "dish_id": str(uuid.uuid4()),
+        "venue_id": venue_id,
+        "name_en": dish.get("dish_name"),
+        "name_local": dish.get("name_local"),
+        "names_local": dish_names_local,
+        "is_signature": dish.get("is_signature", False),
+        "cuisine": dish.get("cuisine"),
+        "price_local": dish.get("price_local"),
+        "price_band": dish.get("price_band"),
+        "currency_code": dish_currency,
+    }
+
+    # Payload guard: key set must match declared write columns exactly
+    if set(record.keys()) != VENUE_DISH_WRITE_COLUMNS:
+        extra = set(record.keys()) - VENUE_DISH_WRITE_COLUMNS
+        missing = VENUE_DISH_WRITE_COLUMNS - set(record.keys())
+        raise ValueError(
+            f"build_dish_record payload mismatch: "
+            f"extra={sorted(extra)}, missing={sorted(missing)}"
+        )
+    return record
+
+
 def build_external_id_record(venue: dict, venue_id: str) -> dict | None:
     """Build a venue_external_id row if the venue carries a name_local_ref.
 
@@ -579,26 +625,8 @@ def upsert_venues(venues: list[dict], geo_region: str, embeddings: list[list[flo
         if dishes:
             client.table("venue_dish").delete().eq("venue_id", venue_id).execute()
             for dish in dishes:
-                dish_names_local = None
-                raw_name_local = dish.get("name_local")
-                if raw_name_local:
-                    lang = REGION_LANGUAGES.get(geo_region, "und")
-                    dish_names_local = {
-                        lang: {"value": raw_name_local, "source": "generated", "ref": None}
-                    }
-                dish_currency = REGION_CURRENCIES.get(geo_region) if dish.get("price_local") else None
-                client.table("venue_dish").insert({
-                    "dish_id": str(uuid.uuid4()),
-                    "venue_id": venue_id,
-                    "name_en": dish.get("dish_name"),
-                    "name_local": dish.get("name_local"),
-                    "names_local": dish_names_local,
-                    "is_signature": dish.get("is_signature", False),
-                    "cuisine": dish.get("cuisine"),
-                    "price_local": dish.get("price_local"),
-                    "price_band": dish.get("price_band"),
-                    "currency_code": dish_currency,
-                }).execute()
+                record = build_dish_record(dish, venue_id, geo_region)
+                client.table("venue_dish").insert(record).execute()
 
         # External IDs (idempotent: ON CONFLICT DO NOTHING)
         ext_record = build_external_id_record(venue, venue_id)

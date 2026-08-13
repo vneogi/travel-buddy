@@ -496,6 +496,7 @@ class SupabaseService:
         geo_lng: float = 55.2744,
     ) -> None:
         """Store a query-response pair in the semantic cache."""
+        from scripts.load_venues import EMBEDDING_MODEL
         cache_entry = {
             "cache_id": str(uuid.uuid4()),
             "query_text": query_text,
@@ -503,6 +504,7 @@ class SupabaseService:
             "cached_response_text": response_text,
             "geo_fence_center": f"({geo_lat},{geo_lng})",
             "hit_count": 0,
+            "embedding_model": EMBEDDING_MODEL,
             "expires_at": (
                 datetime.now(tz=timezone.utc) + timedelta(hours=settings.cache_ttl_hours)
             ).isoformat(),
