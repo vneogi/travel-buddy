@@ -67,7 +67,7 @@
 | Docs hygiene guard | DONE | tests/test_docs_hygiene.py walks every markdown file outside build and vendor directories, and the SPEC-reference check also scans .py and .sql. Known non-ASCII files are allowlisted; the list may only shrink. The ASCII check itself still covers markdown only |
 | Data format guard | DONE | Every data/ file is ASCII by byte count, venue and glossary files round-trip byte-identically, and Lao-script fields are checked for foreign script |
 | Offline vault (SPEC-04) | SPECIFIED | Not implemented |
-| Anonymous identity (SPEC-09) | SPECIFIED | Not implemented. Gates any tester build |
+| Anonymous identity (SPEC-09) | SPECIFIED | Not implemented. Gates any tester build, and therefore gates all field verification |
 | Itinerary normalisation (SPEC-16) | IMPLEMENTED | Decompose and compose land in services/itinerary_normaliser.py, dual-write in both backends, round-trip equality asserted, wire format unchanged. node_id is stable across reschedules via state_json and now comes from models/ids.py. One gap remains: observed_duration_minutes has no writer, so no transition data is accumulating |
 | Booking anchors (SPEC-10) | SPECIFIED | Not implemented. Resequenced to follow SPEC-16, because an anchor is a locked node and building it against the blob means building it twice. Amended so import is the primary path, manual entry the floor, and extraction on the device the preferred implementation of every import path |
 | Forced-choice preferences (SPEC-11) | SPECIFIED | Not implemented. Cold-start preference capture |
@@ -79,6 +79,7 @@
 | On-demand venue discovery (SPEC-18) | SPECIFIED | Not implemented. A traveller asks about where they are standing and the answer persists as a provisional venue, so the venue layer grows from real demand. Coordinate anchoring against OSM or Wikidata is mandatory before anything persists |
 | Corpus mining (SPEC-19) | SPECIFIED | Not implemented. Extracts the operational knowledge no structured dataset carries, from openly licensed corpora only. This is the data source trip_edge never had. Google and TripAdvisor are excluded on licensing |
 | City onboarding kit (SPEC-20) | SPECIFIED | Not implemented. Seeds a city's spine of 40 to 60 anchors, sourced identity first so provenance defaults to sourced rather than generated. SPEC-18 supplies the tail. validate_city refuses rather than warns |
+| Client render contract (SPEC-22) | SPECIFIED | Not implemented, and it precedes every screen. Owns the mapping from SPEC-17's five tiers to five treatments, the interruption budget that SPEC-15 and SPEC-17 both draw on and neither can own, offline as a designed state rather than an error, and the type and script tokens. Can be built before SPEC-17's backend exists, since the envelope shape is already specified |
 | OSM upstream contribution (SPEC-21) | DECIDED IN PRINCIPLE | Not scheduled, and not on the October path. A decision record rather than a spec: confirmed commodity facts go back to OpenStreetMap under the traveller's own account, never behavioural derivations, never model output, never subjective fields. Depends on SPEC-17 for field_verified claims. It also flags that our ODbL exposure is on the consuming side and already live via SPEC-20 |
 
 Migration numbers are assigned when a spec is implemented, not when it is
@@ -96,21 +97,29 @@ numbers were taken by other work while they sat unimplemented.
    Supabase tests execute for the first time rather than skipping. While
    connected, read the distinct price_band values in venue_dish and check the AED
    price magnitudes on the Dubai dishes.
-2. Give observed_duration_minutes a writer, derived from arrival signals on sync
+2. SPEC-09 anonymous device identity. Moved up from last place: it gates any
+   tester build, so nothing at all can be verified in the field until it lands,
+   including the driver card the October trip exists to test.
+3. SPEC-22 client render contract, before any screen is built. Five queued specs
+   each need to render a fact, and without this each will invent its own trust
+   language. It does not wait on SPEC-17's backend, because the envelope shape is
+   already specified and can be a client-side type with a stubbed source.
+4. SPEC-12 driver card UI with the one-tap confirm, plus the name_confirmed signal
+   type alongside driver_card_shown in one migration. The card can render the
+   unconfirmed treatment from the existing source field on names_local, so it does
+   not need attribute_claim in order to be honest.
+5. Give observed_duration_minutes a writer, derived from arrival signals on sync
    rather than at save time. Until it exists the convenience layer has no input
    and SPEC-19 has nothing to corroborate its place-pair claims against.
-3. Retire the dietary suitability claim, per the SPEC-14 decision record. This
+6. Retire the dietary suitability claim, per the SPEC-14 decision record. This
    closes the halal-versus-pork hole by removing the claim rather than by adding
    a rule, which is the correct fix when no source can support the claim.
-4. SPEC-17 trust and verification. It gates SPEC-18, SPEC-19 and SPEC-20, and it
-   owns attribute_claim, which all three write into.
-5. SPEC-12 driver card UI, including the confirm affordance that promotes a name
-   to field_verified. The Oct 2 trip is the verification mechanism.
-6. name_confirmed signal type, alongside driver_card_shown, in one migration.
-7. SPEC-10 booking anchors, now unblocked by SPEC-16.
-8. reroute_rejected plus swap sheet UI -- the last unwired behavioural signal.
-9. SPEC-09 anonymous device identity -- prerequisite for any tester build, and so
-   for putting the app on a phone for the October trip at all.
+7. SPEC-17 trust and verification. It gates SPEC-18, SPEC-19 and SPEC-20, and it
+   owns attribute_claim, which all three write into. Deliberately sequenced behind
+   the field-test items rather than ahead of them, because the October trip needs
+   an installable app and one honest screen, not the full claim store.
+8. SPEC-10 booking anchors, now unblocked by SPEC-16.
+9. reroute_rejected plus swap sheet UI -- the last unwired behavioural signal.
 10. Relocate VALID_DISH_CONTAINS to config/dietary.py (R5 violation).
 
 Export the Dubai rows before applying anything. A rebuild from migrations without
@@ -141,9 +150,9 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 | halal plus pork passes the allergen check | High until the claim is retired | No LABEL_EXCLUDES_ALLERGENS rule for halal, so a pork-serving venue passes a halal check. The fix is to stop making the claim, not to add the rule -- adding it would make the answer trustworthy-looking on data that cannot support it. Live until the retirement lands |
 | Most localized names remain unverified | Medium | Forty-eight of 58 stay source=generated. Two known errors are a wrong vowel inside otherwise valid Lao, which no codepoint guard can detect. The driver card's confirm affordance is the mitigation |
 | Lao order phrase may say fry, not spicy | Medium | The papaya salad phrase reads bo phat lai, not bo phet lai -- stir-fry rather than spicy, one missing vowel. Needs a native speaker, not a script check. Three of four hot dishes carry no moderating phrase at all, and the raw-meat laap has no cooked-request phrase |
-| price_local units documented, AED rows still suspect | Medium | 0015 states the rule: minor units per the ISO 4217 exponent, so LAK at exponent 0 means 35000 = 35000 LAK and AED at exponent 2 means 4500 = 45.00 AED. The 0009 comment's "45 AED" example was ambiguous, so existing Dubai dish prices may be off by 100x either way. Device check against the live rows; do not backfill blindly |
 | opening_hours null on all Laos venues | Medium | The loader writes opening_hours_structured correctly; the data has simply never been re-loaded since |
 | hybrid_venue_search geo_region param | Medium | supabase_service passes a geo_region filter the RPC in 0001 does not declare. Verify against the live function |
+| price_local units documented, AED rows still suspect | Medium | 0015 states the rule: minor units per the ISO 4217 exponent, so LAK at exponent 0 means 35000 = 35000 LAK and AED at exponent 2 means 4500 = 45.00 AED. The 0009 comment's "45 AED" example was ambiguous, so existing Dubai dish prices may be off by 100x either way. Device check against the live rows; do not backfill blindly |
 | Raw-safety guard keys off English prose | Low | The guard that flags an uncooked dish looks for the word raw in the description, so rewording a description silently disables a safety check. Key it off a structured field |
 | seniors overcorrected | Low | Set on 40 of 58 venues, roughly two thirds, so it cannot discriminate. mobility_limited is 17 of 58, which is plausible rather than overcorrected -- an earlier version of this table attributed the two-thirds figure to the wrong tag |
 | Vientiane has zero massage_spa | Low | Suspect. This was reported by a warning function that was broken until recently, so re-check it against the data rather than trusting the earlier report |
