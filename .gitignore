@@ -40,6 +40,10 @@ htmlcov/
 *.log
 logs/
 
+# Curation working copies -- human-readable UTF-8 for editing, never committed.
+# Use scripts/format_venue_json.py --to-repo to push changes back to data/.
+curation/
+
 # Database dumps -- may contain data. Never commit.
 *.sql.bak
 backup_*.sql
