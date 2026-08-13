@@ -25,9 +25,11 @@
 - Flutter: offline-first with a SQLite outbox, sync engine, and typed exception
   hierarchy. Signal emission is wired for most but not all registered types --
   see the SPEC-07 row below.
-- Migrations 0011 to 0014 are committed and unapplied. 0011 waits on a live
+- Migrations 0011 to 0015 are committed and unapplied. 0011 waits on a live
   schema dump and diff. 0014 must not be applied at all in its current form --
-  it declares node_id as UUID against an 8-character string. See Known Risks.
+  it declares node_id as UUID against an 8-character string. 0015 is the only
+  one that is not purely additive and carries two preconditions of its own.
+  See Known Risks before applying anything.
 - Every file under data/ is ASCII-escaped, and a guard enforces it. Use
   scripts/format_venue_json.py to get a readable copy for curation and to
   re-escape on the way back in.
@@ -46,6 +48,7 @@
 | Migration 0012 venue_external_id | COMMITTED, UNAPPLIED | Maps a venue to Wikidata, OSM, Google and Foursquare identifiers, unique on (source, external_id). Roadmap concern 2 |
 | Migration 0013 taxonomy_term | COMMITTED, UNAPPLIED | Versions the controlled vocabulary across ten taxonomies, seeded from the venue and dish data. Roadmap concern 6 |
 | Migration 0014 itinerary normalisation | COMMITTED, DO NOT APPLY | Creates trip_node and trip_edge. Blocked: node_id and edge_id are declared UUID, but TripNode.node_id has always been an 8-character hex string, which Postgres rejects. Applying it makes every Supabase trip save fail. In-memory does not type-check and the live tests skip without creds, which is why the suite is green |
+| Migration 0015 drift fixes | COMMITTED, UNAPPLIED, PRECONDITIONS | Four fixes: venue_dish.price_band CHECK realigned to the taxonomy_term seed, venue_dish.names_local JSONB with a backfill, venue_dish.currency_code plus an explicit minor-unit rule, and embedding_model on venues_rag and cached_responses. Not purely additive -- it drops and re-adds a CHECK. Two preconditions in Known Risks must be cleared first |
 | Venue loader | REPAIRED, CARRIES EVERY FIELD | Pure ASCII, vocabulary restored, geo_region inferred from the file wrapper. Payload built once in build_venue_record; insert and update derive from it so they cannot drift apart |
 | Loader payload guard | DONE | A test asserts build_venue_record's key set equals VENUES_RAG_WRITE_COLUMNS. The earlier guards watched the declaration only, which is how four fields were dropped while the suite stayed green |
 | External-id writer | DONE | upsert_venues writes venue_external_id for every venue carrying a verified name reference, and the test drives upsert_venues rather than the helper, which is the distinction that let the first attempt land as dead code |
@@ -86,7 +89,9 @@ numbers were taken by other work while they sat unimplemented.
    observed_duration_minutes an actual writer, derived from arrival signals on
    sync rather than at save time, since it cannot be known when a trip is saved.
 2. Dump the live schema and diff it against the migration set, then apply
-   migrations 0011 to 0013 and re-load the three Laos files. Device task. The
+   migrations 0011 to 0013 and 0015, and re-load the three Laos files. Device
+   task. Clear the two 0015 preconditions first: check the distinct price_band
+   values in venue_dish, and scope the names_local backfill to Laos regions. The
    re-load also lands the opening hours that are currently null and the ten
    verified names.
 3. Retire the dietary suitability claim, per the SPEC-14 decision record. This
@@ -118,6 +123,11 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 |-------|----------|--------|
 | Migration 0014 declares node_id as UUID | High | TripNode.node_id has always been str(uuid4())[:8], an 8-character string Postgres rejects as a UUID. Applying 0014 makes every Supabase trip save fail. The suite is green because in-memory does not type-check and the live tests skip without credentials. Do not apply 0014 until this is fixed |
 | observed_duration_minutes has no writer | Medium | The column exists and a code comment claims it is populated from day one. Nothing populates it. It cannot be computed when a trip is saved, only derived from arrival signals on sync, so the transition data the convenience layer depends on is not accumulating |
+| Migration 0015 re-adds a CHECK that live data may violate | High | ADD CONSTRAINT validates every existing row, so if any live venue_dish row carries price_band='premium' the migration aborts. The old CHECK from 0005 allowed premium; the new one does not. This was verified against the repo data only, and the Dubai dishes exist solely in the hosted database. Run SELECT DISTINCT price_band FROM venue_dish before applying |
+| Migration 0015 language backfill hardcodes lo | High | The names_local backfill writes {"lo": ...} for every row with a non-null name_local, but REGION_LANGUAGES maps dubai_uae to ar. Any Dubai dish with a local name would be labelled Lao, and invented provenance is the exact failure the localized-name work exists to prevent. The loader beside it derives the language from geo_region correctly; only the SQL does not. Scope the UPDATE to Laos regions by joining venues_rag.geo_region, and handle the rest as a separate pass |
+| cached_responses.embedding_model has no writer | Medium | 0015 adds the column to both venues_rag and cached_responses. build_venue_record fills it for venues_rag; the cache insert in supabase_service does not set it at all, so every cached embedding lands untagged. Third instance of this pattern after venue_external_id and observed_duration_minutes |
+| venue_dish payload has no declaration guard | Medium | venues_rag writes through build_venue_record with a test asserting its key set equals VENUES_RAG_WRITE_COLUMNS. venue_dish is still an inline dict literal inside upsert_venues with no declared write set, and 0015 added four more columns to it. This is the same structure that silently dropped four curated fields from venues_rag while the suite stayed green |
+| price_local units documented, AED rows still suspect | Medium | 0015 states the rule: minor units per the ISO 4217 exponent, so LAK at exponent 0 means 35000 = 35000 LAK and AED at exponent 2 means 4500 = 45.00 AED. The 0009 comment's "45 AED" example was ambiguous, so existing Dubai dish prices may be off by 100x either way. Device check against the live rows; do not backfill blindly |
 | Live schema contains manual edits of unknown extent | High | Loads have been succeeding against columns no migration declared, so somebody added them by hand. PostgREST rejects writes to columns absent from its schema cache, so this is not a REST-layer quirk. Migration 0011 must not be applied before a dump and diff: if a hand-made name_local TEXT exists, ADD COLUMN IF NOT EXISTS names_local JSONB adds a second empty column and leaves the populated one unread |
 | Dubai venue data has no source file | High | data/ holds only the Laos files. The 16 Dubai venues exist as rows in the hosted database and nowhere else, so a rebuild from migrations loses them. Export to version control before any rebuild |
 | The dietary safety layer has no data source | RESOLVED BY DESCOPING | In OSM, diet:halal covers 20 of 6611 central Bangkok POIs and diet:vegetarian about two percent; Dubai is the best case at six and seven percent. A safety filter with no trustworthy input converts caution into misplaced confidence, so the claim is retired rather than sourced. See the SPEC-14 decision record |
