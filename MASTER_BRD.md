@@ -36,6 +36,11 @@ Vieng and Vientiane (58 hand-curated venues). `geo_region` is per trip, set from
 **Near-term goal:** a real field test in Laos on Oct 2 2026. That date is the
 forcing function for everything prioritized in `docs/PROJECT_STATUS.md`.
 
+**Market direction:** the product optimises for the Indian outbound traveller,
+and the cities after Laos follow that traveller's corridor. See
+`docs/MARKET_STRATEGY.md`. Laos is a field test of the engine, not a market
+entry.
+
 **Target platform:** Android first via the Play Store, iOS to follow.
 
 **Repository:** `github.com/vneogi/travel-buddy`, branch `main`.
@@ -228,7 +233,10 @@ Versioned SQL lives in `supabase/migrations/`, applied in numeric order.
 - **trip_party** and party members: party type and size, stamped server-side
 - **venues_rag**: name, description, lat, lng, vibe_tags[], audience[],
   category, micro_location, opening_hours_structured (JSONB), geo_region,
-  is_sponsored, bid_weight, embedding VECTOR(1536)
+  is_sponsored, bid_weight, embedding VECTOR(1536). Migration 0011 adds
+  typical_dwell_minutes, indoor_outdoor, price_band, has_aircon,
+  nearest_landmark, wheelchair_notes, and names_local plus landmarks_local as
+  language-keyed JSONB carrying a source per name (SPEC-12)
 - **venue_dish** and **dish_glossary**: dish_key, name_en, name_local,
   name_roman, cuisine, allergens, dietary labels
 - **signal**, **signal_type**, **source**: behavioural capture
@@ -247,13 +255,24 @@ SQL functions:
 | `consume_reroute(user_id)` | Atomic check-and-increment, used by the throttle |
 | `check_semantic_cache(...)` | Vector similarity search over the cache table |
 
-**Known drift.** `scripts/load_venues.py` writes `typical_dwell_minutes`,
-`indoor_outdoor` and `price_band` to `venues_rag`, and no migration defines
-those columns. `name_local` and `nearest_landmark` are also absent, which blocks
-driver cards. A database rebuilt from `supabase/migrations/` today fails on
-load. `supabase_service` also passes a `geo_region` filter that the RPC in
-`0001_initial_schema.sql` does not declare. Both are tracked in
+**Schema state.** The column drift that made a rebuild from
+`supabase/migrations/` fail is closed in code. Migration `0011` declares every
+column the loader writes, the loader builds its payload in one place
+(`build_venue_record`), and a test asserts that payload's key set equals the
+declared write set, so a declared column that stops being written now fails the
+suite rather than writing NULL.
+
+**`0011` must not be applied before the live schema is dumped and diffed.**
+Loads have been succeeding against columns no migration declared, so those
+columns exist in the hosted database and were almost certainly added by hand.
+The extent of those manual edits is unknown. This matters concretely: if a
+hand-made `name_local TEXT` is present, `ADD COLUMN IF NOT EXISTS names_local
+JSONB` adds a second empty column and silently leaves the populated one unread.
+The dump, the diff and any backfill are device tasks tracked in
 `docs/AWAITING_VERIFICATION.md`.
+
+**Still open.** `supabase_service` passes a `geo_region` filter that the RPC in
+`0001_initial_schema.sql` does not declare. Verify against the live function.
 
 ---
 
@@ -452,6 +471,7 @@ Laos field test, is in `docs/TESTING_GUIDE.md`.
 | What is built and what is next | `docs/PROJECT_STATUS.md` |
 | What is unverified or broken | `docs/AWAITING_VERIFICATION.md` |
 | Why we are building it | `docs/VISION.md` |
+| Which traveller, which cities | `docs/MARKET_STRATEGY.md` |
 | Signal and data-model design | `docs/DATA_MODEL_BRD.md` |
 | Numbered specifications | `docs/specs/` |
 | Rules from past bugs | `docs/ENGINEERING_RULES.md` |
