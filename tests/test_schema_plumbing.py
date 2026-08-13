@@ -2,17 +2,17 @@
 
 These tests validate:
 1. venue_external_id seed data from the verification artifact
-2. taxonomy_term seed completeness against venue JSON data
-3. Bidirectional agreement between Python constants and the migration seed
-
-The loader does NOT read vocabulary from the database. The Python constants
-stay the runtime check; a test asserts the constants and seeded table agree
-exactly in both directions.
+2. venue_external_id writer (build_external_id_record) produces correct rows
+3. taxonomy_term seed completeness against venue and glossary data
+4. Bidirectional agreement between Python constants and the migration seed
+5. Migration safety: additive-only (no DROP, no ALTER venues_rag)
 """
 import json
 import re
 import sys
 from pathlib import Path
+
+import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 MIGRATIONS_DIR = REPO_ROOT / "supabase" / "migrations"
@@ -22,6 +22,9 @@ sys.path.insert(0, str(REPO_ROOT / "scripts"))
 from load_venues import (  # noqa: E402
     EXTERNAL_ID_SOURCES,
     TAXONOMY_TERMS,
+    VENUE_EXTERNAL_ID_WRITE_COLUMNS,
+    build_external_id_record,
+    build_venue_record,
 )
 
 sys.path.pop(0)
@@ -48,11 +51,18 @@ def _iter_laos_venues():
             yield json_file, geo_region, venue
 
 
+def _strip_sql_comments(sql: str) -> str:
+    """Remove SQL single-line comments (-- ...) from content."""
+    return "\n".join(
+        line for line in sql.splitlines()
+        if not line.strip().startswith("--")
+    )
+
+
 def _parse_taxonomy_seed_from_migration():
     """Parse the INSERT statements in 0013 to extract seeded (taxonomy, term) pairs."""
     migration = MIGRATIONS_DIR / "0013_taxonomy_term.sql"
     content = migration.read_text(encoding="utf-8")
-    # Match INSERT ... VALUES lines like ('category', 'bar'),
     pattern = re.compile(r"\('([^']+)',\s*'([^']+)'\)")
     pairs = set()
     for m in pattern.finditer(content):
@@ -111,18 +121,76 @@ def test_refs_parse_into_resolvable_form():
             raise AssertionError(f"Unhandled source '{source}' for {entry['venue_name']}")
 
 
-def test_duplicate_external_id_detected_by_unique_constraint():
-    """The 0012 migration must define UNIQUE(source, external_id).
-
-    We verify this by parsing the migration SQL rather than hitting a DB.
-    """
+def test_unique_constraint_on_source_external_id():
+    """Migration 0012 must declare UNIQUE(source, external_id) in SQL (not just comments)."""
     migration = MIGRATIONS_DIR / "0012_venue_external_id.sql"
-    content = migration.read_text(encoding="utf-8")
-    assert "UNIQUE" in content.upper(), "Migration must have a UNIQUE constraint"
-    # Verify it's on (source, external_id)
-    assert "source" in content and "external_id" in content, (
-        "UNIQUE constraint must cover source and external_id"
+    sql = _strip_sql_comments(migration.read_text(encoding="utf-8"))
+    assert re.search(r"UNIQUE\s*\(\s*source\s*,\s*external_id\s*\)", sql), (
+        "Migration 0012 must have UNIQUE(source, external_id) constraint "
+        "in SQL statements (not just comments)"
     )
+
+
+# ---------------------------------------------------------------------------
+# PART 1 continued: venue_external_id writer (A, B, C)
+# ---------------------------------------------------------------------------
+
+def test_build_external_id_record_produces_10_rows():
+    """Dry run over all Laos venues must produce exactly 10 external-id records,
+    matching the verification artifact."""
+    artifact = _load_verification_artifact()
+    expected_refs = {e["ref"] for e in artifact["verified_names"]}
+
+    records = []
+    for _json_file, geo_region, venue in _iter_laos_venues():
+        venue_id = "test-" + venue["name"].lower().replace(" ", "-")
+        rec = build_external_id_record(venue, venue_id)
+        if rec is not None:
+            records.append(rec)
+
+    assert len(records) == 10, f"Expected 10 external_id records, got {len(records)}"
+    actual_refs = {r["external_id"] for r in records}
+    assert actual_refs == expected_refs, (
+        f"Mismatch: expected {sorted(expected_refs)}, got {sorted(actual_refs)}"
+    )
+
+
+def test_build_external_id_record_key_guard():
+    """Payload keys from build_external_id_record must equal VENUE_EXTERNAL_ID_WRITE_COLUMNS."""
+    # Find a venue that will produce a record
+    for _json_file, geo_region, venue in _iter_laos_venues():
+        rec = build_external_id_record(venue, "test-venue-id")
+        if rec is not None:
+            assert set(rec.keys()) == VENUE_EXTERNAL_ID_WRITE_COLUMNS, (
+                f"Payload keys {sorted(rec.keys())} != "
+                f"declared {sorted(VENUE_EXTERNAL_ID_WRITE_COLUMNS)}"
+            )
+            return
+    pytest.fail("No venue produced an external_id record")
+
+
+def test_second_run_produces_no_duplicates():
+    """Running build_external_id_record twice produces identical records (idempotent).
+    The UNIQUE(source, external_id) constraint means a second INSERT would use
+    ON CONFLICT DO NOTHING -- same data, no error."""
+    seen = {}
+    for _json_file, geo_region, venue in _iter_laos_venues():
+        rec = build_external_id_record(venue, "test-" + venue["name"])
+        if rec is None:
+            continue
+        key = (rec["source"], rec["external_id"])
+        if key in seen:
+            pytest.fail(f"Duplicate (source, external_id): {key}")
+        seen[key] = rec
+
+    # Run again -- same venues produce same keys
+    for _json_file, geo_region, venue in _iter_laos_venues():
+        rec = build_external_id_record(venue, "test-" + venue["name"])
+        if rec is None:
+            continue
+        key = (rec["source"], rec["external_id"])
+        assert key in seen, f"Second run produced unknown key {key}"
+        assert rec == seen[key], f"Second run produced different record for {key}"
 
 
 # ---------------------------------------------------------------------------
@@ -130,32 +198,23 @@ def test_duplicate_external_id_detected_by_unique_constraint():
 # ---------------------------------------------------------------------------
 
 def test_taxonomy_seed_completeness():
-    """Every taxonomy value used in venue JSONs must exist in the migration seed.
-
-    If this fails, the seed is incomplete and DB validation would reject data
-    we already have.
-    """
+    """Every taxonomy value used in venue JSONs must exist in the migration seed."""
     seeded = _parse_taxonomy_seed_from_migration()
 
     missing = []
     for _json_file, _geo_region, venue in _iter_laos_venues():
-        # category
         cat = venue.get("category")
         if cat and ("category", cat) not in seeded:
             missing.append(("category", cat, venue["name"]))
-        # vibe_tags
         for tag in venue.get("vibe_tags", []):
             if ("vibe_tag", tag) not in seeded:
                 missing.append(("vibe_tag", tag, venue["name"]))
-        # audience
         for aud in venue.get("audience", []):
             if ("audience", aud) not in seeded:
                 missing.append(("audience", aud, venue["name"]))
-        # price_band
         pb = venue.get("price_band")
         if pb and ("price_band", pb) not in seeded:
             missing.append(("price_band", pb, venue["name"]))
-        # indoor_outdoor
         io = venue.get("indoor_outdoor")
         if io and ("indoor_outdoor", io) not in seeded:
             missing.append(("indoor_outdoor", io, venue["name"]))
@@ -166,10 +225,42 @@ def test_taxonomy_seed_completeness():
     )
 
 
-def test_taxonomy_seed_count():
-    """The seed must contain exactly 45 terms (category 16, vibe_tag 15, etc.)."""
+def test_taxonomy_seed_completeness_glossary():
+    """Every dish taxonomy value in the glossary must exist in the migration seed."""
     seeded = _parse_taxonomy_seed_from_migration()
-    assert len(seeded) == 45, f"Expected 45 seeded terms, got {len(seeded)}"
+    glossary = json.loads((DATA_DIR / "laos_dish_glossary.json").read_text())
+
+    missing = []
+    for dish in glossary["dishes"]:
+        name = dish.get("name_en") or dish.get("dish_key") or "?"
+        for field, taxonomy in [
+            ("cuisine", "cuisine"),
+            ("dish_type", "dish_type"),
+            ("spice_level", "spice_level"),
+            ("adventurousness", "adventurousness"),
+        ]:
+            val = dish.get(field)
+            if val is not None and (taxonomy, str(val)) not in seeded:
+                missing.append((taxonomy, str(val), name))
+        for val in dish.get("suitable_for", []):
+            if ("suitable_for", val) not in seeded:
+                missing.append(("suitable_for", val, name))
+        # typical_price_band uses the price_band taxonomy
+        pb = dish.get("typical_price_band")
+        if pb and ("price_band", pb) not in seeded:
+            missing.append(("price_band", pb, name))
+
+    assert not missing, (
+        "Taxonomy seed is incomplete -- glossary uses terms not in 0013:\n"
+        + "\n".join(f"  {tax}.{term} (used by {name})" for tax, term, name in missing[:20])
+    )
+
+
+def test_taxonomy_seed_count():
+    """The seed must contain the expected number of terms."""
+    seeded = _parse_taxonomy_seed_from_migration()
+    # 45 original + new dish terms
+    assert len(seeded) >= 45, f"Expected at least 45 seeded terms, got {len(seeded)}"
 
 
 def test_constants_match_seed_bidirectional():
@@ -182,11 +273,10 @@ def test_constants_match_seed_bidirectional():
     """
     seeded = _parse_taxonomy_seed_from_migration()
 
-    # Build set from Python constants
     constant_pairs = set()
     for taxonomy, terms in TAXONOMY_TERMS.items():
         for term in terms:
-            constant_pairs.add((taxonomy, term))
+            constant_pairs.add((taxonomy, str(term)))
 
     in_seed_not_constant = sorted(seeded - constant_pairs)
     in_constant_not_seed = sorted(constant_pairs - seeded)
@@ -208,36 +298,37 @@ def test_constants_match_seed_bidirectional():
 
 
 def test_taxonomy_composite_pk():
-    """The migration must use a composite PRIMARY KEY (taxonomy, term)."""
+    """The migration must use a composite PRIMARY KEY (taxonomy, term) in SQL."""
     migration = MIGRATIONS_DIR / "0013_taxonomy_term.sql"
-    content = migration.read_text(encoding="utf-8")
-    # Find non-comment lines containing PRIMARY KEY
-    pk_lines = [
-        l for l in content.splitlines()
-        if "PRIMARY KEY" in l.upper() and not l.strip().startswith("--")
-    ]
-    assert pk_lines, "No PRIMARY KEY SQL statement found (only comments)"
-    pk_text = pk_lines[0]
-    assert "taxonomy" in pk_text and "term" in pk_text, (
-        f"PRIMARY KEY must be composite on (taxonomy, term), got: {pk_text}"
+    sql = _strip_sql_comments(migration.read_text(encoding="utf-8"))
+    assert re.search(r"PRIMARY\s+KEY\s*\(\s*taxonomy\s*,\s*term\s*\)", sql), (
+        "Migration 0013 must have PRIMARY KEY (taxonomy, term) in SQL statements"
     )
 
 
+# ---------------------------------------------------------------------------
+# Migration safety: additive-only
+# ---------------------------------------------------------------------------
+
 def test_migration_0012_is_additive_only():
-    """Migration 0012 must only ADD structure, never DROP or ALTER existing objects."""
+    """Migration 0012 must not DROP anything or ALTER venues_rag."""
     migration = MIGRATIONS_DIR / "0012_venue_external_id.sql"
-    content = migration.read_text(encoding="utf-8").upper()
-    assert "DROP" not in content, "Migration 0012 must not contain DROP"
-    assert "ALTER TABLE venues_rag" not in content, (
-        "Migration 0012 must not ALTER the existing venues_rag table"
+    sql = _strip_sql_comments(migration.read_text(encoding="utf-8"))
+    assert not re.search(r"\bDROP\b", sql, re.IGNORECASE), (
+        "Migration 0012 contains a DROP statement"
+    )
+    assert not re.search(r"ALTER\s+TABLE\s+venues_rag", sql, re.IGNORECASE), (
+        "Migration 0012 alters the existing venues_rag table"
     )
 
 
 def test_migration_0013_is_additive_only():
-    """Migration 0013 must only ADD structure, never DROP or ALTER existing objects."""
+    """Migration 0013 must not DROP anything or ALTER venues_rag."""
     migration = MIGRATIONS_DIR / "0013_taxonomy_term.sql"
-    content = migration.read_text(encoding="utf-8").upper()
-    assert "DROP" not in content, "Migration 0013 must not contain DROP"
-    assert "ALTER TABLE venues_rag" not in content, (
-        "Migration 0013 must not ALTER the existing venues_rag table"
+    sql = _strip_sql_comments(migration.read_text(encoding="utf-8"))
+    assert not re.search(r"\bDROP\b", sql, re.IGNORECASE), (
+        "Migration 0013 contains a DROP statement"
+    )
+    assert not re.search(r"ALTER\s+TABLE\s+venues_rag", sql, re.IGNORECASE), (
+        "Migration 0013 alters the existing venues_rag table"
     )

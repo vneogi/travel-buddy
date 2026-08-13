@@ -148,6 +148,16 @@ VALID_LOCALIZED_SOURCES = frozenset({
 # (both include wikidata, osm) but mean different things.
 EXTERNAL_ID_SOURCES = frozenset({"wikidata", "osm", "google", "foursquare"})
 
+# Column names the loader writes to venue_external_id. Same guard pattern as
+# VENUES_RAG_WRITE_COLUMNS: a test asserts the payload keys equal this set.
+VENUE_EXTERNAL_ID_WRITE_COLUMNS = frozenset({
+    "venue_id",
+    "source",
+    "external_id",
+    "confidence",
+    "verified_at",
+})
+
 # Taxonomy vocabularies (concern 6 in DATA_LAYER_ROADMAP).
 # The loader validates venue data against these at runtime.
 # A test asserts these match the taxonomy_term table exactly.
@@ -169,6 +179,18 @@ TAXONOMY_TERMS = {
     }),
     "price_band": frozenset({"budget", "free", "mid", "splurge"}),
     "indoor_outdoor": frozenset({"indoor", "mixed", "outdoor"}),
+    # Dish vocabularies (seeded from laos_dish_glossary.json)
+    "cuisine": frozenset({
+        "drink", "french_colonial", "lao", "vietnamese",
+    }),
+    "dish_type": frozenset({
+        "alcoholic_drink", "bread_pastry", "coffee_tea", "dessert",
+        "grill", "noodle_soup", "rice_dish", "salad", "snack",
+        "soft_drink", "stew", "street_snack",
+    }),
+    "spice_level": frozenset({"hot", "medium", "mild", "none"}),
+    "suitable_for": frozenset({"gluten_free", "halal", "vegan", "vegetarian"}),
+    "adventurousness": frozenset({"1", "2", "3", "4", "5"}),
 }
 
 # Laos bounding box (generous)
@@ -483,6 +505,25 @@ def build_venue_record(venue: dict, venue_id: str, embedding: list[float],
             ref=venue.get("nearest_landmark_local_ref"),
         ),
         "wheelchair_notes": venue.get("wheelchair_notes"),
+    }
+
+
+def build_external_id_record(venue: dict, venue_id: str) -> dict | None:
+    """Build a venue_external_id row if the venue carries a name_local_ref.
+
+    Returns a dict whose keys exactly match VENUE_EXTERNAL_ID_WRITE_COLUMNS,
+    or None if no external reference is present.
+    """
+    source = venue.get("name_local_source")
+    ref = venue.get("name_local_ref")
+    if not source or not ref or source not in EXTERNAL_ID_SOURCES:
+        return None
+    return {
+        "venue_id": venue_id,
+        "source": source,
+        "external_id": ref,
+        "confidence": 1.0,
+        "verified_at": None,
     }
 
 
