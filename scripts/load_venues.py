@@ -394,8 +394,8 @@ def collect_warnings(venues: list[dict], geo_region: str) -> list[str]:
 
     for v in venues:
         name = v.get("name", "?")
-        if v.get("opening_hours_structured") is None:
-            warnings.append(f"'{name}': opening_hours_structured is null")
+        if v.get("opening_hours_structured") is None and v.get("opening_hours") is None:
+            warnings.append(f"'{name}': no opening hours data (neither structured nor plain)")
         if v.get("has_aircon") is None:
             warnings.append(f"'{name}': has_aircon is null")
         cat = v.get("category", "")
@@ -577,6 +577,14 @@ def upsert_venues(venues: list[dict], geo_region: str, embeddings: list[list[flo
                     "cuisine": dish.get("cuisine"),
                     "price_local": dish.get("price_local"),
                 }).execute()
+
+        # External IDs (idempotent: ON CONFLICT DO NOTHING)
+        ext_record = build_external_id_record(venue, venue_id)
+        if ext_record is not None:
+            client.table("venue_external_id").upsert(
+                ext_record,
+                on_conflict="source,external_id",
+            ).execute()
 
     return len(venues)
 

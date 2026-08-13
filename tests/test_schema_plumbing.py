@@ -193,6 +193,100 @@ def test_second_run_produces_no_duplicates():
         assert rec == seen[key], f"Second run produced different record for {key}"
 
 
+class FakeTable:
+    """Minimal fake for Supabase table fluent API."""
+    def __init__(self, name, calls):
+        self._name = name
+        self._calls = calls
+
+    def upsert(self, data, **kwargs):
+        self._calls.append(("upsert", self._name, data, kwargs))
+        return self
+
+    def insert(self, data):
+        self._calls.append(("insert", self._name, data))
+        return self
+
+    def update(self, data):
+        self._calls.append(("update", self._name, data))
+        return self
+
+    def delete(self):
+        self._calls.append(("delete", self._name))
+        return self
+
+    def select(self, *args):
+        self._calls.append(("select", self._name, args))
+        return self
+
+    def eq(self, col, val):
+        return self
+
+    def execute(self):
+        class R:
+            data = []
+        return R()
+
+
+class FakeClient:
+    """Captures calls to all tables."""
+    def __init__(self):
+        self.calls = []
+
+    def table(self, name):
+        return FakeTable(name, self.calls)
+
+
+def test_upsert_venues_writes_external_ids(monkeypatch):
+    """upsert_venues must call venue_external_id upsert for venues with refs."""
+    import uuid as _uuid
+    sys.path.insert(0, str(REPO_ROOT / "scripts"))
+    import load_venues
+    sys.path.pop(0)
+
+    # Load all Laos venues
+    all_venues = []
+    for _jf, geo_region, venue in _iter_laos_venues():
+        all_venues.append(venue)
+    geo_region = "luang_prabang_laos"  # doesn't matter, just need a valid one
+
+    # Fake embeddings (one per venue)
+    fake_embeddings = [[0.0] * 3 for _ in all_venues]
+
+    # Patch create_client to return our fake
+    fake_client = FakeClient()
+    monkeypatch.setattr("os.environ", {
+        "TB_SUPABASE_URL": "http://fake", "TB_SUPABASE_KEY": "fake"
+    })
+
+    # Monkey-patch the supabase import inside load_venues
+    import types
+    fake_supabase = types.ModuleType("supabase")
+    fake_supabase.create_client = lambda url, key: fake_client
+    monkeypatch.setitem(sys.modules, "supabase", fake_supabase)
+
+    # Reload to pick up the patched module
+    import importlib
+    importlib.reload(load_venues)
+
+    load_venues.upsert_venues(all_venues, geo_region, fake_embeddings)
+
+    # Check venue_external_id upserts
+    ext_calls = [c for c in fake_client.calls
+                 if c[0] == "upsert" and c[1] == "venue_external_id"]
+    assert len(ext_calls) == 10, (
+        f"Expected 10 venue_external_id upserts, got {len(ext_calls)}"
+    )
+    # Verify the refs match the artifact
+    artifact = _load_verification_artifact()
+    expected_refs = {e["ref"] for e in artifact["verified_names"]}
+    actual_refs = {c[2]["external_id"] for c in ext_calls}
+    assert actual_refs == expected_refs, (
+        f"External ID mismatch: {sorted(actual_refs - expected_refs)}"
+    )
+
+
+
 # ---------------------------------------------------------------------------
 # PART 2: taxonomy_term
 # ---------------------------------------------------------------------------
@@ -266,17 +360,29 @@ def test_taxonomy_seed_count():
 def test_constants_match_seed_bidirectional():
     """TAXONOMY_TERMS constants and the migration seed must agree exactly.
 
-    This test stops the two from drifting. A term in the constant but not
-    in the seed means new data validates locally but is rejected by the DB.
-    A term in the seed but not the constant means the DB accepts data the
-    loader would reject.
+    Enumerates ALL taxonomies dynamically from both sides, covering all 10.
+    A term in the constant but not in the seed means new data validates
+    locally but is rejected by the DB. A term in the seed but not the
+    constant means the DB accepts data the loader would reject.
     """
     seeded = _parse_taxonomy_seed_from_migration()
 
+    # Build set from Python constants (all taxonomies, converting to str)
     constant_pairs = set()
     for taxonomy, terms in TAXONOMY_TERMS.items():
         for term in terms:
             constant_pairs.add((taxonomy, str(term)))
+
+    # Both sides must enumerate the same set of taxonomies
+    seed_taxonomies = {t[0] for t in seeded}
+    constant_taxonomies = set(TAXONOMY_TERMS.keys())
+    taxonomy_diff = seed_taxonomies.symmetric_difference(constant_taxonomies)
+    assert not taxonomy_diff, (
+        f"Taxonomy set mismatch between seed and constants: {sorted(taxonomy_diff)}"
+    )
+    assert len(seed_taxonomies) == 10, (
+        f"Expected 10 taxonomies, got {len(seed_taxonomies)}: {sorted(seed_taxonomies)}"
+    )
 
     in_seed_not_constant = sorted(seeded - constant_pairs)
     in_constant_not_seed = sorted(constant_pairs - seeded)

@@ -159,3 +159,86 @@ def test_to_repo_on_ascii_file_is_noop(filename):
     assert ascii_bytes == original_bytes, (
         f"{filename}: to_repo on already-ASCII file should be identity"
     )
+
+
+# ---------------------------------------------------------------------------
+# G4d: Ratchet tests for spice and safety gaps in the dish glossary
+# ---------------------------------------------------------------------------
+
+# These counts are the CEILING. They may decrease as a native speaker adds
+# moderating phrases or cooked-request alternatives. They must NEVER increase.
+# If a new dish is added without proper phrases, this test blocks the commit.
+
+_KNOWN_HOT_WITHOUT_MODERATE = 3  # Sweet Chili Paste, Raw Minced Beef, Spicy Cucumber
+_KNOWN_RAW_WITHOUT_COOK_REQUEST = 1  # Raw Minced Beef & Bile Salad
+
+
+def test_spice_gap_ratchet():
+    """Hot dishes without a moderating phrase must not increase.
+
+    A "moderating phrase" is one that includes a Lao request to reduce spice.
+    Known Lao modifiers: \u0e9c\u0eb1\u0e94\u0edc\u0ec9\u0ead\u0e8d (little spicy),
+    \u0e9a\u0ecd\u0ec8\u0e9c\u0eb1\u0e94 (not spicy).
+    The gap stays visible until a native speaker fills it.
+    """
+    fp = DATA_DIR / "laos_dish_glossary.json"
+    data = json.loads(fp.read_text(encoding="utf-8"))
+
+    moderate_keywords = [
+        "\u0e9c\u0eb1\u0e94\u0edc\u0ec9\u0ead\u0e8d",
+        "\u0e9a\u0ecd\u0ec8\u0e9c\u0eb1\u0e94",
+        "\u0e9c\u0eb1\u0e94\u0eab\u0ebc\u0eb2\u0e8d",
+    ]
+
+    hot_no_moderate = []
+    for dish in data["dishes"]:
+        if dish.get("spice_level") != "hot":
+            continue
+        phrase = dish.get("order_phrase_local", "")
+        has_moderate = any(kw in phrase for kw in moderate_keywords)
+        if not has_moderate:
+            hot_no_moderate.append(dish.get("name_en") or dish.get("dish_key"))
+
+    assert len(hot_no_moderate) <= _KNOWN_HOT_WITHOUT_MODERATE, (
+        f"Spice gap INCREASED from {_KNOWN_HOT_WITHOUT_MODERATE} to "
+        f"{len(hot_no_moderate)}. New gaps: {hot_no_moderate}. "
+        f"Add a moderating phrase or update the ratchet ceiling."
+    )
+
+
+def test_raw_safety_gap_ratchet():
+    """Raw/uncooked dishes without a cooked-request alternative must not increase.
+
+    A "cooked-request phrase" would offer the option to cook the dish
+    (e.g. larb suk vs larb dip). Lao keyword: \u0eaa\u0eb8\u0e81 (suk = cooked).
+    The gap stays visible until a native speaker fills it.
+    """
+    fp = DATA_DIR / "laos_dish_glossary.json"
+    data = json.loads(fp.read_text(encoding="utf-8"))
+
+    raw_indicators = ["raw", "uncooked", "dip"]
+    cook_keywords = [
+        "\u0eaa\u0eb8\u0e81",
+    ]
+
+    raw_no_cook = []
+    for dish in data["dishes"]:
+        desc = (dish.get("description", "") or "").lower()
+        name = (dish.get("name_en", "") or "").lower()
+        dish_key = (dish.get("dish_key", "") or "").lower()
+        is_raw = any(
+            kw in desc or kw in name or kw in dish_key
+            for kw in raw_indicators
+        )
+        if not is_raw:
+            continue
+        phrase = dish.get("order_phrase_local", "")
+        has_cook_option = any(kw in phrase for kw in cook_keywords)
+        if not has_cook_option:
+            raw_no_cook.append(dish.get("name_en") or dish.get("dish_key"))
+
+    assert len(raw_no_cook) <= _KNOWN_RAW_WITHOUT_COOK_REQUEST, (
+        f"Raw safety gap INCREASED from {_KNOWN_RAW_WITHOUT_COOK_REQUEST} to "
+        f"{len(raw_no_cook)}. New gaps: {raw_no_cook}. "
+        f"Add a cooked-request phrase or update the ratchet ceiling."
+    )
