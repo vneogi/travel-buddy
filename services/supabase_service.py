@@ -193,15 +193,21 @@ class SupabaseService:
     # =========================================================================
 
     def save_trip(self, trip_state: TripState) -> str:
-        """Save or upsert a trip state."""
+        """Save or upsert a trip state. Dual-writes normalised nodes (SPEC-16)."""
+        trip_dict = trip_state.model_dump(mode="json")
         trip_data = {
             "trip_id": trip_state.trip_id,
             "user_id": trip_state.user_id,
-            "state_json": trip_state.model_dump(mode="json"),
+            "state_json": trip_dict,
             "is_active": True,
             "updated_at": datetime.now(tz=timezone.utc).isoformat(),
         }
         self.client.table("trip_states").upsert(trip_data).execute()
+        # SPEC-16 phase 1: dual-write normalised rows
+        from services.itinerary_normaliser import decompose_trip
+        nodes, edges = decompose_trip(trip_dict)
+        self.save_trip_nodes(trip_state.trip_id, nodes)
+        self.save_trip_edges(trip_state.trip_id, edges)
         return trip_state.trip_id
 
     def get_trip(self, trip_id: str) -> Optional[TripState]:
@@ -230,6 +236,56 @@ class SupabaseService:
         return [TripState(**row["state_json"]) for row in result.data]
 
     # =========================================================================
+    # Itinerary Normalisation (SPEC-16)
+    # =========================================================================
+
+    def save_trip_nodes(self, trip_id: str, nodes: list) -> int:
+        """Save normalised trip_node rows. Idempotent via ON CONFLICT."""
+        if not nodes:
+            return 0
+        # Delete existing nodes for this trip, re-insert (idempotent)
+        self.client.table("trip_node").delete().eq("trip_id", trip_id).execute()
+        for node in nodes:
+            row = dict(node)
+            # Convert vibe_tags list to Postgres array format
+            row["trip_id"] = trip_id
+            self.client.table("trip_node").insert(row).execute()
+        return len(nodes)
+
+    def get_trip_nodes(self, trip_id: str) -> list:
+        """Get normalised trip_node rows for a trip, ordered by (day_index, seq)."""
+        result = (
+            self.client.table("trip_node")
+            .select("*")
+            .eq("trip_id", trip_id)
+            .order("day_index")
+            .order("seq")
+            .execute()
+        )
+        return result.data or []
+
+    def save_trip_edges(self, trip_id: str, edges: list) -> int:
+        """Save normalised trip_edge rows. Idempotent: delete + re-insert."""
+        if not edges:
+            return 0
+        self.client.table("trip_edge").delete().eq("trip_id", trip_id).execute()
+        for edge in edges:
+            row = dict(edge)
+            row["trip_id"] = trip_id
+            self.client.table("trip_edge").insert(row).execute()
+        return len(edges)
+
+    def get_trip_edges(self, trip_id: str) -> list:
+        """Get normalised trip_edge rows for a trip."""
+        result = (
+            self.client.table("trip_edge")
+            .select("*")
+            .eq("trip_id", trip_id)
+            .execute()
+        )
+        return result.data or []
+
+        # =========================================================================
     # Trip Party (SPEC-03 — party_context stamping)
     # =========================================================================
 

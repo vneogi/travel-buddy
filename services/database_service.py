@@ -34,6 +34,8 @@ class DatabaseService:
         self._event_log: List[dict] = []
         self._signals: Dict[str, dict] = {}  # keyed by signal_id (idempotency)
         self._parties: Dict[str, dict] = {}  # keyed by trip_id (SPEC-03)
+        self._trip_nodes: Dict[str, list] = {}  # SPEC-16: trip_id -> node rows
+        self._trip_edges: Dict[str, list] = {}  # SPEC-16: trip_id -> edge rows
         self._valid_signal_types = set(SIGNAL_TYPES)  # from models.signal_types (single source of truth)
 
     # =========================================================================
@@ -120,8 +122,14 @@ class DatabaseService:
     # =========================================================================
 
     def save_trip(self, trip_state: TripState) -> str:
-        """Save or update a trip state."""
-        self._trips[trip_state.trip_id] = trip_state.model_dump(mode="json")
+        """Save or update a trip state. Dual-writes normalised nodes (SPEC-16)."""
+        trip_dict = trip_state.model_dump(mode="json")
+        self._trips[trip_state.trip_id] = trip_dict
+        # SPEC-16 phase 1: dual-write normalised rows
+        from services.itinerary_normaliser import decompose_trip
+        nodes, edges = decompose_trip(trip_dict)
+        self._trip_nodes[trip_state.trip_id] = nodes
+        self._trip_edges[trip_state.trip_id] = edges
         return trip_state.trip_id
 
     def get_trip(self, trip_id: str) -> Optional[TripState]:
@@ -140,6 +148,29 @@ class DatabaseService:
 
 
     # =========================================================================
+    # Itinerary Normalisation (SPEC-16)
+    # =========================================================================
+
+    def save_trip_nodes(self, trip_id: str, nodes: list) -> int:
+        """Save normalised trip_node rows. Idempotent: replaces existing."""
+        self._trip_nodes[trip_id] = list(nodes)
+        return len(nodes)
+
+    def get_trip_nodes(self, trip_id: str) -> list:
+        """Get normalised trip_node rows for a trip, ordered by (day_index, seq)."""
+        rows = self._trip_nodes.get(trip_id, [])
+        return sorted(rows, key=lambda r: (r.get("day_index", 0), r.get("seq", 0)))
+
+    def save_trip_edges(self, trip_id: str, edges: list) -> int:
+        """Save normalised trip_edge rows. Idempotent: replaces existing."""
+        self._trip_edges[trip_id] = list(edges)
+        return len(edges)
+
+    def get_trip_edges(self, trip_id: str) -> list:
+        """Get normalised trip_edge rows for a trip."""
+        return list(self._trip_edges.get(trip_id, []))
+
+        # =========================================================================
     # Trip Party (SPEC-03 — party_context stamping)
     # =========================================================================
 
