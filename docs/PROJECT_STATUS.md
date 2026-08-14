@@ -85,6 +85,11 @@
 | OSM upstream contribution (SPEC-21) | DECIDED IN PRINCIPLE | Not scheduled, and not on the October path. A decision record rather than a spec: confirmed commodity facts go back to OpenStreetMap under the traveller's own account, never behavioural derivations, never model output, never subjective fields. Depends on SPEC-17 for field_verified claims. It also flags that our ODbL exposure is on the consuming side and already live via SPEC-20 |
 | Money as a dimension (SPEC-23) | SPECIFIED | Not implemented. The engineering contract under VISION section 20, and roadmap concern 7. A band and an amount are different things and both are needed; no amount is storable without its currency; a band is meaningless until anchored to a region, which is what makes price tolerance portable between cities; transport cost belongs on trip_edge; budget is revealed from rejections rather than asked for, with a volunteered hard cap honoured exactly; amounts are SPEC-17 claims on a weeks-scale horizon and degrade to a band when stale. Depends on SPEC-13, SPEC-16 and SPEC-17 |
 
+| Identity lifecycle (SPEC-24) | SPECIFIED | Not implemented, and the design is deliberately settled ahead of the build. Sign-in itself is nearly free because Supabase Auth owns the provider flow and security.py already verifies the token; the work is what happens to the anonymous history. Owns credential aliases, the anonymous-to-account merge, multi-device, and sign-out. Merge direction is fixed one way, which extends the upgrade-on-sight rule already live on identity_kind. Union rather than dedupe; tier and quota both resolve to the maximum, since taking the minimum makes sign-in a way to refill the daily reroute allowance |
+| Ask Anything surface (SPEC-25) | SPECIFIED | Not implemented. Free text reaches the engine today only through trip/event, which requires a trip_id, so a search box outside a trip has nowhere to post and SPEC-18's central scenario cannot be asked at all. Owns one endpoint with the trip optional, a closed intent set that routes only to capabilities that already exist, and cost bounds applied before the model call rather than around it. Every answer is a SPEC-17 envelope: there is no prose channel, which is what stops the box becoming an ungrounded chatbot. Offline it answers from cache or refuses at once, and never queues |
+| Home surface (SPEC-26) | SPECIFIED | Not implemented. get_active_trips already exists in the service layer with no route exposing it, so a returning user cannot be shown their own trips -- the gap is one route, not a subsystem. Also owns a single self-contained home aggregate that renders offline, the designed empty state, and a trip creation path requiring destination and dates only. Gated on SPEC-13 for region validity, since geo_region is still an unconstrained string |
+| App lifecycle and data rights (SPEC-27) | SPECIFIED | Not implemented. The three consumer obligations with no owner: push transport with tokens that survive the SPEC-24 merge and delivery through the SPEC-22 interruption budget enforced server-side, deletion and export under DPDP and GDPR, and a minimum supported client that blocks writes but never reads. States the position that raw signals are deleted while non-identifying derived aggregates survive |
+
 Migration numbers are assigned when a spec is implemented, not when it is
 written. SPEC-11, SPEC-13, SPEC-14 and SPEC-15 each claimed a number, and the
 numbers were taken by other work while they sat unimplemented.
@@ -127,6 +132,12 @@ numbers were taken by other work while they sat unimplemented.
 8. SPEC-10 booking anchors, now unblocked by SPEC-16.
 9. reroute_rejected plus swap sheet UI -- the last unwired behavioural signal.
 10. Relocate VALID_DISH_CONTAINS to config/dietary.py (R5 violation).
+11. The consumer surface, sequenced in docs/CONSUMER_SURFACE_ROADMAP.md and
+    deliberately behind everything above it. SPEC-26 first because the trip list
+    is one route over a service method that already exists and nothing has a
+    first screen until it lands, then SPEC-25 once SPEC-17's envelope is real
+    enough to honour, then SPEC-27 before the first build that reaches people who
+    are not us. SPEC-24's design is settled now and built here.
 
 Export the Dubai rows before applying anything. A rebuild from migrations without
 that export silently loses 16 venues.
@@ -143,6 +154,7 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 
 | Issue | Severity | Detail |
 |-------|----------|--------|
+| Anonymous data has no path into an account, and signal sits outside referential integrity | Medium | SPEC-09 starts accumulating trip_states, event_log and signal rows under a device UUID that belongs to a device rather than a person. Until SPEC-24 exists, the first sign-in strands all of it, and from the user's side that looks like an app that lost their trip. The schema makes it sharper: trip_states.user_id and event_log.user_id are UUID REFERENCES user_tiers, while signal.user_id is TEXT with no foreign key and no type match, so the table holding the asset is the one table outside the constraint system. Neither a merge nor a SPEC-27 deletion can rely on a cascade, and nothing will complain when a future table is missed -- which is why both specs walk the schema instead of keeping a list. The engineering does not get harder with time; the data does |
 | observed_duration_minutes has no writer | Medium | The column exists and is honestly documented as starting empty, but nothing populates it. It cannot be computed when a trip is saved, only derived from arrival signals on sync, so the transition data the convenience layer depends on is not accumulating. This is the last open defect from the SPEC-16 work |
 | The five Supabase tests have never run | Medium | tests/test_supabase_integration.py skips without TB_SUPABASE_URL, and no run has ever had it set. Every claim about the Supabase write path rests on FakeClient doubles. R8 treats a permanent skip as a finding, and this is the largest one. Run the suite with credentials on the next device day |
 | Non-Laos local dish names remain unbackfilled | Low | 0015's names_local backfill is correctly scoped to the three Laos regions, so any Dubai dish carrying a name_local keeps a null names_local rather than a wrong language tag. That is the right trade, but it leaves a second pass owed once the Dubai rows are exported and their language confirmed |
