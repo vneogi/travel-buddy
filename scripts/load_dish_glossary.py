@@ -34,10 +34,8 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_REPO_ROOT))
 
 from config.dietary import (  # noqa: E402
-    VALID_ALLERGENS,
     VALID_DIETARY_LABELS,
     VALID_DISH_CONTAINS,
-    LABEL_EXCLUDES_ALLERGENS,
     check_allergen_conflicts,
 )
 
