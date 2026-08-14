@@ -116,7 +116,6 @@ class SupabaseService:
                     .in_("identity_kind", lower)
                     .execute()
                 )
-                user_data["identity_kind"] = identity_kind
 
             # Check if daily reset needed
             if user_data["last_reset_date"] != date.today().isoformat():
