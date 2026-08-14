@@ -371,6 +371,7 @@ class DatabaseService:
         value_json: Optional[dict] = None,
         captured_at: datetime = None,
         trip_id: Optional[str] = None,
+        provenance: Optional[dict] = None,
     ) -> bool:
         """Record a signal. Returns True if new, False if duplicate (idempotent).
 
@@ -392,6 +393,7 @@ class DatabaseService:
             "value_json": value_json,
             "captured_at": (captured_at or datetime.now(tz=timezone.utc)).isoformat(),
             "ingested_at": datetime.now(tz=timezone.utc).isoformat(),
+            "provenance": provenance if provenance is not None else {"method": "client_emit"},
         }
         return True
 

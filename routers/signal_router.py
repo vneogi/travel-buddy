@@ -289,7 +289,7 @@ async def ingest_signals(
             continue
 
         # Build provenance (notes extreme skew for analytics)
-        _provenance = _compute_provenance(sig.captured_at)  # noqa: F841
+        provenance = _compute_provenance(sig.captured_at)
 
         # SPEC-03: stamp party_context server-side at ingest.
         # Merged INTO value_json (not overwriting). If trip unknown, omit --
@@ -311,6 +311,7 @@ async def ingest_signals(
             value_json=value_json if value_json else None,
             captured_at=sig.captured_at,
             trip_id=sig.trip_id,
+            provenance=provenance,
         )
         if was_new:
             accepted += 1

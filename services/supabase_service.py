@@ -645,6 +645,7 @@ class SupabaseService:
         value_json: Optional[dict] = None,
         captured_at: datetime = None,
         trip_id: Optional[str] = None,
+        provenance: Optional[dict] = None,
     ) -> bool:
         """Idempotent signal insert. Returns True if new, False if duplicate.
 
@@ -672,7 +673,7 @@ class SupabaseService:
             "value_numeric": value_numeric,
             "value_json": value_json,
             "captured_at": captured_at.isoformat() if captured_at else None,
-            "provenance": {"method": "client_emit"},
+            "provenance": provenance if provenance is not None else {"method": "client_emit"},
         }
         # Remove None values to let Postgres defaults apply
         row = {k: v for k, v in row.items() if v is not None}
