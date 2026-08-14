@@ -86,8 +86,8 @@ The hole only exists if the app makes the claim. Retiring the claim closes it.
 ## What this changes in the repo
 
 - The `suitable_for` presentation and filtering paths are removed
-- `VALID_DISH_CONTAINS` still belongs in `config/dietary.py` rather than in the
-  glossary loader; that relocation stands on its own merits (R5)
+- `VALID_DISH_CONTAINS` belongs in `config/dietary.py` rather than in the
+  glossary loader; that relocation landed in PR #15 (`d061222`)
 - The severity entry recording the halal defect is updated when the retirement
   lands, not before
 - No migration. Nothing here adds a column

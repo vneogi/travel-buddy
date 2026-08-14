@@ -58,12 +58,6 @@ prose, so a reword silently disables it, and the spice keywords are spelled
 with PHAT where PHET is meant. The keyword spelling must be corrected together
 with the data, never separately, or the search stops matching today's text.
 
-### Low -- VALID_DISH_CONTAINS lives in the wrong file
-
-It sits in `scripts/load_dish_glossary.py` and belongs in `config/dietary.py`
-(R5). No longer blocked by anything; R14 and R15 were rewritten and the
-delete-and-recreate procedure they once required is retired.
-
 ## Finding -- Aug 14 2026 -- SPEC-04 October scope shrunk
 
 `docs/CONSUMER_SURFACE_ROADMAP.md` said the October trip needed SPEC-09, the
@@ -84,6 +78,11 @@ amended the same day; device-day steps live in `docs/briefs/DEVICE_DAY.md`.
 Recorded because each was open long enough to be quoted elsewhere, and a reader
 finding a stale copy of this file should be able to tell.
 
+- **VALID_DISH_CONTAINS lived in the glossary loader.** Fixed in PR #15
+  (`d061222`). Constant now lives in `config/dietary.py`; loader imports it;
+  identity and set-equality guards land in `tests/test_valid_dish_contains.py`.
+  The same PR also ruff-formatted the device-day helper scripts that had made
+  main's format check red since `d062b5a`.
 - **The loader discarded five curated fields per venue.** Fixed. The loader
   writes them and a schema-drift guard compares its write set against the
   migrations.

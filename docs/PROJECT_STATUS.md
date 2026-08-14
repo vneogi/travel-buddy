@@ -100,13 +100,11 @@ numbers were taken by other work while they sat unimplemented.
 
 ## What is Next (Priority Order)
 
-### Interim (laptop unavailable until ~Aug 15)
-
-0. Relocate VALID_DISH_CONTAINS to config/dietary.py (R5). Pure refactor, no
-   schema dependency, no live data. Brief: docs/briefs/GENIE_RELOCATE_VALID_DISH_CONTAINS.md.
-   Genie executes; lands via PR.
-
 ### October path (forcing function: Laos field test, Oct 2)
+
+Interim R5 relocate of VALID_DISH_CONTAINS landed in PR #15 (d061222). The
+Windows laptop is available; device day is unblocked on credentials and time
+only.
 
 Success means an installable build whose engine knows a real trip anchored on
 real flight and hotel bookings, and whose driver card works without
@@ -191,7 +189,7 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 | Raw-safety guard keys off English prose | Low | The guard that flags an uncooked dish looks for the word raw in the description, so rewording a description silently disables a safety check. Key it off a structured field |
 | seniors overcorrected | Low | Set on 40 of 58 venues, roughly two thirds, so it cannot discriminate. mobility_limited is 17 of 58, which is plausible rather than overcorrected -- an earlier version of this table attributed the two-thirds figure to the wrong tag |
 | Vientiane has zero massage_spa | Low | Suspect. This was reported by a warning function that was broken until recently, so re-check it against the data rather than trusting the earlier report |
-| VALID_DISH_CONTAINS in the wrong file | Low | Lives in load_dish_glossary.py, belongs in config/dietary.py (R5). Interim Genie brief: docs/briefs/GENIE_RELOCATE_VALID_DISH_CONTAINS.md |
+| VALID_DISH_CONTAINS in the wrong file | RESOLVED | Moved into config/dietary.py in PR #15 (d061222). Loader imports the canonical object; identity and set-equality guards in tests/test_valid_dish_contains.py |
 | Full Offline Vault was over-scoped for October | Low | Resolved in docs Aug 14: SPEC-04 shrunk to a thin hotel-card rescue entry; venue card is SPEC-12 on SPEC-02 cache. Left here so an old CONSUMER_SURFACE quote is not re-elevated |
 
 ## How to Run

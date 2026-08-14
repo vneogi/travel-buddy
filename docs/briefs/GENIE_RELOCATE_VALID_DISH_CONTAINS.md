@@ -1,5 +1,8 @@
 # Genie Brief -- Relocate VALID_DISH_CONTAINS (R5)
 
+> Status: DONE. Landed via PR #15, squash merge `d061222` on main.
+> Kept as the executed brief; do not re-run.
+
 > Paste this entire file to Genie Code. Land via PR, not direct to main.
 
 ## Goal
