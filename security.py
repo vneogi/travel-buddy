@@ -1,17 +1,18 @@
-"""Travel Buddy - Authentication & Authorization.
+"""Travel Buddy -- Authentication & Authorization.
 
-Verifies Supabase-issued JWTs and exposes FastAPI dependencies that make the
-authenticated user's ID the single source of truth for every request. Clients
-can no longer act on behalf of an arbitrary ``user_id`` supplied in the body or
-path (the previous IDOR hole).
+Resolution order (SPEC-09):
+1. Real Supabase JWT (when TB_SUPABASE_JWT_SECRET set) -- verified user
+2. Authorization: Anonymous <uuid-v4> -- device identity (when TB_ALLOW_ANONYMOUS=true
+   AND no JWT secret configured). UUID must be version 4 with correct variant bits;
+   version 1 UUIDs embed the device MAC address, which is a PII leak.
+3. X-Debug-User-Id -- only when no JWT secret AND TB_DEBUG=true
+4. Otherwise 401
 
-Supabase signs access tokens with the project's JWT secret (HS256), sets the
-``sub`` claim to the user's UUID, and ``aud`` to ``"authenticated"``. Set
-``TB_SUPABASE_JWT_SECRET`` (Project Settings -> API -> JWT Secret) to enable
-verification. (If your project uses the newer asymmetric signing keys, verify
-via JWKS instead -- ask and I'll provide that variant.)
+TB_ALLOW_ANONYMOUS defaults to False (fail-closed). Deployments that accept
+anonymous device identities must opt in explicitly.
 """
 
+import uuid as _uuid_mod
 from typing import Optional
 
 import jwt
@@ -23,6 +24,43 @@ from models.schemas import TripState
 
 # auto_error=False lets us return clearer 401s and run the dev fallback below.
 _bearer = HTTPBearer(auto_error=False)
+
+
+def _is_valid_uuid_v4(value: str) -> bool:
+    """Validate that value is a UUID version 4 with RFC 4122 variant bits.
+
+    Rejects v1 UUIDs (embed device MAC -- real privacy leak in an app claiming
+    no PII), v3/v5 (deterministic from input), nil, and malformed strings.
+    """
+    try:
+        parsed = _uuid_mod.UUID(value)
+    except (ValueError, AttributeError, TypeError):
+        return False
+    # Version must be 4 (random)
+    if parsed.version != 4:
+        return False
+    # Variant must be RFC 4122 (variant bits 10xx)
+    if parsed.variant != _uuid_mod.RFC_4122:
+        return False
+    return True
+
+
+def _parse_anonymous_header(authorization: Optional[str]) -> Optional[str]:
+    """Parse Authorization: Anonymous <uuid> and return the UUID, or None.
+
+    We parse the raw Authorization header rather than relying on HTTPBearer
+    because HTTPBearer only accepts the Bearer scheme and would reject
+    'Authorization: Anonymous <uuid>' before our code runs.
+    """
+    if not authorization:
+        return None
+    parts = authorization.split(None, 1)
+    if len(parts) != 2:
+        return None
+    scheme, value = parts
+    if scheme.lower() != "anonymous":
+        return None
+    return value.strip()
 
 
 def _decode_supabase_jwt(token: str) -> str:
@@ -58,19 +96,19 @@ def _decode_supabase_jwt(token: str) -> str:
 
 async def get_current_user_id(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(_bearer),
+    authorization: Optional[str] = Header(default=None),
     x_debug_user_id: Optional[str] = Header(default=None),
 ) -> str:
     """FastAPI dependency: return the authenticated user's ID.
 
-    Production: requires a valid ``Authorization: Bearer <supabase_jwt>`` header.
+    Production: requires a valid Authorization: Bearer <supabase_jwt> header.
+    Anonymous: Authorization: Anonymous <uuid-v4> when TB_ALLOW_ANONYMOUS=true
+    and no JWT secret is configured.
     Local dev (only when TB_SUPABASE_JWT_SECRET is unset AND TB_DEBUG is true):
-    falls back to the ``X-Debug-User-Id`` header so the app is testable without
-    real tokens. The fallback is refused whenever a JWT secret is configured or
-    debug is off, so production always fails closed.
+    falls back to the X-Debug-User-Id header so the app is testable without
+    real tokens.
     """
-    # Real auth takes precedence whenever a JWT secret is configured -- the
-    # debug header must NEVER override a verified token, or production is
-    # trivially bypassable via X-Debug-User-Id.
+    # --- Path 1: Real JWT auth (takes precedence when secret configured) ---
     if settings.supabase_jwt_secret:
         if credentials is None or not credentials.credentials:
             raise HTTPException(
@@ -80,8 +118,26 @@ async def get_current_user_id(
             )
         return _decode_supabase_jwt(credentials.credentials)
 
-    # No JWT secret configured. Dev fallback only (never reachable in prod,
-    # which always has a secret set).
+    # --- Path 2: Anonymous device identity (SPEC-09) ---
+    anon_uuid = _parse_anonymous_header(authorization)
+    if anon_uuid is not None:
+        if not settings.allow_anonymous:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Anonymous identity is not enabled (TB_ALLOW_ANONYMOUS=false)",
+            )
+        if not _is_valid_uuid_v4(anon_uuid):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=(
+                    "Invalid anonymous identity: must be a valid UUID version 4 "
+                    "(RFC 4122 variant). Version 1 UUIDs are rejected because they "
+                    "embed the device MAC address."
+                ),
+            )
+        return anon_uuid
+
+    # --- Path 3: Debug fallback ---
     if settings.debug:
         if not x_debug_user_id:
             raise HTTPException(
@@ -93,7 +149,7 @@ async def get_current_user_id(
             )
         return x_debug_user_id
 
-    # Misconfigured production: never serve unauthenticated traffic.
+    # --- Path 4: Misconfigured production ---
     raise HTTPException(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         detail="Server auth misconfiguration: TB_SUPABASE_JWT_SECRET is not set",
@@ -101,7 +157,7 @@ async def get_current_user_id(
 
 
 def require_trip_owner(trip: Optional[TripState], user_id: str) -> TripState:
-    """Return the trip if it exists and belongs to ``user_id``; else raise.
+    """Return the trip if it exists and belongs to user_id; else raise.
 
     404 for missing trips, 403 for trips owned by someone else.
     """

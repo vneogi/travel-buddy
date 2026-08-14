@@ -29,6 +29,12 @@ class Settings(BaseSettings):
     supabase_jwt_secret: Optional[str] = None
     jwt_audience: str = "authenticated"
 
+    # --- Anonymous identity (SPEC-09) ---
+    # When True, accepts Authorization: Anonymous <uuid-v4> as a valid identity.
+    # Defaults to False (fail-closed). Must be explicitly enabled for deployments
+    # that accept device-only identities. Ignored when supabase_jwt_secret is set.
+    allow_anonymous: bool = False
+
     # --- Model Gateway (LiteLLM) ---
     litellm_api_key: Optional[str] = None
     gemini_api_key: Optional[str] = None          # TB_GEMINI_API_KEY
