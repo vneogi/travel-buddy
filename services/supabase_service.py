@@ -96,12 +96,24 @@ class SupabaseService:
             user_data = result.data[0]
 
             # Upgrade-on-sight: only promote, never demote.
+            # The Python rank check is an optimisation that avoids a pointless
+            # round trip. Correctness lives in the UPDATE statement itself: the
+            # .in_ filter ensures only strictly-lower kinds are overwritten, so
+            # a losing interleave (two threads read the same stale value) writes
+            # zero rows instead of the wrong value.
+            #
+            # Assumption: identity_kind is NOT NULL DEFAULT 'unknown' (0018).
+            # If that ever changes to allow NULL, the .in_ filter will miss NULL
+            # rows and this needs revisiting.
             stored = user_data.get("identity_kind", "unknown")
             if self._IDENTITY_KIND_RANK.get(identity_kind, 0) > self._IDENTITY_KIND_RANK.get(stored, 0):
+                lower = [k for k, r in self._IDENTITY_KIND_RANK.items()
+                         if r < self._IDENTITY_KIND_RANK[identity_kind]]
                 (
                     self.client.table("user_tiers")
                     .update({"identity_kind": identity_kind})
                     .eq("user_id", user_id)
+                    .in_("identity_kind", lower)
                     .execute()
                 )
                 user_data["identity_kind"] = identity_kind

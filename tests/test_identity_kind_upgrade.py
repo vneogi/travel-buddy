@@ -108,6 +108,8 @@ class FakeTable:
         self._pending_op = None
         self._filter_uid = None
         self._update_payload = None
+        self._in_col = None
+        self._in_values = None
 
     def table(self, name):
         return self
@@ -118,6 +120,12 @@ class FakeTable:
 
     def eq(self, col, val):
         self._filter_uid = val
+        return self
+
+    def in_(self, col, values):
+        """Filter: only match rows where col's value is in values."""
+        self._in_col = col
+        self._in_values = list(values)
         return self
 
     def execute(self):
@@ -131,7 +139,15 @@ class FakeTable:
             return FakeResponse([self._insert_data])
         elif self._pending_op == "update":
             if self._filter_uid in self._rows:
-                self._rows[self._filter_uid].update(self._update_payload)
+                # Respect in_ filter if present (atomic promotion)
+                if hasattr(self, '_in_col') and self._in_col:
+                    stored_val = self._rows[self._filter_uid].get(self._in_col)
+                    if stored_val in self._in_values:
+                        self._rows[self._filter_uid].update(self._update_payload)
+                    self._in_col = None
+                    self._in_values = None
+                else:
+                    self._rows[self._filter_uid].update(self._update_payload)
             self._pending_op = None
             return FakeResponse([self._rows.get(self._filter_uid)])
         return FakeResponse([])
