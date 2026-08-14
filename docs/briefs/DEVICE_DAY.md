@@ -6,7 +6,9 @@ Dubai file is committed and pushed.
 
 Success criteria for the day:
 
-- `data/dubai_uae.json` exists in git with 16 venues
+- `data/dubai_uae.json` exists in git with 16 venues, and
+  `python3 scripts/load_venues.py data/dubai_uae.json --dry-run` exited 0
+  before that commit (restorable, not merely parseable)
 - Live schema dump and 0011 dual-column decision are recorded
 - Migrations 0011 to 0018 applied, or a hard stop documented with the
   blocking finding
@@ -222,7 +224,10 @@ print("wrote", out, "venues", len(out_venues))
 PY
 ```
 
-Verify and commit the durability fix before touching schema:
+Verify the file parses, then prove the real loader can consume it. A parse
+check is not a restore proof -- the Laos loader bug in 8dfc412 sat behind a
+green test module while the committed data could not be loaded. Hard stop on
+any dry-run error; fix the export mapping and re-run before committing.
 
 ```bash
 python3 - <<'PY'
@@ -233,6 +238,14 @@ assert len(w["venues"]) >= 16, len(w["venues"])
 print("ok", w["geo_region"], len(w["venues"]))
 PY
 
+python3 scripts/load_venues.py data/dubai_uae.json --dry-run
+# Expect exit code 0 and zero validation errors. Warnings are allowed only if
+# you understand them; errors mean the file is not restorable -- do not commit.
+```
+
+Commit only after the dry-run exits 0:
+
+```bash
 git add data/dubai_uae.json
 git commit -m "$(cat <<'EOF'
 data: export Dubai venues from live Supabase

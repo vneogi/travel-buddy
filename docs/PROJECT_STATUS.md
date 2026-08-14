@@ -113,11 +113,12 @@ PROJECT_STATUS disagreed on SPEC-04, and that SPEC-04 mostly duplicated
 SPEC-02 plus SPEC-12.
 
 1. Device day -- blocked on the laptop only. Runnable brief:
-   docs/briefs/DEVICE_DAY.md. Export Dubai to data/dubai_uae.json and push it
-   before any migration apply. Then dump/diff the live schema (0011 dual
-   name_local / names_local gate), apply 0011 to 0018, re-load Laos, run
-   pytest with TB_SUPABASE_URL set, and record the live checks
-   (price_band, AED magnitudes, pg_description, hybrid_venue_search).
+   docs/briefs/DEVICE_DAY.md. Export Dubai to data/dubai_uae.json, prove it
+   with `load_venues.py --dry-run`, and push it before any migration apply.
+   Then dump/diff the live schema (0011 dual name_local / names_local gate),
+   apply 0011 to 0018, re-load Laos, run pytest with TB_SUPABASE_URL set, and
+   record the live checks (price_band, AED magnitudes, pg_description,
+   hybrid_venue_search).
 2. SPEC-09 client half: UUID on first launch, secure storage, Anonymous
    header, drop TB_DEBUG_USER_ID. Server half is done; this is what gates a
    tester build.
