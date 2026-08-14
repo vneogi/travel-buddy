@@ -99,7 +99,7 @@ to the JSON keys the loader understands. Keep ASCII on disk via `\uXXXX`
 escapes (`ensure_ascii=True`).
 
 ```bash
-SNAP=data/live_snapshot/STAMP   # same stamp as Step 1
+export SNAP=data/live_snapshot/STAMP   # same stamp as Step 1
 python3 - <<'PY'
 import json, os
 from datetime import date
