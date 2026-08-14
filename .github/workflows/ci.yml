@@ -34,9 +34,8 @@ jobs:
       - name: Ruff lint
         run: ruff check . --config pyproject.toml
 
-      # Format check deliberately omitted: enabling it requires a whole-tree
-      # reformat commit that destroys git blame on every file. Add it back
-      # after that commit lands as a deliberate, isolated change.
+      - name: Ruff format check
+        run: ruff format --check .
 
   # ===========================================================================
   # Job 2: Unit Tests
