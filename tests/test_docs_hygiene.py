@@ -30,7 +30,6 @@ NON_ASCII_ALLOWLIST = frozenset({
     "docs/DATA_MODEL_BRD.md",
     "docs/UX_BACKLOG.md",
     "docs/VISION.md",
-    "docs/research/SURVEY_FINDINGS.md",
     "docs/research/survey_deep.md",
     "docs/research/survey_short.md",
     "docs/specs/SPEC-01-migrations-and-first-signal.md",

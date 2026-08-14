@@ -99,9 +99,24 @@ English, and today nothing in the schema can tell the two apart.
 **Region becomes an entity.** SPEC-13. Adding a city currently requires a code
 change, and `geo_region` is an unconstrained string.
 
-**The dietary model becomes a safety requirement.** SPEC-14. This is the
-sharpest differentiator for the chosen traveller and simultaneously an open
-safety hole, since halal is documented as not enforced against pork today.
+**The eating decision is the arrival moment worth owning.** Asked what they do
+when hungry in an unfamiliar area, respondents described retreating to a global
+hotel brand, to Subway, or to instant noodles in the room. Asked separately for
+the best unplanned thing that happened on a trip, they named discovering local
+food. The same moment produced both answers, which is roughly what an unmet need
+looks like from the outside: high frequency, precisely located, and the traveller
+knows at the time that they settled for less than was available. Small sample and
+a weak instrument, recorded in `docs/research/SURVEY_FINDINGS.md`.
+
+The earlier framing here, that the dietary model becomes a safety requirement, is
+withdrawn. SPEC-14 retired that promise on purpose: we cannot make
+ingredient-level claims about kitchens nobody has inspected, and the halal-versus-
+pork hole closed by dropping the claim rather than by enforcing it. Helping
+somebody decide where to eat does not reopen any of that, because it is not a
+claim about what is in the food. One narrower question is raised and deliberately
+left undecided: whether pure-veg establishment status is a confirmable commodity
+fact of the kind SPEC-17 already handles, distinct from the ingredient claims
+SPEC-14 refused.
 
 ## Data sourcing: open sources, not scraping
 

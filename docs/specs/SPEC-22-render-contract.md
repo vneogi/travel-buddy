@@ -78,6 +78,17 @@ independently.
    no warning iconography. This is the one capability competitors cannot copy, so
    it gets design attention rather than an error banner.
 
+   What we hold is not just the schedule. The only evidence we have about the
+   disconnected moment says people lose the ability to pay and the ability to
+   judge a place they have just walked past -- not the ability to navigate, and
+   not the itinerary. So the cached set includes, for the venues within reach,
+   their payment methods and their resolved verdict with provenance, per the
+   registry entry in SPEC-17. Offline may render a `hedge` where a live
+   connection would have rendered `assert`, since the claim is older; that is
+   decision 5 doing its job rather than a degradation to apologise for. Caching
+   the itinerary alone satisfies the letter of this decision and misses the pain
+   it exists to address.
+
 8. **The interruption budget lives here and has exactly one owner.** A single
    service that the UI asks for permission to interrupt, holding a per-day cap, a
    minimum gap between interruptions, and a suppression window after a dismissal.
@@ -121,6 +132,8 @@ independently.
 - A dismissal emits its signal, asserted on the outbox rather than on a callback
 - The offline state renders cached content, carries no error colour, and does not
   place retry as the primary action
+- With the network down, a venue in reach still renders its payment methods and a
+  verdict carrying provenance, asserted against the cache rather than a live call
 - Bundled fonts cover every codepoint appearing in the local-script fields under
   `data/`, walked from the files rather than from a fixed list
 - No literal font size or spacing value outside the token file
@@ -134,6 +147,8 @@ independently.
 - [ ] Interruption service owns the budget, and both callers route through it
 - [ ] Dismissals emitted as signals
 - [ ] Offline state designed and implemented as a state rather than an error
+- [ ] Cached set covers payment methods and verdict-with-provenance, not only the
+      itinerary
 - [ ] Token file for type and spacing, with the no-literals guard
 - [ ] Font coverage asserted against the actual data
 - [ ] ARB wiring in place with English and Hindi
