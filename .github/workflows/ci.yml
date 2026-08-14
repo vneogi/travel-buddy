@@ -1,6 +1,13 @@
 # Travel Buddy MVP - CI/CD Pipeline
 # Runs on: push to main, pull requests
 # Deploys to: Railway (or swap for Fly.io / Cloud Run)
+#
+# deploy is manual on purpose. It ran for the first time on 2026-08-14, once
+# the lint job stopped failing and stopped blocking the chain, and failed
+# immediately: there is no Railway project, no RAILWAY_TOKEN and no service
+# named travel-buddy-api. Leaving it on every push would keep main permanently
+# red, which is what let the lint job stay broken unnoticed for a week. Deploy
+# by running this workflow from the Actions tab once a target exists.
 
 name: CI/CD Pipeline
 
@@ -9,6 +16,7 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 env:
   PYTHON_VERSION: '3.11'
@@ -98,7 +106,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
 
