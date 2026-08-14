@@ -42,8 +42,18 @@ class DatabaseService:
     # User Tier Operations
     # =========================================================================
 
+    # Monotonic rank for identity_kind: unknown < anonymous < supabase.
+    # Only upgrades are allowed; a bare call with the default 'unknown'
+    # is always a no-op against any stored value.
+    _IDENTITY_KIND_RANK = {"unknown": 0, "anonymous": 1, "supabase": 2}
+
     def get_or_create_user(self, user_id: str, identity_kind: str = "unknown") -> UserTier:
-        """Get user tier info, creating a free-tier user if not exists."""
+        """Get user tier info, creating a free-tier user if not exists.
+
+        Upgrade-on-sight: if the caller supplies a higher-rank identity_kind
+        than what is stored, update it. This self-heals rows created by
+        internal callers that genuinely do not know the kind.
+        """
         if user_id not in self._users:
             self._users[user_id] = {
                 "user_id": user_id,
@@ -53,6 +63,11 @@ class DatabaseService:
                 "last_reset_date": date.today().isoformat(),
                 "identity_kind": identity_kind,
             }
+        else:
+            # Upgrade-on-sight: only promote, never demote.
+            stored = self._users[user_id].get("identity_kind", "unknown")
+            if self._IDENTITY_KIND_RANK.get(identity_kind, 0) > self._IDENTITY_KIND_RANK.get(stored, 0):
+                self._users[user_id]["identity_kind"] = identity_kind
 
         user_data = self._users[user_id]
 

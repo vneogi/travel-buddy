@@ -75,8 +75,16 @@ class SupabaseService:
     # User Tier Operations
     # =========================================================================
 
+    # Monotonic rank for identity_kind: unknown < anonymous < supabase.
+    _IDENTITY_KIND_RANK = {"unknown": 0, "anonymous": 1, "supabase": 2}
+
     def get_or_create_user(self, user_id: str, identity_kind: str = "unknown") -> UserTier:
-        """Get user tier info, creating free-tier user if not exists."""
+        """Get user tier info, creating free-tier user if not exists.
+
+        Upgrade-on-sight: if the caller supplies a higher-rank identity_kind
+        than what is stored, update it. This self-heals rows created by
+        internal callers that genuinely do not know the kind.
+        """
         result = (
             self.client.table("user_tiers")
             .select("*")
@@ -86,6 +94,18 @@ class SupabaseService:
 
         if result.data:
             user_data = result.data[0]
+
+            # Upgrade-on-sight: only promote, never demote.
+            stored = user_data.get("identity_kind", "unknown")
+            if self._IDENTITY_KIND_RANK.get(identity_kind, 0) > self._IDENTITY_KIND_RANK.get(stored, 0):
+                (
+                    self.client.table("user_tiers")
+                    .update({"identity_kind": identity_kind})
+                    .eq("user_id", user_id)
+                    .execute()
+                )
+                user_data["identity_kind"] = identity_kind
+
             # Check if daily reset needed
             if user_data["last_reset_date"] != date.today().isoformat():
                 self._reset_daily_reroutes(user_id)

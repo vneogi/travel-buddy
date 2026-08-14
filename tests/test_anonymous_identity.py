@@ -340,15 +340,15 @@ class TestIdentityKindWriter:
         svc.get_or_create_user(uid)
         assert svc._users[uid]["identity_kind"] == "unknown"
 
-    def test_identity_kind_not_overwritten_on_subsequent_calls(self):
-        """Once set, identity_kind does not change on re-fetch."""
+    def test_identity_kind_upgrades_on_sight(self):
+        """identity_kind upgrades monotonically: anonymous -> supabase promotes."""
         from services.database_service import DatabaseService
         svc = DatabaseService()
         uid = str(uuid.uuid4())
         svc.get_or_create_user(uid, identity_kind="anonymous")
-        # Second call with different kind should NOT overwrite
+        # Higher-rank kind promotes (upgrade-on-sight)
         svc.get_or_create_user(uid, identity_kind="supabase")
-        assert svc._users[uid]["identity_kind"] == "anonymous"
+        assert svc._users[uid]["identity_kind"] == "supabase"
 
     def test_get_current_user_id_backward_compat(self):
         """get_current_user_id still returns a plain string (backward compat)."""
