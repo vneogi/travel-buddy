@@ -12,13 +12,11 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
+from models.ids import generate_edge_id, generate_node_id
+
 
 # Sparse seq gap for inserts between nodes without rewriting
 _SEQ_GAP = 1000
-
-
-# Import from the single source of truth (models/ids.py)
-from models.ids import generate_edge_id, generate_node_id
 
 # Region -> IANA timezone mapping (application-level, not stored per-row)
 REGION_TIMEZONES: Dict[str, str] = {
