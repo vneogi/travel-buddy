@@ -64,3 +64,9 @@ mobile/android/*.keystore
 mobile/android/*.jks
 mobile/android/app/google-services.json
 mobile/ios/Runner/GoogleService-Info.plist
+
+# Live database snapshots taken by scripts/export_live_snapshot.py.
+# These hold full table dumps including signal and event_log, which carry
+# user identifiers, so they stay out of version control. Curated venue data
+# extracted from a snapshot goes into data/ in the normal curated format.
+data/live_snapshot/

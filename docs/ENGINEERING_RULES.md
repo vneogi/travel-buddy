@@ -141,9 +141,8 @@ matched *before* the edit -> false confidence that the edit landed.
 - The pattern is: old_text match succeeds, replacement write is discarded,
   file content after call == file content before call
 - If a file read shows content you just "replaced," assume reversion. Do
-  NOT re-apply through the filesystem -- those writes are denied (R15).
-  Switch to the delete-and-recreate procedure in R14 instead, and do not
-  retry `editAsset` a second time.
+  NOT re-apply through the filesystem -- those writes are denied. Switch to
+  git plumbing (R15) and do not retry `editAsset` a second time.
 
 **Amendment: local working copy is the execution surface, not origin/main.**
 
@@ -190,32 +189,54 @@ the same contract, and divergence is only caught at runtime:
 once the provider resolved to Supabase. `tests/test_backend_parity.py`
 asserts signature compatibility so divergence fails in CI.
 
-## R14. Non-ASCII content silently blocks editAsset
+## R14. The ASCII convention, and what it is actually for
 
-Any file containing an em-dash (U+2014), emoji, or box-drawing character
-will reject edits while reporting success. The failure signature:
+**This rule was over-broad for months and is now narrowed. The original text
+claimed that any file containing an em-dash would silently reject edits.
+That was disproved twice: `editAsset` matched and wrote non-ASCII Lao venue
+JSONs successfully, and git plumbing bypasses the write path entirely. The
+convention survives, but for different and smaller reasons than the ones it
+was introduced with.**
 
-- `editAsset` returns `changed: true`
-- `git diff` is empty -- the write was silently discarded
-- Subsequent `readAssetById` shows the file unchanged
+Two places where non-ASCII does real damage, both now guarded by
+`tests/test_docs_hygiene.py`:
 
-The tool matches the `old_text` correctly (proving it found the content)
-but the write-back fails when the file's byte stream includes non-ASCII.
+1. **Inside a `COMMENT ON ... IS '...'` body in any `.sql` file.** The text
+   persists into `pg_description` in the live database. A non-UTF-8 client
+   then renders it as mojibake indistinguishable from corruption, and no file
+   guard can see it afterwards because the damage is in the database rather
+   than the repo. This is not theoretical: an em-dash in `0010` was applied to
+   production and needed migration `0016` to correct, because fixing the file
+   fixes only future builds.
+2. **In `.py` comments and docstrings.** Keeps a mojibake round-trip visible
+   as a diff instead of silent corruption. There is also a concrete Windows
+   failure: check and cross marks in `test_backend_parity` output crashed on
+   a cp1252 console, which is a correctness reason rather than a style one.
 
-**Workaround:** create the new content at a temporary path with
-`createAsset` (e.g. `docs/FOO.new.md`), then `git rm` the original and
-`git mv` the temp file into place. Never leave both files committed --
-that is how the repo briefly carried two contradictory status documents.
+**Deliberately exempt, and each exemption is a decision rather than an
+oversight:**
 
-**Prevention:** all new source files and documentation must be pure ASCII.
-Use `--` instead of em-dash, `->` instead of arrows, and never use emoji
-or box-drawing characters. `tests/test_docs_hygiene.py` enforces this for
-documentation.
+- **String literals in `.py`.** A degree sign in a temperature format is
+  correct code, and this product renders Lao and Arabic. A blanket ban would
+  fight the code rather than protect it.
+- **`.dart` files.** Display strings in a client are legitimately non-ASCII;
+  localisation belongs in ARB files, not under a byte guard.
+- **`--` comments in `.sql`.** Inert. They never reach the database.
+- **`data/` JSON.** Stored as `\uXXXX` escapes, which is pure ASCII on disk
+  and readable via `scripts/format_venue_json.py`.
+- **Markdown on the allowlist**, which may only shrink, never grow.
 
-## R15. Workspace writes are blocked outside the asset tools
+**When a test genuinely needs native script**, the prescribed form is a
+`\uXXXX` escape in a string literal. The answer is never a new allowlist
+entry.
 
-The safety filter denies all direct filesystem mutations to `/Workspace`
-paths:
+**A file guard cannot see the database.** After applying migrations, scan
+`pg_description` for non-ASCII directly; that is the only way to know whether
+a comment landed badly before the guard existed.
+
+## R15. Workspace writes are filtered, but git plumbing is not
+
+The safety filter denies direct filesystem mutation of `/Workspace` paths:
 
 - `open(path, 'w')` / `open(path, 'wb')` -- denied
 - `shutil.copy2(src, workspace_path)` -- denied
@@ -223,13 +244,29 @@ paths:
 - `subprocess` writing to workspace -- denied
 - `os.remove`, `os.rename`, `pathlib.write_text` -- denied
 
-Only the Databricks-managed tools (`createAsset`, `editAsset`, `runGit`)
-can mutate workspace files.
+**The original conclusion drawn from this -- that only `createAsset`,
+`editAsset` and `runGit` can mutate workspace files -- was wrong.** Git
+plumbing writes arbitrary bytes and is not filtered:
 
-**Consequence:** new-file work (via `createAsset`) is cheap; edits to
-existing files are expensive. Bias the queue toward new modules over
-refactors of existing ones. When an existing file blocks edits due to
-non-ASCII content (R14), rebuild it from scratch at a temp path.
+    git hash-object -w        # content into the object store
+    git update-index          # point the index at it
+    git checkout-index -f     # materialise it in the working tree
+
+This is the canonical path for writing a file whose content is awkward for
+the asset tools, including anything non-ASCII, and it retired the
+delete-and-recreate workaround this rule used to prescribe.
+
+**One trap remains.** After a plumbing write, `editAsset` operates from a
+stale cache and can silently revert what plumbing just wrote. Do not mix the
+two mechanisms on one file inside one task. Pick plumbing, finish the file,
+commit, and only then go back to the asset tools.
+
+**Consequence for the queue:** new-file work is still cheaper than editing
+existing files, but the gap is far smaller than this rule once claimed, and
+"the file has non-ASCII" is no longer a reason to rebuild it from scratch.
+
+**When `runGit` itself is unavailable the workspace cannot be mutated at
+all**, which is a different failure and is covered below.
 
 **When runGit itself is unavailable, the workspace cannot be mutated at
 all.** `runGit` has failed with `Git folder (Repo) has invalid type`
@@ -260,3 +297,43 @@ in the entire file.
 Dated observations and verification results belong in
 `docs/AWAITING_VERIFICATION.md`, which is a dated log by design and is
 expected to go stale.
+
+## R17. A guard that cannot fail is not a guard
+
+This defect class has now reached a commit four times, in four different
+disguises, which is why it gets its own rule rather than staying a footnote
+to R7.
+
+1. **Asserting on constants instead of the payload.** `test_no_silent_key_drop`
+   compared two module-level constants to each other. Both were correct; the
+   dictionary the loader actually built was not, and four curated fields were
+   being dropped on every run while the test stayed green.
+2. **Asserting on a helper the test itself calls.** The first
+   `venue_external_id` test built a record via the helper and asserted on the
+   result. It passed for days while nothing in the production path ever called
+   that helper, so the table had no writer at all.
+3. **Keying a safety guard off English prose.** The raw-meat check looks for
+   the word "raw" in a description. Rewording the description silently
+   disables a safety guard, and nothing fails.
+4. **Substring matching text that also appears in a comment.**
+   `test_..._price_band_check_is_not_valid` asserts `"NOT VALID" in sql`.
+   Delete `NOT VALID` from the constraint and the test still passes, because
+   the file's own explanatory comment contains the phrase. Proven by
+   sabotaging the DDL and watching the assertion hold.
+
+**Rules:**
+
+- Assert on the value the production path produces, reached the way
+  production reaches it. If the test has to call a helper to get the value,
+  ask what calls that helper in real life, and if the answer is "nothing",
+  that is the finding.
+- Before trusting a new guard, break the thing it guards and watch it fail.
+  A guard never observed failing has not been tested; it has been written.
+- Strip comments before matching against source text, or match the
+  construct rather than a string that may appear anywhere in the file.
+- Prefer a guard that enumerates both sides and compares sets over one that
+  looks for the presence of a substring. Set equality names what diverged;
+  a substring check cannot.
+- A guard hardcoded to one filename does not cover the next file. If the
+  claim is "this can never happen again", the guard has to scan for the
+  pattern rather than check the one place it is known to occur.
