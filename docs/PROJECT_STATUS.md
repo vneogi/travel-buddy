@@ -3,6 +3,8 @@
 > Current state of the codebase. For commit history use `git log`.
 > For the device-verification queue see docs/AWAITING_VERIFICATION.md.
 > For engineering rules see docs/ENGINEERING_RULES.md.
+> For how the people and agents around the code work, see docs/WAYS_OF_WORKING.md.
+> Read that one before your first review or brief, not after.
 > For which traveller and which cities, see docs/MARKET_STRATEGY.md.
 > For measured per-city data coverage, see docs/CORRIDOR_COVERAGE.md.
 > For the schema and data-layer sequence, see docs/DATA_LAYER_ROADMAP.md.
