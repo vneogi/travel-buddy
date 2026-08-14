@@ -160,6 +160,29 @@ mechanism which forces a new field to be given a horizon and a safety judgement
 before it can reach a screen, rather than inheriting a permissive default because
 nobody thought about it.
 
+The registry also settles a case the tiers alone get wrong. Whether a venue takes
+only cash is a commodity fact, and decision 8 would ordinarily defer a commodity
+fact to Maps. But it is needed at exactly the moment there is no connection to
+defer over: at the counter, wallet already out. So its `deferral_target` is null
+and `needed_at_arrival` is true, which forces it into the cached set instead of
+the deferred set:
+
+    payment_methods, operational, 180, false, true, NULL
+
+That combination -- commodity, yet not deferrable -- is the useful distinction
+here, and it is worth stating because the naive reading of decision 8 sends
+exactly the wrong field to Maps. What makes something deferrable is not that
+Google has it; it is that Google has it *and* we will have a connection when the
+question is asked.
+
+The evidence for prioritising this one is thin but it is the only direct evidence
+we hold about the disconnected moment. Asked what they struggled with most in an
+unfamiliar place with no internet, most respondents named making a payment, ahead
+of navigation and ahead of anything about the schedule. Small sample and a weak
+instrument, recorded in `docs/research/SURVEY_FINDINGS.md`. Cash-only is also the
+cheapest field confirmation in the registry: it is printed at the till, it is one
+tap, and it changes often enough to be worth re-asking.
+
 ## Prior art
 
 Three open-source apps have already solved parts of this and are worth reading

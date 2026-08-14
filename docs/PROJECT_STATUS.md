@@ -25,12 +25,13 @@
 - Flutter: offline-first with a SQLite outbox, sync engine, and typed exception
   hierarchy. Signal emission is wired for most but not all registered types --
   see the SPEC-07 row below.
-- Migrations 0011 to 0015 are committed and unapplied, and all five are now
+- Migrations 0011 to 0016 are committed and unapplied, and all six are now
   applicable. 0011 is the only one still gated, on a live schema dump and diff,
   because the live schema carries hand-made columns. 0014's UUID defect and
   0015's two preconditions were fixed in 7c20b5f and f012253. 0015 remains the
   only one that is not purely additive, since it drops and re-adds a CHECK, but
-  the new CHECK is added NOT VALID and so cannot abort on existing rows.
+  the new CHECK is added NOT VALID and so cannot abort on existing rows. 0016 is
+  comments only.
 - Every file under data/ is ASCII-escaped, and a guard enforces it. Use
   scripts/format_venue_json.py to get a readable copy for curation and to
   re-escape on the way back in.
@@ -51,6 +52,7 @@
 | Migration 0013 taxonomy_term | COMMITTED, UNAPPLIED | Versions the controlled vocabulary across ten taxonomies, seeded from the venue and dish data. Roadmap concern 6 |
 | Migration 0014 itinerary normalisation | COMMITTED, UNAPPLIED | Creates trip_node and trip_edge. node_id and edge_id are TEXT, which matches the 8-character hex IDs the application generates. The earlier UUID declaration would have failed every Supabase trip save; fixed in 7c20b5f, along with extracting both ID generators into models/ids.py |
 | Migration 0015 drift fixes | COMMITTED, UNAPPLIED | Four fixes: venue_dish.price_band CHECK realigned to the taxonomy_term seed, venue_dish.names_local JSONB with a backfill, venue_dish.currency_code plus an explicit minor-unit rule, and embedding_model on venues_rag and cached_responses. Not purely additive, since it drops and re-adds a CHECK, but the new CHECK is NOT VALID and the backfill is scoped to the Laos regions by joining venues_rag. Both preconditions were cleared in f012253; two follow-ups remain rather than blockers |
+| Migration 0016 comment fixes | COMMITTED, UNAPPLIED | Comments only, no schema change, idempotent. Re-issues the dish_glossary table comment in ASCII, because 0010 was applied while it held an em-dash and editing the 0010 file corrected future builds without touching the live pg_description. Also rewrites the suitable_for column comment to record the SPEC-14 retirement, so the database stops documenting a claim we no longer make |
 | Venue loader | REPAIRED, CARRIES EVERY FIELD | Pure ASCII, vocabulary restored, geo_region inferred from the file wrapper. Payload built once in build_venue_record; insert and update derive from it so they cannot drift apart |
 | Loader payload guard | DONE | A test asserts build_venue_record's key set equals VENUES_RAG_WRITE_COLUMNS, and build_dish_record does the same for venue_dish against VENUE_DISH_WRITE_COLUMNS. The earlier guards watched the declaration only, which is how four fields were dropped while the suite stayed green |
 | External-id writer | DONE | upsert_venues writes venue_external_id for every venue carrying a verified name reference, and the test drives upsert_venues rather than the helper, which is the distinction that let the first attempt land as dead code |
@@ -91,12 +93,15 @@ numbers were taken by other work while they sat unimplemented.
 1. Device day, in this order, because every item is blocked on a laptop and on
    nothing else. Export the 16 Dubai venues to a file under data/ first, since
    they exist nowhere but the hosted database. Dump the live schema and diff it
-   against migrations 0001 to 0015. Apply 0011 to 0015. Re-load the three Laos
+   against migrations 0001 to 0016. Apply 0011 to 0016. Re-load the three Laos
    files, which lands the opening hours that are currently null and the ten
    verified names. Then run the suite with TB_SUPABASE_URL set, so the five
    Supabase tests execute for the first time rather than skipping. While
    connected, read the distinct price_band values in venue_dish and check the AED
-   price magnitudes on the Dubai dishes.
+   price magnitudes on the Dubai dishes. Also scan pg_description for non-ASCII,
+   which confirms 0016 landed and tells us whether 0010's em-dash was the only
+   comment affected; the file guards cannot see the database, so this is the only
+   way to know.
 2. SPEC-09 anonymous device identity. Moved up from last place: it gates any
    tester build, so nothing at all can be verified in the field until it lands,
    including the driver card the October trip exists to test.
@@ -142,7 +147,7 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 | Non-Laos local dish names remain unbackfilled | Low | 0015's names_local backfill is correctly scoped to the three Laos regions, so any Dubai dish carrying a name_local keeps a null names_local rather than a wrong language tag. That is the right trade, but it leaves a second pass owed once the Dubai rows are exported and their language confirmed |
 | price_band CHECK is added but not validated | Low | 0015 adds the CHECK as NOT VALID so it cannot abort, which means existing rows are never checked against it. New and updated rows are. The VALIDATE CONSTRAINT statement is present but commented out; run it after reading the distinct live price_band values |
 | node_id carries 32 bits of entropy | Low | generate_node_id truncates a UUID to 8 hex characters, and node_id is a primary key with foreign key references from trip_edge. Collision probability is not negligible at scale. Both generators now live in models/ids.py, so widening it is a one-line change plus a backfill decision |
-| The ASCII convention is unenforced for code | Low | The hygiene guard walks markdown only. Genie's em-dashes in 0015 were cleaned by hand, and one of them had landed inside a COMMENT ON COLUMN, which would have persisted into the live database. A brief to extend the guard to .py and .sql is with Genie |
+| The ASCII convention for code is enforced narrowly, by design | Low | Two guards landed in 1c9988f rather than a blanket file scan. SQL is checked only inside COMMENT ON bodies, which is where non-ASCII reaches the database, and a companion test fails if any COMMENT ON statement escapes the extraction regex, so dollar-quoting cannot silently bypass it. Python is checked in comments and docstrings via tokenize and ast, with string literals exempt because a degree sign in a temperature format is correct code. The narrow guard immediately found an em-dash in an applied migration that a survey of the same files had missed. Remaining exposure: .dart is not covered, and non-ASCII in Python string literals is permitted by choice |
 | Live schema contains manual edits of unknown extent | High | Loads have been succeeding against columns no migration declared, so somebody added them by hand. PostgREST rejects writes to columns absent from its schema cache, so this is not a REST-layer quirk. Migration 0011 must not be applied before a dump and diff: if a hand-made name_local TEXT exists, ADD COLUMN IF NOT EXISTS names_local JSONB adds a second empty column and leaves the populated one unread |
 | Dubai venue data has no source file | High | data/ holds only the Laos files. The 16 Dubai venues exist as rows in the hosted database and nowhere else, so a rebuild from migrations loses them. Export to version control before any rebuild |
 | OSM licence position unexamined | Medium | SPEC-19 mines OpenStreetMap and SPEC-20 seeds venues_rag from it, which plausibly makes venues_rag a derivative database under ODbL and attaches share-alike to it if it is ever distributed. Recommendations generated on top are most likely a produced work, needing attribution only. Nobody qualified has looked at either question. Recorded in the SPEC-21 decision record; it needs advice before a city is onboarded from OSM at scale, not after |
