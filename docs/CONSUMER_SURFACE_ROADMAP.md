@@ -76,8 +76,13 @@ allowed to render.
 ## Sequencing
 
 None of this is on the October 2 path. That trip is one known user testing
-whether a driver card survives a day without connectivity, and it needs SPEC-09,
-the card, and the offline vault. Consumer surface follows the field test.
+whether a driver card survives a day without connectivity on a real trip
+anchored by real bookings. The October spine is device day, SPEC-09 client,
+SPEC-22, SPEC-12, SPEC-10, then a thin SPEC-04 rescue entry to the hotel
+card -- not the full Offline Vault. SPEC-02 already delivered the offline
+substrate; SPEC-12 already owns the venue card on that cache. See SPEC-04
+("What SPEC-04 still adds" and "October scope") and docs/PROJECT_STATUS.md.
+Consumer surface follows the field test.
 
 The exception is the SPEC-24 design, which is settled now and built later, for
 the reason above.

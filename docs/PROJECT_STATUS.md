@@ -70,7 +70,7 @@
 | arrival_delta derivation | DONE | Server-derived from visited_confirmed vs scheduled_start |
 | Docs hygiene guard | DONE | tests/test_docs_hygiene.py walks every markdown file outside build and vendor directories, and the SPEC-reference check also scans .py and .sql. Known non-ASCII files are allowlisted; the list may only shrink. The ASCII check itself still covers markdown only |
 | Data format guard | DONE | Every data/ file is ASCII by byte count, venue and glossary files round-trip byte-identically, and Lao-script fields are checked for foreign script |
-| Offline vault (SPEC-04) | SPECIFIED | Not implemented |
+| Offline vault (SPEC-04) | SPECIFIED, OCTOBER SHRUNK | Full vault not on the October path. SPEC-02 already delivers outbox, SyncEngine, cache_trip and cache_place; SPEC-12 already owns the venue driver card on that cache. October keeps only a thin rescue entry to the hotel address card once SPEC-10 exists. cache_vault, passes, emergency grid and phrase packs stay post-field-test -- see SPEC-04 |
 | Anonymous identity (SPEC-09) | SERVER HALF IMPLEMENTED | The client half is still owed. Server side is done and verified: resolution order is JWT, then Anonymous, then the debug header, failing closed; TB_ALLOW_ANONYMOUS defaults to False; the raw Authorization header is parsed rather than loosening HTTPBearer, which would have rejected a non-Bearer scheme; UUIDs must be version 4 with the RFC 4122 variant, so v1 is refused and its embedded MAC address never reaches us; and non-canonical spellings are rejected rather than normalised, so one UUID cannot become five distinct user ids. Migration 0018 carries identity_kind |
 | Itinerary normalisation (SPEC-16) | IMPLEMENTED | Decompose and compose land in services/itinerary_normaliser.py, dual-write in both backends, round-trip equality asserted, wire format unchanged. node_id is stable across reschedules via state_json and now comes from models/ids.py. One gap remains: observed_duration_minutes has no writer, so no transition data is accumulating |
 | Booking anchors (SPEC-10) | SPECIFIED | Not implemented. Resequenced to follow SPEC-16, because an anchor is a locked node and building it against the blob means building it twice. Amended so import is the primary path, manual entry the floor, and extraction on the device the preferred implementation of every import path |
@@ -98,59 +98,59 @@ numbers were taken by other work while they sat unimplemented.
 
 ## What is Next (Priority Order)
 
-1. Device day, in this order, because every item is blocked on a laptop and on
-   nothing else. Export the 16 Dubai venues to a file under data/ first, since
-   they exist nowhere but the hosted database. Dump the live schema and diff it
-   against migrations 0001 to 0018. Apply 0011 to 0018. Re-load the three Laos
-   files, which lands the opening hours that are currently null and the ten
-   verified names. Then run the suite with TB_SUPABASE_URL set, so the five
-   Supabase tests execute for the first time rather than skipping. While
-   connected, read the distinct price_band values in venue_dish and check the AED
-   price magnitudes on the Dubai dishes. Also scan pg_description for non-ASCII,
-   which confirms 0016 landed and tells us whether 0010's em-dash was the only
-   comment affected; the file guards cannot see the database, so this is the only
-   way to know.
-2. SPEC-09 client half: generate the UUID on first launch, persist it in secure
-   storage, send it as the Anonymous header, and drop TB_DEBUG_USER_ID from the
-   client and the start script. The server half is done and verified, so this is
-   the whole of what still gates a tester build -- and therefore gates the driver
-   card the October trip exists to test.
-3. SPEC-22 client render contract, before any screen is built. Five queued specs
-   each need to render a fact, and without this each will invent its own trust
-   language. It does not wait on SPEC-17's backend, because the envelope shape is
-   already specified and can be a client-side type with a stubbed source.
-4. SPEC-12 driver card UI with the one-tap confirm, plus the name_confirmed signal
-   type alongside driver_card_shown in one migration. The card can render the
-   unconfirmed treatment from the existing source field on names_local, so it does
-   not need attribute_claim in order to be honest.
-5. Give observed_duration_minutes a writer, derived from arrival signals on sync
-   rather than at save time. Until it exists the convenience layer has no input
-   and SPEC-19 has nothing to corroborate its place-pair claims against.
-6. Retire the dietary suitability claim, per the SPEC-14 decision record. This
-   closes the halal-versus-pork hole by removing the claim rather than by adding
-   a rule, which is the correct fix when no source can support the claim.
-7. SPEC-17 trust and verification. It gates SPEC-18, SPEC-19 and SPEC-20, and it
-   owns attribute_claim, which all three write into. Deliberately sequenced behind
-   the field-test items rather than ahead of them, because the October trip needs
-   an installable app and one honest screen, not the full claim store.
-8. SPEC-10 booking anchors, now unblocked by SPEC-16.
-9. reroute_rejected plus swap sheet UI -- the last unwired behavioural signal.
-10. Relocate VALID_DISH_CONTAINS to config/dietary.py (R5 violation).
-11. The consumer surface, sequenced in docs/CONSUMER_SURFACE_ROADMAP.md and
-    deliberately behind everything above it. SPEC-26 first because the trip list
-    is one route over a service method that already exists and nothing has a
-    first screen until it lands, then SPEC-25 once SPEC-17's envelope is real
-    enough to honour, then SPEC-27 before the first build that reaches people who
-    are not us. SPEC-24's design is settled now and built here.
-12. A swappable LLM provider, including local models, has no owning spec and
-    takes the next free number. The dependency is already load-bearing: every
-    intelligent path routes through one hosted vendor, cost guardrails are
-    written against that vendor's pricing, and a region where it is unavailable
-    or a price change we do not control both land as an outage. Naming it here
-    so it stops living only in conversation.
+### Interim (laptop unavailable until ~Aug 15)
 
-Export the Dubai rows before applying anything. A rebuild from migrations without
-that export silently loses 16 venues.
+0. Relocate VALID_DISH_CONTAINS to config/dietary.py (R5). Pure refactor, no
+   schema dependency, no live data. Brief: docs/briefs/GENIE_RELOCATE_VALID_DISH_CONTAINS.md.
+   Genie executes; lands via PR.
+
+### October path (forcing function: Laos field test, Oct 2)
+
+Success means an installable build whose engine knows a real trip anchored on
+real flight and hotel bookings, and whose driver card works without
+connectivity. Re-cut Aug 14 after finding that CONSUMER_SURFACE_ROADMAP and
+PROJECT_STATUS disagreed on SPEC-04, and that SPEC-04 mostly duplicated
+SPEC-02 plus SPEC-12.
+
+1. Device day -- blocked on the laptop only. Runnable brief:
+   docs/briefs/DEVICE_DAY.md. Export Dubai to data/dubai_uae.json and push it
+   before any migration apply. Then dump/diff the live schema (0011 dual
+   name_local / names_local gate), apply 0011 to 0018, re-load Laos, run
+   pytest with TB_SUPABASE_URL set, and record the live checks
+   (price_band, AED magnitudes, pg_description, hybrid_venue_search).
+2. SPEC-09 client half: UUID on first launch, secure storage, Anonymous
+   header, drop TB_DEBUG_USER_ID. Server half is done; this is what gates a
+   tester build.
+3. SPEC-22 client render contract, before any screen. Envelope shape is
+   already specified; stub the source on the client if SPEC-17 backend is
+   not ready.
+4. SPEC-12 driver card UI with one-tap confirm, plus name_confirmed and
+   driver_card_shown in one migration. Renders from SPEC-02 cache_place.
+5. SPEC-10 booking anchors (manual floor plus import path as specified).
+   This is what makes "full context" true for the field test.
+6. SPEC-04 October slice only: <=2-tap rescue entry to the hotel address
+   card, offline/cold-boot, reusing the SPEC-12 treatment against the
+   accommodation node. Not the full vault.
+
+### After the field-test spine (still important, not Oct-critical)
+
+7. Give observed_duration_minutes a writer from arrival signals on sync.
+8. Retire the dietary suitability claim (SPEC-14). Closes the
+   halal-versus-pork hole by removing the claim.
+9. SPEC-17 trust and verification -- gates SPEC-18/19/20; behind the
+   field-test installable app on purpose.
+10. reroute_rejected plus swap sheet UI -- last unwired behavioural signal.
+11. Full SPEC-04 remainder (cache_vault, passes, emergency grid, phrase
+    packs) if still wanted.
+12. Consumer surface per docs/CONSUMER_SURFACE_ROADMAP.md (SPEC-26, then
+    SPEC-25, then SPEC-27; SPEC-24 design settled, build later).
+13. Swappable LLM provider -- no owning spec yet; next free number. Every
+    intelligent path is one hosted vendor today.
+
+Export the Dubai rows before applying anything. A rebuild from migrations
+without that export silently loses 16 venues. There is no DB snapshot
+outside the hosted project; that is why device-day Step 2 commits
+data/dubai_uae.json before Step 4.
 
 The one task that cannot be done by an agent is judging whether a
 transliterated venue name is what the signage actually says. A script test
@@ -188,7 +188,8 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 | Raw-safety guard keys off English prose | Low | The guard that flags an uncooked dish looks for the word raw in the description, so rewording a description silently disables a safety check. Key it off a structured field |
 | seniors overcorrected | Low | Set on 40 of 58 venues, roughly two thirds, so it cannot discriminate. mobility_limited is 17 of 58, which is plausible rather than overcorrected -- an earlier version of this table attributed the two-thirds figure to the wrong tag |
 | Vientiane has zero massage_spa | Low | Suspect. This was reported by a warning function that was broken until recently, so re-check it against the data rather than trusting the earlier report |
-| VALID_DISH_CONTAINS in the wrong file | Low | Lives in load_dish_glossary.py, belongs in config/dietary.py (R5) |
+| VALID_DISH_CONTAINS in the wrong file | Low | Lives in load_dish_glossary.py, belongs in config/dietary.py (R5). Interim Genie brief: docs/briefs/GENIE_RELOCATE_VALID_DISH_CONTAINS.md |
+| Full Offline Vault was over-scoped for October | Low | Resolved in docs Aug 14: SPEC-04 shrunk to a thin hotel-card rescue entry; venue card is SPEC-12 on SPEC-02 cache. Left here so an old CONSUMER_SURFACE quote is not re-elevated |
 
 ## How to Run
 

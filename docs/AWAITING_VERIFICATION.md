@@ -6,9 +6,9 @@ incidents worth not repeating. It is the only place in the repo where dated
 observations belong (R16).
 
 What it deliberately does not carry: the device-day task order, which lives in
-`docs/PROJECT_STATUS.md`. Two documents holding the same ordered list is how
-they end up contradicting each other, which is what this consolidation is
-fixing.
+`docs/PROJECT_STATUS.md` with the runnable steps in `docs/briefs/DEVICE_DAY.md`.
+Two documents holding the same ordered list is how they end up contradicting
+each other, which is what this consolidation is fixing.
 
 Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 `#85` and so on; those numbers cannot be reconciled against `git log`.
@@ -62,6 +62,21 @@ with the data, never separately, or the search stops matching today's text.
 It sits in `scripts/load_dish_glossary.py` and belongs in `config/dietary.py`
 (R5). No longer blocked by anything; R14 and R15 were rewritten and the
 delete-and-recreate procedure they once required is retired.
+
+## Finding -- Aug 14 2026 -- SPEC-04 October scope shrunk
+
+`docs/CONSUMER_SURFACE_ROADMAP.md` said the October trip needed SPEC-09, the
+driver card, and the offline vault. `docs/PROJECT_STATUS.md` omitted SPEC-04
+from the numbered next list and left booking anchors at item 8. Both were
+wrong relative to the forcing function ("full context" on real bookings).
+
+Checked against what is already shipped: SPEC-02 already delivers outbox,
+SyncEngine, `cache_trip` and `cache_place`. SPEC-12 already specifies the
+venue driver card offline from `cache_place`. The unique SPEC-04 remainder
+that matters for October is a thin rescue entry to the hotel address card
+once SPEC-10 exists. `cache_vault`, pass tiles, emergency grid and phrase
+packs are post-field-test. SPEC-04, PROJECT_STATUS and CONSUMER_SURFACE were
+amended the same day; device-day steps live in `docs/briefs/DEVICE_DAY.md`.
 
 ## Closed since the last revision
 

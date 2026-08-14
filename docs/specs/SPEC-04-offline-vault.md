@@ -2,6 +2,62 @@
 *Implements VISION capability #7 (calm in the unexpected). P1 per docs/UX_BACKLOG.md.*
 *Depends on: SPEC-02 offline cache (`cache_trip`, `cache_place`). No new architecture.*
 
+> Status: SPECIFIED. October scope shrunk Aug 14 2026 -- see "What SPEC-04
+> still adds" and "October scope" below. Full vault (passes, emergency pack,
+> phrase pack, cache_vault tables) is post-field-test unless spare capacity
+> appears after SPEC-12 and SPEC-10 land.
+
+## What SPEC-04 still adds (vs SPEC-02 and SPEC-12)
+
+SPEC-02 already delivered the offline substrate this product needs for Laos:
+
+- `outbox` + `SyncEngine` -- signal durability and exactly-once sync
+- `cache_trip` + `cache_place` -- offline reads of the current trip and venues
+- Cold-boot survival of those tables via sqflite
+
+SPEC-12 already owns the standout field-test surface: a full-screen native-
+script card that renders from `cache_place` with pre-cache on trip load, an
+unconfirmed treatment, and one-tap confirm. That card does not need
+`cache_vault`.
+
+Against that baseline, SPEC-04 as originally written was mostly a second
+name for work other specs already own. The unique remainder is:
+
+| Piece | Unique to SPEC-04? | October? |
+|---|---|---|
+| Venue driver card offline from `cache_place` | No -- SPEC-12 | Yes, via SPEC-12 |
+| Hotel / accommodation address card | Mostly no -- SPEC-12 against the accommodation node once SPEC-10 exists | Thin slice only |
+| Dedicated Vault shell (<=2 taps, never spinner) | Yes -- navigation and empty-state contract | Thin: entry to hotel + venue cards |
+| `cache_vault` / `cache_asset` tables | Yes -- survival payload + binary blobs | No |
+| Offline pass / boarding-pass tiles | Yes | No |
+| Emergency dial grid | Yes (also wants SPEC-13 numbers) | No |
+| Per-city phrase / "if X happens" pack | Yes | No |
+
+Decision: the October path does not build the full Offline Vault. It builds
+SPEC-12 on the SPEC-02 cache, then SPEC-10 so the trip has a real hotel and
+flight, then a thin rescue entry that opens the hotel address card offline.
+The rest of this spec stays specified and waits until after the field test.
+
+## October scope
+
+In scope for Oct 2:
+
+1. Pre-cache accommodation (local script + romanized + coordinates) into
+   `cache_place` or an equivalent place-shaped row when the booking anchor
+   lands -- no new SQLite engine, no `cache_vault` required.
+2. A <=2-tap path from the itinerary to that hotel card, with the same
+   brightness / no-chrome rules as SPEC-12.
+3. Cold boot with no network still shows the hotel card and any venue cards
+   already in `cache_place`. Missing data shows "not saved yet", never a
+   spinner or error.
+
+Out of scope for Oct 2 (remain in this spec for later):
+
+- `cache_vault` and `cache_asset`
+- Offline pass tiles and brightness-boost QR flow
+- Emergency actions grid
+- Per-city phrase / incident packs
+
 ## Why this exists
 Our offline work so far solved **data durability** (signals survive no-signal). It never answered:
 *what does the user actually need to DO when stranded?* Lost, no signal, in a country whose script

@@ -77,9 +77,13 @@ grid) is close to ours but more complete. Fold in when the designer engages.
 2. Supabase flip — real persistence
 3. SPEC-03 `trip_party` + `party_context` stamping — segmentation, cannot be backfilled
 4. Behavioral signal types (`reroute_accepted/rejected`, `visited_confirmed`, `dwell`, `arrival_delta`)
-5. **then** SPEC-04 Vault + map-first shell, if time before Oct 2
+5. **then** SPEC-12 driver card + SPEC-10 anchors; SPEC-04 only as the thin
+   hotel-card rescue entry (see SPEC-04 October scope). Full Vault and
+   map-first shell are post-field-test unless spare capacity appears.
 
-If it's Vault vs behavioral signals, **signals win.**
+If it's full Vault vs the October spine (identity, card, anchors), **the
+spine wins.** Behavioral signals that are already registered still beat
+polish.
 
 ## 3. Provenance
 Kept from the source doc: Vault concept, native-script address card, climate-comfort delta,
