@@ -11,7 +11,7 @@ Adding a new allergen or dietary label? Add it HERE ONLY.
 from __future__ import annotations
 
 # ===========================================================================
-# Allergens — what a dish CONTAINS or MAY_CONTAIN
+# Allergens -- what a dish CONTAINS or MAY_CONTAIN
 # ===========================================================================
 # Based on EU-14 major allergens + common extensions for SEA cuisine
 
@@ -40,7 +40,7 @@ VALID_ALLERGENS: frozenset[str] = frozenset({
 
 
 # ===========================================================================
-# Dietary labels — what a dish is SUITABLE_FOR
+# Dietary labels -- what a dish is SUITABLE_FOR
 # ===========================================================================
 
 VALID_DIETARY_LABELS: frozenset[str] = frozenset({
@@ -60,7 +60,7 @@ VALID_DIETARY_LABELS: frozenset[str] = frozenset({
 
 
 # ===========================================================================
-# Dietary constraints — what a PERSON avoids (party_member.dietary_constraints)
+# Dietary constraints -- what a PERSON avoids (party_member.dietary_constraints)
 # ===========================================================================
 # Superset: includes both "I am X" (vegan) and "I avoid Y" (peanuts)
 
@@ -81,7 +81,7 @@ VALID_DIETARY_CONSTRAINTS: frozenset[str] = VALID_DIETARY_LABELS | VALID_ALLERGE
 # exclusion set. Violation = hard failure in the loader (not a warning).
 #
 # Logic: "suitable_for vegan" means NO animal products whatsoever.
-# A dish cannot be vegan AND contain dairy — that's a data error that
+# A dish cannot be vegan AND contain dairy -- that's a data error that
 # could cause an allergic reaction.
 
 LABEL_EXCLUDES_ALLERGENS: dict[str, frozenset[str]] = {
@@ -96,7 +96,7 @@ LABEL_EXCLUDES_ALLERGENS: dict[str, frozenset[str]] = {
     "pescatarian": frozenset({
         # Pescatarian excludes land-animal meat but not fish/shellfish.
         # No allergen-level exclusions needed here since allergens
-        # don't encode "meat" — handled by category instead.
+        # don't encode "meat" -- handled by category instead.
     }),
     "gluten_free": frozenset({"gluten"}),
     "dairy_free": frozenset({"dairy"}),
@@ -114,7 +114,7 @@ def check_allergen_conflicts(
 
     A conflict means the dish claims suitability for a dietary group
     but also contains (or may contain) an allergen that contradicts it.
-    This is a SAFETY invariant — conflicts are hard failures.
+    This is a SAFETY invariant -- conflicts are hard failures.
     """
     conflicts: list[str] = []
     all_allergens = set(contains) | set(may_contain)

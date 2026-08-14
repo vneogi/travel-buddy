@@ -80,7 +80,7 @@ class TestSignalIngest:
         assert resp1.status_code == 200
         assert resp1.json()["accepted"] == 1
 
-        # Second post — same signal_id
+        # Second post -- same signal_id
         resp2 = client.post(
             "/api/v1/signals",
             json={"signals": [sig]},
@@ -133,7 +133,7 @@ class TestSignalIngest:
         resp = client.post(
             "/api/v1/signals",
             json={"signals": [sig]},
-            # No headers — no auth
+            # No headers -- no auth
         )
         assert resp.status_code == 401
 
@@ -149,7 +149,7 @@ class TestSignalIngest:
         stored = db_service.get_signal("aaaaaaaa-1111-2222-3333-444444444444")
         assert stored["user_id"] == "attacker-id-999"  # gets whatever token says
         # Key point: there's no way for a client to set user_id to someone
-        # else's — the token IS the identity. No IDOR.
+        # else's -- the token IS the identity. No IDOR.
 
     # ==================================================================
     # SPEC-02 Part C tests
@@ -179,7 +179,7 @@ class TestSignalIngest:
 
         SPEC-02 Part C: tolerate up to 30 days.
         """
-        # 20 days ago — well within tolerance
+        # 20 days ago -- well within tolerance
         old_ts = (datetime.now(tz=timezone.utc) - timedelta(days=20)).isoformat()
         sig = self._make_signal(signal_id="old-ok-001", captured_at=old_ts)
         resp = client.post(

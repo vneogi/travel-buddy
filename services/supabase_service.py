@@ -286,7 +286,7 @@ class SupabaseService:
         return result.data or []
 
         # =========================================================================
-    # Trip Party (SPEC-03 — party_context stamping)
+    # Trip Party (SPEC-03 -- party_context stamping)
     # =========================================================================
 
     def save_trip_party(self, trip_id: str, party: TripPartyIn) -> TripParty:
@@ -569,7 +569,7 @@ class SupabaseService:
 
 
     # =========================================================================
-    # Signal Capture (SPEC-01 Part B — data flywheel)
+    # Signal Capture (SPEC-01 Part B -- data flywheel)
     # =========================================================================
 
     _signal_type_cache: Dict[str, str] = {}
@@ -625,7 +625,7 @@ class SupabaseService:
             self.get_valid_signal_types()
         type_id = self._signal_type_cache.get(signal_type)
         if not type_id:
-            return False  # unknown type — should have been caught by router
+            return False  # unknown type -- should have been caught by router
 
         source_id = self._ensure_first_party_source_id()
 

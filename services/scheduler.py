@@ -3,9 +3,9 @@
 Forward-pass scheduler that keeps a live itinerary self-consistent after an
 edit (cancel / swap / add / reroute):
 
-  * LOCKED nodes are fixed anchors — their reserved start time never moves.
+  * LOCKED nodes are fixed anchors -- their reserved start time never moves.
   * Non-locked nodes keep their planned start unless inter-venue transit makes
-    that infeasible, in which case they're pushed later (minimal perturbation —
+    that infeasible, in which case they're pushed later (minimal perturbation --
     intentional free time/pacing is preserved; a cancel frees its slot without
     compacting the rest of the day).
   * Transit time between consecutive stops is added from the Distance-Matrix

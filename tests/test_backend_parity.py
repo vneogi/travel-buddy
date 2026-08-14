@@ -1,4 +1,4 @@
-"""R13 — Both backends must satisfy one interface.
+"""R13 -- Both backends must satisfy one interface.
 
 DatabaseService and SupabaseService are independent implementations of
 the same contract. This test asserts that every public method on one
@@ -95,18 +95,18 @@ class TestBackendParity:
         """Every public method on SupabaseService must exist on DatabaseService.
 
         SupabaseService should not invent methods the in-memory backend doesn't
-        have — callers would break when the provider resolves to in-memory.
+        have -- callers would break when the provider resolves to in-memory.
         """
         db_methods, supa_methods = method_maps
         extra = set(supa_methods.keys()) - set(db_methods.keys())
-        # ──────────────────────────────────────────────────────────────────────
-        # KNOWN GAPS — each entry is DEBT, not a permanent exemption.
+        # ----------------------------------------------------------------------
+        # KNOWN GAPS -- each entry is DEBT, not a permanent exemption.
         # When you fix one, REMOVE it from here so the test catches regression.
-        # ──────────────────────────────────────────────────────────────────────
+        # ----------------------------------------------------------------------
         allowed_extras = {
             # Diagnostics: Supabase-only helpers not needed in-memory.
             "get_signal",          # read single signal row by ID
-            "get_signals_count",   # SELECT count(*) — in-memory uses len()
+            "get_signals_count",   # SELECT count(*) -- in-memory uses len()
 
             # Cache methods: SupabaseService has these for pgvector-backed
             # semantic cache, but nothing calls them through db_provider yet.
@@ -128,17 +128,17 @@ class TestBackendParity:
         db_methods, supa_methods = method_maps
         shared = set(db_methods.keys()) & set(supa_methods.keys())
 
-        # ──────────────────────────────────────────────────────────────────────
-        # KNOWN ARITY MISMATCHES — each is DEBT, not a permanent exemption.
+        # ----------------------------------------------------------------------
+        # KNOWN ARITY MISMATCHES -- each is DEBT, not a permanent exemption.
         # The test catches this morning's startup crash (commit #74). When the
         # arity is unified, REMOVE from here so the test guards against regression.
-        # ──────────────────────────────────────────────────────────────────────
+        # ----------------------------------------------------------------------
         # add_venue: SupabaseService requires `embedding` because pgvector
         # needs the vector at insert time. DatabaseService computes mock
         # embeddings internally. Resolution options:
-        #   A) DatabaseService.add_venue(venue, embedding=None) — optional param
+        #   A) DatabaseService.add_venue(venue, embedding=None) -- optional param
         #   B) Both take embedding; in-memory ignores it
-        #   C) seed path always provides embedding (preferred — uniform contract)
+        #   C) seed path always provides embedding (preferred -- uniform contract)
         # Target: unify before any code path calls add_venue through db_provider
         # with a real embedding (currently only seed_supabase.py does, directly).
         known_mismatches = {"add_venue"}
@@ -158,7 +158,7 @@ class TestBackendParity:
     def test_report_full_interface(self, method_maps, capsys):
         """Informational: print both interfaces for review.
 
-        Always passes — its purpose is to make `pytest -v` output useful
+        Always passes -- its purpose is to make `pytest -v` output useful
         for spotting arity drift before it hits production.
         """
         db_methods, supa_methods = method_maps
@@ -167,7 +167,7 @@ class TestBackendParity:
         for name in all_names:
             db_sig = str(db_methods.get(name, "(MISSING)"))
             su_sig = str(supa_methods.get(name, "(MISSING)"))
-            status = "✓" if name in db_methods and name in supa_methods else "✗"
+            status = "PASS" if name in db_methods and name in supa_methods else "FAIL"
             print(f"  {status} {name}")
             if name in db_methods:
                 print(f"      DB:   {db_sig}")

@@ -9,7 +9,7 @@ Supabase signs access tokens with the project's JWT secret (HS256), sets the
 ``sub`` claim to the user's UUID, and ``aud`` to ``"authenticated"``. Set
 ``TB_SUPABASE_JWT_SECRET`` (Project Settings -> API -> JWT Secret) to enable
 verification. (If your project uses the newer asymmetric signing keys, verify
-via JWKS instead — ask and I'll provide that variant.)
+via JWKS instead -- ask and I'll provide that variant.)
 """
 
 from typing import Optional
@@ -68,7 +68,7 @@ async def get_current_user_id(
     real tokens. The fallback is refused whenever a JWT secret is configured or
     debug is off, so production always fails closed.
     """
-    # Real auth takes precedence whenever a JWT secret is configured — the
+    # Real auth takes precedence whenever a JWT secret is configured -- the
     # debug header must NEVER override a verified token, or production is
     # trivially bypassable via X-Debug-User-Id.
     if settings.supabase_jwt_secret:

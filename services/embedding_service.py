@@ -32,7 +32,7 @@ class EmbeddingService:
     def _synthetic_embedding(self, text: str) -> List[float]:
         """Deterministic SHA-256-based pseudo-embedding, unit-normalized.
 
-        NOTE: same text -> same vector, but this is NOT semantic — paraphrases
+        NOTE: same text -> same vector, but this is NOT semantic -- paraphrases
         are ~orthogonal. Only used when no API key is configured.
         """
         embedding: List[float] = []

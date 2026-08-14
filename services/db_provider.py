@@ -4,14 +4,14 @@ If TB_SUPABASE_URL and TB_SUPABASE_KEY are both configured AND the supabase
 client library is installed, use SupabaseService. Otherwise fall back to the
 in-memory DatabaseService.
 
-This module exports `db_service` — the resolved backend. All other modules
+This module exports `db_service` -- the resolved backend. All other modules
 should import from here (or from services/__init__.py which re-exports it).
 The name `db_service` is preserved so existing callers don't need changes.
 
 Resolution order:
   1. Check settings.supabase_url AND settings.supabase_key are both non-empty
   2. Try to import and instantiate SupabaseService
-  3. If either check fails → in-memory fallback
+  3. If either check fails -> in-memory fallback
 
 The chosen backend is logged loudly at import time so "writes to /dev/null"
 failures are immediately obvious.
@@ -59,10 +59,10 @@ def _resolve_backend():
 
 db_service = _resolve_backend()
 
-# Behavioural branch — never use _BACKEND_NAME for logic decisions (R13).
+# Behavioural branch -- never use _BACKEND_NAME for logic decisions (R13).
 IS_SUPABASE: bool = "SUPABASE" in _BACKEND_NAME
 
-# ─── LOUD startup log ─────────────────────────────────────────────────────────
+# --- LOUD startup log ---------------------------------------------------------
 # This line must be unmissable. If you see "IN-MEMORY" in production, signals
 # are going to a volatile dict that vanishes on restart.
 logger.warning("=" * 60)

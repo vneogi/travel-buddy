@@ -1,6 +1,6 @@
 """Travel Buddy MVP - Weather Service
 
-⚠️  STATUS: SCAFFOLDED — NOT WIRED INTO THE REQUEST PATH.
+WARNING  STATUS: SCAFFOLDED -- NOT WIRED INTO THE REQUEST PATH.
     weather_alert events route to the LLM but never call this service.
     Real weather fetching + auto-swap is a future milestone.
     Requires: TB_OPENWEATHER_API_KEY in .env.

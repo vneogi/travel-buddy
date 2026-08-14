@@ -13,7 +13,7 @@ This means:
 
 History: The global scrubbing was added after a real JWT secret in .env
 caused test_auth.py to attempt real JWT validation instead of using the
-debug bypass. Do NOT remove the scrubbing — scope it instead.
+debug bypass. Do NOT remove the scrubbing -- scope it instead.
 """
 import os
 import sys
@@ -21,18 +21,18 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-# ─── Load .env into os.environ FIRST ─────────────────────────────────────────
+# --- Load .env into os.environ FIRST -----------------------------------------
 # Without this, os.environ only has shell-exported vars. On most dev machines,
-# TB_SUPABASE_URL lives in .env (not exported) — so os.environ.get() would
+# TB_SUPABASE_URL lives in .env (not exported) -- so os.environ.get() would
 # return "" and the integration tests would always skip.
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
-# ─── Save real values BEFORE clearing (needed by integration tests) ──────────
+# --- Save real values BEFORE clearing (needed by integration tests) ----------
 _SAVED_SUPABASE_URL = os.environ.get("TB_SUPABASE_URL", "")
 _SAVED_SUPABASE_KEY = os.environ.get("TB_SUPABASE_KEY", "")
 _SAVED_SUPABASE_JWT_SECRET = os.environ.get("TB_SUPABASE_JWT_SECRET", "")
 
-# ─── MUST run before any app imports ─────────────────────────────────────────
+# --- MUST run before any app imports -----------------------------------------
 # Override Supabase creds (env vars take precedence over .env file in pydantic).
 # Setting to empty string makes Optional[str] fields resolve to None.
 os.environ["TB_SUPABASE_JWT_SECRET"] = ""
@@ -44,7 +44,7 @@ os.environ["TB_DEBUG"] = "true"
 for _mod in list(sys.modules.keys()):
     if _mod.startswith("config"):
         del sys.modules[_mod]
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 
 import pytest
 from fastapi.testclient import TestClient

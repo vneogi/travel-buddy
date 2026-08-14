@@ -262,7 +262,7 @@ class GoogleMapsService:
                     # If API fails, include venue optimistically
                     validated.append(venue)
             else:
-                # No place_id — use time-based heuristic from mock
+                # No place_id -- use time-based heuristic from mock
                 validated.append(venue)
 
         return validated

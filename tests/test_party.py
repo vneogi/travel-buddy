@@ -1,8 +1,8 @@
-"""SPEC-03 — Trip party & party_context stamping tests.
+"""SPEC-03 -- Trip party & party_context stamping tests.
 
 Verifies:
-1. Create trip WITH explicit party → persists correctly, returned in response
-2. Create trip WITHOUT party → defaults to solo/1
+1. Create trip WITH explicit party -> persists correctly, returned in response
+2. Create trip WITHOUT party -> defaults to solo/1
 3. GET /trip/{id} returns the party
 4. Signal for a trip with a party gets party_context stamped into value_json
 5. Signal for an unknown trip still succeeds (party_context omitted, never fail)
@@ -46,7 +46,7 @@ def reset_db():
 
 
 def test_create_trip_with_party():
-    """Create trip with explicit family party — persisted and returned."""
+    """Create trip with explicit family party -- persisted and returned."""
     resp = client.post("/api/v1/trip/create", json={
         "start_date": _now_iso(),
         "party": {
@@ -71,7 +71,7 @@ def test_create_trip_with_party():
 
 
 def test_create_trip_without_party_defaults_solo():
-    """Create trip with no party field → defaults to solo, size 1."""
+    """Create trip with no party field -> defaults to solo, size 1."""
     resp = client.post("/api/v1/trip/create", json={
         "start_date": _now_iso(),
     }, headers=HEADERS)
@@ -110,7 +110,7 @@ def test_get_trip_includes_party():
 
 
 def test_signal_gets_party_context_stamped():
-    """Signal for a trip with a party → value_json contains party_context.
+    """Signal for a trip with a party -> value_json contains party_context.
 
     This is the MOAT-CRITICAL test: party_context is stamped SERVER-SIDE
     at ingest, merged into value_json.
@@ -165,7 +165,7 @@ def test_signal_gets_party_context_stamped():
 
 
 def test_signal_unknown_trip_still_succeeds():
-    """Signal for a non-existent trip → ingest succeeds, no party_context.
+    """Signal for a non-existent trip -> ingest succeeds, no party_context.
 
     SPEC-03: never fail ingest due to missing party data.
     """
@@ -192,7 +192,7 @@ def test_signal_unknown_trip_still_succeeds():
 
 
 def test_signal_no_trip_id_still_succeeds():
-    """Signal with no trip_id at all → ingest succeeds, no party_context."""
+    """Signal with no trip_id at all -> ingest succeeds, no party_context."""
     resp = client.post("/api/v1/signals", json={
         "signals": [{
             "signal_id": "sig-no-trip",
@@ -244,7 +244,7 @@ def test_party_context_merge_preserves_existing_value_json():
 
 
 def test_no_birth_date_in_party_schema():
-    """PartyMemberIn uses age_band only — no birth_date field accepted.
+    """PartyMemberIn uses age_band only -- no birth_date field accepted.
 
     Pydantic v2 with default config rejects extra fields (forbid not needed
     since age_band is the spec; just verify the schema has no date fields).

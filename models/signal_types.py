@@ -5,17 +5,17 @@ SINGLE SOURCE OF TRUTH for: signal type KEYS and VALUE_KIND (what value_json car
 Adding a type requires:
   1. An entry here (key + value_kind),
   2. A row in a new supabase/migrations/*.sql seeding `signal_type`,
-  3. Nothing else — database_service reads this module at startup.
+  3. Nothing else -- database_service reads this module at startup.
 
 What Python IS authoritative for:
   - The complete set of valid signal type keys
   - value_kind (documents what value_json carries, for downstream consumers)
 
 What Python is NOT authoritative for (SQL is the source):
-  - category (explicit_user | behavioral | derived — set only in migrations)
-  - decay_policy (none | exp_180d | ... — set only in migrations)
-  - enum_values (closed value sets for specific types — set only in migrations)
-  - description (human-readable — set only in migrations)
+  - category (explicit_user | behavioral | derived -- set only in migrations)
+  - decay_policy (none | exp_180d | ... -- set only in migrations)
+  - enum_values (closed value sets for specific types -- set only in migrations)
+  - description (human-readable -- set only in migrations)
 
 tests/test_signal_types.py asserts keys AND value_kind agree across Python
 and migrations, so drift in either direction fails CI.
@@ -27,7 +27,7 @@ and migrations, so drift in either direction fails CI.
 SIGNAL_TYPES: dict[str, str] = {
     # Explicit preference
     "user_loved": "enum",
-    # Reroute outcomes — the core ranking-training signal.
+    # Reroute outcomes -- the core ranking-training signal.
     "reroute_accepted": "json",
     "reroute_rejected": "json",
     # Ground truth on whether the plan was followed.
@@ -41,17 +41,17 @@ SIGNAL_TYPES: dict[str, str] = {
     "dish_ordered": "boolean",
 }
 
-# What value_json carries for each type. This is DOCUMENTATION — not validated
+# What value_json carries for each type. This is DOCUMENTATION -- not validated
 # at ingest (yet). The drift guard checks value_kind; this describes the shape
 # within that kind. Keep in sync manually when adding types.
 PAYLOAD_SHAPES: dict[str, str] = {
-    "user_loved": "enum value from ARRAY['loved'] — currently single-valued",
-    "reroute_accepted": "json: {replacement_ref: str} — the venue that replaced the original",
-    "reroute_rejected": "json: {rejected_refs: list[str]} — venues offered but declined",
+    "user_loved": "enum value from ARRAY['loved'] -- currently single-valued",
+    "reroute_accepted": "json: {replacement_ref: str} -- the venue that replaced the original",
+    "reroute_rejected": "json: {rejected_refs: list[str]} -- venues offered but declined",
     "visited_confirmed": "boolean: true (presence = confirmation)",
-    "node_skipped": "json: {reason: str} — value from NODE_SKIPPED_REASONS enum",
+    "node_skipped": "json: {reason: str} -- value from NODE_SKIPPED_REASONS enum",
     "arrival_delta": "numeric: minutes (positive = late, negative = early)",
-    "dish_loved": "enum value from ARRAY['loved'] — same as user_loved but entity_type='dish'",
+    "dish_loved": "enum value from ARRAY['loved'] -- same as user_loved but entity_type='dish'",
     "dish_ordered": "boolean: true (presence = ordered/consumed)",
 }
 

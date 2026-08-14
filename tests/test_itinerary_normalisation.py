@@ -433,12 +433,12 @@ class TestSharedIdHelper:
         assert "from models.ids import" in norm_src
 
     def test_no_inline_uuid_slice_in_normaliser(self):
-        """The normaliser must not have inline uuid4()[:8] — use the helper."""
+        """The normaliser must not have inline uuid4()[:8] -- use the helper."""
         norm_src = (REPO_ROOT / "services" / "itinerary_normaliser.py").read_text()
         assert "uuid.uuid4())[:8]" not in norm_src
 
     def test_no_inline_uuid_slice_in_schemas(self):
-        """schemas.py must not have inline uuid4()[:8] — use the helper."""
+        """schemas.py must not have inline uuid4()[:8] -- use the helper."""
         schemas_src = (REPO_ROOT / "models" / "schemas.py").read_text()
         assert "uuid.uuid4())[:8]" not in schemas_src
 

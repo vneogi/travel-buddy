@@ -1,4 +1,4 @@
-"""Tests for scripts/load_venues.py — validation logic.
+"""Tests for scripts/load_venues.py -- validation logic.
 
 Runs the loader in --dry-run mode against test fixtures.
 Asserts exit code and error messages.

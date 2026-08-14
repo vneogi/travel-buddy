@@ -60,8 +60,8 @@ class DatabaseService:
             user_data["daily_reroute_count"] = 0
             user_data["last_reset_date"] = date.today().isoformat()
 
-        # Build model explicitly — last_reset_date is internal bookkeeping,
-        # not a UserTier field (Pydantic v2 rejects extras → 500).
+        # Build model explicitly -- last_reset_date is internal bookkeeping,
+        # not a UserTier field (Pydantic v2 rejects extras -> 500).
         return UserTier(
             user_id=user_data["user_id"],
             tier_status=user_data["tier_status"],
@@ -171,7 +171,7 @@ class DatabaseService:
         return list(self._trip_edges.get(trip_id, []))
 
         # =========================================================================
-    # Trip Party (SPEC-03 — party_context stamping)
+    # Trip Party (SPEC-03 -- party_context stamping)
     # =========================================================================
 
     def save_trip_party(self, trip_id: str, party: TripPartyIn) -> TripParty:
@@ -337,7 +337,7 @@ class DatabaseService:
 
 
     # =========================================================================
-    # Signal Capture (SPEC-01 Part B — data flywheel)
+    # Signal Capture (SPEC-01 Part B -- data flywheel)
     # =========================================================================
 
     def get_valid_signal_types(self) -> set:
@@ -358,11 +358,11 @@ class DatabaseService:
     ) -> bool:
         """Record a signal. Returns True if new, False if duplicate (idempotent).
 
-        signal_id is the client-generated UUID — the idempotency key.
+        signal_id is the client-generated UUID -- the idempotency key.
         Re-recording the same signal_id is a no-op (returns False).
         """
         if signal_id in self._signals:
-            return False  # duplicate — idempotent no-op
+            return False  # duplicate -- idempotent no-op
 
         self._signals[signal_id] = {
             "signal_id": signal_id,

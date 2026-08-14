@@ -26,7 +26,7 @@ async def _crash_endpoint():
     raise RuntimeError("Deliberate test crash")
 
 
-# Mount once (idempotent — FastAPI won't double-register the same path)
+# Mount once (idempotent -- FastAPI won't double-register the same path)
 app.include_router(_test_router)
 
 
@@ -112,7 +112,7 @@ def test_debug_errors_returns_404_when_debug_off(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# Test 5: Secret-leak guard — no env values in error log
+# Test 5: Secret-leak guard -- no env values in error log
 # ---------------------------------------------------------------------------
 
 def test_no_secrets_in_error_log(monkeypatch):

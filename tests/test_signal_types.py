@@ -32,7 +32,7 @@ HEADERS = {"X-Debug-User-Id": "test-user-signal-types"}
 
 
 # ==============================================================================
-# Test 1: Drift guard — migrations agree with SIGNAL_TYPES
+# Test 1: Drift guard -- migrations agree with SIGNAL_TYPES
 # ==============================================================================
 
 def _extract_signal_types_from_migrations() -> dict[str, str]:
@@ -122,7 +122,7 @@ def test_client_emittable_types_accepted(signal_type):
 # ==============================================================================
 
 def test_arrival_delta_rejected_from_client():
-    """Server-derived types cannot be POSTed by clients — 422-equivalent rejection."""
+    """Server-derived types cannot be POSTed by clients -- 422-equivalent rejection."""
     signal_id = str(uuid.uuid4())
     payload = {
         "signals": [{

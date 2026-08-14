@@ -1,4 +1,4 @@
-"""Travel Buddy — Signal Router (SPEC-01 + SPEC-02 Part C)
+"""Travel Buddy -- Signal Router (SPEC-01 + SPEC-02 Part C)
 
 Ingest endpoint for the signal-capture data flywheel. Accepts batches of
 client-generated signals, validates type, enforces auth, and upserts
@@ -74,7 +74,7 @@ def _resolve_venue_id(place_ref: str) -> Optional[str]:
 class SignalIn(BaseModel):
     """A single signal from the client.
 
-    signal_id is CLIENT-GENERATED (UUID) — the idempotency key.
+    signal_id is CLIENT-GENERATED (UUID) -- the idempotency key.
     user_id is NEVER accepted from the client (filled from auth token).
     """
     signal_id: str = Field(..., description="Client-generated UUID (idempotency key)")
@@ -112,7 +112,7 @@ class SignalBatchResponse(BaseModel):
 
 
 # ==============================================================================
-# Consent stub (seam for future consent enforcement — SPEC-01 guiding rule)
+# Consent stub (seam for future consent enforcement -- SPEC-01 guiding rule)
 # ==============================================================================
 
 def require_consent(scope: str, user_id: str) -> None:
@@ -171,7 +171,7 @@ def _build_party_context(trip_id: str, captured_at: datetime) -> Optional[Dict]:
 
     SPEC-03 design: server-side at ingest, authoritative. If trip or party
     not found, returns None (never fail ingest). The context is frozen at
-    ingest time — later party edits don't retroactively change old signals.
+    ingest time -- later party edits don't retroactively change old signals.
     """
     party = db_service.get_trip_party(trip_id)
     if not party:
@@ -222,9 +222,9 @@ async def ingest_signals(
     - Validates captured_at skew (30d old / 5min future tolerance).
     - Idempotent: ON CONFLICT (signal_id) DO NOTHING.
     - Consent: stub (passes; wired in a later spec).
-    - Returns {accepted, duplicates, rejected} — never 500s the whole batch.
+    - Returns {accepted, duplicates, rejected} -- never 500s the whole batch.
     """
-    # Consent check (stub — passes for now)
+    # Consent check (stub -- passes for now)
     require_consent("behavioral_capture", user_id)
 
     valid_types = db_service.get_valid_signal_types()
@@ -260,7 +260,7 @@ async def ingest_signals(
                 ))
                 continue
 
-        # §29: dish signal types require entity_type='dish' + entity_id
+        # S29: dish signal types require entity_type='dish' + entity_id
         if sig.signal_type in DISH_SIGNAL_TYPES:
             if sig.entity_type != "dish":
                 rejected.append(RejectedSignal(
@@ -288,7 +288,7 @@ async def ingest_signals(
         provenance = _compute_provenance(sig.captured_at)
 
         # SPEC-03: stamp party_context server-side at ingest.
-        # Merged INTO value_json (not overwriting). If trip unknown, omit —
+        # Merged INTO value_json (not overwriting). If trip unknown, omit --
         # never fail ingest due to missing party data.
         value_json = dict(sig.value_json) if sig.value_json else {}
         if sig.trip_id:
@@ -296,7 +296,7 @@ async def ingest_signals(
             if party_context:
                 value_json["party_context"] = party_context
 
-        # Record signal (idempotent — duplicates counted, not errors)
+        # Record signal (idempotent -- duplicates counted, not errors)
         was_new = db_service.record_signal(
             user_id=user_id,
             signal_id=sig.signal_id,

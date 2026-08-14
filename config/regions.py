@@ -22,7 +22,7 @@ class Region:
     timezone: str
 
 
-# ─── Region Registry ──────────────────────────────────────────────────────────
+# --- Region Registry ----------------------------------------------------------
 # Add new regions here. Trip creation sets trip.geo_region = one of these codes.
 
 REGIONS: Dict[str, Region] = {

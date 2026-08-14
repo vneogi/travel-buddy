@@ -35,7 +35,7 @@ from seed_data import seed_venues
 # Logging Configuration (SPEC-05: use logging, not print)
 # ==============================================================================
 
-# ─── Logging (R12 compliant) ──────────────────────────────────────────────────
+# --- Logging (R12 compliant) --------------------------------------------------
 # Root logger at WARNING: any new third-party dependency is silent by default.
 # Only our own "travelbuddy" logger is raised. This eliminates the whack-a-mole
 # of enumerating hpack/h2/httpcore/litellm/openai one by one.
@@ -78,7 +78,7 @@ async def _lifespan(app):
     logger.info("%s v%s", settings.app_name, settings.app_version)
     logger.info("Geo-fence: %s | Debug: %s", settings.geo_fence, settings.debug)
     logger.info("Venues loaded: %d (%s)", venue_count, venue_source)
-    # Booleans only — NEVER log key values.
+    # Booleans only -- NEVER log key values.
     logger.info(
         "Config: llm_key_present=%s supabase_configured=%s jwt_auth=%s cors=%s",
         bool(settings.litellm_api_key),
@@ -190,7 +190,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
         message=str(exc),
         traceback_str=tb_str,
     )
-    # Response carries only the request_id — never internal details.
+    # Response carries only the request_id -- never internal details.
     return JSONResponse(
         status_code=500,
         content={"detail": "Internal server error", "request_id": request_id},
@@ -199,7 +199,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    """Log validation failures — this bug class (Pydantic extra field) cost hours."""
+    """Log validation failures -- this bug class (Pydantic extra field) cost hours."""
     request_id = getattr(request.state, "request_id", "unknown")
     logger.warning(
         "Validation error on %s %s request_id=%s: %s",

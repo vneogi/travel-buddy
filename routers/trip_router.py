@@ -242,7 +242,7 @@ async def process_trip_event(
 
 # NOTE: The old `POST /user/{user_id}/upgrade` endpoint was removed. It granted
 # Pro with no payment and no auth. Tier upgrades now happen only via verified
-# payments (see routers/payment_router.py — fix #2).
+# payments (see routers/payment_router.py -- fix #2).
 
 @router.get("/venues/search")
 async def search_venues(
@@ -270,7 +270,7 @@ async def search_venues(
 
 @router.get("/stats")
 async def get_stats(user_id: str = Depends(get_current_user_id)):
-    """Get system statistics (requires auth — exposes internal analytics)."""
+    """Get system statistics (requires auth -- exposes internal analytics)."""
     return {
         "cache": cache_service.get_stats(),
         "events": db_service.get_event_stats(),

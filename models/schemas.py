@@ -159,7 +159,7 @@ class UserTier(BaseModel):
 
 
 # ==============================================================================
-# Trip Party (SPEC-03 — party_context stamping)
+# Trip Party (SPEC-03 -- party_context stamping)
 # ==============================================================================
 
 class PartyMemberIn(BaseModel):

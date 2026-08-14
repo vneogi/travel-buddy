@@ -186,7 +186,7 @@ def seed_venues() -> tuple:
     from services.db_provider import IS_SUPABASE
     if IS_SUPABASE:
         # Venues live in venues_rag, seeded by seed_supabase.py.
-        # Don't call add_venue() — it requires an embedding argument
+        # Don't call add_venue() -- it requires an embedding argument
         # that the in-memory seed path doesn't compute.
         try:
             count = db_service.get_venue_count()

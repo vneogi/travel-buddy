@@ -1,6 +1,6 @@
 """Travel Buddy MVP - Cost Monitoring & Analytics
 
-⚠️  STATUS: SCAFFOLDED — NOT WIRED INTO THE REQUEST PATH.
+WARNING  STATUS: SCAFFOLDED -- NOT WIRED INTO THE REQUEST PATH.
     This module is not imported by any router/agent/main.py.
     Cost data is not surfaced by any endpoint (/stats reports
     cache/event counts from db_service, not cost).

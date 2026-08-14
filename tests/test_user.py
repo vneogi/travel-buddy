@@ -17,7 +17,7 @@ def client():
 
 
 class TestUserStatus:
-    """GET /api/v1/user/status — the endpoint that was 500-ing."""
+    """GET /api/v1/user/status -- the endpoint that was 500-ing."""
 
     def test_user_status_returns_200_and_tier(self, client):
         """Regression: UserTier(**user_data) with extra fields -> 500."""
