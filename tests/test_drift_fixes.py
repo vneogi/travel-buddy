@@ -380,3 +380,40 @@ def test_build_dish_record_no_currency_when_unpriced():
     dish = {"dish_name": "X", "price_local": None}
     record = build_dish_record(dish, str(uuid.uuid4()), "luang_prabang_laos")
     assert record["currency_code"] is None
+
+
+# ---------------------------------------------------------------------------
+# Fix 0017: venues_rag.price_band CHECK (final drift closure)
+# ---------------------------------------------------------------------------
+
+def test_venues_rag_price_band_check_matches_taxonomy():
+    """venues_rag.price_band CHECK must equal the taxonomy_term price_band seed.
+
+    This is the third and final column in the price_band drift class:
+    - venue_dish.price_band (0015)
+    - venues_rag.price_band (0017)
+    All share the same vocabulary from taxonomy_term seed in 0013.
+    """
+    import re
+    sql_0017 = (MIGRATIONS_DIR / "0017_venues_rag_price_band_check.sql").read_text()
+    stripped = re.sub(r"--[^\n]*", "", sql_0017)
+    match = re.search(
+        r"ADD\s+CONSTRAINT\s+venues_rag_price_band_check\s+CHECK\s*\("
+        r"price_band\s+IN\s*\(([^)]+)\)",
+        stripped,
+    )
+    assert match, "Could not find venues_rag_price_band_check in 0017"
+    check_terms = set(re.findall(r"'([^']+)'", match.group(1)))
+
+    sql_0013 = (MIGRATIONS_DIR / "0013_taxonomy_term.sql").read_text()
+    seed_terms = set(re.findall(r"'price_band',\s*'([^']+)'", sql_0013))
+
+    assert check_terms == seed_terms, (
+        f"venues_rag CHECK {sorted(check_terms)} != seed {sorted(seed_terms)}"
+    )
+
+
+def test_venues_rag_price_band_check_is_not_valid():
+    """The CHECK must use NOT VALID (same safety pattern as 0015)."""
+    sql_0017 = (MIGRATIONS_DIR / "0017_venues_rag_price_band_check.sql").read_text()
+    assert "NOT VALID" in sql_0017
