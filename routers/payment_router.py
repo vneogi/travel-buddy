@@ -32,6 +32,7 @@ class VerifyPurchaseRequest(BaseModel):
 # Endpoints
 # =========================================================================
 
+
 @router.get("/plans")
 async def get_plans():
     """Get available subscription plans (public)."""

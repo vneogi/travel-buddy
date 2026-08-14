@@ -17,7 +17,9 @@ class Settings(BaseSettings):
     app_version: str = "0.1.0-mvp"
     geo_fence: str = "dubai_uae"
     debug: bool = False  # Fail-closed: prod never trusts debug headers by default
-    llm_debug: bool = False  # TB_LLM_DEBUG: verbose LiteLLM/OpenAI/httpx logging (separate from TB_DEBUG)
+    llm_debug: bool = (
+        False  # TB_LLM_DEBUG: verbose LiteLLM/OpenAI/httpx logging (separate from TB_DEBUG)
+    )
 
     # --- Database (Supabase / PostgreSQL) ---
     database_url: str = "postgresql://localhost:5432/travel_buddy"
@@ -37,7 +39,7 @@ class Settings(BaseSettings):
 
     # --- Model Gateway (LiteLLM) ---
     litellm_api_key: Optional[str] = None
-    gemini_api_key: Optional[str] = None          # TB_GEMINI_API_KEY
+    gemini_api_key: Optional[str] = None  # TB_GEMINI_API_KEY
     heavy_model: str = "gpt-4o"  # For structural rescheduling
     light_model: str = "gpt-4o-mini"  # For translations, simple QA (16x cheaper than gpt-4o)
     embedding_model: str = "text-embedding-3-small"
@@ -104,6 +106,7 @@ settings = Settings()
 def configure_provider_keys() -> None:
     """Export provider API keys to the env vars litellm/OpenAI expect."""
     import os
+
     if settings.litellm_api_key:
         os.environ.setdefault("OPENAI_API_KEY", settings.litellm_api_key)
     if settings.gemini_api_key:

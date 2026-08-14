@@ -12,6 +12,7 @@ from typing import Dict
 @dataclass(frozen=True)
 class Region:
     """Immutable region metadata."""
+
     code: str
     display_name: str
     country: str

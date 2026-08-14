@@ -26,11 +26,13 @@ def _fresh_uid():
 # In-memory backend (DatabaseService)
 # ---------------------------------------------------------------------------
 
+
 class TestUpgradeOnSightInMemory:
     """Upgrade-on-sight in the in-memory DatabaseService."""
 
     def _make_svc(self):
         from services.database_service import DatabaseService
+
         return DatabaseService()
 
     def test_ordering_independence_bare_then_anonymous(self):
@@ -95,6 +97,7 @@ class TestUpgradeOnSightInMemory:
 # Supabase backend (SupabaseService) -- FakeClient pattern (R13)
 # ---------------------------------------------------------------------------
 
+
 class FakeResponse:
     def __init__(self, data):
         self.data = data
@@ -140,7 +143,7 @@ class FakeTable:
         elif self._pending_op == "update":
             if self._filter_uid in self._rows:
                 # Respect in_ filter if present (atomic promotion)
-                if hasattr(self, '_in_col') and self._in_col:
+                if hasattr(self, "_in_col") and self._in_col:
                     stored_val = self._rows[self._filter_uid].get(self._in_col)
                     if stored_val in self._in_values:
                         self._rows[self._filter_uid].update(self._update_payload)
@@ -169,10 +172,12 @@ class TestUpgradeOnSightSupabase:
     def _make_svc(self):
         import os
         import importlib
+
         os.environ["TB_SUPABASE_URL"] = "https://fake.supabase.co"
         os.environ["TB_SUPABASE_KEY"] = "fake-key"
         try:
             import services.supabase_service as ss_mod
+
             importlib.reload(ss_mod)
             svc = ss_mod.SupabaseService.__new__(ss_mod.SupabaseService)
             svc._client = FakeTable()

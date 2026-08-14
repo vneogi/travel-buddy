@@ -4,6 +4,7 @@ The UserTier(**user_data) bug (commit #47) caused every authenticated endpoint
 to 500 because the in-memory dict included `last_reset_date` which isn't a
 UserTier field. These tests lock in the fix.
 """
+
 import pytest
 from fastapi.testclient import TestClient
 

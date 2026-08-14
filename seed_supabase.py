@@ -17,6 +17,7 @@ from pathlib import Path
 # Ensure .env is loaded regardless of CWD (pydantic-settings reads env_file
 # relative to CWD, which fails when invoked from outside the project root).
 from dotenv import load_dotenv
+
 load_dotenv(Path(__file__).resolve().parent / ".env")
 
 from seed_data import DUBAI_VENUES
@@ -41,8 +42,7 @@ def seed_supabase() -> int:
         )
 
     existing = {
-        r["name"]
-        for r in (svc.client.table("venues_rag").select("name").execute().data or [])
+        r["name"] for r in (svc.client.table("venues_rag").select("name").execute().data or [])
     }
     to_insert = [v for v in DUBAI_VENUES if v.name not in existing]
     if not to_insert:
@@ -52,20 +52,22 @@ def seed_supabase() -> int:
     rows = []
     for v in to_insert:
         text = f"{v.name} {v.description} {' '.join(v.vibe_tags)}"
-        rows.append({
-            "name": v.name,
-            "description": v.description,
-            "micro_location": v.micro_location,
-            "lat": v.lat,
-            "lng": v.lng,
-            "vibe_tags": v.vibe_tags,
-            "audience": v.audience,
-            "category": v.category,
-            "opening_hours": v.opening_hours,
-            "is_sponsored": v.is_sponsored,
-            "bid_weight": v.bid_weight,
-            "embedding": _vector_literal(embedding_service.generate_embedding(text)),
-        })
+        rows.append(
+            {
+                "name": v.name,
+                "description": v.description,
+                "micro_location": v.micro_location,
+                "lat": v.lat,
+                "lng": v.lng,
+                "vibe_tags": v.vibe_tags,
+                "audience": v.audience,
+                "category": v.category,
+                "opening_hours": v.opening_hours,
+                "is_sponsored": v.is_sponsored,
+                "bid_weight": v.bid_weight,
+                "embedding": _vector_literal(embedding_service.generate_embedding(text)),
+            }
+        )
 
     svc.client.table("venues_rag").insert(rows).execute()
     print(f"Inserted {len(rows)} venues (skipped {len(existing)} existing).")

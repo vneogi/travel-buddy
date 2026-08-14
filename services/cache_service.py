@@ -67,9 +67,7 @@ class SemanticCacheService:
             if entry.is_expired:
                 continue
 
-            similarity = embedding_service.cosine_similarity(
-                query_embedding, entry.embedding
-            )
+            similarity = embedding_service.cosine_similarity(query_embedding, entry.embedding)
 
             if similarity > best_score:
                 best_score = similarity

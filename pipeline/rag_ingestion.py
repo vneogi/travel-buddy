@@ -46,9 +46,11 @@ from pipeline.chunker import VenueChunk, chunker
 # Data Models
 # ==============================================================================
 
+
 @dataclass
 class ScrapedVenue:
     """Raw venue data from scraping."""
+
     name: str
     raw_text: str
     source_url: str
@@ -60,6 +62,7 @@ class ScrapedVenue:
 @dataclass
 class EnrichedVenue:
     """Venue with extracted metadata ready for embedding."""
+
     name: str
     description: str
     micro_location: str
@@ -77,6 +80,7 @@ class EnrichedVenue:
 # ==============================================================================
 # Scraper Adapters
 # ==============================================================================
+
 
 class BaseScraper:
     """Base class for venue scrapers."""
@@ -136,12 +140,14 @@ class TimeOutDubaiScraper(BaseScraper):
 
                     if title_elem and desc_elem:
                         venue_url = urljoin(self.BASE_URL, link_elem["href"]) if link_elem else ""
-                        venues.append(ScrapedVenue(
-                            name=title_elem.get_text(strip=True),
-                            raw_text=desc_elem.get_text(strip=True),
-                            source_url=venue_url,
-                            source_name="timeout_dubai",
-                        ))
+                        venues.append(
+                            ScrapedVenue(
+                                name=title_elem.get_text(strip=True),
+                                raw_text=desc_elem.get_text(strip=True),
+                                source_url=venue_url,
+                                source_name="timeout_dubai",
+                            )
+                        )
 
                 time.sleep(self.rate_limit_delay)
 
@@ -192,12 +198,14 @@ class RedditDubaiScraper(BaseScraper):
                         title = post_data.get("title", "")
 
                         if len(text) > 100:  # Only substantial posts
-                            venues.append(ScrapedVenue(
-                                name=title[:100],
-                                raw_text=f"{title}. {text[:2000]}",
-                                source_url=f"https://reddit.com{post_data.get('permalink', '')}",
-                                source_name="reddit_dubai",
-                            ))
+                            venues.append(
+                                ScrapedVenue(
+                                    name=title[:100],
+                                    raw_text=f"{title}. {text[:2000]}",
+                                    source_url=f"https://reddit.com{post_data.get('permalink', '')}",
+                                    source_name="reddit_dubai",
+                                )
+                            )
 
                 time.sleep(self.rate_limit_delay)
 
@@ -211,6 +219,7 @@ class RedditDubaiScraper(BaseScraper):
 # ==============================================================================
 # Metadata Extraction (LLM-powered)
 # ==============================================================================
+
 
 class MetadataExtractor:
     """Uses LLM to extract structured metadata from venue text.
@@ -300,6 +309,7 @@ Rules:
 # Main Pipeline Orchestrator
 # ==============================================================================
 
+
 class RAGIngestionPipeline:
     """Orchestrates the full ingestion pipeline.
 
@@ -374,6 +384,7 @@ class RAGIngestionPipeline:
         embeddings = []
         try:
             import litellm
+
             for chunk in chunks:
                 response = await litellm.aembedding(
                     model=settings.embedding_model,

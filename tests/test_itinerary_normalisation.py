@@ -41,21 +41,23 @@ def _make_trip(num_nodes=3, geo_region="dubai_uae") -> TripState:
     base_time = datetime(2025, 3, 15, 9, 0, tzinfo=timezone.utc)
     nodes = []
     for i in range(num_nodes):
-        nodes.append(TripNode(
-            node_id=f"node-{i:04d}",
-            venue_name=f"Venue {i}",
-            venue_id=str(uuid.uuid4()) if i % 2 == 0 else None,
-            scheduled_start=base_time + timedelta(hours=i * 2),
-            duration_minutes=90,
-            is_locked=(i == 0),
-            status=NodeStatus.PENDING,
-            micro_location=f"Location {i}",
-            vibe_tags=["culture", "food"] if i % 2 == 0 else [],
-            lat=25.0 + i * 0.01,
-            lng=55.0 + i * 0.01,
-            opening_hours="09:00-22:00",
-            geo_region=geo_region,
-        ))
+        nodes.append(
+            TripNode(
+                node_id=f"node-{i:04d}",
+                venue_name=f"Venue {i}",
+                venue_id=str(uuid.uuid4()) if i % 2 == 0 else None,
+                scheduled_start=base_time + timedelta(hours=i * 2),
+                duration_minutes=90,
+                is_locked=(i == 0),
+                status=NodeStatus.PENDING,
+                micro_location=f"Location {i}",
+                vibe_tags=["culture", "food"] if i % 2 == 0 else [],
+                lat=25.0 + i * 0.01,
+                lng=55.0 + i * 0.01,
+                opening_hours="09:00-22:00",
+                geo_region=geo_region,
+            )
+        )
     return TripState(
         trip_id=str(uuid.uuid4()),
         user_id=str(uuid.uuid4()),
@@ -67,6 +69,7 @@ def _make_trip(num_nodes=3, geo_region="dubai_uae") -> TripState:
 # ---------------------------------------------------------------------------
 # Round-trip equality
 # ---------------------------------------------------------------------------
+
 
 class TestRoundTrip:
     def test_empty_trip_round_trips(self):
@@ -103,6 +106,7 @@ class TestRoundTrip:
 # ---------------------------------------------------------------------------
 # Decompose structure
 # ---------------------------------------------------------------------------
+
 
 class TestDecompose:
     def test_node_count_matches(self):
@@ -165,6 +169,7 @@ class TestDecompose:
 # Compose (API wire format)
 # ---------------------------------------------------------------------------
 
+
 class TestCompose:
     def test_wire_format_fields(self):
         """Composed output must have exactly the TripNode model fields."""
@@ -172,25 +177,61 @@ class TestCompose:
         nodes, _ = decompose_trip(trip.model_dump(mode="json"))
         composed = compose_trip_nodes(nodes)
         expected_keys = {
-            "node_id", "venue_name", "venue_id", "scheduled_start",
-            "duration_minutes", "is_locked", "status", "micro_location",
-            "vibe_tags", "lat", "lng", "opening_hours", "geo_region",
+            "node_id",
+            "venue_name",
+            "venue_id",
+            "scheduled_start",
+            "duration_minutes",
+            "is_locked",
+            "status",
+            "micro_location",
+            "vibe_tags",
+            "lat",
+            "lng",
+            "opening_hours",
+            "geo_region",
         }
         assert set(composed[0].keys()) == expected_keys
 
     def test_ordering_by_day_seq(self):
         """Compose must return nodes ordered by (day_index, seq)."""
         rows = [
-            {"node_id": "b", "day_index": 0, "seq": 2000, "title": "B",
-             "duration_minutes": 60, "is_locked": False, "status": "planned",
-             "venue_ref": None, "micro_location": None, "vibe_tags": [],
-             "lat": None, "lng": None, "opening_hours": None, "geo_region": None,
-             "scheduled_start": None, "scheduled_end": None},
-            {"node_id": "a", "day_index": 0, "seq": 1000, "title": "A",
-             "duration_minutes": 60, "is_locked": False, "status": "planned",
-             "venue_ref": None, "micro_location": None, "vibe_tags": [],
-             "lat": None, "lng": None, "opening_hours": None, "geo_region": None,
-             "scheduled_start": None, "scheduled_end": None},
+            {
+                "node_id": "b",
+                "day_index": 0,
+                "seq": 2000,
+                "title": "B",
+                "duration_minutes": 60,
+                "is_locked": False,
+                "status": "planned",
+                "venue_ref": None,
+                "micro_location": None,
+                "vibe_tags": [],
+                "lat": None,
+                "lng": None,
+                "opening_hours": None,
+                "geo_region": None,
+                "scheduled_start": None,
+                "scheduled_end": None,
+            },
+            {
+                "node_id": "a",
+                "day_index": 0,
+                "seq": 1000,
+                "title": "A",
+                "duration_minutes": 60,
+                "is_locked": False,
+                "status": "planned",
+                "venue_ref": None,
+                "micro_location": None,
+                "vibe_tags": [],
+                "lat": None,
+                "lng": None,
+                "opening_hours": None,
+                "geo_region": None,
+                "scheduled_start": None,
+                "scheduled_end": None,
+            },
         ]
         composed = compose_trip_nodes(rows)
         assert composed[0]["node_id"] == "a"
@@ -200,6 +241,7 @@ class TestCompose:
 # ---------------------------------------------------------------------------
 # Idempotent backfill
 # ---------------------------------------------------------------------------
+
 
 class TestIdempotent:
     def test_decompose_twice_same_result(self):
@@ -226,6 +268,7 @@ class TestIdempotent:
 # ---------------------------------------------------------------------------
 # Dual-write verification
 # ---------------------------------------------------------------------------
+
 
 class TestDualWrite:
     def test_save_trip_writes_nodes(self):
@@ -263,24 +306,22 @@ class TestDualWrite:
 # Backend parity (method existence)
 # ---------------------------------------------------------------------------
 
+
 class TestBackendParity:
     def test_both_backends_have_node_methods(self):
         """Both DatabaseService and SupabaseService must have SPEC-16 methods."""
         from services.supabase_service import SupabaseService
-        required = ["save_trip_nodes", "get_trip_nodes",
-                    "save_trip_edges", "get_trip_edges"]
+
+        required = ["save_trip_nodes", "get_trip_nodes", "save_trip_edges", "get_trip_edges"]
         for method in required:
-            assert hasattr(DatabaseService, method), (
-                f"DatabaseService missing {method}"
-            )
-            assert hasattr(SupabaseService, method), (
-                f"SupabaseService missing {method}"
-            )
+            assert hasattr(DatabaseService, method), f"DatabaseService missing {method}"
+            assert hasattr(SupabaseService, method), f"SupabaseService missing {method}"
 
 
 # ---------------------------------------------------------------------------
 # Migration guards
 # ---------------------------------------------------------------------------
+
 
 def _strip_sql_comments(sql: str) -> str:
     """Remove SQL line comments for assertion clarity."""
@@ -343,6 +384,7 @@ class TestMigration:
 # ID format versus column declaration (Task 1 guard)
 # ---------------------------------------------------------------------------
 
+
 class TestIdFormatVsDeclaration:
     """The ID format models/schemas.py produces must be accepted by the
     declared column type in migration 0014.
@@ -354,8 +396,9 @@ class TestIdFormatVsDeclaration:
 
     @pytest.fixture
     def migration_0014(self):
-        return (REPO_ROOT / "supabase" / "migrations"
-                / "0014_itinerary_normalisation.sql").read_text()
+        return (
+            REPO_ROOT / "supabase" / "migrations" / "0014_itinerary_normalisation.sql"
+        ).read_text()
 
     def _extract_column_type(self, migration_sql, col_name):
         """Extract the declared type for a column from CREATE TABLE DDL."""
@@ -376,27 +419,22 @@ class TestIdFormatVsDeclaration:
     def test_edge_id_is_text(self, migration_0014):
         """trip_edge.edge_id must be TEXT."""
         col_type = self._extract_column_type(migration_0014, "edge_id")
-        assert col_type == "TEXT", (
-            f"edge_id declared as {col_type}, must be TEXT."
-        )
+        assert col_type == "TEXT", f"edge_id declared as {col_type}, must be TEXT."
 
     def test_from_node_id_is_text(self, migration_0014):
         """trip_edge.from_node_id must be TEXT to match node_id."""
         col_type = self._extract_column_type(migration_0014, "from_node_id")
-        assert col_type == "TEXT", (
-            f"from_node_id declared as {col_type}, must be TEXT."
-        )
+        assert col_type == "TEXT", f"from_node_id declared as {col_type}, must be TEXT."
 
     def test_to_node_id_is_text(self, migration_0014):
         """trip_edge.to_node_id must be TEXT to match node_id."""
         col_type = self._extract_column_type(migration_0014, "to_node_id")
-        assert col_type == "TEXT", (
-            f"to_node_id declared as {col_type}, must be TEXT."
-        )
+        assert col_type == "TEXT", f"to_node_id declared as {col_type}, must be TEXT."
 
     def test_generated_node_id_fits_text_column(self):
         """The generated node_id format is a short string, not a full UUID."""
         from models.ids import generate_node_id
+
         nid = generate_node_id()
         assert isinstance(nid, str)
         assert len(nid) == 8, f"Expected 8-char ID, got {len(nid)}: {nid}"
@@ -406,6 +444,7 @@ class TestIdFormatVsDeclaration:
     def test_generated_edge_id_fits_text_column(self):
         """The generated edge_id is a full UUID string stored as TEXT."""
         from models.ids import generate_edge_id
+
         eid = generate_edge_id()
         assert isinstance(eid, str)
         assert len(eid) == 36  # UUID format: 8-4-4-4-12
@@ -418,6 +457,7 @@ class TestIdFormatVsDeclaration:
 # ---------------------------------------------------------------------------
 # Shared ID helper (Task 2 guard)
 # ---------------------------------------------------------------------------
+
 
 class TestSharedIdHelper:
     """The ID format must be defined in exactly one place (models/ids.py)."""
@@ -447,11 +487,11 @@ class TestSharedIdHelper:
 # REGION_TIMEZONES mapping
 # ---------------------------------------------------------------------------
 
+
 class TestRegionTimezones:
     def test_all_known_regions_mapped(self):
         """Every geo_region used in data files must map to an IANA timezone."""
-        required = ["dubai_uae", "luang_prabang_laos", "vang_vieng_laos",
-                    "vientiane_laos"]
+        required = ["dubai_uae", "luang_prabang_laos", "vang_vieng_laos", "vientiane_laos"]
         for region in required:
             assert region in REGION_TIMEZONES, f"Missing: {region}"
 

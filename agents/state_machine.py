@@ -100,9 +100,7 @@ class TripStateMachine:
     # =========================================================================
 
     def _node_classify_intent(self, state: Dict) -> Dict:
-        tier, confidence = router_agent.classify_intent(
-            state["message"], state["event_type"]
-        )
+        tier, confidence = router_agent.classify_intent(state["message"], state["event_type"])
         state["routing_tier"] = tier
         state["confidence"] = confidence
         return state
@@ -134,10 +132,7 @@ class TripStateMachine:
         # Per-node geo_region for multi-city trips; fall back to trip's region
         # Use the last node's geo_region as proxy for "current city"
         current_node = trip_state.nodes[-1] if trip_state.nodes else None
-        geo_region = (
-            (current_node.geo_region if current_node else None)
-            or trip_state.geo_region
-        )
+        geo_region = (current_node.geo_region if current_node else None) or trip_state.geo_region
 
         venues = db_service.hybrid_venue_search(
             query=search_query,
@@ -207,7 +202,7 @@ class TripStateMachine:
             # Circuit breaker: no feasible candidate within max_loop_depth.
             state["breaker_tripped"] = True
             state["schedule_warnings"] = [
-                "Couldn\'t find a change that keeps your locked reservations reachable in time."
+                "Couldn't find a change that keeps your locked reservations reachable in time."
             ]
 
         trip_state.updated_at = datetime.now(tz=timezone.utc)
@@ -274,11 +269,7 @@ class TripStateMachine:
                 return None
             vi = 0
             for i, node in enumerate(nodes):
-                if (
-                    not node.is_locked
-                    and node.status == NodeStatus.PENDING
-                    and vi < len(window)
-                ):
+                if not node.is_locked and node.status == NodeStatus.PENDING and vi < len(window):
                     nodes[i] = self._node_from_venue(
                         window[vi].venue,
                         node.scheduled_start,
@@ -317,7 +308,7 @@ class TripStateMachine:
 
         if state.get("no_candidates"):
             state["response"] = (
-                "I couldn\'t find a suitable alternative nearby that fits your "
+                "I couldn't find a suitable alternative nearby that fits your "
                 "preferences and transit range, so your itinerary is unchanged."
             )
             return state
@@ -368,7 +359,7 @@ class TripStateMachine:
 
     def _fallback_response(self, state: Dict) -> str:
         return (
-            "I couldn\'t safely rework the schedule around your locked "
+            "I couldn't safely rework the schedule around your locked "
             "reservations for this request, so nothing was changed. Try a "
             "different activity, a nearer venue, or freeing up a locked slot. "
             "Your locked reservations remain intact."

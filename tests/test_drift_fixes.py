@@ -41,6 +41,7 @@ def _strip_sql_comments(sql: str) -> str:
 # Fix A: price_band CHECK == taxonomy seed (sabotage-ready)
 # ---------------------------------------------------------------------------
 
+
 def test_all_price_band_checks_equal_taxonomy_seed():
     """Every final CHECK on a price_band column must equal the taxonomy_term seed.
 
@@ -77,10 +78,9 @@ def test_all_price_band_checks_equal_taxonomy_seed():
                 table = match.group(1)
             else:
                 # Find CREATE TABLE preceding this inline CHECK
-                preceding = sql[:match.start()]
+                preceding = sql[: match.start()]
                 create_match = re.findall(
-                    r"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(\w+)",
-                    preceding, re.IGNORECASE
+                    r"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(\w+)", preceding, re.IGNORECASE
                 )
                 table = create_match[-1] if create_match else "unknown"
             final_checks[(table, "price_band")] = (terms, mig_path.name)
@@ -91,12 +91,10 @@ def test_all_price_band_checks_equal_taxonomy_seed():
     for (table, col), (terms, mig_name) in sorted(final_checks.items()):
         if terms != seed_terms:
             failures.append(
-                f"  {mig_name}: {table}.{col} CHECK {sorted(terms)} "
-                f"!= seed {sorted(seed_terms)}"
+                f"  {mig_name}: {table}.{col} CHECK {sorted(terms)} != seed {sorted(seed_terms)}"
             )
     assert not failures, (
-        "price_band CHECK constraint(s) disagree with taxonomy_term seed:\n"
-        + "\n".join(failures)
+        "price_band CHECK constraint(s) disagree with taxonomy_term seed:\n" + "\n".join(failures)
     )
 
 
@@ -104,8 +102,7 @@ def test_price_band_check_is_not_valid():
     """The CHECK must use NOT VALID to avoid aborting on existing rows."""
     sql = _strip_sql_comments((MIGRATIONS_DIR / "0015_drift_fixes.sql").read_text())
     match = re.search(
-        r"ADD\s+CONSTRAINT\s+venue_dish_price_band_check.*?NOT\s+VALID",
-        sql, re.DOTALL
+        r"ADD\s+CONSTRAINT\s+venue_dish_price_band_check.*?NOT\s+VALID", sql, re.DOTALL
     )
     assert match, "CHECK constraint missing NOT VALID in DDL (comments stripped)"
 
@@ -119,6 +116,7 @@ def test_validate_constraint_is_commented():
 # ---------------------------------------------------------------------------
 # Fix B: Dish localisation -- production path + backfill scope
 # ---------------------------------------------------------------------------
+
 
 def _run_production_dish_insert(venue_data: dict, geo_region: str) -> list:
     """Simulate the production dish-insert path, capturing payloads.
@@ -134,23 +132,31 @@ def _run_production_dish_insert(venue_data: dict, geo_region: str) -> list:
     class FakeTable:
         def __init__(self, name):
             self._name = name
+
         def insert(self, data):
             if self._name == "venue_dish":
                 captured.append(data)
             return self
+
         def delete(self):
             return self
+
         def eq(self, *a):
             return self
+
         def select(self, *a):
             return self
+
         def upsert(self, data, **kw):
             return self
+
         def order(self, *a, **kw):
             return self
+
         def execute(self):
             class R:
                 data = []
+
             return R()
 
     class FakeClient:
@@ -169,6 +175,7 @@ def _run_production_dish_insert(venue_data: dict, geo_region: str) -> list:
 
         # Reload to pick up the patched module
         import load_venues as lv
+
         importlib.reload(lv)
 
         fake_embeddings = [[0.0] * 3]
@@ -230,14 +237,16 @@ def test_backfill_does_not_invent_language_for_dubai():
         "lat": 25.2,
         "lng": 55.27,
         "category": "restaurant",
-        "dishes": [{
-            "dish_name": "Shawarma",
-            "name_local": "\u0634\u0627\u0648\u0631\u0645\u0627",
-            "is_signature": True,
-            "cuisine": "emirati",
-            "price_local": 4500,
-            "price_band": "budget",
-        }],
+        "dishes": [
+            {
+                "dish_name": "Shawarma",
+                "name_local": "\u0634\u0627\u0648\u0631\u0645\u0627",
+                "is_signature": True,
+                "cuisine": "emirati",
+                "price_local": 4500,
+                "price_band": "budget",
+            }
+        ],
     }
     captured = _run_production_dish_insert(dubai_venue, "dubai_uae")
     assert len(captured) == 1
@@ -251,11 +260,15 @@ def test_backfill_does_not_invent_language_for_dubai():
 # Fix C: Currency -- every priced row has currency_code on production path
 # ---------------------------------------------------------------------------
 
+
 def test_every_priced_dish_has_currency():
     """Production path: if price_local is set, currency_code must be set."""
     data = json.loads((DATA_DIR / "laos_luang_prabang.json").read_text())
-    venue = next(v for v in data["venues"] if v.get("dishes") and
-                 any(d.get("price_local") for d in v["dishes"]))
+    venue = next(
+        v
+        for v in data["venues"]
+        if v.get("dishes") and any(d.get("price_local") for d in v["dishes"])
+    )
     captured = _run_production_dish_insert(venue, "luang_prabang_laos")
 
     priced = [p for p in captured if p.get("price_local")]
@@ -274,14 +287,16 @@ def test_unpriced_dish_has_no_currency():
         "lat": 19.89,
         "lng": 102.13,
         "category": "cafe",
-        "dishes": [{
-            "dish_name": "Free Tea Sample",
-            "name_local": None,
-            "is_signature": False,
-            "cuisine": "lao",
-            "price_local": None,
-            "price_band": None,
-        }],
+        "dishes": [
+            {
+                "dish_name": "Free Tea Sample",
+                "name_local": None,
+                "is_signature": False,
+                "cuisine": "lao",
+                "price_local": None,
+                "price_band": None,
+            }
+        ],
     }
     captured = _run_production_dish_insert(venue, "luang_prabang_laos")
     assert len(captured) == 1
@@ -298,6 +313,7 @@ def test_region_currencies_covers_all_regions():
 # Fix D: Embedding provenance -- production path tags every embedding
 # ---------------------------------------------------------------------------
 
+
 def test_embedding_model_in_write_columns():
     """VENUES_RAG_WRITE_COLUMNS must include embedding_model."""
     assert "embedding_model" in VENUES_RAG_WRITE_COLUMNS
@@ -306,8 +322,12 @@ def test_embedding_model_in_write_columns():
 def test_build_venue_record_includes_embedding_model():
     """Production path: build_venue_record must set embedding_model."""
     venue = {
-        "name": "Test Venue", "description": "A test",
-        "micro_location": "loc", "lat": 25.0, "lng": 55.0, "category": "restaurant",
+        "name": "Test Venue",
+        "description": "A test",
+        "micro_location": "loc",
+        "lat": 25.0,
+        "lng": 55.0,
+        "category": "restaurant",
     }
     record = build_venue_record(venue, str(uuid.uuid4()), [0.1] * 3, "dubai_uae")
     assert record.get("embedding_model") == EMBEDDING_MODEL
@@ -331,17 +351,21 @@ def test_cache_write_includes_embedding_model():
     class CaptureTable:
         def __init__(self):
             self.captured = None
+
         def insert(self, data):
             self.captured = data
             return self
+
         def execute(self):
             class R:
                 data = []
+
             return R()
 
     class FakeClient:
         def __init__(self):
             self.cache_table = CaptureTable()
+
         def table(self, name):
             if name == "cached_responses":
                 return self.cache_table
@@ -359,6 +383,7 @@ def test_cache_write_includes_embedding_model():
         sys.modules["supabase"] = fake_supabase
 
         from services import supabase_service
+
         importlib.reload(supabase_service)
         svc = supabase_service.SupabaseService()
         svc._client = fake_client
@@ -386,12 +411,16 @@ def test_cache_write_includes_embedding_model():
 # Payload guard (Fix 4)
 # ---------------------------------------------------------------------------
 
+
 def test_build_dish_record_key_guard():
     """build_dish_record must produce exactly VENUE_DISH_WRITE_COLUMNS keys."""
     dish = {
-        "dish_name": "Test Dish", "name_local": "\u0e97\u0ebb\u0e94\u0eaa\u0ead\u0e9a",
-        "is_signature": True, "cuisine": "lao",
-        "price_local": 35000, "price_band": "budget",
+        "dish_name": "Test Dish",
+        "name_local": "\u0e97\u0ebb\u0e94\u0eaa\u0ead\u0e9a",
+        "is_signature": True,
+        "cuisine": "lao",
+        "price_local": 35000,
+        "price_band": "budget",
     }
     record = build_dish_record(dish, str(uuid.uuid4()), "luang_prabang_laos")
     assert set(record.keys()) == VENUE_DISH_WRITE_COLUMNS
@@ -416,13 +445,10 @@ def test_build_dish_record_no_currency_when_unpriced():
 # ---------------------------------------------------------------------------
 
 
-
-
 def test_venues_rag_price_band_check_is_not_valid():
     """The CHECK must use NOT VALID (same safety pattern as 0015)."""
     sql = _strip_sql_comments((MIGRATIONS_DIR / "0017_venues_rag_price_band_check.sql").read_text())
     match = re.search(
-        r"ADD\s+CONSTRAINT\s+venues_rag_price_band_check.*?NOT\s+VALID",
-        sql, re.DOTALL
+        r"ADD\s+CONSTRAINT\s+venues_rag_price_band_check.*?NOT\s+VALID", sql, re.DOTALL
     )
     assert match, "CHECK constraint missing NOT VALID in DDL (comments stripped)"

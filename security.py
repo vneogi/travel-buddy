@@ -39,6 +39,7 @@ _CANONICAL_UUID_RE_PATTERN = (
 
 class ResolvedIdentity(NamedTuple):
     """The result of identity resolution: who, and how they were identified."""
+
     user_id: str
     identity_kind: str  # 'supabase' | 'anonymous' | 'debug'
 

@@ -20,6 +20,11 @@ ignore = [
     "W293",   # whitespace before ':'
 ]
 
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E402"]
+"scripts/*" = ["E402"]
+"seed_supabase.py" = ["E402"]
+
 [tool.ruff.format]
 quote-style = "double"
 

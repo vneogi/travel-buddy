@@ -11,6 +11,7 @@ the loader source, so a rename cannot leave a stale set behind.
 A third test (test_no_silent_key_drop) unions every key present in the
 venue JSON files and asserts it is either persisted or explicitly ignored.
 """
+
 import json
 import re
 import string
@@ -74,8 +75,7 @@ def test_loader_writes_subset_of_migrations():
     undefined = sorted(VENUES_RAG_WRITE_COLUMNS - defined)
     assert not undefined, (
         "Loader writes columns with no migration definition -- a fresh DB "
-        "built from 0001 upward will reject the load:\n"
-        + "\n".join("  " + c for c in undefined)
+        "built from 0001 upward will reject the load:\n" + "\n".join("  " + c for c in undefined)
     )
 
 
@@ -85,14 +85,10 @@ def test_loader_constant_matches_source():
     This prevents the constant from going stale after a rename.
     """
     source = LOADER_PATH.read_text(encoding="utf-8")
-    missing = sorted(
-        col for col in VENUES_RAG_WRITE_COLUMNS
-        if ('"' + col + '"') not in source
-    )
+    missing = sorted(col for col in VENUES_RAG_WRITE_COLUMNS if ('"' + col + '"') not in source)
     assert not missing, (
         "Columns in VENUES_RAG_WRITE_COLUMNS not found (quoted) in "
-        "scripts/load_venues.py -- stale after rename?\n"
-        + "\n".join("  " + c for c in missing)
+        "scripts/load_venues.py -- stale after rename?\n" + "\n".join("  " + c for c in missing)
     )
 
 
@@ -165,16 +161,14 @@ def test_no_silent_key_drop():
     mapped_keys = set(JSON_KEY_TO_COLUMN.keys())
 
     accounted_for = (
-        VENUES_RAG_WRITE_COLUMNS | INTENTIONALLY_NOT_PERSISTED
-        | synthetic_keys | mapped_keys
+        VENUES_RAG_WRITE_COLUMNS | INTENTIONALLY_NOT_PERSISTED | synthetic_keys | mapped_keys
     )
 
     dropped = sorted(all_keys - accounted_for)
     assert not dropped, (
         "Venue JSON keys silently discarded by the loader -- add to "
         "VENUES_RAG_WRITE_COLUMNS, JSON_KEY_TO_COLUMN, or "
-        "INTENTIONALLY_NOT_PERSISTED with a reason:\n"
-        + "\n".join("  " + k for k in dropped)
+        "INTENTIONALLY_NOT_PERSISTED with a reason:\n" + "\n".join("  " + k for k in dropped)
     )
 
 
@@ -211,14 +205,12 @@ def test_payload_keys_match_write_columns():
     if extra_in_payload:
         problems.append(
             "Present in build_venue_record payload but NOT declared in "
-            "VENUES_RAG_WRITE_COLUMNS:\n"
-            + "\n".join("  " + k for k in extra_in_payload)
+            "VENUES_RAG_WRITE_COLUMNS:\n" + "\n".join("  " + k for k in extra_in_payload)
         )
     assert not problems, "\n\n".join(problems)
 
     # The update payload must equal the record minus exactly venue_id and name.
-    update_payload = {k: v for k, v in record.items()
-                     if k not in ("venue_id", "name")}
+    update_payload = {k: v for k, v in record.items() if k not in ("venue_id", "name")}
     expected_update_keys = declared_keys - {"venue_id", "name"}
     assert set(update_payload.keys()) == expected_update_keys, (
         "Update payload key set does not equal record minus {venue_id, name}. "
@@ -257,14 +249,10 @@ def test_localized_jsonb_shape():
                 continue
             missing_keys = {"value", "source"} - set(entry.keys())
             if missing_keys:
-                problems.append(
-                    f"{col}[{lang}] missing keys: {sorted(missing_keys)}"
-                )
+                problems.append(f"{col}[{lang}] missing keys: {sorted(missing_keys)}")
             extra_keys = set(entry.keys()) - {"value", "source", "ref"}
             if extra_keys:
-                problems.append(
-                    f"{col}[{lang}] has unexpected keys: {sorted(extra_keys)}"
-                )
+                problems.append(f"{col}[{lang}] has unexpected keys: {sorted(extra_keys)}")
             source = entry.get("source")
             if source and source not in VALID_LOCALIZED_SOURCES:
                 problems.append(
@@ -298,13 +286,11 @@ def test_lao_script_guard():
                 if ch in allowed_ascii:
                     continue
                 problems.append(
-                    f"{json_file.name}: {venue['name']}.{field} has non-Lao "
-                    f"codepoint U+{cp:04X}"
+                    f"{json_file.name}: {venue['name']}.{field} has non-Lao codepoint U+{cp:04X}"
                 )
                 break
 
     assert not problems, "Lao-script guard failures:\n" + "\n".join("  " + p for p in problems)
-
 
 
 def test_loader_applies_verification_artifact():
@@ -338,8 +324,7 @@ def test_loader_applies_verification_artifact():
             assert "ref" not in entry
 
     assert verified_seen == set(verified), (
-        "Verified venues missing from loader output: "
-        f"{sorted(set(verified) - verified_seen)}"
+        f"Verified venues missing from loader output: {sorted(set(verified) - verified_seen)}"
     )
     assert len(verified_seen) == 10
     assert generated_non_verified, "Expected at least one non-verified venue"

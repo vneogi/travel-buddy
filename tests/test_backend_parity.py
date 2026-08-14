@@ -7,6 +7,7 @@ exists on the other with a compatible signature.
 DOES NOT instantiate SupabaseService (no creds needed). Uses inspect to
 compare method signatures at the class level.
 """
+
 import inspect
 from typing import Set, Dict, Tuple
 
@@ -35,23 +36,21 @@ def _params_compatible(
       - B may have extra params with defaults (it's a superset)
       - 'self' is excluded from comparison
     """
-    params_a = {
-        k: v for k, v in sig_a.parameters.items() if k != "self"
-    }
-    params_b = {
-        k: v for k, v in sig_b.parameters.items() if k != "self"
-    }
+    params_a = {k: v for k, v in sig_a.parameters.items() if k != "self"}
+    params_b = {k: v for k, v in sig_b.parameters.items() if k != "self"}
 
     # Required params in A (no default)
     required_a = {
-        k for k, v in params_a.items()
+        k
+        for k, v in params_a.items()
         if v.default is inspect.Parameter.empty
         and v.kind not in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD)
     }
 
     # Required params in B
     required_b = {
-        k for k, v in params_b.items()
+        k
+        for k, v in params_b.items()
         if v.default is inspect.Parameter.empty
         and v.kind not in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD)
     }
@@ -59,12 +58,18 @@ def _params_compatible(
     # A's required params must all exist in B
     missing_in_b = required_a - set(params_b.keys())
     if missing_in_b:
-        return False, f"required params {missing_in_b} from DatabaseService not found in SupabaseService"
+        return (
+            False,
+            f"required params {missing_in_b} from DatabaseService not found in SupabaseService",
+        )
 
     # B's required params must all exist in A (otherwise callers can't satisfy B)
     extra_required_in_b = required_b - set(params_a.keys())
     if extra_required_in_b:
-        return False, f"SupabaseService requires extra params {extra_required_in_b} not in DatabaseService"
+        return (
+            False,
+            f"SupabaseService requires extra params {extra_required_in_b} not in DatabaseService",
+        )
 
     return True, ""
 
@@ -76,6 +81,7 @@ class TestBackendParity:
     def classes(self):
         from services.database_service import DatabaseService
         from services.supabase_service import SupabaseService
+
         return DatabaseService, SupabaseService
 
     @pytest.fixture(scope="class")
@@ -105,18 +111,16 @@ class TestBackendParity:
         # ----------------------------------------------------------------------
         allowed_extras = {
             # Diagnostics: Supabase-only helpers not needed in-memory.
-            "get_signal",          # read single signal row by ID
-            "get_signals_count",   # SELECT count(*) -- in-memory uses len()
-
+            "get_signal",  # read single signal row by ID
+            "get_signals_count",  # SELECT count(*) -- in-memory uses len()
             # Cache methods: SupabaseService has these for pgvector-backed
             # semantic cache, but nothing calls them through db_provider yet.
             # cache_service is a separate singleton (SemanticCacheService).
             # Target: when cache_service is unified under db_provider, these
             # must be added to DatabaseService OR the allowlist shrinks to zero.
-            "check_cache",         # DEBT: unused via db_provider (cache_service is separate)
-            "store_cache",         # DEBT: unused via db_provider (cache_service is separate)
-            "clear_expired_cache", # DEBT: unused via db_provider (cache_service is separate)
-
+            "check_cache",  # DEBT: unused via db_provider (cache_service is separate)
+            "store_cache",  # DEBT: unused via db_provider (cache_service is separate)
+            "clear_expired_cache",  # DEBT: unused via db_provider (cache_service is separate)
         }
         unexpected = extra - allowed_extras
         assert not unexpected, (
@@ -152,7 +156,9 @@ class TestBackendParity:
         assert not mismatches, (
             "NEW signature mismatches between DatabaseService and SupabaseService:\n"
             + "\n".join(mismatches)
-            + "\n\n(Known mismatches excluded: " + ", ".join(sorted(known_mismatches)) + ")"
+            + "\n\n(Known mismatches excluded: "
+            + ", ".join(sorted(known_mismatches))
+            + ")"
         )
 
     def test_report_full_interface(self, method_maps, capsys):
@@ -173,4 +179,6 @@ class TestBackendParity:
                 print(f"      DB:   {db_sig}")
             if name in supa_methods:
                 print(f"      Supa: {su_sig}")
-        print(f"\n  Total: DB={len(db_methods)} Supa={len(supa_methods)} Shared={len(set(db_methods) & set(supa_methods))}")
+        print(
+            f"\n  Total: DB={len(db_methods)} Supa={len(supa_methods)} Shared={len(set(db_methods) & set(supa_methods))}"
+        )

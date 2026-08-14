@@ -16,12 +16,16 @@ SPEC-02 Part C additions:
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional
 
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
 from security import get_current_user_id
 from services.db_provider import db_service
 from models.signal_types import SERVER_DERIVED_TYPES, NODE_SKIPPED_REASONS, DISH_SIGNAL_TYPES
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1", tags=["signals"])
 
@@ -58,7 +62,9 @@ def _resolve_venue_id(place_ref: str) -> Optional[str]:
             miss_pct = (_resolve_misses / total) * 100
             logger.info(
                 "Entity resolution: %d/%d hits (%.0f%% miss rate)",
-                _resolve_hits, total, miss_pct,
+                _resolve_hits,
+                total,
+                miss_pct,
             )
         return None
     except Exception:
@@ -71,31 +77,41 @@ def _resolve_venue_id(place_ref: str) -> Optional[str]:
 # Request / Response Models
 # ==============================================================================
 
+
 class SignalIn(BaseModel):
     """A single signal from the client.
 
     signal_id is CLIENT-GENERATED (UUID) -- the idempotency key.
     user_id is NEVER accepted from the client (filled from auth token).
     """
+
     signal_id: str = Field(..., description="Client-generated UUID (idempotency key)")
     signal_type: str = Field(..., description="Signal type key (e.g. 'user_loved')")
     place_ref: str = Field(..., description="Venue ID or name from the itinerary")
-    entity_type: str = Field(default="venue", description="Subject type: venue|dish|area|transit_leg (§29)")
-    entity_id: Optional[str] = Field(default=None, description="Subject ID (required for dish signals)")
+    entity_type: str = Field(
+        default="venue", description="Subject type: venue|dish|area|transit_leg (§29)"
+    )
+    entity_id: Optional[str] = Field(
+        default=None, description="Subject ID (required for dish signals)"
+    )
     value_text: Optional[str] = None
     value_numeric: Optional[float] = None
     value_json: Optional[dict] = None
-    captured_at: datetime = Field(..., description="When the user acted (device clock, stored verbatim)")
+    captured_at: datetime = Field(
+        ..., description="When the user acted (device clock, stored verbatim)"
+    )
     trip_id: Optional[str] = None
 
 
 class SignalBatchRequest(BaseModel):
     """Batch of signals (offline queue syncs batches; single = batch of 1)."""
+
     signals: List[SignalIn] = Field(..., min_length=1, max_length=100)
 
 
 class RejectedSignal(BaseModel):
     """A signal that was permanently rejected (client should not retry)."""
+
     signal_id: str
     reason: str
 
@@ -106,6 +122,7 @@ class SignalBatchResponse(BaseModel):
     SPEC-02 Part C: includes itemized rejected[] so the client can mark
     permanently-bad rows as failed_permanent and stop retrying them.
     """
+
     accepted: int
     duplicates: int
     rejected: List[RejectedSignal] = Field(default_factory=list)
@@ -114,6 +131,7 @@ class SignalBatchResponse(BaseModel):
 # ==============================================================================
 # Consent stub (seam for future consent enforcement -- SPEC-01 guiding rule)
 # ==============================================================================
+
 
 def require_consent(scope: str, user_id: str) -> None:
     """Stub: in a future spec, this checks the user's granted consent scopes.
@@ -128,6 +146,7 @@ def require_consent(scope: str, user_id: str) -> None:
 # ==============================================================================
 # Helpers
 # ==============================================================================
+
 
 def _validate_captured_at(captured_at: datetime) -> Optional[str]:
     """Validate captured_at skew tolerance (SPEC-02 Part C).
@@ -236,52 +255,58 @@ async def ingest_signals(
     for sig in batch.signals:
         # Per-item validation: unknown signal_type
         if sig.signal_type not in valid_types:
-            rejected.append(RejectedSignal(
-                signal_id=sig.signal_id,
-                reason=f"unknown signal_type: '{sig.signal_type}'"
-            ))
+            rejected.append(
+                RejectedSignal(
+                    signal_id=sig.signal_id, reason=f"unknown signal_type: '{sig.signal_type}'"
+                )
+            )
             continue
 
         # SPEC-06: server-derived types cannot be submitted by clients
         if sig.signal_type in SERVER_DERIVED_TYPES:
-            rejected.append(RejectedSignal(
-                signal_id=sig.signal_id,
-                reason=f"'{sig.signal_type}' is derived server-side and cannot be submitted"
-            ))
+            rejected.append(
+                RejectedSignal(
+                    signal_id=sig.signal_id,
+                    reason=f"'{sig.signal_type}' is derived server-side and cannot be submitted",
+                )
+            )
             continue
 
         # SPEC-06: node_skipped reason must be from the closed enum
         if sig.signal_type == "node_skipped":
             reason = (sig.value_json or {}).get("reason")
             if reason and reason not in NODE_SKIPPED_REASONS:
-                rejected.append(RejectedSignal(
-                    signal_id=sig.signal_id,
-                    reason=f"node_skipped reason '{reason}' not in allowed set: {sorted(NODE_SKIPPED_REASONS)}"
-                ))
+                rejected.append(
+                    RejectedSignal(
+                        signal_id=sig.signal_id,
+                        reason=f"node_skipped reason '{reason}' not in allowed set: {sorted(NODE_SKIPPED_REASONS)}",
+                    )
+                )
                 continue
 
         # S29: dish signal types require entity_type='dish' + entity_id
         if sig.signal_type in DISH_SIGNAL_TYPES:
             if sig.entity_type != "dish":
-                rejected.append(RejectedSignal(
-                    signal_id=sig.signal_id,
-                    reason=f"'{sig.signal_type}' requires entity_type='dish', got '{sig.entity_type}'"
-                ))
+                rejected.append(
+                    RejectedSignal(
+                        signal_id=sig.signal_id,
+                        reason=f"'{sig.signal_type}' requires entity_type='dish', got '{sig.entity_type}'",
+                    )
+                )
                 continue
             if not sig.entity_id:
-                rejected.append(RejectedSignal(
-                    signal_id=sig.signal_id,
-                    reason=f"'{sig.signal_type}' requires entity_id (dish reference)"
-                ))
+                rejected.append(
+                    RejectedSignal(
+                        signal_id=sig.signal_id,
+                        reason=f"'{sig.signal_type}' requires entity_id (dish reference)",
+                    )
+                )
                 continue
 
         # Per-item validation: captured_at skew
         skew_error = _validate_captured_at(sig.captured_at)
         if skew_error:
-            rejected.append(RejectedSignal(
-                signal_id=sig.signal_id,
-                reason=skew_error
-            ))
+            rejected.append(RejectedSignal(signal_id=sig.signal_id, reason=skew_error))
             continue
 
         # Build provenance (notes extreme skew for analytics)
@@ -307,12 +332,14 @@ async def ingest_signals(
             value_json=value_json if value_json else None,
             captured_at=sig.captured_at,
             trip_id=sig.trip_id,
+            provenance=provenance,
         )
         if was_new:
             accepted += 1
             # SPEC-07: derive arrival_delta from visited_confirmed
             if sig.signal_type == "visited_confirmed":
                 from services.arrival_delta_service import derive_arrival_delta
+
                 derive_arrival_delta(
                     source_signal_id=sig.signal_id,
                     user_id=user_id,

@@ -33,20 +33,24 @@ def _resolve_backend():
     # Gate 1: are Supabase creds configured?
     if not settings.supabase_url or not settings.supabase_key:
         from services.database_service import db_service as _mem_db
+
         _BACKEND_NAME = "IN-MEMORY (no Supabase creds)"
         return _mem_db
 
     # Gate 2: is the supabase client library actually installed?
     try:
         from services.supabase_service import get_supabase_service
+
         svc = get_supabase_service()
     except ImportError:
         from services.database_service import db_service as _mem_db
+
         _BACKEND_NAME = "IN-MEMORY (supabase package not installed)"
         return _mem_db
 
     if svc is None:
         from services.database_service import db_service as _mem_db
+
         _BACKEND_NAME = "IN-MEMORY (SupabaseService init failed)"
         return _mem_db
 

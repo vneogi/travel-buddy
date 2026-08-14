@@ -37,91 +37,181 @@ from config.dietary import (
 # Vocabulary (SINGLE SOURCE OF TRUTH for validation)
 # ===========================================================================
 
-VALID_CATEGORIES = frozenset({
-    "restaurant", "cafe", "temple", "market", "nature", "activity",
-    "museum", "bar", "hotel_lobby", "hospital", "pharmacy",
-    "transport_hub", "embassy", "essential_service", "massage_spa",
-    "night_market", "waterfall", "viewpoint", "cooking_class",
-    "street_food", "walking_area", "river_activity", "craft_workshop",
-})
+VALID_CATEGORIES = frozenset(
+    {
+        "restaurant",
+        "cafe",
+        "temple",
+        "market",
+        "nature",
+        "activity",
+        "museum",
+        "bar",
+        "hotel_lobby",
+        "hospital",
+        "pharmacy",
+        "transport_hub",
+        "embassy",
+        "essential_service",
+        "massage_spa",
+        "night_market",
+        "waterfall",
+        "viewpoint",
+        "cooking_class",
+        "street_food",
+        "walking_area",
+        "river_activity",
+        "craft_workshop",
+    }
+)
 
-VALID_VIBE_TAGS = frozenset({
-    "cultural", "authentic", "energetic", "leisurely", "adventurous",
-    "premium_interiors", "artistic", "independent", "familiar",
-    "air_conditioned", "outdoor", "romantic", "spiritual", "scenic",
-    "lively", "quiet", "historic", "modern", "cozy", "luxurious",
-    "family_friendly", "instagram_worthy", "hidden_gem",
-    "photogenic", "local_favourite", "touristy", "budget",
-    "riverside", "hidden", "upscale", "historical",
-})
+VALID_VIBE_TAGS = frozenset(
+    {
+        "cultural",
+        "authentic",
+        "energetic",
+        "leisurely",
+        "adventurous",
+        "premium_interiors",
+        "artistic",
+        "independent",
+        "familiar",
+        "air_conditioned",
+        "outdoor",
+        "romantic",
+        "spiritual",
+        "scenic",
+        "lively",
+        "quiet",
+        "historic",
+        "modern",
+        "cozy",
+        "luxurious",
+        "family_friendly",
+        "instagram_worthy",
+        "hidden_gem",
+        "photogenic",
+        "local_favourite",
+        "touristy",
+        "budget",
+        "riverside",
+        "hidden",
+        "upscale",
+        "historical",
+    }
+)
 
-VALID_AUDIENCES = frozenset({
-    "solo_traveler", "couple", "family_with_kids", "family_with_teens",
-    "executive", "backpacker", "digital_nomad", "group",
-    "solo", "friends_group", "seniors",
-    "family_young_kids", "family_teens", "mobility_limited",
-})
+VALID_AUDIENCES = frozenset(
+    {
+        "solo_traveler",
+        "couple",
+        "family_with_kids",
+        "family_with_teens",
+        "executive",
+        "backpacker",
+        "digital_nomad",
+        "group",
+        "solo",
+        "friends_group",
+        "seniors",
+        "family_young_kids",
+        "family_teens",
+        "mobility_limited",
+    }
+)
 
 VALID_INDOOR_OUTDOOR = frozenset({"indoor", "outdoor", "both", "mixed"})
 
 VALID_PRICE_BANDS = frozenset({"budget", "moderate", "mid", "premium", "luxury", "splurge", "free"})
 
-VALID_CUISINES = frozenset({
-    "lao", "thai", "french", "fusion", "international", "vietnamese",
-    "emirati", "indian", "chinese", "japanese", "korean", "italian",
-    "american", "middle_eastern", "african", "bakery", "dessert",
-    "coffee", "smoothie", "street_food", "french_colonial", "drink",
-})
+VALID_CUISINES = frozenset(
+    {
+        "lao",
+        "thai",
+        "french",
+        "fusion",
+        "international",
+        "vietnamese",
+        "emirati",
+        "indian",
+        "chinese",
+        "japanese",
+        "korean",
+        "italian",
+        "american",
+        "middle_eastern",
+        "african",
+        "bakery",
+        "dessert",
+        "coffee",
+        "smoothie",
+        "street_food",
+        "french_colonial",
+        "drink",
+    }
+)
 
 # Food categories that may have dishes
-FOOD_CATEGORIES = frozenset({
-    "restaurant", "cafe", "bar", "night_market", "street_food",
-    "market", "craft_workshop",
-})
+FOOD_CATEGORIES = frozenset(
+    {
+        "restaurant",
+        "cafe",
+        "bar",
+        "night_market",
+        "street_food",
+        "market",
+        "craft_workshop",
+    }
+)
 
 # Column names the loader writes to venues_rag.  Exposed as a constant so
 # tests/test_venue_schema.py can import it rather than maintaining a mirror.
-VENUES_RAG_WRITE_COLUMNS = frozenset({
-    "audience",
-    "bid_weight",
-    "category",
-    "description",
-    "embedding", "embedding_model",
-    "geo_region",
-    "has_aircon",
-    "indoor_outdoor",
-    "is_sponsored",
-    "landmarks_local",
-    "lat",
-    "lng",
-    "micro_location",
-    "name",
-    "names_local",
-    "nearest_landmark",
-    "opening_hours_structured",
-    "price_band",
-    "typical_dwell_minutes",
-    "venue_id",
-    "vibe_tags",
-    "wheelchair_notes",
-})
+VENUES_RAG_WRITE_COLUMNS = frozenset(
+    {
+        "audience",
+        "bid_weight",
+        "category",
+        "description",
+        "embedding",
+        "embedding_model",
+        "geo_region",
+        "has_aircon",
+        "indoor_outdoor",
+        "is_sponsored",
+        "landmarks_local",
+        "lat",
+        "lng",
+        "micro_location",
+        "name",
+        "names_local",
+        "nearest_landmark",
+        "opening_hours_structured",
+        "price_band",
+        "typical_dwell_minutes",
+        "venue_id",
+        "vibe_tags",
+        "wheelchair_notes",
+    }
+)
 
 # Venue JSON keys intentionally NOT written to venues_rag.
 # A key that appears in data/*.json but is in neither this set nor
 # VENUES_RAG_WRITE_COLUMNS will fail test_no_silent_key_drop.
 EMBEDDING_MODEL = "text-embedding-3-small"
 
-INTENTIONALLY_NOT_PERSISTED = frozenset({
-    # Handled by the venue_dish table (separate upsert below)
-    "dishes",
-    # Mapped to opening_hours_structured via fallback in the insert dict
-    "opening_hours",
-    # Provenance metadata consumed by _build_localized_jsonb, not stored directly
-    "name_local_source",
-    "name_local_ref",
-    "nearest_landmark_local_source",
-    "nearest_landmark_local_ref",
-})
+INTENTIONALLY_NOT_PERSISTED = frozenset(
+    {
+        # Handled by the venue_dish table (separate upsert below)
+        "dishes",
+        # Mapped to opening_hours_structured via fallback in the insert dict
+        "opening_hours",
+        # Provenance metadata consumed by _build_localized_jsonb, not stored directly
+        "name_local_source",
+        "name_local_ref",
+        "nearest_landmark_local_source",
+        "nearest_landmark_local_ref",
+    }
+)
 
 # JSON keys in venue data that map to differently-named DB columns.
 # test_no_silent_key_drop uses this to avoid false-drop reports.
@@ -147,10 +237,16 @@ REGION_LANGUAGES = {
 }
 
 # Valid provenance values for names_local / landmarks_local entries.
-VALID_LOCALIZED_SOURCES = frozenset({
-    "wikidata", "osm", "official", "manual", "generated",
-    "field_verified",
-})
+VALID_LOCALIZED_SOURCES = frozenset(
+    {
+        "wikidata",
+        "osm",
+        "official",
+        "manual",
+        "generated",
+        "field_verified",
+    }
+)
 
 # Closed vocabulary for venue_external_id.source (concern 2 in DATA_LAYER_ROADMAP).
 # Intentionally SEPARATE from VALID_LOCALIZED_SOURCES above -- they overlap
@@ -159,49 +255,112 @@ EXTERNAL_ID_SOURCES = frozenset({"wikidata", "osm", "google", "foursquare"})
 
 # Column names the loader writes to venue_external_id. Same guard pattern as
 # VENUES_RAG_WRITE_COLUMNS: a test asserts the payload keys equal this set.
-VENUE_DISH_WRITE_COLUMNS = frozenset({
-    "dish_id", "venue_id", "name_en", "name_local", "names_local",
-    "is_signature", "cuisine", "price_local", "price_band", "currency_code",
-})
+VENUE_DISH_WRITE_COLUMNS = frozenset(
+    {
+        "dish_id",
+        "venue_id",
+        "name_en",
+        "name_local",
+        "names_local",
+        "is_signature",
+        "cuisine",
+        "price_local",
+        "price_band",
+        "currency_code",
+    }
+)
 
-VENUE_EXTERNAL_ID_WRITE_COLUMNS = frozenset({
-    "venue_id",
-    "source",
-    "external_id",
-    "confidence",
-    "verified_at",
-})
+VENUE_EXTERNAL_ID_WRITE_COLUMNS = frozenset(
+    {
+        "venue_id",
+        "source",
+        "external_id",
+        "confidence",
+        "verified_at",
+    }
+)
 
 # Taxonomy vocabularies (concern 6 in DATA_LAYER_ROADMAP).
 # The loader validates venue data against these at runtime.
 # A test asserts these match the taxonomy_term table exactly.
 TAXONOMY_TERMS = {
-    "category": frozenset({
-        "bar", "cafe", "craft_workshop", "hospital", "market",
-        "massage_spa", "museum", "nature", "pharmacy", "restaurant",
-        "river_activity", "street_food", "temple", "transport_hub",
-        "viewpoint", "walking_area",
-    }),
-    "vibe_tag": frozenset({
-        "adventurous", "authentic", "budget", "hidden", "historical",
-        "lively", "local_favourite", "photogenic", "quiet", "riverside",
-        "romantic", "scenic", "spiritual", "touristy", "upscale",
-    }),
-    "audience": frozenset({
-        "couple", "family_teens", "family_young_kids", "friends_group",
-        "mobility_limited", "seniors", "solo",
-    }),
+    "category": frozenset(
+        {
+            "bar",
+            "cafe",
+            "craft_workshop",
+            "hospital",
+            "market",
+            "massage_spa",
+            "museum",
+            "nature",
+            "pharmacy",
+            "restaurant",
+            "river_activity",
+            "street_food",
+            "temple",
+            "transport_hub",
+            "viewpoint",
+            "walking_area",
+        }
+    ),
+    "vibe_tag": frozenset(
+        {
+            "adventurous",
+            "authentic",
+            "budget",
+            "hidden",
+            "historical",
+            "lively",
+            "local_favourite",
+            "photogenic",
+            "quiet",
+            "riverside",
+            "romantic",
+            "scenic",
+            "spiritual",
+            "touristy",
+            "upscale",
+        }
+    ),
+    "audience": frozenset(
+        {
+            "couple",
+            "family_teens",
+            "family_young_kids",
+            "friends_group",
+            "mobility_limited",
+            "seniors",
+            "solo",
+        }
+    ),
     "price_band": frozenset({"budget", "free", "mid", "splurge"}),
     "indoor_outdoor": frozenset({"indoor", "mixed", "outdoor"}),
     # Dish vocabularies (seeded from laos_dish_glossary.json)
-    "cuisine": frozenset({
-        "drink", "french_colonial", "lao", "vietnamese",
-    }),
-    "dish_type": frozenset({
-        "alcoholic_drink", "bread_pastry", "coffee_tea", "dessert",
-        "grill", "noodle_soup", "rice_dish", "salad", "snack",
-        "soft_drink", "stew", "street_snack",
-    }),
+    "cuisine": frozenset(
+        {
+            "drink",
+            "french_colonial",
+            "lao",
+            "vietnamese",
+        }
+    ),
+    "dish_type": frozenset(
+        {
+            "alcoholic_drink",
+            "bread_pastry",
+            "coffee_tea",
+            "dessert",
+            "grill",
+            "noodle_soup",
+            "rice_dish",
+            "salad",
+            "snack",
+            "soft_drink",
+            "stew",
+            "street_snack",
+        }
+    ),
     "spice_level": frozenset({"hot", "medium", "mild", "none"}),
     "suitable_for": frozenset({"gluten_free", "halal", "vegan", "vegetarian"}),
     "adventurousness": frozenset({"1", "2", "3", "4", "5"}),
@@ -223,6 +382,7 @@ TIME_RE = re.compile(r"^\d{2}:\d{2}$")
 # Validation
 # ===========================================================================
 
+
 def get_bounding_box(geo_region: str):
     """Return (lat_min, lat_max, lng_min, lng_max) for a region."""
     if "dubai" in geo_region:
@@ -239,8 +399,9 @@ def validate_time(t: str) -> bool:
     return 0 <= h <= 23 and 0 <= m <= 59
 
 
-def validate_venue(venue: dict, idx: int, geo_region: str,
-                   registered_regions: frozenset, seen_names: set) -> list[str]:
+def validate_venue(
+    venue: dict, idx: int, geo_region: str, registered_regions: frozenset, seen_names: set
+) -> list[str]:
     """Validate a single venue dict. Returns list of error strings (empty = valid)."""
     errors = []
     name = venue.get("name", f"<unnamed venue #{idx}>")
@@ -266,7 +427,9 @@ def validate_venue(venue: dict, idx: int, geo_region: str,
     # geo_region validation
     v_region = venue.get("geo_region", geo_region)
     if v_region not in registered_regions:
-        errors.append(f"{prefix}: geo_region '{v_region}' not in registered regions {sorted(registered_regions)}")
+        errors.append(
+            f"{prefix}: geo_region '{v_region}' not in registered regions {sorted(registered_regions)}"
+        )
 
     # Duplicate name within region
     name_key = (venue.get("name", "").lower().strip(), v_region)
@@ -325,7 +488,9 @@ def validate_venue(venue: dict, idx: int, geo_region: str,
         else:
             missing_days = DAY_KEYS - set(hours.keys())
             if missing_days:
-                errors.append(f"{prefix}: opening_hours_structured missing days: {sorted(missing_days)}")
+                errors.append(
+                    f"{prefix}: opening_hours_structured missing days: {sorted(missing_days)}"
+                )
             for day, slots in hours.items():
                 if day not in DAY_KEYS:
                     errors.append(f"{prefix}: opening_hours_structured invalid day key '{day}'")
@@ -335,7 +500,9 @@ def validate_venue(venue: dict, idx: int, geo_region: str,
                     continue
                 for slot in slots:
                     if not isinstance(slot, list) or len(slot) != 2:
-                        errors.append(f"{prefix}: opening_hours_structured['{day}'] slot must be [start, end]")
+                        errors.append(
+                            f"{prefix}: opening_hours_structured['{day}'] slot must be [start, end]"
+                        )
                         continue
                     start, end = slot
                     if not validate_time(start):
@@ -343,7 +510,9 @@ def validate_venue(venue: dict, idx: int, geo_region: str,
                     if not validate_time(end):
                         errors.append(f"{prefix}: invalid time '{end}' in {day}")
                     if validate_time(start) and validate_time(end) and end <= start:
-                        errors.append(f"{prefix}: time range end '{end}' <= start '{start}' in {day}")
+                        errors.append(
+                            f"{prefix}: time range end '{end}' <= start '{start}' in {day}"
+                        )
 
     # Dishes on non-food category
     dishes = venue.get("dishes", [])
@@ -362,15 +531,21 @@ def validate_venue(venue: dict, idx: int, geo_region: str,
         # Allergen vocabulary check
         for allergen in dish.get("contains", []):
             if allergen not in VALID_ALLERGENS:
-                errors.append(f"{prefix} > dish '{d_name}': contains allergen '{allergen}' not in valid set")
+                errors.append(
+                    f"{prefix} > dish '{d_name}': contains allergen '{allergen}' not in valid set"
+                )
         for allergen in dish.get("may_contain", []):
             if allergen not in VALID_ALLERGENS:
-                errors.append(f"{prefix} > dish '{d_name}': may_contain allergen '{allergen}' not in valid set")
+                errors.append(
+                    f"{prefix} > dish '{d_name}': may_contain allergen '{allergen}' not in valid set"
+                )
 
         # Dietary label vocabulary check
         for label in dish.get("suitable_for", []):
             if label not in VALID_DIETARY_LABELS:
-                errors.append(f"{prefix} > dish '{d_name}': suitable_for '{label}' not in valid set")
+                errors.append(
+                    f"{prefix} > dish '{d_name}': suitable_for '{label}' not in valid set"
+                )
 
         # SAFETY INVARIANT: cross-field allergen assertion
         suitable = dish.get("suitable_for", [])
@@ -379,7 +554,9 @@ def validate_venue(venue: dict, idx: int, geo_region: str,
         if suitable:
             conflicts = check_allergen_conflicts(suitable, contains_list, may_contain_list)
             for conflict in conflicts:
-                errors.append(f"{prefix} > dish '{d_name}': ALLERGEN SAFETY VIOLATION -- {conflict}")
+                errors.append(
+                    f"{prefix} > dish '{d_name}': ALLERGEN SAFETY VIOLATION -- {conflict}"
+                )
 
     return errors
 
@@ -426,6 +603,7 @@ def collect_warnings(venues: list[dict], geo_region: str) -> list[str]:
 # Embedding
 # ===========================================================================
 
+
 def generate_embedding_text(venue: dict) -> str:
     """Build the text to embed. Same composition as query-time for consistency."""
     parts = [
@@ -439,6 +617,7 @@ def generate_embedding_text(venue: dict) -> str:
 def embed_batch(texts: list[str]) -> list[list[float]]:
     """Generate embeddings using text-embedding-3-small via LiteLLM."""
     import litellm
+
     response = litellm.embedding(
         model="text-embedding-3-small",
         input=texts,
@@ -459,8 +638,8 @@ def estimate_embedding_cost(texts: list[str]) -> float:
 # Database operations
 # ===========================================================================
 
-def _build_localized_jsonb(raw_value, geo_region: str, source: str = "generated",
-                           ref: str = None):
+
+def _build_localized_jsonb(raw_value, geo_region: str, source: str = "generated", ref: str = None):
     """Wrap a raw localized string into the SPEC-12 keyed JSONB shape.
 
     Returns None if raw_value is falsy, otherwise:
@@ -480,8 +659,7 @@ def _build_localized_jsonb(raw_value, geo_region: str, source: str = "generated"
     return {lang: entry}
 
 
-def build_venue_record(venue: dict, venue_id: str, embedding: list[float],
-                       geo_region: str) -> dict:
+def build_venue_record(venue: dict, venue_id: str, embedding: list[float], geo_region: str) -> dict:
     """Build the venues_rag row dict from a venue JSON object.
 
     Returns a dict whose keys exactly match VENUES_RAG_WRITE_COLUMNS.
@@ -500,7 +678,8 @@ def build_venue_record(venue: dict, venue_id: str, embedding: list[float],
         "category": venue.get("category"),
         "is_sponsored": venue.get("is_sponsored", False),
         "bid_weight": venue.get("bid_weight", 0.0),
-        "opening_hours_structured": venue.get("opening_hours_structured") or venue.get("opening_hours"),
+        "opening_hours_structured": venue.get("opening_hours_structured")
+        or venue.get("opening_hours"),
         "geo_region": geo_region,
         "embedding": embedding,
         "embedding_model": EMBEDDING_MODEL,
@@ -509,13 +688,15 @@ def build_venue_record(venue: dict, venue_id: str, embedding: list[float],
         "price_band": venue.get("price_band"),
         "has_aircon": venue.get("has_aircon"),
         "names_local": _build_localized_jsonb(
-            venue.get("name_local"), geo_region,
+            venue.get("name_local"),
+            geo_region,
             source=venue.get("name_local_source", "generated"),
             ref=venue.get("name_local_ref"),
         ),
         "nearest_landmark": venue.get("nearest_landmark"),
         "landmarks_local": _build_localized_jsonb(
-            venue.get("nearest_landmark_local"), geo_region,
+            venue.get("nearest_landmark_local"),
+            geo_region,
             source=venue.get("nearest_landmark_local_source", "generated"),
             ref=venue.get("nearest_landmark_local_ref"),
         ),
@@ -524,7 +705,9 @@ def build_venue_record(venue: dict, venue_id: str, embedding: list[float],
 
 
 def build_dish_record(
-    dish: dict, venue_id: str, geo_region: str,
+    dish: dict,
+    venue_id: str,
+    geo_region: str,
 ) -> dict:
     """Build a venue_dish row dict from a dish entry in the venue JSON.
 
@@ -535,9 +718,7 @@ def build_dish_record(
     raw_name_local = dish.get("name_local")
     if raw_name_local:
         lang = REGION_LANGUAGES.get(geo_region, "und")
-        dish_names_local = {
-            lang: {"value": raw_name_local, "source": "generated", "ref": None}
-        }
+        dish_names_local = {lang: {"value": raw_name_local, "source": "generated", "ref": None}}
     dish_currency = REGION_CURRENCIES.get(geo_region) if dish.get("price_local") else None
 
     record = {
@@ -558,8 +739,7 @@ def build_dish_record(
         extra = set(record.keys()) - VENUE_DISH_WRITE_COLUMNS
         missing = VENUE_DISH_WRITE_COLUMNS - set(record.keys())
         raise ValueError(
-            f"build_dish_record payload mismatch: "
-            f"extra={sorted(extra)}, missing={sorted(missing)}"
+            f"build_dish_record payload mismatch: extra={sorted(extra)}, missing={sorted(missing)}"
         )
     return record
 
@@ -600,9 +780,13 @@ def upsert_venues(venues: list[dict], geo_region: str, embeddings: list[list[flo
         venue_name = venue["name"]
 
         # Check if venue already exists (upsert)
-        existing = client.table("venues_rag").select("venue_id").eq(
-            "name", venue_name
-        ).eq("geo_region", geo_region).execute()
+        existing = (
+            client.table("venues_rag")
+            .select("venue_id")
+            .eq("name", venue_name)
+            .eq("geo_region", geo_region)
+            .execute()
+        )
 
         if existing.data:
             venue_id = existing.data[0]["venue_id"]
@@ -611,11 +795,8 @@ def upsert_venues(venues: list[dict], geo_region: str, embeddings: list[list[flo
 
         if existing.data:
             # Update: strip identity columns used in the WHERE clause
-            update_payload = {k: v for k, v in record.items()
-                             if k not in ("venue_id", "name")}
-            client.table("venues_rag").update(
-                update_payload
-            ).eq("venue_id", venue_id).execute()
+            update_payload = {k: v for k, v in record.items() if k not in ("venue_id", "name")}
+            client.table("venues_rag").update(update_payload).eq("venue_id", venue_id).execute()
         else:
             # Insert
             client.table("venues_rag").insert(record).execute()
@@ -643,13 +824,16 @@ def upsert_venues(venues: list[dict], geo_region: str, embeddings: list[list[flo
 # Main
 # ===========================================================================
 
+
 def main():
     parser = argparse.ArgumentParser(description="Load venue data with validation")
     parser.add_argument("files", nargs="+", help="JSON venue data files")
-    parser.add_argument("--dry-run", action="store_true",
-                        help="Validate and report without writing to DB")
-    parser.add_argument("--geo-region", default=None,
-                        help="Override geo_region for all venues in the file")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Validate and report without writing to DB"
+    )
+    parser.add_argument(
+        "--geo-region", default=None, help="Override geo_region for all venues in the file"
+    )
     args = parser.parse_args()
 
     registered_regions = get_all_region_codes()
@@ -662,7 +846,7 @@ def main():
             all_errors.append(f"File not found: {filepath}")
             continue
 
-        with open(filepath, encoding='utf-8') as f:
+        with open(filepath, encoding="utf-8") as f:
             raw_text = f.read()
 
         # Reject // comments (JSON doesn't support them)
@@ -701,7 +885,9 @@ def main():
                 )
                 continue
         elif not isinstance(venues, list):
-            all_errors.append(f"{filepath}: Expected JSON array or dict with venues key, got {type(venues).__name__}")
+            all_errors.append(
+                f"{filepath}: Expected JSON array or dict with venues key, got {type(venues).__name__}"
+            )
             continue
 
         # Determine geo_region: CLI override > file-level field > infer from filename
@@ -717,13 +903,17 @@ def main():
                 elif venues and venues[0].get("geo_region"):
                     geo_region = venues[0]["geo_region"]
                 else:
-                    all_errors.append(f"{filepath}: Cannot determine geo_region. "
-                                      f"Use --geo-region or name file as venues_<region>.json")
+                    all_errors.append(
+                        f"{filepath}: Cannot determine geo_region. "
+                        f"Use --geo-region or name file as venues_<region>.json"
+                    )
                     continue
 
         if geo_region not in registered_regions:
-            all_errors.append(f"{filepath}: geo_region '{geo_region}' not registered. "
-                              f"Valid: {sorted(registered_regions)}")
+            all_errors.append(
+                f"{filepath}: geo_region '{geo_region}' not registered. "
+                f"Valid: {sorted(registered_regions)}"
+            )
             continue
 
         # Validate every venue
@@ -742,16 +932,16 @@ def main():
 
     # Report
     if all_warnings:
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"WARNINGS ({len(all_warnings)}):")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
         for w in all_warnings:
             print(f"  [!]  {w}")
 
     if all_errors:
-        print(f"\n{'='*60}", file=sys.stderr)
+        print(f"\n{'=' * 60}", file=sys.stderr)
         print(f"ERRORS ({len(all_errors)}) -- NO DATA LOADED:", file=sys.stderr)
-        print(f"{'='*60}", file=sys.stderr)
+        print(f"{'=' * 60}", file=sys.stderr)
         for e in all_errors:
             print(f"  [X] {e}", file=sys.stderr)
         sys.exit(1)
@@ -761,9 +951,9 @@ def main():
         sys.exit(1)
 
     # Summary
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("VALIDATION PASSED")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     total_venues = 0
     total_dishes = 0
     for filepath, venues, geo_region in file_data:
@@ -801,7 +991,7 @@ def main():
     BATCH_SIZE = 50
     all_embeddings: list[list[float]] = []
     for i in range(0, len(all_texts), BATCH_SIZE):
-        batch = all_texts[i:i + BATCH_SIZE]
+        batch = all_texts[i : i + BATCH_SIZE]
         embs = embed_batch(batch)
         all_embeddings.extend(embs)
         print(f"    Embedded {min(i + BATCH_SIZE, len(all_texts))}/{len(all_texts)}")
@@ -810,7 +1000,7 @@ def main():
     emb_idx = 0
     for filepath, venues, geo_region in file_data:
         n = len(venues)
-        file_embeddings = all_embeddings[emb_idx:emb_idx + n]
+        file_embeddings = all_embeddings[emb_idx : emb_idx + n]
         emb_idx += n
         inserted = upsert_venues(venues, geo_region, file_embeddings)
         print(f"  Upserted {inserted} venues for {geo_region}")

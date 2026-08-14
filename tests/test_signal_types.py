@@ -35,6 +35,7 @@ HEADERS = {"X-Debug-User-Id": "test-user-signal-types"}
 # Test 1: Drift guard -- migrations agree with SIGNAL_TYPES
 # ==============================================================================
 
+
 def _extract_signal_types_from_migrations() -> dict[str, str]:
     """Parse all migration SQL files and extract (key, value_kind) from signal_type INSERTs.
 
@@ -44,9 +45,7 @@ def _extract_signal_types_from_migrations() -> dict[str, str]:
     types = {}
     insert_pattern = re.compile(r"INSERT INTO signal_type.*?;", re.DOTALL | re.IGNORECASE)
     # Each VALUES row: ('key', 'category', 'value_kind', ...)
-    row_pattern = re.compile(
-        r"\('([a-z_]+)',\s*'([a-z_]+)',\s*'([a-z_]+)'"
-    )
+    row_pattern = re.compile(r"\('([a-z_]+)',\s*'([a-z_]+)',\s*'([a-z_]+)'")
 
     for path in sorted(glob.glob(f"{migration_dir}/*.sql")):
         with open(path) as f:
@@ -83,16 +82,15 @@ def test_drift_guard_migrations_match_python():
         py_vk = SIGNAL_TYPES[key]
         sql_vk = migration_types[key]
         if py_vk != sql_vk:
-            mismatches.append(f"  {key}: Python=\'{py_vk}\' vs SQL=\'{sql_vk}\'")
+            mismatches.append(f"  {key}: Python='{py_vk}' vs SQL='{sql_vk}'")
 
-    assert not mismatches, (
-        f"Registry VALUE_KIND drift detected!\n" + "\n".join(mismatches)
-    )
+    assert not mismatches, "Registry VALUE_KIND drift detected!\n" + "\n".join(mismatches)
 
 
 # ==============================================================================
 # Test 2: Each client-emittable type is accepted by ingest
 # ==============================================================================
+
 
 @pytest.mark.parametrize("signal_type", sorted(client_emittable_types()))
 def test_client_emittable_types_accepted(signal_type):
@@ -121,18 +119,21 @@ def test_client_emittable_types_accepted(signal_type):
 # Test 3: arrival_delta (server-derived) is rejected from client
 # ==============================================================================
 
+
 def test_arrival_delta_rejected_from_client():
     """Server-derived types cannot be POSTed by clients -- 422-equivalent rejection."""
     signal_id = str(uuid.uuid4())
     payload = {
-        "signals": [{
-            "signal_id": signal_id,
-            "signal_type": "arrival_delta",
-            "place_ref": "test-place-001",
-            "trip_id": "test-trip-001",
-            "captured_at": datetime.now(timezone.utc).isoformat(),
-            "value_json": {"minutes": 5},
-        }]
+        "signals": [
+            {
+                "signal_id": signal_id,
+                "signal_type": "arrival_delta",
+                "place_ref": "test-place-001",
+                "trip_id": "test-trip-001",
+                "captured_at": datetime.now(timezone.utc).isoformat(),
+                "value_json": {"minutes": 5},
+            }
+        ]
     }
     resp = client.post("/api/v1/signals", json=payload, headers=HEADERS)
     assert resp.status_code == 200
@@ -146,17 +147,20 @@ def test_arrival_delta_rejected_from_client():
 # Test 4: Unregistered type is rejected
 # ==============================================================================
 
+
 def test_unregistered_type_rejected():
     """An unknown signal type gets per-item rejected (not a 500)."""
     signal_id = str(uuid.uuid4())
     payload = {
-        "signals": [{
-            "signal_id": signal_id,
-            "signal_type": "bogus_type",
-            "place_ref": "test-place-001",
-            "trip_id": "test-trip-001",
-            "captured_at": datetime.now(timezone.utc).isoformat(),
-        }]
+        "signals": [
+            {
+                "signal_id": signal_id,
+                "signal_type": "bogus_type",
+                "place_ref": "test-place-001",
+                "trip_id": "test-trip-001",
+                "captured_at": datetime.now(timezone.utc).isoformat(),
+            }
+        ]
     }
     resp = client.post("/api/v1/signals", json=payload, headers=HEADERS)
     assert resp.status_code == 200
@@ -170,9 +174,11 @@ def test_unregistered_type_rejected():
 # Test 5: Both backends agree on valid types
 # ==============================================================================
 
+
 def test_both_backends_agree():
     """database_service and signal_types module expose identical type sets."""
     from services.database_service import db_service
+
     backend_types = db_service.get_valid_signal_types()
     python_types = set(SIGNAL_TYPES.keys())
     assert backend_types == python_types
@@ -181,6 +187,7 @@ def test_both_backends_agree():
 # ==============================================================================
 # Test 6: is_valid and client_emittable_types are consistent
 # ==============================================================================
+
 
 def test_is_valid_covers_all():
     """is_valid returns True for every key in SIGNAL_TYPES."""
@@ -201,19 +208,23 @@ def test_server_derived_not_in_client_emittable():
 # Test 7: node_skipped reason must be from closed enum
 # ==============================================================================
 
+
 def test_node_skipped_valid_reason_accepted():
     """node_skipped with a valid reason from the closed enum is accepted."""
     import uuid
+
     signal_id = str(uuid.uuid4())
     payload = {
-        "signals": [{
-            "signal_id": signal_id,
-            "signal_type": "node_skipped",
-            "place_ref": "test-place-001",
-            "trip_id": "test-trip-001",
-            "captured_at": datetime.now(timezone.utc).isoformat(),
-            "value_json": {"reason": "too_tired"},
-        }]
+        "signals": [
+            {
+                "signal_id": signal_id,
+                "signal_type": "node_skipped",
+                "place_ref": "test-place-001",
+                "trip_id": "test-trip-001",
+                "captured_at": datetime.now(timezone.utc).isoformat(),
+                "value_json": {"reason": "too_tired"},
+            }
+        ]
     }
     resp = client.post("/api/v1/signals", json=payload, headers=HEADERS)
     assert resp.status_code == 200
@@ -223,16 +234,19 @@ def test_node_skipped_valid_reason_accepted():
 def test_node_skipped_invalid_reason_rejected():
     """node_skipped with a free-text reason not in the closed enum is rejected."""
     import uuid
+
     signal_id = str(uuid.uuid4())
     payload = {
-        "signals": [{
-            "signal_id": signal_id,
-            "signal_type": "node_skipped",
-            "place_ref": "test-place-001",
-            "trip_id": "test-trip-001",
-            "captured_at": datetime.now(timezone.utc).isoformat(),
-            "value_json": {"reason": "was tired lol"},
-        }]
+        "signals": [
+            {
+                "signal_id": signal_id,
+                "signal_type": "node_skipped",
+                "place_ref": "test-place-001",
+                "trip_id": "test-trip-001",
+                "captured_at": datetime.now(timezone.utc).isoformat(),
+                "value_json": {"reason": "was tired lol"},
+            }
+        ]
     }
     resp = client.post("/api/v1/signals", json=payload, headers=HEADERS)
     assert resp.status_code == 200
@@ -244,7 +258,9 @@ def test_node_skipped_invalid_reason_rejected():
 
 def test_node_skipped_reasons_enum_matches_migration():
     """NODE_SKIPPED_REASONS in Python matches enum_values in migration 0004."""
-    import re, glob
+    import re
+    import glob
+
     # Extract the ARRAY[...] from 0004
     migration_reasons = set()
     for path in sorted(glob.glob("supabase/migrations/0004*.sql")):
@@ -266,17 +282,20 @@ def test_node_skipped_reasons_enum_matches_migration():
 # Test 8: Dish signal types require entity_type='dish' + entity_id (section 29)
 # ==============================================================================
 
+
 def test_dish_loved_with_venue_entity_type_rejected():
     """dish_loved with entity_type='venue' (default) is rejected."""
     signal_id = str(uuid.uuid4())
     payload = {
-        "signals": [{
-            "signal_id": signal_id,
-            "signal_type": "dish_loved",
-            "place_ref": "some-restaurant",
-            "entity_type": "venue",
-            "captured_at": datetime.now(timezone.utc).isoformat(),
-        }]
+        "signals": [
+            {
+                "signal_id": signal_id,
+                "signal_type": "dish_loved",
+                "place_ref": "some-restaurant",
+                "entity_type": "venue",
+                "captured_at": datetime.now(timezone.utc).isoformat(),
+            }
+        ]
     }
     resp = client.post("/api/v1/signals", json=payload, headers=HEADERS)
     assert resp.status_code == 200
@@ -290,13 +309,15 @@ def test_dish_loved_without_entity_id_rejected():
     """dish_loved with entity_type='dish' but no entity_id is rejected."""
     signal_id = str(uuid.uuid4())
     payload = {
-        "signals": [{
-            "signal_id": signal_id,
-            "signal_type": "dish_loved",
-            "place_ref": "some-restaurant",
-            "entity_type": "dish",
-            "captured_at": datetime.now(timezone.utc).isoformat(),
-        }]
+        "signals": [
+            {
+                "signal_id": signal_id,
+                "signal_type": "dish_loved",
+                "place_ref": "some-restaurant",
+                "entity_type": "dish",
+                "captured_at": datetime.now(timezone.utc).isoformat(),
+            }
+        ]
     }
     resp = client.post("/api/v1/signals", json=payload, headers=HEADERS)
     assert resp.status_code == 200
@@ -309,14 +330,16 @@ def test_dish_loved_valid_accepted():
     """dish_loved with entity_type='dish' + entity_id is accepted."""
     signal_id = str(uuid.uuid4())
     payload = {
-        "signals": [{
-            "signal_id": signal_id,
-            "signal_type": "dish_loved",
-            "place_ref": "some-restaurant",
-            "entity_type": "dish",
-            "entity_id": "dish-khao-piak-001",
-            "captured_at": datetime.now(timezone.utc).isoformat(),
-        }]
+        "signals": [
+            {
+                "signal_id": signal_id,
+                "signal_type": "dish_loved",
+                "place_ref": "some-restaurant",
+                "entity_type": "dish",
+                "entity_id": "dish-khao-piak-001",
+                "captured_at": datetime.now(timezone.utc).isoformat(),
+            }
+        ]
     }
     resp = client.post("/api/v1/signals", json=payload, headers=HEADERS)
     assert resp.status_code == 200
@@ -358,6 +381,7 @@ def test_dish_signal_types_subset_of_signal_types():
 # ==============================================================================
 # Test 9: PAYLOAD_SHAPES documents every signal type
 # ==============================================================================
+
 
 def test_payload_shapes_completeness():
     """Every key in SIGNAL_TYPES must have a PAYLOAD_SHAPES entry.

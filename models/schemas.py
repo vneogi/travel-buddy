@@ -20,6 +20,7 @@ from models.ids import generate_node_id
 # Enums
 # ==============================================================================
 
+
 class TierStatus(str, Enum):
     FREE = "free"
     PRO = "pro"
@@ -39,6 +40,7 @@ class RoutingTier(str, Enum):
 
 class EventType(str, Enum):
     """User event types that trigger state changes."""
+
     CANCEL_ACTIVITY = "cancel_activity"
     SWAP_ACTIVITY = "swap_activity"
     ADD_ACTIVITY = "add_activity"
@@ -53,8 +55,10 @@ class EventType(str, Enum):
 # TripState (Core State Object - TypedDict for LangGraph)
 # ==============================================================================
 
+
 class TripNode(BaseModel):
     """A single activity node in the itinerary graph."""
+
     node_id: str = Field(default_factory=lambda: generate_node_id())
     venue_name: str
     venue_id: Optional[str] = None
@@ -72,6 +76,7 @@ class TripNode(BaseModel):
 
 class CurrentContext(BaseModel):
     """Real-time traveler context."""
+
     location_lat: float = 25.1972
     location_lng: float = 55.2744
     time_of_day: str = "14:30"
@@ -81,6 +86,7 @@ class CurrentContext(BaseModel):
 
 class ExecutionControl(BaseModel):
     """Cost-control metadata for the state machine."""
+
     routing_tier: RoutingTier = RoutingTier.LIGHT
     loop_depth_counter: int = 0
     max_loop_depth: int = 3
@@ -88,6 +94,7 @@ class ExecutionControl(BaseModel):
 
 class TripState(BaseModel):
     """The live, mutable trip state object."""
+
     trip_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: str
     geo_region: str = "dubai_uae"  # Per-trip geo-fence; unlocks multi-city
@@ -101,6 +108,7 @@ class TripState(BaseModel):
 # TypedDict version for LangGraph state
 class GraphState(TypedDict):
     """LangGraph-compatible state dict."""
+
     trip_state: dict  # Serialized TripState
     user_message: str
     event_type: str
@@ -115,8 +123,10 @@ class GraphState(TypedDict):
 # API Request/Response Models
 # ==============================================================================
 
+
 class TripEventRequest(BaseModel):
     """POST /api/v1/trip/event - Incoming user event."""
+
     # NOTE: user_id is derived from the auth token server-side; any value sent
     # by the client is ignored. Kept optional only for backward compatibility.
     user_id: Optional[str] = None
@@ -129,6 +139,7 @@ class TripEventRequest(BaseModel):
 
 class TripEventResponse(BaseModel):
     """Response after processing a trip event."""
+
     trip_id: str
     status: str
     message: str
@@ -140,6 +151,7 @@ class TripEventResponse(BaseModel):
 
 class CreateTripRequest(BaseModel):
     """POST /api/v1/trip/create - Create a new trip."""
+
     # NOTE: user_id is derived from the auth token server-side; ignored if sent.
     user_id: Optional[str] = None
     start_date: datetime
@@ -150,27 +162,33 @@ class CreateTripRequest(BaseModel):
 
 class UserTier(BaseModel):
     """User tier information."""
+
     user_id: str
     tier_status: TierStatus = TierStatus.FREE
     daily_reroute_count: int = 0
     max_daily_reroutes: int = 5
 
 
-
-
 # ==============================================================================
 # Trip Party (SPEC-03 -- party_context stamping)
 # ==============================================================================
 
+
 class PartyMemberIn(BaseModel):
     """A member of the travel party (input model)."""
+
     role: str = Field(..., description="self|partner|child|teen|parent|friend")
-    age_band: str = Field(..., description="infant|toddler|child|teen|adult|senior (NEVER a birth date)")
-    needs: List[str] = Field(default_factory=list, description="nap_schedule|stroller|dietary:*|low_stamina")
+    age_band: str = Field(
+        ..., description="infant|toddler|child|teen|adult|senior (NEVER a birth date)"
+    )
+    needs: List[str] = Field(
+        default_factory=list, description="nap_schedule|stroller|dietary:*|low_stamina"
+    )
 
 
 class TripPartyIn(BaseModel):
     """Trip party composition (input model for create-trip)."""
+
     party_type: str = Field(
         default="solo",
         description="solo|couple|friends|family_young_kids|family_teens|multigen|daddy_kiddo|accessibility_focused|mixed",
@@ -182,6 +200,7 @@ class TripPartyIn(BaseModel):
 
 class TripParty(BaseModel):
     """Stored trip party (response model)."""
+
     party_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     trip_id: str
     party_type: str
@@ -189,12 +208,15 @@ class TripParty(BaseModel):
     members: List[PartyMemberIn] = Field(default_factory=list)
     notes: Optional[str] = None
 
+
 # ==============================================================================
 # Venue / RAG Models
 # ==============================================================================
 
+
 class VenueRAG(BaseModel):
     """A venue entry with RAG metadata."""
+
     venue_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
     description: str
@@ -212,6 +234,7 @@ class VenueRAG(BaseModel):
 
 class VenueSearchResult(BaseModel):
     """Result from hybrid venue search."""
+
     venue: VenueRAG
     similarity_score: float
     final_score: float  # After sponsored boost

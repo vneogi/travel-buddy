@@ -4,6 +4,7 @@ Verifies that visited_confirmed signals produce a derived arrival_delta
 signal with correct delta_minutes, deterministic signal_id, and that
 failure cases (no trip, no node, no trip_id) are handled gracefully.
 """
+
 import uuid
 from datetime import datetime, timedelta, timezone
 

@@ -7,6 +7,7 @@ These tests validate:
 4. Bidirectional agreement between Python constants and the migration seed
 5. Migration safety: additive-only (no DROP, no ALTER venues_rag)
 """
+
 import json
 import re
 import sys
@@ -34,6 +35,7 @@ sys.path.pop(0)
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _load_verification_artifact():
     path = DATA_DIR / "laos_name_verification.json"
     return json.loads(path.read_text(encoding="utf-8"))
@@ -53,10 +55,7 @@ def _iter_laos_venues():
 
 def _strip_sql_comments(sql: str) -> str:
     """Remove SQL single-line comments (-- ...) from content."""
-    return "\n".join(
-        line for line in sql.splitlines()
-        if not line.strip().startswith("--")
-    )
+    return "\n".join(line for line in sql.splitlines() if not line.strip().startswith("--"))
 
 
 def _parse_taxonomy_seed_from_migration():
@@ -73,6 +72,7 @@ def _parse_taxonomy_seed_from_migration():
 # ---------------------------------------------------------------------------
 # PART 1: venue_external_id
 # ---------------------------------------------------------------------------
+
 
 def test_verification_artifact_has_ten_refs():
     """The verification artifact must carry exactly 10 verified entries with refs."""
@@ -109,13 +109,11 @@ def test_refs_parse_into_resolvable_form():
         ref = entry["ref"]
         if source == "wikidata":
             assert wikidata_re.match(ref), (
-                f"Wikidata ref '{ref}' for {entry['venue_name']} "
-                f"does not match Q<digits> pattern"
+                f"Wikidata ref '{ref}' for {entry['venue_name']} does not match Q<digits> pattern"
             )
         elif source == "osm":
             assert osm_re.match(ref), (
-                f"OSM ref '{ref}' for {entry['venue_name']} "
-                f"does not match type/id pattern"
+                f"OSM ref '{ref}' for {entry['venue_name']} does not match type/id pattern"
             )
         else:
             raise AssertionError(f"Unhandled source '{source}' for {entry['venue_name']}")
@@ -134,6 +132,7 @@ def test_unique_constraint_on_source_external_id():
 # ---------------------------------------------------------------------------
 # PART 1 continued: venue_external_id writer (A, B, C)
 # ---------------------------------------------------------------------------
+
 
 def test_build_external_id_record_produces_10_rows():
     """Dry run over all Laos venues must produce exactly 10 external-id records,
@@ -195,6 +194,7 @@ def test_second_run_produces_no_duplicates():
 
 class FakeTable:
     """Minimal fake for Supabase table fluent API."""
+
     def __init__(self, name, calls):
         self._name = name
         self._calls = calls
@@ -225,11 +225,13 @@ class FakeTable:
     def execute(self):
         class R:
             data = []
+
         return R()
 
 
 class FakeClient:
     """Captures calls to all tables."""
+
     def __init__(self):
         self.calls = []
 
@@ -240,8 +242,10 @@ class FakeClient:
 def test_upsert_venues_writes_external_ids(monkeypatch):
     """upsert_venues must call venue_external_id upsert for venues with refs."""
     import uuid as _uuid
+
     sys.path.insert(0, str(REPO_ROOT / "scripts"))
     import load_venues
+
     sys.path.pop(0)
 
     # Load all Laos venues
@@ -255,28 +259,25 @@ def test_upsert_venues_writes_external_ids(monkeypatch):
 
     # Patch create_client to return our fake
     fake_client = FakeClient()
-    monkeypatch.setattr("os.environ", {
-        "TB_SUPABASE_URL": "http://fake", "TB_SUPABASE_KEY": "fake"
-    })
+    monkeypatch.setattr("os.environ", {"TB_SUPABASE_URL": "http://fake", "TB_SUPABASE_KEY": "fake"})
 
     # Monkey-patch the supabase import inside load_venues
     import types
+
     fake_supabase = types.ModuleType("supabase")
     fake_supabase.create_client = lambda url, key: fake_client
     monkeypatch.setitem(sys.modules, "supabase", fake_supabase)
 
     # Reload to pick up the patched module
     import importlib
+
     importlib.reload(load_venues)
 
     load_venues.upsert_venues(all_venues, geo_region, fake_embeddings)
 
     # Check venue_external_id upserts
-    ext_calls = [c for c in fake_client.calls
-                 if c[0] == "upsert" and c[1] == "venue_external_id"]
-    assert len(ext_calls) == 10, (
-        f"Expected 10 venue_external_id upserts, got {len(ext_calls)}"
-    )
+    ext_calls = [c for c in fake_client.calls if c[0] == "upsert" and c[1] == "venue_external_id"]
+    assert len(ext_calls) == 10, f"Expected 10 venue_external_id upserts, got {len(ext_calls)}"
     # Verify the refs match the artifact
     artifact = _load_verification_artifact()
     expected_refs = {e["ref"] for e in artifact["verified_names"]}
@@ -286,10 +287,10 @@ def test_upsert_venues_writes_external_ids(monkeypatch):
     )
 
 
-
 # ---------------------------------------------------------------------------
 # PART 2: taxonomy_term
 # ---------------------------------------------------------------------------
+
 
 def test_taxonomy_seed_completeness():
     """Every taxonomy value used in venue JSONs must exist in the migration seed."""
@@ -415,6 +416,7 @@ def test_taxonomy_composite_pk():
 # ---------------------------------------------------------------------------
 # Migration safety: additive-only
 # ---------------------------------------------------------------------------
+
 
 def test_migration_0012_is_additive_only():
     """Migration 0012 must not DROP anything or ALTER venues_rag."""

@@ -16,16 +16,45 @@ from models.schemas import EventType, RoutingTier
 
 # Intent keywords for classification
 STRUCTURAL_INTENTS = {
-    "reschedule", "reroute", "replace", "swap", "cancel", "change plan",
-    "add activity", "move", "shift", "reorganize", "different place",
-    "something else", "too tired", "weather", "raining", "too hot",
+    "reschedule",
+    "reroute",
+    "replace",
+    "swap",
+    "cancel",
+    "change plan",
+    "add activity",
+    "move",
+    "shift",
+    "reorganize",
+    "different place",
+    "something else",
+    "too tired",
+    "weather",
+    "raining",
+    "too hot",
 }
 
 LIGHT_INTENTS = {
-    "translate", "what is", "dress code", "how to get", "directions",
-    "price", "cost", "menu", "phone number", "hours", "open",
-    "tell me about", "information", "history", "culture", "tip",
-    "recommend food", "wifi", "parking", "nearby",
+    "translate",
+    "what is",
+    "dress code",
+    "how to get",
+    "directions",
+    "price",
+    "cost",
+    "menu",
+    "phone number",
+    "hours",
+    "open",
+    "tell me about",
+    "information",
+    "history",
+    "culture",
+    "tip",
+    "recommend food",
+    "wifi",
+    "parking",
+    "nearby",
 }
 
 
@@ -58,14 +87,8 @@ class RouterAgent:
             return (RoutingTier.LIGHT, 0.95)
 
         # Keyword-based classification (fallback)
-        structural_score = sum(
-            1 for keyword in STRUCTURAL_INTENTS
-            if keyword in message_lower
-        )
-        light_score = sum(
-            1 for keyword in LIGHT_INTENTS
-            if keyword in message_lower
-        )
+        structural_score = sum(1 for keyword in STRUCTURAL_INTENTS if keyword in message_lower)
+        light_score = sum(1 for keyword in LIGHT_INTENTS if keyword in message_lower)
 
         total = structural_score + light_score
         if total == 0:

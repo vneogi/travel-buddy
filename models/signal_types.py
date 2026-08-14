@@ -58,15 +58,17 @@ PAYLOAD_SHAPES: dict[str, str] = {
 
 # Closed enum for node_skipped reasons. Client must present a picker,
 # not a free-text field. Unanalyzable free-text defeats the purpose.
-NODE_SKIPPED_REASONS = frozenset({
-    "too_far",
-    "too_tired",
-    "closed",
-    "crowded",
-    "not_interested",
-    "ran_out_of_time",
-    "weather",
-})
+NODE_SKIPPED_REASONS = frozenset(
+    {
+        "too_far",
+        "too_tired",
+        "closed",
+        "crowded",
+        "not_interested",
+        "ran_out_of_time",
+        "weather",
+    }
+)
 
 SERVER_DERIVED_TYPES = frozenset({"arrival_delta"})
 

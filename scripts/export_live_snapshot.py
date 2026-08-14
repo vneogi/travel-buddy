@@ -29,6 +29,7 @@ Usage:
 Reads the service_role key because it must bypass RLS to see every row. The
 key is never printed, never written to the snapshot, and never logged.
 """
+
 import json
 import os
 import sys
@@ -77,9 +78,7 @@ def fetch_table(base_url, key, table):
     rows = []
     offset = 0
     while True:
-        url = "%s/rest/v1/%s?select=*&limit=%d&offset=%d" % (
-            base_url, table, PAGE_SIZE, offset
-        )
+        url = "%s/rest/v1/%s?select=*&limit=%d&offset=%d" % (base_url, table, PAGE_SIZE, offset)
         try:
             page = _request(url, key)
         except urllib.error.HTTPError as exc:
@@ -179,8 +178,7 @@ def main():
                 "captured_at": stamp,
                 "total_rows": total_rows,
                 "tables": [
-                    {"table": t, "rows": n, "status": s, "detail": d}
-                    for t, n, s, d in summary
+                    {"table": t, "rows": n, "status": s, "detail": d} for t, n, s, d in summary
                 ],
             },
             indent=2,

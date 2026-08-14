@@ -54,11 +54,10 @@ class SupabaseService:
         if self._client is None:
             try:
                 from supabase import create_client
+
                 self._client = create_client(self.url, self.key)
             except ImportError:
-                raise ImportError(
-                    "supabase package required. Install with: pip install supabase"
-                )
+                raise ImportError("supabase package required. Install with: pip install supabase")
         return self._client
 
     @property
@@ -85,12 +84,7 @@ class SupabaseService:
         than what is stored, update it. This self-heals rows created by
         internal callers that genuinely do not know the kind.
         """
-        result = (
-            self.client.table("user_tiers")
-            .select("*")
-            .eq("user_id", user_id)
-            .execute()
-        )
+        result = self.client.table("user_tiers").select("*").eq("user_id", user_id).execute()
 
         if result.data:
             user_data = result.data[0]
@@ -106,9 +100,14 @@ class SupabaseService:
             # If that ever changes to allow NULL, the .in_ filter will miss NULL
             # rows and this needs revisiting.
             stored = user_data.get("identity_kind", "unknown")
-            if self._IDENTITY_KIND_RANK.get(identity_kind, 0) > self._IDENTITY_KIND_RANK.get(stored, 0):
-                lower = [k for k, r in self._IDENTITY_KIND_RANK.items()
-                         if r < self._IDENTITY_KIND_RANK[identity_kind]]
+            if self._IDENTITY_KIND_RANK.get(identity_kind, 0) > self._IDENTITY_KIND_RANK.get(
+                stored, 0
+            ):
+                lower = [
+                    k
+                    for k, r in self._IDENTITY_KIND_RANK.items()
+                    if r < self._IDENTITY_KIND_RANK[identity_kind]
+                ]
                 (
                     self.client.table("user_tiers")
                     .update({"identity_kind": identity_kind})
@@ -116,7 +115,6 @@ class SupabaseService:
                     .in_("identity_kind", lower)
                     .execute()
                 )
-                user_data["identity_kind"] = identity_kind
 
             # Check if daily reset needed
             if user_data["last_reset_date"] != date.today().isoformat():
@@ -148,18 +146,17 @@ class SupabaseService:
 
     def _reset_daily_reroutes(self, user_id: str) -> None:
         """Reset daily reroute count for a user."""
-        self.client.table("user_tiers").update({
-            "daily_reroute_count": 0,
-            "last_reset_date": date.today().isoformat(),
-        }).eq("user_id", user_id).execute()
+        self.client.table("user_tiers").update(
+            {
+                "daily_reroute_count": 0,
+                "last_reset_date": date.today().isoformat(),
+            }
+        ).eq("user_id", user_id).execute()
 
     def increment_reroute_count(self, user_id: str) -> int:
         """Increment daily reroute count. Returns new count."""
         # Use RPC for atomic increment
-        result = self.client.rpc(
-            "increment_reroute",
-            {"target_user_id": user_id}
-        ).execute()
+        result = self.client.rpc("increment_reroute", {"target_user_id": user_id}).execute()
 
         if result.data:
             return result.data
@@ -167,10 +164,12 @@ class SupabaseService:
         # Fallback: read-modify-write
         user = self.get_or_create_user(user_id)
         new_count = user.daily_reroute_count + 1
-        self.client.table("user_tiers").update({
-            "daily_reroute_count": new_count,
-            "updated_at": datetime.now(tz=timezone.utc).isoformat(),
-        }).eq("user_id", user_id).execute()
+        self.client.table("user_tiers").update(
+            {
+                "daily_reroute_count": new_count,
+                "updated_at": datetime.now(tz=timezone.utc).isoformat(),
+            }
+        ).eq("user_id", user_id).execute()
         return new_count
 
     def check_reroute_allowed(self, user_id: str) -> Tuple[bool, int, int]:
@@ -188,20 +187,24 @@ class SupabaseService:
 
     def upgrade_user(self, user_id: str) -> UserTier:
         """Upgrade user to pro tier."""
-        self.client.table("user_tiers").update({
-            "tier_status": "pro",
-            "max_daily_reroutes": settings.max_daily_reroutes_pro,
-            "updated_at": datetime.now(tz=timezone.utc).isoformat(),
-        }).eq("user_id", user_id).execute()
+        self.client.table("user_tiers").update(
+            {
+                "tier_status": "pro",
+                "max_daily_reroutes": settings.max_daily_reroutes_pro,
+                "updated_at": datetime.now(tz=timezone.utc).isoformat(),
+            }
+        ).eq("user_id", user_id).execute()
         return self.get_or_create_user(user_id)
 
     def downgrade_user(self, user_id: str) -> UserTier:
         """Downgrade a user back to the free tier."""
-        self.client.table("user_tiers").update({
-            "tier_status": "free",
-            "max_daily_reroutes": settings.max_daily_reroutes_free,
-            "updated_at": datetime.now(tz=timezone.utc).isoformat(),
-        }).eq("user_id", user_id).execute()
+        self.client.table("user_tiers").update(
+            {
+                "tier_status": "free",
+                "max_daily_reroutes": settings.max_daily_reroutes_free,
+                "updated_at": datetime.now(tz=timezone.utc).isoformat(),
+            }
+        ).eq("user_id", user_id).execute()
         return self.get_or_create_user(user_id)
 
     def get_venue_count(self) -> int:
@@ -238,6 +241,7 @@ class SupabaseService:
         self.client.table("trip_states").upsert(trip_data).execute()
         # SPEC-16 phase 1: dual-write normalised rows
         from services.itinerary_normaliser import decompose_trip
+
         nodes, edges = decompose_trip(trip_dict)
         self.save_trip_nodes(trip_state.trip_id, nodes)
         self.save_trip_edges(trip_state.trip_id, edges)
@@ -310,15 +314,11 @@ class SupabaseService:
 
     def get_trip_edges(self, trip_id: str) -> list:
         """Get normalised trip_edge rows for a trip."""
-        result = (
-            self.client.table("trip_edge")
-            .select("*")
-            .eq("trip_id", trip_id)
-            .execute()
-        )
+        result = self.client.table("trip_edge").select("*").eq("trip_id", trip_id).execute()
         return result.data or []
 
         # =========================================================================
+
     # Trip Party (SPEC-03 -- party_context stamping)
     # =========================================================================
 
@@ -328,22 +328,26 @@ class SupabaseService:
 
         party_id = str(_uuid.uuid4())
         # Insert trip_party row
-        self.client.table("trip_party").insert({
-            "party_id": party_id,
-            "trip_id": trip_id,
-            "party_type": party.party_type,
-            "size": party.size,
-            "notes": party.notes,
-        }).execute()
+        self.client.table("trip_party").insert(
+            {
+                "party_id": party_id,
+                "trip_id": trip_id,
+                "party_type": party.party_type,
+                "size": party.size,
+                "notes": party.notes,
+            }
+        ).execute()
 
         # Insert party_member rows
         for member in party.members:
-            self.client.table("party_member").insert({
-                "party_id": party_id,
-                "role": member.role,
-                "age_band": member.age_band,
-                "needs": member.needs,
-            }).execute()
+            self.client.table("party_member").insert(
+                {
+                    "party_id": party_id,
+                    "role": member.role,
+                    "age_band": member.age_band,
+                    "needs": member.needs,
+                }
+            ).execute()
 
         return TripParty(
             party_id=party_id,
@@ -358,12 +362,7 @@ class SupabaseService:
         """Get trip party from Supabase."""
         from models.schemas import PartyMemberIn
 
-        result = (
-            self.client.table("trip_party")
-            .select("*")
-            .eq("trip_id", trip_id)
-            .execute()
-        )
+        result = self.client.table("trip_party").select("*").eq("trip_id", trip_id).execute()
         if not result.data:
             return None
 
@@ -435,6 +434,7 @@ class SupabaseService:
         When None, all venues are searched (backward compat).
         """
         from services.embedding_service import embedding_service
+
         if radius_km is None:
             radius_km = settings.transit_radius_km
         if top_k is None:
@@ -459,12 +459,10 @@ class SupabaseService:
 
         # Post-filter: geo_region safety net (if SQL function doesn't filter)
         if geo_region:
-            rows = [r for r in rows
-                    if r.get("geo_region", "dubai_uae") == geo_region]
+            rows = [r for r in rows if r.get("geo_region", "dubai_uae") == geo_region]
 
         if vibe_filter:
-            rows = [r for r in rows
-                    if any(t in (r.get("vibe_tags") or []) for t in vibe_filter)]
+            rows = [r for r in rows if any(t in (r.get("vibe_tags") or []) for t in vibe_filter)]
 
         results = []
         for r in rows[:top_k]:
@@ -478,11 +476,13 @@ class SupabaseService:
                 vibe_tags=r.get("vibe_tags") or [],
                 opening_hours=r.get("opening_hours", "09:00-23:00"),
             )
-            results.append(VenueSearchResult(
-                venue=venue,
-                similarity_score=float(r.get("similarity_score", 0.0)),
-                final_score=float(r.get("final_score", 0.0)),
-            ))
+            results.append(
+                VenueSearchResult(
+                    venue=venue,
+                    similarity_score=float(r.get("similarity_score", 0.0)),
+                    final_score=float(r.get("final_score", 0.0)),
+                )
+            )
         return results
 
     # =========================================================================
@@ -506,15 +506,15 @@ class SupabaseService:
             {
                 "query_embedding": query_embedding,
                 "similarity_threshold": threshold,
-            }
+            },
         ).execute()
 
         if result.data and len(result.data) > 0:
             hit = result.data[0]
             # Increment hit count
-            self.client.table("cached_responses").update({
-                "hit_count": hit.get("hit_count", 0) + 1
-            }).eq("cache_id", hit["cache_id"]).execute()
+            self.client.table("cached_responses").update(
+                {"hit_count": hit.get("hit_count", 0) + 1}
+            ).eq("cache_id", hit["cache_id"]).execute()
 
             return (hit["cached_response_text"], hit["similarity_score"])
 
@@ -530,6 +530,7 @@ class SupabaseService:
     ) -> None:
         """Store a query-response pair in the semantic cache."""
         from scripts.load_venues import EMBEDDING_MODEL
+
         cache_entry = {
             "cache_id": str(uuid.uuid4()),
             "query_text": query_text,
@@ -592,14 +593,9 @@ class SupabaseService:
         return {
             "total_events": len(events),
             "cached_responses": sum(1 for e in events if e.get("from_cache")),
-            "heavy_model_calls": sum(
-                1 for e in events if e.get("routing_tier_used") == "heavy"
-            ),
-            "total_token_cost": sum(
-                e.get("token_cost_estimate", 0) for e in events
-            ),
+            "heavy_model_calls": sum(1 for e in events if e.get("routing_tier_used") == "heavy"),
+            "total_token_cost": sum(e.get("token_cost_estimate", 0) for e in events),
         }
-
 
     # =========================================================================
     # Signal Capture (SPEC-01 Part B -- data flywheel)
@@ -613,12 +609,7 @@ class SupabaseService:
 
         Caches the key -> signal_type_id mapping for efficient batch inserts.
         """
-        rows = (
-            self.client.table("signal_type")
-            .select("signal_type_id,key")
-            .execute()
-            .data or []
-        )
+        rows = self.client.table("signal_type").select("signal_type_id,key").execute().data or []
         self._signal_type_cache = {r["key"]: r["signal_type_id"] for r in rows}
         return set(self._signal_type_cache.keys())
 
@@ -646,6 +637,7 @@ class SupabaseService:
         value_json: Optional[dict] = None,
         captured_at: datetime = None,
         trip_id: Optional[str] = None,
+        provenance: Optional[dict] = None,
     ) -> bool:
         """Idempotent signal insert. Returns True if new, False if duplicate.
 
@@ -673,35 +665,28 @@ class SupabaseService:
             "value_numeric": value_numeric,
             "value_json": value_json,
             "captured_at": captured_at.isoformat() if captured_at else None,
-            "provenance": {"method": "client_emit"},
+            "provenance": provenance if provenance is not None else {"method": "client_emit"},
         }
         # Remove None values to let Postgres defaults apply
         row = {k: v for k, v in row.items() if v is not None}
 
         # PostgREST: on_conflict + ignore_duplicates => ON CONFLICT DO NOTHING.
         # Returns [] when the row already existed -> False (duplicate).
-        result = self.client.table("signal").upsert(
-            row, on_conflict="signal_id", ignore_duplicates=True
-        ).execute()
+        result = (
+            self.client.table("signal")
+            .upsert(row, on_conflict="signal_id", ignore_duplicates=True)
+            .execute()
+        )
         return bool(result.data)
 
     def get_signals_count(self) -> int:
         """Get total signals stored (for diagnostics)."""
-        result = (
-            self.client.table("signal")
-            .select("signal_id", count="exact")
-            .execute()
-        )
+        result = self.client.table("signal").select("signal_id", count="exact").execute()
         return result.count or 0
 
     def get_signal(self, signal_id: str) -> Optional[dict]:
         """Get a signal by ID (for diagnostics/testing)."""
-        result = (
-            self.client.table("signal")
-            .select("*")
-            .eq("signal_id", signal_id)
-            .execute()
-        )
+        result = self.client.table("signal").select("*").eq("signal_id", signal_id).execute()
         return result.data[0] if result.data else None
 
     # =========================================================================

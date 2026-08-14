@@ -28,9 +28,7 @@ class MapsService:
         "jbr": (25.0780, 55.1340),
     }
 
-    def calculate_distance_km(
-        self, lat1: float, lng1: float, lat2: float, lng2: float
-    ) -> float:
+    def calculate_distance_km(self, lat1: float, lng1: float, lat2: float, lng2: float) -> float:
         """Calculate distance between two points using Haversine formula."""
         R = 6371  # Earth's radius in km
 
@@ -60,9 +58,7 @@ class MapsService:
         Mock implementation: estimates based on distance with Dubai-specific
         traffic multipliers.
         """
-        distance_km = self.calculate_distance_km(
-            origin_lat, origin_lng, dest_lat, dest_lng
-        )
+        distance_km = self.calculate_distance_km(origin_lat, origin_lng, dest_lat, dest_lng)
 
         # Dubai traffic speed estimates (km/h)
         speed_map = {
@@ -93,15 +89,15 @@ class MapsService:
             "duration_minutes": max(5, minutes),  # Minimum 5 min
             "mode": mode,
             "traffic_condition": (
-                "heavy" if traffic_multiplier > 1.3 else
-                "moderate" if traffic_multiplier > 1.0 else
-                "light"
+                "heavy"
+                if traffic_multiplier > 1.3
+                else "moderate"
+                if traffic_multiplier > 1.0
+                else "light"
             ),
         }
 
-    def check_venue_open(
-        self, venue_hours: str, check_time: Optional[datetime] = None
-    ) -> bool:
+    def check_venue_open(self, venue_hours: str, check_time: Optional[datetime] = None) -> bool:
         """Check if a venue is currently open based on its hours string.
 
         Hours format: "HH:MM-HH:MM" (e.g., "09:00-23:00")
@@ -142,18 +138,14 @@ class MapsService:
 
         for venue in venues:
             # Check if open
-            is_open = self.check_venue_open(
-                venue.get("opening_hours", "09:00-23:00")
-            )
+            is_open = self.check_venue_open(venue.get("opening_hours", "09:00-23:00"))
 
             if not is_open:
                 continue
 
             # Calculate transit time
             transit = self.get_transit_time(
-                user_lat, user_lng,
-                venue.get("lat", 25.1972),
-                venue.get("lng", 55.2744)
+                user_lat, user_lng, venue.get("lat", 25.1972), venue.get("lng", 55.2744)
             )
 
             if transit["duration_minutes"] <= max_transit_minutes:

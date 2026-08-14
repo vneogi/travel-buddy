@@ -27,7 +27,12 @@ PLANS = {
         "price_usd": 4.99,
         "interval": "month",
         "max_reroutes": 50,
-        "features": ["50 daily reroutes", "GPT-4o access", "No sponsored results", "Priority support"],
+        "features": [
+            "50 daily reroutes",
+            "GPT-4o access",
+            "No sponsored results",
+            "Priority support",
+        ],
         "revenuecat_product_id": "tb_pro_monthly",
     },
     "pro_yearly": {
@@ -35,7 +40,13 @@ PLANS = {
         "price_usd": 39.99,
         "interval": "year",
         "max_reroutes": 50,
-        "features": ["50 daily reroutes", "GPT-4o access", "No sponsored results", "Priority support", "2 months free"],
+        "features": [
+            "50 daily reroutes",
+            "GPT-4o access",
+            "No sponsored results",
+            "Priority support",
+            "2 months free",
+        ],
         "revenuecat_product_id": "tb_pro_yearly",
     },
 }
@@ -127,9 +138,7 @@ class PaymentService:
             )
 
         if response.status_code == 200:
-            entitlements = (
-                response.json().get("subscriber", {}).get("entitlements", {})
-            )
+            entitlements = response.json().get("subscriber", {}).get("entitlements", {})
             pro_data = entitlements.get("pro", {})
             expires_at = pro_data.get("expires_date")
             return {
@@ -156,11 +165,10 @@ class PaymentService:
     # Stripe (Web Payments)
     # =========================================================================
 
-    async def create_checkout_session(
-        self, user_id: str, plan_id: str = "pro_monthly"
-    ) -> Dict:
+    async def create_checkout_session(self, user_id: str, plan_id: str = "pro_monthly") -> Dict:
         """Create a Stripe Checkout session for web upgrades."""
         import stripe
+
         stripe.api_key = self.stripe_key
 
         if plan_id not in PLANS:
@@ -185,18 +193,15 @@ class PaymentService:
         )
         return {"checkout_url": session.url, "session_id": session.id}
 
-    def verify_stripe_webhook(
-        self, payload: bytes, signature: str
-    ) -> Optional[Dict]:
+    def verify_stripe_webhook(self, payload: bytes, signature: str) -> Optional[Dict]:
         """Verify and parse a Stripe webhook event. Returns None if invalid."""
         if not self.stripe_webhook_secret:
             return None
         import stripe
+
         stripe.api_key = self.stripe_key
         try:
-            event = stripe.Webhook.construct_event(
-                payload, signature, self.stripe_webhook_secret
-            )
+            event = stripe.Webhook.construct_event(payload, signature, self.stripe_webhook_secret)
             return {"type": event["type"], "data": event["data"]["object"]}
         except Exception:
             # Any signature/parse failure -> reject.

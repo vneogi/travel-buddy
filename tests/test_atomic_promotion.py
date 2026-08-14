@@ -27,6 +27,7 @@ def _fresh_uid():
 # Instrumented FakeClient that records .in_() calls
 # ---------------------------------------------------------------------------
 
+
 class FakeResponse:
     def __init__(self, data):
         self.data = data
@@ -42,6 +43,7 @@ class InstrumentedFakeTable:
         self._update_payload = None
         self._in_filter = None  # (column, values) from last .in_() call
         self.update_calls = []  # list of {payload, eq_uid, in_filter}
+        self._stale_read = None  # one-shot override for SELECT (simulates stale snapshot)
 
     def table(self, name):
         self._pending_op = None
@@ -64,6 +66,15 @@ class InstrumentedFakeTable:
 
     def execute(self):
         if self._pending_op == "select":
+            if self._stale_read is not None:
+                # One-shot: return a row with overridden fields (simulates
+                # a stale snapshot from a losing thread). Consumed once so it
+                # cannot leak into subsequent calls in the same test.
+                row = dict(self._rows.get(self._filter_uid, {}))
+                row.update(self._stale_read)
+                self._stale_read = None
+                self._pending_op = None
+                return FakeResponse([row] if row else [])
             row = self._rows.get(self._filter_uid)
             self._pending_op = None
             return FakeResponse([row] if row else [])
@@ -72,16 +83,24 @@ class InstrumentedFakeTable:
             self._pending_op = None
             return FakeResponse([self._insert_data])
         elif self._pending_op == "update":
-            self.update_calls.append({
-                "payload": self._update_payload,
-                "eq_uid": self._filter_uid,
-                "in_filter": self._in_filter,
-            })
-            # Simulate the conditional write: only apply if stored kind in lower
-            if self._filter_uid in self._rows and self._in_filter:
-                col, allowed = self._in_filter
-                stored_val = self._rows[self._filter_uid].get(col)
-                if stored_val in allowed:
+            self.update_calls.append(
+                {
+                    "payload": self._update_payload,
+                    "eq_uid": self._filter_uid,
+                    "in_filter": self._in_filter,
+                }
+            )
+            # Simulate Postgres semantics: if .in_() was called, only apply
+            # when the stored value is in the allowed set. If .in_() was NOT
+            # called, the UPDATE is unconditional (matches any row with eq).
+            if self._filter_uid in self._rows:
+                if self._in_filter:
+                    col, allowed = self._in_filter
+                    stored_val = self._rows[self._filter_uid].get(col)
+                    if stored_val in allowed:
+                        self._rows[self._filter_uid].update(self._update_payload)
+                else:
+                    # No in_ filter: unconditional update (real Postgres behavior)
                     self._rows[self._filter_uid].update(self._update_payload)
             self._pending_op = None
             return FakeResponse([])
@@ -104,6 +123,7 @@ def _make_svc():
     os.environ["TB_SUPABASE_KEY"] = "fake-key"
     try:
         import services.supabase_service as ss_mod
+
         importlib.reload(ss_mod)
         svc = ss_mod.SupabaseService.__new__(ss_mod.SupabaseService)
         svc._client = InstrumentedFakeTable()
@@ -116,6 +136,7 @@ def _make_svc():
 # ---------------------------------------------------------------------------
 # Structural: UPDATE carries .in_ filter with exactly the lower kinds
 # ---------------------------------------------------------------------------
+
 
 class TestAtomicPromotionFilter:
     """The promotion UPDATE must filter on strictly-lower kinds via .in_()."""
@@ -200,36 +221,37 @@ class TestAtomicPromotionFilter:
 # Behavioral: the in_ filter prevents stale-read downgrades
 # ---------------------------------------------------------------------------
 
-class TestAtomicBehavior:
-    """The in_ filter must actually prevent writes when stored kind is higher.
 
-    Simulates the race: thread reads stale 'unknown', but another thread
-    already promoted to 'supabase'. The UPDATE with in_(['unknown']) should
-    be a no-op because the stored value is now 'supabase'.
+class TestAtomicBehavior:
+    """The in_ filter must actually prevent writes when the real row has advanced.
+
+    Uses _stale_read to simulate the race: the SELECT returns old data (the
+    loser's snapshot), the Python check fires, the UPDATE is issued -- but the
+    .in_() filter matches zero rows because the real stored value is higher.
     """
 
-    def test_race_simulation_no_downgrade(self):
-        """Simulated race: in_ filter prevents anonymous overwriting supabase."""
+    def test_race_loser_writes_nothing(self):
+        """Loser thread issues UPDATE but in_ filter prevents the write."""
         svc = _make_svc()
         uid = _fresh_uid()
-        # Create as unknown
-        svc.get_or_create_user(uid)
+        svc.get_or_create_user(uid)  # stored: unknown
 
-        # Simulate: another thread already promoted to supabase
+        # Winner thread already promoted to supabase (behind loser's back).
         svc._client._rows[uid]["identity_kind"] = "supabase"
 
-        # Now this thread tries to promote to anonymous based on stale read.
-        # Manually invoke the upgrade path with a stale snapshot:
-        # The Python check sees stored='unknown' (from original read), rank 1 > 0
-        # -> issues UPDATE with in_(['unknown'])
-        # But the row now has 'supabase', so in_ filter excludes it -> 0 rows updated
+        # Loser's SELECT will return stale snapshot showing 'unknown'.
+        svc._client._stale_read = {"identity_kind": "unknown"}
         svc._client.update_calls.clear()
 
-        # Force the code path by giving it a stale user_data
-        # We simulate by directly calling with anonymous after the row is supabase
-        # The SELECT will now return 'supabase', so Python check won't fire.
-        # That's the optimisation working. For a true structural test, we already
-        # verified the filter is present above.
         svc.get_or_create_user(uid, identity_kind="anonymous")
-        assert svc._client._rows[uid]["identity_kind"] == "supabase"
-        assert len(svc._client.update_calls) == 0
+
+        # The loser does not know it lost: Python sees rank 1 > 0 from
+        # the stale read and issues the UPDATE. But the .in_() filter
+        # names only ['unknown'], the real row is 'supabase', so zero
+        # rows are updated.
+        assert len(svc._client.update_calls) == 1, (
+            "Loser must issue an UPDATE (proves Python check fired)"
+        )
+        assert svc._client._rows[uid]["identity_kind"] == "supabase", (
+            "Row must stay supabase (proves .in_() filter blocked the write)"
+        )

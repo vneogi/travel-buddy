@@ -45,6 +45,7 @@ def db(real_supabase_env):
     # Re-import to get a fresh service with the restored URL/key.
     import importlib
     import services.supabase_service as svc_mod
+
     importlib.reload(svc_mod)
     svc = svc_mod.get_supabase_service()
     assert svc is not None, "get_supabase_service() returned None despite creds"
@@ -62,11 +63,17 @@ def test_trip_persists_across_fetch(db):
     uid = str(uuid.uuid4())
     db.get_or_create_user(uid)  # FK: trip_states.user_id -> user_tiers
     from models.schemas import TripState, TripNode
+
     trip = TripState(
         user_id=uid,
-        nodes=[TripNode(venue_name="Test Venue",
-                        scheduled_start=datetime(2026, 8, 5, 9, 0),
-                        lat=25.2, lng=55.27)],
+        nodes=[
+            TripNode(
+                venue_name="Test Venue",
+                scheduled_start=datetime(2026, 8, 5, 9, 0),
+                lat=25.2,
+                lng=55.27,
+            )
+        ],
     )
     db.save_trip(trip)
     fetched = db.get_trip(trip.trip_id)
@@ -90,6 +97,7 @@ def test_venues_were_seeded(db):
 
 
 def test_hybrid_search_returns_results(db):
-    results = db.hybrid_venue_search(query="quiet premium cafe with great interiors",
-                                     user_lat=25.20, user_lng=55.27)
+    results = db.hybrid_venue_search(
+        query="quiet premium cafe with great interiors", user_lat=25.20, user_lng=55.27
+    )
     assert isinstance(results, list)

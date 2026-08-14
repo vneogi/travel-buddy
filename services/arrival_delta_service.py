@@ -24,6 +24,7 @@ Design:
     arrival_delta signal_id (hash of source), so duplicate insert is a no-op.
   - Called synchronously after successful ingest of visited_confirmed.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -49,13 +50,17 @@ def derive_arrival_delta(
     Never raises -- derivation failure must not break ingest.
     """
     if not trip_id:
-        logger.debug("arrival_delta: no trip_id on visited_confirmed %s, skipping", source_signal_id)
+        logger.debug(
+            "arrival_delta: no trip_id on visited_confirmed %s, skipping", source_signal_id
+        )
         return None
 
     try:
         trip = db_service.get_trip(trip_id)
         if not trip:
-            logger.debug("arrival_delta: trip %s not found for signal %s", trip_id, source_signal_id)
+            logger.debug(
+                "arrival_delta: trip %s not found for signal %s", trip_id, source_signal_id
+            )
             return None
 
         # Find the node matching place_ref (by venue_id or venue_name)
@@ -63,7 +68,8 @@ def derive_arrival_delta(
         if not target_node:
             logger.debug(
                 "arrival_delta: no node matching place_ref=%s in trip %s",
-                place_ref, trip_id,
+                place_ref,
+                trip_id,
             )
             return None
 
@@ -96,7 +102,9 @@ def derive_arrival_delta(
 
         logger.info(
             "arrival_delta derived: %.1f min for place_ref=%s (signal %s)",
-            delta_minutes, place_ref, derived_signal_id,
+            delta_minutes,
+            place_ref,
+            derived_signal_id,
         )
         return delta_minutes
 
@@ -104,7 +112,8 @@ def derive_arrival_delta(
         # Never break ingest. Log and move on.
         logger.warning(
             "arrival_delta derivation failed for signal %s: %s",
-            source_signal_id, e,
+            source_signal_id,
+            e,
         )
         return None
 

@@ -36,7 +36,9 @@ class DatabaseService:
         self._parties: Dict[str, dict] = {}  # keyed by trip_id (SPEC-03)
         self._trip_nodes: Dict[str, list] = {}  # SPEC-16: trip_id -> node rows
         self._trip_edges: Dict[str, list] = {}  # SPEC-16: trip_id -> edge rows
-        self._valid_signal_types = set(SIGNAL_TYPES)  # from models.signal_types (single source of truth)
+        self._valid_signal_types = set(
+            SIGNAL_TYPES
+        )  # from models.signal_types (single source of truth)
 
     # =========================================================================
     # User Tier Operations
@@ -66,7 +68,9 @@ class DatabaseService:
         else:
             # Upgrade-on-sight: only promote, never demote.
             stored = self._users[user_id].get("identity_kind", "unknown")
-            if self._IDENTITY_KIND_RANK.get(identity_kind, 0) > self._IDENTITY_KIND_RANK.get(stored, 0):
+            if self._IDENTITY_KIND_RANK.get(identity_kind, 0) > self._IDENTITY_KIND_RANK.get(
+                stored, 0
+            ):
                 self._users[user_id]["identity_kind"] = identity_kind
 
         user_data = self._users[user_id]
@@ -87,7 +91,7 @@ class DatabaseService:
 
     def increment_reroute_count(self, user_id: str) -> int:
         """Increment the daily reroute count. Returns new count."""
-        user = self.get_or_create_user(user_id)
+        self.get_or_create_user(user_id)  # ensure row exists + daily reset
         self._users[user_id]["daily_reroute_count"] += 1
         return self._users[user_id]["daily_reroute_count"]
 
@@ -143,6 +147,7 @@ class DatabaseService:
         self._trips[trip_state.trip_id] = trip_dict
         # SPEC-16 phase 1: dual-write normalised rows
         from services.itinerary_normaliser import decompose_trip
+
         nodes, edges = decompose_trip(trip_dict)
         self._trip_nodes[trip_state.trip_id] = nodes
         self._trip_edges[trip_state.trip_id] = edges
@@ -156,12 +161,7 @@ class DatabaseService:
 
     def get_active_trips(self, user_id: str) -> List[TripState]:
         """Get all active trips for a user."""
-        return [
-            TripState(**t)
-            for t in self._trips.values()
-            if t["user_id"] == user_id
-        ]
-
+        return [TripState(**t) for t in self._trips.values() if t["user_id"] == user_id]
 
     # =========================================================================
     # Itinerary Normalisation (SPEC-16)
@@ -187,6 +187,7 @@ class DatabaseService:
         return list(self._trip_edges.get(trip_id, []))
 
         # =========================================================================
+
     # Trip Party (SPEC-03 -- party_context stamping)
     # =========================================================================
 
@@ -257,6 +258,7 @@ class DatabaseService:
 
             # Step 2a: Distance filter
             from services.maps_service import maps_service
+
             distance = maps_service.calculate_distance_km(
                 user_lat, user_lng, venue["lat"], venue["lng"]
             )
@@ -274,17 +276,12 @@ class DatabaseService:
                     continue
 
             # Step 1: Cosine similarity
-            similarity = embedding_service.cosine_similarity(
-                query_embedding, venue["embedding"]
-            )
+            similarity = embedding_service.cosine_similarity(query_embedding, venue["embedding"])
 
             # Step 2b: Sponsored boost (BRD formula)
             sponsored_boost = 0.0
             if venue.get("is_sponsored", False):
-                sponsored_boost = (
-                    venue.get("bid_weight", 0.0)
-                    * settings.sponsored_boost_multiplier
-                )
+                sponsored_boost = venue.get("bid_weight", 0.0) * settings.sponsored_boost_multiplier
 
             final_score = similarity + sponsored_boost
 
@@ -328,16 +325,18 @@ class DatabaseService:
         payload: dict = None,
     ) -> None:
         """Log an event for analytics."""
-        self._event_log.append({
-            "event_id": str(uuid.uuid4()),
-            "user_id": user_id,
-            "trip_id": trip_id,
-            "event_type": event_type,
-            "routing_tier_used": routing_tier,
-            "from_cache": from_cache,
-            "payload": payload or {},
-            "created_at": datetime.now(tz=timezone.utc).isoformat(),
-        })
+        self._event_log.append(
+            {
+                "event_id": str(uuid.uuid4()),
+                "user_id": user_id,
+                "trip_id": trip_id,
+                "event_type": event_type,
+                "routing_tier_used": routing_tier,
+                "from_cache": from_cache,
+                "payload": payload or {},
+                "created_at": datetime.now(tz=timezone.utc).isoformat(),
+            }
+        )
 
     def get_event_stats(self) -> dict:
         """Get event log statistics."""
@@ -350,7 +349,6 @@ class DatabaseService:
             "heavy_model_calls": heavy,
             "light_model_calls": total - cached - heavy,
         }
-
 
     # =========================================================================
     # Signal Capture (SPEC-01 Part B -- data flywheel)
@@ -371,6 +369,7 @@ class DatabaseService:
         value_json: Optional[dict] = None,
         captured_at: datetime = None,
         trip_id: Optional[str] = None,
+        provenance: Optional[dict] = None,
     ) -> bool:
         """Record a signal. Returns True if new, False if duplicate (idempotent).
 
@@ -392,6 +391,7 @@ class DatabaseService:
             "value_json": value_json,
             "captured_at": (captured_at or datetime.now(tz=timezone.utc)).isoformat(),
             "ingested_at": datetime.now(tz=timezone.utc).isoformat(),
+            "provenance": provenance if provenance is not None else {"method": "client_emit"},
         }
         return True
 

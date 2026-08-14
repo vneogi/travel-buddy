@@ -35,6 +35,7 @@ from security import (
 # UUID v4 validation + canonicalisation + non-canonical rejection
 # ---------------------------------------------------------------------------
 
+
 class TestUuidV4Validation:
     """UUID must be version 4 with RFC 4122 variant bits, in canonical form."""
 
@@ -123,14 +124,13 @@ class TestUuidV4Validation:
                 continue
             with pytest.raises(HTTPException) as exc_info:
                 _validate_anonymous_uuid(form)
-            assert exc_info.value.status_code == 401, (
-                f"Form {name!r} ({form}) should be rejected"
-            )
+            assert exc_info.value.status_code == 401, f"Form {name!r} ({form}) should be rejected"
 
 
 # ---------------------------------------------------------------------------
 # Anonymous header parsing
 # ---------------------------------------------------------------------------
+
 
 class TestAnonymousHeaderParsing:
     """Authorization: Anonymous <uuid> parsed from raw header."""
@@ -160,6 +160,7 @@ class TestAnonymousHeaderParsing:
 # ---------------------------------------------------------------------------
 # Integration: resolve_identity resolution order
 # ---------------------------------------------------------------------------
+
 
 class TestAnonymousResolution:
     """Anonymous identity accepted only when TB_ALLOW_ANONYMOUS=true and no JWT secret."""
@@ -245,6 +246,7 @@ class TestAnonymousResolution:
     async def test_jwt_path_returns_supabase_kind(self, jwt_configured_settings):
         """JWT path returns identity_kind='supabase'."""
         import jwt as pyjwt
+
         token = pyjwt.encode(
             {"sub": "jwt-user-123", "aud": "authenticated"},
             "test-secret",
@@ -310,6 +312,7 @@ class TestAnonymousResolution:
 # identity_kind writer: production path (R17)
 # ---------------------------------------------------------------------------
 
+
 class TestIdentityKindWriter:
     """identity_kind must be persisted on user creation by the production path.
 
@@ -319,6 +322,7 @@ class TestIdentityKindWriter:
     def test_anonymous_path_persists_identity_kind(self):
         """Anonymous resolution -> get_or_create_user writes 'anonymous'."""
         from services.database_service import DatabaseService
+
         svc = DatabaseService()
         uid = str(uuid.uuid4())
         svc.get_or_create_user(uid, identity_kind="anonymous")
@@ -327,6 +331,7 @@ class TestIdentityKindWriter:
     def test_supabase_path_persists_identity_kind(self):
         """JWT resolution -> get_or_create_user writes 'supabase'."""
         from services.database_service import DatabaseService
+
         svc = DatabaseService()
         uid = str(uuid.uuid4())
         svc.get_or_create_user(uid, identity_kind="supabase")
@@ -335,6 +340,7 @@ class TestIdentityKindWriter:
     def test_default_identity_kind_is_unknown(self):
         """Callers that omit identity_kind get 'unknown' (existing code paths)."""
         from services.database_service import DatabaseService
+
         svc = DatabaseService()
         uid = str(uuid.uuid4())
         svc.get_or_create_user(uid)
@@ -343,6 +349,7 @@ class TestIdentityKindWriter:
     def test_identity_kind_upgrades_on_sight(self):
         """identity_kind upgrades monotonically: anonymous -> supabase promotes."""
         from services.database_service import DatabaseService
+
         svc = DatabaseService()
         uid = str(uuid.uuid4())
         svc.get_or_create_user(uid, identity_kind="anonymous")
