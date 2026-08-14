@@ -41,44 +41,73 @@ def _strip_sql_comments(sql: str) -> str:
 # Fix A: price_band CHECK == taxonomy seed (sabotage-ready)
 # ---------------------------------------------------------------------------
 
-def _extract_check_terms_from_0015() -> set:
-    """Extract the price_band CHECK term set from migration 0015."""
-    sql = (MIGRATIONS_DIR / "0015_drift_fixes.sql").read_text()
-    stripped = _strip_sql_comments(sql)
-    match = re.search(
-        r"ADD\s+CONSTRAINT\s+venue_dish_price_band_check\s+CHECK\s*\("
-        r"price_band\s+IN\s*\(([^)]+)\)",
-        stripped,
+def test_all_price_band_checks_equal_taxonomy_seed():
+    """Every final CHECK on a price_band column must equal the taxonomy_term seed.
+
+    Scans all migrations in filename order, tracks the last CHECK state per
+    (table, column). Each final state must match the seed from 0013. This makes
+    the drift class closed by construction: any future migration that introduces
+    or supersedes a price_band CHECK will be caught if it disagrees with the seed.
+    """
+    # Extract seed from 0013
+    sql_0013 = (MIGRATIONS_DIR / "0013_taxonomy_term.sql").read_text()
+    seed_terms = set(re.findall(r"'price_band',\s*'([^']+)'", sql_0013))
+    assert seed_terms, "No price_band terms found in taxonomy seed (0013)"
+
+    # Scan all migrations in order, track final CHECK per (table, column)
+    # Pattern: ADD CONSTRAINT <name> CHECK (price_band IN (...))
+    # or inline CHECK (price_band IN (...)) in CREATE TABLE
+    check_pattern = re.compile(
+        r"(?:ALTER\s+TABLE\s+(\w+)\s+ADD\s+CONSTRAINT\s+\w+\s+CHECK|"
+        r"(\w+)\s+TEXT\s+CHECK)\s*\(\s*price_band\s+IN\s*\(([^)]+)\)",
+        re.IGNORECASE | re.DOTALL,
     )
-    assert match, "Could not find price_band CHECK in 0015"
-    raw = match.group(1)
-    return set(re.findall(r"'([^']+)'", raw))
 
+    final_checks = {}  # (table, 'price_band') -> set of terms
+    migration_files = sorted(MIGRATIONS_DIR.glob("*.sql"))
 
-def _extract_seed_price_band_terms() -> set:
-    """Extract price_band terms from taxonomy_term seed in 0013."""
-    sql = (MIGRATIONS_DIR / "0013_taxonomy_term.sql").read_text()
-    return set(re.findall(r"'price_band',\s*'([^']+)'", sql))
+    for mig_path in migration_files:
+        sql = _strip_sql_comments(mig_path.read_text())
+        for match in check_pattern.finditer(sql):
+            table = match.group(1) or "inline"
+            terms = set(re.findall(r"'([^']+)'", match.group(3)))
+            # For ALTER TABLE, group(1) has the table name
+            # For inline CHECK in CREATE TABLE, we need the table from context
+            if match.group(1):
+                table = match.group(1)
+            else:
+                # Find CREATE TABLE preceding this inline CHECK
+                preceding = sql[:match.start()]
+                create_match = re.findall(
+                    r"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(\w+)",
+                    preceding, re.IGNORECASE
+                )
+                table = create_match[-1] if create_match else "unknown"
+            final_checks[(table, "price_band")] = (terms, mig_path.name)
 
+    assert final_checks, "No price_band CHECK constraints found in any migration"
 
-def test_price_band_check_equals_taxonomy_seed():
-    """The 0015 CHECK term set must exactly equal the taxonomy_term price_band seed."""
-    check_terms = _extract_check_terms_from_0015()
-    seed_terms = _extract_seed_price_band_terms()
-    assert check_terms == seed_terms, (
-        f"CHECK terms {sorted(check_terms)} != seed terms {sorted(seed_terms)}"
+    failures = []
+    for (table, col), (terms, mig_name) in sorted(final_checks.items()):
+        if terms != seed_terms:
+            failures.append(
+                f"  {mig_name}: {table}.{col} CHECK {sorted(terms)} "
+                f"!= seed {sorted(seed_terms)}"
+            )
+    assert not failures, (
+        "price_band CHECK constraint(s) disagree with taxonomy_term seed:\n"
+        + "\n".join(failures)
     )
 
 
 def test_price_band_check_is_not_valid():
     """The CHECK must use NOT VALID to avoid aborting on existing rows."""
-    sql = (MIGRATIONS_DIR / "0015_drift_fixes.sql").read_text()
-    # Find the ADD CONSTRAINT line and verify NOT VALID follows
+    sql = _strip_sql_comments((MIGRATIONS_DIR / "0015_drift_fixes.sql").read_text())
     match = re.search(
         r"ADD\s+CONSTRAINT\s+venue_dish_price_band_check.*?NOT\s+VALID",
         sql, re.DOTALL
     )
-    assert match, "CHECK constraint missing NOT VALID"
+    assert match, "CHECK constraint missing NOT VALID in DDL (comments stripped)"
 
 
 def test_validate_constraint_is_commented():
@@ -386,34 +415,14 @@ def test_build_dish_record_no_currency_when_unpriced():
 # Fix 0017: venues_rag.price_band CHECK (final drift closure)
 # ---------------------------------------------------------------------------
 
-def test_venues_rag_price_band_check_matches_taxonomy():
-    """venues_rag.price_band CHECK must equal the taxonomy_term price_band seed.
 
-    This is the third and final column in the price_band drift class:
-    - venue_dish.price_band (0015)
-    - venues_rag.price_band (0017)
-    All share the same vocabulary from taxonomy_term seed in 0013.
-    """
-    import re
-    sql_0017 = (MIGRATIONS_DIR / "0017_venues_rag_price_band_check.sql").read_text()
-    stripped = re.sub(r"--[^\n]*", "", sql_0017)
-    match = re.search(
-        r"ADD\s+CONSTRAINT\s+venues_rag_price_band_check\s+CHECK\s*\("
-        r"price_band\s+IN\s*\(([^)]+)\)",
-        stripped,
-    )
-    assert match, "Could not find venues_rag_price_band_check in 0017"
-    check_terms = set(re.findall(r"'([^']+)'", match.group(1)))
-
-    sql_0013 = (MIGRATIONS_DIR / "0013_taxonomy_term.sql").read_text()
-    seed_terms = set(re.findall(r"'price_band',\s*'([^']+)'", sql_0013))
-
-    assert check_terms == seed_terms, (
-        f"venues_rag CHECK {sorted(check_terms)} != seed {sorted(seed_terms)}"
-    )
 
 
 def test_venues_rag_price_band_check_is_not_valid():
     """The CHECK must use NOT VALID (same safety pattern as 0015)."""
-    sql_0017 = (MIGRATIONS_DIR / "0017_venues_rag_price_band_check.sql").read_text()
-    assert "NOT VALID" in sql_0017
+    sql = _strip_sql_comments((MIGRATIONS_DIR / "0017_venues_rag_price_band_check.sql").read_text())
+    match = re.search(
+        r"ADD\s+CONSTRAINT\s+venues_rag_price_band_check.*?NOT\s+VALID",
+        sql, re.DOTALL
+    )
+    assert match, "CHECK constraint missing NOT VALID in DDL (comments stripped)"
