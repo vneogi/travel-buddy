@@ -1,5 +1,7 @@
 # Genie Brief -- Relocate VALID_DISH_CONTAINS (R5)
 
+> Paste this entire file to Genie Code. Land via PR, not direct to main.
+
 ## Goal
 
 Move `VALID_DISH_CONTAINS` from `scripts/load_dish_glossary.py` into

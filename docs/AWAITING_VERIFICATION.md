@@ -6,9 +6,10 @@ incidents worth not repeating. It is the only place in the repo where dated
 observations belong (R16).
 
 What it deliberately does not carry: the device-day task order, which lives in
-`docs/PROJECT_STATUS.md` with the runnable steps in `docs/briefs/DEVICE_DAY.md`.
-Two documents holding the same ordered list is how they end up contradicting
-each other, which is what this consolidation is fixing.
+`docs/PROJECT_STATUS.md` with the runnable Windows PowerShell steps in
+`docs/briefs/DEVICE_DAY.md`. Two documents holding the same ordered list is how
+they end up contradicting each other, which is what this consolidation is
+fixing.
 
 Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 `#85` and so on; those numbers cannot be reconciled against `git log`.

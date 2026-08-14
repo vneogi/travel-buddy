@@ -1,13 +1,16 @@
-# Device Day Brief
+# Device Day -- Windows laptop (PowerShell)
 
-Run this on the laptop when it is available (target: on or after Aug 15 2026).
-Do not improvise order. Do not apply any migration until Step 3 says the
-Dubai file is committed and pushed.
+Run this on the Windows test laptop. All commands are PowerShell 5.1
+compatible. Do not improvise order. Do not apply any migration until Step 2
+has committed and pushed `data/dubai_uae.json` after a successful loader
+dry-run.
+
+Canonical copy: `docs/briefs/DEVICE_DAY.md` on `origin/main`.
 
 Success criteria for the day:
 
 - `data/dubai_uae.json` exists in git with 16 venues, and
-  `python3 scripts/load_venues.py data/dubai_uae.json --dry-run` exited 0
+  `python scripts/load_venues.py data/dubai_uae.json --dry-run` exited 0
   before that commit (restorable, not merely parseable)
 - Live schema dump and 0011 dual-column decision are recorded
 - Migrations 0011 to 0018 applied, or a hard stop documented with the
@@ -18,19 +21,31 @@ Success criteria for the day:
 - Live checks below recorded in `docs/AWAITING_VERIFICATION.md` as a dated
   entry
 
-Tooling assumed: git, python3, pip, psql (or Supabase SQL editor for the
-SQL steps), network access to the hosted project. Supabase CLI is optional;
-this brief uses `psql` against `TB_DATABASE_URL`.
+Tooling assumed on this laptop:
+
+- git
+- Python 3 on PATH as `python` (same as `scripts/start-backend.ps1`)
+- pip
+- psql (PostgreSQL client) OR the Supabase SQL editor for the SQL steps
+- Network access to the hosted Supabase project
+
+Supabase CLI is optional. This brief uses `psql` against `TB_DATABASE_URL`.
+
+If `psql` is missing, run the SQL blocks in the Supabase SQL editor and save
+the result grids to the same temp filenames under `$env:TEMP`.
 
 ---
 
 ## Step 0 -- pull and confirm the tree
 
-```bash
-cd ~/travel-buddy
+```powershell
+cd $HOME\travel-buddy
+# If the clone lives elsewhere, cd there instead, then:
 git pull origin main
-git status   # working tree should be clean before starting
-grep -n "name_local TEXT" supabase/migrations/0011_venues_rag_missing_columns.sql
+if ($LASTEXITCODE -ne 0) { throw "git pull failed" }
+git status
+
+findstr /n "name_local TEXT" supabase\migrations\0011_venues_rag_missing_columns.sql
 # Expect the PREREQUISITE comment about dual name_local / names_local columns
 ```
 
@@ -40,222 +55,107 @@ Copy `.env.example` to `.env` if needed and fill at least:
 - `TB_SUPABASE_KEY` (service_role -- bypasses RLS)
 - `TB_DATABASE_URL` (postgres connection string for psql)
 - `OPENAI_API_KEY` (needed for the Laos reload embeddings)
+- `TB_LITELLM_API_KEY` if your loader/embeddings path expects it
 
-Load them into the shell (the export script does not read `.env`):
+Load `.env` into this PowerShell process (the export script does not read `.env`):
 
-```bash
-set -a
-source .env
-set +a
-test -n "$TB_SUPABASE_URL" && test -n "$TB_SUPABASE_KEY" && test -n "$TB_DATABASE_URL"
-echo "creds present"
+```powershell
+$ErrorActionPreference = 'Stop'
+Get-Content .env | ForEach-Object {
+    $line = $_.Trim()
+    if ($line -eq '' -or $line.StartsWith('#')) { return }
+    $eq = $line.IndexOf('=')
+    if ($eq -lt 1) { return }
+    $name = $line.Substring(0, $eq).Trim()
+    $value = $line.Substring($eq + 1).Trim()
+    Set-Item -Path "Env:$name" -Value $value
+}
+if (-not $env:TB_SUPABASE_URL) { throw "TB_SUPABASE_URL missing" }
+if (-not $env:TB_SUPABASE_KEY) { throw "TB_SUPABASE_KEY missing" }
+if (-not $env:TB_DATABASE_URL) { throw "TB_DATABASE_URL missing" }
+Write-Host "creds present"
 ```
 
 Install runtime and test deps if this machine has not:
 
-```bash
-python3 -m pip install -r requirements.txt -r requirements-dev.txt
+```powershell
+python -m pip install -r requirements.txt -r requirements-dev.txt
+if ($LASTEXITCODE -ne 0) { throw "pip install failed" }
 ```
 
 ---
 
 ## Step 1 -- live snapshot (durability first)
 
-```bash
-python3 scripts/export_live_snapshot.py
+```powershell
+python scripts/export_live_snapshot.py
+if ($LASTEXITCODE -ne 0) { throw "snapshot failed" }
 ```
 
 Note the printed `Snapshot directory: data/live_snapshot/<stamp>`.
-That directory is gitignored. Confirm the region breakdown includes Dubai:
+That directory is gitignored. Set SNAP to that stamp path and confirm Dubai:
 
-```bash
+```powershell
 # replace STAMP with the directory name the script printed
-export SNAP=data/live_snapshot/STAMP
-python3 - <<'PY'
+$env:SNAP = "data\live_snapshot\STAMP"
+@"
 import json, os
-snap = os.environ["SNAP"]
-venues = json.loads(open(f"{snap}/venues_rag.json", encoding="utf-8").read())
+snap = os.environ['SNAP']
+venues = json.load(open(os.path.join(snap, 'venues_rag.json'), encoding='utf-8'))
 regions = {}
 for v in venues:
-    regions[v.get("geo_region")] = regions.get(v.get("geo_region"), 0) + 1
+    regions[v.get('geo_region')] = regions.get(v.get('geo_region'), 0) + 1
 print(regions)
-dubai = [v for v in venues if "dubai" in (v.get("geo_region") or "")]
-print("dubai_count", len(dubai))
+dubai = [v for v in venues if 'dubai' in (v.get('geo_region') or '')]
+print('dubai_count', len(dubai))
 if len(dubai) < 16:
-    raise SystemExit("STOP: expected at least 16 Dubai venues; do not continue")
-PY
+    raise SystemExit('STOP: expected at least 16 Dubai venues; do not continue')
+"@ | Set-Content -Encoding ascii "$env:TEMP\tb_check_dubai.py"
+python "$env:TEMP\tb_check_dubai.py"
+if ($LASTEXITCODE -ne 0) { throw "Dubai count check failed -- STOP" }
 ```
 
-Hard stop if Dubai count is not 16 (or whatever the live count is, if it
-differs -- record the real number and stop to investigate before applying
-anything).
+Hard stop if Dubai count is below 16 (or differs from what PROJECT_STATUS
+claims -- record the real number and investigate before applying anything).
 
 ---
 
 ## Step 2 -- durable Dubai file under data/
 
-Write a loader-shaped file the repo can rebuild from. Map live columns back
-to the JSON keys the loader understands. Keep ASCII on disk via `\uXXXX`
-escapes (`ensure_ascii=True`).
+Write the loader-shaped file, then prove `load_venues.py` can consume it.
+A parse check is not a restore proof -- the Laos loader bug in 8dfc412 sat
+behind a green test module while the committed data could not be loaded.
 
-```bash
-export SNAP=data/live_snapshot/STAMP   # same stamp as Step 1
-python3 - <<'PY'
-import json, os
-from datetime import date
-from pathlib import Path
+```powershell
+# SNAP must still point at the Step 1 stamp directory
+python scripts/export_dubai_from_snapshot.py $env:SNAP
+if ($LASTEXITCODE -ne 0) { throw "Dubai export failed -- do not commit" }
 
-snap = Path(os.environ["SNAP"])
-venues = json.loads((snap / "venues_rag.json").read_text(encoding="utf-8"))
-dishes_path = snap / "venue_dish.json"
-dishes = json.loads(dishes_path.read_text(encoding="utf-8")) if dishes_path.is_file() else []
+python -c "import json; w=json.load(open('data/dubai_uae.json',encoding='utf-8')); assert w['geo_region']; assert len(w['venues'])>=16; print('ok', w['geo_region'], len(w['venues']))"
+if ($LASTEXITCODE -ne 0) { throw "parse check failed" }
 
-dubai = [v for v in venues if (v.get("geo_region") or "").find("dubai") >= 0]
-if not dubai:
-    raise SystemExit("no dubai rows")
-
-# Attach dishes by venue_id when present
-by_venue = {}
-for d in dishes:
-    by_venue.setdefault(d.get("venue_id"), []).append(d)
-
-def first_local(blob, field_fallback):
-    """Prefer names_local/landmarks_local JSONB; fall back to legacy TEXT."""
-    if isinstance(blob, dict) and blob:
-        # pick any language entry that has a value
-        for _lang, entry in blob.items():
-            if isinstance(entry, dict) and entry.get("value"):
-                return entry.get("value"), entry.get("source"), entry.get("ref")
-            if isinstance(entry, str) and entry:
-                return entry, None, None
-    if field_fallback:
-        return field_fallback, None, None
-    return None, None, None
-
-out_venues = []
-for v in sorted(dubai, key=lambda r: (r.get("name") or "")):
-    names_local = v.get("names_local")
-    if isinstance(names_local, str):
-        try:
-            names_local = json.loads(names_local)
-        except Exception:
-            names_local = None
-    landmarks_local = v.get("landmarks_local")
-    if isinstance(landmarks_local, str):
-        try:
-            landmarks_local = json.loads(landmarks_local)
-        except Exception:
-            landmarks_local = None
-
-    name_local, name_src, name_ref = first_local(
-        names_local, v.get("name_local")
-    )
-    landmark_local, _, _ = first_local(
-        landmarks_local, v.get("nearest_landmark_local")
-    )
-
-    opening = v.get("opening_hours_structured") or v.get("opening_hours")
-    if isinstance(opening, str):
-        try:
-            opening = json.loads(opening)
-        except Exception:
-            pass
-
-    row = {
-        "name": v.get("name"),
-        "category": v.get("category"),
-        "micro_location": v.get("micro_location"),
-        "nearest_landmark": v.get("nearest_landmark"),
-        "lat": v.get("lat"),
-        "lng": v.get("lng"),
-        "typical_dwell_minutes": v.get("typical_dwell_minutes"),
-        "indoor_outdoor": v.get("indoor_outdoor"),
-        "has_aircon": v.get("has_aircon"),
-        "price_band": v.get("price_band"),
-        "audience": v.get("audience") or [],
-        "vibe_tags": v.get("vibe_tags") or [],
-        "description": v.get("description") or "",
-        "wheelchair_notes": v.get("wheelchair_notes"),
-    }
-    if name_local:
-        row["name_local"] = name_local
-        if name_src:
-            row["name_local_source"] = name_src
-        if name_ref:
-            row["name_local_ref"] = name_ref
-    if landmark_local:
-        row["nearest_landmark_local"] = landmark_local
-    if opening:
-        row["opening_hours"] = opening
-
-    # Dishes: keep fields the loader understands; leave unknowns out
-    attached = []
-    for d in by_venue.get(v.get("venue_id"), []):
-        dish = {
-            k: d.get(k)
-            for k in (
-                "name", "name_local", "dish_key", "price_local", "price_band",
-                "currency_code", "contains", "may_contain", "suitable_for",
-                "description",
-            )
-            if d.get(k) is not None
-        }
-        if dish.get("name"):
-            attached.append(dish)
-    if attached:
-        row["dishes"] = attached
-
-    # Drop nulls for readability
-    out_venues.append({k: val for k, val in row.items() if val is not None})
-
-wrapper = {
-    "geo_region": dubai[0].get("geo_region") or "dubai_uae",
-    "curated_at": date.today().isoformat(),
-    "curator_notes": (
-        "Exported from live Supabase on device day. Not re-curated. "
-        "Preserve until a deliberate curation pass replaces it."
-    ),
-    "venues": out_venues,
-}
-
-out = Path("data/dubai_uae.json")
-out.write_text(json.dumps(wrapper, indent=2, ensure_ascii=True) + "\n", encoding="utf-8")
-print("wrote", out, "venues", len(out_venues))
-PY
-```
-
-Verify the file parses, then prove the real loader can consume it. A parse
-check is not a restore proof -- the Laos loader bug in 8dfc412 sat behind a
-green test module while the committed data could not be loaded. Hard stop on
-any dry-run error; fix the export mapping and re-run before committing.
-
-```bash
-python3 - <<'PY'
-import json
-w = json.load(open("data/dubai_uae.json", encoding="utf-8"))
-assert w["geo_region"]
-assert len(w["venues"]) >= 16, len(w["venues"])
-print("ok", w["geo_region"], len(w["venues"]))
-PY
-
-python3 scripts/load_venues.py data/dubai_uae.json --dry-run
+python scripts/load_venues.py data/dubai_uae.json --dry-run
+if ($LASTEXITCODE -ne 0) { throw "loader dry-run failed -- file is not restorable; fix mapping and retry before commit" }
 # Expect exit code 0 and zero validation errors. Warnings are allowed only if
-# you understand them; errors mean the file is not restorable -- do not commit.
+# you understand them; errors mean do not commit.
 ```
 
 Commit only after the dry-run exits 0:
 
-```bash
+```powershell
 git add data/dubai_uae.json
-git commit -m "$(cat <<'EOF'
+git commit -m @"
 data: export Dubai venues from live Supabase
 
 The 16 Dubai rows existed only in the hosted database. Capture them under
 data/ before any migration apply so a rebuild cannot silently drop them.
-EOF
-)"
+"@
+if ($LASTEXITCODE -ne 0) { throw "commit failed" }
 git push origin main
-git show origin/main:data/dubai_uae.json | python3 -c "import sys,json; w=json.load(sys.stdin); print(w['geo_region'], len(w['venues']))"
+if ($LASTEXITCODE -ne 0) { throw "push failed" }
+
+python -c "import subprocess,json,sys; raw=subprocess.check_output(['git','show','origin/main:data/dubai_uae.json']); w=json.loads(raw); print(w['geo_region'], len(w['venues'])); sys.exit(0 if len(w['venues'])>=16 else 1)"
+if ($LASTEXITCODE -ne 0) { throw "origin/main dubai file missing or short" }
 ```
 
 Hard stop until `origin/main` shows the file with the expected count.
@@ -264,72 +164,45 @@ Hard stop until `origin/main` shows the file with the expected count.
 
 ## Step 3 -- schema dump and 0011 dual-column decision
 
-PostgREST OpenAPI is already in `$SNAP/_live_schema.json`. Also capture
-CHECK constraints and comments via SQL (OpenAPI cannot see them):
+PostgREST OpenAPI is already in `$env:SNAP\_live_schema.json`. Also capture
+columns and comments via SQL (OpenAPI cannot see CHECKs or pg_description):
 
-```bash
-psql "$TB_DATABASE_URL" -v ON_ERROR_STOP=1 -A -F$'\t' -c "
-SELECT column_name, data_type, udt_name
-FROM information_schema.columns
-WHERE table_schema = 'public' AND table_name = 'venues_rag'
-ORDER BY ordinal_position;
-" | tee /tmp/tb_venues_rag_columns.txt
+```powershell
+$colFile = Join-Path $env:TEMP 'tb_venues_rag_columns.txt'
+$descFile = Join-Path $env:TEMP 'tb_pg_description.txt'
 
-psql "$TB_DATABASE_URL" -v ON_ERROR_STOP=1 -A -F$'\t' -c "
-SELECT c.relname AS table_name, coalesce(a.attname, '') AS column_name, d.description
-FROM pg_catalog.pg_description d
-JOIN pg_catalog.pg_class c ON c.oid = d.objoid
-LEFT JOIN pg_catalog.pg_attribute a
-  ON a.attrelid = c.oid AND a.attnum = d.objsubid
-WHERE c.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public')
-ORDER BY 1, 2;
-" | tee /tmp/tb_pg_description.txt
+psql $env:TB_DATABASE_URL -v ON_ERROR_STOP=1 -A -F "`t" -c "SELECT column_name, data_type, udt_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'venues_rag' ORDER BY ordinal_position;" | Set-Content -Encoding ascii $colFile
+if ($LASTEXITCODE -ne 0) { throw "column dump failed" }
+
+psql $env:TB_DATABASE_URL -v ON_ERROR_STOP=1 -A -F "`t" -c "SELECT c.relname AS table_name, coalesce(a.attname, '') AS column_name, d.description FROM pg_catalog.pg_description d JOIN pg_catalog.pg_class c ON c.oid = d.objoid LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid = c.oid AND a.attnum = d.objsubid WHERE c.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public') ORDER BY 1, 2;" | Set-Content -Encoding ascii $descFile
+if ($LASTEXITCODE -ne 0) { throw "pg_description dump failed" }
+
+python scripts/device_day_name_column_decision.py $colFile
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "STOP: do not apply 0011 as-is. Record the finding in docs/AWAITING_VERIFICATION.md"
+    throw "0011 dual-column gate failed"
+}
 ```
 
-Decide before apply:
+Optional OpenAPI diff against 0011 ADD COLUMN names:
 
-```bash
-python3 - <<'PY'
-from pathlib import Path
-cols = set()
-for line in Path("/tmp/tb_venues_rag_columns.txt").read_text(encoding="utf-8").splitlines():
-    if not line or line.startswith("column_name") or line.startswith("("):
-        continue
-    cols.add(line.split("\t")[0].strip())
-print("venues_rag columns:", sorted(cols))
-print("has name_local:", "name_local" in cols)
-print("has names_local:", "names_local" in cols)
-print("has nearest_landmark_local:", "nearest_landmark_local" in cols)
-print("has landmarks_local:", "landmarks_local" in cols)
-if "name_local" in cols and "names_local" not in cols:
-    print("DECISION: write a backfill BEFORE 0011, or amend apply order.")
-    print("DO NOT apply 0011 as-is: ADD COLUMN names_local would leave name_local unread.")
-elif "name_local" in cols and "names_local" in cols:
-    print("DECISION: both exist -- inspect which is populated; do not blind-apply.")
-else:
-    print("DECISION: safe to apply 0011 as written for the names_local path.")
-PY
-```
-Also diff OpenAPI properties against migration-declared names if useful:
-
-```bash
-python3 - <<'PY'
+```powershell
+@"
 import json, re, pathlib
-snap = pathlib.Path("data/live_snapshot")
-# pick latest stamp
+snap = pathlib.Path('data/live_snapshot')
 stamps = sorted(p for p in snap.iterdir() if p.is_dir())
-schema = json.loads((stamps[-1] / "_live_schema.json").read_text(encoding="utf-8"))
-live_cols = set(schema.get("venues_rag", {}).keys())
-mig = pathlib.Path("supabase/migrations/0011_venues_rag_missing_columns.sql").read_text(encoding="utf-8")
-wanted = set(re.findall(r"ADD COLUMN IF NOT EXISTS (\w+)", mig))
-print("0011 columns already live:", sorted(wanted & live_cols))
-print("0011 columns missing live:", sorted(wanted - live_cols))
-print("live columns not in 0011 add-set (sample):", sorted(live_cols - wanted)[:30])
-PY
+schema = json.loads((stamps[-1] / '_live_schema.json').read_text(encoding='utf-8'))
+live_cols = set(schema.get('venues_rag', {}).keys())
+mig = pathlib.Path('supabase/migrations/0011_venues_rag_missing_columns.sql').read_text(encoding='utf-8')
+wanted = set(re.findall(r'ADD COLUMN IF NOT EXISTS (\w+)', mig))
+print('0011 columns already live:', sorted(wanted & live_cols))
+print('0011 columns missing live:', sorted(wanted - live_cols))
+print('live columns not in 0011 add-set (sample):', sorted(live_cols - wanted)[:30])
+"@ | Set-Content -Encoding ascii "$env:TEMP\tb_openapi_diff.py"
+python "$env:TEMP\tb_openapi_diff.py"
 ```
 
-If the decision is "do not apply 0011 as-is", stop and write the finding into
-`docs/AWAITING_VERIFICATION.md`. Do not proceed to Step 4.
+If the decision is "do not apply 0011 as-is", stop. Do not proceed to Step 4.
 
 ---
 
@@ -337,30 +210,29 @@ If the decision is "do not apply 0011 as-is", stop and write the finding into
 
 Only after Step 2 is on `origin/main` and Step 3 decision is "safe".
 
-```bash
+```powershell
 git pull origin main
-for f in \
-  supabase/migrations/0011_venues_rag_missing_columns.sql \
-  supabase/migrations/0012_venue_external_id.sql \
-  supabase/migrations/0013_taxonomy_term.sql \
-  supabase/migrations/0014_itinerary_normalisation.sql \
-  supabase/migrations/0015_drift_fixes.sql \
-  supabase/migrations/0016_comment_fixes.sql \
-  supabase/migrations/0017_venues_rag_price_band_check.sql \
-  supabase/migrations/0018_anonymous_identity.sql
-do
-  echo "APPLY $f"
-  psql "$TB_DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"
-done
-```
+if ($LASTEXITCODE -ne 0) { throw "git pull failed" }
 
-If any file fails, stop. Do not continue the loop. Capture the error and the
-file name in `docs/AWAITING_VERIFICATION.md`.
+$files = @(
+  'supabase\migrations\0011_venues_rag_missing_columns.sql',
+  'supabase\migrations\0012_venue_external_id.sql',
+  'supabase\migrations\0013_taxonomy_term.sql',
+  'supabase\migrations\0014_itinerary_normalisation.sql',
+  'supabase\migrations\0015_drift_fixes.sql',
+  'supabase\migrations\0016_comment_fixes.sql',
+  'supabase\migrations\0017_venues_rag_price_band_check.sql',
+  'supabase\migrations\0018_anonymous_identity.sql'
+)
+foreach ($f in $files) {
+    Write-Host "APPLY $f"
+    psql $env:TB_DATABASE_URL -v ON_ERROR_STOP=1 -f $f
+    if ($LASTEXITCODE -ne 0) {
+        throw "STOP: $f failed -- do not continue. Record in docs/AWAITING_VERIFICATION.md"
+    }
+}
 
-Confirm 0018 column:
-
-```bash
-psql "$TB_DATABASE_URL" -c "\d user_tiers"
+psql $env:TB_DATABASE_URL -c "\d user_tiers"
 # expect identity_kind
 ```
 
@@ -370,48 +242,44 @@ psql "$TB_DATABASE_URL" -c "\d user_tiers"
 
 Dry run first:
 
-```bash
-python3 scripts/load_venues.py \
-  data/laos_luang_prabang.json \
-  data/laos_vang_vieng.json \
-  data/laos_vientiane.json \
+```powershell
+python scripts/load_venues.py `
+  data/laos_luang_prabang.json `
+  data/laos_vang_vieng.json `
+  data/laos_vientiane.json `
   --dry-run
+if ($LASTEXITCODE -ne 0) { throw "Laos venue dry-run failed" }
 
-python3 scripts/load_dish_glossary.py data/laos_dish_glossary.json --dry-run
+python scripts/load_dish_glossary.py data/laos_dish_glossary.json --dry-run
+if ($LASTEXITCODE -ne 0) { throw "glossary dry-run failed" }
 ```
 
-Then real load (writes embeddings -- needs `OPENAI_API_KEY`):
+Then real load (writes embeddings -- needs OpenAI / LiteLLM key in the env):
 
-```bash
-python3 scripts/load_venues.py \
-  data/laos_luang_prabang.json \
-  data/laos_vang_vieng.json \
+```powershell
+python scripts/load_venues.py `
+  data/laos_luang_prabang.json `
+  data/laos_vang_vieng.json `
   data/laos_vientiane.json
+if ($LASTEXITCODE -ne 0) { throw "Laos venue load failed" }
 
-python3 scripts/load_dish_glossary.py data/laos_dish_glossary.json
+python scripts/load_dish_glossary.py data/laos_dish_glossary.json
+if ($LASTEXITCODE -ne 0) { throw "glossary load failed" }
 ```
 
 Spot-check opening hours no longer null for Laos:
 
-```bash
-psql "$TB_DATABASE_URL" -c "
-SELECT geo_region,
-       count(*) AS venues,
-       count(opening_hours_structured) AS with_hours
-FROM venues_rag
-WHERE geo_region LIKE '%laos%'
-GROUP BY 1
-ORDER BY 1;
-"
+```powershell
+psql $env:TB_DATABASE_URL -c "SELECT geo_region, count(*) AS venues, count(opening_hours_structured) AS with_hours FROM venues_rag WHERE geo_region LIKE '%laos%' GROUP BY 1 ORDER BY 1;"
 ```
 
 ---
 
 ## Step 6 -- pytest with live credentials
 
-```bash
+```powershell
 git pull origin main
-export TB_SUPABASE_URL TB_SUPABASE_KEY
+# TB_SUPABASE_URL / TB_SUPABASE_KEY already in this process from Step 0
 # Keep TB_ALLOW_ANONYMOUS unset/false unless deliberately testing that path.
 pytest -q -ra
 ```
@@ -420,15 +288,23 @@ Record the summary line including skips. The five tests in
 `tests/test_supabase_integration.py` must not skip for missing URL. Any
 failure is a finding -- do not re-label it as environmental without evidence.
 
+Optional companion smoke (API must be running):
+
+```powershell
+.\scripts\smoke-test.ps1
+```
+
 ---
 
 ## Step 7 -- live checks (record results)
 
-Run and paste outcomes into a new dated section of
+Save SQL to a temp file (PowerShell 5.1 is safer this way than inline quoting),
+run it, and paste outcomes into a new dated section of
 `docs/AWAITING_VERIFICATION.md`:
 
-```bash
-psql "$TB_DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+```powershell
+$sqlFile = Join-Path $env:TEMP 'tb_device_day_checks.sql'
+@'
 -- price_band distinct values (venue_dish and venues_rag)
 SELECT 'venue_dish' AS src, price_band, count(*)
 FROM venue_dish GROUP BY 1,2 ORDER BY 1,2;
@@ -458,7 +334,10 @@ SELECT pg_get_function_identity_arguments(p.oid) AS args,
 FROM pg_proc p
 JOIN pg_namespace n ON n.oid = p.pronamespace
 WHERE n.nspname = 'public' AND p.proname = 'hybrid_venue_search';
-SQL
+'@ | Set-Content -Encoding ascii $sqlFile
+
+psql $env:TB_DATABASE_URL -v ON_ERROR_STOP=1 -f $sqlFile
+if ($LASTEXITCODE -ne 0) { throw "live checks failed" }
 ```
 
 Do not run `VALIDATE CONSTRAINT` on the price_band CHECKs today unless the
@@ -473,6 +352,7 @@ finding.
 Append a dated block to `docs/AWAITING_VERIFICATION.md` covering:
 
 - Dubai export commit SHA and venue count
+- Loader dry-run result for `data/dubai_uae.json`
 - 0011 dual-column decision and what was applied
 - pytest summary with skip reasons
 - price_band / AED / pg_description / hybrid_venue_search observations
@@ -482,9 +362,9 @@ status rows, Dubai source-file risk). Do not hand-mirror test counts (R16).
 
 Push documentation commits to main. Verify with:
 
-```bash
+```powershell
 git fetch origin
-git show origin/main:docs/AWAITING_VERIFICATION.md | tail -80
+git show origin/main:docs/AWAITING_VERIFICATION.md | Select-Object -Last 80
 ```
 
 ---
