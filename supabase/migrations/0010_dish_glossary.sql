@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS dish_glossary (
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-COMMENT ON TABLE dish_glossary IS 'Canonical dish definitions with allergen safety data. Single source of truth — venue_dish references via dish_key.';
+COMMENT ON TABLE dish_glossary IS 'Canonical dish definitions with allergen safety data. Single source of truth -- venue_dish references via dish_key.';
 COMMENT ON COLUMN dish_glossary.dish_key IS 'Snake_case identifier, globally unique. Used as FK from venue_dish.';
 COMMENT ON COLUMN dish_glossary.contains IS 'Array of confirmed allergens from config/dietary.py VALID_ALLERGENS.';
 COMMENT ON COLUMN dish_glossary.may_contain IS 'Array of cross-contamination allergens.';

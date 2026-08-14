@@ -168,3 +168,163 @@ def test_every_spec_reference_resolves():
             for k, v in sorted(missing.items())
         )
     )
+
+
+# ---------------------------------------------------------------------------
+# Non-ASCII guards for code (.py and .sql)
+# ---------------------------------------------------------------------------
+
+import ast
+import io
+import tokenize as _tokenize
+
+
+def _extract_comment_on_bodies(sql: str):
+    """Yield (line_number, body_text) for each COMMENT ON ... IS '...' in sql.
+
+    Matches both single-line and multi-line COMMENT ON statements. Returns the
+    text between the IS quotes, which is what Postgres persists to pg_description.
+    """
+    # Match: COMMENT ON ... IS '<body>';  (body may span lines)
+    pattern = re.compile(
+        r"COMMENT\s+ON\s+\w+.*?IS\s*\n?\s*'((?:[^']|'')*)'",
+        re.IGNORECASE | re.DOTALL,
+    )
+    for match in pattern.finditer(sql):
+        # Line number of the IS keyword (where the body starts)
+        line_num = sql[:match.start(1)].count("\n") + 1
+        yield line_num, match.group(1)
+
+
+def _python_comment_and_docstring_chars(filepath: Path):
+    """Yield (line, col, char, codepoint) for non-ASCII in comments and docstrings.
+
+    Uses tokenize for COMMENT tokens and ast for docstrings. String literals
+    that are not docstrings are intentionally exempt -- the program may
+    legitimately emit degree signs, section references, or other symbols.
+
+    .dart files are excluded from this guard entirely. Display strings in a
+    client that renders Lao and Arabic are legitimately non-ASCII; localisation
+    belongs in ARB files, not under a byte-level ASCII guard.
+    """
+    source = filepath.read_text(encoding="utf-8")
+    hits = []
+
+    # 1. COMMENT tokens (lines starting with #)
+    try:
+        tokens = list(_tokenize.generate_tokens(io.StringIO(source).readline))
+    except _tokenize.TokenError:
+        return hits  # Unparseable file -- skip gracefully
+    for tok in tokens:
+        if tok.type == _tokenize.COMMENT:
+            for i, ch in enumerate(tok.string):
+                if ord(ch) > 127:
+                    hits.append((tok.start[0], tok.start[1] + i, ch, ord(ch)))
+
+    # 2. Docstrings via AST
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return hits  # Unparseable -- skip gracefully
+
+    docstring_lines = set()
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
+            if (node.body and isinstance(node.body[0], ast.Expr)
+                    and isinstance(node.body[0].value, ast.Constant)
+                    and isinstance(node.body[0].value.value, str)):
+                ds_node = node.body[0].value
+                for ln in range(ds_node.lineno, ds_node.end_lineno + 1):
+                    docstring_lines.add(ln)
+
+    source_lines = source.splitlines()
+    for ln in sorted(docstring_lines):
+        if ln <= len(source_lines):
+            line_text = source_lines[ln - 1]
+            for col, ch in enumerate(line_text):
+                if ord(ch) > 127:
+                    hits.append((ln, col, ch, ord(ch)))
+
+    return hits
+
+
+def test_no_non_ascii_in_sql_comment_on():
+    """No non-ASCII character may appear inside a COMMENT ON body in .sql files.
+
+    Justification: COMMENT ON text persists into pg_description in the live
+    database. A non-ASCII character (especially an em-dash U+2014 or curly
+    quote) will be stored verbatim. If the client or connection is not UTF-8
+    the value becomes mojibake that cannot be distinguished from corruption.
+    This has occurred once (0015 draft, already fixed).
+
+    Applied migrations (0001-0014) are included because this is a read-only
+    assertion -- if they already pass, nothing changes; if a future edit adds
+    a COMMENT ON, the guard catches it.
+    """
+    offenders = []
+    for path in sorted(REPO_ROOT.rglob("*.sql")):
+        if not path.is_file():
+            continue
+        rel = _rel(path)
+        if EXCLUDED_PARTS & set(path.relative_to(REPO_ROOT).parts):
+            continue
+        sql = path.read_text(encoding="utf-8")
+        for line_num, body in _extract_comment_on_bodies(sql):
+            for col, ch in enumerate(body):
+                if ord(ch) > 127:
+                    offenders.append(
+                        f"  {rel}:{line_num} col {col}: "
+                        f"'{ch}' (U+{ord(ch):04X}) in COMMENT ON body"
+                    )
+    assert not offenders, (
+        "Non-ASCII inside COMMENT ON persists to pg_description. "
+        "Use ASCII equivalents (-- for em-dash, etc).\n"
+        + "\n".join(offenders)
+    )
+
+
+def test_no_non_ascii_in_python_comments_or_docstrings():
+    """No non-ASCII character may appear in Python comments or docstrings.
+
+    Justification (narrower than a blanket file scan, and each reason is real):
+
+    1. In .sql COMMENT ON bodies, non-ASCII persists into the database (tested
+       separately above).
+
+    2. In .py comments and docstrings, keeping prose ASCII ensures that a
+       mojibake round-trip through a non-UTF-8 tool shows up as a diff rather
+       than silent corruption. It also keeps every non-ASCII string an explicit
+       \\uXXXX escape, making the encoding choice visible and reviewable.
+
+    String literals are intentionally EXEMPT. A degree sign in a temperature
+    format string is correct code; forcing \\u00b0 makes it worse. This
+    product renders Lao and Arabic -- a blanket ban on non-ASCII literals
+    would fight the code rather than protect it.
+
+    .dart files are deliberately excluded. Display strings in a Flutter client
+    are legitimately non-ASCII; localisation belongs in ARB files, not under
+    this guard.
+
+    When a test genuinely needs a native-script string (e.g. proving the Lao
+    script guard works), the prescribed form is \\uXXXX escapes in a string
+    literal, which is pure ASCII. The answer is never an allowlist entry.
+    """
+    offenders = []
+    for path in sorted(REPO_ROOT.rglob("*.py")):
+        if not path.is_file():
+            continue
+        if path.suffix == ".dart":
+            continue
+        rel = _rel(path)
+        if EXCLUDED_PARTS & set(path.relative_to(REPO_ROOT).parts):
+            continue
+        for line_num, col, ch, codepoint in _python_comment_and_docstring_chars(path):
+            offenders.append(
+                f"  {rel}:{line_num} col {col}: "
+                f"'{ch}' (U+{codepoint:04X})"
+            )
+    assert not offenders, (
+        "Non-ASCII in comments/docstrings. Use ASCII equivalents "
+        "(-- for em-dash, -> for arrow) or \\uXXXX in string literals.\n"
+        + "\n".join(offenders)
+    )
