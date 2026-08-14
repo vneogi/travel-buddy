@@ -65,13 +65,11 @@ def build_wrapper(venues: list, dishes: list) -> dict:
         by_venue.setdefault(d.get("venue_id"), []).append(d)
 
     out_venues = []
-    for v in sorted(dubai, key=lambda r: (r.get("name") or "")):
+    for v in sorted(dubai, key=lambda r: r.get("name") or ""):
         names_local = _maybe_json(v.get("names_local"))
         landmarks_local = _maybe_json(v.get("landmarks_local"))
         name_local, name_src, name_ref = _first_local(names_local, v.get("name_local"))
-        landmark_local, _, _ = _first_local(
-            landmarks_local, v.get("nearest_landmark_local")
-        )
+        landmark_local, _, _ = _first_local(landmarks_local, v.get("nearest_landmark_local"))
         opening = v.get("opening_hours_structured") or v.get("opening_hours")
         opening = _maybe_json(opening) if isinstance(opening, str) else opening
 
@@ -167,9 +165,7 @@ def main(argv: list[str] | None = None) -> int:
 
     venues = json.loads(venues_path.read_text(encoding="utf-8"))
     dishes_path = snap / "venue_dish.json"
-    dishes = (
-        json.loads(dishes_path.read_text(encoding="utf-8")) if dishes_path.is_file() else []
-    )
+    dishes = json.loads(dishes_path.read_text(encoding="utf-8")) if dishes_path.is_file() else []
 
     wrapper = build_wrapper(venues, dishes)
     count = len(wrapper["venues"])
@@ -183,9 +179,7 @@ def main(argv: list[str] | None = None) -> int:
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(
-        json.dumps(wrapper, indent=2, ensure_ascii=True) + "\n", encoding="utf-8"
-    )
+    out.write_text(json.dumps(wrapper, indent=2, ensure_ascii=True) + "\n", encoding="utf-8")
     print("wrote %s venues=%d geo_region=%s" % (out, count, wrapper["geo_region"]))
     print("NEXT: python scripts/load_venues.py %s --dry-run" % out)
     print("Commit only if that dry-run exits 0.")

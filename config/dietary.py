@@ -42,6 +42,31 @@ VALID_ALLERGENS: frozenset[str] = frozenset(
 
 
 # ===========================================================================
+# Dish contains vocabulary -- allowed terms for contains / may_contain arrays
+# ===========================================================================
+# Superset of VALID_ALLERGENS: adds meat types (halal/kosher filtering),
+# sensitivities (chilli, alcohol, fish_sauce), and singular aliases used by
+# the glossary (EU-14 uses plurals; glossary uses singulars).
+
+VALID_DISH_CONTAINS: frozenset[str] = VALID_ALLERGENS | frozenset(
+    {
+        # Meat types
+        "pork",
+        "beef",
+        # Sensitivities
+        "chilli",
+        "alcohol",
+        "fish_sauce",
+        # Singular aliases (glossary uses these; EU-14 uses plurals)
+        "egg",
+        "peanut",
+        "soy",
+        "tree_nut",
+    }
+)
+
+
+# ===========================================================================
 # Dietary labels -- what a dish is SUITABLE_FOR
 # ===========================================================================
 
