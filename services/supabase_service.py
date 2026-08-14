@@ -75,7 +75,7 @@ class SupabaseService:
     # User Tier Operations
     # =========================================================================
 
-    def get_or_create_user(self, user_id: str) -> UserTier:
+    def get_or_create_user(self, user_id: str, identity_kind: str = "unknown") -> UserTier:
         """Get user tier info, creating free-tier user if not exists."""
         result = (
             self.client.table("user_tiers")
@@ -104,6 +104,7 @@ class SupabaseService:
                 "daily_reroute_count": 0,
                 "max_daily_reroutes": settings.max_daily_reroutes_free,
                 "last_reset_date": date.today().isoformat(),
+                "identity_kind": identity_kind,
             }
             self.client.table("user_tiers").insert(new_user).execute()
             return UserTier(

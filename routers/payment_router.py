@@ -14,7 +14,7 @@ from pydantic import BaseModel
 
 from services.payment_service import payment_service, PLANS
 from services.db_provider import db_service
-from security import get_current_user_id
+from security import get_current_user_id, resolve_identity, ResolvedIdentity
 
 router = APIRouter(prefix="/api/v1/payment", tags=["payment"])
 
@@ -50,10 +50,11 @@ async def get_plans():
 
 
 @router.get("/status")
-async def get_subscription_status(user_id: str = Depends(get_current_user_id)):
+async def get_subscription_status(identity: ResolvedIdentity = Depends(resolve_identity)):
     """Check subscription status for the authenticated user."""
+    user_id = identity.user_id
     rc_status = await payment_service.get_subscriber_status(user_id)
-    user = db_service.get_or_create_user(user_id)
+    user = db_service.get_or_create_user(user_id, identity.identity_kind)
     return {
         "user_id": user_id,
         "local_tier": user.tier_status.value,

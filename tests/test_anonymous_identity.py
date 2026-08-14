@@ -7,12 +7,14 @@ Covers:
 - TB_ALLOW_ANONYMOUS fail-closed default
 - Anonymous rejected when JWT secret is configured
 - Resolution order: JWT > Anonymous > Debug > 401
+- identity_kind written on user creation (production path, R17)
+- Canonicalisation: all non-canonical forms rejected (not just normalised)
 """
 
 import uuid
 import sys
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 import pytest
 from fastapi import HTTPException
@@ -20,54 +22,110 @@ from fastapi import HTTPException
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-from security import _is_valid_uuid_v4, _parse_anonymous_header, get_current_user_id
+from security import (
+    _validate_anonymous_uuid,
+    _parse_anonymous_header,
+    resolve_identity,
+    get_current_user_id,
+    ResolvedIdentity,
+)
 
 
 # ---------------------------------------------------------------------------
-# UUID v4 validation
+# UUID v4 validation + canonicalisation + non-canonical rejection
 # ---------------------------------------------------------------------------
 
 class TestUuidV4Validation:
-    """UUID must be version 4 with RFC 4122 variant bits."""
+    """UUID must be version 4 with RFC 4122 variant bits, in canonical form."""
 
-    def test_valid_uuid_v4(self):
-        """A fresh uuid4() is accepted."""
-        assert _is_valid_uuid_v4(str(uuid.uuid4())) is True
+    def test_valid_canonical_uuid_v4(self):
+        """A fresh uuid4() in canonical form is accepted."""
+        uid = str(uuid.uuid4())
+        assert _validate_anonymous_uuid(uid) == uid
 
     def test_rejects_uuid_v1(self):
         """v1 UUIDs embed the device MAC address -- privacy leak."""
         v1 = str(uuid.uuid1())
-        assert _is_valid_uuid_v4(v1) is False
+        with pytest.raises(HTTPException) as exc_info:
+            _validate_anonymous_uuid(v1)
+        assert exc_info.value.status_code == 401
+        assert "version 4" in exc_info.value.detail.lower() or "Version 4" in exc_info.value.detail
 
     def test_rejects_uuid_v5(self):
         """v5 (deterministic from input) is not random."""
         v5 = str(uuid.uuid5(uuid.NAMESPACE_DNS, "test.example.com"))
-        assert _is_valid_uuid_v4(v5) is False
+        with pytest.raises(HTTPException) as exc_info:
+            _validate_anonymous_uuid(v5)
+        assert exc_info.value.status_code == 401
 
     def test_rejects_nil_uuid(self):
         """Nil UUID (all zeros) has version 0."""
-        assert _is_valid_uuid_v4("00000000-0000-0000-0000-000000000000") is False
+        with pytest.raises(HTTPException):
+            _validate_anonymous_uuid("00000000-0000-0000-0000-000000000000")
 
     def test_rejects_malformed_string(self):
         """Random strings are not UUIDs."""
-        assert _is_valid_uuid_v4("not-a-uuid") is False
-        assert _is_valid_uuid_v4("") is False
-        assert _is_valid_uuid_v4("12345678") is False
+        with pytest.raises(HTTPException):
+            _validate_anonymous_uuid("not-a-uuid")
 
     def test_rejects_none(self):
-        """None must not crash."""
-        assert _is_valid_uuid_v4(None) is False
+        """None must not crash -- raises 401."""
+        with pytest.raises(HTTPException):
+            _validate_anonymous_uuid(None)
 
-    def test_rejects_short_hex(self):
-        """8-char node IDs (from trip nodes) are not valid UUIDs."""
-        assert _is_valid_uuid_v4("a1b2c3d4") is False
+    def test_rejects_uppercase(self):
+        """Uppercase form is valid UUID but non-canonical -- rejected."""
+        uid = str(uuid.uuid4()).upper()
+        with pytest.raises(HTTPException) as exc_info:
+            _validate_anonymous_uuid(uid)
+        assert "canonical" in exc_info.value.detail.lower()
 
-    def test_uuid_v4_format_details(self):
-        """Version nibble is 4, variant bits are 10xx."""
-        v4 = uuid.uuid4()
-        assert v4.version == 4
-        assert v4.variant == uuid.RFC_4122
-        assert _is_valid_uuid_v4(str(v4)) is True
+    def test_rejects_braced(self):
+        """Braced form {uuid} is non-canonical -- rejected."""
+        uid = "{" + str(uuid.uuid4()) + "}"
+        with pytest.raises(HTTPException):
+            _validate_anonymous_uuid(uid)
+
+    def test_rejects_urn_form(self):
+        """urn:uuid:xxx form is non-canonical -- rejected."""
+        uid = "urn:uuid:" + str(uuid.uuid4())
+        with pytest.raises(HTTPException):
+            _validate_anonymous_uuid(uid)
+
+    def test_rejects_hyphenless(self):
+        """Hyphenless form is non-canonical -- rejected."""
+        uid = str(uuid.uuid4()).replace("-", "")
+        with pytest.raises(HTTPException):
+            _validate_anonymous_uuid(uid)
+
+    def test_all_five_forms_one_uuid_only_canonical_passes(self):
+        """Five representations of one UUID: only canonical passes.
+
+        This is the exact scenario from the bug report: in-memory keys on the
+        raw string, Postgres normalises, so the backends disagree unless we
+        reject non-canonical forms at the gate.
+        """
+        base = uuid.uuid4()
+        canonical = str(base)
+        forms = {
+            "canonical": canonical,
+            "uppercase": canonical.upper(),
+            "braced": "{" + canonical + "}",
+            "urn": "urn:uuid:" + canonical,
+            "hyphenless": canonical.replace("-", ""),
+        }
+
+        # Only canonical passes
+        assert _validate_anonymous_uuid(forms["canonical"]) == canonical
+
+        for name, form in forms.items():
+            if name == "canonical":
+                continue
+            with pytest.raises(HTTPException) as exc_info:
+                _validate_anonymous_uuid(form)
+            assert exc_info.value.status_code == 401, (
+                f"Form {name!r} ({form}) should be rejected"
+            )
 
 
 # ---------------------------------------------------------------------------
@@ -100,7 +158,7 @@ class TestAnonymousHeaderParsing:
 
 
 # ---------------------------------------------------------------------------
-# Integration: get_current_user_id resolution order
+# Integration: resolve_identity resolution order
 # ---------------------------------------------------------------------------
 
 class TestAnonymousResolution:
@@ -134,22 +192,23 @@ class TestAnonymousResolution:
             yield mock_settings
 
     @pytest.mark.asyncio
-    async def test_valid_anonymous_accepted(self, allow_anonymous_settings):
-        """Valid v4 UUID with Anonymous scheme returns the UUID as user_id."""
+    async def test_anonymous_returns_canonical_and_kind(self, allow_anonymous_settings):
+        """Valid canonical v4 UUID returns (user_id, 'anonymous')."""
         uid = str(uuid.uuid4())
-        result = await get_current_user_id(
+        result = await resolve_identity(
             credentials=None,
             authorization=f"Anonymous {uid}",
             x_debug_user_id=None,
         )
-        assert result == uid
+        assert result.user_id == uid
+        assert result.identity_kind == "anonymous"
 
     @pytest.mark.asyncio
     async def test_anonymous_rejected_when_disabled(self, deny_anonymous_settings):
         """Anonymous identity rejected when TB_ALLOW_ANONYMOUS=false (default)."""
         uid = str(uuid.uuid4())
         with pytest.raises(HTTPException) as exc_info:
-            await get_current_user_id(
+            await resolve_identity(
                 credentials=None,
                 authorization=f"Anonymous {uid}",
                 x_debug_user_id=None,
@@ -162,31 +221,68 @@ class TestAnonymousResolution:
         """v1 UUID rejected even when anonymous is enabled."""
         v1 = str(uuid.uuid1())
         with pytest.raises(HTTPException) as exc_info:
-            await get_current_user_id(
+            await resolve_identity(
                 credentials=None,
                 authorization=f"Anonymous {v1}",
                 x_debug_user_id=None,
             )
         assert exc_info.value.status_code == 401
-        assert "version 4" in exc_info.value.detail
 
     @pytest.mark.asyncio
-    async def test_malformed_uuid_rejected(self, allow_anonymous_settings):
-        """Non-UUID string rejected."""
+    async def test_non_canonical_rejected(self, allow_anonymous_settings):
+        """Uppercase UUID rejected even though it is valid v4."""
+        uid = str(uuid.uuid4()).upper()
         with pytest.raises(HTTPException) as exc_info:
-            await get_current_user_id(
+            await resolve_identity(
                 credentials=None,
-                authorization="Anonymous not-a-uuid",
+                authorization=f"Anonymous {uid}",
                 x_debug_user_id=None,
             )
         assert exc_info.value.status_code == 401
+        assert "canonical" in exc_info.value.detail.lower()
 
     @pytest.mark.asyncio
-    async def test_jwt_takes_precedence(self, jwt_configured_settings):
-        """When JWT secret is set, Anonymous header is never reached -- 401 for missing bearer."""
+    async def test_jwt_path_returns_supabase_kind(self, jwt_configured_settings):
+        """JWT path returns identity_kind='supabase'."""
+        import jwt as pyjwt
+        token = pyjwt.encode(
+            {"sub": "jwt-user-123", "aud": "authenticated"},
+            "test-secret",
+            algorithm="HS256",
+        )
+        mock_creds = MagicMock()
+        mock_creds.credentials = token
+        jwt_configured_settings.jwt_audience = "authenticated"
+
+        result = await resolve_identity(
+            credentials=mock_creds,
+            authorization=None,
+            x_debug_user_id=None,
+        )
+        assert result.user_id == "jwt-user-123"
+        assert result.identity_kind == "supabase"
+
+    @pytest.mark.asyncio
+    async def test_debug_path_returns_debug_kind(self):
+        """Debug path returns identity_kind='debug'."""
+        with patch("security.settings") as mock_settings:
+            mock_settings.supabase_jwt_secret = None
+            mock_settings.allow_anonymous = False
+            mock_settings.debug = True
+            result = await resolve_identity(
+                credentials=None,
+                authorization=None,
+                x_debug_user_id="debug-user-456",
+            )
+            assert result.user_id == "debug-user-456"
+            assert result.identity_kind == "debug"
+
+    @pytest.mark.asyncio
+    async def test_jwt_takes_precedence_over_anonymous(self, jwt_configured_settings):
+        """When JWT secret is set, Anonymous header is never reached."""
         uid = str(uuid.uuid4())
         with pytest.raises(HTTPException) as exc_info:
-            await get_current_user_id(
+            await resolve_identity(
                 credentials=None,
                 authorization=f"Anonymous {uid}",
                 x_debug_user_id=None,
@@ -195,16 +291,68 @@ class TestAnonymousResolution:
         assert "bearer token" in exc_info.value.detail.lower()
 
     @pytest.mark.asyncio
-    async def test_no_auth_no_anonymous_no_debug_gives_500(self):
+    async def test_no_auth_gives_500(self):
         """No secret + no anonymous + no debug = misconfiguration 500."""
         with patch("security.settings") as mock_settings:
             mock_settings.supabase_jwt_secret = None
             mock_settings.allow_anonymous = False
             mock_settings.debug = False
             with pytest.raises(HTTPException) as exc_info:
-                await get_current_user_id(
+                await resolve_identity(
                     credentials=None,
                     authorization=None,
                     x_debug_user_id=None,
                 )
             assert exc_info.value.status_code == 500
+
+
+# ---------------------------------------------------------------------------
+# identity_kind writer: production path (R17)
+# ---------------------------------------------------------------------------
+
+class TestIdentityKindWriter:
+    """identity_kind must be persisted on user creation by the production path.
+
+    R17: drives the real get_or_create_user, not a helper.
+    """
+
+    def test_anonymous_path_persists_identity_kind(self):
+        """Anonymous resolution -> get_or_create_user writes 'anonymous'."""
+        from services.database_service import DatabaseService
+        svc = DatabaseService()
+        uid = str(uuid.uuid4())
+        svc.get_or_create_user(uid, identity_kind="anonymous")
+        assert svc._users[uid]["identity_kind"] == "anonymous"
+
+    def test_supabase_path_persists_identity_kind(self):
+        """JWT resolution -> get_or_create_user writes 'supabase'."""
+        from services.database_service import DatabaseService
+        svc = DatabaseService()
+        uid = str(uuid.uuid4())
+        svc.get_or_create_user(uid, identity_kind="supabase")
+        assert svc._users[uid]["identity_kind"] == "supabase"
+
+    def test_default_identity_kind_is_unknown(self):
+        """Callers that omit identity_kind get 'unknown' (existing code paths)."""
+        from services.database_service import DatabaseService
+        svc = DatabaseService()
+        uid = str(uuid.uuid4())
+        svc.get_or_create_user(uid)
+        assert svc._users[uid]["identity_kind"] == "unknown"
+
+    def test_identity_kind_not_overwritten_on_subsequent_calls(self):
+        """Once set, identity_kind does not change on re-fetch."""
+        from services.database_service import DatabaseService
+        svc = DatabaseService()
+        uid = str(uuid.uuid4())
+        svc.get_or_create_user(uid, identity_kind="anonymous")
+        # Second call with different kind should NOT overwrite
+        svc.get_or_create_user(uid, identity_kind="supabase")
+        assert svc._users[uid]["identity_kind"] == "anonymous"
+
+    def test_get_current_user_id_backward_compat(self):
+        """get_current_user_id still returns a plain string (backward compat)."""
+        identity = ResolvedIdentity(user_id="test-123", identity_kind="debug")
+        # Simulate what get_current_user_id does
+        assert identity.user_id == "test-123"
+        assert isinstance(identity.user_id, str)

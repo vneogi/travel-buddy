@@ -3,17 +3,21 @@
 Resolution order (SPEC-09):
 1. Real Supabase JWT (when TB_SUPABASE_JWT_SECRET set) -- verified user
 2. Authorization: Anonymous <uuid-v4> -- device identity (when TB_ALLOW_ANONYMOUS=true
-   AND no JWT secret configured). UUID must be version 4 with correct variant bits;
-   version 1 UUIDs embed the device MAC address, which is a PII leak.
+   AND no JWT secret configured). UUID must be version 4 with correct variant bits,
+   in canonical form (lowercase hyphenated). Anything else is rejected.
 3. X-Debug-User-Id -- only when no JWT secret AND TB_DEBUG=true
 4. Otherwise 401
 
 TB_ALLOW_ANONYMOUS defaults to False (fail-closed). Deployments that accept
 anonymous device identities must opt in explicitly.
+
+identity_kind is resolved here and passed through to get_or_create_user so the
+database records HOW a user was identified. Values: 'supabase', 'anonymous',
+'debug'. Existing rows (predating this column) default to 'unknown'.
 """
 
 import uuid as _uuid_mod
-from typing import Optional
+from typing import NamedTuple, Optional
 
 import jwt
 from fastapi import Depends, Header, HTTPException, status
@@ -25,28 +29,71 @@ from models.schemas import TripState
 # auto_error=False lets us return clearer 401s and run the dev fallback below.
 _bearer = HTTPBearer(auto_error=False)
 
+# The canonical UUID form is lowercase hyphenated: 8-4-4-4-12.
+# Our client always sends this form. Anything else (uppercase, braced,
+# urn:uuid:, hyphenless) signals a hand-rolled request and is rejected.
+_CANONICAL_UUID_RE_PATTERN = (
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+)
 
-def _is_valid_uuid_v4(value: str) -> bool:
-    """Validate that value is a UUID version 4 with RFC 4122 variant bits.
 
-    Rejects v1 UUIDs (embed device MAC -- real privacy leak in an app claiming
-    no PII), v3/v5 (deterministic from input), nil, and malformed strings.
+class ResolvedIdentity(NamedTuple):
+    """The result of identity resolution: who, and how they were identified."""
+    user_id: str
+    identity_kind: str  # 'supabase' | 'anonymous' | 'debug'
+
+
+def _validate_anonymous_uuid(value: str) -> str:
+    """Validate and canonicalise a UUID v4 for anonymous identity.
+
+    Returns the canonical (lowercase hyphenated) form.
+    Raises HTTPException if:
+    - Not a valid UUID at all
+    - Not version 4 (v1 embeds device MAC -- real PII leak)
+    - Not RFC 4122 variant
+    - Not already in canonical form (our client only sends canonical;
+      anything else is a hand-rolled or intercepted request)
     """
     try:
         parsed = _uuid_mod.UUID(value)
     except (ValueError, AttributeError, TypeError):
-        return False
-    # Version must be 4 (random)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid anonymous identity: not a valid UUID",
+        )
+
     if parsed.version != 4:
-        return False
-    # Variant must be RFC 4122 (variant bits 10xx)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=(
+                "Invalid anonymous identity: must be UUID version 4 "
+                "(RFC 4122 variant). Version 1 UUIDs are rejected because "
+                "they embed the device MAC address."
+            ),
+        )
+
     if parsed.variant != _uuid_mod.RFC_4122:
-        return False
-    return True
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid anonymous identity: must have RFC 4122 variant bits",
+        )
+
+    canonical = str(parsed)
+    if value != canonical:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=(
+                "Invalid anonymous identity: UUID must be in canonical form "
+                "(lowercase hyphenated). Our client always sends canonical; "
+                "non-canonical forms are rejected."
+            ),
+        )
+
+    return canonical
 
 
 def _parse_anonymous_header(authorization: Optional[str]) -> Optional[str]:
-    """Parse Authorization: Anonymous <uuid> and return the UUID, or None.
+    """Parse Authorization: Anonymous <uuid> and return the raw UUID value, or None.
 
     We parse the raw Authorization header rather than relying on HTTPBearer
     because HTTPBearer only accepts the Bearer scheme and would reject
@@ -94,19 +141,16 @@ def _decode_supabase_jwt(token: str) -> str:
     return user_id
 
 
-async def get_current_user_id(
+async def resolve_identity(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(_bearer),
     authorization: Optional[str] = Header(default=None),
     x_debug_user_id: Optional[str] = Header(default=None),
-) -> str:
-    """FastAPI dependency: return the authenticated user's ID.
+) -> ResolvedIdentity:
+    """Core identity resolution. Returns (user_id, identity_kind).
 
-    Production: requires a valid Authorization: Bearer <supabase_jwt> header.
-    Anonymous: Authorization: Anonymous <uuid-v4> when TB_ALLOW_ANONYMOUS=true
-    and no JWT secret is configured.
-    Local dev (only when TB_SUPABASE_JWT_SECRET is unset AND TB_DEBUG is true):
-    falls back to the X-Debug-User-Id header so the app is testable without
-    real tokens.
+    This is the single source of truth for HOW a user was identified.
+    Routers that need to pass identity_kind to get_or_create_user should
+    depend on this directly.
     """
     # --- Path 1: Real JWT auth (takes precedence when secret configured) ---
     if settings.supabase_jwt_secret:
@@ -116,26 +160,19 @@ async def get_current_user_id(
                 detail="Missing bearer token",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        return _decode_supabase_jwt(credentials.credentials)
+        user_id = _decode_supabase_jwt(credentials.credentials)
+        return ResolvedIdentity(user_id=user_id, identity_kind="supabase")
 
     # --- Path 2: Anonymous device identity (SPEC-09) ---
-    anon_uuid = _parse_anonymous_header(authorization)
-    if anon_uuid is not None:
+    anon_raw = _parse_anonymous_header(authorization)
+    if anon_raw is not None:
         if not settings.allow_anonymous:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Anonymous identity is not enabled (TB_ALLOW_ANONYMOUS=false)",
             )
-        if not _is_valid_uuid_v4(anon_uuid):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=(
-                    "Invalid anonymous identity: must be a valid UUID version 4 "
-                    "(RFC 4122 variant). Version 1 UUIDs are rejected because they "
-                    "embed the device MAC address."
-                ),
-            )
-        return anon_uuid
+        canonical_uuid = _validate_anonymous_uuid(anon_raw)
+        return ResolvedIdentity(user_id=canonical_uuid, identity_kind="anonymous")
 
     # --- Path 3: Debug fallback ---
     if settings.debug:
@@ -147,13 +184,24 @@ async def get_current_user_id(
                     "header, or set TB_SUPABASE_JWT_SECRET to enable real auth."
                 ),
             )
-        return x_debug_user_id
+        return ResolvedIdentity(user_id=x_debug_user_id, identity_kind="debug")
 
     # --- Path 4: Misconfigured production ---
     raise HTTPException(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         detail="Server auth misconfiguration: TB_SUPABASE_JWT_SECRET is not set",
     )
+
+
+async def get_current_user_id(
+    identity: ResolvedIdentity = Depends(resolve_identity),
+) -> str:
+    """Backward-compat dependency returning just the user_id string.
+
+    Routers that only need user_id (and do not call get_or_create_user)
+    can still depend on this.
+    """
+    return identity.user_id
 
 
 def require_trip_owner(trip: Optional[TripState], user_id: str) -> TripState:

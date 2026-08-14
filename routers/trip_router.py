@@ -29,7 +29,7 @@ from models.schemas import (
 from services.db_provider import db_service
 from services.cache_service import cache_service
 from agents.state_machine import state_machine
-from security import get_current_user_id, require_trip_owner
+from security import get_current_user_id, resolve_identity, ResolvedIdentity, require_trip_owner
 
 router = APIRouter(prefix="/api/v1", tags=["trip"])
 
@@ -52,9 +52,10 @@ async def health_check():
 
 
 @router.get("/user/status")
-async def get_user_status(user_id: str = Depends(get_current_user_id)):
+async def get_user_status(identity: ResolvedIdentity = Depends(resolve_identity)):
     """Get the authenticated user's tier info and remaining reroutes."""
-    user = db_service.get_or_create_user(user_id)
+    user_id = identity.user_id
+    user = db_service.get_or_create_user(user_id, identity.identity_kind)
     allowed, remaining, max_reroutes = db_service.check_reroute_allowed(user_id)
     return {
         "user_id": user.user_id,
@@ -72,10 +73,11 @@ async def get_user_status(user_id: str = Depends(get_current_user_id)):
 @router.post("/trip/create")
 async def create_trip(
     request: CreateTripRequest,
-    user_id: str = Depends(get_current_user_id),
+    identity: ResolvedIdentity = Depends(resolve_identity),
 ):
     """Create a new trip with a sample Dubai itinerary for the caller."""
-    db_service.get_or_create_user(user_id)
+    user_id = identity.user_id
+    db_service.get_or_create_user(user_id, identity.identity_kind)
 
     start = request.start_date.replace(hour=9, minute=0, second=0)
     nodes = [
