@@ -36,34 +36,11 @@ sys.path.insert(0, str(_REPO_ROOT))
 from config.dietary import (  # noqa: E402
     VALID_ALLERGENS,
     VALID_DIETARY_LABELS,
+    VALID_DISH_CONTAINS,
     LABEL_EXCLUDES_ALLERGENS,
     check_allergen_conflicts,
 )
 
-# ---------------------------------------------------------------------------
-# Extended ingredient vocabulary for dish contains/may_contain arrays.
-# Superset of VALID_ALLERGENS: adds meat types (halal/kosher filtering),
-# sensitivities (chilli, alcohol, fish_sauce), and singular aliases.
-#
-# Authoritative source: config/dietary.py VALID_ALLERGENS.
-# This extension is co-located with the loader until dietary.py is updated.
-# ---------------------------------------------------------------------------
-VALID_DISH_CONTAINS: frozenset[str] = VALID_ALLERGENS | frozenset(
-    {
-        # Meat types
-        "pork",
-        "beef",
-        # Sensitivities
-        "chilli",
-        "alcohol",
-        "fish_sauce",
-        # Singular aliases (glossary uses these; EU-14 uses plurals)
-        "egg",
-        "peanut",
-        "soy",
-        "tree_nut",
-    }
-)
 
 logging.basicConfig(
     level=logging.WARNING,
