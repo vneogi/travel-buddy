@@ -16,6 +16,10 @@ SPEC-02 Part C additions:
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
@@ -285,7 +289,7 @@ async def ingest_signals(
             continue
 
         # Build provenance (notes extreme skew for analytics)
-        provenance = _compute_provenance(sig.captured_at)
+        _provenance = _compute_provenance(sig.captured_at)  # noqa: F841
 
         # SPEC-03: stamp party_context server-side at ingest.
         # Merged INTO value_json (not overwriting). If trip unknown, omit --

@@ -13,6 +13,7 @@ line-length = 100
 select = ["E", "F", "W"]
 ignore = [
     "E501",   # line too long (handled by formatter)
+    "E402",   # module-level import not at top (tests do sys.path manipulation)
     "F401",   # unused import (common during dev)
     "E722",   # bare except
     "W291",   # trailing whitespace

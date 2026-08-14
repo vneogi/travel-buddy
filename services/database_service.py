@@ -87,7 +87,7 @@ class DatabaseService:
 
     def increment_reroute_count(self, user_id: str) -> int:
         """Increment the daily reroute count. Returns new count."""
-        user = self.get_or_create_user(user_id)
+        self.get_or_create_user(user_id)  # ensure row exists + daily reset
         self._users[user_id]["daily_reroute_count"] += 1
         return self._users[user_id]["daily_reroute_count"]
 

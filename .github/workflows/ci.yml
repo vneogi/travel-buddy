@@ -17,7 +17,7 @@ env:
 
 jobs:
   # ===========================================================================
-  # Job 1: Lint & Type Check
+  # Job 1: Lint
   # ===========================================================================
   lint:
     runs-on: ubuntu-latest
@@ -29,13 +29,14 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install linters
-        run: pip install ruff mypy
+        run: pip install ruff==0.16.3
 
       - name: Ruff lint
         run: ruff check . --config pyproject.toml
 
-      - name: Ruff format check
-        run: ruff format --check .
+      # Format check deliberately omitted: enabling it requires a whole-tree
+      # reformat commit that destroys git blame on every file. Add it back
+      # after that commit lands as a deliberate, isolated change.
 
   # ===========================================================================
   # Job 2: Unit Tests

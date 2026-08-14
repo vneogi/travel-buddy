@@ -171,7 +171,7 @@ def report_fk_linkage(client) -> None:
     # Count unlinked
     unlinked_count = total_count - linked_count
 
-    print(f"\n--- venue_dish FK linkage report ---")
+    print("\n--- venue_dish FK linkage report ---")
     print(f"  Total venue_dish rows: {total_count}")
     print(f"  Linked (dish_key set): {linked_count}")
     print(f"  Unlinked (dish_key NULL): {unlinked_count}")
@@ -222,7 +222,7 @@ def main() -> int:
         dishes = data
         region = "unknown"
     else:
-        print(f"ERROR: Expected top-level dict with 'dishes' key or a list", file=sys.stderr)
+        print("ERROR: Expected top-level dict with 'dishes' key or a list", file=sys.stderr)
         return 1
 
     print(f"Loaded {len(dishes)} dishes from {filepath} (region: {region})")

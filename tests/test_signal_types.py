@@ -86,7 +86,7 @@ def test_drift_guard_migrations_match_python():
             mismatches.append(f"  {key}: Python=\'{py_vk}\' vs SQL=\'{sql_vk}\'")
 
     assert not mismatches, (
-        f"Registry VALUE_KIND drift detected!\n" + "\n".join(mismatches)
+        "Registry VALUE_KIND drift detected!\n" + "\n".join(mismatches)
     )
 
 
@@ -244,7 +244,8 @@ def test_node_skipped_invalid_reason_rejected():
 
 def test_node_skipped_reasons_enum_matches_migration():
     """NODE_SKIPPED_REASONS in Python matches enum_values in migration 0004."""
-    import re, glob
+    import re
+    import glob
     # Extract the ARRAY[...] from 0004
     migration_reasons = set()
     for path in sorted(glob.glob("supabase/migrations/0004*.sql")):
