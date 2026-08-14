@@ -46,7 +46,7 @@ Both findings point the same way: the data layer needs to record where every
 fact came from and how much to trust it, and it needs somewhere to put facts
 that were computed rather than curated.
 
-## The six concerns, in order
+## The seven concerns, in order
 
 ### 1. The itinerary is an opaque blob -- SPEC-16
 
@@ -173,6 +173,34 @@ every venue already tagged.
 
 Cost of delay: proportional to the number of venues tagged, which is
 proportional to the number of cities. Cheapest before the second city, not after.
+
+### 7. Money is barely represented -- SPEC-23
+
+Added after the survey, though it does not rest on the survey. A venue carries one
+unconstrained text band: `venues_rag.price_band` was added by 0011 as bare `TEXT`
+with no CHECK, while `venue_dish.price_band` has one and `taxonomy_term` holds the
+vocabulary, which is the same drift class as concerns 2 and 6 in a third place.
+There is no venue-level amount, so an entry fee has nowhere to live.
+`currency_code` sits on `venue_dish` alone. The scheduler mentions no price, cost,
+budget or fare anywhere, and the traveller model has no notion of spend capacity,
+so affordability is not a thing this system can currently rank on.
+
+Two consequences beyond the obvious one. A band that is not anchored to a region is
+not a transfer carrier at all, which undercuts concern 6: `budget` is the same
+string in Luang Prabang and Dubai and a different amount, so a tolerance learned
+in one city means nothing in the next. And transport cost is a property of an
+edge, so concern 5 is where it belongs, inheriting the writer problem that
+`observed_duration_minutes` still has.
+
+    venues_rag  entry_amount_minor, entry_currency_code, constrained price_band
+    trip_edge   transport_cost_estimate_minor, transport_cost_observed_minor
+
+Cost of delay: it compounds with venues, cities and trips at once, which is worse
+than any other concern here. Every venue curated without an amount is a venue to
+revisit, every region added without an anchor makes the band less meaningful, and
+every trip taken without transport cost on the edge is observation lost for good.
+Not the most urgent, because nothing is broken today and the field test does not
+need it, but the cheapest moment to add the columns is before the second city.
 
 ## Position on machine learning
 

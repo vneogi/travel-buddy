@@ -106,5 +106,14 @@ through the last time you had two unplanned hours; and what did the guide do tha
 was worth the money.
 
 Until there are twenty independent respondents, cite this file as an insufficient
-sample. It is currently sufficient to have withdrawn one framing and redirected
-the offline cache, and not sufficient to justify building anything new.
+sample. It has been sufficient to withdraw one framing, redirect the offline
+cache, and specify SPEC-23. That last one deserves its reasoning stated, because
+it looks like the exception: the cost finding is a stated preference from a
+ranking question, which is the kind of data this product's thesis distrusts, and
+"cost matters" is a cheap answer to give. What justified acting was not the count
+but the coincidence -- the survey pointed at the part of the data layer that was
+already the weakest, where venue price is one unconstrained band, currency lives
+on one table, and the scheduler has no concept of money at all. A weak signal
+aimed at a known gap is worth more than a strong signal aimed at nothing.
+
+Nothing here is sufficient to justify building on its own.
