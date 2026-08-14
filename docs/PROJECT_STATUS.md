@@ -25,7 +25,7 @@
 - Flutter: offline-first with a SQLite outbox, sync engine, and typed exception
   hierarchy. Signal emission is wired for most but not all registered types --
   see the SPEC-07 row below.
-- Migrations 0011 to 0017 are committed and unapplied, and all seven are now
+- Migrations 0011 to 0018 are committed and unapplied, and all eight are now
   applicable. 0011 is the only one still gated, on a live schema dump and diff,
   because the live schema carries hand-made columns. 0014's UUID defect and
   0015's two preconditions were fixed in 7c20b5f and f012253. 0015 remains the
@@ -54,6 +54,7 @@
 | Migration 0015 drift fixes | COMMITTED, UNAPPLIED | Four fixes: venue_dish.price_band CHECK realigned to the taxonomy_term seed, venue_dish.names_local JSONB with a backfill, venue_dish.currency_code plus an explicit minor-unit rule, and embedding_model on venues_rag and cached_responses. Not purely additive, since it drops and re-adds a CHECK, but the new CHECK is NOT VALID and the backfill is scoped to the Laos regions by joining venues_rag. Both preconditions were cleared in f012253; two follow-ups remain rather than blockers |
 | Migration 0016 comment fixes | COMMITTED, UNAPPLIED | Comments only, no schema change, idempotent. Re-issues the dish_glossary table comment in ASCII, because 0010 was applied while it held an em-dash and editing the 0010 file corrected future builds without touching the live pg_description. Also rewrites the suitable_for column comment to record the SPEC-14 retirement, so the database stops documenting a claim we no longer make |
 | Migration 0017 venues_rag price_band | COMMITTED, UNAPPLIED | Adds the CHECK that 0011 omitted, NOT VALID so it cannot abort on live rows, with the VALIDATE line commented out for after the distinct values are read. Paired with a test that compares the CHECK terms against the taxonomy_term seed as sets rather than by substring |
+| Migration 0018 anonymous identity | COMMITTED, UNAPPLIED | Adds identity_kind to user_tiers, defaulting to unknown rather than anonymous so it asserts nothing about rows nobody verified, with a CHECK over anonymous, supabase and unknown. Written by upgrade-on-sight in both backends: a known kind promotes a lesser one and nothing ever demotes, so call ordering cannot strand a row as unknown. In the Supabase backend the promotion UPDATE carries an in_ filter naming the strictly-lower kinds, so correctness lives in the statement rather than in a read-then-write that two threads can interleave |
 | Venue loader | REPAIRED, CARRIES EVERY FIELD | Pure ASCII, vocabulary restored, geo_region inferred from the file wrapper. Payload built once in build_venue_record; insert and update derive from it so they cannot drift apart |
 | Loader payload guard | DONE | A test asserts build_venue_record's key set equals VENUES_RAG_WRITE_COLUMNS, and build_dish_record does the same for venue_dish against VENUE_DISH_WRITE_COLUMNS. The earlier guards watched the declaration only, which is how four fields were dropped while the suite stayed green |
 | External-id writer | DONE | upsert_venues writes venue_external_id for every venue carrying a verified name reference, and the test drives upsert_venues rather than the helper, which is the distinction that let the first attempt land as dead code |
@@ -70,7 +71,7 @@
 | Docs hygiene guard | DONE | tests/test_docs_hygiene.py walks every markdown file outside build and vendor directories, and the SPEC-reference check also scans .py and .sql. Known non-ASCII files are allowlisted; the list may only shrink. The ASCII check itself still covers markdown only |
 | Data format guard | DONE | Every data/ file is ASCII by byte count, venue and glossary files round-trip byte-identically, and Lao-script fields are checked for foreign script |
 | Offline vault (SPEC-04) | SPECIFIED | Not implemented |
-| Anonymous identity (SPEC-09) | SPECIFIED | Not implemented. Gates any tester build, and therefore gates all field verification |
+| Anonymous identity (SPEC-09) | SERVER HALF IMPLEMENTED | The client half is still owed. Server side is done and verified: resolution order is JWT, then Anonymous, then the debug header, failing closed; TB_ALLOW_ANONYMOUS defaults to False; the raw Authorization header is parsed rather than loosening HTTPBearer, which would have rejected a non-Bearer scheme; UUIDs must be version 4 with the RFC 4122 variant, so v1 is refused and its embedded MAC address never reaches us; and non-canonical spellings are rejected rather than normalised, so one UUID cannot become five distinct user ids. Migration 0018 carries identity_kind |
 | Itinerary normalisation (SPEC-16) | IMPLEMENTED | Decompose and compose land in services/itinerary_normaliser.py, dual-write in both backends, round-trip equality asserted, wire format unchanged. node_id is stable across reschedules via state_json and now comes from models/ids.py. One gap remains: observed_duration_minutes has no writer, so no transition data is accumulating |
 | Booking anchors (SPEC-10) | SPECIFIED | Not implemented. Resequenced to follow SPEC-16, because an anchor is a locked node and building it against the blob means building it twice. Amended so import is the primary path, manual entry the floor, and extraction on the device the preferred implementation of every import path |
 | Forced-choice preferences (SPEC-11) | SPECIFIED | Not implemented. Cold-start preference capture |
@@ -100,7 +101,7 @@ numbers were taken by other work while they sat unimplemented.
 1. Device day, in this order, because every item is blocked on a laptop and on
    nothing else. Export the 16 Dubai venues to a file under data/ first, since
    they exist nowhere but the hosted database. Dump the live schema and diff it
-   against migrations 0001 to 0017. Apply 0011 to 0017. Re-load the three Laos
+   against migrations 0001 to 0018. Apply 0011 to 0018. Re-load the three Laos
    files, which lands the opening hours that are currently null and the ten
    verified names. Then run the suite with TB_SUPABASE_URL set, so the five
    Supabase tests execute for the first time rather than skipping. While
@@ -109,9 +110,11 @@ numbers were taken by other work while they sat unimplemented.
    which confirms 0016 landed and tells us whether 0010's em-dash was the only
    comment affected; the file guards cannot see the database, so this is the only
    way to know.
-2. SPEC-09 anonymous device identity. Moved up from last place: it gates any
-   tester build, so nothing at all can be verified in the field until it lands,
-   including the driver card the October trip exists to test.
+2. SPEC-09 client half: generate the UUID on first launch, persist it in secure
+   storage, send it as the Anonymous header, and drop TB_DEBUG_USER_ID from the
+   client and the start script. The server half is done and verified, so this is
+   the whole of what still gates a tester build -- and therefore gates the driver
+   card the October trip exists to test.
 3. SPEC-22 client render contract, before any screen is built. Five queued specs
    each need to render a fact, and without this each will invent its own trust
    language. It does not wait on SPEC-17's backend, because the envelope shape is
@@ -139,6 +142,12 @@ numbers were taken by other work while they sat unimplemented.
     first screen until it lands, then SPEC-25 once SPEC-17's envelope is real
     enough to honour, then SPEC-27 before the first build that reaches people who
     are not us. SPEC-24's design is settled now and built here.
+12. A swappable LLM provider, including local models, has no owning spec and
+    takes the next free number. The dependency is already load-bearing: every
+    intelligent path routes through one hosted vendor, cost guardrails are
+    written against that vendor's pricing, and a region where it is unavailable
+    or a price change we do not control both land as an outage. Naming it here
+    so it stops living only in conversation.
 
 Export the Dubai rows before applying anything. A rebuild from migrations without
 that export silently loses 16 venues.
@@ -159,6 +168,8 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 | observed_duration_minutes has no writer | Medium | The column exists and is honestly documented as starting empty, but nothing populates it. It cannot be computed when a trip is saved, only derived from arrival signals on sync, so the transition data the convenience layer depends on is not accumulating. This is the last open defect from the SPEC-16 work |
 | The five Supabase tests have never run | Medium | tests/test_supabase_integration.py skips without TB_SUPABASE_URL, and no run has ever had it set. Every claim about the Supabase write path rests on FakeClient doubles. R8 treats a permanent skip as a finding, and this is the largest one. Run the suite with credentials on the next device day |
 | Non-Laos local dish names remain unbackfilled | Low | 0015's names_local backfill is correctly scoped to the three Laos regions, so any Dubai dish carrying a name_local keeps a null names_local rather than a wrong language tag. That is the right trade, but it leaves a second pass owed once the Dubai rows are exported and their language confirmed |
+| deploy fails: there is no deployment target | Medium | ci.yml chains lint, test, build and deploy, each needing the one before, and lint failed on every run as far back as the retained history, so build and deploy had never executed once in the life of this repository. Both ran for the first time on 8ed6c16. build passed and pushed an image to the container registry, which is the first artifact this project has ever produced. deploy failed after one second at the Railway step, which needs a RAILWAY_TOKEN secret and a service named travel-buddy-api; the health check reads a PRODUCTION_URL secret. Nothing here is a regression -- it is scaffolding written early and never once exercised. The decision to make is whether a hosted deployment is wanted before the field test at all. Until it is, deploy should be gated or made non-blocking rather than left failing, because a permanently red main is the exact condition that let lint stay broken and unnoticed for a week |
+| Signal provenance was silently unwritten until today | Low | _compute_provenance computed clock skew and its return was discarded, while both backends defaulted provenance to a constant. So clock_skew_seconds was never persisted for any signal and SPEC-02 Part C was unmet in the live write path. Fixed and guarded by a test that drives the ingest endpoint rather than the storage layer. Recorded because the gap was invisible for months: nothing failed, the column had a default, and the only symptom was analytics that could not exist |
 | The scheduler is money-blind | Medium | services/scheduler.py contains no reference to price, cost, budget or fare, and no model carries traveller spend capacity, so affordability cannot be ranked on at all. The only price in config is Stripe subscription pricing, which is our revenue rather than the traveller's spend. Specified as SPEC-23 and roadmap concern 7; the cost of delay compounds with venues, regions and trips simultaneously. The venues_rag.price_band half of this row was closed by 0017 |
 | The price_band vocabulary is declared in three places and linked by one test | Low | 0017 constrains venues_rag.price_band, which was the last unconstrained one, but a CHECK duplicates the taxonomy rather than referencing it. What actually binds them is test_venues_rag_price_band_check_matches_taxonomy, which parses both files and compares sets. That guard is hardcoded to one filename, so a fourth price_band CHECK added later is unguarded, and 0005 still declares the superseded vocabulary including premium. The claim in 0017 that any future table is now taxonomy-aligned is not true as written |
 | price_band CHECK is added but not validated | Low | 0015 adds the CHECK as NOT VALID so it cannot abort, which means existing rows are never checked against it. New and updated rows are. The VALIDATE CONSTRAINT statement is present but commented out; run it after reading the distinct live price_band values |

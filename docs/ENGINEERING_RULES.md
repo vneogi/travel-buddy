@@ -300,9 +300,10 @@ expected to go stale.
 
 ## R17. A guard that cannot fail is not a guard
 
-This defect class has now reached a commit four times, in four different
-disguises, which is why it gets its own rule rather than staying a footnote
-to R7.
+This defect class keeps reaching a commit, in a new disguise each time, which
+is why it gets its own rule rather than staying a footnote to R7. The
+instances below are recorded because the disguise is the interesting part: in
+every one, the assertion looked reasonable in review.
 
 1. **Asserting on constants instead of the payload.** `test_no_silent_key_drop`
    compared two module-level constants to each other. Both were correct; the
@@ -321,14 +322,43 @@ to R7.
    the file's own explanatory comment contains the phrase. Proven by
    sabotaging the DDL and watching the assertion hold.
 
+Three more arrived in a single day, all of them tests written specifically to
+guard a defect that had just been found, and all three passed with the defect
+reintroduced.
+
+5. **A test that supplies the value production is supposed to compute.** The
+   provenance test built the dict itself and handed it to the storage layer.
+   The bug was the router discarding it. Deleting the argument from the router
+   left the test green.
+6. **A test whose fake cannot express the failure.** The race test asserted
+   that a conditional `UPDATE` wrote nothing, against a fake that only applied
+   updates when a filter was present. Remove the filter and the fake wrote
+   nothing either -- for the opposite reason. The assertion was right and the
+   double was wrong.
+7. **A sabotage proof run against the file rather than the test.** Five
+   passing structural tests in the same file hid one inert test, because the
+   suite went red and nobody checked which assertion produced it.
+
 **Rules:**
 
 - Assert on the value the production path produces, reached the way
   production reaches it. If the test has to call a helper to get the value,
   ask what calls that helper in real life, and if the answer is "nothing",
   that is the finding.
+- Reaching the failure the way production reaches it is the stronger form of
+  the rule above, and it is the one that catches instance 5. A test that
+  constructs the input itself proves the code downstream of the bug works. Go
+  in through the endpoint, the loader, the router -- whatever the real caller
+  is.
 - Before trusting a new guard, break the thing it guards and watch it fail.
   A guard never observed failing has not been tested; it has been written.
+- Watch *which* guard fails, by name. A red suite is not the proof; the
+  specific assertion you believed covered the case is. Instance 7 passed the
+  weaker version of this rule and still shipped an inert test.
+- A test double is part of the guard. If the fake cannot represent the
+  failure, the assertion above it cannot catch the failure, however well
+  written it is. When sabotage produces the expected pass, suspect the double
+  before the assertion.
 - Strip comments before matching against source text, or match the
   construct rather than a string that may appear anywhere in the file.
 - Prefer a guard that enumerates both sides and compares sets over one that
