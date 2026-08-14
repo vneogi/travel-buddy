@@ -248,6 +248,20 @@ def _python_comment_and_docstring_chars(filepath: Path):
     return hits
 
 
+def _count_comment_on_occurrences(sql: str) -> list:
+    """Return line numbers where COMMENT ON appears (case-insensitive).
+
+    Used to verify that _extract_comment_on_bodies parsed every statement.
+    """
+    lines = []
+    for i, line in enumerate(sql.splitlines(), 1):
+        # Match COMMENT ON at start of a non-comment line
+        stripped = line.strip()
+        if stripped.upper().startswith("COMMENT ON") and not stripped.startswith("--"):
+            lines.append(i)
+    return lines
+
+
 def test_no_non_ascii_in_sql_comment_on():
     """No non-ASCII character may appear inside a COMMENT ON body in .sql files.
 
@@ -274,12 +288,52 @@ def test_no_non_ascii_in_sql_comment_on():
                 if ord(ch) > 127:
                     offenders.append(
                         f"  {rel}:{line_num} col {col}: "
-                        f"'{ch}' (U+{ord(ch):04X}) in COMMENT ON body"
+                        f"\'{ch}\' (U+{ord(ch):04X}) in COMMENT ON body"
                     )
     assert not offenders, (
         "Non-ASCII inside COMMENT ON persists to pg_description. "
         "Use ASCII equivalents (-- for em-dash, etc).\n"
         + "\n".join(offenders)
+    )
+
+
+def test_sql_comment_on_extraction_is_complete():
+    """Every COMMENT ON statement must be parsed by _extract_comment_on_bodies.
+
+    A COMMENT ON using dollar-quoting ($$body$$) or E-string (E\'body\')
+    would silently bypass the single-quote regex. This test fails loudly
+    naming the unparsed statement, converting a silent miss into a loud one
+    without needing a full SQL parser.
+    """
+    unparsed = []
+    for path in sorted(REPO_ROOT.rglob("*.sql")):
+        if not path.is_file():
+            continue
+        rel = _rel(path)
+        if EXCLUDED_PARTS & set(path.relative_to(REPO_ROOT).parts):
+            continue
+        sql = path.read_text(encoding="utf-8")
+        occurrence_lines = _count_comment_on_occurrences(sql)
+        extracted_count = sum(1 for _ in _extract_comment_on_bodies(sql))
+        if extracted_count != len(occurrence_lines):
+            # Identify which ones were missed
+            extracted_lines = set()
+            for match in re.finditer(
+                r"COMMENT\s+ON\s+\w+.*?IS\s*\n?\s*\'((?:[^\']|\'\')*)\'",
+                sql, re.IGNORECASE | re.DOTALL
+            ):
+                extracted_lines.add(sql[:match.start()].count("\n") + 1)
+            for line_num in occurrence_lines:
+                if line_num not in extracted_lines:
+                    line_text = sql.splitlines()[line_num - 1].strip()[:80]
+                    unparsed.append(
+                        f"  {rel}:{line_num}: {line_text}"
+                    )
+    assert not unparsed, (
+        "COMMENT ON statement(s) not parsed by the extraction regex. "
+        "Likely uses dollar-quoting ($$) or E-string (E\'...\') instead "
+        "of single quotes. Extend _extract_comment_on_bodies to handle it.\n"
+        + "\n".join(unparsed)
     )
 
 
@@ -312,8 +366,6 @@ def test_no_non_ascii_in_python_comments_or_docstrings():
     offenders = []
     for path in sorted(REPO_ROOT.rglob("*.py")):
         if not path.is_file():
-            continue
-        if path.suffix == ".dart":
             continue
         rel = _rel(path)
         if EXCLUDED_PARTS & set(path.relative_to(REPO_ROOT).parts):
