@@ -210,8 +210,11 @@ respondents selected. Both rated over-packed schedules 2-3/5.
 Full-screen card: venue name in large native script, nearest landmark,
 GPS pin, fair-fare band. Works fully offline; lives in the Offline Vault.
 
-Evidence: the one respondent who answered Q33 named "Money & language"
-and "No internet" as the biggest struggles in an unfamiliar place.
+Evidence: asked what they struggled with most in an unfamiliar place with no
+internet, respondents named money and payments more than anything else, along
+with language and interacting with locals. Written when only one person had
+answered; it held up on the wider sample. See docs/research/SURVEY_FINDINGS.md,
+including why that sample is still insufficient.
 
 ## 27. Bookings as Hard Anchors
 
@@ -397,8 +400,10 @@ exactly the anti-tourist-trap positioning (§10 principle) that builds trust.
 
 ## 20. Currency, money & cost intelligence
 
-**Survey validation:** "money" cited as a small thing that ruined a day. "Cost" ranked #1 criterion
-by both respondents when picking a place. Yet no travel app provides *contextual* cost awareness.
+**Survey validation:** "money" cited as a small thing that ruined a day, and cost picked in the top
+three factors by nearly every respondent on the wider short form -- the highest count of any answer
+on either instrument. Yet no travel app provides *contextual* cost awareness. The engineering
+contract for this section is SPEC-23.
 
 **Features:**
 - Per-destination **currency + exchange rate** (cached for offline use in the Vault)
