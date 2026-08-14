@@ -40,10 +40,7 @@ class VenueChunk:
 
         Includes venue context for semantic grounding.
         """
-        return (
-            f"{self.venue_name} in {self.micro_location}, Dubai. "
-            f"{self.text}"
-        )
+        return f"{self.venue_name} in {self.micro_location}, Dubai. {self.text}"
 
     def to_dict(self) -> Dict:
         return {
@@ -64,8 +61,8 @@ class SemanticChunker:
 
     # Thematic separators (ordered by priority)
     THEME_SEPARATORS = [
-        r"\n\n",                    # Double newline
-        r"\. (?=[A-Z])",            # Sentence boundary
+        r"\n\n",  # Double newline
+        r"\. (?=[A-Z])",  # Sentence boundary
         r"(?:Interior|Atmosphere|Food|Drinks|Service|Location|Price):",  # Section headers
     ]
 
@@ -82,12 +79,14 @@ class SemanticChunker:
 
         # If short enough, keep as single chunk
         if len(text.split()) <= self.MAX_CHUNK_TOKENS:
-            return [VenueChunk(
-                text=text,
-                venue_name=venue_name,
-                micro_location=micro_location,
-                source_url=source_url,
-            )]
+            return [
+                VenueChunk(
+                    text=text,
+                    venue_name=venue_name,
+                    micro_location=micro_location,
+                    source_url=source_url,
+                )
+            ]
 
         # Split by thematic separators
         segments = self._split_by_themes(text)
@@ -106,33 +105,43 @@ class SemanticChunker:
             if len(combined.split()) > self.MAX_CHUNK_TOKENS:
                 # Save current chunk if substantial
                 if len(current_chunk.split()) >= self.MIN_CHUNK_TOKENS:
-                    chunks.append(VenueChunk(
-                        text=current_chunk.strip(),
-                        venue_name=venue_name,
-                        micro_location=micro_location,
-                        chunk_type=self._classify_chunk(current_chunk),
-                        source_url=source_url,
-                    ))
+                    chunks.append(
+                        VenueChunk(
+                            text=current_chunk.strip(),
+                            venue_name=venue_name,
+                            micro_location=micro_location,
+                            chunk_type=self._classify_chunk(current_chunk),
+                            source_url=source_url,
+                        )
+                    )
                 current_chunk = segment
             else:
                 current_chunk = combined
 
         # Don't forget the last chunk
         if current_chunk and len(current_chunk.split()) >= self.MIN_CHUNK_TOKENS:
-            chunks.append(VenueChunk(
-                text=current_chunk.strip(),
-                venue_name=venue_name,
-                micro_location=micro_location,
-                chunk_type=self._classify_chunk(current_chunk),
-                source_url=source_url,
-            ))
+            chunks.append(
+                VenueChunk(
+                    text=current_chunk.strip(),
+                    venue_name=venue_name,
+                    micro_location=micro_location,
+                    chunk_type=self._classify_chunk(current_chunk),
+                    source_url=source_url,
+                )
+            )
 
-        return chunks if chunks else [VenueChunk(
-            text=text[:2000],
-            venue_name=venue_name,
-            micro_location=micro_location,
-            source_url=source_url,
-        )]
+        return (
+            chunks
+            if chunks
+            else [
+                VenueChunk(
+                    text=text[:2000],
+                    venue_name=venue_name,
+                    micro_location=micro_location,
+                    source_url=source_url,
+                )
+            ]
+        )
 
     def chunk_review(
         self,
@@ -160,14 +169,17 @@ class SemanticChunker:
                 return segments
 
         # Fallback: split by sentences
-        sentences = re.split(r'(?<=[.!?])\s+', text)
+        sentences = re.split(r"(?<=[.!?])\s+", text)
         return sentences
 
     def _classify_chunk(self, text: str) -> str:
         """Classify chunk type based on content."""
         text_lower = text.lower()
 
-        if any(w in text_lower for w in ["interior", "design", "decor", "acoustic", "lighting", "furniture"]):
+        if any(
+            w in text_lower
+            for w in ["interior", "design", "decor", "acoustic", "lighting", "furniture"]
+        ):
             return "atmosphere"
         elif any(w in text_lower for w in ["food", "menu", "dish", "cuisine", "chef", "taste"]):
             return "culinary"
@@ -183,11 +195,11 @@ class SemanticChunker:
     def _clean_text(self, text: str) -> str:
         """Clean raw scraped text."""
         # Remove excessive whitespace
-        text = re.sub(r'\s+', ' ', text)
+        text = re.sub(r"\s+", " ", text)
         # Remove HTML artifacts
-        text = re.sub(r'<[^>]+>', '', text)
+        text = re.sub(r"<[^>]+>", "", text)
         # Remove excessive punctuation
-        text = re.sub(r'[.]{3,}', '...', text)
+        text = re.sub(r"[.]{3,}", "...", text)
         return text.strip()
 
 

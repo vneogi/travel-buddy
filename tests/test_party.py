@@ -47,17 +47,21 @@ def reset_db():
 
 def test_create_trip_with_party():
     """Create trip with explicit family party -- persisted and returned."""
-    resp = client.post("/api/v1/trip/create", json={
-        "start_date": _now_iso(),
-        "party": {
-            "party_type": "daddy_kiddo",
-            "size": 2,
-            "members": [
-                {"role": "self", "age_band": "adult", "needs": []},
-                {"role": "child", "age_band": "toddler", "needs": ["nap_schedule", "stroller"]},
-            ],
+    resp = client.post(
+        "/api/v1/trip/create",
+        json={
+            "start_date": _now_iso(),
+            "party": {
+                "party_type": "daddy_kiddo",
+                "size": 2,
+                "members": [
+                    {"role": "self", "age_band": "adult", "needs": []},
+                    {"role": "child", "age_band": "toddler", "needs": ["nap_schedule", "stroller"]},
+                ],
+            },
         },
-    }, headers=HEADERS)
+        headers=HEADERS,
+    )
 
     assert resp.status_code == 200
     data = resp.json()
@@ -72,9 +76,13 @@ def test_create_trip_with_party():
 
 def test_create_trip_without_party_defaults_solo():
     """Create trip with no party field -> defaults to solo, size 1."""
-    resp = client.post("/api/v1/trip/create", json={
-        "start_date": _now_iso(),
-    }, headers=HEADERS)
+    resp = client.post(
+        "/api/v1/trip/create",
+        json={
+            "start_date": _now_iso(),
+        },
+        headers=HEADERS,
+    )
 
     assert resp.status_code == 200
     data = resp.json()
@@ -86,17 +94,21 @@ def test_create_trip_without_party_defaults_solo():
 def test_get_trip_includes_party():
     """GET /trip/{id} returns the party for display."""
     # Create a trip with a party
-    create_resp = client.post("/api/v1/trip/create", json={
-        "start_date": _now_iso(),
-        "party": {
-            "party_type": "couple",
-            "size": 2,
-            "members": [
-                {"role": "self", "age_band": "adult", "needs": []},
-                {"role": "partner", "age_band": "adult", "needs": []},
-            ],
+    create_resp = client.post(
+        "/api/v1/trip/create",
+        json={
+            "start_date": _now_iso(),
+            "party": {
+                "party_type": "couple",
+                "size": 2,
+                "members": [
+                    {"role": "self", "age_band": "adult", "needs": []},
+                    {"role": "partner", "age_band": "adult", "needs": []},
+                ],
+            },
         },
-    }, headers=HEADERS)
+        headers=HEADERS,
+    )
     trip_id = create_resp.json()["trip_id"]
 
     # GET the trip
@@ -116,32 +128,42 @@ def test_signal_gets_party_context_stamped():
     at ingest, merged into value_json.
     """
     # Create trip with family party
-    create_resp = client.post("/api/v1/trip/create", json={
-        "start_date": _now_iso(),
-        "party": {
-            "party_type": "family_young_kids",
-            "size": 4,
-            "members": [
-                {"role": "self", "age_band": "adult", "needs": []},
-                {"role": "partner", "age_band": "adult", "needs": []},
-                {"role": "child", "age_band": "toddler", "needs": ["nap_schedule"]},
-                {"role": "child", "age_band": "child", "needs": ["stroller"]},
-            ],
+    create_resp = client.post(
+        "/api/v1/trip/create",
+        json={
+            "start_date": _now_iso(),
+            "party": {
+                "party_type": "family_young_kids",
+                "size": 4,
+                "members": [
+                    {"role": "self", "age_band": "adult", "needs": []},
+                    {"role": "partner", "age_band": "adult", "needs": []},
+                    {"role": "child", "age_band": "toddler", "needs": ["nap_schedule"]},
+                    {"role": "child", "age_band": "child", "needs": ["stroller"]},
+                ],
+            },
         },
-    }, headers=HEADERS)
+        headers=HEADERS,
+    )
     trip_id = create_resp.json()["trip_id"]
 
     # Emit a signal for this trip
-    signal_resp = client.post("/api/v1/signals", json={
-        "signals": [{
-            "signal_id": "sig-party-001",
-            "signal_type": "user_loved",
-            "place_ref": "dubai-aquarium",
-            "trip_id": trip_id,
-            "captured_at": _recent_iso(),
-            "value_json": {"original_field": "preserved"},
-        }],
-    }, headers=HEADERS)
+    signal_resp = client.post(
+        "/api/v1/signals",
+        json={
+            "signals": [
+                {
+                    "signal_id": "sig-party-001",
+                    "signal_type": "user_loved",
+                    "place_ref": "dubai-aquarium",
+                    "trip_id": trip_id,
+                    "captured_at": _recent_iso(),
+                    "value_json": {"original_field": "preserved"},
+                }
+            ],
+        },
+        headers=HEADERS,
+    )
 
     assert signal_resp.status_code == 200
     assert signal_resp.json()["accepted"] == 1
@@ -169,15 +191,21 @@ def test_signal_unknown_trip_still_succeeds():
 
     SPEC-03: never fail ingest due to missing party data.
     """
-    resp = client.post("/api/v1/signals", json={
-        "signals": [{
-            "signal_id": "sig-unknown-trip",
-            "signal_type": "user_loved",
-            "place_ref": "some-venue",
-            "trip_id": "nonexistent-trip-id",
-            "captured_at": _recent_iso(),
-        }],
-    }, headers=HEADERS)
+    resp = client.post(
+        "/api/v1/signals",
+        json={
+            "signals": [
+                {
+                    "signal_id": "sig-unknown-trip",
+                    "signal_type": "user_loved",
+                    "place_ref": "some-venue",
+                    "trip_id": "nonexistent-trip-id",
+                    "captured_at": _recent_iso(),
+                }
+            ],
+        },
+        headers=HEADERS,
+    )
 
     assert resp.status_code == 200
     assert resp.json()["accepted"] == 1
@@ -193,14 +221,20 @@ def test_signal_unknown_trip_still_succeeds():
 
 def test_signal_no_trip_id_still_succeeds():
     """Signal with no trip_id at all -> ingest succeeds, no party_context."""
-    resp = client.post("/api/v1/signals", json={
-        "signals": [{
-            "signal_id": "sig-no-trip",
-            "signal_type": "user_loved",
-            "place_ref": "some-venue",
-            "captured_at": _recent_iso(),
-        }],
-    }, headers=HEADERS)
+    resp = client.post(
+        "/api/v1/signals",
+        json={
+            "signals": [
+                {
+                    "signal_id": "sig-no-trip",
+                    "signal_type": "user_loved",
+                    "place_ref": "some-venue",
+                    "captured_at": _recent_iso(),
+                }
+            ],
+        },
+        headers=HEADERS,
+    )
 
     assert resp.status_code == 200
     assert resp.json()["accepted"] == 1
@@ -209,26 +243,36 @@ def test_signal_no_trip_id_still_succeeds():
 def test_party_context_merge_preserves_existing_value_json():
     """party_context is MERGED into value_json, not overwriting it."""
     # Create trip with solo party
-    create_resp = client.post("/api/v1/trip/create", json={
-        "start_date": _now_iso(),
-    }, headers=HEADERS)
+    create_resp = client.post(
+        "/api/v1/trip/create",
+        json={
+            "start_date": _now_iso(),
+        },
+        headers=HEADERS,
+    )
     trip_id = create_resp.json()["trip_id"]
 
     # Send signal with existing value_json fields
-    resp = client.post("/api/v1/signals", json={
-        "signals": [{
-            "signal_id": "sig-merge-test",
-            "signal_type": "user_loved",
-            "place_ref": "test-venue",
-            "trip_id": trip_id,
-            "captured_at": _recent_iso(2),
-            "value_json": {
-                "intensity": 0.9,
-                "source": "heart_button",
-                "nested": {"key": "value"},
-            },
-        }],
-    }, headers=HEADERS)
+    resp = client.post(
+        "/api/v1/signals",
+        json={
+            "signals": [
+                {
+                    "signal_id": "sig-merge-test",
+                    "signal_type": "user_loved",
+                    "place_ref": "test-venue",
+                    "trip_id": trip_id,
+                    "captured_at": _recent_iso(2),
+                    "value_json": {
+                        "intensity": 0.9,
+                        "source": "heart_button",
+                        "nested": {"key": "value"},
+                    },
+                }
+            ],
+        },
+        headers=HEADERS,
+    )
 
     assert resp.status_code == 200
     stored = db_service.get_signal("sig-merge-test")

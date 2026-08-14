@@ -3,6 +3,7 @@
 Covers: unhandled exceptions, validation errors, debug endpoint gating,
 secret-leak prevention, ring buffer cap, and X-Request-ID header.
 """
+
 import pytest
 from fastapi.testclient import TestClient
 from fastapi import APIRouter
@@ -42,6 +43,7 @@ def _clear_error_log():
 # Test 1: Unhandled exception -> 500 + request_id + entry in ring buffer
 # ---------------------------------------------------------------------------
 
+
 def test_unhandled_exception_returns_500_with_request_id():
     client = TestClient(app, raise_server_exceptions=False)
     r = client.get("/api/v1/_test/crash")
@@ -62,6 +64,7 @@ def test_unhandled_exception_returns_500_with_request_id():
 # ---------------------------------------------------------------------------
 # Test 2: Validation error -> 422 + entry recorded
 # ---------------------------------------------------------------------------
+
 
 def test_validation_error_returns_422_with_entry():
     client = TestClient(app, raise_server_exceptions=False)
@@ -85,6 +88,7 @@ def test_validation_error_returns_422_with_entry():
 # Test 3: GET /debug/errors returns entries when debug=True
 # ---------------------------------------------------------------------------
 
+
 def test_debug_errors_returns_200_when_debug_on():
     client = TestClient(app, raise_server_exceptions=False)
     # Trigger a crash first
@@ -102,6 +106,7 @@ def test_debug_errors_returns_200_when_debug_on():
 # Test 4: GET /debug/errors returns 404 when debug=False
 # ---------------------------------------------------------------------------
 
+
 def test_debug_errors_returns_404_when_debug_off(monkeypatch):
     client = TestClient(app, raise_server_exceptions=False)
     monkeypatch.setattr(settings, "debug", False)
@@ -115,6 +120,7 @@ def test_debug_errors_returns_404_when_debug_off(monkeypatch):
 # Test 5: Secret-leak guard -- no env values in error log
 # ---------------------------------------------------------------------------
 
+
 def test_no_secrets_in_error_log(monkeypatch):
     """Set a fake API key, trigger an error, assert the key never leaks."""
     fake_secret = "sk-test-SUPER-SECRET-12345"
@@ -126,6 +132,7 @@ def test_no_secrets_in_error_log(monkeypatch):
     entries = error_log.recent(limit=10)
     # Serialize all entries to string and check for the secret
     import json
+
     all_text = json.dumps(entries)
     assert fake_secret not in all_text, "Secret leaked into error log!"
 
@@ -133,6 +140,7 @@ def test_no_secrets_in_error_log(monkeypatch):
 # ---------------------------------------------------------------------------
 # Test 6: Ring buffer capped at 100
 # ---------------------------------------------------------------------------
+
 
 def test_ring_buffer_capped_at_100():
     for i in range(150):
@@ -153,6 +161,7 @@ def test_ring_buffer_capped_at_100():
 # ---------------------------------------------------------------------------
 # Test 7: X-Request-ID header present on normal responses
 # ---------------------------------------------------------------------------
+
 
 def test_request_id_header_on_normal_response():
     client = TestClient(app)

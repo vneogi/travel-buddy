@@ -63,6 +63,7 @@ def decompose_trip(
                 else:
                     dt = sched_start
                 from datetime import timedelta
+
                 end_dt = dt + timedelta(minutes=duration)
                 sched_end = end_dt.isoformat()
                 if isinstance(sched_start, str):
@@ -177,9 +178,19 @@ def round_trip_equal(trip_state: Dict[str, Any]) -> bool:
 
     for orig, comp in zip(original, composed):
         # Compare the fields that must round-trip
-        for key in ("node_id", "venue_name", "venue_id", "duration_minutes",
-                    "is_locked", "micro_location", "vibe_tags", "lat", "lng",
-                    "opening_hours", "geo_region"):
+        for key in (
+            "node_id",
+            "venue_name",
+            "venue_id",
+            "duration_minutes",
+            "is_locked",
+            "micro_location",
+            "vibe_tags",
+            "lat",
+            "lng",
+            "opening_hours",
+            "geo_region",
+        ):
             if orig.get(key) != comp.get(key):
                 return False
         # Status: pending/active -> planned -> pending (active maps to planned maps to pending)

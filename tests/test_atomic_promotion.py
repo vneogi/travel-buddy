@@ -27,6 +27,7 @@ def _fresh_uid():
 # Instrumented FakeClient that records .in_() calls
 # ---------------------------------------------------------------------------
 
+
 class FakeResponse:
     def __init__(self, data):
         self.data = data
@@ -82,11 +83,13 @@ class InstrumentedFakeTable:
             self._pending_op = None
             return FakeResponse([self._insert_data])
         elif self._pending_op == "update":
-            self.update_calls.append({
-                "payload": self._update_payload,
-                "eq_uid": self._filter_uid,
-                "in_filter": self._in_filter,
-            })
+            self.update_calls.append(
+                {
+                    "payload": self._update_payload,
+                    "eq_uid": self._filter_uid,
+                    "in_filter": self._in_filter,
+                }
+            )
             # Simulate Postgres semantics: if .in_() was called, only apply
             # when the stored value is in the allowed set. If .in_() was NOT
             # called, the UPDATE is unconditional (matches any row with eq).
@@ -120,6 +123,7 @@ def _make_svc():
     os.environ["TB_SUPABASE_KEY"] = "fake-key"
     try:
         import services.supabase_service as ss_mod
+
         importlib.reload(ss_mod)
         svc = ss_mod.SupabaseService.__new__(ss_mod.SupabaseService)
         svc._client = InstrumentedFakeTable()
@@ -132,6 +136,7 @@ def _make_svc():
 # ---------------------------------------------------------------------------
 # Structural: UPDATE carries .in_ filter with exactly the lower kinds
 # ---------------------------------------------------------------------------
+
 
 class TestAtomicPromotionFilter:
     """The promotion UPDATE must filter on strictly-lower kinds via .in_()."""
@@ -215,6 +220,7 @@ class TestAtomicPromotionFilter:
 # ---------------------------------------------------------------------------
 # Behavioral: the in_ filter prevents stale-read downgrades
 # ---------------------------------------------------------------------------
+
 
 class TestAtomicBehavior:
     """The in_ filter must actually prevent writes when the real row has advanced.

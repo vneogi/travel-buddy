@@ -83,9 +83,7 @@ class GoogleMapsService:
             params["traffic_model"] = "best_guess"
 
         async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{self.BASE_URL}/distancematrix/json", params=params
-            )
+            response = await client.get(f"{self.BASE_URL}/distancematrix/json", params=params)
             response.raise_for_status()
             data = response.json()
 
@@ -183,17 +181,19 @@ class GoogleMapsService:
             if open_now and not is_open:
                 continue
 
-            places.append({
-                "place_id": place.get("id"),
-                "name": place.get("displayName", {}).get("text", ""),
-                "address": place.get("formattedAddress", ""),
-                "lat": place.get("location", {}).get("latitude"),
-                "lng": place.get("location", {}).get("longitude"),
-                "rating": place.get("rating"),
-                "review_count": place.get("userRatingCount"),
-                "is_open_now": is_open,
-                "types": place.get("types", []),
-            })
+            places.append(
+                {
+                    "place_id": place.get("id"),
+                    "name": place.get("displayName", {}).get("text", ""),
+                    "address": place.get("formattedAddress", ""),
+                    "lat": place.get("location", {}).get("latitude"),
+                    "lng": place.get("location", {}).get("longitude"),
+                    "rating": place.get("rating"),
+                    "review_count": place.get("userRatingCount"),
+                    "is_open_now": is_open,
+                    "types": place.get("types", []),
+                }
+            )
 
         return places
 
@@ -241,9 +241,7 @@ class GoogleMapsService:
         self._cache[cache_key] = (result, time.time())
         return result
 
-    async def validate_venues_open(
-        self, venues: List[Dict]
-    ) -> List[Dict]:
+    async def validate_venues_open(self, venues: List[Dict]) -> List[Dict]:
         """Cross-reference venues with Places API for open_now status.
 
         This is Step 3 from BRD Section 3.3.
@@ -301,20 +299,20 @@ class GoogleMapsService:
         }
 
         async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{self.BASE_URL}/distancematrix/json", params=params
-            )
+            response = await client.get(f"{self.BASE_URL}/distancematrix/json", params=params)
             response.raise_for_status()
             data = response.json()
 
         results = []
         for element in data["rows"][0]["elements"]:
             if element["status"] == "OK":
-                results.append({
-                    "distance_km": element["distance"]["value"] / 1000,
-                    "duration_minutes": element["duration"]["value"] / 60,
-                    "status": "ok",
-                })
+                results.append(
+                    {
+                        "distance_km": element["distance"]["value"] / 1000,
+                        "duration_minutes": element["duration"]["value"] / 60,
+                        "status": "ok",
+                    }
+                )
             else:
                 results.append({"status": "not_found"})
 

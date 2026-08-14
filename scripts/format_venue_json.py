@@ -54,9 +54,7 @@ def _report_deltas(original, modified, label: str):
             orig_count = len(original[key])
             mod_count = len(modified[key])
             if orig_count != mod_count:
-                deltas.append(
-                    f"  RECORD COUNT CHANGED: {key} {orig_count} -> {mod_count}"
-                )
+                deltas.append(f"  RECORD COUNT CHANGED: {key} {orig_count} -> {mod_count}")
 
     # Top-level keys
     if isinstance(original, dict) and isinstance(modified, dict):
@@ -70,11 +68,11 @@ def _report_deltas(original, modified, label: str):
             deltas.append(f"  KEYS REMOVED: {sorted(removed)}")
 
     if deltas:
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"DELTAS DETECTED in {label}:")
         for d in deltas:
             print(d)
-        print(f"{'='*60}\n")
+        print(f"{'=' * 60}\n")
 
 
 def to_readable(input_path: Path):
@@ -116,8 +114,7 @@ def to_repo(input_path: Path):
     # SAFETY: verify re-parse equals input
     reparsed = json.loads(ascii_bytes.decode("ascii"))
     if reparsed != data:
-        print("ERROR: Re-parsed output does not equal input. Refusing to write.",
-              file=sys.stderr)
+        print("ERROR: Re-parsed output does not equal input. Refusing to write.", file=sys.stderr)
         sys.exit(1)
 
     # Idempotent: if output already matches, skip
@@ -137,7 +134,7 @@ def to_repo(input_path: Path):
 def main():
     parser = argparse.ArgumentParser(
         description="Convert venue/glossary JSON between ASCII-escaped (repo) "
-                    "and human-readable (curation) forms."
+        "and human-readable (curation) forms."
     )
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument(

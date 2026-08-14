@@ -80,9 +80,7 @@ class LLMService:
             model = self.heavy_model if routing_tier == "heavy" else self.light_model
 
         # Get fallback chain
-        fallback_chain = (
-            self.HEAVY_FALLBACK if routing_tier == "heavy" else self.LIGHT_FALLBACK
-        )
+        fallback_chain = self.HEAVY_FALLBACK if routing_tier == "heavy" else self.LIGHT_FALLBACK
 
         # Ensure primary model is first in chain
         if model not in fallback_chain:
@@ -134,17 +132,13 @@ class LLMService:
                 last_error = e
                 continue
 
-        raise RuntimeError(
-            f"All models failed for {routing_tier} tier. Last error: {last_error}"
-        )
+        raise RuntimeError(f"All models failed for {routing_tier} tier. Last error: {last_error}")
 
     # =========================================================================
     # Specialized Methods
     # =========================================================================
 
-    async def classify_intent(
-        self, user_message: str, event_type: str
-    ) -> Tuple[str, float]:
+    async def classify_intent(self, user_message: str, event_type: str) -> Tuple[str, float]:
         """Use LLM to classify intent when keyword matching is ambiguous.
 
         Returns: (routing_tier, confidence)
@@ -157,7 +151,7 @@ class LLMService:
                     "classify whether it requires STRUCTURAL changes to their itinerary "
                     "(heavy: rescheduling, swapping, rerouting) or is a SIMPLE information "
                     "request (light: translations, dress codes, prices, directions).\n\n"
-                    "Respond with JSON: {\"tier\": \"heavy\" or \"light\", \"confidence\": 0.0-1.0}"
+                    'Respond with JSON: {"tier": "heavy" or "light", "confidence": 0.0-1.0}'
                 ),
             },
             {
@@ -218,9 +212,7 @@ class LLMService:
         )
         return result["content"]
 
-    async def generate_info_response(
-        self, user_message: str, context: Dict = None
-    ) -> str:
+    async def generate_info_response(self, user_message: str, context: Dict = None) -> str:
         """Generate a light response for info queries."""
         system_prompt = (
             "You are Travel Buddy AI, a Dubai travel expert. "
@@ -294,9 +286,7 @@ class LLMService:
     # Cost Tracking
     # =========================================================================
 
-    def _calculate_cost(
-        self, model: str, tokens: Dict[str, int]
-    ) -> float:
+    def _calculate_cost(self, model: str, tokens: Dict[str, int]) -> float:
         """Calculate USD cost for a completion."""
         costs = self.MODEL_COSTS.get(model, {"input": 0.001, "output": 0.002})
         input_cost = (tokens["input"] / 1000) * costs["input"]
@@ -312,14 +302,16 @@ class LLMService:
         latency_ms: int,
     ) -> None:
         """Log a call for internal tracking."""
-        self._call_log.append({
-            "model": model,
-            "tier": tier,
-            "tokens": tokens,
-            "cost_usd": cost,
-            "latency_ms": latency_ms,
-            "timestamp": time.time(),
-        })
+        self._call_log.append(
+            {
+                "model": model,
+                "tier": tier,
+                "tokens": tokens,
+                "cost_usd": cost,
+                "latency_ms": latency_ms,
+                "timestamp": time.time(),
+            }
+        )
 
     def get_usage_stats(self) -> Dict:
         """Get accumulated usage statistics."""
@@ -333,7 +325,8 @@ class LLMService:
             },
             "avg_latency_ms": (
                 int(sum(c["latency_ms"] for c in self._call_log) / len(self._call_log))
-                if self._call_log else 0
+                if self._call_log
+                else 0
             ),
         }
 

@@ -17,6 +17,7 @@ Validation (all HARD FAILURES -- script exits non-zero):
 --report-fk: After load, query venue_dish and report which rows have
              dish_key set vs NULL (FK linkage health check).
 """
+
 from __future__ import annotations
 
 import argparse
@@ -47,20 +48,22 @@ from config.dietary import (  # noqa: E402
 # Authoritative source: config/dietary.py VALID_ALLERGENS.
 # This extension is co-located with the loader until dietary.py is updated.
 # ---------------------------------------------------------------------------
-VALID_DISH_CONTAINS: frozenset[str] = VALID_ALLERGENS | frozenset({
-    # Meat types
-    "pork",
-    "beef",
-    # Sensitivities
-    "chilli",
-    "alcohol",
-    "fish_sauce",
-    # Singular aliases (glossary uses these; EU-14 uses plurals)
-    "egg",
-    "peanut",
-    "soy",
-    "tree_nut",
-})
+VALID_DISH_CONTAINS: frozenset[str] = VALID_ALLERGENS | frozenset(
+    {
+        # Meat types
+        "pork",
+        "beef",
+        # Sensitivities
+        "chilli",
+        "alcohol",
+        "fish_sauce",
+        # Singular aliases (glossary uses these; EU-14 uses plurals)
+        "egg",
+        "peanut",
+        "soy",
+        "tree_nut",
+    }
+)
 
 logging.basicConfig(
     level=logging.WARNING,
@@ -77,6 +80,7 @@ REQUIRED_FIELDS = {"dish_key", "name_en", "contains", "may_contain", "suitable_f
 # ---------------------------------------------------------------------------
 # Validation
 # ---------------------------------------------------------------------------
+
 
 def validate_glossary(dishes: list[dict]) -> list[str]:
     """Validate all dishes. Returns list of error strings. Empty = valid."""
@@ -131,25 +135,24 @@ def validate_glossary(dishes: list[dict]) -> list[str]:
 # Database upsert
 # ---------------------------------------------------------------------------
 
+
 def upsert_dishes(client, dishes: list[dict]) -> dict:
     """Upsert dishes into dish_glossary. Returns {inserted, updated, errors}."""
     rows = []
     for dish in dishes:
-        rows.append({
-            "dish_key": dish["dish_key"],
-            "canonical_name": dish["name_en"],
-            "cuisine": dish.get("cuisine"),
-            "contains": dish["contains"],
-            "may_contain": dish["may_contain"],
-            "suitable_for": dish["suitable_for"],
-            "description": dish.get("description"),
-        })
+        rows.append(
+            {
+                "dish_key": dish["dish_key"],
+                "canonical_name": dish["name_en"],
+                "cuisine": dish.get("cuisine"),
+                "contains": dish["contains"],
+                "may_contain": dish["may_contain"],
+                "suitable_for": dish["suitable_for"],
+                "description": dish.get("description"),
+            }
+        )
 
-    result = (
-        client.table("dish_glossary")
-        .upsert(rows, on_conflict="dish_key")
-        .execute()
-    )
+    result = client.table("dish_glossary").upsert(rows, on_conflict="dish_key").execute()
     return {"upserted": len(result.data), "errors": []}
 
 
@@ -185,11 +188,14 @@ def report_fk_linkage(client) -> None:
 # Main
 # ---------------------------------------------------------------------------
 
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Load dish glossary into Supabase.")
     parser.add_argument("filepath", help="Path to dish glossary JSON file")
     parser.add_argument("--dry-run", action="store_true", help="Validate only, do not upsert")
-    parser.add_argument("--report-fk", action="store_true", help="Report venue_dish FK linkage after load")
+    parser.add_argument(
+        "--report-fk", action="store_true", help="Report venue_dish FK linkage after load"
+    )
     parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
     args = parser.parse_args()
 
@@ -243,7 +249,9 @@ def main() -> int:
 
     # --- Supabase client ---
     url = os.environ.get("TB_SUPABASE_URL") or os.environ.get("SUPABASE_URL", "")
-    key = os.environ.get("TB_SUPABASE_SERVICE_KEY") or os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+    key = os.environ.get("TB_SUPABASE_SERVICE_KEY") or os.environ.get(
+        "SUPABASE_SERVICE_ROLE_KEY", ""
+    )
 
     if not url or not key:
         print(
@@ -254,6 +262,7 @@ def main() -> int:
         return 1
 
     from supabase import create_client
+
     client = create_client(url, key)
 
     # --- Upsert ---

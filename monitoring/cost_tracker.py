@@ -34,13 +34,12 @@ API_COSTS = {
     "gemini-1.5-flash_input": 0.000075,
     "gemini-1.5-flash_output": 0.0003,
     "text-embedding-3-small": 0.00002,  # per 1K tokens
-
     # External API costs (per call)
     "google_distance_matrix": 0.005,  # per element
-    "google_places_nearby": 0.032,    # per request
-    "google_places_details": 0.017,   # per request
-    "openweather_current": 0.0,       # free tier
-    "openweather_forecast": 0.0,      # free tier
+    "google_places_nearby": 0.032,  # per request
+    "google_places_details": 0.017,  # per request
+    "openweather_current": 0.0,  # free tier
+    "openweather_forecast": 0.0,  # free tier
 }
 
 # Revenue reference
@@ -99,13 +98,15 @@ class CostTracker:
         output_cost = (output_tokens / 1000) * API_COSTS.get(f"{model}_output", 0.002)
         total_cost = input_cost + output_cost
 
-        self._events.append(CostEvent(
-            user_id=user_id,
-            event_type=f"llm_{routing_tier}",
-            model_or_api=model,
-            cost_usd=total_cost,
-            tokens_used=input_tokens + output_tokens,
-        ))
+        self._events.append(
+            CostEvent(
+                user_id=user_id,
+                event_type=f"llm_{routing_tier}",
+                model_or_api=model,
+                cost_usd=total_cost,
+                tokens_used=input_tokens + output_tokens,
+            )
+        )
 
         # Rotate: keep only recent events to prevent memory leak
         if len(self._events) > self.MAX_EVENTS:
@@ -114,44 +115,46 @@ class CostTracker:
         self._check_budget_alert()
         return total_cost
 
-    def record_api_call(
-        self, user_id: str, api_name: str, call_count: int = 1
-    ) -> float:
+    def record_api_call(self, user_id: str, api_name: str, call_count: int = 1) -> float:
         """Record an external API call."""
         unit_cost = API_COSTS.get(api_name, 0.0)
         total_cost = unit_cost * call_count
 
-        self._events.append(CostEvent(
-            user_id=user_id,
-            event_type="api_call",
-            model_or_api=api_name,
-            cost_usd=total_cost,
-        ))
+        self._events.append(
+            CostEvent(
+                user_id=user_id,
+                event_type="api_call",
+                model_or_api=api_name,
+                cost_usd=total_cost,
+            )
+        )
 
         return total_cost
 
     def record_cache_hit(self, user_id: str) -> None:
         """Record a cache hit (zero cost, but track savings)."""
-        self._events.append(CostEvent(
-            user_id=user_id,
-            event_type="cache_hit",
-            model_or_api="semantic_cache",
-            cost_usd=0.0,
-            from_cache=True,
-        ))
+        self._events.append(
+            CostEvent(
+                user_id=user_id,
+                event_type="cache_hit",
+                model_or_api="semantic_cache",
+                cost_usd=0.0,
+                from_cache=True,
+            )
+        )
 
-    def record_embedding(
-        self, user_id: str, token_count: int
-    ) -> float:
+    def record_embedding(self, user_id: str, token_count: int) -> float:
         """Record an embedding generation."""
         cost = (token_count / 1000) * API_COSTS["text-embedding-3-small"]
-        self._events.append(CostEvent(
-            user_id=user_id,
-            event_type="embedding",
-            model_or_api="text-embedding-3-small",
-            cost_usd=cost,
-            tokens_used=token_count,
-        ))
+        self._events.append(
+            CostEvent(
+                user_id=user_id,
+                event_type="embedding",
+                model_or_api="text-embedding-3-small",
+                cost_usd=cost,
+                tokens_used=token_count,
+            )
+        )
         return cost
 
     # =========================================================================
@@ -166,10 +169,7 @@ class CostTracker:
         day_start = target_date.replace(hour=0, minute=0, second=0)
         day_end = day_start + timedelta(days=1)
 
-        day_events = [
-            e for e in self._events
-            if day_start <= e.timestamp < day_end
-        ]
+        day_events = [e for e in self._events if day_start <= e.timestamp < day_end]
 
         total_cost = sum(e.cost_usd for e in day_events)
         total_tokens = sum(e.tokens_used for e in day_events)
@@ -197,10 +197,7 @@ class CostTracker:
     def get_user_cost(self, user_id: str, days: int = 30) -> Dict:
         """Get cost attribution for a specific user."""
         cutoff = datetime.now(tz=timezone.utc) - timedelta(days=days)
-        user_events = [
-            e for e in self._events
-            if e.user_id == user_id and e.timestamp >= cutoff
-        ]
+        user_events = [e for e in self._events if e.user_id == user_id and e.timestamp >= cutoff]
 
         total_cost = sum(e.cost_usd for e in user_events)
         total_events = len(user_events)
@@ -229,8 +226,12 @@ class CostTracker:
         return {
             model: {
                 **stats,
-                "cost_per_call": round(stats["cost"] / stats["calls"], 5) if stats["calls"] > 0 else 0,
-                "cost_per_1k_tokens": round(stats["cost"] / (stats["tokens"] / 1000), 5) if stats["tokens"] > 0 else 0,
+                "cost_per_call": round(stats["cost"] / stats["calls"], 5)
+                if stats["calls"] > 0
+                else 0,
+                "cost_per_1k_tokens": round(stats["cost"] / (stats["tokens"] / 1000), 5)
+                if stats["tokens"] > 0
+                else 0,
             }
             for model, stats in model_stats.items()
         }
@@ -250,12 +251,14 @@ class CostTracker:
         if daily_cost >= self._daily_budget_usd * 0.8:
             # 80% threshold warning
             for callback in self._alert_callbacks:
-                callback({
-                    "type": "budget_warning",
-                    "utilization": daily_cost / self._daily_budget_usd,
-                    "cost": daily_cost,
-                    "budget": self._daily_budget_usd,
-                })
+                callback(
+                    {
+                        "type": "budget_warning",
+                        "utilization": daily_cost / self._daily_budget_usd,
+                        "cost": daily_cost,
+                        "budget": self._daily_budget_usd,
+                    }
+                )
 
     def _cost_breakdown(self, events: List[CostEvent]) -> Dict:
         """Break down costs by category."""

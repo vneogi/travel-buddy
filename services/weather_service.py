@@ -30,9 +30,37 @@ from config.settings import settings
 class WeatherThresholds:
     EXTREME_HEAT_C = 45
     HIGH_HEAT_C = 40
-    RAIN_CODES = {200, 201, 202, 210, 211, 212, 221, 230, 231, 232,
-                  300, 301, 302, 310, 311, 312, 313, 314, 321,
-                  500, 501, 502, 503, 504, 511, 520, 521, 522, 531}
+    RAIN_CODES = {
+        200,
+        201,
+        202,
+        210,
+        211,
+        212,
+        221,
+        230,
+        231,
+        232,
+        300,
+        301,
+        302,
+        310,
+        311,
+        312,
+        313,
+        314,
+        321,
+        500,
+        501,
+        502,
+        503,
+        504,
+        511,
+        520,
+        521,
+        522,
+        531,
+    }
     STORM_CODES = {200, 201, 202, 210, 211, 212, 221, 230, 231, 232, 771, 781}
     SAND_CODES = {731, 751, 761, 762}  # Dust/sand
     HIGH_HUMIDITY_PERCENT = 80
@@ -71,9 +99,7 @@ class WeatherService:
         self._cache: Dict[str, Tuple[Dict, float]] = {}  # Simple TTL cache
         self._cache_ttl = 600  # 10 minutes
 
-    async def get_current_weather(
-        self, lat: float = None, lng: float = None
-    ) -> Dict:
+    async def get_current_weather(self, lat: float = None, lng: float = None) -> Dict:
         """Get current weather conditions for a location.
 
         Returns standardized weather dict:
@@ -109,9 +135,7 @@ class WeatherService:
         }
 
         async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{self.BASE_URL}/weather", params=params
-            )
+            response = await client.get(f"{self.BASE_URL}/weather", params=params)
             response.raise_for_status()
             raw = response.json()
 
@@ -124,9 +148,7 @@ class WeatherService:
             "wind_speed_kmh": raw["wind"]["speed"] * 3.6,
             "visibility_km": raw.get("visibility", 10000) / 1000,
             "description": raw["weather"][0]["description"],
-            "is_daytime": (
-                raw["sys"]["sunrise"] < time.time() < raw["sys"]["sunset"]
-            ),
+            "is_daytime": (raw["sys"]["sunrise"] < time.time() < raw["sys"]["sunset"]),
             "uv_index": None,  # Requires separate UV API call
         }
 
@@ -155,24 +177,24 @@ class WeatherService:
         }
 
         async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{self.BASE_URL}/forecast", params=params
-            )
+            response = await client.get(f"{self.BASE_URL}/forecast", params=params)
             response.raise_for_status()
             raw = response.json()
 
         forecasts = []
         # Already limited by cnt param; return all fetched blocks.
         for item in raw.get("list", []):
-            forecasts.append({
-                "datetime": item["dt_txt"],
-                "temp_c": item["main"]["temp"],
-                "humidity": item["main"]["humidity"],
-                "condition": item["weather"][0]["main"],
-                "condition_code": item["weather"][0]["id"],
-                "description": item["weather"][0]["description"],
-                "wind_speed_kmh": item["wind"]["speed"] * 3.6,
-            })
+            forecasts.append(
+                {
+                    "datetime": item["dt_txt"],
+                    "temp_c": item["main"]["temp"],
+                    "humidity": item["main"]["humidity"],
+                    "condition": item["weather"][0]["main"],
+                    "condition_code": item["weather"][0]["id"],
+                    "description": item["weather"][0]["description"],
+                    "wind_speed_kmh": item["wind"]["speed"] * 3.6,
+                }
+            )
 
         return forecasts
 
@@ -188,65 +210,77 @@ class WeatherService:
 
         # Extreme heat
         if temp >= WeatherThresholds.EXTREME_HEAT_C:
-            alerts.append(WeatherAlert(
-                alert_type="extreme_heat",
-                severity="warning",
-                message=(
-                    f"Temperature is {temp}°C. Outdoor activities are dangerous. "
-                    "Strongly recommend indoor air-conditioned alternatives."
-                ),
-                swap_to_indoor=True,
-                cancel_outdoor=True,
-            ))
+            alerts.append(
+                WeatherAlert(
+                    alert_type="extreme_heat",
+                    severity="warning",
+                    message=(
+                        f"Temperature is {temp}°C. Outdoor activities are dangerous. "
+                        "Strongly recommend indoor air-conditioned alternatives."
+                    ),
+                    swap_to_indoor=True,
+                    cancel_outdoor=True,
+                )
+            )
         elif temp >= WeatherThresholds.HIGH_HEAT_C:
-            alerts.append(WeatherAlert(
-                alert_type="high_heat",
-                severity="advisory",
-                message=(
-                    f"Temperature is {temp}°C with {humidity}% humidity. "
-                    "Consider shorter outdoor activities or shaded venues."
-                ),
-                swap_to_indoor=False,
-            ))
+            alerts.append(
+                WeatherAlert(
+                    alert_type="high_heat",
+                    severity="advisory",
+                    message=(
+                        f"Temperature is {temp}°C with {humidity}% humidity. "
+                        "Consider shorter outdoor activities or shaded venues."
+                    ),
+                    swap_to_indoor=False,
+                )
+            )
 
         # Rain/storms
         if code in WeatherThresholds.STORM_CODES:
-            alerts.append(WeatherAlert(
-                alert_type="storm",
-                severity="warning",
-                message="Thunderstorm conditions. All outdoor activities should move indoors.",
-                swap_to_indoor=True,
-                cancel_outdoor=True,
-            ))
+            alerts.append(
+                WeatherAlert(
+                    alert_type="storm",
+                    severity="warning",
+                    message="Thunderstorm conditions. All outdoor activities should move indoors.",
+                    swap_to_indoor=True,
+                    cancel_outdoor=True,
+                )
+            )
         elif code in WeatherThresholds.RAIN_CODES:
-            alerts.append(WeatherAlert(
-                alert_type="rain",
-                severity="advisory",
-                message="Rain expected. Outdoor activities may be affected.",
-                swap_to_indoor=True,
-            ))
+            alerts.append(
+                WeatherAlert(
+                    alert_type="rain",
+                    severity="advisory",
+                    message="Rain expected. Outdoor activities may be affected.",
+                    swap_to_indoor=True,
+                )
+            )
 
         # Sandstorms
         if code in WeatherThresholds.SAND_CODES:
-            alerts.append(WeatherAlert(
-                alert_type="sandstorm",
-                severity="warning",
-                message="Dust/sand storm conditions. Avoid all outdoor activities.",
-                swap_to_indoor=True,
-                cancel_outdoor=True,
-            ))
+            alerts.append(
+                WeatherAlert(
+                    alert_type="sandstorm",
+                    severity="warning",
+                    message="Dust/sand storm conditions. Avoid all outdoor activities.",
+                    swap_to_indoor=True,
+                    cancel_outdoor=True,
+                )
+            )
 
         # High humidity
         if humidity >= WeatherThresholds.HIGH_HUMIDITY_PERCENT and temp >= 35:
-            alerts.append(WeatherAlert(
-                alert_type="high_humidity",
-                severity="info",
-                message=(
-                    f"Humidity at {humidity}% with {temp}°C. "
-                    "Extended outdoor walking will be uncomfortable."
-                ),
-                swap_to_indoor=False,
-            ))
+            alerts.append(
+                WeatherAlert(
+                    alert_type="high_humidity",
+                    severity="info",
+                    message=(
+                        f"Humidity at {humidity}% with {temp}°C. "
+                        "Extended outdoor walking will be uncomfortable."
+                    ),
+                    swap_to_indoor=False,
+                )
+            )
 
         return alerts
 
@@ -263,7 +297,8 @@ class WeatherService:
         alerts = self.evaluate_alerts(weather)
         # Return most severe alert that requires indoor swap
         for alert in sorted(
-            alerts, key=lambda a: {"warning": 3, "advisory": 2, "info": 1}[a.severity],
+            alerts,
+            key=lambda a: {"warning": 3, "advisory": 2, "info": 1}[a.severity],
             reverse=True,
         ):
             if alert.swap_to_indoor:

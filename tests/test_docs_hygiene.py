@@ -11,6 +11,7 @@ statically detectable:
 - A SPEC reference that resolves to nothing hides a spec that was never
   committed. SPEC-08 was executed in full and absent from the repo for weeks.
 """
+
 import re
 from pathlib import Path
 
@@ -26,24 +27,26 @@ LIVING_DOCS = (
 )
 
 # Measured Aug 12 2026. May only shrink.
-NON_ASCII_ALLOWLIST = frozenset({
-    "docs/DATA_MODEL_BRD.md",
-    "docs/UX_BACKLOG.md",
-    "docs/VISION.md",
-    "docs/research/survey_deep.md",
-    "docs/research/survey_short.md",
-    "docs/specs/SPEC-01-migrations-and-first-signal.md",
-    "docs/specs/SPEC-02-offline-queue-and-sync.md",
-    "docs/specs/SPEC-03-party-context.md",
-    "docs/specs/SPEC-04-offline-vault.md",
-    "docs/specs/SPEC-05-observability.md",
-    "docs/specs/SPEC-06-behavioral-signals.md",
-    "docs/specs/SPEC-07-signal-emission.md",
-    "docs/specs/SPEC-09-anonymous-identity.md",
-    "mobile/README.md",
-    "scripts/README.md",
-    "supabase/migrations/README.md",
-})
+NON_ASCII_ALLOWLIST = frozenset(
+    {
+        "docs/DATA_MODEL_BRD.md",
+        "docs/UX_BACKLOG.md",
+        "docs/VISION.md",
+        "docs/research/survey_deep.md",
+        "docs/research/survey_short.md",
+        "docs/specs/SPEC-01-migrations-and-first-signal.md",
+        "docs/specs/SPEC-02-offline-queue-and-sync.md",
+        "docs/specs/SPEC-03-party-context.md",
+        "docs/specs/SPEC-04-offline-vault.md",
+        "docs/specs/SPEC-05-observability.md",
+        "docs/specs/SPEC-06-behavioral-signals.md",
+        "docs/specs/SPEC-07-signal-emission.md",
+        "docs/specs/SPEC-09-anonymous-identity.md",
+        "mobile/README.md",
+        "scripts/README.md",
+        "supabase/migrations/README.md",
+    }
+)
 
 FORBIDDEN_CLAIMS = (
     "LangGraph State Machine",
@@ -57,10 +60,20 @@ FORBIDDEN_CLAIMS = (
 COUNT_RE = re.compile(r"\b\d+\s+(?:passed|failed|skipped)\b")
 SPEC_REF_RE = re.compile(r"SPEC-(\d{2})")
 
-EXCLUDED_PARTS = frozenset({
-    ".git", ".dart_tool", "node_modules", "build", ".venv", "venv",
-    "__pycache__", ".pytest_cache", "Pods", ".gradle",
-})
+EXCLUDED_PARTS = frozenset(
+    {
+        ".git",
+        ".dart_tool",
+        "node_modules",
+        "build",
+        ".venv",
+        "venv",
+        "__pycache__",
+        ".pytest_cache",
+        "Pods",
+        ".gradle",
+    }
+)
 
 
 def _rel(path):
@@ -69,9 +82,9 @@ def _rel(path):
 
 def _tracked_docs():
     return sorted(
-        p for p in REPO_ROOT.rglob("*.md")
-        if p.is_file()
-        and not EXCLUDED_PARTS & set(p.relative_to(REPO_ROOT).parts)
+        p
+        for p in REPO_ROOT.rglob("*.md")
+        if p.is_file() and not EXCLUDED_PARTS & set(p.relative_to(REPO_ROOT).parts)
     )
 
 
@@ -89,14 +102,13 @@ def test_no_unexpected_non_ascii():
         bad = [i for i, b in enumerate(raw) if b > 127]
         if bad:
             at = bad[0]
-            context = raw[max(0, at - 30):at + 30].decode("utf-8", "replace")
+            context = raw[max(0, at - 30) : at + 30].decode("utf-8", "replace")
             offenders[rel] = (len(bad), context)
     assert not offenders, (
         "Non-ASCII silently blocks editAsset (R14). Use -- for an em-dash "
         "and -> for an arrow.\n"
         + "\n".join(
-            "  %s: %d byte(s), near: %r" % (k, v[0], v[1])
-            for k, v in sorted(offenders.items())
+            "  %s: %d byte(s), near: %r" % (k, v[0], v[1]) for k, v in sorted(offenders.items())
         )
     )
 
@@ -134,8 +146,7 @@ def test_living_docs_make_no_false_architecture_claims():
                 offenders.append("%s: %r" % (_rel(path), claim))
     assert not offenders, (
         "These describe a system that does not exist. The orchestrator is "
-        "not LangGraph and db_provider needs no manual flip.\n"
-        + "\n".join(offenders)
+        "not LangGraph and db_provider needs no manual flip.\n" + "\n".join(offenders)
     )
 
 
@@ -144,9 +155,9 @@ def _tracked_code_files():
     results = []
     for ext in ("*.py", "*.sql"):
         results.extend(
-            p for p in REPO_ROOT.rglob(ext)
-            if p.is_file()
-            and not EXCLUDED_PARTS & set(p.relative_to(REPO_ROOT).parts)
+            p
+            for p in REPO_ROOT.rglob(ext)
+            if p.is_file() and not EXCLUDED_PARTS & set(p.relative_to(REPO_ROOT).parts)
         )
     return sorted(results)
 
@@ -162,10 +173,7 @@ def test_every_spec_reference_resolves():
                 missing.setdefault("SPEC-" + num, []).append(_rel(path))
     assert not missing, (
         "A SPEC reference resolving to nothing hides an uncommitted spec.\n"
-        + "\n".join(
-            "  %s referenced by %s" % (k, ", ".join(v))
-            for k, v in sorted(missing.items())
-        )
+        + "\n".join("  %s referenced by %s" % (k, ", ".join(v)) for k, v in sorted(missing.items()))
     )
 
 
@@ -191,7 +199,7 @@ def _extract_comment_on_bodies(sql: str):
     )
     for match in pattern.finditer(sql):
         # Line number of the IS keyword (where the body starts)
-        line_num = sql[:match.start(1)].count("\n") + 1
+        line_num = sql[: match.start(1)].count("\n") + 1
         yield line_num, match.group(1)
 
 
@@ -229,9 +237,12 @@ def _python_comment_and_docstring_chars(filepath: Path):
     docstring_lines = set()
     for node in ast.walk(tree):
         if isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
-            if (node.body and isinstance(node.body[0], ast.Expr)
-                    and isinstance(node.body[0].value, ast.Constant)
-                    and isinstance(node.body[0].value.value, str)):
+            if (
+                node.body
+                and isinstance(node.body[0], ast.Expr)
+                and isinstance(node.body[0].value, ast.Constant)
+                and isinstance(node.body[0].value.value, str)
+            ):
                 ds_node = node.body[0].value
                 for ln in range(ds_node.lineno, ds_node.end_lineno + 1):
                     docstring_lines.add(ln)
@@ -286,13 +297,11 @@ def test_no_non_ascii_in_sql_comment_on():
             for col, ch in enumerate(body):
                 if ord(ch) > 127:
                     offenders.append(
-                        f"  {rel}:{line_num} col {col}: "
-                        f"\'{ch}\' (U+{ord(ch):04X}) in COMMENT ON body"
+                        f"  {rel}:{line_num} col {col}: '{ch}' (U+{ord(ch):04X}) in COMMENT ON body"
                     )
     assert not offenders, (
         "Non-ASCII inside COMMENT ON persists to pg_description. "
-        "Use ASCII equivalents (-- for em-dash, etc).\n"
-        + "\n".join(offenders)
+        "Use ASCII equivalents (-- for em-dash, etc).\n" + "\n".join(offenders)
     )
 
 
@@ -319,20 +328,18 @@ def test_sql_comment_on_extraction_is_complete():
             extracted_lines = set()
             for match in re.finditer(
                 r"COMMENT\s+ON\s+\w+.*?IS\s*\n?\s*\'((?:[^\']|\'\')*)\'",
-                sql, re.IGNORECASE | re.DOTALL
+                sql,
+                re.IGNORECASE | re.DOTALL,
             ):
-                extracted_lines.add(sql[:match.start()].count("\n") + 1)
+                extracted_lines.add(sql[: match.start()].count("\n") + 1)
             for line_num in occurrence_lines:
                 if line_num not in extracted_lines:
                     line_text = sql.splitlines()[line_num - 1].strip()[:80]
-                    unparsed.append(
-                        f"  {rel}:{line_num}: {line_text}"
-                    )
+                    unparsed.append(f"  {rel}:{line_num}: {line_text}")
     assert not unparsed, (
         "COMMENT ON statement(s) not parsed by the extraction regex. "
-        "Likely uses dollar-quoting ($$) or E-string (E\'...\') instead "
-        "of single quotes. Extend _extract_comment_on_bodies to handle it.\n"
-        + "\n".join(unparsed)
+        "Likely uses dollar-quoting ($$) or E-string (E'...') instead "
+        "of single quotes. Extend _extract_comment_on_bodies to handle it.\n" + "\n".join(unparsed)
     )
 
 
@@ -370,12 +377,8 @@ def test_no_non_ascii_in_python_comments_or_docstrings():
         if EXCLUDED_PARTS & set(path.relative_to(REPO_ROOT).parts):
             continue
         for line_num, col, ch, codepoint in _python_comment_and_docstring_chars(path):
-            offenders.append(
-                f"  {rel}:{line_num} col {col}: "
-                f"'{ch}' (U+{codepoint:04X})"
-            )
+            offenders.append(f"  {rel}:{line_num} col {col}: '{ch}' (U+{codepoint:04X})")
     assert not offenders, (
         "Non-ASCII in comments/docstrings. Use ASCII equivalents "
-        "(-- for em-dash, -> for arrow) or \\uXXXX in string literals.\n"
-        + "\n".join(offenders)
+        "(-- for em-dash, -> for arrow) or \\uXXXX in string literals.\n" + "\n".join(offenders)
     )

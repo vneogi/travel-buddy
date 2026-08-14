@@ -51,7 +51,7 @@ value_json["party_context"] = {
     "size": party.size,
     "age_bands": sorted({m.age_band for m in party.members}),
     "time_of_day": captured_at.strftime("%H:%M"),
-    "day_index": (captured_at.date() - trip_start.date()).days,   # if trip_start known
+    "day_index": (captured_at.date() - trip_start.date()).days,  # if trip_start known
 }
 ```
 ⚠️ **Design decision:** stamp on the **server at ingest**, not the client. Rationale: the client may

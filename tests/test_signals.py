@@ -35,9 +35,13 @@ def reset_signals():
 class TestSignalIngest:
     """POST /api/v1/signals"""
 
-    def _make_signal(self, signal_id="aaaaaaaa-1111-2222-3333-444444444444",
-                     signal_type="user_loved", place_ref="dubai-mall",
-                     captured_at=None):
+    def _make_signal(
+        self,
+        signal_id="aaaaaaaa-1111-2222-3333-444444444444",
+        signal_type="user_loved",
+        place_ref="dubai-mall",
+        captured_at=None,
+    ):
         return {
             "signal_id": signal_id,
             "signal_type": signal_type,

@@ -50,6 +50,7 @@ class EmbeddingService:
         """Real embedding via OpenAI (through litellm)."""
         try:
             import litellm
+
             response = litellm.embedding(model=settings.embedding_model, input=[text])
             return response.data[0]["embedding"]
         except Exception as e:

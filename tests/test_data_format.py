@@ -5,6 +5,7 @@ These tests enforce:
 2. Byte-identical round-trip through format_venue_json.py for all venue/glossary files.
 3. Lao-script guard extended to the dish glossary's name_local and order_phrase_local.
 """
+
 import json
 import string
 import subprocess
@@ -28,6 +29,7 @@ sys.path.pop(0)
 # ASCII guard: every file in data/ must be pure ASCII
 # ---------------------------------------------------------------------------
 
+
 def test_all_data_files_are_pure_ascii():
     """Every file in data/ must contain only ASCII bytes (0x00-0x7F).
 
@@ -43,11 +45,10 @@ def test_all_data_files_are_pure_ascii():
         non_ascii = [i for i, b in enumerate(raw) if b >= 128]
         if non_ascii:
             violations.append(
-                f"{fp.name}: {len(non_ascii)} non-ASCII bytes "
-                f"(first at offset {non_ascii[0]})"
+                f"{fp.name}: {len(non_ascii)} non-ASCII bytes (first at offset {non_ascii[0]})"
             )
-    assert not violations, (
-        "data/ files must be pure ASCII:\n" + "\n".join("  " + v for v in violations)
+    assert not violations, "data/ files must be pure ASCII:\n" + "\n".join(
+        "  " + v for v in violations
     )
 
 
@@ -60,9 +61,7 @@ def test_ascii_guard_catches_non_ascii():
     lao_char = "\u0e81"  # Lao KO
     raw = lao_char.encode("utf-8")
     has_non_ascii = any(b >= 128 for b in raw)
-    assert has_non_ascii, (
-        "Test setup error: Lao character should produce non-ASCII bytes"
-    )
+    assert has_non_ascii, "Test setup error: Lao character should produce non-ASCII bytes"
 
 
 # ---------------------------------------------------------------------------
@@ -107,6 +106,7 @@ def test_round_trip_byte_identical(filename):
 # Lao-script guard for dish glossary
 # ---------------------------------------------------------------------------
 
+
 def test_glossary_lao_script_guard():
     """Lao fields in the dish glossary must not contain non-Lao letters.
 
@@ -134,20 +134,18 @@ def test_glossary_lao_script_guard():
                     continue
                 if ch in allowed_ascii:
                     continue
-                problems.append(
-                    f"{dish_name}.{field} has non-Lao codepoint U+{cp:04X}"
-                )
+                problems.append(f"{dish_name}.{field} has non-Lao codepoint U+{cp:04X}")
                 break  # one problem per field is enough
 
-    assert not problems, (
-        "Glossary Lao-script guard failures:\n"
-        + "\n".join("  " + p for p in problems)
+    assert not problems, "Glossary Lao-script guard failures:\n" + "\n".join(
+        "  " + p for p in problems
     )
 
 
 # ---------------------------------------------------------------------------
 # Idempotency checks
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.parametrize("filename", _VENUE_GLOSSARY_FILES)
 def test_to_repo_on_ascii_file_is_noop(filename):
@@ -226,10 +224,7 @@ def test_raw_safety_gap_ratchet():
         desc = (dish.get("description", "") or "").lower()
         name = (dish.get("name_en", "") or "").lower()
         dish_key = (dish.get("dish_key", "") or "").lower()
-        is_raw = any(
-            kw in desc or kw in name or kw in dish_key
-            for kw in raw_indicators
-        )
+        is_raw = any(kw in desc or kw in name or kw in dish_key for kw in raw_indicators)
         if not is_raw:
             continue
         phrase = dish.get("order_phrase_local", "")

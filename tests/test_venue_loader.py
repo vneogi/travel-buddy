@@ -141,7 +141,6 @@ class TestTripNodeBackwardCompat:
         assert node.geo_region == "vang_vieng_laos"
 
 
-
 class TestAllergenSafetyViolation:
     """SAFETY INVARIANT: suitable_for must not conflict with contains/may_contain."""
 
@@ -184,6 +183,7 @@ class TestDietaryVocabShared:
             VALID_DIETARY_LABELS,
             VALID_DIETARY_CONSTRAINTS,
         )
+
         # Sanity: these are frozensets with real content
         assert len(VALID_ALLERGENS) >= 14  # EU-14 minimum
         assert "dairy" in VALID_ALLERGENS
@@ -195,6 +195,7 @@ class TestDietaryVocabShared:
 
     def test_cross_field_check_catches_conflict(self):
         from config.dietary import check_allergen_conflicts
+
         conflicts = check_allergen_conflicts(
             suitable_for=["vegan"],
             contains=["dairy"],
@@ -205,6 +206,7 @@ class TestDietaryVocabShared:
 
     def test_cross_field_check_passes_valid(self):
         from config.dietary import check_allergen_conflicts
+
         conflicts = check_allergen_conflicts(
             suitable_for=["vegan", "gluten_free"],
             contains=[],

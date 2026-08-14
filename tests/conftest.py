@@ -15,6 +15,7 @@ History: The global scrubbing was added after a real JWT secret in .env
 caused test_auth.py to attempt real JWT validation instead of using the
 debug bypass. Do NOT remove the scrubbing -- scope it instead.
 """
+
 import os
 import sys
 from pathlib import Path
@@ -97,6 +98,7 @@ def real_supabase_env():
 def _seed_once():
     """Seed venue data once for the test session."""
     from seed_data import seed_venues
+
     seed_venues()
 
 

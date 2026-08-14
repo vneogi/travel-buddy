@@ -4,6 +4,7 @@ Asserts on what get_signal returns -- not on _compute_provenance's return value.
 The helper already works; testing it again would have missed the real bug (the
 return being discarded in the write path).
 """
+
 import sys
 import uuid
 from datetime import datetime, timedelta, timezone

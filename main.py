@@ -22,6 +22,7 @@ from fastapi.responses import JSONResponse
 
 from config.settings import settings
 from routers.trip_router import router as trip_router
+
 try:
     from routers.payment_router import router as payment_router
 except ImportError:
@@ -61,6 +62,7 @@ if settings.llm_debug:
 # Also suppress litellm's own verbose flag (separate from Python logging).
 try:
     import litellm
+
     litellm.set_verbose = bool(settings.llm_debug)
     litellm.suppress_debug_info = not settings.llm_debug
 except ImportError:
@@ -69,6 +71,7 @@ except ImportError:
 # ==============================================================================
 # Lifespan (replaces deprecated @app.on_event("startup"))
 # ==============================================================================
+
 
 @asynccontextmanager
 async def _lifespan(app):
@@ -146,6 +149,7 @@ app.include_router(debug_router)
 # Observability (SPEC-05)
 # ==============================================================================
 
+
 @app.middleware("http")
 async def request_context_middleware(request: Request, call_next):
     """Attach a request_id and log method/path/status/duration for every request."""
@@ -159,13 +163,20 @@ async def request_context_middleware(request: Request, call_next):
         duration_ms = int((time.perf_counter() - started) * 1000)
         logger.error(
             "%s %s -> EXCEPTION in %dms request_id=%s",
-            request.method, request.url.path, duration_ms, request_id,
+            request.method,
+            request.url.path,
+            duration_ms,
+            request_id,
         )
         raise
     duration_ms = int((time.perf_counter() - started) * 1000)
     logger.info(
         "%s %s -> %d in %dms request_id=%s",
-        request.method, request.url.path, response.status_code, duration_ms, request_id,
+        request.method,
+        request.url.path,
+        response.status_code,
+        duration_ms,
+        request_id,
     )
     response.headers["X-Request-ID"] = request_id
     return response
@@ -179,7 +190,11 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
     tb_str = "".join(tb)
     logger.error(
         "Unhandled %s on %s %s request_id=%s\n%s",
-        type(exc).__name__, request.method, request.url.path, request_id, tb_str,
+        type(exc).__name__,
+        request.method,
+        request.url.path,
+        request_id,
+        tb_str,
     )
     error_log.record(
         request_id=request_id,
@@ -203,7 +218,10 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     request_id = getattr(request.state, "request_id", "unknown")
     logger.warning(
         "Validation error on %s %s request_id=%s: %s",
-        request.method, request.url.path, request_id, exc.errors(),
+        request.method,
+        request.url.path,
+        request_id,
+        exc.errors(),
     )
     error_log.record(
         request_id=request_id,
@@ -217,11 +235,6 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         status_code=422,
         content={"detail": exc.errors(), "request_id": request_id},
     )
-
-
-
-
-
 
 
 @app.get("/")
@@ -242,6 +255,7 @@ async def root():
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(
         "main:app",
         host=settings.host,

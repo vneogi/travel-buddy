@@ -15,48 +15,52 @@ from __future__ import annotations
 # ===========================================================================
 # Based on EU-14 major allergens + common extensions for SEA cuisine
 
-VALID_ALLERGENS: frozenset[str] = frozenset({
-    # EU-14
-    "gluten",
-    "crustaceans",
-    "eggs",
-    "fish",
-    "peanuts",
-    "soybeans",
-    "dairy",        # aka milk/lactose
-    "tree_nuts",
-    "celery",
-    "mustard",
-    "sesame",
-    "sulphites",
-    "lupin",
-    "molluscs",
-    # SEA extensions
-    "shellfish",    # broader than crustaceans
-    "msg",
-    "shrimp_paste",
-    "fermented_fish",
-})
+VALID_ALLERGENS: frozenset[str] = frozenset(
+    {
+        # EU-14
+        "gluten",
+        "crustaceans",
+        "eggs",
+        "fish",
+        "peanuts",
+        "soybeans",
+        "dairy",  # aka milk/lactose
+        "tree_nuts",
+        "celery",
+        "mustard",
+        "sesame",
+        "sulphites",
+        "lupin",
+        "molluscs",
+        # SEA extensions
+        "shellfish",  # broader than crustaceans
+        "msg",
+        "shrimp_paste",
+        "fermented_fish",
+    }
+)
 
 
 # ===========================================================================
 # Dietary labels -- what a dish is SUITABLE_FOR
 # ===========================================================================
 
-VALID_DIETARY_LABELS: frozenset[str] = frozenset({
-    "vegan",
-    "vegetarian",
-    "pescatarian",
-    "halal",
-    "kosher",
-    "gluten_free",
-    "dairy_free",
-    "nut_free",
-    "egg_free",
-    "low_fodmap",
-    "keto",
-    "raw",
-})
+VALID_DIETARY_LABELS: frozenset[str] = frozenset(
+    {
+        "vegan",
+        "vegetarian",
+        "pescatarian",
+        "halal",
+        "kosher",
+        "gluten_free",
+        "dairy_free",
+        "nut_free",
+        "egg_free",
+        "low_fodmap",
+        "keto",
+        "raw",
+    }
+)
 
 
 # ===========================================================================
@@ -64,14 +68,20 @@ VALID_DIETARY_LABELS: frozenset[str] = frozenset({
 # ===========================================================================
 # Superset: includes both "I am X" (vegan) and "I avoid Y" (peanuts)
 
-VALID_DIETARY_CONSTRAINTS: frozenset[str] = VALID_DIETARY_LABELS | VALID_ALLERGENS | frozenset({
-    # Person-level constraints that aren't dish-level labels
-    "no_alcohol",
-    "no_pork",
-    "no_beef",
-    "no_raw_food",
-    "no_spicy",
-})
+VALID_DIETARY_CONSTRAINTS: frozenset[str] = (
+    VALID_DIETARY_LABELS
+    | VALID_ALLERGENS
+    | frozenset(
+        {
+            # Person-level constraints that aren't dish-level labels
+            "no_alcohol",
+            "no_pork",
+            "no_beef",
+            "no_raw_food",
+            "no_spicy",
+        }
+    )
+)
 
 
 # ===========================================================================
@@ -85,19 +95,35 @@ VALID_DIETARY_CONSTRAINTS: frozenset[str] = VALID_DIETARY_LABELS | VALID_ALLERGE
 # could cause an allergic reaction.
 
 LABEL_EXCLUDES_ALLERGENS: dict[str, frozenset[str]] = {
-    "vegan": frozenset({
-        "dairy", "eggs", "fish", "crustaceans", "shellfish",
-        "molluscs", "shrimp_paste", "fermented_fish",
-    }),
-    "vegetarian": frozenset({
-        "fish", "crustaceans", "shellfish", "molluscs",
-        "shrimp_paste", "fermented_fish",
-    }),
-    "pescatarian": frozenset({
-        # Pescatarian excludes land-animal meat but not fish/shellfish.
-        # No allergen-level exclusions needed here since allergens
-        # don't encode "meat" -- handled by category instead.
-    }),
+    "vegan": frozenset(
+        {
+            "dairy",
+            "eggs",
+            "fish",
+            "crustaceans",
+            "shellfish",
+            "molluscs",
+            "shrimp_paste",
+            "fermented_fish",
+        }
+    ),
+    "vegetarian": frozenset(
+        {
+            "fish",
+            "crustaceans",
+            "shellfish",
+            "molluscs",
+            "shrimp_paste",
+            "fermented_fish",
+        }
+    ),
+    "pescatarian": frozenset(
+        {
+            # Pescatarian excludes land-animal meat but not fish/shellfish.
+            # No allergen-level exclusions needed here since allergens
+            # don't encode "meat" -- handled by category instead.
+        }
+    ),
     "gluten_free": frozenset({"gluten"}),
     "dairy_free": frozenset({"dairy"}),
     "nut_free": frozenset({"peanuts", "tree_nuts"}),
@@ -126,8 +152,7 @@ def check_allergen_conflicts(
         violations = all_allergens & excluded
         if violations:
             conflicts.append(
-                f"suitable_for='{label}' conflicts with "
-                f"allergens {sorted(violations)}"
+                f"suitable_for='{label}' conflicts with allergens {sorted(violations)}"
             )
 
     return conflicts

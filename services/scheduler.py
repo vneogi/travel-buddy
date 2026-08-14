@@ -49,9 +49,9 @@ def reschedule_and_validate(nodes: List[TripNode]) -> ScheduleResult:
     for node in active:
         transit_min = 0
         if prev is not None and _has_coords(prev) and _has_coords(node):
-            transit_min = maps_service.get_transit_time(
-                prev.lat, prev.lng, node.lat, node.lng
-            )["duration_minutes"]
+            transit_min = maps_service.get_transit_time(prev.lat, prev.lng, node.lat, node.lng)[
+                "duration_minutes"
+            ]
 
         earliest = prev_end + timedelta(minutes=transit_min) if prev_end else None
 
