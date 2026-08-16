@@ -18,13 +18,13 @@ Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 
 | Area | Unverified since | Verify with |
 |---|---|---|
-| Migrations 0011 to 0018 | committed, never applied | apply against the live database, in order |
-| The five Supabase tests | never once executed | run the suite with `TB_SUPABASE_URL` set |
+| Migrations 0011 to 0018 | applied device day 2026-08-17 | VALIDATE on NOT VALID CHECKs still deferred; confirm via Step 7 |
+| The five Supabase tests | ran green 2026-08-17 | `280 passed` suite with TB_SUPABASE_URL; see finding below |
 | Flutter client | Aug 9 | `flutter analyze && flutter test` on a device |
 | PowerShell scripts | Aug 9 | `.\scripts\smoke-test.ps1` on Windows |
-| `hybrid_venue_search` geo_region parameter | unknown | compare the live function against `0001` |
-| Dubai row contents, including AED magnitudes | never | read them while connected |
-| `pg_description` non-ASCII | never | scan directly; no file guard can see the database |
+| `hybrid_venue_search` geo_region parameter | unknown | Step 7d signature read |
+| Dubai row contents, including AED magnitudes | never | Step 7b observe-only |
+| `pg_description` non-ASCII | never | Step 7c scan |
 
 The Supabase row is the largest single gap in the repo. Every claim about the
 Supabase write path currently rests on `FakeClient` doubles. R8 treats a
@@ -58,6 +58,16 @@ prose, so a reword silently disables it, and the spice keywords are spelled
 with PHAT where PHET is meant. The keyword spelling must be corrected together
 with the data, never separately, or the search stops matching today's text.
 
+
+## Finding -- Aug 17 2026 -- live pytest green: 280 passed
+
+Second Step 6 run after LF-normalizing working-tree `laos*.json`:
+`280 passed, 13 warnings in 58.42s`. Warnings include the five
+`tests/test_supabase_integration.py` cases (DeprecationWarning from the
+Supabase client) -- they ran with live creds and passed. Closes the
+long-standing "five Supabase tests have never run" gap for this day.
+Windows note: `git checkout -- data/*.json` alone did not clear CRLF;
+explicit Python `\r\n` -> `\n` rewrite did.
 
 ## Finding -- Aug 17 2026 -- first live pytest: 270 passed, 10 failed
 

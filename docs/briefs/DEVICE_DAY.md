@@ -2,20 +2,19 @@
 
 PowerShell 5.1. Canonical copy: `docs/briefs/DEVICE_DAY.md` on `origin/main`.
 
-## RESUME HERE (as of 2026-08-17, after Step 5 load + Step 6 pytest)
+## RESUME HERE (as of 2026-08-17, after green live pytest)
 
-Steps 0-5 done. Step 6 ran live: **270 passed, 10 failed**. The five
-Supabase integration tests are **not** among the failures (they ran with
-`TB_SUPABASE_URL` set). Fix the 10 failures below (pull), re-run pytest,
-then Step 5d spot-check + Steps 7-8.
+Steps 0-6 done. **Next: Step 5d hours spot-check, then Step 7 live checks
+in the Supabase SQL editor**, then Step 8 doc closeout.
 
 | Step | Status | Evidence |
 |---|---|---|
 | 0-3 | DONE | OpenAPI gate safe; durability on origin |
-| 4 Apply 0011-0018 | DONE (confirm) | SQL editor; confirm `identity_kind` if not pasted |
+| 4 Apply 0011-0018 | DONE (confirm) | SQL editor; paste `identity_kind` check if not yet |
 | 5 Re-load Laos | DONE | 58 venues upserted; 30 glossary rows |
-| 6 Pytest with live creds | PARTIAL | 270 passed / 10 failed -- see Step 6 notes; Supabase five ran |
-| 7 Live checks | pending | |
+| 5d Hours spot-check | NEXT | SQL below |
+| 6 Pytest with live creds | DONE | `280 passed, 13 warnings in 58.42s` (Supabase five ran) |
+| 7 Live checks | NEXT | SQL editor (preferred); record into AWAITING_VERIFICATION |
 | 8 Close day in docs | pending | |
 
 ### Pickup commands (any Windows machine)
@@ -421,6 +420,22 @@ pytest -q tests/test_data_format.py
 
 Re-run full `pytest -q -ra` after pull. Expect green or a new finding only.
 
+**Second live run (same day):** after LF fix on working-tree `laos*.json`,
+suite reported `280 passed, 13 warnings in 58.42s`. Step 6 closed.
+
+If `git checkout -- data/*.json` still leaves CRLF on Windows, force LF:
+
+```powershell
+python -c "from pathlib import Path; `$n=0
+for p in Path('data').glob('laos*.json'):
+ b=p.read_bytes(); n=b.replace(b'\r\n',b'\n').replace(b'\r',b'\n')
+ if n!=b: p.write_bytes(n); print('fixed', p.name)
+"
+```
+
+Do not commit those line-ending-only edits unless `git diff` shows real
+content changes.
+
 Optional companion smoke (API must be running):
 
 ```powershell
@@ -430,6 +445,54 @@ Optional companion smoke (API must be running):
 ---
 
 ## Step 7 -- live checks (record results)
+
+**Preferred: Supabase SQL editor.** Run each block separately; paste result
+rows (or row counts) into chat / `docs/AWAITING_VERIFICATION.md`. `psql` is
+optional fallback (no `-U postgres`).
+
+### 7a. price_band distinct values
+
+```sql
+SELECT 'venue_dish' AS src, price_band, count(*)
+FROM venue_dish GROUP BY 1, 2 ORDER BY 1, 2;
+
+SELECT 'venues_rag' AS src, price_band, count(*)
+FROM venues_rag GROUP BY 1, 2 ORDER BY 1, 2;
+```
+
+### 7b. Dubai dishes (observe only; do not backfill)
+
+```sql
+SELECT vd.name, vd.price_local, vd.currency_code, vd.price_band, v.name AS venue
+FROM venue_dish vd
+JOIN venues_rag v ON v.venue_id = vd.venue_id
+WHERE v.geo_region LIKE '%dubai%'
+ORDER BY vd.price_local NULLS LAST
+LIMIT 50;
+```
+
+### 7c. pg_description non-ASCII (0016 confirmation)
+
+```sql
+SELECT c.relname, a.attname, d.description
+FROM pg_catalog.pg_description d
+JOIN pg_catalog.pg_class c ON c.oid = d.objoid
+LEFT JOIN pg_catalog.pg_attribute a
+  ON a.attrelid = c.oid AND a.attnum = d.objsubid
+WHERE c.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public')
+  AND d.description ~ '[^[:ascii:]]';
+```
+
+### 7d. hybrid_venue_search signature
+
+```sql
+SELECT pg_get_function_identity_arguments(p.oid) AS args
+FROM pg_proc p
+JOIN pg_namespace n ON n.oid = p.pronamespace
+WHERE n.nspname = 'public' AND p.proname = 'hybrid_venue_search';
+```
+
+### Optional psql one-shot (same queries)
 
 ```powershell
 $sqlFile = Join-Path $env:TEMP 'tb_device_day_checks.sql'

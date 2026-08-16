@@ -38,10 +38,9 @@
   scripts/format_venue_json.py to get a readable copy for curation and to
   re-escape on the way back in.
 - Test health: run `pytest -q -ra`. Counts are deliberately not recorded here
-  (R16). The expected skips are the live-database tests in
-  tests/test_supabase_integration.py, which skip when TB_SUPABASE_URL is unset.
-  Any other skip is a finding, not a pass (R8). Those five have never once run
-  with credentials, which is itself a finding -- see Known Risks.
+  (R16). The live-database tests in tests/test_supabase_integration.py skip
+  when TB_SUPABASE_URL is unset; with credentials they ran green on device day
+  2026-08-17. Any unexpected skip is a finding, not a pass (R8).
 
 ## Component Status
 
@@ -49,14 +48,14 @@
 |-----------|--------|-------|
 | Supabase persistence | LIVE | db_provider auto-resolves; falls back to in-memory |
 | Migrations 0001-0010 | APPLIED | 0005 entity_ref generalization, 0007 RLS, 0008 hours JSONB, 0009 dish price, 0010 glossary |
-| Migration 0011 | COMMITTED, UNAPPLIED | Complete. Eight additive columns: typical_dwell_minutes, indoor_outdoor, price_band, has_aircon, nearest_landmark, wheelchair_notes, and names_local plus landmarks_local as JSONB. Gated on the live schema dump, not on further authoring |
-| Migration 0012 venue_external_id | COMMITTED, UNAPPLIED | Maps a venue to Wikidata, OSM, Google and Foursquare identifiers, unique on (source, external_id). Roadmap concern 2 |
-| Migration 0013 taxonomy_term | COMMITTED, UNAPPLIED | Versions the controlled vocabulary across ten taxonomies, seeded from the venue and dish data. Roadmap concern 6 |
-| Migration 0014 itinerary normalisation | COMMITTED, UNAPPLIED | Creates trip_node and trip_edge. node_id and edge_id are TEXT, which matches the 8-character hex IDs the application generates. The earlier UUID declaration would have failed every Supabase trip save; fixed in 7c20b5f, along with extracting both ID generators into models/ids.py |
-| Migration 0015 drift fixes | COMMITTED, UNAPPLIED | Four fixes: venue_dish.price_band CHECK realigned to the taxonomy_term seed, venue_dish.names_local JSONB with a backfill, venue_dish.currency_code plus an explicit minor-unit rule, and embedding_model on venues_rag and cached_responses. Not purely additive, since it drops and re-adds a CHECK, but the new CHECK is NOT VALID and the backfill is scoped to the Laos regions by joining venues_rag. Both preconditions were cleared in f012253; two follow-ups remain rather than blockers |
-| Migration 0016 comment fixes | COMMITTED, UNAPPLIED | Comments only, no schema change, idempotent. Re-issues the dish_glossary table comment in ASCII, because 0010 was applied while it held an em-dash and editing the 0010 file corrected future builds without touching the live pg_description. Also rewrites the suitable_for column comment to record the SPEC-14 retirement, so the database stops documenting a claim we no longer make |
-| Migration 0017 venues_rag price_band | COMMITTED, UNAPPLIED | Adds the CHECK that 0011 omitted, NOT VALID so it cannot abort on live rows, with the VALIDATE line commented out for after the distinct values are read. Paired with a test that compares the CHECK terms against the taxonomy_term seed as sets rather than by substring |
-| Migration 0018 anonymous identity | COMMITTED, UNAPPLIED | Adds identity_kind to user_tiers, defaulting to unknown rather than anonymous so it asserts nothing about rows nobody verified, with a CHECK over anonymous, supabase and unknown. Written by upgrade-on-sight in both backends: a known kind promotes a lesser one and nothing ever demotes, so call ordering cannot strand a row as unknown. In the Supabase backend the promotion UPDATE carries an in_ filter naming the strictly-lower kinds, so correctness lives in the statement rather than in a read-then-write that two threads can interleave |
+| Migration 0011 | APPLIED (device day 2026-08-17) | Eight additive columns; OpenAPI gate cleared (no name_local dual column) |
+| Migration 0012 venue_external_id | APPLIED (device day 2026-08-17) | Maps a venue to Wikidata, OSM, Google and Foursquare identifiers, unique on (source, external_id). Roadmap concern 2 |
+| Migration 0013 taxonomy_term | APPLIED (device day 2026-08-17) | Versions the controlled vocabulary across ten taxonomies, seeded from the venue and dish data. Roadmap concern 6 |
+| Migration 0014 itinerary normalisation | APPLIED (device day 2026-08-17) | Creates trip_node and trip_edge. node_id and edge_id are TEXT, which matches the 8-character hex IDs the application generates |
+| Migration 0015 drift fixes | APPLIED (device day 2026-08-17) | price_band CHECK NOT VALID; names_local backfill; currency_code; embedding_model. VALIDATE deferred |
+| Migration 0016 comment fixes | APPLIED (device day 2026-08-17) | Comments only; confirm pg_description ASCII in Step 7 |
+| Migration 0017 venues_rag price_band | APPLIED (device day 2026-08-17) | NOT VALID CHECK; VALIDATE deferred until distinct-value read |
+| Migration 0018 anonymous identity | APPLIED (device day 2026-08-17) | identity_kind on user_tiers |
 | Venue loader | REPAIRED, CARRIES EVERY FIELD | Pure ASCII, vocabulary restored, geo_region inferred from the file wrapper. Payload built once in build_venue_record; insert and update derive from it so they cannot drift apart |
 | Loader payload guard | DONE | A test asserts build_venue_record's key set equals VENUES_RAG_WRITE_COLUMNS, and build_dish_record does the same for venue_dish against VENUE_DISH_WRITE_COLUMNS. The earlier guards watched the declaration only, which is how four fields were dropped while the suite stayed green |
 | External-id writer | DONE | upsert_venues writes venue_external_id for every venue carrying a verified name reference, and the test drives upsert_venues rather than the helper, which is the distinction that let the first attempt land as dead code |
@@ -116,11 +115,11 @@ SPEC-02 plus SPEC-12.
    docs/briefs/DEVICE_DAY.md. Step 2 durability landed as
    data/dubai_uae_raw_snapshot.json (6bfa1c6): 16 venues, not_loader_source.
    Loader-valid data/dubai_uae.json is still owed (null 0011 fields + Dubai
-   vocabulary outside the Laos-era loader sets). Step 3 OpenAPI gate passed
-   (22 venues_rag columns; no name_local/names_local; safe for 0011).
-   Continue from Step 4: apply 0011 to 0018 in the Supabase SQL editor
-   (preferred; psql optional), re-load Laos, pytest with TB_SUPABASE_URL,
-   record live checks.
+   vocabulary outside the Laos-era loader sets). Step 3 OpenAPI gate passed.
+   Migrations 0011-0018 applied via SQL editor. Laos re-loaded (58 venues,
+   30 glossary). Live pytest: 280 passed (five Supabase integration tests
+   included). Continue: Step 5d hours spot-check, Step 7 live SQL checks,
+   Step 8 doc closeout.
 2. SPEC-09 client half: UUID on first launch, secure storage, Anonymous
    header, drop TB_DEBUG_USER_ID. Server half is done; this is what gates a
    tester build.
@@ -169,7 +168,7 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 |-------|----------|--------|
 | Anonymous data has no path into an account, and signal sits outside referential integrity | Medium | SPEC-09 starts accumulating trip_states, event_log and signal rows under a device UUID that belongs to a device rather than a person. Until SPEC-24 exists, the first sign-in strands all of it, and from the user's side that looks like an app that lost their trip. The schema makes it sharper: trip_states.user_id and event_log.user_id are UUID REFERENCES user_tiers, while signal.user_id is TEXT with no foreign key and no type match, so the table holding the asset is the one table outside the constraint system. Neither a merge nor a SPEC-27 deletion can rely on a cascade, and nothing will complain when a future table is missed -- which is why both specs walk the schema instead of keeping a list. The engineering does not get harder with time; the data does |
 | observed_duration_minutes has no writer | Medium | The column exists and is honestly documented as starting empty, but nothing populates it. It cannot be computed when a trip is saved, only derived from arrival signals on sync, so the transition data the convenience layer depends on is not accumulating. This is the last open defect from the SPEC-16 work |
-| The five Supabase tests have never run | Medium | tests/test_supabase_integration.py skips without TB_SUPABASE_URL, and no run has ever had it set. Every claim about the Supabase write path rests on FakeClient doubles. R8 treats a permanent skip as a finding, and this is the largest one. Run the suite with credentials on the next device day |
+| The five Supabase tests have never run | Closed Aug 17 2026 | Live device-day pytest: 280 passed including tests/test_supabase_integration.py with TB_SUPABASE_URL set |
 | Non-Laos local dish names remain unbackfilled | Low | 0015's names_local backfill is correctly scoped to the three Laos regions, so any Dubai dish carrying a name_local keeps a null names_local rather than a wrong language tag. That is the right trade, but it leaves a second pass owed once the Dubai rows are exported and their language confirmed |
 | deploy fails: there is no deployment target | Medium | ci.yml chains lint, test, build and deploy, each needing the one before, and lint failed on every run as far back as the retained history, so build and deploy had never executed once in the life of this repository. Both ran for the first time on 8ed6c16. build passed and pushed an image to the container registry, which is the first artifact this project has ever produced. deploy failed after one second at the Railway step, which needs a RAILWAY_TOKEN secret and a service named travel-buddy-api; the health check reads a PRODUCTION_URL secret. Nothing here is a regression -- it is scaffolding written early and never once exercised. Resolved by gating: deploy now requires workflow_dispatch, so main stays green and deploying becomes a deliberate act from the Actions tab once a target exists. build still runs on every push to main, so the image is proven continuously and only the release step is manual. Left ungated it would have made main permanently red, which is the exact condition that let lint stay broken and unnoticed for a week |
 | Signal provenance was silently unwritten until today | Low | _compute_provenance computed clock skew and its return was discarded, while both backends defaulted provenance to a constant. So clock_skew_seconds was never persisted for any signal and SPEC-02 Part C was unmet in the live write path. Fixed and guarded by a test that drives the ingest endpoint rather than the storage layer. Recorded because the gap was invisible for months: nothing failed, the column had a default, and the only symptom was analytics that could not exist |
