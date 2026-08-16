@@ -59,6 +59,16 @@ with PHAT where PHET is meant. The keyword spelling must be corrected together
 with the data, never separately, or the search stops matching today's text.
 
 
+## Finding -- Aug 17 2026 -- Step 5 real load blocked on env name mismatch
+
+Laos dry-runs passed (58 venues / 44 dishes; 2 expected market warnings).
+Real `load_venues.py` failed at embedding: LiteLLM/OpenAI SDK required
+`OPENAI_API_KEY` while `.env` carries `TB_LITELLM_API_KEY`. Real
+`load_dish_glossary.py` failed looking for `TB_SUPABASE_SERVICE_KEY` while
+canonical `.env.example` name is `TB_SUPABASE_KEY`. Fixed in loaders (map /
+accept aliases) and DEVICE_DAY Step 5a preflight. Re-run after pull; no DB
+writes from the failed venue attempt (crashed before upsert).
+
 ## Finding -- Aug 17 2026 -- empty venues_rag column dump must not unlock 0011
 
 On device day Step 3b, `psql ... -U postgres` prompted for a password and the

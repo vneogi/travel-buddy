@@ -2,10 +2,12 @@
 
 PowerShell 5.1. Canonical copy: `docs/briefs/DEVICE_DAY.md` on `origin/main`.
 
-## RESUME HERE (as of 2026-08-17, after OpenAPI 0011 gate)
+## RESUME HERE (as of 2026-08-17, Step 5 env bridge)
 
-Steps 0-3 are done. **Start at Step 4** -- apply migrations in the
-**Supabase SQL editor** (preferred). `psql` is optional fallback only.
+Steps 0-4 assumed done (migrations via SQL editor). Dry-runs for Laos passed.
+Real load failed once: LiteLLM needed `OPENAI_API_KEY` / `TB_LITELLM_API_KEY`,
+and glossary wanted `TB_SUPABASE_SERVICE_KEY` while `.env` uses
+`TB_SUPABASE_KEY`. **Pull, run Step 5a preflight, then 5c.**
 
 | Step | Status | Evidence |
 |---|---|---|
@@ -13,8 +15,8 @@ Steps 0-3 are done. **Start at Step 4** -- apply migrations in the
 | 1 Live snapshot | DONE | `data/live_snapshot/20260816T174110Z` (gitignored; laptop-local) |
 | 2 Dubai durability | DONE | `data/dubai_uae_raw_snapshot.json` on `origin/main` at `6bfa1c6` -- 16 venues, `not_loader_source: true` |
 | 3 Schema dump / 0011 gate | DONE | OpenAPI: 22 `venues_rag` columns; no `name_local` / `names_local`; DECISION: safe |
-| 4 Apply 0011-0018 | NEXT | Prefer Supabase SQL editor (Step 4 primary). Stop on first error |
-| 5 Re-load Laos | pending | |
+| 4 Apply 0011-0018 | DONE (confirm) | SQL editor; confirm `identity_kind` if not already pasted |
+| 5 Re-load Laos | NEXT | Dry-run OK; real load needs 5a then 5c |
 | 6 Pytest with live creds | pending | |
 | 7 Live checks | pending | |
 | 8 Close day in docs | pending | |
@@ -301,7 +303,39 @@ foreach ($f in $files) {
 ---
 ## Step 5 -- re-load Laos venues and glossary
 
-Dry run first:
+Dry-run does **not** need embedding or write keys. A real load does.
+
+### 5a. Env preflight (before real load)
+
+Re-load `.env` into this PowerShell process (pickup block at top), then:
+
+```powershell
+# Presence only -- do not print secret values
+@(
+  'TB_SUPABASE_URL',
+  'TB_SUPABASE_KEY',
+  'TB_LITELLM_API_KEY',
+  'OPENAI_API_KEY'
+) | ForEach-Object {
+    $v = [Environment]::GetEnvironmentVariable($_)
+    "{0} present={1}" -f $_, [bool]$v
+}
+if (-not $env:TB_SUPABASE_URL) { throw "TB_SUPABASE_URL missing" }
+if (-not $env:TB_SUPABASE_KEY) { throw "TB_SUPABASE_KEY missing (service_role)" }
+if (-not $env:TB_LITELLM_API_KEY -and -not $env:OPENAI_API_KEY) {
+    throw "TB_LITELLM_API_KEY (or OPENAI_API_KEY) missing -- needed for embeddings"
+}
+# Bridge if .env only has the project name (loaders also do this after pull):
+if (-not $env:OPENAI_API_KEY -and $env:TB_LITELLM_API_KEY) {
+    $env:OPENAI_API_KEY = $env:TB_LITELLM_API_KEY
+}
+```
+
+If `TB_LITELLM_API_KEY` is absent from `.env`, add the OpenAI key there (same
+value LiteLLM uses for `text-embedding-3-small`), re-run the pickup `.env`
+loader, then re-check presence.
+
+### 5b. Dry run
 
 ```powershell
 python scripts/load_venues.py `
@@ -315,7 +349,9 @@ python scripts/load_dish_glossary.py data/laos_dish_glossary.json --dry-run
 if ($LASTEXITCODE -ne 0) { throw "glossary dry-run failed" }
 ```
 
-Then real load (writes embeddings -- needs OpenAI / LiteLLM key in the env):
+Two warnings about markets with no dishes are expected and non-blocking.
+
+### 5c. Real load
 
 ```powershell
 python scripts/load_venues.py `
@@ -328,7 +364,19 @@ python scripts/load_dish_glossary.py data/laos_dish_glossary.json
 if ($LASTEXITCODE -ne 0) { throw "glossary load failed" }
 ```
 
-Spot-check opening hours no longer null for Laos:
+### 5d. Spot-check opening hours (SQL editor if no psql)
+
+```sql
+SELECT geo_region,
+       count(*) AS venues,
+       count(opening_hours_structured) AS with_hours
+FROM venues_rag
+WHERE geo_region LIKE '%laos%'
+GROUP BY 1
+ORDER BY 1;
+```
+
+Or with psql (no `-U postgres`):
 
 ```powershell
 psql $env:TB_DATABASE_URL -c "SELECT geo_region, count(*) AS venues, count(opening_hours_structured) AS with_hours FROM venues_rag WHERE geo_region LIKE '%laos%' GROUP BY 1 ORDER BY 1;"

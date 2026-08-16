@@ -223,15 +223,25 @@ def main() -> int:
         return 0
 
     # --- Supabase client ---
-    url = os.environ.get("TB_SUPABASE_URL") or os.environ.get("SUPABASE_URL", "")
-    key = os.environ.get("TB_SUPABASE_SERVICE_KEY") or os.environ.get(
-        "SUPABASE_SERVICE_ROLE_KEY", ""
+    # Canonical name in .env.example is TB_SUPABASE_KEY (service_role). Also
+    # accept TB_SUPABASE_SERVICE_KEY / SUPABASE_* aliases used in older docs.
+    url = (
+        os.environ.get("TB_SUPABASE_URL")
+        or os.environ.get("SUPABASE_URL")
+        or ""
+    )
+    key = (
+        os.environ.get("TB_SUPABASE_KEY")
+        or os.environ.get("TB_SUPABASE_SERVICE_KEY")
+        or os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+        or ""
     )
 
     if not url or not key:
         print(
-            "ERROR: Set TB_SUPABASE_URL and TB_SUPABASE_SERVICE_KEY "
-            "(or SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)",
+            "ERROR: Set TB_SUPABASE_URL and TB_SUPABASE_KEY "
+            "(service_role). Aliases: TB_SUPABASE_SERVICE_KEY, "
+            "SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.",
             file=sys.stderr,
         )
         return 1

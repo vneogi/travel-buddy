@@ -618,6 +618,15 @@ def embed_batch(texts: list[str]) -> list[list[float]]:
     """Generate embeddings using text-embedding-3-small via LiteLLM."""
     import litellm
 
+    # Project .env uses TB_LITELLM_API_KEY; LiteLLM/OpenAI SDK read OPENAI_API_KEY.
+    if not os.environ.get("OPENAI_API_KEY") and os.environ.get("TB_LITELLM_API_KEY"):
+        os.environ["OPENAI_API_KEY"] = os.environ["TB_LITELLM_API_KEY"]
+    if not os.environ.get("OPENAI_API_KEY"):
+        raise SystemExit(
+            "ERROR: Set TB_LITELLM_API_KEY (or OPENAI_API_KEY) before a real load. "
+            "Dry-run does not need it."
+        )
+
     response = litellm.embedding(
         model="text-embedding-3-small",
         input=texts,
