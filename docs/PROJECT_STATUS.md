@@ -27,13 +27,10 @@
 - Flutter: offline-first with a SQLite outbox, sync engine, and typed exception
   hierarchy. Signal emission is wired for most but not all registered types --
   see the SPEC-07 row below.
-- Migrations 0011 to 0018 are committed and unapplied, and all eight are now
-  applicable. 0011 is the only one still gated, on a live schema dump and diff,
-  because the live schema carries hand-made columns. 0014's UUID defect and
-  0015's two preconditions were fixed in 7c20b5f and f012253. 0015 remains the
-  only one that is not purely additive, since it drops and re-adds a CHECK, but
-  the new CHECK is added NOT VALID and so cannot abort on existing rows. 0016 is
-  comments only.
+- Migrations 0011 to 0018 are applied on the hosted database (device day
+  2026-08-17, Supabase SQL editor). 0011 was gated on a live OpenAPI schema
+  dump (no name_local dual-column conflict). 0015/0017 CHECKs remain NOT
+  VALID until a deliberate VALIDATE after distinct-value review.
 - Every file under data/ is ASCII-escaped, and a guard enforces it. Use
   scripts/format_venue_json.py to get a readable copy for curation and to
   re-escape on the way back in.
