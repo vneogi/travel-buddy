@@ -1,0 +1,3 @@
+# Keep curated JSON LF on all platforms so byte-identical round-trip
+# tests (tests/test_data_format.py) do not fail under core.autocrlf=true.
+data/*.json text eol=lf

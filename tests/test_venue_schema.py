@@ -139,6 +139,11 @@ def test_no_silent_key_drop():
     all_keys: set = set()
     for json_file in sorted(DATA_DIR.glob("*.json")):
         data = json.loads(json_file.read_text(encoding="utf-8"))
+        # Raw PostgREST dumps are durability artifacts, not loader input
+        # (e.g. dubai_uae_raw_snapshot.json). Their live-row key set must not
+        # widen INTENTIONALLY_NOT_PERSISTED or VENUES_RAG_WRITE_COLUMNS.
+        if isinstance(data, dict) and data.get("not_loader_source") is True:
+            continue
         # Unwrap dict wrapper if present
         if isinstance(data, dict):
             venues = next(

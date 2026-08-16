@@ -59,6 +59,25 @@ with PHAT where PHET is meant. The keyword spelling must be corrected together
 with the data, never separately, or the search stops matching today's text.
 
 
+## Finding -- Aug 17 2026 -- first live pytest: 270 passed, 10 failed
+
+Step 5 real load succeeded (58 Laos venues, 30 glossary). Step 6 with
+`TB_SUPABASE_URL` set: 270 passed, 10 failed, 13 warnings. The five tests in
+`tests/test_supabase_integration.py` appear in the warnings list and are
+absent from FAILED -- treated as ran-and-passed (R8: not skipped for missing
+URL).
+
+Failures classified:
+
+- 8x `test_data_format` byte-identity: working-tree CRLF vs LF serializers
+  (Windows `core.autocrlf`). Mitigation: `.gitattributes` `data/*.json
+  text eol=lf` + renormalize on the laptop.
+- `test_no_unexpected_non_ascii`: R14 arrows in DEVICE_DAY /
+  ENGINEERING_RULES (fixed to `->` / `=>`).
+- `test_no_silent_key_drop`: `dubai_uae_raw_snapshot.json` live-row keys
+  (`created_at`, `source_url`, `trap_score`, `updated_at`). Guard now skips
+  files with `not_loader_source: true`.
+
 ## Finding -- Aug 17 2026 -- Step 5 real load blocked on env name mismatch
 
 Laos dry-runs passed (58 venues / 44 dishes; 2 expected market warnings).

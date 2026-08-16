@@ -2,22 +2,19 @@
 
 PowerShell 5.1. Canonical copy: `docs/briefs/DEVICE_DAY.md` on `origin/main`.
 
-## RESUME HERE (as of 2026-08-17, Step 5 env bridge)
+## RESUME HERE (as of 2026-08-17, after Step 5 load + Step 6 pytest)
 
-Steps 0-4 assumed done (migrations via SQL editor). Dry-runs for Laos passed.
-Real load failed once: LiteLLM needed `OPENAI_API_KEY` / `TB_LITELLM_API_KEY`,
-and glossary wanted `TB_SUPABASE_SERVICE_KEY` while `.env` uses
-`TB_SUPABASE_KEY`. **Pull, run Step 5a preflight, then 5c.**
+Steps 0-5 done. Step 6 ran live: **270 passed, 10 failed**. The five
+Supabase integration tests are **not** among the failures (they ran with
+`TB_SUPABASE_URL` set). Fix the 10 failures below (pull), re-run pytest,
+then Step 5d spot-check + Steps 7-8.
 
 | Step | Status | Evidence |
 |---|---|---|
-| 0 Pull + env | DONE | Creds loaded; deps installed |
-| 1 Live snapshot | DONE | `data/live_snapshot/20260816T174110Z` (gitignored; laptop-local) |
-| 2 Dubai durability | DONE | `data/dubai_uae_raw_snapshot.json` on `origin/main` at `6bfa1c6` -- 16 venues, `not_loader_source: true` |
-| 3 Schema dump / 0011 gate | DONE | OpenAPI: 22 `venues_rag` columns; no `name_local` / `names_local`; DECISION: safe |
-| 4 Apply 0011-0018 | DONE (confirm) | SQL editor; confirm `identity_kind` if not already pasted |
-| 5 Re-load Laos | NEXT | Dry-run OK; real load needs 5a then 5c |
-| 6 Pytest with live creds | pending | |
+| 0-3 | DONE | OpenAPI gate safe; durability on origin |
+| 4 Apply 0011-0018 | DONE (confirm) | SQL editor; confirm `identity_kind` if not pasted |
+| 5 Re-load Laos | DONE | 58 venues upserted; 30 glossary rows |
+| 6 Pytest with live creds | PARTIAL | 270 passed / 10 failed -- see Step 6 notes; Supabase five ran |
 | 7 Live checks | pending | |
 | 8 Close day in docs | pending | |
 
@@ -246,7 +243,7 @@ error; record the file name and message in chat or
 
 ### How to apply each file
 
-1. Open the hosted Supabase project → **SQL Editor** → New query.
+1. Open the hosted Supabase project -> **SQL Editor** -> New query.
 2. On the laptop, open the migration file under `supabase\migrations\` in an
    editor, copy **the entire file** (including comments).
 3. Paste into the SQL editor and Run.
@@ -267,7 +264,7 @@ Expect exactly one row. Then continue to Step 5.
 
 | # | File | Notes |
 |---|---|---|
-| 1 | `supabase/migrations/0011_venues_rag_missing_columns.sql` | `typical_dwell_minutes` / `indoor_outdoor` / `price_band` already live → `IF NOT EXISTS` no-ops; still adds `has_aircon`, `names_local`, `nearest_landmark`, `landmarks_local`, `wheelchair_notes` |
+| 1 | `supabase/migrations/0011_venues_rag_missing_columns.sql` | `typical_dwell_minutes` / `indoor_outdoor` / `price_band` already live -> `IF NOT EXISTS` no-ops; still adds `has_aircon`, `names_local`, `nearest_landmark`, `landmarks_local`, `wheelchair_notes` |
 | 2 | `supabase/migrations/0012_venue_external_id.sql` | |
 | 3 | `supabase/migrations/0013_taxonomy_term.sql` | |
 | 4 | `supabase/migrations/0014_itinerary_normalisation.sql` | |
@@ -396,6 +393,33 @@ pytest -q -ra
 Record the summary line including skips. The five tests in
 `tests/test_supabase_integration.py` must not skip for missing URL. Any
 failure is a finding -- do not re-label it as environmental without evidence.
+
+### Known Windows failures from first live run (2026-08-17)
+
+First live suite: **270 passed, 10 failed**. Supabase five ran (present in
+warnings, absent from FAILED list). Classify before re-running:
+
+1. **8x `test_data_format` CRLF** -- working tree has `\r\n` under
+   `core.autocrlf`; serializers emit `\n`. Repo now has `.gitattributes`
+   (`data/*.json text eol=lf`). After pull:
+
+```powershell
+git add --renormalize data
+git status
+# If data/*.json show as modified, restore LF from index:
+git checkout -- data/*.json
+python -c "from pathlib import Path; p=Path('data/laos_luang_prabang.json'); print('CRLF' if b'\r\n' in p.read_bytes()[:40] else 'LF')"
+# Expect: LF
+pytest -q tests/test_data_format.py
+```
+
+2. **`test_no_unexpected_non_ascii`** -- R14 arrows in DEVICE_DAY /
+   ENGINEERING_RULES (`->` / `=>` fixed on origin).
+
+3. **`test_no_silent_key_drop`** -- raw Dubai dump keys were scanned as if
+   loader-sourced. Test now skips `not_loader_source: true` files.
+
+Re-run full `pytest -q -ra` after pull. Expect green or a new finding only.
 
 Optional companion smoke (API must be running):
 

@@ -373,7 +373,7 @@ reintroduced.
   a substring check cannot.
 - A negative observation ("X not found") is only meaningful if the scan
   actually ran over a real population. Empty input, auth failure text, or a
-  missing required key must refuse before the "not found ⇒ safe" branch.
+  missing required key must refuse before the "not found => safe" branch.
 - A guard hardcoded to one filename does not cover the next file. If the
   claim is "this can never happen again", the guard has to scan for the
   pattern rather than check the one place it is known to occur.
