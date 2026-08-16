@@ -142,18 +142,25 @@ Pitfall: `$env:SNAP = "data\live_snapshot\STAMP"` is a placeholder -- replace
 
 ## Step 3 -- schema dump and 0011 dual-column decision (START HERE)
 
-PostgREST OpenAPI is in `$env:SNAP\_live_schema.json` if SNAP points at a
-local stamp. The SQL dumps below are mandatory either way.
+`psql` is optional. Prefer the OpenAPI path below when `psql` is not on PATH
+(common on the Windows laptop). The dual-column gate only needs the live
+column *names* for `venues_rag`.
+
+### 3a. Column dump without psql (preferred when psql is missing)
+
+Needs a local stamp under `data/live_snapshot/` (gitignored). If missing,
+re-run `python scripts/export_live_snapshot.py` first and set `$env:SNAP`.
 
 ```powershell
+# If the original stamp still exists:
+$env:SNAP = "data\live_snapshot\20260816T174110Z"
+# Otherwise re-export and paste the new stamp name instead of STAMP:
+# python scripts/export_live_snapshot.py
+# $env:SNAP = "data\live_snapshot\PASTE_STAMP_HERE"
+
 $colFile = Join-Path $env:TEMP 'tb_venues_rag_columns.txt'
-$descFile = Join-Path $env:TEMP 'tb_pg_description.txt'
-
-psql $env:TB_DATABASE_URL -v ON_ERROR_STOP=1 -A -F "`t" -c "SELECT column_name, data_type, udt_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'venues_rag' ORDER BY ordinal_position;" | Set-Content -Encoding ascii $colFile
-if ($LASTEXITCODE -ne 0) { throw "column dump failed" }
-
-psql $env:TB_DATABASE_URL -v ON_ERROR_STOP=1 -A -F "`t" -c "SELECT c.relname AS table_name, coalesce(a.attname, '') AS column_name, d.description FROM pg_catalog.pg_description d JOIN pg_catalog.pg_class c ON c.oid = d.objoid LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid = c.oid AND a.attnum = d.objsubid WHERE c.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public') ORDER BY 1, 2;" | Set-Content -Encoding ascii $descFile
-if ($LASTEXITCODE -ne 0) { throw "pg_description dump failed" }
+python scripts/device_day_schema_from_openapi.py $env:SNAP --out $colFile
+if ($LASTEXITCODE -ne 0) { throw "openapi column dump failed" }
 
 python scripts/device_day_name_column_decision.py $colFile
 if ($LASTEXITCODE -ne 0) {
@@ -162,7 +169,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 ```
 
-Optional OpenAPI diff against 0011 ADD COLUMN names (needs a local stamp):
+Optional OpenAPI diff against 0011 ADD COLUMN names:
 
 ```powershell
 @"
@@ -183,6 +190,28 @@ print('live columns not in 0011 add-set (sample):', sorted(live_cols - wanted)[:
 python "$env:TEMP\tb_openapi_diff.py"
 ```
 
+### 3b. Column + comment dump with psql (if installed later)
+
+```powershell
+$colFile = Join-Path $env:TEMP 'tb_venues_rag_columns.txt'
+$descFile = Join-Path $env:TEMP 'tb_pg_description.txt'
+
+psql $env:TB_DATABASE_URL -v ON_ERROR_STOP=1 -A -F "`t" -c "SELECT column_name, data_type, udt_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'venues_rag' ORDER BY ordinal_position;" | Set-Content -Encoding ascii $colFile
+if ($LASTEXITCODE -ne 0) { throw "column dump failed" }
+
+psql $env:TB_DATABASE_URL -v ON_ERROR_STOP=1 -A -F "`t" -c "SELECT c.relname AS table_name, coalesce(a.attname, '') AS column_name, d.description FROM pg_catalog.pg_description d JOIN pg_catalog.pg_class c ON c.oid = d.objoid LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid = c.oid AND a.attnum = d.objsubid WHERE c.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public') ORDER BY 1, 2;" | Set-Content -Encoding ascii $descFile
+if ($LASTEXITCODE -ne 0) { throw "pg_description dump failed" }
+
+python scripts/device_day_name_column_decision.py $colFile
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "STOP: do not apply 0011 as-is. Record the finding in docs/AWAITING_VERIFICATION.md"
+    throw "0011 dual-column gate failed"
+}
+```
+
+`pg_description` (comment scan) still needs SQL. Defer it to Step 7 and run
+those queries in the Supabase SQL editor if `psql` stays unavailable.
+
 If the decision is "do not apply 0011 as-is", stop. Do not proceed to Step 4.
 Paste the decision script output into chat or AWAITING_VERIFICATION before
 applying anything.
@@ -193,6 +222,27 @@ applying anything.
 
 Only after Step 2 durability is on `origin/main` (met) and Step 3 decision
 is "safe".
+
+### 4a. Without psql -- Supabase SQL editor
+
+1. Open the hosted project SQL editor.
+2. For each file below, paste the full file contents and run, in order.
+   Stop on the first error; record the file name and message.
+3. After 0018, run: `SELECT column_name FROM information_schema.columns WHERE table_name = 'user_tiers' AND column_name = 'identity_kind';`
+   Expect one row.
+
+Files in order:
+
+- `supabase/migrations/0011_venues_rag_missing_columns.sql`
+- `supabase/migrations/0012_venue_external_id.sql`
+- `supabase/migrations/0013_taxonomy_term.sql`
+- `supabase/migrations/0014_itinerary_normalisation.sql`
+- `supabase/migrations/0015_drift_fixes.sql`
+- `supabase/migrations/0016_comment_fixes.sql`
+- `supabase/migrations/0017_venues_rag_price_band_check.sql`
+- `supabase/migrations/0018_anonymous_identity.sql`
+
+### 4b. With psql
 
 ```powershell
 git pull origin main
@@ -220,8 +270,10 @@ psql $env:TB_DATABASE_URL -c "\d user_tiers"
 # expect identity_kind
 ```
 
----
+Optional later: `python -m pip install "psycopg[binary]"` and a thin wrapper
+can replace both 4a and 4b; not required today.
 
+---
 ## Step 5 -- re-load Laos venues and glossary
 
 Dry run first:
