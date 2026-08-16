@@ -58,6 +58,30 @@ prose, so a reword silently disables it, and the spice keywords are spelled
 with PHAT where PHET is meant. The keyword spelling must be corrected together
 with the data, never separately, or the search stops matching today's text.
 
+
+## Finding -- Aug 16 2026 -- Dubai loader export refused; raw dump committed
+
+Device-day Step 2 tried `export_dubai_from_snapshot.py` then
+`load_venues.py --dry-run` on `data/dubai_uae.json`. Dry-run exited non-zero
+with 72 errors. Cause, verified from the committed raw dump:
+
+- All 16 Dubai rows have null `typical_dwell_minutes`, `indoor_outdoor`, and
+  `price_band` (columns present, values null).
+- Categories outside the Laos-era loader set include `gallery`, `beach_club`,
+  `shopping`, `attraction`, `community_space`.
+- Audiences outside the set include `creative_professional`, `art_enthusiast`,
+  `collector`, `food_enthusiast`.
+- Vibe tag `executive` is not in `VALID_VIBE_TAGS` (though `executive` exists
+  as an audience).
+
+Decision: do not invent field values mid device-day. Commit
+`data/dubai_uae_raw_snapshot.json` (`not_loader_source: true`, 6bfa1c6) for
+durability, continue migrations from Step 3, and treat loader-valid
+`data/dubai_uae.json` as a follow-up curation plus vocabulary decision.
+The raw dump recorded `venue_dishes: 0`; confirm against the local
+`live_snapshot/*/venue_dish.json` whether any Dubai dishes exist before
+relying on that number.
+
 ## Finding -- Aug 14 2026 -- SPEC-04 October scope shrunk
 
 `docs/CONSUMER_SURFACE_ROADMAP.md` said the October trip needed SPEC-09, the

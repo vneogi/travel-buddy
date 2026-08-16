@@ -1,65 +1,35 @@
 # Device Day -- Windows laptop (PowerShell)
 
-Run this on the Windows test laptop. All commands are PowerShell 5.1
-compatible. Do not improvise order. Do not apply any migration until Step 2
-has committed and pushed `data/dubai_uae.json` after a successful loader
-dry-run.
+PowerShell 5.1. Canonical copy: `docs/briefs/DEVICE_DAY.md` on `origin/main`.
 
-Canonical copy: `docs/briefs/DEVICE_DAY.md` on `origin/main`.
+## RESUME HERE (as of 2026-08-16, after Step 2)
 
-Success criteria for the day:
+Steps 0-2 are done on the first Windows session. **Start at Step 3.**
 
-- `data/dubai_uae.json` exists in git with 16 venues, and
-  `python scripts/load_venues.py data/dubai_uae.json --dry-run` exited 0
-  before that commit (restorable, not merely parseable)
-- Live schema dump and 0011 dual-column decision are recorded
-- Migrations 0011 to 0018 applied, or a hard stop documented with the
-  blocking finding
-- Three Laos venue files re-loaded
-- `pytest -q -ra` run with `TB_SUPABASE_URL` set; the five Supabase tests
-  either pass or fail with a named finding (skips are not a pass)
-- Live checks below recorded in `docs/AWAITING_VERIFICATION.md` as a dated
-  entry
+| Step | Status | Evidence |
+|---|---|---|
+| 0 Pull + env | DONE | Creds loaded; deps installed |
+| 1 Live snapshot | DONE | `data/live_snapshot/20260816T174110Z` (gitignored; laptop-local) |
+| 2 Dubai durability | DONE | `data/dubai_uae_raw_snapshot.json` on `origin/main` at `6bfa1c6` -- 16 venues, `not_loader_source: true` |
+| 3 Schema dump / 0011 gate | NEXT | |
+| 4 Apply 0011-0018 | pending | |
+| 5 Re-load Laos | pending | |
+| 6 Pytest with live creds | pending | |
+| 7 Live checks | pending | |
+| 8 Close day in docs | pending | |
 
-Tooling assumed on this laptop:
-
-- git
-- Python 3 on PATH as `python` (same as `scripts/start-backend.ps1`)
-- pip
-- psql (PostgreSQL client) OR the Supabase SQL editor for the SQL steps
-- Network access to the hosted Supabase project
-
-Supabase CLI is optional. This brief uses `psql` against `TB_DATABASE_URL`.
-
-If `psql` is missing, run the SQL blocks in the Supabase SQL editor and save
-the result grids to the same temp filenames under `$env:TEMP`.
-
----
-
-## Step 0 -- pull and confirm the tree
+### Pickup commands (any Windows machine)
 
 ```powershell
-cd $HOME\travel-buddy
-# If the clone lives elsewhere, cd there instead, then:
+cd C:\Users\ariav\travel-buddy   # or wherever this clone lives
 git pull origin main
 if ($LASTEXITCODE -ne 0) { throw "git pull failed" }
-git status
 
-findstr /n "name_local TEXT" supabase\migrations\0011_venues_rag_missing_columns.sql
-# Expect the PREREQUISITE comment about dual name_local / names_local columns
-```
+# Confirm durability is on origin (do not re-do Step 2)
+python -c "import subprocess,json; w=json.loads(subprocess.check_output(['git','show','origin/main:data/dubai_uae_raw_snapshot.json'])); print(w['geo_region'], len(w['venues']), w.get('not_loader_source'))"
+# Expect: dubai_uae 16 True
 
-Copy `.env.example` to `.env` if needed and fill at least:
-
-- `TB_SUPABASE_URL`
-- `TB_SUPABASE_KEY` (service_role -- bypasses RLS)
-- `TB_DATABASE_URL` (postgres connection string for psql)
-- `OPENAI_API_KEY` (needed for the Laos reload embeddings)
-- `TB_LITELLM_API_KEY` if your loader/embeddings path expects it
-
-Load `.env` into this PowerShell process (the export script does not read `.env`):
-
-```powershell
+# Load .env into this PowerShell process
 $ErrorActionPreference = 'Stop'
 Get-Content .env | ForEach-Object {
     $line = $_.Trim()
@@ -76,96 +46,104 @@ if (-not $env:TB_DATABASE_URL) { throw "TB_DATABASE_URL missing" }
 Write-Host "creds present"
 ```
 
-Install runtime and test deps if this machine has not:
-
-```powershell
-python -m pip install -r requirements.txt -r requirements-dev.txt
-if ($LASTEXITCODE -ne 0) { throw "pip install failed" }
-```
-
----
-
-## Step 1 -- live snapshot (durability first)
+`data/live_snapshot/` is gitignored. If this is a different machine, or the
+stamp folder is gone, re-take a snapshot before Step 3's optional OpenAPI
+diff (the SQL column dump does not need it):
 
 ```powershell
 python scripts/export_live_snapshot.py
 if ($LASTEXITCODE -ne 0) { throw "snapshot failed" }
+# Set SNAP to the NEW stamp the script printed -- never leave the word STAMP
+$env:SNAP = "data\live_snapshot\PASTE_STAMP_HERE"
 ```
 
-Note the printed `Snapshot directory: data/live_snapshot/<stamp>`.
-That directory is gitignored. Set SNAP to that stamp path and confirm Dubai:
+If the original stamp still exists on this machine:
 
 ```powershell
-# replace STAMP with the directory name the script printed
-$env:SNAP = "data\live_snapshot\STAMP"
+$env:SNAP = "data\live_snapshot\20260816T174110Z"
+```
+
+Then continue at **Step 3** below.
+
+### What Step 2 already decided (do not re-litigate mid-apply)
+
+- Loader-shaped `data/dubai_uae.json` **failed** `load_venues.py --dry-run`
+  (72 errors): all 16 rows have null `typical_dwell_minutes` /
+  `indoor_outdoor` / `price_band`; Dubai categories/audiences/vibes sit
+  outside the Laos-era loader vocabulary.
+- We did **not** invent those values. Raw dump was committed instead.
+- Loader-valid `data/dubai_uae.json` is a **follow-up**, not a migration
+  blocker. Do not pass the raw file to `load_venues.py`.
+- Raw dump recorded `venue_dishes: 0`. Before trusting that, optionally:
+
+```powershell
 @"
 import json, os
-snap = os.environ['SNAP']
-venues = json.load(open(os.path.join(snap, 'venues_rag.json'), encoding='utf-8'))
-regions = {}
-for v in venues:
-    regions[v.get('geo_region')] = regions.get(v.get('geo_region'), 0) + 1
-print(regions)
-dubai = [v for v in venues if 'dubai' in (v.get('geo_region') or '')]
-print('dubai_count', len(dubai))
-if len(dubai) < 16:
-    raise SystemExit('STOP: expected at least 16 Dubai venues; do not continue')
-"@ | Set-Content -Encoding ascii "$env:TEMP\tb_check_dubai.py"
-python "$env:TEMP\tb_check_dubai.py"
-if ($LASTEXITCODE -ne 0) { throw "Dubai count check failed -- STOP" }
+from pathlib import Path
+snap = Path(os.environ['SNAP'])
+venues = json.loads((snap/'venues_rag.json').read_text(encoding='utf-8'))
+dishes = json.loads((snap/'venue_dish.json').read_text(encoding='utf-8'))
+ids = {v['venue_id'] for v in venues if 'dubai' in (v.get('geo_region') or '')}
+print('dubai_venues', len(ids))
+print('dishes_for_dubai', sum(1 for d in dishes if d.get('venue_id') in ids))
+print('dish_geo_hint_sample', dishes[0].keys() if dishes else None)
+"@ | Set-Content -Encoding ascii "$env:TEMP\tb_dubai_dishes.py"
+python "$env:TEMP\tb_dubai_dishes.py"
 ```
-
-Hard stop if Dubai count is below 16 (or differs from what PROJECT_STATUS
-claims -- record the real number and investigate before applying anything).
 
 ---
 
-## Step 2 -- durable Dubai file under data/
+## Success criteria (full day)
 
-Write the loader-shaped file, then prove `load_venues.py` can consume it.
-A parse check is not a restore proof -- the Laos loader bug in 8dfc412 sat
-behind a green test module while the committed data could not be loaded.
+- Durable Dubai on `origin/main` before migrations -- **met** via raw dump
+- Live schema dump and 0011 dual-column decision recorded
+- Migrations 0011 to 0018 applied, or hard stop documented
+- Three Laos venue files re-loaded
+- `pytest -q -ra` with `TB_SUPABASE_URL` set; five Supabase tests must not
+  skip for missing URL
+- Live checks recorded in `docs/AWAITING_VERIFICATION.md`
 
-```powershell
-# SNAP must still point at the Step 1 stamp directory
-python scripts/export_dubai_from_snapshot.py $env:SNAP
-if ($LASTEXITCODE -ne 0) { throw "Dubai export failed -- do not commit" }
-
-python -c "import json; w=json.load(open('data/dubai_uae.json',encoding='utf-8')); assert w['geo_region']; assert len(w['venues'])>=16; print('ok', w['geo_region'], len(w['venues']))"
-if ($LASTEXITCODE -ne 0) { throw "parse check failed" }
-
-python scripts/load_venues.py data/dubai_uae.json --dry-run
-if ($LASTEXITCODE -ne 0) { throw "loader dry-run failed -- file is not restorable; fix mapping and retry before commit" }
-# Expect exit code 0 and zero validation errors. Warnings are allowed only if
-# you understand them; errors mean do not commit.
-```
-
-Commit only after the dry-run exits 0:
-
-```powershell
-git add data/dubai_uae.json
-git commit -m @"
-data: export Dubai venues from live Supabase
-
-The 16 Dubai rows existed only in the hosted database. Capture them under
-data/ before any migration apply so a rebuild cannot silently drop them.
-"@
-if ($LASTEXITCODE -ne 0) { throw "commit failed" }
-git push origin main
-if ($LASTEXITCODE -ne 0) { throw "push failed" }
-
-python -c "import subprocess,json,sys; raw=subprocess.check_output(['git','show','origin/main:data/dubai_uae.json']); w=json.loads(raw); print(w['geo_region'], len(w['venues'])); sys.exit(0 if len(w['venues'])>=16 else 1)"
-if ($LASTEXITCODE -ne 0) { throw "origin/main dubai file missing or short" }
-```
-
-Hard stop until `origin/main` shows the file with the expected count.
+Tooling: git, `python`, pip, `psql` (or Supabase SQL editor), network to
+hosted Supabase. If `psql` is missing, run SQL in the Supabase SQL editor and
+save results to the same `$env:TEMP` filenames.
 
 ---
 
-## Step 3 -- schema dump and 0011 dual-column decision
+## Steps 0-2 -- DONE (reference only)
 
-PostgREST OpenAPI is already in `$env:SNAP\_live_schema.json`. Also capture
-columns and comments via SQL (OpenAPI cannot see CHECKs or pg_description):
+Kept so a fresh reader can see what already ran. Do not repeat unless the
+durable Dubai file is missing from `origin/main`.
+
+### Step 0 -- pull and confirm the tree (DONE)
+
+```powershell
+cd C:\Users\ariav\travel-buddy
+git pull origin main
+findstr /n "name_local TEXT" supabase\migrations\0011_venues_rag_missing_columns.sql
+# Load .env into process env (see RESUME HERE)
+python -m pip install -r requirements.txt -r requirements-dev.txt
+```
+
+### Step 1 -- live snapshot (DONE)
+
+Stamp used: `20260816T174110Z`. Counts: dubai 16, luang_prabang 23,
+vang_vieng 15, vientiane 20. Unapplied tables 404'd as expected
+(`venue_external_id`, `taxonomy_term`, `trip_node`, `trip_edge`).
+
+Pitfall: `$env:SNAP = "data\live_snapshot\STAMP"` is a placeholder -- replace
+`STAMP` with the real directory name the export script printed.
+
+### Step 2 -- durable Dubai (DONE via 2b)
+
+- 2a loader export dry-run: FAILED (expected; see RESUME HERE)
+- 2b raw dump: committed `6bfa1c6` as `data/dubai_uae_raw_snapshot.json`
+
+---
+
+## Step 3 -- schema dump and 0011 dual-column decision (START HERE)
+
+PostgREST OpenAPI is in `$env:SNAP\_live_schema.json` if SNAP points at a
+local stamp. The SQL dumps below are mandatory either way.
 
 ```powershell
 $colFile = Join-Path $env:TEMP 'tb_venues_rag_columns.txt'
@@ -184,17 +162,20 @@ if ($LASTEXITCODE -ne 0) {
 }
 ```
 
-Optional OpenAPI diff against 0011 ADD COLUMN names:
+Optional OpenAPI diff against 0011 ADD COLUMN names (needs a local stamp):
 
 ```powershell
 @"
 import json, re, pathlib
 snap = pathlib.Path('data/live_snapshot')
 stamps = sorted(p for p in snap.iterdir() if p.is_dir())
+if not stamps:
+    raise SystemExit('no local live_snapshot stamps -- re-run export_live_snapshot.py')
 schema = json.loads((stamps[-1] / '_live_schema.json').read_text(encoding='utf-8'))
 live_cols = set(schema.get('venues_rag', {}).keys())
 mig = pathlib.Path('supabase/migrations/0011_venues_rag_missing_columns.sql').read_text(encoding='utf-8')
 wanted = set(re.findall(r'ADD COLUMN IF NOT EXISTS (\w+)', mig))
+print('using stamp', stamps[-1])
 print('0011 columns already live:', sorted(wanted & live_cols))
 print('0011 columns missing live:', sorted(wanted - live_cols))
 print('live columns not in 0011 add-set (sample):', sorted(live_cols - wanted)[:30])
@@ -203,12 +184,15 @@ python "$env:TEMP\tb_openapi_diff.py"
 ```
 
 If the decision is "do not apply 0011 as-is", stop. Do not proceed to Step 4.
+Paste the decision script output into chat or AWAITING_VERIFICATION before
+applying anything.
 
 ---
 
 ## Step 4 -- apply migrations 0011 to 0018
 
-Only after Step 2 is on `origin/main` and Step 3 decision is "safe".
+Only after Step 2 durability is on `origin/main` (met) and Step 3 decision
+is "safe".
 
 ```powershell
 git pull origin main
@@ -279,7 +263,7 @@ psql $env:TB_DATABASE_URL -c "SELECT geo_region, count(*) AS venues, count(openi
 
 ```powershell
 git pull origin main
-# TB_SUPABASE_URL / TB_SUPABASE_KEY already in this process from Step 0
+# TB_SUPABASE_URL / TB_SUPABASE_KEY already in this process from pickup
 # Keep TB_ALLOW_ANONYMOUS unset/false unless deliberately testing that path.
 pytest -q -ra
 ```
@@ -297,10 +281,6 @@ Optional companion smoke (API must be running):
 ---
 
 ## Step 7 -- live checks (record results)
-
-Save SQL to a temp file (PowerShell 5.1 is safer this way than inline quoting),
-run it, and paste outcomes into a new dated section of
-`docs/AWAITING_VERIFICATION.md`:
 
 ```powershell
 $sqlFile = Join-Path $env:TEMP 'tb_device_day_checks.sql'
@@ -341,9 +321,7 @@ if ($LASTEXITCODE -ne 0) { throw "live checks failed" }
 ```
 
 Do not run `VALIDATE CONSTRAINT` on the price_band CHECKs today unless the
-distinct-value read shows a clean set that matches the taxonomy seed. If it
-does, validating is allowed; if it does not, leave NOT VALID and file the
-finding.
+distinct-value read shows a clean set that matches the taxonomy seed.
 
 ---
 
@@ -351,16 +329,14 @@ finding.
 
 Append a dated block to `docs/AWAITING_VERIFICATION.md` covering:
 
-- Dubai export commit SHA and venue count
-- Loader dry-run result for `data/dubai_uae.json`
+- Dubai durability: raw dump SHA `6bfa1c6`, loader-valid file still owed
 - 0011 dual-column decision and what was applied
 - pytest summary with skip reasons
 - price_band / AED / pg_description / hybrid_venue_search observations
+- Whether Dubai `venue_dish` rows exist live
 
 Update `docs/PROJECT_STATUS.md` only for facts that changed (migration
-status rows, Dubai source-file risk). Do not hand-mirror test counts (R16).
-
-Push documentation commits to main. Verify with:
+status rows, Dubai risk). Do not hand-mirror test counts (R16).
 
 ```powershell
 git fetch origin
@@ -376,4 +352,6 @@ git show origin/main:docs/AWAITING_VERIFICATION.md | Select-Object -Last 80
 - No Railway / deploy
 - No Genie code changes during the apply window
 - No blind VALIDATE CONSTRAINT
+- No inventing Dubai dwell/price/indoor values to force a loader dry-run
 - No Dubai dish `names_local` backfill
+- Do not pass `data/dubai_uae_raw_snapshot.json` to `load_venues.py`

@@ -112,13 +112,13 @@ connectivity. Re-cut Aug 14 after finding that CONSUMER_SURFACE_ROADMAP and
 PROJECT_STATUS disagreed on SPEC-04, and that SPEC-04 mostly duplicated
 SPEC-02 plus SPEC-12.
 
-1. Device day -- blocked on the Windows laptop only. Runnable PowerShell
-   brief: docs/briefs/DEVICE_DAY.md. Export Dubai to data/dubai_uae.json,
-   prove it with `load_venues.py --dry-run`, and push it before any
-   migration apply. Then dump/diff the live schema (0011 dual name_local /
-   names_local gate), apply 0011 to 0018, re-load Laos, run pytest with
-   TB_SUPABASE_URL set, and record the live checks (price_band, AED
-   magnitudes, pg_description, hybrid_venue_search).
+1. Device day -- in progress on the Windows laptop. Brief:
+   docs/briefs/DEVICE_DAY.md. Step 2 durability landed as
+   data/dubai_uae_raw_snapshot.json (6bfa1c6): 16 venues, not_loader_source.
+   Loader-valid data/dubai_uae.json is still owed (null 0011 fields + Dubai
+   vocabulary outside the Laos-era loader sets). Continue from Step 3:
+   dump/diff live schema, apply 0011 to 0018, re-load Laos, pytest with
+   TB_SUPABASE_URL, record live checks.
 2. SPEC-09 client half: UUID on first launch, secure storage, Anonymous
    header, drop TB_DEBUG_USER_ID. Server half is done; this is what gates a
    tester build.
@@ -149,9 +149,9 @@ SPEC-02 plus SPEC-12.
     intelligent path is one hosted vendor today.
 
 Export the Dubai rows before applying anything. A rebuild from migrations
-without that export silently loses 16 venues. There is no DB snapshot
-outside the hosted project; that is why device-day Step 2 commits
-data/dubai_uae.json before Step 4.
+without that export silently loses 16 venues. Step 2 durability is met by
+data/dubai_uae_raw_snapshot.json (6bfa1c6). A loader-valid dubai_uae.json
+is still a follow-up, not a migration blocker.
 
 The one task that cannot be done by an agent is judging whether a
 transliterated venue name is what the signage actually says. A script test
@@ -177,7 +177,7 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 | node_id carries 32 bits of entropy | Low | generate_node_id truncates a UUID to 8 hex characters, and node_id is a primary key with foreign key references from trip_edge. Collision probability is not negligible at scale. Both generators now live in models/ids.py, so widening it is a one-line change plus a backfill decision |
 | The ASCII convention for code is enforced narrowly, by design | Low | Two guards landed in 1c9988f rather than a blanket file scan. SQL is checked only inside COMMENT ON bodies, which is where non-ASCII reaches the database, and a companion test fails if any COMMENT ON statement escapes the extraction regex, so dollar-quoting cannot silently bypass it. Python is checked in comments and docstrings via tokenize and ast, with string literals exempt because a degree sign in a temperature format is correct code. The narrow guard immediately found an em-dash in an applied migration that a survey of the same files had missed. Remaining exposure: .dart is not covered, and non-ASCII in Python string literals is permitted by choice |
 | Live schema contains manual edits of unknown extent | High | Loads have been succeeding against columns no migration declared, so somebody added them by hand. PostgREST rejects writes to columns absent from its schema cache, so this is not a REST-layer quirk. Migration 0011 must not be applied before a dump and diff: if a hand-made name_local TEXT exists, ADD COLUMN IF NOT EXISTS names_local JSONB adds a second empty column and leaves the populated one unread |
-| Dubai venue data has no source file | High | data/ holds only the Laos files. The 16 Dubai venues exist as rows in the hosted database and nowhere else, so a rebuild from migrations loses them. Export to version control before any rebuild |
+| Dubai venue data has no source file | Medium | Durability landed as data/dubai_uae_raw_snapshot.json (6bfa1c6, not_loader_source). Still owed: loader-valid data/dubai_uae.json after filling null typical_dwell_minutes/indoor_outdoor/price_band and mapping Dubai categories/audiences/vibes into the loader vocabulary. Raw dump carried venue_dishes: 0 -- confirm whether live Dubai dishes exist |
 | OSM licence position unexamined | Medium | SPEC-19 mines OpenStreetMap and SPEC-20 seeds venues_rag from it, which plausibly makes venues_rag a derivative database under ODbL and attaches share-alike to it if it is ever distributed. Recommendations generated on top are most likely a produced work, needing attribution only. Nobody qualified has looked at either question. Recorded in the SPEC-21 decision record; it needs advice before a city is onboarded from OSM at scale, not after |
 | The dietary safety layer has no data source | RESOLVED BY DESCOPING | In OSM, diet:halal covers 20 of 6611 central Bangkok POIs and diet:vegetarian about two percent; Dubai is the best case at six and seven percent. A safety filter with no trustworthy input converts caution into misplaced confidence, so the claim is retired rather than sourced. See the SPEC-14 decision record |
 | halal plus pork passes the allergen check | High until the claim is retired | No LABEL_EXCLUDES_ALLERGENS rule for halal, so a pork-serving venue passes a halal check. The fix is to stop making the claim, not to add the rule -- adding it would make the answer trustworthy-looking on data that cannot support it. Live until the retirement lands |
