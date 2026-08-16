@@ -462,13 +462,21 @@ FROM venues_rag GROUP BY 1, 2 ORDER BY 1, 2;
 
 ### 7b. Dubai dishes (observe only; do not backfill)
 
+`venue_dish` uses `name_en` / `name_local`, not `name`.
+
 ```sql
-SELECT vd.name, vd.price_local, vd.currency_code, vd.price_band, v.name AS venue
+SELECT vd.name_en, vd.name_local, vd.price_local, vd.currency_code,
+       vd.price_band, v.name AS venue
 FROM venue_dish vd
 JOIN venues_rag v ON v.venue_id = vd.venue_id
 WHERE v.geo_region LIKE '%dubai%'
 ORDER BY vd.price_local NULLS LAST
 LIMIT 50;
+
+SELECT count(*) AS dubai_dishes
+FROM venue_dish vd
+JOIN venues_rag v ON v.venue_id = vd.venue_id
+WHERE v.geo_region LIKE '%dubai%';
 ```
 
 ### 7c. pg_description non-ASCII (0016 confirmation)

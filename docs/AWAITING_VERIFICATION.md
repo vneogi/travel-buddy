@@ -22,9 +22,9 @@ Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 | The five Supabase tests | ran green 2026-08-17 | `280 passed` suite with TB_SUPABASE_URL; see finding below |
 | Flutter client | Aug 9 | `flutter analyze && flutter test` on a device |
 | PowerShell scripts | Aug 9 | `.\scripts\smoke-test.ps1` on Windows |
-| `hybrid_venue_search` geo_region parameter | unknown | Step 7d signature read |
-| Dubai row contents, including AED magnitudes | never | Step 7b observe-only |
-| `pg_description` non-ASCII | never | Step 7c scan |
+| `hybrid_venue_search` geo_region parameter | Observed Aug 17 2026 | Live signature matches 0001: no geo_region arg (radius-only). Multi-city RPC filter still absent |
+| Dubai row contents, including AED magnitudes | partial Aug 17 | venues exist (16 null price_band). Dish/AED read pending corrected 7b (`name_en`) |
+| `pg_description` non-ASCII | Cleared Aug 17 2026 | Step 7c returned 0 rows |
 
 The Supabase row is the largest single gap in the repo. Every claim about the
 Supabase write path currently rests on `FakeClient` doubles. R8 treats a
@@ -58,6 +58,51 @@ prose, so a reword silently disables it, and the spice keywords are spelled
 with PHAT where PHET is meant. The keyword spelling must be corrected together
 with the data, never separately, or the search stops matching today's text.
 
+
+## Finding -- Aug 17 2026 -- Steps 5d + 7 live SQL (partial)
+
+**5d opening hours:** all Laos venues have `opening_hours_structured` --
+luang_prabang 23/23, vang_vieng 15/15, vientiane 20/20.
+
+**7a price_band:**
+- `venue_dish`: budget 28, mid 13, splurge 3 (no nulls; no `free`/`premium`).
+- `venues_rag`: budget 35, free 5, mid 15, splurge 3, **null 16**.
+  Non-null set matches 0017 CHECK (`budget`/`free`/`mid`/`splurge`). The 16
+  nulls are the Dubai rows (known from raw dump). Do not VALIDATE today unless
+  deliberately accepting NULL-as-allowed; CHECK already permits NULL.
+
+**7b Dubai dishes:** first query failed -- `venue_dish` has `name_en` /
+`name_local`, not `name`. Re-run with corrected SQL (below). Expect likely
+0 rows given raw dump `venue_dishes: 0`.
+
+**7c pg_description non-ASCII:** 0 rows. 0016 / live comments are ASCII.
+
+**7d hybrid_venue_search:** live args match migration `0001` exactly:
+`query_embedding vector, user_lat double precision, user_lng double precision,
+radius_km double precision, sponsored_boost double precision, result_limit
+integer`. No `geo_region` parameter -- radius-only; multi-city filter is still
+absent from the RPC (known gap, now observed live).
+
+Corrected 7b:
+
+```sql
+SELECT vd.name_en, vd.name_local, vd.price_local, vd.currency_code,
+       vd.price_band, v.name AS venue
+FROM venue_dish vd
+JOIN venues_rag v ON v.venue_id = vd.venue_id
+WHERE v.geo_region LIKE '%dubai%'
+ORDER BY vd.price_local NULLS LAST
+LIMIT 50;
+```
+
+Also useful count:
+
+```sql
+SELECT count(*) AS dubai_dishes
+FROM venue_dish vd
+JOIN venues_rag v ON v.venue_id = vd.venue_id
+WHERE v.geo_region LIKE '%dubai%';
+```
 
 ## Finding -- Aug 17 2026 -- live pytest green: 280 passed
 
