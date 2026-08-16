@@ -338,6 +338,13 @@ reintroduced.
 7. **A sabotage proof run against the file rather than the test.** Five
    passing structural tests in the same file hid one inert test, because the
    suite went red and nobody checked which assertion produced it.
+8. **An empty observation counted as a clean bill of health.** The 0011
+   dual-column decision script treated "neither `name_local` nor
+   `names_local` present" as safe to apply. When the input TSV was empty
+   (failed `psql` password prompt), both were absent for the wrong reason,
+   and the script printed `DECISION: safe`. Absence of evidence is not
+   evidence of absence: refuse empty / auth-noise / missing-core-column
+   dumps before evaluating the dual-column branch.
 
 **Rules:**
 
@@ -364,6 +371,9 @@ reintroduced.
 - Prefer a guard that enumerates both sides and compares sets over one that
   looks for the presence of a substring. Set equality names what diverged;
   a substring check cannot.
+- A negative observation ("X not found") is only meaningful if the scan
+  actually ran over a real population. Empty input, auth failure text, or a
+  missing required key must refuse before the "not found ⇒ safe" branch.
 - A guard hardcoded to one filename does not cover the next file. If the
   claim is "this can never happen again", the guard has to scan for the
   pattern rather than check the one place it is known to occur.

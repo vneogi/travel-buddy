@@ -116,9 +116,11 @@ SPEC-02 plus SPEC-12.
    docs/briefs/DEVICE_DAY.md. Step 2 durability landed as
    data/dubai_uae_raw_snapshot.json (6bfa1c6): 16 venues, not_loader_source.
    Loader-valid data/dubai_uae.json is still owed (null 0011 fields + Dubai
-   vocabulary outside the Laos-era loader sets). Continue from Step 3:
-   dump/diff live schema, apply 0011 to 0018, re-load Laos, pytest with
-   TB_SUPABASE_URL, record live checks.
+   vocabulary outside the Laos-era loader sets). Step 3 OpenAPI gate passed
+   (22 venues_rag columns; no name_local/names_local; safe for 0011).
+   Continue from Step 4: apply 0011 to 0018 in the Supabase SQL editor
+   (preferred; psql optional), re-load Laos, pytest with TB_SUPABASE_URL,
+   record live checks.
 2. SPEC-09 client half: UUID on first launch, secure storage, Anonymous
    header, drop TB_DEBUG_USER_ID. Server half is done; this is what gates a
    tester build.

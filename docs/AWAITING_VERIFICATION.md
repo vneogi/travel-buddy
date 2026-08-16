@@ -59,6 +59,20 @@ with PHAT where PHET is meant. The keyword spelling must be corrected together
 with the data, never separately, or the search stops matching today's text.
 
 
+## Finding -- Aug 17 2026 -- empty venues_rag column dump must not unlock 0011
+
+On device day Step 3b, `psql ... -U postgres` prompted for a password and the
+piped TSV was empty (or auth noise). `device_day_name_column_decision.py`
+printed `venues_rag columns: []` then `DECISION: safe to apply 0011`. That was
+a false safe: the else-branch treated "neither name_local nor names_local"
+as permission to apply when the real input was "no columns at all."
+
+Action: do not apply 0011 on that output. Prefer OpenAPI Step 3a
+(`device_day_schema_from_openapi.py`). Decision script now exits 2 on empty
+input, password/FATAL transcripts, or missing core columns
+(`venue_id` / `name` / `geo_region`). Do not pass `-U postgres` when
+`TB_DATABASE_URL` already includes the role.
+
 ## Finding -- Aug 16 2026 -- Dubai loader export refused; raw dump committed
 
 Device-day Step 2 tried `export_dubai_from_snapshot.py` then

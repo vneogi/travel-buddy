@@ -2,17 +2,18 @@
 
 PowerShell 5.1. Canonical copy: `docs/briefs/DEVICE_DAY.md` on `origin/main`.
 
-## RESUME HERE (as of 2026-08-16, after Step 2)
+## RESUME HERE (as of 2026-08-17, after OpenAPI 0011 gate)
 
-Steps 0-2 are done on the first Windows session. **Start at Step 3.**
+Steps 0-3 are done. **Start at Step 4** -- apply migrations in the
+**Supabase SQL editor** (preferred). `psql` is optional fallback only.
 
 | Step | Status | Evidence |
 |---|---|---|
 | 0 Pull + env | DONE | Creds loaded; deps installed |
 | 1 Live snapshot | DONE | `data/live_snapshot/20260816T174110Z` (gitignored; laptop-local) |
 | 2 Dubai durability | DONE | `data/dubai_uae_raw_snapshot.json` on `origin/main` at `6bfa1c6` -- 16 venues, `not_loader_source: true` |
-| 3 Schema dump / 0011 gate | NEXT | |
-| 4 Apply 0011-0018 | pending | |
+| 3 Schema dump / 0011 gate | DONE | OpenAPI: 22 `venues_rag` columns; no `name_local` / `names_local`; DECISION: safe |
+| 4 Apply 0011-0018 | NEXT | Prefer Supabase SQL editor (Step 4 primary). Stop on first error |
 | 5 Re-load Laos | pending | |
 | 6 Pytest with live creds | pending | |
 | 7 Live checks | pending | |
@@ -63,7 +64,7 @@ If the original stamp still exists on this machine:
 $env:SNAP = "data\live_snapshot\20260816T174110Z"
 ```
 
-Then continue at **Step 3** below.
+Then continue at **Step 4** below (Step 3 already passed on this machine).
 
 ### What Step 2 already decided (do not re-litigate mid-apply)
 
@@ -91,6 +92,13 @@ print('dish_geo_hint_sample', dishes[0].keys() if dishes else None)
 python "$env:TEMP\tb_dubai_dishes.py"
 ```
 
+### Pitfall -- empty column dump is NOT "safe"
+
+If `device_day_name_column_decision.py` prints `venues_rag columns: []` or
+`column_count: 0`, **stop**. That means the TSV is empty (often a failed
+`psql` password prompt written into the file). An empty set must never be
+treated as permission to apply 0011. Use Step 3a (OpenAPI) instead.
+
 ---
 
 ## Success criteria (full day)
@@ -103,9 +111,9 @@ python "$env:TEMP\tb_dubai_dishes.py"
   skip for missing URL
 - Live checks recorded in `docs/AWAITING_VERIFICATION.md`
 
-Tooling: git, `python`, pip, `psql` (or Supabase SQL editor), network to
-hosted Supabase. If `psql` is missing, run SQL in the Supabase SQL editor and
-save results to the same `$env:TEMP` filenames.
+Tooling: git, `python`, pip, network to hosted Supabase, and the **Supabase
+SQL editor** for migration apply (Step 4). `psql` is optional; do not block
+on installing it.
 
 ---
 
@@ -196,8 +204,14 @@ python "$env:TEMP\tb_openapi_diff.py"
 $colFile = Join-Path $env:TEMP 'tb_venues_rag_columns.txt'
 $descFile = Join-Path $env:TEMP 'tb_pg_description.txt'
 
+# Do NOT add -U postgres. TB_DATABASE_URL already carries the role; -U forces
+# an interactive password prompt and can leave $colFile empty while exit 0.
 psql $env:TB_DATABASE_URL -v ON_ERROR_STOP=1 -A -F "`t" -c "SELECT column_name, data_type, udt_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'venues_rag' ORDER BY ordinal_position;" | Set-Content -Encoding ascii $colFile
 if ($LASTEXITCODE -ne 0) { throw "column dump failed" }
+Get-Content $colFile | Select-Object -First 5
+if (-not (Get-Content $colFile | Where-Object { $_ -match '^venue_id\t' })) {
+    throw "column dump missing venue_id -- refuse empty/auth-failed TSV"
+}
 
 psql $env:TB_DATABASE_URL -v ON_ERROR_STOP=1 -A -F "`t" -c "SELECT c.relname AS table_name, coalesce(a.attname, '') AS column_name, d.description FROM pg_catalog.pg_description d JOIN pg_catalog.pg_class c ON c.oid = d.objoid LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid = c.oid AND a.attnum = d.objsubid WHERE c.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public') ORDER BY 1, 2;" | Set-Content -Encoding ascii $descFile
 if ($LASTEXITCODE -ne 0) { throw "pg_description dump failed" }
@@ -218,36 +232,53 @@ applying anything.
 
 ---
 
-## Step 4 -- apply migrations 0011 to 0018
+## Step 4 -- apply migrations 0011 to 0018 (START HERE)
 
 Only after Step 2 durability is on `origin/main` (met) and Step 3 decision
-is "safe".
+is "safe" (met via OpenAPI on 2026-08-17).
 
-### 4a. Without psql -- Supabase SQL editor
+**Preferred path: Supabase SQL editor.** Do not install or fight `psql` for
+this step. Paste one migration file per run, in order. Stop on the first
+error; record the file name and message in chat or
+`docs/AWAITING_VERIFICATION.md` before continuing.
 
-1. Open the hosted project SQL editor.
-2. For each file below, paste the full file contents and run, in order.
-   Stop on the first error; record the file name and message.
-3. After 0018, run: `SELECT column_name FROM information_schema.columns WHERE table_name = 'user_tiers' AND column_name = 'identity_kind';`
-   Expect one row.
+### How to apply each file
 
-Files in order:
+1. Open the hosted Supabase project → **SQL Editor** → New query.
+2. On the laptop, open the migration file under `supabase\migrations\` in an
+   editor, copy **the entire file** (including comments).
+3. Paste into the SQL editor and Run.
+4. Confirm success (no error banner). Then move to the next file.
+5. After `0018`, run this check in a new query:
 
-- `supabase/migrations/0011_venues_rag_missing_columns.sql`
-- `supabase/migrations/0012_venue_external_id.sql`
-- `supabase/migrations/0013_taxonomy_term.sql`
-- `supabase/migrations/0014_itinerary_normalisation.sql`
-- `supabase/migrations/0015_drift_fixes.sql`
-- `supabase/migrations/0016_comment_fixes.sql`
-- `supabase/migrations/0017_venues_rag_price_band_check.sql`
-- `supabase/migrations/0018_anonymous_identity.sql`
+```sql
+SELECT column_name
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name = 'user_tiers'
+  AND column_name = 'identity_kind';
+```
 
-### 4b. With psql
+Expect exactly one row. Then continue to Step 5.
+
+### Files in order
+
+| # | File | Notes |
+|---|---|---|
+| 1 | `supabase/migrations/0011_venues_rag_missing_columns.sql` | `typical_dwell_minutes` / `indoor_outdoor` / `price_band` already live → `IF NOT EXISTS` no-ops; still adds `has_aircon`, `names_local`, `nearest_landmark`, `landmarks_local`, `wheelchair_notes` |
+| 2 | `supabase/migrations/0012_venue_external_id.sql` | |
+| 3 | `supabase/migrations/0013_taxonomy_term.sql` | |
+| 4 | `supabase/migrations/0014_itinerary_normalisation.sql` | |
+| 5 | `supabase/migrations/0015_drift_fixes.sql` | |
+| 6 | `supabase/migrations/0016_comment_fixes.sql` | |
+| 7 | `supabase/migrations/0017_venues_rag_price_band_check.sql` | `NOT VALID` CHECK; must not abort on live Dubai nulls |
+| 8 | `supabase/migrations/0018_anonymous_identity.sql` | then run `identity_kind` SELECT above |
+
+### Optional -- psql fallback (skip unless you already use it cleanly)
+
+Do **not** pass `-U postgres` when `TB_DATABASE_URL` already has the role.
 
 ```powershell
-git pull origin main
-if ($LASTEXITCODE -ne 0) { throw "git pull failed" }
-
 $files = @(
   'supabase\migrations\0011_venues_rag_missing_columns.sql',
   'supabase\migrations\0012_venue_external_id.sql',
@@ -265,13 +296,7 @@ foreach ($f in $files) {
         throw "STOP: $f failed -- do not continue. Record in docs/AWAITING_VERIFICATION.md"
     }
 }
-
-psql $env:TB_DATABASE_URL -c "\d user_tiers"
-# expect identity_kind
 ```
-
-Optional later: `python -m pip install "psycopg[binary]"` and a thin wrapper
-can replace both 4a and 4b; not required today.
 
 ---
 ## Step 5 -- re-load Laos venues and glossary
