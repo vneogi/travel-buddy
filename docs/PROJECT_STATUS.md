@@ -108,15 +108,10 @@ connectivity. Re-cut Aug 14 after finding that CONSUMER_SURFACE_ROADMAP and
 PROJECT_STATUS disagreed on SPEC-04, and that SPEC-04 mostly duplicated
 SPEC-02 plus SPEC-12.
 
-1. Device day -- in progress on the Windows laptop. Brief:
-   docs/briefs/DEVICE_DAY.md. Step 2 durability landed as
-   data/dubai_uae_raw_snapshot.json (6bfa1c6): 16 venues, not_loader_source.
-   Loader-valid data/dubai_uae.json is still owed (null 0011 fields + Dubai
-   vocabulary outside the Laos-era loader sets). Step 3 OpenAPI gate passed.
-   Migrations 0011-0018 applied via SQL editor. Laos re-loaded (58 venues,
-   30 glossary). Live pytest: 280 passed (five Supabase integration tests
-   included). Continue: Step 5d hours spot-check, Step 7 live SQL checks,
-   Step 8 doc closeout.
+1. Device day -- **CLOSED** 2026-08-17. Brief: docs/briefs/DEVICE_DAY.md.
+   Dubai raw dump 6bfa1c6; migrations 0011-0018 applied; Laos reloaded;
+   pytest 280 passed with live Supabase; dubai_dishes=0. Loader-valid
+   data/dubai_uae.json remains a follow-up (not Oct-spine blocking).
 2. SPEC-09 client half: UUID on first launch, secure storage, Anonymous
    header, drop TB_DEBUG_USER_ID. Server half is done; this is what gates a
    tester build.
@@ -174,16 +169,16 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 | price_band CHECK is added but not validated | Low | 0015 adds the CHECK as NOT VALID so it cannot abort, which means existing rows are never checked against it. New and updated rows are. The VALIDATE CONSTRAINT statement is present but commented out; run it after reading the distinct live price_band values |
 | node_id carries 32 bits of entropy | Low | generate_node_id truncates a UUID to 8 hex characters, and node_id is a primary key with foreign key references from trip_edge. Collision probability is not negligible at scale. Both generators now live in models/ids.py, so widening it is a one-line change plus a backfill decision |
 | The ASCII convention for code is enforced narrowly, by design | Low | Two guards landed in 1c9988f rather than a blanket file scan. SQL is checked only inside COMMENT ON bodies, which is where non-ASCII reaches the database, and a companion test fails if any COMMENT ON statement escapes the extraction regex, so dollar-quoting cannot silently bypass it. Python is checked in comments and docstrings via tokenize and ast, with string literals exempt because a degree sign in a temperature format is correct code. The narrow guard immediately found an em-dash in an applied migration that a survey of the same files had missed. Remaining exposure: .dart is not covered, and non-ASCII in Python string literals is permitted by choice |
-| Live schema contains manual edits of unknown extent | High | Loads have been succeeding against columns no migration declared, so somebody added them by hand. PostgREST rejects writes to columns absent from its schema cache, so this is not a REST-layer quirk. Migration 0011 must not be applied before a dump and diff: if a hand-made name_local TEXT exists, ADD COLUMN IF NOT EXISTS names_local JSONB adds a second empty column and leaves the populated one unread |
-| Dubai venue data has no source file | Medium | Durability landed as data/dubai_uae_raw_snapshot.json (6bfa1c6, not_loader_source). Still owed: loader-valid data/dubai_uae.json after filling null typical_dwell_minutes/indoor_outdoor/price_band and mapping Dubai categories/audiences/vibes into the loader vocabulary. Raw dump carried venue_dishes: 0 -- confirm whether live Dubai dishes exist |
+| Live schema contains manual edits of unknown extent | Low | 0011 applied after OpenAPI dump; no name_local dual-column. Residual hand-edit risk is historical; new columns are migration-declared |
+| Dubai venue data has no loader-valid source file | Medium | Durability: dubai_uae_raw_snapshot.json (6bfa1c6). Live dubai_dishes=0. Owed: loader-valid dubai_uae.json (null 0011 fields + vocabulary) |
 | OSM licence position unexamined | Medium | SPEC-19 mines OpenStreetMap and SPEC-20 seeds venues_rag from it, which plausibly makes venues_rag a derivative database under ODbL and attaches share-alike to it if it is ever distributed. Recommendations generated on top are most likely a produced work, needing attribution only. Nobody qualified has looked at either question. Recorded in the SPEC-21 decision record; it needs advice before a city is onboarded from OSM at scale, not after |
 | The dietary safety layer has no data source | RESOLVED BY DESCOPING | In OSM, diet:halal covers 20 of 6611 central Bangkok POIs and diet:vegetarian about two percent; Dubai is the best case at six and seven percent. A safety filter with no trustworthy input converts caution into misplaced confidence, so the claim is retired rather than sourced. See the SPEC-14 decision record |
 | halal plus pork passes the allergen check | High until the claim is retired | No LABEL_EXCLUDES_ALLERGENS rule for halal, so a pork-serving venue passes a halal check. The fix is to stop making the claim, not to add the rule -- adding it would make the answer trustworthy-looking on data that cannot support it. Live until the retirement lands |
 | Most localized names remain unverified | Medium | Forty-eight of 58 stay source=generated. Two known errors are a wrong vowel inside otherwise valid Lao, which no codepoint guard can detect. The driver card's confirm affordance is the mitigation |
 | Lao order phrase may say fry, not spicy | Medium | The papaya salad phrase reads bo phat lai, not bo phet lai -- stir-fry rather than spicy, one missing vowel. Needs a native speaker, not a script check. Three of four hot dishes carry no moderating phrase at all, and the raw-meat laap has no cooked-request phrase |
-| opening_hours null on all Laos venues | Medium | The loader writes opening_hours_structured correctly; the data has simply never been re-loaded since |
-| hybrid_venue_search geo_region param | Medium | supabase_service passes a geo_region filter the RPC in 0001 does not declare. Verify against the live function |
-| price_local units documented, AED rows still suspect | Medium | 0015 states the rule: minor units per the ISO 4217 exponent, so LAK at exponent 0 means 35000 = 35000 LAK and AED at exponent 2 means 4500 = 45.00 AED. The 0009 comment's "45 AED" example was ambiguous, so existing Dubai dish prices may be off by 100x either way. Device check against the live rows; do not backfill blindly |
+| opening_hours null on all Laos venues | RESOLVED | Device-day reload: 58/58 opening_hours_structured populated |
+| hybrid_venue_search geo_region param | Medium | Live signature matches 0001: no geo_region arg. Caller may still pass a filter the RPC ignores -- fix needs a new migration + align |
+| price_local units documented, AED rows still suspect | Low | No Dubai venue_dish rows live (count 0). AED magnitude question is moot until dishes are curated |
 | Raw-safety guard keys off English prose | Low | The guard that flags an uncooked dish looks for the word raw in the description, so rewording a description silently disables a safety check. Key it off a structured field |
 | seniors overcorrected | Low | Set on 40 of 58 venues, roughly two thirds, so it cannot discriminate. mobility_limited is 17 of 58, which is plausible rather than overcorrected -- an earlier version of this table attributed the two-thirds figure to the wrong tag |
 | Vientiane has zero massage_spa | Low | Suspect. This was reported by a warning function that was broken until recently, so re-check it against the data rather than trusting the earlier report |

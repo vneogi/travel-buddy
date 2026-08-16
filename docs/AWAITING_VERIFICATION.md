@@ -23,22 +23,23 @@ Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 | Flutter client | Aug 9 | `flutter analyze && flutter test` on a device |
 | PowerShell scripts | Aug 9 | `.\scripts\smoke-test.ps1` on Windows |
 | `hybrid_venue_search` geo_region parameter | Observed Aug 17 2026 | Live signature matches 0001: no geo_region arg (radius-only). Multi-city RPC filter still absent |
-| Dubai row contents, including AED magnitudes | partial Aug 17 | venues exist (16 null price_band). Dish/AED read pending corrected 7b (`name_en`) |
+| Dubai row contents, including AED magnitudes | Cleared Aug 17 2026 | 16 Dubai venues live (null price_band). dubai_dishes=0 -- nothing to inspect for AED; food data is greenfield |
 | `pg_description` non-ASCII | Cleared Aug 17 2026 | Step 7c returned 0 rows |
 
-The Supabase row is the largest single gap in the repo. Every claim about the
-Supabase write path currently rests on `FakeClient` doubles. R8 treats a
-permanent skip as a finding, and this is the oldest one.
+The five Supabase integration tests ran green on device day 2026-08-17 with
+`TB_SUPABASE_URL` set (`280 passed` suite). Remaining credential-gated gaps
+are Flutter, smoke-test.ps1, and deliberate VALIDATE of NOT VALID CHECKs.
 
 ## Open issues that need a person, not a test
 
-### High -- the Dubai venues have no source file
+### High -- the Dubai venues have no loader-valid source file
 
-`data/` holds the three Laos venue files and the dish glossary. There is no
-Dubai file. Those venues exist only as rows in the hosted database, so they
-cannot be re-loaded, diffed, reviewed or restored, and a database rebuilt from
-`supabase/migrations/` would not contain them. Exporting them is the first
-device task for that reason: it is a data-durability fix, not a convenience.
+Durability landed as `data/dubai_uae_raw_snapshot.json` (`6bfa1c6`,
+`not_loader_source: true`, 16 venues). Live `venue_dish` count for Dubai is
+**0**. Still owed: curated `data/dubai_uae.json` that passes
+`load_venues.py --dry-run` (fill null 0011 fields; map Dubai categories /
+audiences / vibes into loader vocabulary; optionally add dishes). Do not pass
+the raw dump to the loader.
 
 ### Medium -- two Lao vowel errors that no guard can catch
 
@@ -59,6 +60,26 @@ with PHAT where PHET is meant. The keyword spelling must be corrected together
 with the data, never separately, or the search stops matching today's text.
 
 
+## Finding -- Aug 17 2026 -- Device Day closed
+
+Full Windows device day completed. Durable outcomes:
+
+- Dubai durability: `data/dubai_uae_raw_snapshot.json` at `6bfa1c6`
+  (`not_loader_source`, 16 venues). Loader-valid `dubai_uae.json` still owed.
+- 0011 dual-column gate: OpenAPI 22 columns; neither `name_local` nor
+  `names_local`; applied 0011-0018 via Supabase SQL editor.
+- Laos reload: 58 venues + 30 glossary; hours 58/58 structured.
+- Pytest: `280 passed` with live `TB_SUPABASE_URL` (five Supabase tests included).
+- price_band: dish vocab clean; venues_rag non-null matches 0017; 16 nulls =
+  Dubai. VALIDATE deferred.
+- Dubai `venue_dish` count live: **0** (confirms raw dump; no AED magnitudes
+  to inspect). Food curation for Dubai is greenfield.
+- pg_description non-ASCII: 0 rows.
+- `hybrid_venue_search` live args = migration 0001 (no geo_region).
+
+October spine next: SPEC-09 client -> SPEC-22 -> SPEC-12 -> SPEC-10 -> thin
+SPEC-04.
+
 ## Finding -- Aug 17 2026 -- Steps 5d + 7 live SQL (partial)
 
 **5d opening hours:** all Laos venues have `opening_hours_structured` --
@@ -71,38 +92,23 @@ luang_prabang 23/23, vang_vieng 15/15, vientiane 20/20.
   nulls are the Dubai rows (known from raw dump). Do not VALIDATE today unless
   deliberately accepting NULL-as-allowed; CHECK already permits NULL.
 
-**7b Dubai dishes:** first query failed -- `venue_dish` has `name_en` /
-`name_local`, not `name`. Re-run with corrected SQL (below). Expect likely
-0 rows given raw dump `venue_dishes: 0`.
+**7b Dubai dishes:** `dubai_dishes = 0`. No AED magnitudes to observe. Raw
+dump's `venue_dishes: 0` confirmed live.
 
-**7c pg_description non-ASCII:** 0 rows. 0016 / live comments are ASCII.
-
-**7d hybrid_venue_search:** live args match migration `0001` exactly:
-`query_embedding vector, user_lat double precision, user_lng double precision,
-radius_km double precision, sponsored_boost double precision, result_limit
-integer`. No `geo_region` parameter -- radius-only; multi-city filter is still
-absent from the RPC (known gap, now observed live).
-
-Corrected 7b:
-
-```sql
-SELECT vd.name_en, vd.name_local, vd.price_local, vd.currency_code,
-       vd.price_band, v.name AS venue
-FROM venue_dish vd
-JOIN venues_rag v ON v.venue_id = vd.venue_id
-WHERE v.geo_region LIKE '%dubai%'
-ORDER BY vd.price_local NULLS LAST
-LIMIT 50;
-```
-
-Also useful count:
+Corrected 7b (already run):
 
 ```sql
 SELECT count(*) AS dubai_dishes
 FROM venue_dish vd
 JOIN venues_rag v ON v.venue_id = vd.venue_id
 WHERE v.geo_region LIKE '%dubai%';
+-- Result: 0
 ```
+
+**7c pg_description non-ASCII:** 0 rows. Live comments are ASCII.
+
+**7d hybrid_venue_search:** live args match migration `0001` exactly (no
+`geo_region` parameter -- radius-only).
 
 ## Finding -- Aug 17 2026 -- live pytest green: 280 passed
 

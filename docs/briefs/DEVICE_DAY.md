@@ -2,20 +2,28 @@
 
 PowerShell 5.1. Canonical copy: `docs/briefs/DEVICE_DAY.md` on `origin/main`.
 
-## RESUME HERE (as of 2026-08-17, after green live pytest)
+## RESUME HERE (as of 2026-08-17 -- Device Day CLOSED)
 
-Steps 0-6 done. **Next: Step 5d hours spot-check, then Step 7 live checks
-in the Supabase SQL editor**, then Step 8 doc closeout.
+All Steps 0-8 complete on the Windows laptop. Next product work is the
+October spine starting at **SPEC-09 client half** (see PROJECT_STATUS).
 
 | Step | Status | Evidence |
 |---|---|---|
-| 0-3 | DONE | OpenAPI gate safe; durability on origin |
-| 4 Apply 0011-0018 | DONE (confirm) | SQL editor; paste `identity_kind` check if not yet |
-| 5 Re-load Laos | DONE | 58 venues upserted; 30 glossary rows |
-| 5d Hours spot-check | NEXT | SQL below |
-| 6 Pytest with live creds | DONE | `280 passed, 13 warnings in 58.42s` (Supabase five ran) |
-| 7 Live checks | NEXT | SQL editor (preferred); record into AWAITING_VERIFICATION |
-| 8 Close day in docs | pending | |
+| 0-3 | DONE | OpenAPI gate: 22 cols; no name_local; DECISION safe |
+| 4 Apply 0011-0018 | DONE | Supabase SQL editor |
+| 5 Re-load Laos | DONE | 58 venues; 30 glossary |
+| 5d Hours spot-check | DONE | LP 23/23, VV 15/15, VTE 20/20 structured hours |
+| 6 Pytest with live creds | DONE | `280 passed, 13 warnings in 58.42s` |
+| 7 Live checks | DONE | 7a-7d recorded; dubai_dishes=0; pg_description ASCII; RPC matches 0001 |
+| 8 Close day in docs | DONE | This block + AWAITING_VERIFICATION / PROJECT_STATUS |
+
+### Follow-ups (not blockers for closing the day)
+
+- Loader-valid `data/dubai_uae.json` (null 0011 fields + Dubai vocabulary)
+- Dubai has **zero** `venue_dish` rows live -- food/AED work is greenfield
+- `VALIDATE CONSTRAINT` on 0015/0017 price_band CHECKs still deferred
+- `hybrid_venue_search` still has no `geo_region` arg (live = 0001)
+- Working-tree LF fix for `laos*.json` on Windows: do not commit line-ending-only noise
 
 ### Pickup commands (any Windows machine)
 
