@@ -42,7 +42,6 @@ NON_ASCII_ALLOWLIST = frozenset(
         "docs/specs/SPEC-06-behavioral-signals.md",
         "docs/specs/SPEC-07-signal-emission.md",
         "docs/specs/SPEC-09-anonymous-identity.md",
-        "mobile/README.md",
         "scripts/README.md",
         "supabase/migrations/README.md",
     }
