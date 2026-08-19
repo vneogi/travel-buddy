@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'env.dart';
 import 'api_exception.dart';
 
@@ -14,18 +15,20 @@ typedef DeviceIdProvider = Future<String> Function();
 ///   1. Bearer <jwt> -- when Supabase session is active
 ///   2. Anonymous <device-uuid> -- device identity fallback
 class ApiClient {
-  final Dio _dio;
+  final Dio dio;
 
   ApiClient({
     required TokenProvider tokenProvider,
     required DeviceIdProvider deviceIdProvider,
-  }) : _dio = Dio(BaseOptions(
-          baseUrl: '${Env.apiBaseUrl}/api/v1',
-          connectTimeout: const Duration(seconds: 10),
-          receiveTimeout: const Duration(seconds: 30), // heavy LLM calls
-          contentType: 'application/json',
-        )) {
-    _dio.interceptors.add(InterceptorsWrapper(
+    @visibleForTesting Dio? dioOverride,
+  }) : dio = dioOverride ??
+            Dio(BaseOptions(
+              baseUrl: '${Env.apiBaseUrl}/api/v1',
+              connectTimeout: const Duration(seconds: 10),
+              receiveTimeout: const Duration(seconds: 30),
+              contentType: 'application/json',
+            )) {
+    dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
         final token = await tokenProvider();
         if (token != null && token.isNotEmpty) {
@@ -40,10 +43,10 @@ class ApiClient {
   }
 
   Future<dynamic> get(String path, {Map<String, dynamic>? query}) =>
-      _wrap(() => _dio.get(path, queryParameters: query));
+      _wrap(() => dio.get(path, queryParameters: query));
 
   Future<dynamic> post(String path, {Object? body}) =>
-      _wrap(() => _dio.post(path, data: body));
+      _wrap(() => dio.post(path, data: body));
 
   Future<dynamic> _wrap(Future<Response<dynamic>> Function() call) async {
     try {
