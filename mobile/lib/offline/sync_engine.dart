@@ -99,10 +99,10 @@ class SyncEngine {
   // Core sync algorithm (SPEC-02 B.2)
   // ============================================================
 
-  /// Single sync pass. Returns true if any work was done.
   /// True when a 401 has halted sync. Only manual re-auth clears this.
   bool get authHalted => _authHalted;
 
+  /// Single sync pass. Returns true if any work was done.
   Future<bool> syncOnce() async {
     if (_authHalted) return false;
     // Single-flight guard — never concurrent syncs

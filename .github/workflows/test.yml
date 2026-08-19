@@ -1,15 +1,22 @@
-name: Flutter CI
+name: Tests
 
 on:
   push:
     branches: [main]
-    paths:
-      - 'mobile/**'
   pull_request:
-    paths:
-      - 'mobile/**'
+    branches: [main]
 
 jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt -r requirements-dev.txt
+      - run: pytest tests/
+
   flutter:
     runs-on: ubuntu-latest
     defaults:
