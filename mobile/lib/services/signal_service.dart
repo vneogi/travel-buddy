@@ -112,5 +112,48 @@ class SignalService {
   Future<void> emitDishOrdered({required String placeRef, required String dishName, required String dishId, String? tripId}) =>
       emit(signalType: 'dish_ordered', placeRef: placeRef, tripId: tripId, valueText: 'true', valueJson: {'dish_name': dishName}, entityType: 'dish', entityId: dishId);
 
+  // ===========================================================
+  // SPEC-12: Driver card signals
+  // ===========================================================
+
+  Future<void> emitDriverCardShown({
+    required String placeRef,
+    required bool wasOffline,
+    required String nameSource,
+    String? tripId,
+  }) =>
+      emit(
+        signalType: 'driver_card_shown',
+        placeRef: placeRef,
+        tripId: tripId,
+        valueJson: {
+          'place_ref': placeRef,
+          'was_offline': wasOffline,
+          'name_source': nameSource,
+        },
+      );
+
+  Future<void> emitNameConfirmed({
+    required String placeRef,
+    required String lang,
+    required String shownValue,
+    required String verdict,
+    String? tripId,
+  }) {
+    assert(verdict == 'confirmed' || verdict == 'rejected',
+        'Invalid verdict: $verdict');
+    return emit(
+      signalType: 'name_confirmed',
+      placeRef: placeRef,
+      tripId: tripId,
+      valueJson: {
+        'place_ref': placeRef,
+        'lang': lang,
+        'shown_value': shownValue,
+        'verdict': verdict,
+      },
+    );
+  }
+
   static const validSkipReasons = {'too_far', 'too_tired', 'closed', 'crowded', 'not_interested', 'ran_out_of_time', 'weather'};
 }

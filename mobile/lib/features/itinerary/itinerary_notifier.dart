@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/api_exception.dart';
 import '../../core/providers.dart';
 import '../../data/models.dart';
+import '../driver_card/driver_card_helpers.dart';
 
 @immutable
 class ItineraryState {
@@ -58,9 +59,26 @@ class ItineraryController extends StateNotifier<ItineraryState> {
       final trip = await _ref.read(tripRepoProvider).getTrip(tripId);
       if (!mounted) return;
       state = ItineraryState(nodes: trip.nodes, loading: false);
+      _preCachePlaces(trip.nodes);
     } catch (e) {
       if (!mounted) return;
       state = ItineraryState(loading: false, error: e);
+    }
+  }
+
+  /// SPEC-12: pre-cache place data for offline driver cards.
+  void _preCachePlaces(List<TripNode> nodes) {
+    try {
+      final db = _ref.read(offlineDatabaseProvider);
+      for (final node in nodes) {
+        final placeRef = node.venueId ?? node.venueName;
+        final data = PlaceDriverCardData.fromTripNode(node);
+        db.cachePlace(placeRef, data.serialize()).catchError((e) {
+          debugPrint('[ItineraryController] Pre-cache place error: $e');
+        });
+      }
+    } catch (e) {
+      debugPrint('[ItineraryController] Pre-cache places error: $e');
     }
   }
 

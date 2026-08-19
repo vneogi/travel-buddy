@@ -41,6 +41,9 @@ SIGNAL_TYPES: dict[str, str] = {
     "dish_ordered": "boolean",
     # SPEC-22: dismissal is data (decision 9)
     "prompt_dismissed": "json",
+    # SPEC-12: driver card lifecycle signals
+    "driver_card_shown": "json",
+    "name_confirmed": "json",
 }
 
 # What value_json carries for each type. This is DOCUMENTATION -- not validated
@@ -56,6 +59,8 @@ PAYLOAD_SHAPES: dict[str, str] = {
     "dish_loved": "enum value from ARRAY['loved'] -- same as user_loved but entity_type='dish'",
     "dish_ordered": "boolean: true (presence = ordered/consumed)",
     "prompt_dismissed": "json: {kind: str, attribute: str, entity_id: optional}",
+    "driver_card_shown": "json: {place_ref: str, was_offline: bool, name_source: str}",
+    "name_confirmed": "json: {place_ref: str, lang: str, shown_value: str, verdict: str} -- verdict is confirmed or rejected",
 }
 
 

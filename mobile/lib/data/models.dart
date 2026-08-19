@@ -39,6 +39,9 @@ class TripNode {
   final List<String> vibeTags;
   final double? lat, lng;
   final String? openingHours;
+  final Map<String, dynamic>? namesLocal;
+  final Map<String, dynamic>? landmarksLocal;
+  final String? nearestLandmark;
 
   const TripNode({
     required this.nodeId,
@@ -53,6 +56,9 @@ class TripNode {
     this.lat,
     this.lng,
     this.openingHours,
+    this.namesLocal,
+    this.landmarksLocal,
+    this.nearestLandmark,
   });
 
   factory TripNode.fromJson(Map<String, dynamic> j) => TripNode(
@@ -68,6 +74,9 @@ class TripNode {
         lat: (j['lat'] as num?)?.toDouble(),
         lng: (j['lng'] as num?)?.toDouble(),
         openingHours: j['opening_hours'] as String?,
+        namesLocal: (j['names_local'] as Map?)?.cast<String, dynamic>(),
+        landmarksLocal: (j['landmarks_local'] as Map?)?.cast<String, dynamic>(),
+        nearestLandmark: j['nearest_landmark'] as String?,
       );
 }
 

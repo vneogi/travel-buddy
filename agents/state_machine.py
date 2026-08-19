@@ -295,6 +295,10 @@ class TripStateMachine:
             lat=venue.lat,
             lng=venue.lng,
             opening_hours=getattr(venue, "opening_hours", None),
+            geo_region=getattr(venue, "geo_region", None),
+            names_local=getattr(venue, "names_local", None),
+            landmarks_local=getattr(venue, "landmarks_local", None),
+            nearest_landmark=getattr(venue, "nearest_landmark", None),
         )
         if node_id is not None:
             kwargs["node_id"] = node_id
