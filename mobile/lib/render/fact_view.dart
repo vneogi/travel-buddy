@@ -4,6 +4,7 @@ import '../theme/typography.dart';
 import '../theme/colors.dart';
 import 'fact_envelope.dart';
 import 'confirm_affordance.dart';
+import 'dismiss_handler.dart';
 import 'render_strings.dart';
 
 /// The ONLY widget that renders a fact (SPEC-22 decision 2).
@@ -11,16 +12,15 @@ import 'render_strings.dart';
 /// Every call site must pass `envelope:`. No bare-value constructor exists.
 /// No `FactView.value(String)`. No optional tier.
 ///
-/// Dismiss (ask/defer) calls onDismiss, which the caller MUST wire to
-/// SignalService.emit(prompt_dismissed). This widget does not import
-/// SignalService directly (render layer has no service dependency).
+/// Dismiss: the widget calls onDismiss with its own attribute and a
+/// tier-derived kind. Callers pass PromptDismissAdapter.handler.
 class FactView extends StatelessWidget {
   final FactEnvelope envelope;
   final String attribute;
   final String? deferralTarget;
   final bool showRecency;
   final VoidCallback? onConfirm;
-  final VoidCallback? onDismiss;
+  final DismissHandler? onDismiss;
 
   const FactView({
     super.key,
@@ -31,6 +31,12 @@ class FactView extends StatelessWidget {
     this.onConfirm,
     this.onDismiss,
   });
+
+  void _handleDismiss() {
+    if (onDismiss == null) return;
+    final kind = envelope.tier == FactTier.ask ? 'question_card' : 'deferral';
+    onDismiss!(kind: kind, attribute: attribute);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,7 +82,7 @@ class FactView extends StatelessWidget {
               SizedBox(height: AppSpacing.xs),
               Text(_valueAsString(), style: AppTypography.body),
               SizedBox(height: AppSpacing.sm),
-              ConfirmAffordance(onConfirm: onConfirm, onDismiss: onDismiss),
+              ConfirmAffordance(onConfirm: onConfirm, onDismiss: _handleDismiss),
             ],
           ),
         );

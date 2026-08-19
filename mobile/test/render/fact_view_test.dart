@@ -42,7 +42,7 @@ void main() {
             envelope: _envelope(FactTier.ask),
             attribute: 'hours',
             onConfirm: () => confirmed = true,
-            onDismiss: () {},
+            onDismiss: ({required String kind, required String attribute}) {},
           ),
         ),
       ));
@@ -130,10 +130,10 @@ void main() {
     });
   });
 
-  group('FactView dismiss writes prompt_dismissed (R17)', () {
-    testWidgets('dismiss calls onDismiss which writes to signal outbox', (tester) async {
-      // Fake outbox to assert the signal was emitted (R17: not a bool flag)
-      final outbox = <Map<String, dynamic>>[];
+  group('FactView dismiss invokes typed handler with attribute (R17)', () {
+    testWidgets('ask tier dismiss passes kind=question_card and widget attribute', (tester) async {
+      String? receivedKind;
+      String? receivedAttribute;
 
       await tester.pumpWidget(MaterialApp(
         home: Scaffold(
@@ -141,26 +141,19 @@ void main() {
             envelope: _envelope(FactTier.ask),
             attribute: 'opening_hours',
             onConfirm: () {},
-            onDismiss: () {
-              // Production code wires this to SignalService.emit.
-              // Test asserts on the outbox structure, not just that it was called.
-              outbox.add({
-                'signal_type': 'prompt_dismissed',
-                'value_json': {'kind': 'question_card', 'attribute': 'opening_hours'},
-              });
+            onDismiss: ({required String kind, required String attribute}) {
+              receivedKind = kind;
+              receivedAttribute = attribute;
             },
           ),
         ),
       ));
 
-      // Tap the dismiss icon button
       await tester.tap(find.byIcon(Icons.close));
       await tester.pump();
 
-      expect(outbox, hasLength(1));
-      expect(outbox.first['signal_type'], equals('prompt_dismissed'));
-      expect(outbox.first['value_json']['attribute'], equals('opening_hours'));
-      expect(outbox.first['value_json']['kind'], equals('question_card'));
+      expect(receivedKind, equals('question_card'));
+      expect(receivedAttribute, equals('opening_hours'));
     });
   });
 }
