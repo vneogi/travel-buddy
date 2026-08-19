@@ -69,7 +69,7 @@
 | Docs hygiene guard | DONE | tests/test_docs_hygiene.py walks every markdown file outside build and vendor directories, and the SPEC-reference check also scans .py and .sql. Known non-ASCII files are allowlisted; the list may only shrink. The ASCII check itself still covers markdown only |
 | Data format guard | DONE | Every data/ file is ASCII by byte count, venue and glossary files round-trip byte-identically, and Lao-script fields are checked for foreign script |
 | Offline vault (SPEC-04) | SPECIFIED, OCTOBER SHRUNK | Full vault not on the October path. SPEC-02 already delivers outbox, SyncEngine, cache_trip and cache_place; SPEC-12 already owns the venue driver card on that cache. October keeps only a thin rescue entry to the hotel address card once SPEC-10 exists. cache_vault, passes, emergency grid and phrase packs stay post-field-test -- see SPEC-04 |
-| Anonymous identity (SPEC-09) | SERVER HALF IMPLEMENTED | The client half is still owed. Server side is done and verified: resolution order is JWT, then Anonymous, then the debug header, failing closed; TB_ALLOW_ANONYMOUS defaults to False; the raw Authorization header is parsed rather than loosening HTTPBearer, which would have rejected a non-Bearer scheme; UUIDs must be version 4 with the RFC 4122 variant, so v1 is refused and its embedded MAC address never reaches us; and non-canonical spellings are rejected rather than normalised, so one UUID cannot become five distinct user ids. Migration 0018 carries identity_kind |
+| Anonymous identity (SPEC-09) | DONE (client + server) | Client half landed PR #16 (`7173a3f`): UUID v4 in flutter_secure_storage, Anonymous header, TB_DEBUG_USER_ID removed. Server half already verified. Owner device E2E with TB_ALLOW_ANONYMOUS=true still deferred until laptop |
 | Itinerary normalisation (SPEC-16) | IMPLEMENTED | Decompose and compose land in services/itinerary_normaliser.py, dual-write in both backends, round-trip equality asserted, wire format unchanged. node_id is stable across reschedules via state_json and now comes from models/ids.py. One gap remains: observed_duration_minutes has no writer, so no transition data is accumulating |
 | Booking anchors (SPEC-10) | SPECIFIED | Not implemented. Resequenced to follow SPEC-16, because an anchor is a locked node and building it against the blob means building it twice. Amended so import is the primary path, manual entry the floor, and extraction on the device the preferred implementation of every import path |
 | Forced-choice preferences (SPEC-11) | SPECIFIED | Not implemented. Cold-start preference capture |
@@ -113,14 +113,11 @@ SPEC-02 plus SPEC-12.
    live pytest ran green with TB_SUPABASE_URL (five Supabase integration
    tests included); dubai_dishes=0. Loader-valid
    data/dubai_uae.json remains a follow-up (not Oct-spine blocking).
-2. SPEC-09 client half: UUID on first launch, secure storage, Anonymous
-   header, drop TB_DEBUG_USER_ID. Server half is done; this is what gates a
-   tester build. **Next -- Genie brief:**
-   docs/briefs/GENIE_SPEC_09_CLIENT.md (unit-testable without laptop;
-   device E2E awaits owner).
+2. SPEC-09 client half -- **DONE** PR #16 (`7173a3f`). Device E2E with
+   `TB_ALLOW_ANONYMOUS=true` deferred until laptop (not blocking next specs).
 3. SPEC-22 client render contract, before any screen. Envelope shape is
    already specified; stub the source on the client if SPEC-17 backend is
-   not ready.
+   not ready. **Next for Genie + planning.**
 4. SPEC-12 driver card UI with one-tap confirm, plus name_confirmed and
    driver_card_shown in one migration. Renders from SPEC-02 cache_place.
 5. SPEC-10 booking anchors (manual floor plus import path as specified).

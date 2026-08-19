@@ -1,8 +1,7 @@
 # Genie Brief -- SPEC-09 Client Half (Anonymous Device Identity)
 
-> Status: READY TO IMPLEMENT. Paste this entire file to Genie Code.
-> Land via PR to main, not direct push. Owner has no laptop this week --
-> write unit tests that do not need a device; device acceptance stays open.
+> Status: DONE. Squash-merged via PR #16 as `7173a3f` on main.
+> Kept as the executed brief; do not re-run.
 
 Canonical spec: `docs/specs/SPEC-09-anonymous-identity.md`
 Server half: DONE (security.py, migration 0018, tests/test_anonymous_identity.py).
