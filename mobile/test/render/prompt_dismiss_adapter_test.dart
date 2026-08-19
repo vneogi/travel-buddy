@@ -26,6 +26,9 @@ class FakeSyncEngine implements SyncEngine {
   void triggerSync() {}
 
   @override
+  bool get authHalted => false;
+
+  @override
   dynamic noSuchMethod(Invocation i) => null;
 }
 
