@@ -58,18 +58,13 @@ def main(argv: list[str] | None = None) -> int:
 
     missing_core = sorted(REQUIRED_CORE - cols)
     if missing_core:
-        print(
-            "DECISION: REFUSE -- dump is missing core venues_rag columns: %s"
-            % missing_core
-        )
+        print("DECISION: REFUSE -- dump is missing core venues_rag columns: %s" % missing_core)
         print("Do not apply 0011. The TSV is not a valid venues_rag column list.")
         return 2
 
     if "name_local" in cols and "names_local" not in cols:
         print("DECISION: write a backfill BEFORE 0011, or amend apply order.")
-        print(
-            "DO NOT apply 0011 as-is: ADD COLUMN names_local would leave name_local unread."
-        )
+        print("DO NOT apply 0011 as-is: ADD COLUMN names_local would leave name_local unread.")
         return 2
     if "name_local" in cols and "names_local" in cols:
         print("DECISION: both exist -- inspect which is populated; do not blind-apply.")

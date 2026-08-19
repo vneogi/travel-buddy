@@ -225,11 +225,7 @@ def main() -> int:
     # --- Supabase client ---
     # Canonical name in .env.example is TB_SUPABASE_KEY (service_role). Also
     # accept TB_SUPABASE_SERVICE_KEY / SUPABASE_* aliases used in older docs.
-    url = (
-        os.environ.get("TB_SUPABASE_URL")
-        or os.environ.get("SUPABASE_URL")
-        or ""
-    )
+    url = os.environ.get("TB_SUPABASE_URL") or os.environ.get("SUPABASE_URL") or ""
     key = (
         os.environ.get("TB_SUPABASE_KEY")
         or os.environ.get("TB_SUPABASE_SERVICE_KEY")
