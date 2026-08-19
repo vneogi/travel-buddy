@@ -5,9 +5,11 @@ import 'package:travel_buddy/core/api_exception.dart';
 import 'package:travel_buddy/core/providers.dart';
 import 'package:travel_buddy/data/models.dart';
 import 'package:travel_buddy/data/repositories.dart';
+import 'package:travel_buddy/offline/offline_database.dart';
 import 'package:travel_buddy/features/itinerary/itinerary_notifier.dart';
 
 class MockTripRepository extends Mock implements TripRepository {}
+class MockOfflineDatabase extends Mock implements OfflineDatabase {}
 
 TripState _trip(List<TripNode> nodes) =>
     TripState(tripId: 't1', userId: 'u1', nodes: nodes);
@@ -26,14 +28,20 @@ void main() {
   setUpAll(() => registerFallbackValue(EventType.askInfo));
 
   late MockTripRepository repo;
+  late MockOfflineDatabase mockDb;
   late ProviderContainer container;
 
   setUp(() {
     repo = MockTripRepository();
+    mockDb = MockOfflineDatabase();
     when(() => repo.getTrip('t1'))
         .thenAnswer((_) async => _trip([_node('n1', 'Old')]));
+    when(() => mockDb.cachePlace(any(), any())).thenAnswer((_) async {});
     container = ProviderContainer(
-      overrides: [tripRepoProvider.overrideWithValue(repo)],
+      overrides: [
+        tripRepoProvider.overrideWithValue(repo),
+        offlineDatabaseProvider.overrideWithValue(mockDb),
+      ],
     );
     addTearDown(container.dispose);
   });
