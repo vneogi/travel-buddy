@@ -34,6 +34,7 @@ class SyncEngine {
   StreamSubscription? _connectivitySub;
   DateTime? _lastSyncTime;
   String? _lastError;
+  bool _authHalted = false;
 
   static const int _queueCap = 5000;
   static const Duration _periodicInterval = Duration(seconds: 60);
@@ -99,7 +100,11 @@ class SyncEngine {
   // ============================================================
 
   /// Single sync pass. Returns true if any work was done.
+  /// True when a 401 has halted sync. Only manual re-auth clears this.
+  bool get authHalted => _authHalted;
+
   Future<bool> syncOnce() async {
+    if (_authHalted) return false;
     // Single-flight guard — never concurrent syncs
     if (_isSyncing) return false;
     _isSyncing = true;
@@ -164,6 +169,7 @@ class SyncEngine {
         // SPEC-02 B.2: 'surface re-auth (do NOT drop events)'
         // Rows reset to pending in finally block.
         _lastError = 'Auth expired: ${e.message}';
+        _authHalted = true;
         debugPrint('[SyncEngine] 401 — halting sync, events preserved');
         return false;
 

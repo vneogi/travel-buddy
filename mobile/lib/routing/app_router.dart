@@ -25,7 +25,8 @@ final appRouter = GoRouter(
     final isAuth = session != null;
     final isOnboarding = state.matchedLocation == '/onboarding';
 
-    if (!isAuth && !isOnboarding) return '/onboarding';
+    // SPEC-09: anonymous identity does not require a Supabase session.
+    // Removed: if (!isAuth && !isOnboarding) return '/onboarding';
     if (isAuth && isOnboarding) return '/';
     return null;
   },

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../data/models.dart';
+import '../features/itinerary/current_window.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
 import '../theme/spacing.dart';
@@ -33,7 +34,7 @@ class ActivityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isActive = node.status == NodeStatus.active;
+    final isActive = nodeIsCurrentWindow(node, DateTime.now());
     final isCompleted = node.status == NodeStatus.completed;
     final isSkipped = node.status == NodeStatus.skipped;
 

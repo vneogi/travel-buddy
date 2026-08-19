@@ -326,7 +326,9 @@ void main() {
     final after = await db.getPendingBatch(limit: 10);
     expect(after.length, 1);
     expect(after.first['signal_id'], 'sig-backoff');
-    expect(after.first['attempts'], 0);
+    // attempts preserved (was set by markRetry); only next_retry_at cleared
+    expect(after.first['attempts'], isNot(0),
+        reason: 'resetBackoff must not wipe attempts (sabotage test)');
     expect(after.first['next_retry_at'], isNull);
   });
 }

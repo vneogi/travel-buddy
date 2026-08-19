@@ -10,6 +10,7 @@ import '../../widgets/reroute_badge.dart';
 import '../../widgets/shimmer_card.dart';
 import '../../widgets/error_view.dart';
 import 'itinerary_notifier.dart';
+import 'replacement_ref.dart';
 import '../../core/providers.dart';
 
 /// The hero screen — live timeline of activity cards.
@@ -39,12 +40,14 @@ class ItineraryScreen extends ConsumerWidget {
         );
     // SPEC-07: emit reroute_accepted with the replacement ref
     if (result != null && result.updatedNodes.isNotEmpty) {
-      final replacement = result.updatedNodes
-          .where((n) => n.nodeId != node.nodeId)
-          .firstOrNull;
+      final replacementRef = replacementRefForSwap(
+        originalNodeId: node.nodeId,
+        originalVenueKey: placeRef,
+        updatedNodes: result.updatedNodes,
+      );
       ref.read(signalServiceProvider).emitRerouteAccepted(
             placeRef: placeRef,
-            replacementRef: replacement?.venueId ?? replacement?.venueName ?? 'unknown',
+            replacementRef: replacementRef,
             tripId: tripId,
           );
     }
