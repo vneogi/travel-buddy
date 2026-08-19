@@ -103,7 +103,7 @@ class _UsageCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.base),
           Text(
             '${status.used}/${status.max} reroutes today',
-            style: AppTypography.body2,
+            style: AppTypography.bodyMedium,
           ),
         ],
       ),

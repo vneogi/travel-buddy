@@ -29,7 +29,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             child: _messages.isEmpty
                 ? Center(
                     child: Text(
-                      'Ask anything about your trip.\n"Swap the next stop for a quiet cafe"',
+                      'Ask anything about your trip.\n"What are the opening hours?" or "What is nearby?"',
                       style: AppTypography.body.copyWith(color: AppColors.muted),
                       textAlign: TextAlign.center,
                     ),

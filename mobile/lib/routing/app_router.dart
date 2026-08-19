@@ -9,6 +9,7 @@ import '../features/chat/chat_screen.dart';
 import '../features/profile/profile_screen.dart';
 import '../features/upgrade/upgrade_screen.dart';
 import '../features/debug/sync_status_screen.dart';
+import 'redirect_for_auth.dart';
 
 /// True only when Supabase was actually initialized (real creds configured).
 bool get _supabaseReady =>
@@ -17,17 +18,14 @@ bool get _supabaseReady =>
 final appRouter = GoRouter(
   initialLocation: '/',
   redirect: (context, state) {
-    // Dev mode: Supabase not initialized → no auth gate. Let the app render so
-    // it can run against the backend using the X-Debug-User-Id header.
-    if (!_supabaseReady) return null;
-
-    final session = Supabase.instance.client.auth.currentSession;
-    final isAuth = session != null;
-    final isOnboarding = state.matchedLocation == '/onboarding';
-
-    if (!isAuth && !isOnboarding) return '/onboarding';
-    if (isAuth && isOnboarding) return '/';
-    return null;
+    final session = _supabaseReady
+        ? Supabase.instance.client.auth.currentSession
+        : null;
+    return redirectForAuth(
+      supabaseReady: _supabaseReady,
+      hasSession: session != null,
+      location: state.matchedLocation,
+    );
   },
   routes: [
     GoRoute(

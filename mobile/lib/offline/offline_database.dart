@@ -172,7 +172,7 @@ class OfflineDatabase {
   Future<int> resetBackoff() async {
     final database = await db;
     return database.rawUpdate(
-      "UPDATE outbox SET next_retry_at = NULL, attempts = 0 "
+      "UPDATE outbox SET next_retry_at = NULL "
       "WHERE state = 'pending'",
     );
   }

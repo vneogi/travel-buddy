@@ -26,7 +26,7 @@ void main() {
     final violations = <String>[];
     for (final file in renderDir.listSync(recursive: true)) {
       if (file is! File || !file.path.endsWith('.dart')) continue;
-      final lines = (file as File).readAsLinesSync();
+      final lines = file.readAsLinesSync();
       for (var i = 0; i < lines.length; i++) {
         final line = lines[i];
         if (RegExp(r'fontSize:\s*\d').hasMatch(line)) {
@@ -43,7 +43,7 @@ void main() {
     final violations = <String>[];
     for (final file in renderDir.listSync(recursive: true)) {
       if (file is! File || !file.path.endsWith('.dart')) continue;
-      final lines = (file as File).readAsLinesSync();
+      final lines = file.readAsLinesSync();
       for (var i = 0; i < lines.length; i++) {
         final line = lines[i];
         if (RegExp(r'EdgeInsets\.(all|only|symmetric)\([^)]*\d{2,}').hasMatch(line) &&
