@@ -74,8 +74,8 @@ class TripNode {
         lat: (j['lat'] as num?)?.toDouble(),
         lng: (j['lng'] as num?)?.toDouble(),
         openingHours: j['opening_hours'] as String?,
-        namesLocal: (j['names_local'] as Map<String, dynamic>?),
-        landmarksLocal: (j['landmarks_local'] as Map<String, dynamic>?),
+        namesLocal: (j['names_local'] as Map?)?.cast<String, dynamic>(),
+        landmarksLocal: (j['landmarks_local'] as Map?)?.cast<String, dynamic>(),
         nearestLandmark: j['nearest_landmark'] as String?,
       );
 }

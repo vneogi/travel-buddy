@@ -68,11 +68,15 @@ class ItineraryController extends StateNotifier<ItineraryState> {
 
   /// SPEC-12: pre-cache place data for offline driver cards.
   void _preCachePlaces(List<TripNode> nodes) {
-    final db = _ref.read(offlineDatabaseProvider);
-    for (final node in nodes) {
-      final placeRef = node.venueId ?? node.venueName;
-      final data = PlaceDriverCardData.fromTripNode(node);
-      db.cachePlace(placeRef, data.serialize());
+    try {
+      final db = _ref.read(offlineDatabaseProvider);
+      for (final node in nodes) {
+        final placeRef = node.venueId ?? node.venueName;
+        final data = PlaceDriverCardData.fromTripNode(node);
+        db.cachePlace(placeRef, data.serialize());
+      }
+    } catch (e) {
+      debugPrint('[ItineraryController] Pre-cache places error: $e');
     }
   }
 
