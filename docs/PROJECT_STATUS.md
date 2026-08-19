@@ -81,7 +81,7 @@
 | On-demand venue discovery (SPEC-18) | SPECIFIED | Not implemented. A traveller asks about where they are standing and the answer persists as a provisional venue, so the venue layer grows from real demand. Coordinate anchoring against OSM or Wikidata is mandatory before anything persists |
 | Corpus mining (SPEC-19) | SPECIFIED | Not implemented. Extracts the operational knowledge no structured dataset carries, from openly licensed corpora only. This is the data source trip_edge never had. Google and TripAdvisor are excluded on licensing |
 | City onboarding kit (SPEC-20) | SPECIFIED | Not implemented. Seeds a city's spine of 40 to 60 anchors, sourced identity first so provenance defaults to sourced rather than generated. SPEC-18 supplies the tail. validate_city refuses rather than warns |
-| Client render contract (SPEC-22) | SPECIFIED | Not implemented, and it precedes every screen. Owns the mapping from SPEC-17's five tiers to five treatments, the interruption budget that SPEC-15 and SPEC-17 both draw on and neither can own, offline as a designed state rather than an error, and the type and script tokens. Can be built before SPEC-17's backend exists, since the envelope shape is already specified |
+| Client render contract (SPEC-22) | SPECIFIED | Not implemented. October brief: docs/briefs/GENIE_SPEC_22_RENDER.md -- envelope widget, five treatments, interruption budget, offline state, prompt_dismissed. Font cmap and screen migration deferred |
 | OSM upstream contribution (SPEC-21) | DECIDED IN PRINCIPLE | Not scheduled, and not on the October path. A decision record rather than a spec: confirmed commodity facts go back to OpenStreetMap under the traveller's own account, never behavioural derivations, never model output, never subjective fields. Depends on SPEC-17 for field_verified claims. It also flags that our ODbL exposure is on the consuming side and already live via SPEC-20 |
 | Money as a dimension (SPEC-23) | SPECIFIED | Not implemented. The engineering contract under VISION section 20, and roadmap concern 7. A band and an amount are different things and both are needed; no amount is storable without its currency; a band is meaningless until anchored to a region, which is what makes price tolerance portable between cities; transport cost belongs on trip_edge; budget is revealed from rejections rather than asked for, with a volunteered hard cap honoured exactly; amounts are SPEC-17 claims on a weeks-scale horizon and degrade to a band when stale. Depends on SPEC-13, SPEC-16 and SPEC-17 |
 
@@ -115,9 +115,9 @@ SPEC-02 plus SPEC-12.
    data/dubai_uae.json remains a follow-up (not Oct-spine blocking).
 2. SPEC-09 client half -- **DONE** PR #16 (`7173a3f`). Device E2E with
    `TB_ALLOW_ANONYMOUS=true` deferred until laptop (not blocking next specs).
-3. SPEC-22 client render contract, before any screen. Envelope shape is
-   already specified; stub the source on the client if SPEC-17 backend is
-   not ready. **Next for Genie + planning.**
+3. SPEC-22 client render contract -- **NEXT.** Brief:
+   docs/briefs/GENIE_SPEC_22_RENDER.md. Envelope widget + five treatments +
+   interruption budget; SPEC-17 backend still stubbed.
 4. SPEC-12 driver card UI with one-tap confirm, plus name_confirmed and
    driver_card_shown in one migration. Renders from SPEC-02 cache_place.
 5. SPEC-10 booking anchors (manual floor plus import path as specified).
