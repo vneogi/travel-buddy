@@ -39,6 +39,8 @@ SIGNAL_TYPES: dict[str, str] = {
     # Dish-level signals. Requires entity_type='dish' (migration 0005).
     "dish_loved": "enum",
     "dish_ordered": "boolean",
+    # SPEC-22: dismissal is data (decision 9)
+    "prompt_dismissed": "json",
 }
 
 # What value_json carries for each type. This is DOCUMENTATION -- not validated
@@ -53,6 +55,7 @@ PAYLOAD_SHAPES: dict[str, str] = {
     "arrival_delta": "numeric: minutes (positive = late, negative = early)",
     "dish_loved": "enum value from ARRAY['loved'] -- same as user_loved but entity_type='dish'",
     "dish_ordered": "boolean: true (presence = ordered/consumed)",
+    "prompt_dismissed": "json: {kind: str, attribute: str, entity_id: optional}",
 }
 
 

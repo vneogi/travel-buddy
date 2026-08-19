@@ -1,0 +1,13 @@
+{
+  "@@locale": "hi",
+  "factHedge": "yaatriyoN ka kahanaa hai {value}",
+  "factAskPrompt": "kyaa yah abhi bhii sahii hai?",
+  "factDeferSee": "{target} dekhein",
+  "factRefuse": "jaanakaaree upalabdh nahiiN",
+  "factConfirm": "puShTi karein",
+  "factDismiss": "khaaarij karein",
+  "factRecency": "{month} meiN puShTi kii gayii",
+  "offlineCached": "{when} meiN cache kiyaa gayaa",
+  "offlineUnavailable": "offline upalabdh nahiiN",
+  "offlineRetry": "online hone par punaH prayaas karein"
+}
