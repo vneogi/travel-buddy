@@ -12,6 +12,7 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final statusAsync = ref.watch(userStatusProvider);
+    final deviceId = ref.watch(deviceIdProvider);
 
     return Scaffold(
       appBar: AppBar(title: Text('Profile', style: AppTypography.h2)),
@@ -26,6 +27,16 @@ class ProfileScreen extends ConsumerWidget {
               error: (_, __) => const Text('Could not load status'),
             ),
             const SizedBox(height: AppSpacing.lg),
+            // SPEC-09: Device identity (read-only)
+            ListTile(
+              leading: const Icon(Icons.fingerprint),
+              title: const Text('Device ID'),
+              subtitle: Text(
+                deviceId,
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.base),
             // Upgrade CTA
             SizedBox(
               width: double.infinity,
@@ -80,7 +91,8 @@ class _UsageCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.base),
           // Usage ring
           SizedBox(
-            width: 80, height: 80,
+            width: 80,
+            height: 80,
             child: CircularProgressIndicator(
               value: status.used / status.max,
               strokeWidth: 6,
@@ -88,14 +100,10 @@ class _UsageCard extends StatelessWidget {
               valueColor: const AlwaysStoppedAnimation(AppColors.primary),
             ),
           ),
-          const SizedBox(height: AppSpacing.md),
+          const SizedBox(height: AppSpacing.base),
           Text(
-            '${status.remaining} reroutes remaining',
-            style: AppTypography.body,
-          ),
-          Text(
-            '${status.used} / ${status.max} used today',
-            style: AppTypography.caption,
+            '${status.used}/${status.max} reroutes today',
+            style: AppTypography.body2,
           ),
         ],
       ),

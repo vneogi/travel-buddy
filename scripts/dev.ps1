@@ -29,7 +29,6 @@ $LanIp = (Get-NetIPAddress -AddressFamily IPv4 |
     $_.InterfaceAlias -notlike '*Loopback*'
   } |
   Select-Object -First 1).IPAddress
-$DebugUserId = '11111111-1111-1111-1111-111111111111'
 
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host " Travel Buddy Dev Environment" -ForegroundColor Cyan
@@ -37,7 +36,6 @@ Write-Host "============================================" -ForegroundColor Cyan
 Write-Host "Repo:     $RepoRoot"
 Write-Host "LAN IP:   $LanIp"
 Write-Host "ADB:      $platformTools"
-Write-Host "Debug ID: $DebugUserId"
 Write-Host ""
 
 switch ($Mode) {
@@ -139,11 +137,10 @@ switch ($Mode) {
 
     # Use localhost (via USB tunnel) -- reliable for general dev
     Write-Host "Launching app against http://localhost:8000 (via USB tunnel) ..." -ForegroundColor Green
-    Write-Host "Debug user: $DebugUserId" -ForegroundColor Green
+    Write-Host "Identity: Anonymous (device UUID)" -ForegroundColor Green
     Write-Host ""
     & flutter run `
-      --dart-define=TB_API_BASE_URL="http://localhost:8000" `
-      --dart-define=TB_DEBUG_USER_ID=$DebugUserId
+      --dart-define=TB_API_BASE_URL="http://localhost:8000"
   }
 
   'app-lan' {
@@ -164,8 +161,7 @@ switch ($Mode) {
     Write-Host ""
 
     & flutter run `
-      --dart-define=TB_API_BASE_URL="http://${LanIp}:8000" `
-      --dart-define=TB_DEBUG_USER_ID=$DebugUserId
+      --dart-define=TB_API_BASE_URL="http://${LanIp}:8000"
   }
 
   'tunnel' {

@@ -17,10 +17,15 @@ Future<void> main() async {
     );
   }
 
-  // Create container so we can start the sync engine before runApp.
+  // Create container so we can resolve identity and start sync before runApp.
   final container = ProviderContainer();
 
-  // SPEC-02: Start sync engine — crash recovery + periodic timer + connectivity.
+  // SPEC-09: Resolve device identity before anything touches the network.
+  // getOrCreate() reads from secure storage or generates a UUID v4.
+  final deviceId = await container.read(deviceIdentityProvider).getOrCreate();
+  container.read(deviceIdProvider.notifier).state = deviceId;
+
+  // SPEC-02: Start sync engine -- crash recovery + periodic timer + connectivity.
   // Without this call, nothing syncs and inflight rows stay stuck forever.
   await container.read(syncEngineProvider).start();
 
@@ -65,11 +70,9 @@ class _TravelBuddyAppState extends State<TravelBuddyApp>
       final now = DateTime.now();
       if (_lastResumeSync != null &&
           now.difference(_lastResumeSync!) < _resumeDebounce) {
-        debugPrint('[App] Resumed — debounced (last sync ${now.difference(_lastResumeSync!).inSeconds}s ago)');
         return;
       }
       _lastResumeSync = now;
-      debugPrint('[App] Resumed — triggering sync');
       ProviderScope.containerOf(context).read(syncEngineProvider).triggerSync();
     }
   }
@@ -78,10 +81,7 @@ class _TravelBuddyAppState extends State<TravelBuddyApp>
   Widget build(BuildContext context) {
     return MaterialApp.router(
       title: 'Travel Buddy',
-      debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.system,
       routerConfig: appRouter,
     );
   }

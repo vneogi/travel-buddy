@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'api_client.dart';
+import 'device_identity.dart';
 import 'env.dart';
 import '../data/repositories.dart';
 import '../data/models.dart';
@@ -8,26 +9,37 @@ import '../offline/offline_database.dart';
 import '../offline/sync_engine.dart';
 import '../services/signal_service.dart';
 
-/// Supabase access token provider (null in dev -> ApiClient falls back to
-/// X-Debug-User-Id). Guarded because Supabase.instance throws if initialize()
-/// was skipped (dev mode with no TB_SUPABASE_URL) -- mirrors main.dart's guard.
+/// Device identity (SPEC-09). Eagerly resolved in main() before runApp;
+/// overridden with the resolved string so downstream reads are synchronous.
+final deviceIdentityProvider = Provider<DeviceIdentity>(
+  (ref) => DeviceIdentity(),
+);
+
+/// Resolved device UUID string. Set by main() after getOrCreate().
+final deviceIdProvider = StateProvider<String>((ref) => '');
+
+/// Supabase access token provider (null when no Supabase session).
 final tokenProvider = Provider<TokenProvider>((ref) {
   return () async {
     if (Env.supabaseUrl.isEmpty || Env.supabaseAnonKey.isEmpty) return null;
     try {
       return Supabase.instance.client.auth.currentSession?.accessToken;
     } catch (_) {
-      return null; // not initialized / no session -> fall back to debug header
+      return null;
     }
   };
 });
 
-/// Central API client.
-final apiClientProvider = Provider<ApiClient>(
-  (ref) => ApiClient(ref.watch(tokenProvider)),
-);
+/// Central API client (SPEC-09: Anonymous header when no JWT).
+final apiClientProvider = Provider<ApiClient>((ref) {
+  final resolvedDeviceId = ref.watch(deviceIdProvider);
+  return ApiClient(
+    tokenProvider: ref.watch(tokenProvider),
+    deviceIdProvider: () async => resolvedDeviceId,
+  );
+});
 
-/// Offline database (SQLite — SPEC-02 Part A).
+/// Offline database (SQLite -- SPEC-02 Part A).
 /// Single instance shared by SignalService and SyncEngine.
 final offlineDatabaseProvider = Provider<OfflineDatabase>(
   (ref) => OfflineDatabase(),
@@ -42,7 +54,7 @@ final syncEngineProvider = Provider<SyncEngine>((ref) {
   );
 });
 
-/// Signal service (SPEC-02 Part A.3 — offline seam, queue-backed).
+/// Signal service (SPEC-02 Part A.3 -- offline seam, queue-backed).
 /// All signal emissions go through this. Persists to SQLite BEFORE network.
 /// UI call sites unchanged from SPEC-01.
 final signalServiceProvider = Provider<SignalService>((ref) {

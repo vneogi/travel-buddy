@@ -20,11 +20,4 @@ class Env {
     'TB_SUPABASE_ANON_KEY',
     defaultValue: '',
   );
-
-  /// Dev-only: when backend has no JWT secret, send X-Debug-User-Id.
-  /// MUST be a UUID once the Supabase backend is flipped on (user_id is UUID).
-  static const debugUserId = String.fromEnvironment(
-    'TB_DEBUG_USER_ID',
-    defaultValue: '',
-  );
 }
