@@ -73,7 +73,9 @@ class ItineraryController extends StateNotifier<ItineraryState> {
       for (final node in nodes) {
         final placeRef = node.venueId ?? node.venueName;
         final data = PlaceDriverCardData.fromTripNode(node);
-        db.cachePlace(placeRef, data.serialize());
+        db.cachePlace(placeRef, data.serialize()).catchError((e) {
+          debugPrint('[ItineraryController] Pre-cache place error: $e');
+        });
       }
     } catch (e) {
       debugPrint('[ItineraryController] Pre-cache places error: $e');
