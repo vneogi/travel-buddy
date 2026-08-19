@@ -19,8 +19,8 @@ Until (2) lands, the execution agent is still on that brief, not SPEC-12.
   claims you did not watch. ASCII in living docs (R14). R17: a guard
   that cannot fail is not a guard.
 - Execution (Genie Code): application code, migrations, tests; land via PR.
-- Owner: laptop, Flutter on device, live SQL editor, PowerShell. Owner
-  currently has no laptop; do not invent device results.
+- Owner: laptop, Flutter on device, live SQL editor, PowerShell. Runbook:
+  `docs/briefs/LAPTOP_VERIFY.md`. Do not invent device results.
 
 ## Where we are
 
