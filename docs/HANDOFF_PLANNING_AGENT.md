@@ -32,10 +32,12 @@ Done on the October spine:
   PromptDismissAdapter. Font cmap, ARB runtime wiring, screen migration
   deferred.
 
-PR #18 is merged (`ce8fedb`). First planning job is the SPEC-12 Genie
-brief: driver card on `FactView` / `ConfirmAffordance` / `cache_place`.
-Then SPEC-10, then thin SPEC-04 hotel rescue. That order is the spine.
-Do not reverse it.
+- SPEC-12 driver card. PR #19 (`a2da64a`). Full-screen offline card on
+  `FactView` / `ConfirmAffordance` / `cache_place`, `driver_card_shown` &
+  `name_confirmed` signals (migration 0020 in repo, unapplied live).
+
+Next: SPEC-10 booking anchors (manual floor plus import path).
+Then thin SPEC-04 hotel rescue. That order is the spine. Do not reverse it.
 
 Status tables: `docs/PROJECT_STATUS.md`. Device-only queue:
 `docs/AWAITING_VERIFICATION.md`.
@@ -92,9 +94,9 @@ implement merge before the driver card.
 
 ## First job
 
-Write and review the SPEC-12 Genie brief. Use `FactView`,
-`ConfirmAffordance`, and SPEC-02 `cache_place`. One migration for
-`name_confirmed` and `driver_card_shown` if the spec still says that.
+Write and review the SPEC-10 Genie brief: booking anchors (manual floor
+plus import path as specified). Locked node representation on
+`trip_node` and itinerary timeline.
 
 Do not start with another full-repo archaeology. The defects that
 matter on itinerary are listed above. If a new claim needs checking,
