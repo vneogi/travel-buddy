@@ -14,6 +14,7 @@ import 'package:travel_buddy/render/fact_envelope.dart';
 import 'package:travel_buddy/services/signal_service.dart';
 
 class MockApiClient extends Mock implements ApiClient {}
+class MockSyncEngine extends Mock implements SyncEngine {}
 
 void main() {
   sqfliteFfiInit();
@@ -110,24 +111,15 @@ void main() {
 
   group('Signal emission (offline outbox)', () {
     late OfflineDatabase db;
-    late MockApiClient mockApi;
-    late SyncEngine syncEngine;
     late SignalService signalService;
 
     setUp(() async {
       db = OfflineDatabase(testPath: inMemoryDatabasePath);
-      mockApi = MockApiClient();
-      syncEngine = SyncEngine(db: db, api: mockApi);
-      signalService = SignalService(db: db, syncEngine: syncEngine);
-
-      // Stub API to throw (offline)
-      when(() => mockApi.post(any(), body: any(named: 'body')))
-          .thenThrow(const NetworkException());
+      final mockSync = MockSyncEngine();
+      signalService = SignalService(db: db, syncEngine: mockSync);
     });
 
     tearDown(() async {
-      syncEngine.stop();
-      await Future.delayed(const Duration(milliseconds: 50));
       await db.close();
     });
 
@@ -141,7 +133,7 @@ void main() {
 
       final batch = await db.getPendingBatch();
       expect(batch, hasLength(1));
-      final payload = jsonDecode(batch.first['payload'] as String);
+      final payload = jsonDecode(batch.first['payload_json'] as String);
       expect(payload['signal_type'], equals('driver_card_shown'));
       final valueJson = payload['value_json'] as Map<String, dynamic>;
       expect(valueJson['was_offline'], isTrue);
@@ -161,7 +153,7 @@ void main() {
 
       final batch = await db.getPendingBatch();
       expect(batch, hasLength(1));
-      final payload = jsonDecode(batch.first['payload'] as String);
+      final payload = jsonDecode(batch.first['payload_json'] as String);
       expect(payload['signal_type'], equals('name_confirmed'));
       final valueJson = payload['value_json'] as Map<String, dynamic>;
       expect(valueJson['verdict'], equals('confirmed'));
@@ -180,7 +172,7 @@ void main() {
 
       final batch = await db.getPendingBatch();
       expect(batch, hasLength(1));
-      final payload = jsonDecode(batch.first['payload'] as String);
+      final payload = jsonDecode(batch.first['payload_json'] as String);
       expect(payload['signal_type'], equals('name_confirmed'));
       final valueJson = payload['value_json'] as Map<String, dynamic>;
       expect(valueJson['verdict'], equals('rejected'));
