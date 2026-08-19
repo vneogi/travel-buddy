@@ -4,11 +4,16 @@ import '../theme/typography.dart';
 import '../theme/colors.dart';
 import 'fact_envelope.dart';
 import 'confirm_affordance.dart';
+import 'render_strings.dart';
 
 /// The ONLY widget that renders a fact (SPEC-22 decision 2).
 ///
 /// Every call site must pass `envelope:`. No bare-value constructor exists.
 /// No `FactView.value(String)`. No optional tier.
+///
+/// Dismiss (ask/defer) calls onDismiss, which the caller MUST wire to
+/// SignalService.emit(prompt_dismissed). This widget does not import
+/// SignalService directly (render layer has no service dependency).
 class FactView extends StatelessWidget {
   final FactEnvelope envelope;
   final String attribute;
@@ -46,27 +51,15 @@ class FactView extends StatelessWidget {
   Widget _buildTierContent() {
     switch (envelope.tier) {
       case FactTier.assert_:
-        // Plain text. No badge, no icon, no colour callout.
+        return Text(_valueAsString(), style: AppTypography.body);
+
+      case FactTier.hedge:
         return Text(
-          _valueAsString(),
+          RenderStrings.factHedge(_valueAsString()),
           style: AppTypography.body,
         );
 
-      case FactTier.hedge:
-        // Qualifier inside the sentence.
-        return Text.rich(TextSpan(
-          style: AppTypography.body,
-          children: [
-            TextSpan(
-              text: 'Travellers usually say ',
-              style: AppTypography.body.copyWith(color: AppColors.muted),
-            ),
-            TextSpan(text: _valueAsString()),
-          ],
-        ));
-
       case FactTier.ask:
-        // Question card with confirm affordance.
         return Container(
           padding: EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
@@ -77,8 +70,8 @@ class FactView extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Is this still correct?',
-                style: AppTypography.body2.copyWith(color: AppColors.muted),
+                RenderStrings.factAskPrompt,
+                style: AppTypography.bodyMedium.copyWith(color: AppColors.muted),
               ),
               SizedBox(height: AppSpacing.xs),
               Text(_valueAsString(), style: AppTypography.body),
@@ -89,22 +82,14 @@ class FactView extends StatelessWidget {
         );
 
       case FactTier.defer_:
-        // Labelled link. No value displayed.
-        return Text.rich(TextSpan(
-          style: AppTypography.body,
-          children: [
-            const TextSpan(text: 'See '),
-            TextSpan(
-              text: deferralTarget ?? 'source',
-              style: AppTypography.body.copyWith(color: AppColors.primary),
-            ),
-          ],
-        ));
+        return Text(
+          RenderStrings.factDeferSee(deferralTarget ?? 'source'),
+          style: AppTypography.body.copyWith(color: AppColors.primary),
+        );
 
       case FactTier.refuse:
-        // Explicit unknown. Never empty/whitespace.
         return Text(
-          'Information not available',
+          RenderStrings.factRefuse,
           style: AppTypography.body.copyWith(color: AppColors.muted),
         );
     }
@@ -113,7 +98,7 @@ class FactView extends StatelessWidget {
   Widget _buildRecency() {
     final month = _monthName(envelope.asOf.month);
     return Text(
-      'Confirmed in $month',
+      RenderStrings.factRecency(month),
       style: AppTypography.caption.copyWith(color: AppColors.subtle),
     );
   }

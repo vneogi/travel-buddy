@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
 import '../theme/colors.dart';
+import 'render_strings.dart';
 
 /// Three-state connectivity/cache model (SPEC-22 decision 7).
 enum OfflineState { live, cached, unavailable }
@@ -62,15 +63,15 @@ class OfflineStateView extends StatelessWidget {
             Icon(Icons.cloud_off, size: AppSpacing.xl, color: AppColors.muted),
             SizedBox(height: AppSpacing.sm),
             Text(
-              'Not available offline',
-              style: AppTypography.body2.copyWith(color: AppColors.muted),
+              RenderStrings.offlineUnavailable,
+              style: AppTypography.bodyMedium.copyWith(color: AppColors.muted),
             ),
             if (onRetry != null)
               Padding(
                 padding: EdgeInsets.only(top: AppSpacing.sm),
                 child: TextButton(
                   onPressed: onRetry,
-                  child: Text('Retry when online', style: AppTypography.caption),
+                  child: Text(RenderStrings.offlineRetry, style: AppTypography.caption),
                 ),
               ),
           ],

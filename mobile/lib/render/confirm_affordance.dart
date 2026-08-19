@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
+import 'render_strings.dart';
 
 /// One-tap confirm control (SPEC-22 decision 2, SPEC-12 shared later).
 ///
@@ -18,12 +19,12 @@ class ConfirmAffordance extends StatelessWidget {
       children: [
         TextButton(
           onPressed: onConfirm,
-          child: Text('Confirm', style: AppTypography.body2),
+          child: Text(RenderStrings.factConfirm, style: AppTypography.bodyMedium),
         ),
         SizedBox(width: AppSpacing.sm),
         if (onDismiss != null)
           IconButton(
-            icon: const Icon(Icons.close, size: AppSpacing.base),
+            icon: const Icon(Icons.close, size: AppSpacing.iconSm),
             onPressed: onDismiss,
             tooltip: 'Dismiss',
           ),

@@ -3,21 +3,30 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// Token literal guard (SPEC-22 decision 10).
 ///
-/// Scans every .dart file under mobile/lib/render/ for raw numeric literals
+/// Scans every .dart file under lib/render/ for raw numeric literals
 /// in fontSize or EdgeInsets. All spacing/typography must go through
 /// AppSpacing.* and AppTypography.*.
+
+Directory _resolveRenderDir() {
+  // flutter test runs from mobile/; CI may run from repo root.
+  final candidates = [
+    Directory('lib/render'),
+    Directory('mobile/lib/render'),
+  ];
+  for (final d in candidates) {
+    if (d.existsSync()) return d;
+  }
+  fail('Neither lib/render nor mobile/lib/render found. '
+       'Run from mobile/ or repo root.');
+}
+
 void main() {
   test('no raw fontSize literals in lib/render/', () {
-    final renderDir = Directory('lib/render');
-    if (!renderDir.existsSync()) {
-      // When running from mobile/ the path is lib/render
-      // When running from repo root it is mobile/lib/render
-      return; // skip gracefully if dir not found (CI runs from mobile/)
-    }
+    final renderDir = _resolveRenderDir();
     final violations = <String>[];
     for (final file in renderDir.listSync(recursive: true)) {
       if (file is! File || !file.path.endsWith('.dart')) continue;
-      final lines = file.readAsLinesSync();
+      final lines = (file as File).readAsLinesSync();
       for (var i = 0; i < lines.length; i++) {
         final line = lines[i];
         if (RegExp(r'fontSize:\s*\d').hasMatch(line)) {
@@ -30,16 +39,13 @@ void main() {
   });
 
   test('no raw EdgeInsets numeric literals in lib/render/', () {
-    final renderDir = Directory('lib/render');
-    if (!renderDir.existsSync()) return;
+    final renderDir = _resolveRenderDir();
     final violations = <String>[];
     for (final file in renderDir.listSync(recursive: true)) {
       if (file is! File || !file.path.endsWith('.dart')) continue;
-      final lines = file.readAsLinesSync();
+      final lines = (file as File).readAsLinesSync();
       for (var i = 0; i < lines.length; i++) {
         final line = lines[i];
-        // Match EdgeInsets.(all|only|symmetric) with 2+ digit raw numbers
-        // but allow AppSpacing references
         if (RegExp(r'EdgeInsets\.(all|only|symmetric)\([^)]*\d{2,}').hasMatch(line) &&
             !line.contains('AppSpacing')) {
           violations.add('${file.path}:${i + 1}: $line');
