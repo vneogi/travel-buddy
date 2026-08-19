@@ -78,12 +78,19 @@ Full Windows device day completed. Durable outcomes:
 - pg_description non-ASCII: 0 rows.
 - `hybrid_venue_search` live args = migration 0001 (no geo_region).
 
-October spine next: itinerary signal/auth/CI fixes
-(docs/briefs/GENIE_ITINERARY_SIGNAL_FIXES.md) -> SPEC-12 -> SPEC-10 -> thin
-SPEC-04. SPEC-09 client and SPEC-22 October slice are merged. Owner laptop
-runbook: docs/briefs/LAPTOP_VERIFY.md (0019, flutter, Anonymous E2E,
-sabotage). After the fix PR merges, planning-agent handoff is
+October spine next: SPEC-12 -> SPEC-10 -> thin SPEC-04. PR #18 merged
+(`ce8fedb`). Owner laptop runbook: docs/briefs/LAPTOP_VERIFY.md (0019,
+Anonymous E2E, sabotage, Chrome). Planning-agent handoff:
 docs/HANDOFF_PLANNING_AGENT.md.
+
+## Finding -- Aug 20 2026 -- PR #18 Flutter on Windows
+
+SHA `d7eb853` (then squash-merged as `ce8fedb`). Owner ran from `mobile/`:
+`flutter analyze --no-fatal-infos` exit 0 (infos only; the two
+unnecessary_cast warnings were the CI failure). `flutter test`: all
+tests passed. GitHub flutter + pytest jobs green on that SHA. Remaining
+laptop work is 0019 apply, Anonymous curl/UI, sabotage -- not a re-run
+of analyze.
 
 ## Finding -- Aug 17 2026 -- Steps 5d + 7 live SQL (partial)
 

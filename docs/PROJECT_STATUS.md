@@ -63,7 +63,7 @@
 | Party context (SPEC-03) | DONE | Server-side stamping, both backends, migration 0003 applied |
 | Observability (SPEC-05) | DONE | Ring buffer, request IDs, debug endpoint |
 | Signal registry (SPEC-06) | DONE | models/signal_types.py plus drift test |
-| Signal emission (SPEC-07) | PARTIAL | Missing UI: reroute_rejected, dish_loved, dish_ordered. visited_confirmed is emitted but unreachable (NodeStatus.active is never assigned). reroute_accepted is emitted with a lookup that excludes the swapped node. Both are in docs/briefs/GENIE_ITINERARY_SIGNAL_FIXES.md |
+| Signal emission (SPEC-07) | PARTIAL | Missing UI: reroute_rejected, dish_loved, dish_ordered. PR #18 (`ce8fedb`): replacement_ref lookup matches stable node_id; visited/NOW uses nodeIsCurrentWindow |
 | Laos curation (SPEC-08) | DONE | 58 venues curated including Lao script. The wrong-script contamination is fixed: appended Chinese, Thai spelling of a Lao word, and a Thai-style consonant cluster |
 | arrival_delta derivation | DONE | Server-derived from visited_confirmed vs scheduled_start |
 | Docs hygiene guard | DONE | tests/test_docs_hygiene.py walks every markdown file outside build and vendor directories, and the SPEC-reference check also scans .py and .sql. Known non-ASCII files are allowlisted; the list may only shrink. The ASCII check itself still covers markdown only |
@@ -118,9 +118,10 @@ SPEC-02 plus SPEC-12.
 3. SPEC-22 client render contract -- **DONE** PR #17 (`1b9b1b3`). October
    slice only; SPEC-17 backend still stubbed. Apply 0019 and `flutter test`
    when the laptop is back.
-4. Itinerary signal, auth-gate, and Flutter CI fixes -- **NEXT.** Brief:
-   docs/briefs/GENIE_ITINERARY_SIGNAL_FIXES.md. Do this before SPEC-12.
-   After it merges, planning-agent handoff is docs/HANDOFF_PLANNING_AGENT.md.
+4. Itinerary signal, auth-gate, and Flutter CI -- **DONE** PR #18
+   (`ce8fedb`). Flutter job green; owner laptop `flutter analyze
+   --no-fatal-infos` (infos only) and `flutter test` green on `d7eb853`.
+   Planning-agent handoff: docs/HANDOFF_PLANNING_AGENT.md.
 5. SPEC-12 driver card UI with one-tap confirm, plus name_confirmed and
    driver_card_shown in one migration. Renders from SPEC-02 cache_place.
 6. SPEC-10 booking anchors (manual floor plus import path as specified).
@@ -161,8 +162,8 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 
 | Issue | Severity | Detail |
 |-------|----------|--------|
-| reroute_accepted.replacement_ref is inverted | High | Swap preserves node_id (SPEC-16). The client looks up the replacement as updatedNodes where nodeId != original, which excludes the swapped node. Training data is wrong or 'unknown'. Fix brief: docs/briefs/GENIE_ITINERARY_SIGNAL_FIXES.md |
-| Supabase session gate softlocks the app | High | app_router redirects to /onboarding when creds are set and there is no session; onboarding never creates a session. SPEC-09 identity is Anonymous UUID. A device with real TB_SUPABASE_* cannot enter the app. Same brief |
+| reroute_accepted.replacement_ref is inverted | Closed PR #18 (`ce8fedb`) | Client helper replacementRefForSwap matches node_id and changed venue key. Production `_swap` calls it |
+| Supabase session gate softlocks the app | Closed PR #18 (`ce8fedb`) | app_router calls redirectForAuth; anonymous device needs no session. Owner E2E with dart-defines still in LAPTOP_VERIFY Step 8b |
 | Anonymous data has no path into an account, and signal sits outside referential integrity | Medium | SPEC-09 starts accumulating trip_states, event_log and signal rows under a device UUID that belongs to a device rather than a person. Until SPEC-24 exists, the first sign-in strands all of it, and from the user's side that looks like an app that lost their trip. The schema makes it sharper: trip_states.user_id and event_log.user_id are UUID REFERENCES user_tiers, while signal.user_id is TEXT with no foreign key and no type match, so the table holding the asset is the one table outside the constraint system. Neither a merge nor a SPEC-27 deletion can rely on a cascade, and nothing will complain when a future table is missed -- which is why both specs walk the schema instead of keeping a list. The engineering does not get harder with time; the data does |
 | observed_duration_minutes has no writer | Medium | The column exists and is honestly documented as starting empty, but nothing populates it. It cannot be computed when a trip is saved, only derived from arrival signals on sync, so the transition data the convenience layer depends on is not accumulating. This is the last open defect from the SPEC-16 work |
 | The five Supabase tests have never run | Closed Aug 17 2026 | Live device-day pytest with TB_SUPABASE_URL set; tests/test_supabase_integration.py included. Run pytest -q -ra to confirm |

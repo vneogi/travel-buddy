@@ -5,13 +5,8 @@ Those two files are the contract. This file is only the baton: what is true
 now, what the previous planning agent already adjudicated, and what the
 next agent must not reopen in the first week.
 
-Switch is valid only after all three:
-
-1. This docs commit is on `main` (SPEC-22 status pointers + this file).
-2. The PR from `docs/briefs/GENIE_ITINERARY_SIGNAL_FIXES.md` is merged.
-3. You have read this file and the two contracts above.
-
-Until (2) lands, the execution agent is still on that brief, not SPEC-12.
+Switch is valid: PR #18 is on `main` (`ce8fedb`). Read this file and
+the two contracts above. First execution brief to write: SPEC-12.
 
 ## Who does what (unchanged)
 
@@ -37,9 +32,10 @@ Done on the October spine:
   PromptDismissAdapter. Font cmap, ARB runtime wiring, screen migration
   deferred.
 
-Next after the fix PR: SPEC-12 driver card on `FactView` /
-`ConfirmAffordance` / `cache_place`. Then SPEC-10, then thin SPEC-04
-hotel rescue. That order is the spine. Do not reverse it.
+PR #18 is merged (`ce8fedb`). First planning job is the SPEC-12 Genie
+brief: driver card on `FactView` / `ConfirmAffordance` / `cache_place`.
+Then SPEC-10, then thin SPEC-04 hotel rescue. That order is the spine.
+Do not reverse it.
 
 Status tables: `docs/PROJECT_STATUS.md`. Device-only queue:
 `docs/AWAITING_VERIFICATION.md`.
@@ -49,18 +45,23 @@ Status tables: `docs/PROJECT_STATUS.md`. Device-only queue:
 A full-repo review (Isaac, 2026-08-19) was checked against the tree.
 Keep the useful bugs; do not inherit the false ones.
 
-Keep (most are the Genie brief above):
+Fixed in PR #18 (`ce8fedb`):
 
-- `replacement_ref` lookup inverted while swap preserves `node_id`.
-- `NodeStatus.active` never assigned; `visited_confirmed` unreachable.
-- Chat placeholder promises a swap; chat always sends `ask_info`.
-- Session redirect vs skip-onboarding loop; worse after SPEC-09.
-- `AppTypography.body2` in `profile_screen.dart`.
+- `replacement_ref` lookup (stable node_id + changed venue).
+- Visited/NOW via `nodeIsCurrentWindow` (server still does not stamp ACTIVE).
+- Session redirect no longer requires a Supabase session.
+- `body2` -> `bodyMedium`.
+- Flutter job in `.github/workflows/test.yml` (pytest sibling kept).
+- compose Python-as-init.sql mount removed.
+- `resetBackoff` keeps `attempts`.
+- 401 sets `_authHalted`; connectivity does not clear it.
+- Chat empty-state is a question, not a swap.
+
+Still true (do not "fix" by rescoping October):
+
 - `cacheTrip` / `getCachedTrip` have no production callers (reads).
-- `docker-compose` mounts Python as `init.sql`.
-- No Flutter job in CI.
-- 401 "halt" is a comment; 60s timer still runs.
-- `resetBackoff` zeroes `attempts` on every reconnect.
+  Wire on SPEC-12 / thin SPEC-04, not a README edit.
+- Chat still always sends `ask_info`; do not build NL swap this week.
 
 Reject or defer:
 
@@ -89,7 +90,7 @@ test. Do not steal SPEC-12's week for it. SPEC-24 vs accumulating
 device UUIDs is already a Medium row in PROJECT_STATUS; date it, do not
 implement merge before the driver card.
 
-## First job after the fix PR
+## First job
 
 Write and review the SPEC-12 Genie brief. Use `FactView`,
 `ConfirmAffordance`, and SPEC-02 `cache_place`. One migration for
