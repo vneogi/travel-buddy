@@ -1,0 +1,17 @@
+{
+  "@@locale": "en",
+  "factHedge": "Travellers usually say {value}",
+  "@factHedge": { "placeholders": { "value": { "type": "String" } } },
+  "factAskPrompt": "Is this still correct?",
+  "factDeferSee": "See {target}",
+  "@factDeferSee": { "placeholders": { "target": { "type": "String" } } },
+  "factRefuse": "Information not available",
+  "factConfirm": "Confirm",
+  "factDismiss": "Dismiss",
+  "factRecency": "Confirmed in {month}",
+  "@factRecency": { "placeholders": { "month": { "type": "String" } } },
+  "offlineCached": "Cached {when}",
+  "@offlineCached": { "placeholders": { "when": { "type": "String" } } },
+  "offlineUnavailable": "Not available offline",
+  "offlineRetry": "Retry when online"
+}

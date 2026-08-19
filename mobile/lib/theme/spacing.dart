@@ -10,6 +10,9 @@ class AppSpacing {
   static const double xl = 32;
   static const double xxl = 48;
 
+  // Icon sizes
+  static const double iconSm = 18;
+
   // Radii
   static const double radiusCard = 16;
   static const double radiusChip = 12;
