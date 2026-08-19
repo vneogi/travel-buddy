@@ -73,7 +73,7 @@
 | Itinerary normalisation (SPEC-16) | IMPLEMENTED | Decompose and compose land in services/itinerary_normaliser.py, dual-write in both backends, round-trip equality asserted, wire format unchanged. node_id is stable across reschedules via state_json and now comes from models/ids.py. One gap remains: observed_duration_minutes has no writer, so no transition data is accumulating |
 | Booking anchors (SPEC-10) | SPECIFIED | Not implemented. Resequenced to follow SPEC-16, because an anchor is a locked node and building it against the blob means building it twice. Amended so import is the primary path, manual entry the floor, and extraction on the device the preferred implementation of every import path |
 | Forced-choice preferences (SPEC-11) | SPECIFIED | Not implemented. Cold-start preference capture |
-| Show driver cards (SPEC-12) | SPECIFIED | Schema and loader ready. No longer blocked: the card ships with an unconfirmed treatment plus a one-tap confirm that promotes a name to field_verified, so it works from day one and improves through use |
+| Show driver cards (SPEC-12) | SPECIFIED, BRIEF READY | Brief: docs/briefs/GENIE_SPEC_12_DRIVER_CARD.md -- offline full-screen card, FactView assert/ask/refuse tiers, ConfirmAffordance verification, SQLite cache_place, driver_card_shown and name_confirmed signals (migration 0020) |
 | Region and locale registry (SPEC-13) | SPECIFIED | Not implemented. Rising in priority: a city-onboarding pipeline needs it for bounding box, languages, currency and fare bands. Makes adding a city a row rather than a code change |
 | Dietary model (SPEC-14) | DECIDED, DESCOPED | Not a feature. The spec is now a decision record: the app makes no dietary suitability claim, because no data source can support one. Ingredient facts stay as facts with a disclaimer. This is also how the halal-versus-pork hole closes |
 | Trip checklist (SPEC-15) | SPECIFIED | Not implemented. Raw item text stays on the device; only a derived record syncs |
@@ -122,8 +122,10 @@ SPEC-02 plus SPEC-12.
    (`ce8fedb`). Flutter job green; owner laptop `flutter analyze
    --no-fatal-infos` (infos only) and `flutter test` green on `d7eb853`.
    Planning-agent handoff: docs/HANDOFF_PLANNING_AGENT.md.
-5. SPEC-12 driver card UI with one-tap confirm, plus name_confirmed and
-   driver_card_shown in one migration. Renders from SPEC-02 cache_place.
+5. SPEC-12 driver card UI with one-tap confirm -- **NEXT.** Brief:
+   docs/briefs/GENIE_SPEC_12_DRIVER_CARD.md. Full-screen offline card,
+   FactView assert/ask/refuse, ConfirmAffordance, SQLite cache_place,
+   driver_card_shown and name_confirmed signals in migration 0020.
 6. SPEC-10 booking anchors (manual floor plus import path as specified).
    This is what makes "full context" true for the field test.
 7. SPEC-04 October slice only: <=2-tap rescue entry to the hotel address
