@@ -20,7 +20,8 @@ Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 |---|---|---|
 | Migrations 0011 to 0018 | applied device day 2026-08-17 | VALIDATE on NOT VALID CHECKs still deferred; confirm via Step 7 |
 | The five Supabase tests | ran green 2026-08-17 | `280 passed` suite with TB_SUPABASE_URL; see finding below |
-| Flutter client | Aug 9 | `flutter analyze && flutter test` on a device |
+| Flutter client | Aug 9 | `flutter analyze && flutter test` on a device (now includes SPEC-22 render tests) |
+| Migration 0019 prompt_dismissed | landed `1b9b1b3`, unapplied | Apply via Supabase SQL editor; then confirm signal_types drift still green |
 | PowerShell scripts | Aug 9 | `.\scripts\smoke-test.ps1` on Windows |
 | `hybrid_venue_search` geo_region parameter | Observed Aug 17 2026 | Live signature matches 0001: no geo_region arg (radius-only). Multi-city RPC filter still absent |
 | Dubai row contents, including AED magnitudes | Cleared Aug 17 2026 | 16 Dubai venues live (null price_band). dubai_dishes=0 -- nothing to inspect for AED; food data is greenfield |
@@ -77,8 +78,11 @@ Full Windows device day completed. Durable outcomes:
 - pg_description non-ASCII: 0 rows.
 - `hybrid_venue_search` live args = migration 0001 (no geo_region).
 
-October spine next: SPEC-09 client -> SPEC-22 -> SPEC-12 -> SPEC-10 -> thin
-SPEC-04.
+October spine next: itinerary signal/auth/CI fixes
+(docs/briefs/GENIE_ITINERARY_SIGNAL_FIXES.md) -> SPEC-12 -> SPEC-10 -> thin
+SPEC-04. SPEC-09 client and SPEC-22 October slice are merged; device E2E,
+flutter test, and apply 0019 remain laptop follow-ups. After the fix PR
+merges, planning-agent handoff is docs/HANDOFF_PLANNING_AGENT.md.
 
 ## Finding -- Aug 17 2026 -- Steps 5d + 7 live SQL (partial)
 

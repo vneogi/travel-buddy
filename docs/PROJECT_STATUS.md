@@ -63,7 +63,7 @@
 | Party context (SPEC-03) | DONE | Server-side stamping, both backends, migration 0003 applied |
 | Observability (SPEC-05) | DONE | Ring buffer, request IDs, debug endpoint |
 | Signal registry (SPEC-06) | DONE | models/signal_types.py plus drift test |
-| Signal emission (SPEC-07) | PARTIAL | Missing in Dart: reroute_rejected, dish_loved, dish_ordered |
+| Signal emission (SPEC-07) | PARTIAL | Missing UI: reroute_rejected, dish_loved, dish_ordered. visited_confirmed is emitted but unreachable (NodeStatus.active is never assigned). reroute_accepted is emitted with a lookup that excludes the swapped node. Both are in docs/briefs/GENIE_ITINERARY_SIGNAL_FIXES.md |
 | Laos curation (SPEC-08) | DONE | 58 venues curated including Lao script. The wrong-script contamination is fixed: appended Chinese, Thai spelling of a Lao word, and a Thai-style consonant cluster |
 | arrival_delta derivation | DONE | Server-derived from visited_confirmed vs scheduled_start |
 | Docs hygiene guard | DONE | tests/test_docs_hygiene.py walks every markdown file outside build and vendor directories, and the SPEC-reference check also scans .py and .sql. Known non-ASCII files are allowlisted; the list may only shrink. The ASCII check itself still covers markdown only |
@@ -81,7 +81,7 @@
 | On-demand venue discovery (SPEC-18) | SPECIFIED | Not implemented. A traveller asks about where they are standing and the answer persists as a provisional venue, so the venue layer grows from real demand. Coordinate anchoring against OSM or Wikidata is mandatory before anything persists |
 | Corpus mining (SPEC-19) | SPECIFIED | Not implemented. Extracts the operational knowledge no structured dataset carries, from openly licensed corpora only. This is the data source trip_edge never had. Google and TripAdvisor are excluded on licensing |
 | City onboarding kit (SPEC-20) | SPECIFIED | Not implemented. Seeds a city's spine of 40 to 60 anchors, sourced identity first so provenance defaults to sourced rather than generated. SPEC-18 supplies the tail. validate_city refuses rather than warns |
-| Client render contract (SPEC-22) | SPECIFIED | Not implemented. October brief: docs/briefs/GENIE_SPEC_22_RENDER.md -- envelope widget, five treatments, interruption budget, offline state, prompt_dismissed. Font cmap and screen migration deferred |
+| Client render contract (SPEC-22) | DONE (October slice) | PR #17 squash-merged as `1b9b1b3`. Envelope widget, five treatments, interruption budget, offline state, PromptDismissAdapter -> SignalService.emit(prompt_dismissed). Font cmap, ARB wiring, and screen migration deferred. Migration 0019 unapplied on live DB until laptop |
 | OSM upstream contribution (SPEC-21) | DECIDED IN PRINCIPLE | Not scheduled, and not on the October path. A decision record rather than a spec: confirmed commodity facts go back to OpenStreetMap under the traveller's own account, never behavioural derivations, never model output, never subjective fields. Depends on SPEC-17 for field_verified claims. It also flags that our ODbL exposure is on the consuming side and already live via SPEC-20 |
 | Money as a dimension (SPEC-23) | SPECIFIED | Not implemented. The engineering contract under VISION section 20, and roadmap concern 7. A band and an amount are different things and both are needed; no amount is storable without its currency; a band is meaningless until anchored to a region, which is what makes price tolerance portable between cities; transport cost belongs on trip_edge; budget is revealed from rejections rather than asked for, with a volunteered hard cap honoured exactly; amounts are SPEC-17 claims on a weeks-scale horizon and degrade to a band when stale. Depends on SPEC-13, SPEC-16 and SPEC-17 |
 
@@ -98,9 +98,9 @@ numbers were taken by other work while they sat unimplemented.
 
 ### October path (forcing function: Laos field test, Oct 2)
 
-Interim R5 relocate of VALID_DISH_CONTAINS landed in PR #15 (d061222). The
-Windows laptop is available; device day is unblocked on credentials and time
-only.
+Interim R5 relocate of VALID_DISH_CONTAINS landed in PR #15 (d061222). Device
+day is closed; remaining device work is Flutter test, apply 0019, and
+SPEC-09 Anonymous E2E when the laptop is back.
 
 Success means an installable build whose engine knows a real trip anchored on
 real flight and hotel bookings, and whose driver card works without
@@ -115,30 +115,33 @@ SPEC-02 plus SPEC-12.
    data/dubai_uae.json remains a follow-up (not Oct-spine blocking).
 2. SPEC-09 client half -- **DONE** PR #16 (`7173a3f`). Device E2E with
    `TB_ALLOW_ANONYMOUS=true` deferred until laptop (not blocking next specs).
-3. SPEC-22 client render contract -- **NEXT.** Brief:
-   docs/briefs/GENIE_SPEC_22_RENDER.md. Envelope widget + five treatments +
-   interruption budget; SPEC-17 backend still stubbed.
-4. SPEC-12 driver card UI with one-tap confirm, plus name_confirmed and
+3. SPEC-22 client render contract -- **DONE** PR #17 (`1b9b1b3`). October
+   slice only; SPEC-17 backend still stubbed. Apply 0019 and `flutter test`
+   when the laptop is back.
+4. Itinerary signal, auth-gate, and Flutter CI fixes -- **NEXT.** Brief:
+   docs/briefs/GENIE_ITINERARY_SIGNAL_FIXES.md. Do this before SPEC-12.
+   After it merges, planning-agent handoff is docs/HANDOFF_PLANNING_AGENT.md.
+5. SPEC-12 driver card UI with one-tap confirm, plus name_confirmed and
    driver_card_shown in one migration. Renders from SPEC-02 cache_place.
-5. SPEC-10 booking anchors (manual floor plus import path as specified).
+6. SPEC-10 booking anchors (manual floor plus import path as specified).
    This is what makes "full context" true for the field test.
-6. SPEC-04 October slice only: <=2-tap rescue entry to the hotel address
+7. SPEC-04 October slice only: <=2-tap rescue entry to the hotel address
    card, offline/cold-boot, reusing the SPEC-12 treatment against the
    accommodation node. Not the full vault.
 
 ### After the field-test spine (still important, not Oct-critical)
 
-7. Give observed_duration_minutes a writer from arrival signals on sync.
-8. Retire the dietary suitability claim (SPEC-14). Closes the
+8. Give observed_duration_minutes a writer from arrival signals on sync.
+9. Retire the dietary suitability claim (SPEC-14). Closes the
    halal-versus-pork hole by removing the claim.
-9. SPEC-17 trust and verification -- gates SPEC-18/19/20; behind the
+10. SPEC-17 trust and verification -- gates SPEC-18/19/20; behind the
    field-test installable app on purpose.
-10. reroute_rejected plus swap sheet UI -- last unwired behavioural signal.
-11. Full SPEC-04 remainder (cache_vault, passes, emergency grid, phrase
+11. reroute_rejected plus swap sheet UI -- last unwired behavioural signal.
+12. Full SPEC-04 remainder (cache_vault, passes, emergency grid, phrase
     packs) if still wanted.
-12. Consumer surface per docs/CONSUMER_SURFACE_ROADMAP.md (SPEC-26, then
+13. Consumer surface per docs/CONSUMER_SURFACE_ROADMAP.md (SPEC-26, then
     SPEC-25, then SPEC-27; SPEC-24 design settled, build later).
-13. Swappable LLM provider -- no owning spec yet; next free number. Every
+14. Swappable LLM provider -- no owning spec yet; next free number. Every
     intelligent path is one hosted vendor today.
 
 Export the Dubai rows before applying anything. A rebuild from migrations
@@ -158,6 +161,8 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 
 | Issue | Severity | Detail |
 |-------|----------|--------|
+| reroute_accepted.replacement_ref is inverted | High | Swap preserves node_id (SPEC-16). The client looks up the replacement as updatedNodes where nodeId != original, which excludes the swapped node. Training data is wrong or 'unknown'. Fix brief: docs/briefs/GENIE_ITINERARY_SIGNAL_FIXES.md |
+| Supabase session gate softlocks the app | High | app_router redirects to /onboarding when creds are set and there is no session; onboarding never creates a session. SPEC-09 identity is Anonymous UUID. A device with real TB_SUPABASE_* cannot enter the app. Same brief |
 | Anonymous data has no path into an account, and signal sits outside referential integrity | Medium | SPEC-09 starts accumulating trip_states, event_log and signal rows under a device UUID that belongs to a device rather than a person. Until SPEC-24 exists, the first sign-in strands all of it, and from the user's side that looks like an app that lost their trip. The schema makes it sharper: trip_states.user_id and event_log.user_id are UUID REFERENCES user_tiers, while signal.user_id is TEXT with no foreign key and no type match, so the table holding the asset is the one table outside the constraint system. Neither a merge nor a SPEC-27 deletion can rely on a cascade, and nothing will complain when a future table is missed -- which is why both specs walk the schema instead of keeping a list. The engineering does not get harder with time; the data does |
 | observed_duration_minutes has no writer | Medium | The column exists and is honestly documented as starting empty, but nothing populates it. It cannot be computed when a trip is saved, only derived from arrival signals on sync, so the transition data the convenience layer depends on is not accumulating. This is the last open defect from the SPEC-16 work |
 | The five Supabase tests have never run | Closed Aug 17 2026 | Live device-day pytest with TB_SUPABASE_URL set; tests/test_supabase_integration.py included. Run pytest -q -ra to confirm |

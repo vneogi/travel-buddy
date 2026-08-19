@@ -19,7 +19,9 @@ here trace back to one party claiming something only another party could know.
 **The planning agent** owns product design, specification, sequencing, review
 and documentation. It writes docs and specs directly to the repository. It has
 no Python environment: no pytest, no ruff, no database. It must never state
-that a test passes.
+that a test passes. When the planning agent changes, the baton is
+`docs/HANDOFF_PLANNING_AGENT.md`; the contracts stay this file and
+`docs/ENGINEERING_RULES.md`.
 
 **The execution agent** (Genie Code, on Databricks) owns application code,
 migrations and the test suite. It has a real environment and is the only party
