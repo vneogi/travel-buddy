@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter/services.dart';
 import '../data/models.dart';
 import '../features/itinerary/current_window.dart';
@@ -184,7 +185,16 @@ class ActivityCard extends StatelessWidget {
                               },
                             ),
                           // SPEC-07: node_skipped reason picker
-                          if (onTapSkip != null && !isCompleted && !isSkipped && !node.isLocked)
+                          // SPEC-12: Driver card button
+        IconButton(
+          icon: const Icon(Icons.directions_car_outlined, size: 20),
+          tooltip: 'Show driver card',
+          onPressed: () {
+            final tripId = GoRouterState.of(context).pathParameters['tripId'] ?? '';
+            context.push('/trip/$tripId/card/${node.venueId ?? node.venueName}');
+          },
+        ),
+        if (onTapSkip != null && !isCompleted && !isSkipped && !node.isLocked)
                             IconButton(
                               icon: const Icon(Icons.skip_next, size: 20),
                               color: AppColors.muted,

@@ -9,7 +9,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 from enum import Enum
-from typing import List, Optional, TypedDict
+from typing import Any, Dict, List, Optional, TypedDict
 
 from pydantic import BaseModel, Field
 
@@ -72,6 +72,11 @@ class TripNode(BaseModel):
     lng: Optional[float] = None
     opening_hours: Optional[str] = None  # "HH:MM-HH:MM"; used for re-validation
     geo_region: Optional[str] = None  # Per-node region; overrides trip's default for multi-city
+    names_local: Optional[Dict[str, Any]] = (
+        None  # SPEC-12: {lang: {value, source}} local script names
+    )
+    landmarks_local: Optional[Dict[str, Any]] = None  # SPEC-12: {lang: landmark_text}
+    nearest_landmark: Optional[str] = None  # SPEC-12: English-language landmark
 
 
 class CurrentContext(BaseModel):

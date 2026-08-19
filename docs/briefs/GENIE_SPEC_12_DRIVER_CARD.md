@@ -98,9 +98,9 @@ In `models/schemas.py`, add optional fields to `TripNode`:
 
 In `agents/state_machine.py` `_node_from_venue`:
 ```python
-    names_local=getattr(venue, "names_local", None),
-    landmarks_local=getattr(venue, "landmarks_local", None),
-    nearest_landmark=getattr(venue, "nearest_landmark", None),
+names_local = (getattr(venue, "names_local", None),)
+landmarks_local = (getattr(venue, "landmarks_local", None),)
+nearest_landmark = (getattr(venue, "nearest_landmark", None),)
 ```
 
 ---
