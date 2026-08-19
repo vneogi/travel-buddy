@@ -114,7 +114,9 @@ SPEC-02 plus SPEC-12.
    data/dubai_uae.json remains a follow-up (not Oct-spine blocking).
 2. SPEC-09 client half: UUID on first launch, secure storage, Anonymous
    header, drop TB_DEBUG_USER_ID. Server half is done; this is what gates a
-   tester build.
+   tester build. **Next -- Genie brief:**
+   docs/briefs/GENIE_SPEC_09_CLIENT.md (unit-testable without laptop;
+   device E2E awaits owner).
 3. SPEC-22 client render contract, before any screen. Envelope shape is
    already specified; stub the source on the client if SPEC-17 backend is
    not ready.
