@@ -5,12 +5,21 @@ import 'api_exception.dart';
 /// Returns the current Supabase access token, or null in dev.
 typedef TokenProvider = Future<String?> Function();
 
+/// Returns the resolved device UUID (SPEC-09 anonymous identity).
+typedef DeviceIdProvider = Future<String> Function();
+
 /// Central HTTP client. Handles auth injection and error mapping.
+///
+/// Header precedence (SPEC-09):
+///   1. Bearer <jwt> -- when Supabase session is active
+///   2. Anonymous <device-uuid> -- device identity fallback
 class ApiClient {
   final Dio _dio;
 
-  ApiClient(TokenProvider tokenProvider)
-      : _dio = Dio(BaseOptions(
+  ApiClient({
+    required TokenProvider tokenProvider,
+    required DeviceIdProvider deviceIdProvider,
+  }) : _dio = Dio(BaseOptions(
           baseUrl: '${Env.apiBaseUrl}/api/v1',
           connectTimeout: const Duration(seconds: 10),
           receiveTimeout: const Duration(seconds: 30), // heavy LLM calls
@@ -21,8 +30,9 @@ class ApiClient {
         final token = await tokenProvider();
         if (token != null && token.isNotEmpty) {
           options.headers['Authorization'] = 'Bearer $token';
-        } else if (Env.debugUserId.isNotEmpty) {
-          options.headers['X-Debug-User-Id'] = Env.debugUserId;
+        } else {
+          final deviceId = await deviceIdProvider();
+          options.headers['Authorization'] = 'Anonymous $deviceId';
         }
         handler.next(options);
       },

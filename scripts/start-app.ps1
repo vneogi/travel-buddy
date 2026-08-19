@@ -75,8 +75,8 @@ Write-Host "  Backend healthy." -ForegroundColor Green
 # --- 4. Flutter run -----------------------------------------------------------
 Write-Host "`n[4/4] Launching Flutter app..." -ForegroundColor Yellow
 Write-Host "  API: http://${lanIp}:8000" -ForegroundColor Green
-Write-Host "  User: 11111111-1111-1111-1111-111111111111 (debug)" -ForegroundColor Green
+Write-Host "  Identity: Anonymous (device UUID from secure storage)" -ForegroundColor Green
 Write-Host ""
 
 Set-Location (Join-Path $PSScriptRoot '..\mobile')
-flutter run --dart-define="TB_API_BASE_URL=http://${lanIp}:8000" --dart-define="TB_DEBUG_USER_ID=11111111-1111-1111-1111-111111111111"
+flutter run --dart-define="TB_API_BASE_URL=http://${lanIp}:8000"
