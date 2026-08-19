@@ -5,15 +5,12 @@ import 'package:mocktail/mocktail.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:sqflite/sqflite.dart';
 
-import 'package:travel_buddy/core/api_client.dart';
-import 'package:travel_buddy/core/api_exception.dart';
 import 'package:travel_buddy/features/driver_card/driver_card_helpers.dart';
 import 'package:travel_buddy/offline/offline_database.dart';
 import 'package:travel_buddy/offline/sync_engine.dart';
 import 'package:travel_buddy/render/fact_envelope.dart';
 import 'package:travel_buddy/services/signal_service.dart';
 
-class MockApiClient extends Mock implements ApiClient {}
 class MockSyncEngine extends Mock implements SyncEngine {}
 
 void main() {
