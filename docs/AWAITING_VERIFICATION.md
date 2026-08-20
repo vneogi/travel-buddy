@@ -23,6 +23,7 @@ Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 | Flutter client | Aug 9 | Run docs/briefs/LAPTOP_VERIFY.md (analyze, test, sabotage, Chrome E2E) |
 | Migration 0019 prompt_dismissed | landed `1b9b1b3`, unapplied | LAPTOP_VERIFY Step 3; then signal_types tests |
 | Migration 0020 driver_card_signals | landed `a2da64a`, unapplied | Apply via Supabase SQL editor; then signal_types drift tests |
+| Migration 0021 booking_anchors | landed `f6328e9`, unapplied | Apply via Supabase SQL editor; then signal_types drift tests |
 | PowerShell scripts | Aug 9 | `.\scripts\smoke-test.ps1` on Windows |
 | `hybrid_venue_search` geo_region parameter | Observed Aug 17 2026 | Live signature matches 0001: no geo_region arg (radius-only). Multi-city RPC filter still absent |
 | Dubai row contents, including AED magnitudes | Cleared Aug 17 2026 | 16 Dubai venues live (null price_band). dubai_dishes=0 -- nothing to inspect for AED; food data is greenfield |
@@ -79,19 +80,17 @@ Full Windows device day completed. Durable outcomes:
 - pg_description non-ASCII: 0 rows.
 - `hybrid_venue_search` live args = migration 0001 (no geo_region).
 
-October spine next: SPEC-10 -> thin SPEC-04. SPEC-09 client, SPEC-22,
-and SPEC-12 (PR #19 `a2da64a`) are merged. Owner laptop runbook:
-docs/briefs/LAPTOP_VERIFY.md (0019, 0020, Anonymous E2E, sabotage, Chrome).
-Planning-agent handoff: docs/HANDOFF_PLANNING_AGENT.md.
+October spine next: thin SPEC-04 hotel rescue. SPEC-09 client, SPEC-22,
+SPEC-12 (`a2da64a`), and SPEC-10 (PR #20 `f6328e9`) are merged. Owner laptop
+runbook: docs/briefs/LAPTOP_VERIFY.md (0019, 0020, 0021, Anonymous E2E,
+sabotage, Chrome). Planning-agent handoff: docs/HANDOFF_PLANNING_AGENT.md.
 
-## Finding -- Aug 20 2026 -- PR #18 Flutter on Windows
+## Finding -- Aug 20 2026 -- PR #20 Flutter on Windows
 
-SHA `d7eb853` (then squash-merged as `ce8fedb`). Owner ran from `mobile/`:
-`flutter analyze --no-fatal-infos` exit 0 (infos only; the two
-unnecessary_cast warnings were the CI failure). `flutter test`: all
-tests passed. GitHub flutter + pytest jobs green on that SHA. Remaining
-laptop work is 0019 apply, Anonymous curl/UI, sabotage -- not a re-run
-of analyze.
+SHA `523c6f3` (then squash-merged as `f6328e9`). Owner ran from `mobile/`:
+`flutter test`: all 83 tests passed. Backend pytest: 287 passed, signal
+drift guard green. Remaining laptop work is 0019, 0020, 0021 apply and
+Anonymous E2E.
 
 ## Finding -- Aug 17 2026 -- Steps 5d + 7 live SQL (partial)
 

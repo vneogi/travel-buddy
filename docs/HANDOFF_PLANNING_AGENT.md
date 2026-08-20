@@ -35,9 +35,12 @@ Done on the October spine:
 - SPEC-12 driver card. PR #19 (`a2da64a`). Full-screen offline card on
   `FactView` / `ConfirmAffordance` / `cache_place`, `driver_card_shown` &
   `name_confirmed` signals (migration 0020 in repo, unapplied live).
+- SPEC-10 booking anchors. PR #20 (`f6328e9`). Immovable locked nodes,
+  booking metadata on `trip_node` (migration 0021 in repo, unapplied live),
+  on-device regex extractor, `AddBookingSheet`, `booking_added` signal.
 
-Next: SPEC-10 booking anchors (manual floor plus import path).
-Then thin SPEC-04 hotel rescue. That order is the spine. Do not reverse it.
+Next: thin SPEC-04 hotel rescue and offline itinerary cache. That order is
+the spine. Do not reverse it.
 
 Status tables: `docs/PROJECT_STATUS.md`. Device-only queue:
 `docs/AWAITING_VERIFICATION.md`.
@@ -94,9 +97,8 @@ implement merge before the driver card.
 
 ## First job
 
-Write and review the SPEC-10 Genie brief: booking anchors (manual floor
-plus import path as specified). Locked node representation on
-`trip_node` and itinerary timeline.
+Write and review the SPEC-04 Genie brief: hotel rescue entry (<=2 taps)
+and offline itinerary cache fallback in ItineraryController.
 
 Do not start with another full-repo archaeology. The defects that
 matter on itinerary are listed above. If a new claim needs checking,
