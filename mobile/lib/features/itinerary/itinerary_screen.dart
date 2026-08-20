@@ -6,6 +6,7 @@ import '../../theme/colors.dart';
 import '../../theme/typography.dart';
 import '../../theme/spacing.dart';
 import '../../widgets/activity_card.dart';
+import '../booking/add_booking_sheet.dart';
 import '../../widgets/reroute_badge.dart';
 import '../../widgets/shimmer_card.dart';
 import '../../widgets/error_view.dart';
@@ -115,6 +116,17 @@ class ItineraryScreen extends ConsumerWidget {
         onPressed: () => context.push('/trip/$tripId/chat'),
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.chat_bubble_outline, color: Colors.white),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            builder: (_) => AddBookingSheet(tripId: tripId),
+          );
+        },
+        icon: const Icon(Icons.anchor),
+        label: const Text('Add Booking'),
       ),
       body: state.loading
           ? const ShimmerList(count: 5)

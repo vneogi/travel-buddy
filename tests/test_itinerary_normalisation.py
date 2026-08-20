@@ -190,6 +190,14 @@ class TestCompose:
             "lng",
             "opening_hours",
             "geo_region",
+            "node_kind",
+            "booking_type",
+            "confirmation_code",
+            "booking_notes",
+            "import_source",
+            "names_local",
+            "landmarks_local",
+            "nearest_landmark",
         }
         assert set(composed[0].keys()) == expected_keys
 

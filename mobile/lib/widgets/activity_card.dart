@@ -139,6 +139,16 @@ class ActivityCard extends StatelessWidget {
                           ),
                           if (node.isLocked)
                             Icon(Icons.lock, size: 16, color: AppColors.accent),
+                          // SPEC-10: booking type icon
+                          if (node.nodeKind == 'booking')
+                            Padding(
+                              padding: const EdgeInsets.only(left: 4),
+                              child: Icon(
+                                _bookingIcon(node.bookingType),
+                                size: 16,
+                                color: AppColors.accent,
+                              ),
+                            ),
                           // Visible swap affordance — swipe still works, but the
                           // gesture alone was undiscoverable.
                           if (onTapSwap != null && !node.isLocked && !isCompleted && !isSkipped)
@@ -209,6 +219,18 @@ class ActivityCard extends StatelessWidget {
                             ),
                         ],
                       ),
+                      // SPEC-10: booking badge
+                      if (node.nodeKind == 'booking')
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            '[BOOKING: ${node.bookingType?.toUpperCase() ?? "OTHER"}]',
+                            style: AppTypography.caption.copyWith(
+                              color: AppColors.accent,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
                       if (node.microLocation != null) ...[
                         const SizedBox(height: AppSpacing.xs),
                         Text(node.microLocation!, style: AppTypography.caption),
