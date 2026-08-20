@@ -68,7 +68,7 @@
 | arrival_delta derivation | DONE | Server-derived from visited_confirmed vs scheduled_start |
 | Docs hygiene guard | DONE | tests/test_docs_hygiene.py walks every markdown file outside build and vendor directories, and the SPEC-reference check also scans .py and .sql. Known non-ASCII files are allowlisted; the list may only shrink. The ASCII check itself still covers markdown only |
 | Data format guard | DONE | Every data/ file is ASCII by byte count, venue and glossary files round-trip byte-identically, and Lao-script fields are checked for foreign script |
-| Offline vault (SPEC-04) | SPECIFIED, BRIEF READY | Brief: docs/briefs/GENIE_SPEC_04_HOTEL_RESCUE.md -- <=2-tap hotel rescue entry to DriverCardScreen, offline itinerary cache fallback in ItineraryController.load(), pre-caching hotel place data in cache_place, honest empty state |
+| Offline vault (SPEC-04) | DONE (October slice) | PR #22 squash-merged as `b7e10c3`. <=2-tap hotel rescue entry to DriverCardScreen, offline itinerary cache fallback in ItineraryController.load(), pre-caching hotel place data in cache_place, honest empty state. Full vault (passes, emergency grid, phrase packs, cache_vault) post-field-test -- see SPEC-04 |
 | Anonymous identity (SPEC-09) | DONE (client + server) | Client half landed PR #16 (`7173a3f`): UUID v4 in flutter_secure_storage, Anonymous header, TB_DEBUG_USER_ID removed. Server half already verified. Owner device E2E with TB_ALLOW_ANONYMOUS=true still deferred until laptop |
 | Itinerary normalisation (SPEC-16) | IMPLEMENTED | Decompose and compose land in services/itinerary_normaliser.py, dual-write in both backends, round-trip equality asserted, wire format unchanged. node_id is stable across reschedules via state_json and now comes from models/ids.py. One gap remains: observed_duration_minutes has no writer, so no transition data is accumulating |
 | Booking anchors (SPEC-10) | DONE (October slice) | PR #20 squash-merged as `f6328e9`. Immovable locked nodes on timeline, booking metadata on trip_node (migration 0021), scheduler conflict rules, on-device parsing floor, AddBookingSheet UI, booking_added signal registered in migration 0021 (unapplied live until laptop) |
@@ -130,10 +130,11 @@ SPEC-02 plus SPEC-12.
    locked nodes on timeline, scheduler hard conflict rules, on-device text
    extractor, AddBookingSheet, and booking_added signal in migration 0021
    (in repo, unapplied live).
-7. SPEC-04 October slice only: <=2-tap rescue entry to the hotel address
-   card -- **NEXT.** Brief: docs/briefs/GENIE_SPEC_04_HOTEL_RESCUE.md.
-   Offline itinerary reads from SQLite cache_trip, hotel rescue sheet / direct
-   driver card navigation, pre-caching hotel place data.
+7. SPEC-04 October slice: <=2-tap rescue entry to hotel address card &
+   offline itinerary cache -- **DONE** PR #22 (`b7e10c3`). Offline itinerary
+   reads from SQLite cache_trip, hotel rescue sheet / direct driver card
+   navigation, pre-caching hotel place data.
+   **All 7 items on the October field-test spine are complete!**
 
 ### After the field-test spine (still important, not Oct-critical)
 

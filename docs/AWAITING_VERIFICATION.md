@@ -80,10 +80,18 @@ Full Windows device day completed. Durable outcomes:
 - pg_description non-ASCII: 0 rows.
 - `hybrid_venue_search` live args = migration 0001 (no geo_region).
 
-October spine next: thin SPEC-04 hotel rescue. SPEC-09 client, SPEC-22,
-SPEC-12 (`a2da64a`), and SPEC-10 (PR #20 `f6328e9`) are merged. Owner laptop
-runbook: docs/briefs/LAPTOP_VERIFY.md (0019, 0020, 0021, Anonymous E2E,
-sabotage, Chrome). Planning-agent handoff: docs/HANDOFF_PLANNING_AGENT.md.
+October spine: all 7 items complete on main (Device Day, SPEC-09 client,
+SPEC-22, fixes PR #18, SPEC-12 `a2da64a`, SPEC-10 `f6328e9`, and SPEC-04
+`b7e10c3`). Owner laptop runbook: docs/briefs/LAPTOP_VERIFY.md (0019, 0020,
+0021, Anonymous E2E, sabotage, Chrome). Planning-agent handoff:
+docs/HANDOFF_PLANNING_AGENT.md.
+
+## Finding -- Aug 20 2026 -- PR #22 Flutter on CI
+
+PR #22 squash-merged as `b7e10c3`. All CI checks passed: `flutter analyze
+--no-fatal-infos` (0 errors, 0 warnings), `flutter test` (all tests passed),
+backend `pytest` (287 passed), and `ruff` lint+format clean. Remaining
+laptop work is 0019, 0020, 0021 apply and Anonymous E2E.
 
 ## Finding -- Aug 20 2026 -- PR #20 Flutter on Windows
 

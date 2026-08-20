@@ -38,9 +38,11 @@ Done on the October spine:
 - SPEC-10 booking anchors. PR #20 (`f6328e9`). Immovable locked nodes,
   booking metadata on `trip_node` (migration 0021 in repo, unapplied live),
   on-device regex extractor, `AddBookingSheet`, `booking_added` signal.
+- SPEC-04 hotel rescue & offline cache. PR #22 (`b7e10c3`). <=2-tap hotel
+  rescue entry to `DriverCardScreen`, offline itinerary cache fallback in
+  `ItineraryController.load()`, pre-caching hotel place data.
 
-Next: thin SPEC-04 hotel rescue and offline itinerary cache. That order is
-the spine. Do not reverse it.
+October spine status: ALL 7 CORE ITEMS COMPLETE ON MAIN.
 
 Status tables: `docs/PROJECT_STATUS.md`. Device-only queue:
 `docs/AWAITING_VERIFICATION.md`.
@@ -97,8 +99,12 @@ implement merge before the driver card.
 
 ## First job
 
-Write and review the SPEC-04 Genie brief: hotel rescue entry (<=2 taps)
-and offline itinerary cache fallback in ItineraryController.
+All 7 items on the October field-test spine are complete on main.
+Next tasks:
+1. Owner laptop verification run (docs/briefs/LAPTOP_VERIFY.md) for 0019-0021
+   live apply, Anonymous E2E, and Chrome smoke.
+2. observed_duration_minutes writer (SPEC-16 gap).
+3. Post-October consumer surface specs (SPEC-26, SPEC-25, SPEC-27).
 
 Do not start with another full-repo archaeology. The defects that
 matter on itinerary are listed above. If a new claim needs checking,
