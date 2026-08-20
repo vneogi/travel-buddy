@@ -50,6 +50,16 @@ void main() {
       ];
       expect(findHotelNode(nodes), isNull);
     });
+
+    test('identifies hotel booking with non-generic name (e.g. Villa Maly)', () {
+      final nodes = [
+        _node('Villa Maly', nodeKind: 'booking', bookingType: 'hotel'),
+        _node('Night Market'),
+      ];
+      final hotel = findHotelNode(nodes);
+      expect(hotel, isNotNull);
+      expect(hotel!.venueName, equals('Villa Maly'));
+    });
   });
 
   group('TripState serialization', () {

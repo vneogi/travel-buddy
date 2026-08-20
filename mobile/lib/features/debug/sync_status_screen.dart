@@ -27,6 +27,8 @@ class _SyncStatusScreenState extends ConsumerState<SyncStatusScreen> {
 
   Future<void> _refresh() async {
     setState(() => _loading = true);
+    ref.read(syncEngineProvider).resetAuthHalted();
+    ref.read(syncEngineProvider).syncOnce();
     final counts = await ref.read(syncEngineProvider).getStatusCounts();
     if (mounted) {
       setState(() {
@@ -63,6 +65,12 @@ class _SyncStatusScreenState extends ConsumerState<SyncStatusScreen> {
                   status: isSyncing ? 'SYNCING...' : 'IDLE',
                   color: isSyncing ? Colors.blue : Colors.green,
                 ),
+                if (syncEngine.authHalted)
+                  const _StatusCard(
+                    title: 'Auth Status',
+                    status: 'HALTED (401)',
+                    color: Colors.red,
+                  ),
                 const SizedBox(height: 12),
                 _CountCard(
                   label: 'Pending',

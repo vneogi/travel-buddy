@@ -5,6 +5,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:sqflite/sqflite.dart';
 
+import 'package:travel_buddy/data/models.dart';
 import 'package:travel_buddy/features/driver_card/driver_card_helpers.dart';
 import 'package:travel_buddy/offline/offline_database.dart';
 import 'package:travel_buddy/offline/sync_engine.dart';
@@ -263,4 +264,35 @@ void main() {
       expect(restored.geoRegion, equals('vientiane_laos'));
     });
   });
+  group('geoRegion threading', () {
+    test(
+      'TripNode with geo_region luang_prabang_laos resolves Lao script and LAK fare via fromTripNode',
+      () {
+        final node = TripNode.fromJson({
+          'node_id': 'n1',
+          'venue_name': 'Wat Xieng Thong',
+          'scheduled_start': '2026-10-05T09:00:00Z',
+          'geo_region': 'luang_prabang_laos',
+          'names_local': {
+            'lo': {'value': 'Lao Name', 'source': 'wikidata'},
+            'en': {'value': 'English Name', 'source': 'wikidata'},
+          },
+        });
+        final placeData = PlaceDriverCardData.fromTripNode(node);
+        expect(placeData.geoRegion, equals('luang_prabang_laos'));
+
+        final entry = resolvePreferredLocalEntry(
+          localizedMap: placeData.namesLocal,
+          geoRegion: placeData.geoRegion,
+        );
+        expect(entry, isNotNull);
+        expect(entry!.key, equals('lo'));
+        expect(entry.value['value'], equals('Lao Name'));
+
+        final fare = resolveFairFareBand(placeData.geoRegion);
+        expect(fare, contains('LAK'));
+      },
+    );
+  });
+
 }

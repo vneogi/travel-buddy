@@ -43,6 +43,7 @@ class TripNode {
   final Map<String, dynamic>? namesLocal;
   final Map<String, dynamic>? landmarksLocal;
   final String? nearestLandmark;
+  final String? geoRegion;
   // SPEC-10: Booking anchor fields
   final String nodeKind;
   final String? bookingType;
@@ -66,6 +67,7 @@ class TripNode {
     this.namesLocal,
     this.landmarksLocal,
     this.nearestLandmark,
+    this.geoRegion,
     this.nodeKind = 'activity',
     this.bookingType,
     this.confirmationCode,
@@ -89,6 +91,7 @@ class TripNode {
         namesLocal: (j['names_local'] as Map?)?.cast<String, dynamic>(),
         landmarksLocal: (j['landmarks_local'] as Map?)?.cast<String, dynamic>(),
         nearestLandmark: j['nearest_landmark'] as String?,
+        geoRegion: j['geo_region'] as String?,
         nodeKind: (j['node_kind'] as String?) ?? 'activity',
         bookingType: j['booking_type'] as String?,
         confirmationCode: j['confirmation_code'] as String?,
@@ -112,6 +115,7 @@ class TripNode {
         'names_local': namesLocal,
         'landmarks_local': landmarksLocal,
         'nearest_landmark': nearestLandmark,
+        'geo_region': geoRegion,
         'node_kind': nodeKind,
         'booking_type': bookingType,
         'confirmation_code': confirmationCode,

@@ -15,7 +15,9 @@ TripNode? findHotelNode(List<TripNode> nodes) {
     final name = n.venueName.toLowerCase();
     return name.contains('hotel') ||
         name.contains('resort') ||
-        name.contains('hostel');
+        name.contains('hostel') ||
+        name.contains('villa') ||
+        name.contains('guesthouse');
   }).firstOrNull;
 }
 

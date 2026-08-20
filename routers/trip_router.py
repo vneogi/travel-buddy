@@ -85,6 +85,7 @@ async def create_trip(
     nodes = [
         TripNode(
             venue_name="Dubai Museum (Al Fahidi Fort)",
+            geo_region=settings.geo_fence,
             scheduled_start=start,
             duration_minutes=90,
             micro_location="Al Fahidi",
@@ -94,6 +95,7 @@ async def create_trip(
         ),
         TripNode(
             venue_name="XVA Art Gallery & Cafe",
+            geo_region=settings.geo_fence,
             scheduled_start=start + timedelta(hours=2),
             duration_minutes=60,
             micro_location="Al Fahidi",
@@ -103,6 +105,7 @@ async def create_trip(
         ),
         TripNode(
             venue_name="La Petite Maison (DIFC)",
+            geo_region=settings.geo_fence,
             scheduled_start=start + timedelta(hours=3, minutes=30),
             duration_minutes=90,
             is_locked=True,  # Locked reservation!
@@ -113,6 +116,7 @@ async def create_trip(
         ),
         TripNode(
             venue_name="Alserkal Avenue Galleries",
+            geo_region=settings.geo_fence,
             scheduled_start=start + timedelta(hours=5, minutes=30),
             duration_minutes=120,
             micro_location="Al Quoz",
@@ -122,6 +126,7 @@ async def create_trip(
         ),
         TripNode(
             venue_name="Drift Beach Dubai",
+            geo_region=settings.geo_fence,
             scheduled_start=start + timedelta(hours=8),
             duration_minutes=180,
             micro_location="Jumeirah",
