@@ -41,8 +41,12 @@ Done on the October spine:
 - SPEC-04 hotel rescue & offline cache. PR #22 (`b7e10c3`). <=2-tap hotel
   rescue entry to `DriverCardScreen`, offline itinerary cache fallback in
   `ItineraryController.load()`, pre-caching hotel place data.
+- Post-spine hardening. PR #23 (`dab16c0`). `geoRegion` threaded from
+  `TripNode` to `PlaceDriverCardData` (Lao script & LAK fares resolve live),
+  `resetAuthHalted()` on `SyncEngine` + `SyncStatusScreen` `HALTED (401)` card,
+  robust hotel matching for villa/guesthouse.
 
-October spine status: ALL 7 CORE ITEMS COMPLETE ON MAIN.
+October spine status: ALL 7 CORE ITEMS COMPLETE & HARDENED ON MAIN.
 
 Status tables: `docs/PROJECT_STATUS.md`. Device-only queue:
 `docs/AWAITING_VERIFICATION.md`.

@@ -82,9 +82,20 @@ Full Windows device day completed. Durable outcomes:
 
 October spine: all 7 items complete on main (Device Day, SPEC-09 client,
 SPEC-22, fixes PR #18, SPEC-12 `a2da64a`, SPEC-10 `f6328e9`, and SPEC-04
-`b7e10c3`). Owner laptop runbook: docs/briefs/LAPTOP_VERIFY.md (0019, 0020,
-0021, Anonymous E2E, sabotage, Chrome). Planning-agent handoff:
-docs/HANDOFF_PLANNING_AGENT.md.
+`b7e10c3`). Hardening landed in PR #23 (`dab16c0`). Owner laptop runbook:
+docs/briefs/LAPTOP_VERIFY.md (0019, 0020, 0021, Anonymous E2E, sabotage,
+Chrome). Planning-agent handoff: docs/HANDOFF_PLANNING_AGENT.md.
+
+## Finding -- Aug 20 2026 -- PR #23 Post-Spine Hardening
+
+PR #23 squash-merged as `dab16c0`. All CI checks passed (pytest 287 passed,
+ruff clean, flutter analyze 0 errors/0 warnings, flutter test 92 passed):
+- `geoRegion` threaded from `TripNode` to `PlaceDriverCardData.fromTripNode`
+  so Lao script & LAK fares resolve live.
+- `resetAuthHalted()` on `SyncEngine` + `SyncStatusScreen` `HALTED (401)` status
+  card.
+- `findHotelNode` matches villa/guesthouse accommodation.
+- Safe `as Map?.cast<String, dynamic>()` on `PlaceDriverCardData.fromJson`.
 
 ## Finding -- Aug 20 2026 -- PR #22 Flutter on CI
 
