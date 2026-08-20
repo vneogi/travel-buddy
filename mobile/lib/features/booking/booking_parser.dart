@@ -59,7 +59,7 @@ ParsedBooking extractBookingFromText(
   // 2. Extract confirmation code
   String? confirmationCode;
   final codeRegex = RegExp(
-    r'(?:pnr|confirmation|booking\s*(?:ref|id|number|code)?|reservation\s*#?)\s*[:#]?\s*([A-Z0-9]{5,10})',
+    r'(?:pnr|confirmation\s*(?:code|#|ref|number)?|booking\s*(?:ref|reference|id|number|code|#)|reservation\s*(?:code|#|ref)?)\s*[:#]?\s*([A-Z0-9]{5,10})',
     caseSensitive: false,
   );
   final codeMatch = codeRegex.firstMatch(text);
