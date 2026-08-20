@@ -5,6 +5,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:sqflite/sqflite.dart';
 
+import 'package:travel_buddy/data/models.dart';
 import 'package:travel_buddy/features/driver_card/driver_card_helpers.dart';
 import 'package:travel_buddy/offline/offline_database.dart';
 import 'package:travel_buddy/offline/sync_engine.dart';
