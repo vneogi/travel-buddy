@@ -332,6 +332,17 @@ void main() {
     expect(after.first['next_retry_at'], isNull);
   });
   test('resetAuthHalted clears halted state allowing sync to retry', () async {
+    await db.enqueue(
+      'sig-auth-reset',
+      jsonEncode({
+        'signal_id': 'sig-auth-reset',
+        'signal_type': 'user_loved',
+        'place_ref': 'creek',
+        'captured_at': DateTime.now().toUtc().toIso8601String(),
+      }),
+      DateTime.now().toUtc().toIso8601String(),
+    );
+
     when(() => mockApi.post('/signals', body: any(named: 'body')))
         .thenThrow(const UnauthorizedException());
 

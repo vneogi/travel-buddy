@@ -271,6 +271,7 @@ void main() {
         final node = TripNode.fromJson({
           'node_id': 'n1',
           'venue_name': 'Wat Xieng Thong',
+          'scheduled_start': '2026-10-05T09:00:00Z',
           'geo_region': 'luang_prabang_laos',
           'names_local': {
             'lo': {'value': 'Lao Name', 'source': 'wikidata'},
