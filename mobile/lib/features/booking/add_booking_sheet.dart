@@ -7,25 +7,38 @@ import '../../data/models.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import 'booking_parser.dart';
+import '../driver_card/driver_card_helpers.dart';
 
 /// Modal bottom sheet for adding a booking anchor (SPEC-10).
 class AddBookingSheet extends ConsumerStatefulWidget {
   final String tripId;
+  final String initialBookingType;
 
-  const AddBookingSheet({super.key, required this.tripId});
+  const AddBookingSheet({
+    super.key,
+    required this.tripId,
+    this.initialBookingType = 'flight',
+  });
 
   @override
   ConsumerState<AddBookingSheet> createState() => _AddBookingSheetState();
 }
 
 class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
-  String _bookingType = 'flight';
+  late String _bookingType;
   final _titleController = TextEditingController();
   final _codeController = TextEditingController();
   final _notesController = TextEditingController();
   final _pasteController = TextEditingController();
   DateTime _scheduledStart = DateTime.now().add(const Duration(hours: 24));
   int _durationMinutes = 180;
+
+  @override
+  void initState() {
+    super.initState();
+    _bookingType = widget.initialBookingType;
+    _durationMinutes = _defaultDurations[_bookingType] ?? 180;
+  }
 
   static const _typeIcons = {
     'flight': Icons.flight_takeoff,
@@ -123,6 +136,22 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
               _pasteController.text.isEmpty ? 'manual' : 'email',
           tripId: widget.tripId,
         );
+
+    // SPEC-04: Pre-cache place data for offline driver cards
+    try {
+      final db = ref.read(offlineDatabaseProvider);
+      final placeData = PlaceDriverCardData(
+        placeRef: title,
+        venueName: title,
+        microLocation: _codeController.text.trim().isNotEmpty
+            ? 'Confirmation: ${_codeController.text.trim()}'
+            : null,
+        nearestLandmark: _notesController.text.trim().isNotEmpty
+            ? _notesController.text.trim()
+            : null,
+      );
+      db.cachePlace(title, placeData.serialize()).catchError((_) {});
+    } catch (_) {}
 
     if (mounted) Navigator.of(context).pop();
   }
