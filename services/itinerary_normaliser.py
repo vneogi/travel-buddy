@@ -87,13 +87,13 @@ def decompose_trip(
             "trip_id": trip_id,
             "day_index": 0,  # single-day trips; future: derive from date
             "seq": (i + 1) * _SEQ_GAP,
-            "node_type": "activity",  # all current nodes are activity type
+            "node_type": n.get("booking_type") or "activity",
             "venue_ref": n.get("venue_id"),
             "title": n.get("venue_name", "Untitled"),
             "scheduled_start": sched_start,
             "scheduled_end": sched_end,
             "duration_minutes": duration,
-            "is_locked": n.get("is_locked", False),
+            "is_locked": n.get("is_locked", False) or n.get("node_kind") == "booking",
             "status": status,
             "geo_region": n.get("geo_region") or trip_geo,
             "micro_location": n.get("micro_location"),
@@ -101,6 +101,14 @@ def decompose_trip(
             "lng": n.get("lng"),
             "vibe_tags": n.get("vibe_tags", []),
             "opening_hours": n.get("opening_hours"),
+            "node_kind": n.get("node_kind", "activity"),
+            "booking_type": n.get("booking_type"),
+            "confirmation_code": n.get("confirmation_code"),
+            "booking_notes": n.get("booking_notes"),
+            "import_source": n.get("import_source"),
+            "names_local": n.get("names_local"),
+            "landmarks_local": n.get("landmarks_local"),
+            "nearest_landmark": n.get("nearest_landmark"),
         }
         nodes.append(node_row)
 
@@ -158,6 +166,14 @@ def compose_trip_nodes(
             "lng": row.get("lng"),
             "opening_hours": row.get("opening_hours"),
             "geo_region": row.get("geo_region"),
+            "node_kind": row.get("node_kind", "activity"),
+            "booking_type": row.get("booking_type"),
+            "confirmation_code": row.get("confirmation_code"),
+            "booking_notes": row.get("booking_notes"),
+            "import_source": row.get("import_source"),
+            "names_local": row.get("names_local"),
+            "landmarks_local": row.get("landmarks_local"),
+            "nearest_landmark": row.get("nearest_landmark"),
         }
         result.append(node)
 
@@ -190,6 +206,14 @@ def round_trip_equal(trip_state: Dict[str, Any]) -> bool:
             "lng",
             "opening_hours",
             "geo_region",
+            "node_kind",
+            "booking_type",
+            "confirmation_code",
+            "booking_notes",
+            "import_source",
+            "names_local",
+            "landmarks_local",
+            "nearest_landmark",
         ):
             if orig.get(key) != comp.get(key):
                 return False

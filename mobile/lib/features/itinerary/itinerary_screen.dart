@@ -6,6 +6,7 @@ import '../../theme/colors.dart';
 import '../../theme/typography.dart';
 import '../../theme/spacing.dart';
 import '../../widgets/activity_card.dart';
+import '../booking/add_booking_sheet.dart';
 import '../../widgets/reroute_badge.dart';
 import '../../widgets/shimmer_card.dart';
 import '../../widgets/error_view.dart';
@@ -107,6 +108,17 @@ class ItineraryScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text('Your Day', style: AppTypography.h2),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.bookmark_add_outlined),
+            tooltip: 'Add Booking',
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                builder: (_) => AddBookingSheet(tripId: tripId),
+              );
+            },
+          ),
           RerouteBadge(onUpgradeTap: () => context.push('/upgrade')),
           const SizedBox(width: AppSpacing.base),
         ],

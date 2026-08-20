@@ -9,7 +9,8 @@ enum EventType {
   weatherAlert('weather_alert'),
   translate('translate'),
   askInfo('ask_info'),
-  reroute('reroute');
+  reroute('reroute'),
+  addBooking('add_booking');
 
   final String wire;
   const EventType(this.wire);
@@ -42,6 +43,12 @@ class TripNode {
   final Map<String, dynamic>? namesLocal;
   final Map<String, dynamic>? landmarksLocal;
   final String? nearestLandmark;
+  // SPEC-10: Booking anchor fields
+  final String nodeKind;
+  final String? bookingType;
+  final String? confirmationCode;
+  final String? bookingNotes;
+  final String? importSource;
 
   const TripNode({
     required this.nodeId,
@@ -59,6 +66,11 @@ class TripNode {
     this.namesLocal,
     this.landmarksLocal,
     this.nearestLandmark,
+    this.nodeKind = 'activity',
+    this.bookingType,
+    this.confirmationCode,
+    this.bookingNotes,
+    this.importSource,
   });
 
   factory TripNode.fromJson(Map<String, dynamic> j) => TripNode(
@@ -77,6 +89,11 @@ class TripNode {
         namesLocal: (j['names_local'] as Map?)?.cast<String, dynamic>(),
         landmarksLocal: (j['landmarks_local'] as Map?)?.cast<String, dynamic>(),
         nearestLandmark: j['nearest_landmark'] as String?,
+        nodeKind: (j['node_kind'] as String?) ?? 'activity',
+        bookingType: j['booking_type'] as String?,
+        confirmationCode: j['confirmation_code'] as String?,
+        bookingNotes: j['booking_notes'] as String?,
+        importSource: j['import_source'] as String?,
       );
 }
 

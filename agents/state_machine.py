@@ -38,6 +38,7 @@ STRUCTURAL_EDIT_EVENTS = {
     EventType.SWAP_ACTIVITY.value,
     EventType.ADD_ACTIVITY.value,
     EventType.REROUTE.value,
+    EventType.ADD_BOOKING.value,
 }
 VENUE_REQUIRED_EVENTS = {
     EventType.SWAP_ACTIVITY.value,
@@ -174,6 +175,47 @@ class TripStateMachine:
         trip_state: TripState = state["trip_state"]
         venues: List[VenueSearchResult] = state["venues_found"]
         target = state.get("target_node_id")
+
+        # SPEC-10: Booking anchors bypass venue search entirely
+        if event_type == EventType.ADD_BOOKING.value:
+            prefs = state.get("preferences") or {}
+            raw_start = prefs.get("scheduled_start") or state.get("message")
+            try:
+                if isinstance(raw_start, str):
+                    start_dt = datetime.fromisoformat(raw_start.replace("Z", "+00:00"))
+                else:
+                    start_dt = raw_start or datetime.now(tz=timezone.utc)
+            except Exception:
+                start_dt = datetime.now(tz=timezone.utc)
+
+            booking_node = TripNode(
+                venue_name=prefs.get("venue_name") or prefs.get("title") or "Booking",
+                scheduled_start=start_dt,
+                duration_minutes=int(prefs.get("duration_minutes", 90)),
+                is_locked=True,
+                status=NodeStatus.PENDING,
+                micro_location=prefs.get("micro_location"),
+                lat=prefs.get("lat"),
+                lng=prefs.get("lng"),
+                node_kind="booking",
+                booking_type=prefs.get("booking_type", "flight"),
+                confirmation_code=prefs.get("confirmation_code"),
+                booking_notes=prefs.get("booking_notes"),
+                import_source=prefs.get("import_source", "manual"),
+            )
+            nodes = list(trip_state.nodes)
+            inserted = False
+            for i, n in enumerate(nodes):
+                if n.scheduled_start > booking_node.scheduled_start:
+                    nodes.insert(i, booking_node)
+                    inserted = True
+                    break
+            if not inserted:
+                nodes.append(booking_node)
+            result = reschedule_and_validate(nodes)
+            trip_state.nodes = result.nodes
+            state["schedule_warnings"] = result.warnings
+            return state
 
         if event_type in VENUE_REQUIRED_EVENTS and not venues:
             state["no_candidates"] = True

@@ -49,6 +49,7 @@ class EventType(str, Enum):
     TRANSLATE = "translate"
     ASK_INFO = "ask_info"
     REROUTE = "reroute"
+    ADD_BOOKING = "add_booking"
 
 
 # ==============================================================================
@@ -77,6 +78,12 @@ class TripNode(BaseModel):
     )
     landmarks_local: Optional[Dict[str, Any]] = None  # SPEC-12: {lang: landmark_text}
     nearest_landmark: Optional[str] = None  # SPEC-12: English-language landmark
+    # SPEC-10: Booking anchor fields
+    node_kind: str = "activity"  # "activity" | "booking"
+    booking_type: Optional[str] = None  # "flight" | "hotel" | "train" | "tour"
+    confirmation_code: Optional[str] = None
+    booking_notes: Optional[str] = None
+    import_source: Optional[str] = None  # "manual" | "email" | "pdf" | "screenshot"
 
 
 class CurrentContext(BaseModel):

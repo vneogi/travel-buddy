@@ -7,6 +7,22 @@ import '../theme/colors.dart';
 import '../theme/typography.dart';
 import '../theme/spacing.dart';
 
+/// Returns the appropriate icon for a booking type (SPEC-10).
+IconData _bookingIcon(String? bookingType) {
+  switch (bookingType) {
+    case 'flight':
+      return Icons.flight_takeoff;
+    case 'hotel':
+      return Icons.hotel;
+    case 'train':
+      return Icons.train;
+    case 'tour':
+      return Icons.explore;
+    default:
+      return Icons.bookmark_border;
+  }
+}
+
 /// Timeline activity card. Shows venue, time, vibe chips, transit.
 /// Locked cards resist swipe (haptic + padlock shake).
 class ActivityCard extends StatelessWidget {
@@ -139,6 +155,16 @@ class ActivityCard extends StatelessWidget {
                           ),
                           if (node.isLocked)
                             Icon(Icons.lock, size: 16, color: AppColors.accent),
+                          // SPEC-10: booking type icon
+                          if (node.nodeKind == 'booking')
+                            Padding(
+                              padding: const EdgeInsets.only(left: 4),
+                              child: Icon(
+                                _bookingIcon(node.bookingType),
+                                size: 16,
+                                color: AppColors.accent,
+                              ),
+                            ),
                           // Visible swap affordance — swipe still works, but the
                           // gesture alone was undiscoverable.
                           if (onTapSwap != null && !node.isLocked && !isCompleted && !isSkipped)
@@ -209,6 +235,18 @@ class ActivityCard extends StatelessWidget {
                             ),
                         ],
                       ),
+                      // SPEC-10: booking badge
+                      if (node.nodeKind == 'booking')
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            '[BOOKING: ${node.bookingType?.toUpperCase() ?? "OTHER"}]',
+                            style: AppTypography.caption.copyWith(
+                              color: AppColors.accent,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
                       if (node.microLocation != null) ...[
                         const SizedBox(height: AppSpacing.xs),
                         Text(node.microLocation!, style: AppTypography.caption),

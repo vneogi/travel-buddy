@@ -133,6 +133,22 @@ class SignalService {
         },
       );
 
+  Future<void> emitBookingAdded({
+    required String bookingType,
+    required String importSource,
+    String? placeRef,
+    String? tripId,
+  }) =>
+      emit(
+        signalType: 'booking_added',
+        placeRef: placeRef ?? 'booking',
+        tripId: tripId,
+        valueJson: {
+          'booking_type': bookingType,
+          'import_source': importSource,
+        },
+      );
+
   Future<void> emitNameConfirmed({
     required String placeRef,
     required String lang,
