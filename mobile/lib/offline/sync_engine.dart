@@ -102,6 +102,11 @@ class SyncEngine {
   /// True when a 401 has halted sync. Only manual re-auth clears this.
   bool get authHalted => _authHalted;
 
+  /// Clears the auth halted state (called on user refresh / re-auth).
+  void resetAuthHalted() {
+    _authHalted = false;
+  }
+
   /// Single sync pass. Returns true if any work was done.
   Future<bool> syncOnce() async {
     if (_authHalted) return false;

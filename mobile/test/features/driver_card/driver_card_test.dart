@@ -263,4 +263,34 @@ void main() {
       expect(restored.geoRegion, equals('vientiane_laos'));
     });
   });
+  group('geoRegion threading', () {
+    test(
+      'TripNode with geo_region luang_prabang_laos resolves Lao script and LAK fare via fromTripNode',
+      () {
+        final node = TripNode.fromJson({
+          'node_id': 'n1',
+          'venue_name': 'Wat Xieng Thong',
+          'geo_region': 'luang_prabang_laos',
+          'names_local': {
+            'lo': {'value': 'Lao Name', 'source': 'wikidata'},
+            'en': {'value': 'English Name', 'source': 'wikidata'},
+          },
+        });
+        final placeData = PlaceDriverCardData.fromTripNode(node);
+        expect(placeData.geoRegion, equals('luang_prabang_laos'));
+
+        final entry = resolvePreferredLocalEntry(
+          localizedMap: placeData.namesLocal,
+          geoRegion: placeData.geoRegion,
+        );
+        expect(entry, isNotNull);
+        expect(entry!.key, equals('lo'));
+        expect(entry.value['value'], equals('Lao Name'));
+
+        final fare = resolveFairFareBand(placeData.geoRegion);
+        expect(fare, contains('LAK'));
+      },
+    );
+  });
+
 }

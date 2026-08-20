@@ -92,7 +92,7 @@ class PlaceDriverCardData {
       lat: node.lat,
       lng: node.lng,
       microLocation: node.microLocation,
-      geoRegion: null, // TripNode carries geoRegion at trip level
+      geoRegion: node.geoRegion,
     );
   }
 
@@ -100,9 +100,9 @@ class PlaceDriverCardData {
     return PlaceDriverCardData(
       placeRef: j['place_ref'] as String,
       venueName: j['venue_name'] as String,
-      namesLocal: j['names_local'] as Map<String, dynamic>?,
+      namesLocal: (j['names_local'] as Map?)?.cast<String, dynamic>(),
       nearestLandmark: j['nearest_landmark'] as String?,
-      landmarksLocal: j['landmarks_local'] as Map<String, dynamic>?,
+      landmarksLocal: (j['landmarks_local'] as Map?)?.cast<String, dynamic>(),
       lat: (j['lat'] as num?)?.toDouble(),
       lng: (j['lng'] as num?)?.toDouble(),
       microLocation: j['micro_location'] as String?,

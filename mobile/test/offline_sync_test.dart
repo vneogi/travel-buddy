@@ -331,4 +331,16 @@ void main() {
         reason: 'resetBackoff must not wipe attempts (sabotage test)');
     expect(after.first['next_retry_at'], isNull);
   });
+  test('resetAuthHalted clears halted state allowing sync to retry', () async {
+    when(() => mockApi.post('/signals', body: any(named: 'body')))
+        .thenThrow(const UnauthorizedException());
+
+    await syncEngine.syncOnce();
+    expect(syncEngine.authHalted, isTrue);
+
+    // resetAuthHalted clears it
+    syncEngine.resetAuthHalted();
+    expect(syncEngine.authHalted, isFalse);
+  });
+
 }
