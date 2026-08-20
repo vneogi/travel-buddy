@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/api_exception.dart';
@@ -60,8 +62,33 @@ class ItineraryController extends StateNotifier<ItineraryState> {
       if (!mounted) return;
       state = ItineraryState(nodes: trip.nodes, loading: false);
       _preCachePlaces(trip.nodes);
+      // SPEC-04: Persist to SQLite cache_trip for offline reads
+      try {
+        final db = _ref.read(offlineDatabaseProvider);
+        db.cacheTrip(tripId, jsonEncode(trip.toJson())).catchError((e) {
+          debugPrint('[ItineraryController] Cache trip error: $e');
+        });
+      } catch (_) {}
     } catch (e) {
       if (!mounted) return;
+      // SPEC-04: Offline fallback -- read from SQLite cache_trip
+      try {
+        final db = _ref.read(offlineDatabaseProvider);
+        final cachedJson = await db.getCachedTrip(tripId);
+        if (cachedJson != null && mounted) {
+          final cachedMap = jsonDecode(cachedJson) as Map<String, dynamic>;
+          final cachedTrip = TripState.fromJson(cachedMap);
+          state = ItineraryState(
+            nodes: cachedTrip.nodes,
+            loading: false,
+            banner: 'Offline: showing saved itinerary',
+          );
+          _preCachePlaces(cachedTrip.nodes);
+          return;
+        }
+      } catch (cacheErr) {
+        debugPrint('[ItineraryController] Offline cache read error: $cacheErr');
+      }
       state = ItineraryState(loading: false, error: e);
     }
   }

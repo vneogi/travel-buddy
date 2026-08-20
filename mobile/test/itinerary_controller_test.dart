@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mocktail/mocktail.dart';
@@ -136,4 +138,39 @@ void main() {
     expect(s.error, isA<NetworkException>());
     expect(s.loading, false);
   });
+
+  group('SPEC-04 offline cache', () {
+    test('offline load falls back to cached trip when network fails', () async {
+      // Make repo throw on load
+      when(() => repo.getTrip('t1')).thenThrow(const NetworkException());
+      // Seed cache with valid trip JSON
+      final cachedTrip = TripState(
+        tripId: 't1',
+        userId: 'u1',
+        nodes: [_node('n1', 'Cached Hotel')],
+      );
+      when(() => mockDb.getCachedTrip('t1'))
+          .thenAnswer((_) async => jsonEncode(cachedTrip.toJson()));
+      when(() => mockDb.cachePlace(any(), any())).thenAnswer((_) async {});
+
+      final c = await ready();
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      expect(c.state.loading, isFalse);
+      expect(c.state.nodes, hasLength(1));
+      expect(c.state.nodes.first.venueName, equals('Cached Hotel'));
+      expect(c.state.banner, contains('Offline'));
+    });
+
+    test('successful load caches trip to SQLite cache_trip', () async {
+      when(() => mockDb.cacheTrip(any(), any())).thenAnswer((_) async {});
+      when(() => mockDb.cachePlace(any(), any())).thenAnswer((_) async {});
+
+      await ready();
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      verify(() => mockDb.cacheTrip('t1', any())).called(1);
+    });
+  });
+
 }

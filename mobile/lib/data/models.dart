@@ -97,6 +97,30 @@ class TripNode {
       );
 }
 
+  Map<String, dynamic> toJson() => {
+        'node_id': nodeId,
+        'venue_name': venueName,
+        'venue_id': venueId,
+        'scheduled_start': scheduledStart.toUtc().toIso8601String(),
+        'duration_minutes': durationMinutes,
+        'is_locked': isLocked,
+        'status': status.name,
+        'micro_location': microLocation,
+        'vibe_tags': vibeTags,
+        'lat': lat,
+        'lng': lng,
+        'opening_hours': openingHours,
+        'names_local': namesLocal,
+        'landmarks_local': landmarksLocal,
+        'nearest_landmark': nearestLandmark,
+        'node_kind': nodeKind,
+        'booking_type': bookingType,
+        'confirmation_code': confirmationCode,
+        'booking_notes': bookingNotes,
+        'import_source': importSource,
+      };
+}
+
 class TripState {
   final String tripId;
   final String userId;
@@ -118,6 +142,13 @@ class TripState {
             .map((n) => TripNode.fromJson(n as Map<String, dynamic>))
             .toList(),
       );
+
+  Map<String, dynamic> toJson() => {
+        'trip_id': tripId,
+        'user_id': userId,
+        'current_context': {'mood': mood},
+        'nodes': nodes.map((n) => n.toJson()).toList(),
+      };
 }
 
 class TripEventResult {
