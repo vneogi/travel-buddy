@@ -95,7 +95,6 @@ class TripNode {
         bookingNotes: j['booking_notes'] as String?,
         importSource: j['import_source'] as String?,
       );
-}
 
   Map<String, dynamic> toJson() => {
         'node_id': nodeId,
