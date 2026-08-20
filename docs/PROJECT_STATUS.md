@@ -71,7 +71,7 @@
 | Offline vault (SPEC-04) | SPECIFIED, OCTOBER SHRUNK | Full vault not on the October path. SPEC-02 already delivers outbox, SyncEngine, cache_trip and cache_place; SPEC-12 already owns the venue driver card on that cache. October keeps only a thin rescue entry to the hotel address card once SPEC-10 exists. cache_vault, passes, emergency grid and phrase packs stay post-field-test -- see SPEC-04 |
 | Anonymous identity (SPEC-09) | DONE (client + server) | Client half landed PR #16 (`7173a3f`): UUID v4 in flutter_secure_storage, Anonymous header, TB_DEBUG_USER_ID removed. Server half already verified. Owner device E2E with TB_ALLOW_ANONYMOUS=true still deferred until laptop |
 | Itinerary normalisation (SPEC-16) | IMPLEMENTED | Decompose and compose land in services/itinerary_normaliser.py, dual-write in both backends, round-trip equality asserted, wire format unchanged. node_id is stable across reschedules via state_json and now comes from models/ids.py. One gap remains: observed_duration_minutes has no writer, so no transition data is accumulating |
-| Booking anchors (SPEC-10) | SPECIFIED | Not implemented. Resequenced to follow SPEC-16, because an anchor is a locked node and building it against the blob means building it twice. Amended so import is the primary path, manual entry the floor, and extraction on the device the preferred implementation of every import path |
+| Booking anchors (SPEC-10) | SPECIFIED, BRIEF READY | Brief: docs/briefs/GENIE_SPEC_10_BOOKING_ANCHORS.md -- immovable locked nodes, booking metadata on trip_node (migration 0021), scheduler conflict rules, on-device parsing floor, AddBookingSheet UI, booking_added signal |
 | Forced-choice preferences (SPEC-11) | SPECIFIED | Not implemented. Cold-start preference capture |
 | Show driver cards (SPEC-12) | DONE (October slice) | PR #19 squash-merged as `a2da64a`. Full-screen offline card from SQLite cache_place, FactView assert/ask/refuse tiers, ConfirmAffordance verification promoting generated to field_verified, driver_card_shown and name_confirmed signals registered in migration 0020 (unapplied live until laptop) |
 | Region and locale registry (SPEC-13) | SPECIFIED | Not implemented. Rising in priority: a city-onboarding pipeline needs it for bounding box, languages, currency and fare bands. Makes adding a city a row rather than a code change |
@@ -127,8 +127,9 @@ SPEC-02 plus SPEC-12.
    cache_place, driver_card_shown & name_confirmed signals (migration 0020
    in repo, unapplied live).
 6. SPEC-10 booking anchors (manual floor plus import path as specified) --
-   **NEXT.** This is what makes "full context" true for the field test.
-   This is what makes "full context" true for the field test.
+   **NEXT.** Brief: docs/briefs/GENIE_SPEC_10_BOOKING_ANCHORS.md. Immovable
+   locked nodes on timeline, scheduler hard conflict rules, on-device text
+   extractor, AddBookingSheet, and booking_added signal in migration 0021.
 7. SPEC-04 October slice only: <=2-tap rescue entry to the hotel address
    card, offline/cold-boot, reusing the SPEC-12 treatment against the
    accommodation node. Not the full vault.
