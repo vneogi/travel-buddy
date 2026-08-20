@@ -7,6 +7,22 @@ import '../theme/colors.dart';
 import '../theme/typography.dart';
 import '../theme/spacing.dart';
 
+/// Returns the appropriate icon for a booking type (SPEC-10).
+IconData _bookingIcon(String? bookingType) {
+  switch (bookingType) {
+    case 'flight':
+      return Icons.flight_takeoff;
+    case 'hotel':
+      return Icons.hotel;
+    case 'train':
+      return Icons.train;
+    case 'tour':
+      return Icons.explore;
+    default:
+      return Icons.bookmark_border;
+  }
+}
+
 /// Timeline activity card. Shows venue, time, vibe chips, transit.
 /// Locked cards resist swipe (haptic + padlock shake).
 class ActivityCard extends StatelessWidget {

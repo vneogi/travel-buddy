@@ -108,6 +108,17 @@ class ItineraryScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text('Your Day', style: AppTypography.h2),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.bookmark_add_outlined),
+            tooltip: 'Add Booking',
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                builder: (_) => AddBookingSheet(tripId: tripId),
+              );
+            },
+          ),
           RerouteBadge(onUpgradeTap: () => context.push('/upgrade')),
           const SizedBox(width: AppSpacing.base),
         ],
@@ -116,17 +127,6 @@ class ItineraryScreen extends ConsumerWidget {
         onPressed: () => context.push('/trip/$tripId/chat'),
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.chat_bubble_outline, color: Colors.white),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            builder: (_) => AddBookingSheet(tripId: tripId),
-          );
-        },
-        icon: const Icon(Icons.anchor),
-        label: const Text('Add Booking'),
       ),
       body: state.loading
           ? const ShimmerList(count: 5)
