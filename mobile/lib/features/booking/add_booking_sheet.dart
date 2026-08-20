@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers.dart';
+import '../itinerary/itinerary_notifier.dart';
 import '../../data/models.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
