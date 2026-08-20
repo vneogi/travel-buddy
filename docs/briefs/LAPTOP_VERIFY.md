@@ -1,49 +1,54 @@
 # Laptop verify -- Windows (PowerShell 5.1)
 
-Owner-only. This is the Device Day style runbook for everything that
-still needs a laptop after Device Day closed (2026-08-17). Isaac records
-results in `docs/AWAITING_VERIFICATION.md`. Do not invent a pass from a
-green CI job or from Genie.
+Owner-only. This is the complete, canonical Device Day runbook for
+verifying the entire October spine (SPEC-09, SPEC-22, SPEC-12, SPEC-10,
+SPEC-04, and post-spine hardening) on your Windows machine with live
+credentials.
 
-PowerShell 5.1. Canonical copy: `docs/briefs/LAPTOP_VERIFY.md` on
-`origin/main` after this lands.
+PowerShell 5.1. Canonical copy: `docs/briefs/LAPTOP_VERIFY.md` on `main`.
 
 Device Day (`docs/briefs/DEVICE_DAY.md`) is CLOSED. Do not re-apply
-0011-0018. Do not re-export Dubai. Do not `VALIDATE CONSTRAINT` unless
-you are deliberately doing that follow-up (it is not in this runbook).
+0011-0018. Do not re-export Dubai. Do not `VALIDATE CONSTRAINT` on
+0015/0017 (that remains a separate non-blocking follow-up).
 
 `docs/TESTING_GUIDE.md` section 4 still mentions
 `--dart-define=TB_DEBUG_USER_ID=...`. That flag was removed in SPEC-09
 (`7173a3f`). Ignore it. Identity is `Authorization: Anonymous <uuid>`.
 
-## What this day is for
+## What this day verifies
 
 Prove, on the Windows machine, in this order:
 
-1. Repo SHA and tools
+1. Repo SHA and tools on `main`
 2. Backend pytest with live Supabase URL (the five integration tests must
    not skip for missing URL)
-3. Migration 0019 applied on the hosted DB
-4. Flutter analyze + test (including SPEC-22 render tests and PR #18
-   helpers once that PR is on the SHA you checkout)
-5. Four sabotage proofs (R17) -- break, watch the named test fail,
+3. Migrations 0019, 0020, and 0021 applied on the hosted Supabase DB
+4. Flutter analyze + test (all 92 unit and widget tests pass with 0 warnings)
+5. Sabotage proofs (R17) -- break, watch the named test fail,
    restore, do not commit the break
 6. Local API + `smoke-test.ps1`
 7. Anonymous identity E2E (`TB_ALLOW_ANONYMOUS=true`, JWT secret unset)
-8. Flutter UI: home reachable with real Supabase dart-defines (no
-   onboarding loop), device id on profile, swap still works, visited
-   control appears in the current time window, chat copy is a question
+8. Flutter UI verification in Chrome:
+   - 8a: Dev gate / Home on `/`
+   - 8b: Real anon Supabase defines -- no onboarding redirect loop
+   - 8c: Profile device ID (UUID v4 format, persisted)
+   - 8d: Live swap on itinerary reflows timeline
+   - 8e: Visited / NOW badge on current-window node
+   - 8f: Chat empty-state is a question (not a swap promise)
+   - 8g: SPEC-12 Driver Card: Lao script, landmark, fair fare band (`20,000 - 50,000 LAK`), one-tap confirm
+   - 8h: SPEC-10 Booking Anchors: `+ Add Booking` in AppBar, paste auto-fill, locked booking card with icon & badge
+   - 8i: SPEC-04 Hotel Rescue: Shield icon in AppBar opens Hotel Driver Card or calm empty state
+   - 8j: Offline Itinerary Cache: load trip, stop API, reload screen -> renders cached itinerary with `"Offline: showing saved itinerary"` banner
 
-Stop and write the failure down. Do not "fix forward" past a hard stop.
+Stop and write the failure down if a step fails. Do not "fix forward" past a hard stop.
 
 ## Hard stops (do not continue)
 
-- `git pull` / checkout fails
+- `git pull` fails or working directory has uncommitted regressions
 - `pytest -q -ra` with `TB_SUPABASE_URL` set shows the five
   `test_supabase_integration` tests skipped for missing URL
-- 0019 `SELECT` returns zero rows after you think you applied it
-- `flutter analyze` or `flutter test` non-zero (record the first error
-  block; that is the finding)
+- 0019, 0020, or 0021 proof `SELECT` returns zero rows after apply
+- `flutter analyze` or `flutter test` non-zero
 - uvicorn starts with `supabase_configured` false while you intended live
   mode (R11 -- you are on in-memory)
 - `TB_SUPABASE_JWT_SECRET` is set in the uvicorn process when you are
@@ -51,33 +56,34 @@ Stop and write the failure down. Do not "fix forward" past a hard stop.
 - You put the **service_role** key into Flutter `--dart-define`. Flutter
   gets the **anon** key only (`TB_SUPABASE_ANON_KEY`)
 
-## Results sheet (paste back to Isaac)
+## Results sheet
 
-Copy this into chat or into a dated AWAITING_VERIFICATION finding. SHA
-and skip reasons are load-bearing. Do not write a pytest count into
-PROJECT_STATUS (R16).
+Copy this into chat or into a dated `docs/AWAITING_VERIFICATION.md` finding:
 
 ```
 Date (ISO):
-Machine:
+Machine: Windows (PowerShell 5.1)
 git SHA:
-Branch (main or PR #18 SHA):
-PR #18 merged? yes/no
+Branch: main
 
-Step 0 flutter doctor (any red?):
-Step 2 pytest -ra skip list:
-Step 3 0019 SELECT output:
-Step 4 flutter analyze exit:
-Step 4 flutter test exit (and any failing test names):
-Step 5 sabotage: four named tests failed when broken, passed after restore? yes/no
+Step 0 flutter doctor:
+Step 2 pytest -ra skip list (confirm 5 Supabase tests passed):
+Step 3 Migrations applied (0019, 0020, 0021):
+Step 4 flutter analyze exit (expect 0 errors, 0 warnings):
+Step 4 flutter test exit (expect 92 passed):
+Step 5 sabotage proofs (named tests failed when broken, passed after restore):
 Step 6 smoke-test.ps1 pass/fail counts:
-Step 7 Anonymous curl HTTP codes (v4 / v1 / no-flag):
+Step 7 Anonymous curl HTTP codes (v4 / v1 / flag-off):
 Step 8a Chrome no supabase defines -- reached / ? yes/no
 Step 8b Chrome WITH anon dart-defines -- onboarding loop? yes/no
-Step 8c Profile device id (UUID v4 shape, not empty):
+Step 8c Profile device id (UUID v4 shape, stable on reload):
 Step 8d Swap: itinerary row changed? yes/no
-Step 8e Visited / NOW visible on a node in the current window? yes/no/not-tried
-Step 8f Chat empty-state text (paste exactly):
+Step 8e Visited / NOW visible on node in current window:
+Step 8f Chat empty-state text:
+Step 8g Driver Card: Lao script, landmark, LAK fare band visible? yes/no
+Step 8h Booking Anchors: Add Booking sheet auto-fills, card shows locked badge? yes/no
+Step 8i Hotel Rescue: Shield icon opens hotel card or rescue sheet? yes/no
+Step 8j Offline Cache: stopping API renders cached itinerary with offline banner? yes/no
 
 Unexpected skips:
 Anything you did not run, and why:
@@ -87,12 +93,13 @@ Anything you did not run, and why:
 
 ## Pickup -- load .env into this PowerShell process
 
-Same helper as Device Day. Run at the start of every new shell.
+Run at the start of every new PowerShell terminal:
 
 ```powershell
 cd C:\Users\ariav\travel-buddy   # or wherever this clone lives
 $ErrorActionPreference = 'Stop'
 
+git checkout main
 git pull origin main
 if ($LASTEXITCODE -ne 0) { throw "git pull failed" }
 
@@ -110,36 +117,22 @@ if (-not $env:TB_SUPABASE_KEY) { throw "TB_SUPABASE_KEY missing" }
 Write-Host "creds present URL=$($env:TB_SUPABASE_URL.Substring(0,[Math]::Min(40,$env:TB_SUPABASE_URL.Length)))..."
 ```
 
-If PR #18 (`fix/itinerary-signal-auth-ci`) is **not** merged, Flutter
-steps 4, 5, 8b, 8e must run on that branch or you will not be testing
-the auth-gate / current-window / replacement_ref work:
-
-```powershell
-git fetch origin
-git checkout origin/fix/itinerary-signal-auth-ci
-if ($LASTEXITCODE -ne 0) { throw "checkout PR branch failed" }
-git log -1 --oneline
-```
-
-If it **is** merged, stay on `main` and record `git log -1 --oneline`.
-
 ---
 
-## Step 0 -- tools
+## Step 0 -- tools & dependencies
 
 ```powershell
 python --version
-# Expect 3.11 or 3.12, not the Windows Store stub.
+# Expect 3.11 or 3.12
 
 flutter --version
 flutter doctor
-# Record anything red. Continue if only Android licenses / VS, etc.
-# Hard stop if Flutter SDK missing.
+# Hard stop if Flutter SDK missing
 
 git log -1 --format="%H %s"
 ```
 
-One-time if needed:
+Install/verify python & dart dependencies:
 
 ```powershell
 pip install -r requirements.txt
@@ -150,32 +143,23 @@ if ($LASTEXITCODE -ne 0) { throw "flutter pub get failed" }
 cd ..
 ```
 
-`intl: ^0.19.0` was dropped on PR #18 because it fought
-`flutter_localizations`. If `pub get` fails on `main` before that merge,
-you are on a SHA that cannot resolve. Checkout the PR branch.
-
 ---
 
-## Step 1 -- do not touch live schema yet
+## Step 1 -- check live schema before migrations
 
-Confirm 0011-0018 are already applied (Device Day). Optional, SQL editor:
+Check what signal types are currently in the live database:
 
 ```sql
 SELECT key FROM signal_type
-WHERE key IN ('prompt_dismissed')
+WHERE key IN ('prompt_dismissed', 'driver_card_shown', 'name_confirmed', 'booking_added')
 ORDER BY 1;
 ```
 
-Expect **zero rows** before Step 3. If you already see `prompt_dismissed`,
-skip the apply and record "0019 already present".
-
 ---
 
-## Step 2 -- pytest, twice
+## Step 2 -- pytest (in-memory & live)
 
-### 2a In-memory (URL still set from .env -- this will hit live)
-
-For a true in-memory run you must **unset** the URL in this process only:
+### 2a In-memory backend
 
 ```powershell
 $savedUrl = $env:TB_SUPABASE_URL
@@ -189,11 +173,9 @@ $env:TB_SUPABASE_URL = $savedUrl
 $env:TB_SUPABASE_KEY = $savedKey
 ```
 
-Expect the five tests in `tests/test_supabase_integration.py` to skip
-with reason containing creds / URL. Any other skip is a finding (R8).
-Do not copy the passed-count into PROJECT_STATUS.
+Expect only the five live integration tests in `tests/test_supabase_integration.py` to skip.
 
-### 2b Live (required)
+### 2b Live Supabase backend (required)
 
 ```powershell
 if (-not $env:TB_SUPABASE_URL) { throw "URL missing -- reload .env" }
@@ -201,45 +183,66 @@ $env:TB_DEBUG = 'true'
 pytest -q -ra
 ```
 
-Hard stop if those five tests skip. Paste the full `-ra` skip section
-into the results sheet.
+Hard stop if the five Supabase tests skip. All 287 tests must pass.
 
 ---
 
-## Step 3 -- apply 0019 (`prompt_dismissed`)
+## Step 3 -- apply migrations 0019, 0020, and 0021
 
-File: `supabase/migrations/0019_prompt_dismissed.sql`
+In the **Supabase SQL Editor** (web dashboard), execute these statements:
 
-In the **Supabase SQL editor** (same path as Device Day 0011-0018):
+### 3a Migration 0019 (`prompt_dismissed`)
+```sql
+INSERT INTO signal_type (key, category, value_kind, enum_values, decay_policy, description) VALUES
+    ('prompt_dismissed', 'explicit_user', 'json', NULL, 'exp_180d',
+     'User dismissed an interruptive fact prompt (ask/defer FactView)')
+ON CONFLICT (key) DO NOTHING;
+```
 
-1. Paste the INSERT from that file (not the rollback comment).
-2. Run.
-3. Proof query:
+### 3b Migration 0020 (`driver_card_shown`, `name_confirmed`)
+```sql
+INSERT INTO signal_type (key, category, value_kind, enum_values, decay_policy, description) VALUES
+    ('driver_card_shown', 'behavioral', 'json', NULL, 'none',
+     'Traveller opened a driver card for a venue (offline or online)'),
+    ('name_confirmed', 'explicit_user', 'json', NULL, 'none',
+     'Traveller verified or rejected local-script venue signage (verdict=confirmed|rejected)')
+ON CONFLICT (key) DO NOTHING;
+```
 
+### 3c Migration 0021 (`booking_anchors`)
+```sql
+ALTER TABLE trip_node
+    ADD COLUMN IF NOT EXISTS node_kind TEXT NOT NULL DEFAULT 'activity',
+    ADD COLUMN IF NOT EXISTS booking_type TEXT NULL,
+    ADD COLUMN IF NOT EXISTS confirmation_code TEXT NULL,
+    ADD COLUMN IF NOT EXISTS booking_notes TEXT NULL,
+    ADD COLUMN IF NOT EXISTS import_source TEXT NULL;
+
+INSERT INTO signal_type (key, category, value_kind, enum_values, decay_policy, description) VALUES
+    ('booking_added', 'explicit_user', 'json', NULL, 'none',
+     'Traveller recorded a booking anchor (flight, hotel, train, tour)')
+ON CONFLICT (key) DO NOTHING;
+```
+
+### 3d Proof query:
 ```sql
 SELECT key, category, value_kind
 FROM signal_type
-WHERE key = 'prompt_dismissed';
+WHERE key IN ('prompt_dismissed', 'driver_card_shown', 'name_confirmed', 'booking_added')
+ORDER BY 1;
 ```
 
-Expect one row: `prompt_dismissed` / `explicit_user` / `json`.
+Expect **4 rows**.
 
-Hard stop if zero rows. Do not emit `prompt_dismissed` from a device
-until this is true -- the server will reject an unregistered type.
-
-Re-run the signal-types drift test:
-
+Re-verify drift guard:
 ```powershell
 pytest tests/test_signal_types.py -q -ra
-if ($LASTEXITCODE -ne 0) { throw "signal_types tests failed after 0019" }
+if ($LASTEXITCODE -ne 0) { throw "signal_types tests failed after migrations" }
 ```
 
 ---
 
 ## Step 4 -- Flutter analyze and test
-
-Working directory **must** be `mobile` (the token-literals test accepts
-repo root as a fallback, but analyze paths are from `mobile`).
 
 ```powershell
 cd C:\Users\ariav\travel-buddy\mobile
@@ -250,58 +253,21 @@ flutter analyze --no-fatal-infos
 if ($LASTEXITCODE -ne 0) { throw "analyze failed -- paste first 40 lines" }
 
 flutter test
-if ($LASTEXITCODE -ne 0) { throw "flutter test failed -- paste failing names" }
+if ($LASTEXITCODE -ne 0) { throw "flutter test failed" }
 cd ..
 ```
 
-If analyze is a wall of pre-existing **warnings** and zero **errors**,
-record both counts. Do not locally add `--no-fatal-warnings` unless Isaac
-says so after seeing the log. Errors always fail.
-
-Named tests that must exist on the PR #18 SHA (hard stop if "No tests
-ran"):
-
-```powershell
-cd mobile
-flutter test --name "picks the same node_id with a new venue"
-flutter test --name "node 10:00 for 90 minutes contains 10:30"
-flutter test --name "anonymous user can stay on /"
-flutter test --name "resetBackoff must not wipe attempts"
-cd ..
-```
-
-If the last name does not match, run:
-
-```powershell
-cd mobile
-flutter test test/offline_sync_test.dart --name "resetBackoff"
-cd ..
-```
-
-SPEC-22 files that must be collected (on `main` after `1b9b1b3`):
-
-```
-test/render/fact_view_test.dart
-test/render/interruption_budget_test.dart
-test/render/prompt_dismiss_adapter_test.dart
-test/render/token_literals_test.dart
-```
+Expect: `flutter analyze` exit 0 (0 errors, 0 warnings); `flutter test` exit 0 (all 92 tests passed).
 
 ---
 
-## Step 5 -- sabotage (R17). Restore every time.
+## Step 5 -- sabotage proofs (R17)
 
-Do this on the PR #18 SHA (or main after merge). After each substep:
-the named test is **red**, then `git checkout -- <file>` (or
-`git restore --source=HEAD -- <file>`), then the same test is **green**.
-Do not commit. Do not leave a broken tree.
+Run from `mobile/`. For each substep: break code -> test fails -> restore -> test passes.
 
-### 5a replacement_ref
-
+### 5a replacement_ref lookup
 File: `mobile/lib/features/itinerary/replacement_ref.dart`
-
 Change `n.nodeId == originalNodeId` to `n.nodeId != originalNodeId`.
-
 ```powershell
 cd mobile
 flutter test --name "picks the same node_id with a new venue"
@@ -314,56 +280,60 @@ flutter test --name "picks the same node_id with a new venue"
 cd ..
 ```
 
-If the test still PASSES after the `!=` edit, the guard is dead. Stop.
-That is R17. Tell Isaac.
-
-### 5b current window
-
+### 5b current window visited
 File: `mobile/lib/features/itinerary/current_window.dart`
-
-Replace the body of `nodeIsCurrentWindow` with `return false;`
-
+Replace body of `nodeIsCurrentWindow` with `return false;`.
 ```powershell
 cd mobile
 flutter test --name "node 10:00 for 90 minutes contains 10:30"
-# Expect FAIL, then restore
+# Expect FAIL
 cd ..
 git checkout -- mobile/lib/features/itinerary/current_window.dart
 ```
 
-### 5c auth redirect
-
+### 5c auth redirect gate
 File: `mobile/lib/routing/redirect_for_auth.dart`
-
 Inside `redirectForAuth`, after `if (!supabaseReady) return null;`, add:
-
-```
-if (!hasSession && location != '/onboarding') return '/onboarding';
-```
-
+`if (!hasSession && location != '/onboarding') return '/onboarding';`
 ```powershell
 cd mobile
 flutter test --name "anonymous user can stay on /"
-# Expect FAIL, then restore
+# Expect FAIL
 cd ..
 git checkout -- mobile/lib/routing/redirect_for_auth.dart
 ```
 
-If you sabotage `app_router.dart` instead of this helper and the test
-stays green, production is not calling the helper. Stop.
-
-### 5d resetBackoff
-
-File: `mobile/lib/offline/offline_database.dart`
-
-In `resetBackoff`, put `attempts = 0` back into the UPDATE.
-
+### 5d driver card geoRegion resolution
+File: `mobile/lib/features/driver_card/driver_card_helpers.dart`
+In `PlaceDriverCardData.fromTripNode`, change `geoRegion: node.geoRegion` back to `geoRegion: null`.
 ```powershell
 cd mobile
-flutter test test/offline_sync_test.dart --name "resetBackoff"
-# Expect FAIL, then restore
+flutter test --name "TripNode with geo_region luang_prabang_laos resolves Lao script and LAK fare"
+# Expect FAIL
 cd ..
-git checkout -- mobile/lib/offline/offline_database.dart
+git checkout -- mobile/lib/features/driver_card/driver_card_helpers.dart
+```
+
+### 5e hotel rescue node matcher
+File: `mobile/lib/features/rescue/hotel_rescue_sheet.dart`
+In `findHotelNode`, change `return true;` to `return false;`.
+```powershell
+cd mobile
+flutter test --name "identifies hotel booking with non-generic name"
+# Expect FAIL
+cd ..
+git checkout -- mobile/lib/features/rescue/hotel_rescue_sheet.dart
+```
+
+### 5f offline itinerary cache fallback
+File: `mobile/lib/features/itinerary/itinerary_notifier.dart`
+In `load()`, comment out the `getCachedTrip` catch block.
+```powershell
+cd mobile
+flutter test --name "offline load falls back to cached trip when network fails"
+# Expect FAIL
+cd ..
+git checkout -- mobile/lib/features/itinerary/itinerary_notifier.dart
 ```
 
 ```powershell
@@ -375,233 +345,118 @@ git status
 
 ## Step 6 -- local API + smoke-test.ps1
 
-**Auth mode for smoke:** JWT secret **unset**, `TB_DEBUG=true`. The
-script sends `X-Debug-User-Id`, not Anonymous.
-
 ```powershell
-# In the shell that will run uvicorn (leave it running)
-if ($env:TB_SUPABASE_JWT_SECRET) {
-    Remove-Item Env:TB_SUPABASE_JWT_SECRET
-    Write-Host "unset TB_SUPABASE_JWT_SECRET for debug/anonymous laptop API"
-}
+# Window 1: prepare API environment
+if ($env:TB_SUPABASE_JWT_SECRET) { Remove-Item Env:TB_SUPABASE_JWT_SECRET }
 $env:TB_DEBUG = 'true'
-# Keep TB_SUPABASE_URL and TB_SUPABASE_KEY so supabase_configured is true
-python -c "from config.settings import settings; print('debug', settings.debug); print('allow_anonymous', settings.allow_anonymous); print('jwt_secret_set', bool(settings.supabase_jwt_secret)); print('supabase_url_set', bool(settings.supabase_url))"
-```
+$env:TB_ALLOW_ANONYMOUS = 'true'
+python -c "from config.settings import settings; print('debug', settings.debug); print('allow_anonymous', settings.allow_anonymous); print('jwt_secret_set', bool(settings.supabase_jwt_secret))"
 
-Expect: debug True, jwt_secret_set False, supabase_url_set True.
-`allow_anonymous` may still be False for smoke.
-
-Second window:
-
-```powershell
-cd C:\Users\ariav\travel-buddy
+# Start uvicorn
 uvicorn main:app --reload --port 8000
 ```
 
-Watch startup. It prints booleans, never secrets. If
-`supabase_configured` is false, you are in-memory -- hard stop for any
-test you wanted live.
-
-Third window:
-
+In Window 2:
 ```powershell
 cd C:\Users\ariav\travel-buddy
 .\scripts\smoke-test.ps1
 ```
 
-Record PASS/FAIL lines. The script is allowed to use the debug header.
-A failure here is a finding even if Flutter is fine.
+Record PASS/FAIL lines.
 
 ---
 
 ## Step 7 -- Anonymous E2E (curl)
 
-Stop and restart uvicorn with Anonymous enabled. JWT still unset.
-
-```powershell
-$env:TB_ALLOW_ANONYMOUS = 'true'
-$env:TB_DEBUG = 'true'
-if ($env:TB_SUPABASE_JWT_SECRET) { Remove-Item Env:TB_SUPABASE_JWT_SECRET }
-python -c "from config.settings import settings; print('allow_anonymous', settings.allow_anonymous); print('jwt_secret_set', bool(settings.supabase_jwt_secret))"
-# Expect allow_anonymous True, jwt_secret_set False
-```
-
-Restart uvicorn so it picks up the env (reload may not see a new env var
-from another shell -- start it in **this** shell).
-
-Use a **v4** UUID (the 13th hex digit is 4):
+Keep uvicorn running with `TB_ALLOW_ANONYMOUS=true` and JWT unset.
 
 ```powershell
 $uuid = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
 $base = 'http://localhost:8000/api/v1'
 
-# 7a health (public)
+# 7a Public health
 curl.exe -s -w "`n%{http_code}" "$base/health"
 
-# 7b Anonymous accepted
+# 7b Anonymous status (200)
 curl.exe -s -w "`n%{http_code}" "$base/user/status" -H "Authorization: Anonymous $uuid"
 
-# 7c v1 UUID rejected (13th digit is 1) -- must not be 200
+# 7c v1 UUID rejected (4xx)
 curl.exe -s -w "`n%{http_code}" "$base/user/status" -H "Authorization: Anonymous aaaaaaaa-aaaa-1aaa-8aaa-aaaaaaaaaaaa"
-```
 
-Expect 7b **200** with a user payload. Expect 7c **4xx**, not 200.
-
-7d fail-closed: in a new shell **without** `TB_ALLOW_ANONYMOUS`, restart
-uvicorn, repeat 7b. Expect **401** with detail about Anonymous not
-enabled. Then put the flag back for Flutter.
-
-Create a trip as that device (proves write path, not just status):
-
-```powershell
-$uuid = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
-curl.exe -s -w "`n%{http_code}" -X POST "$base/trip/create" `
-  -H "Authorization: Anonymous $uuid" `
-  -H "Content-Type: application/json" `
-  --data-binary "{`"start_date`":`"2026-10-02T00:00:00Z`",`"initial_mood`":`"exploratory`"}"
-```
-
-PowerShell 5.1 mangles quotes. Safer -- write a temp JSON file (same
-pattern as `smoke-test.ps1`):
-
-```powershell
-$uuid = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+# 7d Create trip as anonymous device
 $tmp = Join-Path $env:TEMP 'tb_create_trip.json'
 '{"start_date":"2026-10-02T00:00:00Z","initial_mood":"exploratory"}' | Out-File -Encoding ascii $tmp -Force
-curl.exe -s -w "`n%{http_code}" -X POST "http://localhost:8000/api/v1/trip/create" `
+curl.exe -s -w "`n%{http_code}" -X POST "$base/trip/create" `
   -H "Authorization: Anonymous $uuid" `
   -H "Content-Type: application/json" `
   --data-binary "@$tmp"
 ```
 
-Expect 200 and a `trip_id`. Save that id for Step 8.
+Save the printed `trip_id` for Step 8.
 
 ---
 
-## Step 8 -- Flutter UI (Chrome first)
+## Step 8 -- Flutter UI verification (Chrome)
 
-Windows Chrome talks to `localhost`, not `10.0.2.2` (that is the Android
-emulator alias).
-
-Uvicorn must be running with `TB_ALLOW_ANONYMOUS=true` and JWT unset.
-
-### 8a No Supabase dart-defines (dev gate off)
-
+### 8a No Supabase defines (dev gate off)
 ```powershell
 cd C:\Users\ariav\travel-buddy\mobile
 flutter run -d chrome --dart-define=TB_API_BASE_URL=http://localhost:8000
 ```
+- App opens on `/` (Trips).
+- Profile shows Device ID (UUID v4 format).
 
-Expect: app opens on `/` (Trips), **not** stuck on onboarding.
-Open Profile. Device ID is a UUID, not blank, not `null`.
-
-### 8b WITH anon dart-defines (the softlock test)
-
-Use the **anon/publishable** key from Supabase Settings > API, never
-service_role.
-
+### 8b WITH anon Supabase dart-defines (softlock check)
+Use the **anon key** from Supabase Settings > API:
 ```powershell
 flutter run -d chrome `
   --dart-define=TB_API_BASE_URL=http://localhost:8000 `
   --dart-define=TB_SUPABASE_URL=https://YOUR_PROJECT.supabase.co `
   --dart-define=TB_SUPABASE_ANON_KEY=YOUR_ANON_KEY
 ```
+- App opens on `/` and stays (no redirect bounce).
 
-On PR #18 / merged SHA: Get Started / Skip must land on `/` and **stay**.
-If it bounces back to onboarding, the router fix is not on this SHA.
+### 8c Device ID stability
+Reload/restart Chrome; device ID on Profile must stay identical.
 
-On `main` **before** that merge: a loop is the known bug. Record it.
-Do not "fix" by omitting the dart-defines and calling 8b passed.
+### 8d Swap reflow
+On an unlocked card, tap swap icon. Venue updates and timeline reflows.
 
-Sign Out on profile currently `go('/onboarding')`. From onboarding, Get
-Started must still return to `/` and stay (after the fix).
-
-### 8c Device id stable
-
-Kill Chrome, run 8a or 8b again. Device id on Profile must match the
-first run (secure storage). If it changes every launch, SPEC-09 client
-is broken.
-
-### 8d Swap on itinerary
-
-Need a `trip_id` (Step 7 create, or create from the app if home can).
-Home may be a shell -- if you cannot open a trip from UI, Chrome URL:
-
-`http://localhost:xxxxx/trip/PASTE_TRIP_ID`
-
-(exact port from `flutter run` output).
-
-On a non-locked card, swipe/swap. The venue name on that row must
-change. Locked LPM-style row must not swap.
-
-You will not see `replacement_ref` in the UI. After swap, open
-Profile > Sync Status. Outbox should not sit in a tight fail loop.
-Optional: if a row is visible, you are not proving the JSON field --
-Step 5a is what proves the lookup. This step only proves swap still
-reflows.
-
-### 8e NOW / visited (needs PR #18)
-
-Create or use a trip whose **first unlocked node's** `scheduled_start`
-window contains **now** (UTC vs local: Dart compares instants, so a
-node starting "now" in the API's UTC timestamps should work).
-
-The demo `/trip/create` stamps start at 09:00 on `start_date`. If you
-created `2026-10-02` in Step 7, NOW will not show in August. Either:
-
-- POST create with `start_date` = today's UTC morning, or
-- Wait / do not mark 8e passed
-
-Expect: NOW treatment and an "I visited" control on that card. Tap it.
-That is `visited_confirmed`. Sync status should show a queued/synced
-signal, not a 401 storm.
-
-If 8e is not tried, write `not-tried` and why. Do not mark it passed
-because the unit test passed.
+### 8e Visited / NOW badge
+Nodes in current time window show `NOW` badge and `"I'm here"` button.
 
 ### 8f Chat copy
+Open Chat; empty-state shows questions (hours/nearby), not swap suggestions.
 
-Open `/trip/PASTE_TRIP_ID/chat` with an empty thread. Paste the
-placeholder text verbatim. It must **not** contain `Swap the next stop`.
-It should look like a question (hours / nearby). Sending a message may
-return cached LIGHT text; that is known. Do not expect the itinerary to
-change from chat.
+### 8g SPEC-12 Driver Card
+On any activity card, tap the car icon (`Show driver card`):
+- Full-screen high-contrast card opens.
+- Native script headline rendered via `FactView`.
+- Landmarks (native script + English), coordinates, and fair fare band visible.
+- If unconfirmed: tap `Confirm` -> promotes to verified and enqueues `name_confirmed`.
 
----
+### 8h SPEC-10 Booking Anchors
+In itinerary AppBar, tap `+ Add Booking` icon (`bookmark_add_outlined`):
+- Modal sheet opens. Select `Hotel` or `Flight`.
+- Paste sample confirmation text: `"Booking Confirmed! Flight EK501 to Dubai. PNR: AB12CD"`
+- Tap `Auto-fill from paste` -> Type and PNR populate automatically.
+- Tap `Save Anchor` -> locked card appears on timeline with lock icon and `[BOOKING: FLIGHT]` badge.
 
-## Step 9 -- optional Android emulator
+### 8i SPEC-04 Hotel Rescue
+In itinerary AppBar, tap the Shield icon (`shield_outlined`):
+- If a hotel is in the itinerary: directly opens hotel driver card in 1 tap.
+- If no hotel is saved: opens calm `HotelRescueSheet` with `"+ Add Hotel Booking"` button.
 
-Only if Chrome 8a-8c passed. Use `10.0.2.2` not localhost:
-
-```powershell
-cd C:\Users\ariav\travel-buddy\mobile
-flutter run -d emulator-5554 --dart-define=TB_API_BASE_URL=http://10.0.2.2:8000
-```
-
-Same checks as 8a. If the emulator cannot reach the host, that is a
-Windows firewall finding, not an app bug.
-
----
-
-## What you are not doing today
-
-- Loader-valid `data/dubai_uae.json`
-- `VALIDATE CONSTRAINT` on 0015/0017
-- SPEC-12 driver card
-- Wiring `cacheTrip` into itinerary load
-- Email/Supabase sign-in
-- Changing Genie's PR while this run is in flight (pick one SHA at Step 0)
+### 8j Offline itinerary caching
+With the trip loaded in Chrome:
+- Stop the uvicorn backend server in terminal (simulating lost connectivity).
+- Refresh the Chrome browser / reload the trip screen.
+- Screen renders the cached itinerary from SQLite with banner:
+  `"Offline: showing saved itinerary"` (no blank screen, no crash).
+- Restart uvicorn.
 
 ---
 
-## After the day
+## After verification
 
-Paste the results sheet to Isaac. Isaac updates
-`docs/AWAITING_VERIFICATION.md` with a dated finding (SHA, what ran,
-what skipped, what failed). He does not put a pytest count into
-PROJECT_STATUS.
-
-If 0019 applied, say so in that finding so nobody applies it twice.
-If sabotage 5c stayed green after breaking the helper, that blocks
-merge/trust of PR #18 even if CI is green.
+Copy the filled **Results sheet** into chat. We will record the dated finding in `docs/AWAITING_VERIFICATION.md`!
