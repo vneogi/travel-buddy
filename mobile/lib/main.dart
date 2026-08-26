@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/env.dart';
 import 'core/providers.dart';
+import 'offline/db_init.dart';
 import 'routing/app_router.dart';
 import 'theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  initDatabaseFactory();
 
   // Initialize Supabase (for auth). Skipped gracefully if no URL configured.
   if (Env.supabaseUrl.isNotEmpty && Env.supabaseAnonKey.isNotEmpty) {
