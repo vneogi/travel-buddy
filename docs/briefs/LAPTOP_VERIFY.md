@@ -20,9 +20,8 @@ Device Day (`docs/briefs/DEVICE_DAY.md`) is CLOSED. Do not re-apply
 Prove, on the Windows machine, in this order:
 
 1. Repo SHA and tools on `main`
-2. Backend pytest with live Supabase URL (the five integration tests must
-   not skip for missing URL)
-3. Migrations 0019, 0020, and 0021 applied on the hosted Supabase DB
+2. Migrations 0019, 0020, and 0021 applied on the hosted Supabase DB
+3. Backend pytest with live Supabase URL (all 292 tests pass, including live Supabase integration tests)
 4. Flutter analyze + test (all 92 unit and widget tests pass with 0 warnings)
 5. Sabotage proofs (R17) -- break, watch the named test fail,
    restore, do not commit the break
@@ -45,9 +44,8 @@ Stop and write the failure down if a step fails. Do not "fix forward" past a har
 ## Hard stops (do not continue)
 
 - `git pull` fails or working directory has uncommitted regressions
-- `pytest -q -ra` with `TB_SUPABASE_URL` set shows the five
-  `test_supabase_integration` tests skipped for missing URL
 - 0019, 0020, or 0021 proof `SELECT` returns zero rows after apply
+- `pytest -q -ra` with `TB_SUPABASE_URL` set shows any failure (all 292 tests must pass)
 - `flutter analyze` or `flutter test` non-zero
 - uvicorn starts with `supabase_configured` false while you intended live
   mode (R11 -- you are on in-memory)
@@ -67,8 +65,8 @@ git SHA:
 Branch: main
 
 Step 0 flutter doctor:
-Step 2 pytest -ra skip list (confirm 5 Supabase tests passed):
-Step 3 Migrations applied (0019, 0020, 0021):
+Step 2 Migrations applied (0019, 0020, 0021 proof query output):
+Step 3 pytest -ra skip/pass status (confirm 292 passed, 5 Supabase tests included):
 Step 4 flutter analyze exit (expect 0 errors, 0 warnings):
 Step 4 flutter test exit (expect 92 passed):
 Step 5 sabotage proofs (named tests failed when broken, passed after restore):
@@ -157,41 +155,11 @@ ORDER BY 1;
 
 ---
 
-## Step 2 -- pytest (in-memory & live)
-
-### 2a In-memory backend
-
-```powershell
-$savedUrl = $env:TB_SUPABASE_URL
-$savedKey = $env:TB_SUPABASE_KEY
-Remove-Item Env:TB_SUPABASE_URL
-Remove-Item Env:TB_SUPABASE_KEY
-$env:TB_DEBUG = 'true'
-pytest -q -ra
-# Restore immediately
-$env:TB_SUPABASE_URL = $savedUrl
-$env:TB_SUPABASE_KEY = $savedKey
-```
-
-Expect only the five live integration tests in `tests/test_supabase_integration.py` to skip.
-
-### 2b Live Supabase backend (required)
-
-```powershell
-if (-not $env:TB_SUPABASE_URL) { throw "URL missing -- reload .env" }
-$env:TB_DEBUG = 'true'
-pytest -q -ra
-```
-
-Hard stop if the five Supabase tests skip. All 287 tests must pass.
-
----
-
-## Step 3 -- apply migrations 0019, 0020, and 0021
+## Step 2 -- apply migrations 0019, 0020, and 0021
 
 In the **Supabase SQL Editor** (web dashboard), execute these statements:
 
-### 3a Migration 0019 (`prompt_dismissed`)
+### 2a Migration 0019 (`prompt_dismissed`)
 ```sql
 INSERT INTO signal_type (key, category, value_kind, enum_values, decay_policy, description) VALUES
     ('prompt_dismissed', 'explicit_user', 'json', NULL, 'exp_180d',
@@ -199,7 +167,7 @@ INSERT INTO signal_type (key, category, value_kind, enum_values, decay_policy, d
 ON CONFLICT (key) DO NOTHING;
 ```
 
-### 3b Migration 0020 (`driver_card_shown`, `name_confirmed`)
+### 2b Migration 0020 (`driver_card_shown`, `name_confirmed`)
 ```sql
 INSERT INTO signal_type (key, category, value_kind, enum_values, decay_policy, description) VALUES
     ('driver_card_shown', 'behavioral', 'json', NULL, 'none',
@@ -209,7 +177,7 @@ INSERT INTO signal_type (key, category, value_kind, enum_values, decay_policy, d
 ON CONFLICT (key) DO NOTHING;
 ```
 
-### 3c Migration 0021 (`booking_anchors`)
+### 2c Migration 0021 (`booking_anchors`)
 ```sql
 ALTER TABLE trip_node
     ADD COLUMN IF NOT EXISTS node_kind TEXT NOT NULL DEFAULT 'activity',
@@ -224,7 +192,7 @@ INSERT INTO signal_type (key, category, value_kind, enum_values, decay_policy, d
 ON CONFLICT (key) DO NOTHING;
 ```
 
-### 3d Proof query:
+### 2d Proof query:
 ```sql
 SELECT key, category, value_kind
 FROM signal_type
@@ -239,6 +207,20 @@ Re-verify drift guard:
 pytest tests/test_signal_types.py -q -ra
 if ($LASTEXITCODE -ne 0) { throw "signal_types tests failed after migrations" }
 ```
+
+---
+
+## Step 3 -- pytest (live Supabase backend)
+
+With migrations 0019-0021 applied, run the full test suite against your live Supabase project:
+
+```powershell
+if (-not $env:TB_SUPABASE_URL) { throw "URL missing -- reload .env" }
+$env:TB_DEBUG = 'true'
+pytest -q -ra
+```
+
+Expect: **all 292 tests passed** (including the five live integration tests in `tests/test_supabase_integration.py`).
 
 ---
 
