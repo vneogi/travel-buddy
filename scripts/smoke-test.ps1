@@ -67,12 +67,12 @@ $body4 = @"
 $resp4 = Invoke-Curl 'POST' "$baseUrl/signals" $body4
 Assert-Check 'arrival_delta (text instead of numeric) rejected, batch-mate accepted' ($resp4 -match '"accepted":\s*1' -and $resp4 -match '"rejected":\s*\[') "response: $resp4"
 
-# --- Check 5: node_skipped needs json value_kind with reason field ----------
+# --- Check 5: node_skipped with invalid reason -> rejected -------------------
 $body5 = @"
-{"signals":[{"signal_id":"$([guid]::NewGuid().ToString())","signal_type":"node_skipped","place_ref":"spice-souk","value_text":"tired lol","captured_at":"$now"}]}
+{"signals":[{"signal_id":"$([guid]::NewGuid().ToString())","signal_type":"node_skipped","place_ref":"spice-souk","value_json":{"reason":"tired lol"},"captured_at":"$now"}]}
 "@
 $resp5 = Invoke-Curl 'POST' "$baseUrl/signals" $body5
-Assert-Check 'node_skipped with value_text (not json) rejected' ($resp5 -match '"rejected":\s*\[' -and $resp5 -match '"accepted":\s*0') "response: $resp5"
+Assert-Check 'node_skipped with invalid reason rejected' ($resp5 -match '"rejected":\s*\[' -and $resp5 -match '"accepted":\s*0') "response: $resp5"
 
 # --- Check 6: Unregistered signal type -> rejected ---------------------------
 $body6 = @"
