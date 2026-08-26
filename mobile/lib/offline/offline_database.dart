@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -29,7 +30,14 @@ class OfflineDatabase {
   }
 
   Future<Database> _open() async {
-    final path = _testPath ?? join(await getDatabasesPath(), _dbName);
+    final String path;
+    if (_testPath != null) {
+      path = _testPath!;
+    } else if (kIsWeb) {
+      path = _dbName;
+    } else {
+      path = join(await getDatabasesPath(), _dbName);
+    }
     return openDatabase(
       path,
       version: _dbVersion,
