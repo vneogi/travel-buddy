@@ -20,7 +20,7 @@ Device Day (`docs/briefs/DEVICE_DAY.md`) is CLOSED. Do not re-apply
 Prove, on the Windows machine, in this order:
 
 1. Repo SHA and tools on `main`
-2. Migrations 0019, 0020, and 0021 applied on the hosted Supabase DB
+2. Migrations 0019, 0020, 0021, and 0022 applied on the hosted Supabase DB
 3. Backend pytest with live Supabase URL (all 292 tests pass, including live Supabase integration tests)
 4. Flutter analyze + test (all 92 unit and widget tests pass with 0 warnings)
 5. Sabotage proofs (R17) -- break, watch the named test fail,
@@ -65,7 +65,7 @@ git SHA:
 Branch: main
 
 Step 0 flutter doctor:
-Step 2 Migrations applied (0019, 0020, 0021 proof query output):
+Step 2 Migrations applied (0019, 0020, 0021, 0022 proof query output):
 Step 3 pytest -ra skip/pass status (confirm 292 passed, 5 Supabase tests included):
 Step 4 flutter analyze exit (expect 0 errors, 0 warnings):
 Step 4 flutter test exit (expect 92 passed):
@@ -192,7 +192,15 @@ INSERT INTO signal_type (key, category, value_kind, enum_values, decay_policy, d
 ON CONFLICT (key) DO NOTHING;
 ```
 
-### 2d Proof query:
+### 2d Migration 0022 (`trip_node_local_names`)
+```sql
+ALTER TABLE trip_node
+    ADD COLUMN IF NOT EXISTS names_local JSONB DEFAULT NULL,
+    ADD COLUMN IF NOT EXISTS landmarks_local JSONB DEFAULT NULL,
+    ADD COLUMN IF NOT EXISTS nearest_landmark TEXT DEFAULT NULL;
+```
+
+### 2e Proof query:
 ```sql
 SELECT key, category, value_kind
 FROM signal_type
@@ -212,7 +220,7 @@ if ($LASTEXITCODE -ne 0) { throw "signal_types tests failed after migrations" }
 
 ## Step 3 -- pytest (live Supabase backend)
 
-With migrations 0019-0021 applied, run the full test suite against your live Supabase project:
+With migrations 0019-0022 applied, run the full test suite against your live Supabase project:
 
 ```powershell
 if (-not $env:TB_SUPABASE_URL) { throw "URL missing -- reload .env" }
