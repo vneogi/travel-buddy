@@ -46,8 +46,9 @@ Assert-Check 'GET /health returns 200' ($healthCode -eq '200') "got $healthCode"
 
 # --- Check 2: POST signal -> accepted=1 ---------------------------------------
 $signalId = 'smoke-' + [guid]::NewGuid().ToString().Substring(0, 8)
+$now = [DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")
 $body = @"
-{"signals":[{"signal_id":"$signalId","signal_type":"user_loved","place_ref":"dubai-museum","value_text":"loved"}]}
+{"signals":[{"signal_id":"$signalId","signal_type":"user_loved","place_ref":"dubai-museum","value_text":"loved","captured_at":"$now"}]}
 "@
 $resp1 = Invoke-Curl 'POST' "$baseUrl/signals" $body
 Assert-Check 'POST signal accepted=1' ($resp1 -match '"accepted":\s*1') "response: $resp1"
@@ -59,8 +60,8 @@ Assert-Check 'POST duplicate -> duplicates=1' ($resp2 -match '"duplicates":\s*1'
 # --- Check 4: arrival_delta with wrong value_kind -> rejected ------------------
 $body4 = @"
 {"signals":[
-  {"signal_id":"smoke-good-$([guid]::NewGuid().ToString().Substring(0,8))","signal_type":"user_loved","place_ref":"dubai-mall","value_text":"loved"},
-  {"signal_id":"smoke-bad-$([guid]::NewGuid().ToString().Substring(0,8))","signal_type":"arrival_delta","place_ref":"dubai-mall","value_text":"not_a_number"}
+  {"signal_id":"smoke-good-$([guid]::NewGuid().ToString().Substring(0,8))","signal_type":"user_loved","place_ref":"dubai-mall","value_text":"loved","captured_at":"$now"},
+  {"signal_id":"smoke-bad-$([guid]::NewGuid().ToString().Substring(0,8))","signal_type":"arrival_delta","place_ref":"dubai-mall","value_text":"not_a_number","captured_at":"$now"}
 ]}
 "@
 $resp4 = Invoke-Curl 'POST' "$baseUrl/signals" $body4
@@ -68,14 +69,14 @@ Assert-Check 'arrival_delta (text instead of numeric) rejected, batch-mate accep
 
 # --- Check 5: node_skipped needs json value_kind with reason field ----------
 $body5 = @"
-{"signals":[{"signal_id":"smoke-skip-$([guid]::NewGuid().ToString().Substring(0,8))","signal_type":"node_skipped","place_ref":"spice-souk","value_text":"tired lol"}]}
+{"signals":[{"signal_id":"smoke-skip-$([guid]::NewGuid().ToString().Substring(0,8))","signal_type":"node_skipped","place_ref":"spice-souk","value_text":"tired lol","captured_at":"$now"}]}
 "@
 $resp5 = Invoke-Curl 'POST' "$baseUrl/signals" $body5
 Assert-Check 'node_skipped with value_text (not json) rejected' ($resp5 -match '"rejected":\s*\[' -and $resp5 -match '"accepted":\s*0') "response: $resp5"
 
 # --- Check 6: Unregistered signal type -> rejected ---------------------------
 $body6 = @"
-{"signals":[{"signal_id":"smoke-fake-$([guid]::NewGuid().ToString().Substring(0,8))","signal_type":"banana_peeled","place_ref":"atlantis","value_text":"yes"}]}
+{"signals":[{"signal_id":"smoke-fake-$([guid]::NewGuid().ToString().Substring(0,8))","signal_type":"banana_peeled","place_ref":"atlantis","value_text":"yes","captured_at":"$now"}]}
 "@
 $resp6 = Invoke-Curl 'POST' "$baseUrl/signals" $body6
 Assert-Check 'Unregistered type rejected' ($resp6 -match '"rejected":\s*\[' -and $resp6 -match '"accepted":\s*0') "response: $resp6"
