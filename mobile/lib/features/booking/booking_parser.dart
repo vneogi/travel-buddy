@@ -33,6 +33,17 @@ ParsedBooking extractBookingFromText(
     return ParsedBooking(importSource: importSource);
   }
 
+  try {
+    return _extractBookingFromText(rawText, importSource: importSource);
+  } catch (_) {
+    return ParsedBooking(importSource: importSource);
+  }
+}
+
+ParsedBooking _extractBookingFromText(
+  String rawText, {
+  required String importSource,
+}) {
   final text = rawText.trim();
   final lower = text.toLowerCase();
 
@@ -70,14 +81,19 @@ ParsedBooking extractBookingFromText(
   final lines =
       text.split('\n').map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
   String? venueName;
+  // Dart RegExp has no inline (?im) flags; those throw FormatException.
   final expecting = RegExp(
-    r'(?im)^(.{2,80}?)\s+is expecting you on\b',
+    r'^(.{2,80}?)\s+is expecting you on\b',
+    caseSensitive: false,
+    multiLine: true,
   ).firstMatch(text);
   if (expecting != null) {
     venueName = expecting.group(1)?.trim();
   } else {
     final bookingAt = RegExp(
-      r'(?im)^(?:your\s+)?booking\s+(?:at|with)\s+(.{2,80}?)\s+is confirmed\b',
+      r'^(?:your\s+)?booking\s+(?:at|with)\s+(.{2,80}?)\s+is confirmed\b',
+      caseSensitive: false,
+      multiLine: true,
     ).firstMatch(text);
     venueName = bookingAt?.group(1)?.trim();
   }

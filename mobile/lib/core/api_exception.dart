@@ -23,7 +23,9 @@ class ServerException extends ApiException {
 }
 
 class NetworkException extends ApiException {
-  const NetworkException([super.m = 'No connection. Check your network.']);
+  const NetworkException([
+    super.m = "Can't reach Travel Buddy. Check your connection.",
+  ]);
 }
 
 class UnsupportedRegionException extends ApiException {
