@@ -99,14 +99,22 @@ class WeatherProvider:
                     f"OpenWeather returned {response.status_code}",
                     status_code=response.status_code,
                 )
-            raw = response.json()
+            try:
+                raw = response.json()
+            except (ValueError, TypeError) as exc:
+                raise WeatherProviderError("Malformed JSON from weather provider") from exc
+        except WeatherProviderError:
+            raise
         except httpx.TimeoutException:
             raise WeatherProviderError("OpenWeather request timed out")
         except httpx.HTTPError as e:
             raise WeatherProviderError(f"OpenWeather HTTP error: {e}")
 
         blocks: List[ForecastBlock] = []
-        for item in raw.get("list", []):
+        raw_list = raw.get("list")
+        if not isinstance(raw_list, list):
+            raise WeatherProviderError("Malformed forecast response: missing list field")
+        for item in raw_list:
             dt = datetime.fromtimestamp(item["dt"], tz=timezone.utc)
             blocks.append(
                 ForecastBlock(
@@ -116,7 +124,7 @@ class WeatherProvider:
                     humidity=item["main"]["humidity"],
                     condition_code=item["weather"][0]["id"],
                     condition_main=item["weather"][0]["main"],
-                    rain_probability=item.get("pop", 0.0),
+                    rain_probability=max(0.0, min(1.0, float(item.get("pop", 0.0)))),
                     wind_speed_kmh=item["wind"]["speed"] * 3.6,
                 )
             )

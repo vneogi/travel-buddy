@@ -232,6 +232,21 @@ class TripStateMachine:
             state["schedule_warnings"] = result.warnings
             return state
 
+        # SPEC-29 D4: Cancel uses a direct status-flip; no venue loop needed.
+        if event_type == EventType.CANCEL_ACTIVITY.value:
+            target = state.get("target_node_id")
+            for node in trip_state.nodes:
+                if node.node_id == target:
+                    if node.is_locked:
+                        # Refuse: locked nodes cannot be canceled.
+                        return state
+                    node.status = NodeStatus.SKIPPED
+                    break
+            result = reschedule_and_validate(list(trip_state.nodes))
+            trip_state.nodes = result.nodes
+            state["schedule_warnings"] = result.warnings
+            return state
+
         if event_type in VENUE_REQUIRED_EVENTS and not venues:
             state["no_candidates"] = True
             state["schedule_warnings"] = ["No suitable venues found for this change."]
@@ -363,6 +378,25 @@ class TripStateMachine:
 
     async def _node_generate_response(self, state: Dict) -> Dict:
         """Node: produce the user-facing text (LLM when configured, else canned)."""
+        # SPEC-29 D4: Cancel is fully deterministic -- no LLM, no RAG.
+        if state["event_type"] == EventType.CANCEL_ACTIVITY.value:
+            target = state.get("target_node_id")
+            trip_state: TripState = state["trip_state"]
+            target_node = next((n for n in trip_state.nodes if n.node_id == target), None)
+            if target_node and target_node.is_locked:
+                # Locked nodes cannot be canceled -- refuse calmly.
+                state["response"] = (
+                    f"'{target_node.venue_name}' is a locked booking and "
+                    "cannot be canceled. Unlock it first if you need to remove it."
+                )
+                # Do not mutate state -- node stays unchanged.
+                return state
+            if target_node:
+                state["response"] = f"Canceled {target_node.venue_name}."
+            else:
+                state["response"] = "Activity canceled."
+            return state
+
         if state["event_type"] == EventType.ADD_BOOKING.value:
             state["response"] = "Booking saved as a locked itinerary anchor."
             warnings = state.get("schedule_warnings") or []

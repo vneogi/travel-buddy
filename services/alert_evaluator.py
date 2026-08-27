@@ -105,7 +105,7 @@ def _evaluate_block(
                 severity="warning",
                 message=(
                     f"Feels like {block.feels_like_c:.0f} C during {names_str}. "
-                    "Seek shade, carry water, and consider shortening outdoor time."
+                    "If you will be outdoors, seek shade, carry water, and consider shortening outdoor time."
                 ),
                 affected_node_ids=node_ids,
                 affected_node_names=node_names,
@@ -135,7 +135,7 @@ def _evaluate_block(
                 severity="advisory",
                 message=(
                     f"Feels like {block.feels_like_c:.0f} C during {names_str}. "
-                    "Consider shorter outdoor activities or shaded venues."
+                    "If you will be outdoors, consider shorter exposure or shaded venues."
                 ),
                 affected_node_ids=node_ids,
                 affected_node_names=node_names,
@@ -166,7 +166,7 @@ def _evaluate_block(
                 alert_type="storm",
                 severity="warning",
                 message=(
-                    f"Thunderstorm conditions forecast during {names_str}. Move activities indoors."
+                    f"Thunderstorm conditions forecast during {names_str}. Outdoor plans may be unsafe."
                 ),
                 affected_node_ids=node_ids,
                 affected_node_names=node_names,
@@ -194,7 +194,7 @@ def _evaluate_block(
                 alert_type="rain",
                 severity="advisory",
                 message=(
-                    f"{pct}% chance of rain during {names_str}. Consider indoor alternatives."
+                    f"{pct}% chance of rain during {names_str}. Review plans that require outdoor time."
                 ),
                 affected_node_ids=node_ids,
                 affected_node_names=node_names,

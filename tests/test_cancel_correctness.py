@@ -1,15 +1,21 @@
-"""SPEC-29: Cancel correctness tests.
+"""SPEC-29 D4: Cancel correctness tests.
 
-Proves canceled nodes stay in position, preserve fields,
-and do not trigger RAG/LLM/venue search.
+All tests invoke `process_event` through the real state machine.
+Venue search and LLM are monkeypatched to raise if called -- proving
+cancel uses neither.
 """
 
+import asyncio
 from datetime import datetime, timezone
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from agents.state_machine import (
+    VENUE_REQUIRED_EVENTS,
+    state_machine,
+)
 from models.schemas import EventType, NodeStatus, TripNode, TripState
-from services.scheduler import reschedule_and_validate
 
 
 def _node(name, hour, duration=90, node_id=None, is_locked=False, status=NodeStatus.PENDING):
@@ -26,81 +32,186 @@ def _node(name, hour, duration=90, node_id=None, is_locked=False, status=NodeSta
     )
 
 
-# --- Test 13: Cancel keeps order [A, canceled-B, C] ---
+def _trip(nodes):
+    return TripState(
+        trip_id="trip-cancel-test",
+        user_id="u1",
+        geo_region="dubai_uae",
+        nodes=nodes,
+    )
 
 
-def test_cancel_keeps_original_order():
-    """Cancel keeps order [A, canceled-B, C]."""
-    nodes = [
-        _node("A", hour=9, node_id="n-a"),
-        _node("B", hour=11, node_id="n-b", status=NodeStatus.SKIPPED),
-        _node("C", hour=13, node_id="n-c"),
-    ]
-
-    result = reschedule_and_validate(nodes)
-
-    assert [n.node_id for n in result.nodes] == ["n-a", "n-b", "n-c"]
-    # B is still at index 1
-    assert result.nodes[1].status == NodeStatus.SKIPPED
-    assert result.nodes[1].venue_name == "B"
-
-
-# --- Test 14: Cancel preserves B venue id/name/time, only status changes ---
+def _monkeypatch_no_llm_no_venue():
+    """Return patches that raise if venue search or LLM is called."""
+    venue_patch = patch(
+        "services.db_provider.db_service.hybrid_venue_search",
+        side_effect=AssertionError("Venue search must not be called for cancel"),
+    )
+    llm_patch = patch(
+        "services.llm_service.llm_service.classify_intent",
+        side_effect=AssertionError("LLM classify must not be called for cancel"),
+    )
+    llm_gen_patch = patch(
+        "services.llm_service.llm_service.generate_itinerary_response",
+        side_effect=AssertionError("LLM gen must not be called for cancel"),
+    )
+    return venue_patch, llm_patch, llm_gen_patch
 
 
-def test_cancel_preserves_venue_fields():
-    """Cancel preserves B's venue id/name/time and changes only status."""
-    b_node = _node("Desert Safari", hour=11, node_id="n-safari")
-    b_node.status = NodeStatus.SKIPPED
-    original_start = b_node.scheduled_start
-    original_venue_name = b_node.venue_name
-    original_venue_id = b_node.venue_id
+# =========================================================================
+# Test 1: Unlocked cancel succeeds with no search/LLM
+# =========================================================================
 
-    nodes = [
-        _node("Museum", hour=9),
-        b_node,
-        _node("Dinner", hour=14),
-    ]
 
-    result = reschedule_and_validate(nodes)
+def test_cancel_unlocked_no_search_no_llm():
+    """Cancel an unlocked node: no venue search, no LLM call."""
+    trip = _trip(
+        [
+            _node("Museum", hour=9, node_id="n-museum"),
+            _node("Desert Safari", hour=11, node_id="n-safari"),
+            _node("Dinner", hour=14, node_id="n-dinner"),
+        ]
+    )
 
-    canceled = result.nodes[1]
+    venue_p, llm_p, llm_gen_p = _monkeypatch_no_llm_no_venue()
+    with venue_p, llm_p, llm_gen_p:
+        result = asyncio.run(
+            state_machine.process_event(
+                trip_state=trip,
+                event_type=EventType.CANCEL_ACTIVITY.value,
+                message="Cancel Desert Safari",
+                target_node_id="n-safari",
+            )
+        )
+
+    # Succeeded without triggering any monkeypatched raises.
+    assert "Canceled Desert Safari" in result["response"]
+    updated = result["updated_trip_state"]
+    canceled = next(n for n in updated.nodes if n.node_id == "n-safari")
     assert canceled.status == NodeStatus.SKIPPED
-    assert canceled.venue_name == original_venue_name
-    assert canceled.venue_id == original_venue_id
-    assert canceled.scheduled_start == original_start
 
 
-# --- Test 15: Cancel performs no venue search and no LLM call ---
+# =========================================================================
+# Test 2: Canceled node remains at original index
+# =========================================================================
 
 
-def test_cancel_does_not_trigger_venue_search():
-    """Cancel event_type is in STRUCTURAL but not VENUE_REQUIRED.
+def test_cancel_preserves_original_index():
+    """Canceled node stays at index 1 in [A, B, C]."""
+    trip = _trip(
+        [
+            _node("A", hour=9, node_id="n-a"),
+            _node("B", hour=11, node_id="n-b"),
+            _node("C", hour=14, node_id="n-c"),
+        ]
+    )
 
-    The state machine _node_venue_search returns early for non-VENUE_REQUIRED events.
-    This test validates the constant sets.
-    """
-    from agents.state_machine import VENUE_REQUIRED_EVENTS
+    venue_p, llm_p, llm_gen_p = _monkeypatch_no_llm_no_venue()
+    with venue_p, llm_p, llm_gen_p:
+        result = asyncio.run(
+            state_machine.process_event(
+                trip_state=trip,
+                event_type=EventType.CANCEL_ACTIVITY.value,
+                message="Cancel B",
+                target_node_id="n-b",
+            )
+        )
 
-    assert EventType.CANCEL_ACTIVITY.value not in VENUE_REQUIRED_EVENTS
+    nodes = result["updated_trip_state"].nodes
+    assert [n.node_id for n in nodes] == ["n-a", "n-b", "n-c"]
+    assert nodes[1].status == NodeStatus.SKIPPED
+    assert nodes[1].venue_name == "B"
+    assert nodes[1].venue_id == "vid-b"
 
 
-# --- Test 16: Locked booking cannot be canceled ---
+# =========================================================================
+# Test 3: Locked cancel refuses and is unchanged
+# =========================================================================
 
 
-def test_locked_booking_not_in_skipped_by_scheduler():
-    """Locked booking cannot be canceled -- scheduler still schedules it."""
-    nodes = [
-        _node("Activity", hour=9, node_id="n-act"),
-        _node("Locked Hotel", hour=12, node_id="n-hotel", is_locked=True),
-        _node("Dinner", hour=18, node_id="n-dinner"),
-    ]
+def test_cancel_locked_refuses_unchanged():
+    """Locked booking cancellation refused with deterministic copy."""
+    trip = _trip(
+        [
+            _node("Activity", hour=9, node_id="n-act"),
+            _node("Locked Hotel", hour=12, node_id="n-hotel", is_locked=True),
+            _node("Dinner", hour=18, node_id="n-dinner"),
+        ]
+    )
 
-    # Even if somehow status were set to SKIPPED on a locked node,
-    # the scheduler only skips non-locked scheduling -- locked nodes
-    # always anchor. This test verifies the contract: locked nodes
-    # should never have status=SKIPPED in practice.
-    # The state machine must refuse cancellation of locked nodes.
-    result = reschedule_and_validate(nodes)
-    locked = [n for n in result.nodes if n.is_locked]
-    assert all(n.status != NodeStatus.SKIPPED for n in locked)
+    venue_p, llm_p, llm_gen_p = _monkeypatch_no_llm_no_venue()
+    with venue_p, llm_p, llm_gen_p:
+        result = asyncio.run(
+            state_machine.process_event(
+                trip_state=trip,
+                event_type=EventType.CANCEL_ACTIVITY.value,
+                message="Cancel Locked Hotel",
+                target_node_id="n-hotel",
+            )
+        )
+
+    # Response is a calm refusal
+    assert "locked" in result["response"].lower()
+    assert "cannot be canceled" in result["response"].lower()
+
+    # Node is unchanged
+    hotel = next(n for n in result["updated_trip_state"].nodes if n.node_id == "n-hotel")
+    assert hotel.status == NodeStatus.PENDING
+    assert hotel.is_locked is True
+    assert hotel.venue_name == "Locked Hotel"
+
+
+# =========================================================================
+# Test 4: Response is deterministic (no LLM variance)
+# =========================================================================
+
+
+def test_cancel_response_is_deterministic():
+    """Same cancel produces identical response text."""
+
+    def run_cancel():
+        trip = _trip([_node("Spa", hour=10, node_id="n-spa")])
+        venue_p, llm_p, llm_gen_p = _monkeypatch_no_llm_no_venue()
+        with venue_p, llm_p, llm_gen_p:
+            return asyncio.run(
+                state_machine.process_event(
+                    trip_state=trip,
+                    event_type=EventType.CANCEL_ACTIVITY.value,
+                    message="Cancel Spa",
+                    target_node_id="n-spa",
+                )
+            )
+
+    r1 = run_cancel()
+    r2 = run_cancel()
+    assert r1["response"] == r2["response"]
+    assert r1["response"] == "Canceled Spa."
+
+
+# =========================================================================
+# Test 5: Repeated cancel is idempotent
+# =========================================================================
+
+
+def test_cancel_idempotent():
+    """Canceling an already-skipped node is a no-op (still deterministic)."""
+    trip = _trip(
+        [
+            _node("Beach", hour=10, node_id="n-beach", status=NodeStatus.SKIPPED),
+        ]
+    )
+
+    venue_p, llm_p, llm_gen_p = _monkeypatch_no_llm_no_venue()
+    with venue_p, llm_p, llm_gen_p:
+        result = asyncio.run(
+            state_machine.process_event(
+                trip_state=trip,
+                event_type=EventType.CANCEL_ACTIVITY.value,
+                message="Cancel Beach",
+                target_node_id="n-beach",
+            )
+        )
+
+    # Node stays skipped, response is still valid
+    assert result["updated_trip_state"].nodes[0].status == NodeStatus.SKIPPED
+    assert "Canceled Beach" in result["response"] or "Beach" in result["response"]

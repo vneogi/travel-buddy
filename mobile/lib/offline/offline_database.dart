@@ -13,7 +13,7 @@ import 'package:sqflite/sqflite.dart';
 /// Invariant: a user action is durable in outbox BEFORE any network attempt.
 class OfflineDatabase {
   static const _dbName = 'travel_buddy_offline.db';
-  static const _dbVersion = 2;
+  static const _dbVersion = 3;
 
   /// Optional path override for testing (pass inMemoryDatabasePath for isolation).
   final String? _testPath;
@@ -77,11 +77,15 @@ class OfflineDatabase {
       ')',
     );
     await _createTripListCache(db);
+    await _createAlertTables(db);
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
       await _createTripListCache(db);
+    }
+    if (oldVersion < 3) {
+      await _createAlertTables(db);
     }
   }
 
@@ -91,6 +95,28 @@ class OfflineDatabase {
       '  cache_key    TEXT PRIMARY KEY,'
       '  list_json    TEXT NOT NULL,'
       '  cached_at    TEXT NOT NULL'
+      ')',
+    );
+  }
+
+  /// SPEC-29: Alert cache and dismissal tables.
+  Future<void> _createAlertTables(Database db) async {
+    await db.execute(
+      'CREATE TABLE alert_cache ('
+      '  identity_scope TEXT NOT NULL,'
+      '  trip_id        TEXT NOT NULL,'
+      '  payload_json   TEXT NOT NULL,'
+      '  cached_at      TEXT NOT NULL,'
+      '  expires_at     TEXT NOT NULL,'
+      '  PRIMARY KEY (identity_scope, trip_id)'
+      ')',
+    );
+    await db.execute(
+      'CREATE TABLE alert_dismissals ('
+      '  identity_scope TEXT NOT NULL,'
+      '  alert_id       TEXT NOT NULL,'
+      '  dismissed_at   TEXT NOT NULL,'
+      '  PRIMARY KEY (identity_scope, alert_id)'
       ')',
     );
   }
@@ -324,5 +350,97 @@ class OfflineDatabase {
   Future<void> close() async {
     await _db?.close();
     _db = null;
+  }
+
+  // ============================================================
+  // Alert cache (SPEC-29)
+  // ============================================================
+
+  /// Cache alerts scoped by identity and trip.
+  Future<void> cacheAlerts({
+    required String identityScope,
+    required String tripId,
+    required String payloadJson,
+    required String expiresAt,
+  }) async {
+    final database = await db;
+    await database.insert(
+      'alert_cache',
+      {
+        'identity_scope': identityScope,
+        'trip_id': tripId,
+        'payload_json': payloadJson,
+        'cached_at': DateTime.now().toUtc().toIso8601String(),
+        'expires_at': expiresAt,
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  /// Retrieve cached alerts (only if not expired).
+  Future<String?> getCachedAlerts({
+    required String identityScope,
+    required String tripId,
+  }) async {
+    final database = await db;
+    final now = DateTime.now().toUtc().toIso8601String();
+    final rows = await database.query(
+      'alert_cache',
+      where: 'identity_scope = ? AND trip_id = ? AND expires_at > ?',
+      whereArgs: [identityScope, tripId, now],
+    );
+    if (rows.isEmpty) return null;
+    return rows.first['payload_json'] as String?;
+  }
+
+  /// Record a dismissed alert.
+  Future<void> dismissAlert({
+    required String identityScope,
+    required String alertId,
+  }) async {
+    final database = await db;
+    await database.insert(
+      'alert_dismissals',
+      {
+        'identity_scope': identityScope,
+        'alert_id': alertId,
+        'dismissed_at': DateTime.now().toUtc().toIso8601String(),
+      },
+      conflictAlgorithm: ConflictAlgorithm.ignore,
+    );
+  }
+
+  /// Get all dismissed alert IDs for this identity.
+  Future<Set<String>> getDismissedAlertIds({
+    required String identityScope,
+  }) async {
+    final database = await db;
+    final rows = await database.query(
+      'alert_dismissals',
+      columns: ['alert_id'],
+      where: 'identity_scope = ?',
+      whereArgs: [identityScope],
+    );
+    return rows.map((r) => r['alert_id'] as String).toSet();
+  }
+
+  /// Prune expired alert cache rows and stale dismissals (> 30 days).
+  Future<void> pruneAlertData() async {
+    final database = await db;
+    final now = DateTime.now().toUtc().toIso8601String();
+    await database.delete(
+      'alert_cache',
+      where: 'expires_at <= ?',
+      whereArgs: [now],
+    );
+    final cutoff = DateTime.now()
+        .toUtc()
+        .subtract(const Duration(days: 30))
+        .toIso8601String();
+    await database.delete(
+      'alert_dismissals',
+      where: 'dismissed_at < ?',
+      whereArgs: [cutoff],
+    );
   }
 }

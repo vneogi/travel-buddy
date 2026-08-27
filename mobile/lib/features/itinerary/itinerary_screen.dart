@@ -15,6 +15,8 @@ import '../../widgets/error_view.dart';
 import 'itinerary_notifier.dart';
 import 'replacement_ref.dart';
 import '../../core/providers.dart';
+import '../alerts/alerts_notifier.dart';
+import '../../widgets/alert_card.dart';
 
 /// The hero screen — live timeline of activity cards.
 ///
@@ -104,6 +106,9 @@ class ItineraryScreen extends ConsumerWidget {
       }
     });
 
+    // SPEC-29: Refresh alerts on screen open (provider auto-fetches on build).
+    // Manual refresh + app-resume handled via _AlertsSection.
+
     final state = ref.watch(itineraryControllerProvider(tripId));
 
     return Scaffold(
@@ -166,6 +171,10 @@ class ItineraryScreen extends ConsumerWidget {
                             .read(itineraryControllerProvider(tripId).notifier)
                             .clearBanner(),
                       ),
+                    // SPEC-29: Context alerts above timeline.
+                    // Non-blocking: itinerary shows immediately; alerts
+                    // render when available (no spinner replacement).
+                    _AlertsSection(tripId: tripId),
                     Expanded(
                       child: state.nodes.isEmpty
                           ? Center(
@@ -292,6 +301,67 @@ class _SkipReasonSheet extends StatelessWidget {
           const SizedBox(height: AppSpacing.base),
         ],
       ),
+    );
+  }
+}
+
+
+/// SPEC-29: Non-blocking alert section above the timeline.
+///
+/// Renders alert cards when data is available. Does NOT show a spinner
+/// or replace the itinerary while loading.
+class _AlertsSection extends ConsumerStatefulWidget {
+  final String tripId;
+  const _AlertsSection({required this.tripId});
+
+  @override
+  ConsumerState<_AlertsSection> createState() => _AlertsSectionState();
+}
+
+class _AlertsSectionState extends ConsumerState<_AlertsSection>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.read(alertsNotifierProvider(widget.tripId).notifier).refresh();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final alertsAsync = ref.watch(alertsNotifierProvider(widget.tripId));
+
+    return alertsAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (alertsState) {
+        final visible = alertsState.visible;
+        if (visible.isEmpty) return const SizedBox.shrink();
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final alert in visible)
+              AlertCard(
+                alert: alert,
+                onDismiss: () => ref
+                    .read(alertsNotifierProvider(widget.tripId).notifier)
+                    .dismiss(alert.alertId),
+              ),
+          ],
+        );
+      },
     );
   }
 }
