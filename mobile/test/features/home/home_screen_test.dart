@@ -21,7 +21,8 @@ void main() {
         child: const MaterialApp(home: HomeScreen()),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
 
     expect(find.text('Where to next?'), findsOneWidget);
     expect(find.text('Create a trip'), findsOneWidget);
@@ -51,7 +52,8 @@ void main() {
         child: const MaterialApp(home: HomeScreen()),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
 
     expect(find.text('Dubai Uae'), findsOneWidget);
     expect(find.textContaining('2 bookings'), findsOneWidget);

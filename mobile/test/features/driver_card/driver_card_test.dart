@@ -351,7 +351,9 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    // Do not pumpAndSettle: the loading spinner is an infinite animation.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
 
     const arabicName = '\u0645\u062A\u062D\u0641 \u062F\u0628\u064A';
     expect(find.text(arabicName), findsOneWidget);
