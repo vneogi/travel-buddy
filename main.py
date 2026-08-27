@@ -28,6 +28,7 @@ try:
 except ImportError:
     payment_router = None
 from routers.signal_router import router as signal_router
+from routers.alerts_router import router as alerts_router
 from routers.debug_router import router as debug_router
 from monitoring.error_log import error_log
 from seed_data import seed_venues
@@ -142,6 +143,7 @@ app.include_router(trip_router)
 if payment_router:
     app.include_router(payment_router)
 app.include_router(signal_router)
+app.include_router(alerts_router)
 app.include_router(debug_router)
 
 

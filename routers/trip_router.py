@@ -178,10 +178,7 @@ async def create_trip(
 def _summarize_trip(trip: TripState) -> TripSummary:
     starts_at = min((node.scheduled_start for node in trip.nodes), default=None)
     ends_at = max(
-        (
-            node.scheduled_start + timedelta(minutes=node.duration_minutes)
-            for node in trip.nodes
-        ),
+        (node.scheduled_start + timedelta(minutes=node.duration_minutes) for node in trip.nodes),
         default=None,
     )
     return TripSummary(

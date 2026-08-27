@@ -126,6 +126,10 @@ class TripStateMachine:
         if state["routing_tier"] != RoutingTier.HEAVY:
             return state
 
+        # SPEC-29: Cancel never needs venue search
+        if state["event_type"] not in VENUE_REQUIRED_EVENTS:
+            return state
+
         trip_state: TripState = state["trip_state"]
         user_lat = trip_state.current_context.location_lat
         user_lng = trip_state.current_context.location_lng
