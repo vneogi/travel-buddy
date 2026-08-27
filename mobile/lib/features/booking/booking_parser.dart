@@ -133,7 +133,7 @@ ParsedBooking _extractBookingFromText(
 }
 
 final _confirmationLabel = RegExp(
-  r'(?:pnr|confirmation\s+(?:code|ref|number)|booking\s+(?:ref|reference|id|number|code)|reservation\s+(?:code|ref|reference)|pin\s*(?:code)?)\s*[:#]?\s*',
+  r'(?:\bpnr\b|\bconfirmation\s+(?:code|number|reference|ref)\b|\bbooking\s+(?:reference|number|code|id|ref)\b|\breservation\s+(?:reference|number|code|ref)\b|\bpin(?:\s+code)?\b)\s*[:#]?\s*',
   caseSensitive: false,
 );
 final _confirmationToken = RegExp(r'^[A-Z0-9][A-Z0-9.]{3,19}');
