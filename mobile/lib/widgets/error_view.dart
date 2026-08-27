@@ -47,12 +47,19 @@ class ErrorView extends StatelessWidget {
     if (error is UnauthorizedException) {
       return (Icons.lock_outline, 'Session expired', error.message);
     }
+    if (error is ForbiddenException) {
+      return (Icons.block_outlined, 'Access denied', error.message);
+    }
     if (error is NotFoundException) {
       return (Icons.search_off, 'Not found', error.message);
     }
     if (error is ServerException) {
       return (Icons.cloud_off, 'Server error', error.message);
     }
-    return (Icons.error_outline, 'Something went wrong', error.toString());
+    return (
+      Icons.error_outline,
+      'Something went wrong',
+      'Please try again. If the problem continues, check your connection.',
+    );
   }
 }

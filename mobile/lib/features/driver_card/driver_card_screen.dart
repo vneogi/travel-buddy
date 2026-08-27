@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/providers.dart';
 import '../../render/fact_envelope.dart';
@@ -150,65 +151,58 @@ class _DriverCardScreenState extends ConsumerState<DriverCardScreen> {
 
   Widget _buildCard() {
     final data = _data!;
-    final fareBand = resolveFairFareBand(data.geoRegion);
+    final mapsUri = buildMapsUri(data.lat, data.lng);
+    final hasCoords = data.lat != null && data.lng != null;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Native script headline via FactView
           _buildNameSection(),
           const SizedBox(height: AppSpacing.lg),
-          // Landmark section
           _buildLandmarkSection(data),
           const SizedBox(height: AppSpacing.lg),
-          // Roman name + coordinates
           Text(data.venueName, style: AppTypography.h1),
-          if (data.lat != null && data.lng != null) ...[
+          if (mapsUri != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            OutlinedButton.icon(
+              onPressed: () => _openMaps(mapsUri),
+              icon: const Icon(Icons.map_outlined),
+              label: const Text('Open in Maps'),
+            ),
+          ],
+          if (hasCoords) ...[
             const SizedBox(height: AppSpacing.sm),
             Text(
               '${data.lat!.toStringAsFixed(5)}, ${data.lng!.toStringAsFixed(5)}',
-              style: AppTypography.bodyMedium,
+              style: AppTypography.caption.copyWith(color: AppColors.muted),
             ),
           ],
           const SizedBox(height: AppSpacing.lg),
-          // Fair fare band
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(AppSpacing.base),
-            decoration: BoxDecoration(
-              color: AppColors.primaryLight,
-              borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Fair Fare', style: AppTypography.label),
-                const SizedBox(height: AppSpacing.xs),
-                Text(fareBand, style: AppTypography.bodyMedium),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          // Screenshot affordance
           Center(
             child: Text(
-              'Screenshot this card for offline safety',
-              style: AppTypography.caption,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          // Disclaimer
-          Center(
-            child: Text(
-              'Venue and fare information is an offline travel aid.',
+              'Venue information is an offline travel aid.',
               style: AppTypography.caption.copyWith(color: AppColors.muted),
             ),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _openMaps(Uri uri) async {
+    var opened = false;
+    try {
+      opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      opened = false;
+    }
+    if (!opened && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open Maps on this device.')),
+      );
+    }
   }
 
   Widget _buildNameSection() {
@@ -235,6 +229,7 @@ class _DriverCardScreenState extends ConsumerState<DriverCardScreen> {
     return FactView(
       envelope: envelope,
       attribute: 'local_name',
+      valueStyle: AppTypography.localScript(_resolvedLang),
       onConfirm: _currentTier == FactTier.ask ? _onConfirm : null,
       onDismiss: _currentTier == FactTier.ask
           ? ({required String kind, required String attribute}) => _onReject()

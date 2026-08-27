@@ -57,6 +57,7 @@ final appRouter = GoRouter(
           path: '/trip/:tripId/chat',
           builder: (_, state) => ChatScreen(
             tripId: state.pathParameters['tripId']!,
+            initialQuestion: state.uri.queryParameters['q'],
           ),
         ),
         GoRoute(

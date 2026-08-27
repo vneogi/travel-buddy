@@ -28,6 +28,24 @@ class AppTypography {
         color: AppColors.ink,
       );
 
+  /// Large native-script treatment for arm's-length driver-card reading.
+  /// Uses system fallbacks so rendering does not require a font download.
+  /// Bundled Noto assets remain the deterministic full offline fix.
+  static TextStyle localScript(String? languageCode) {
+    final fallbacks = switch (languageCode) {
+      'lo' => const ['Noto Sans Lao', 'Leelawadee UI', 'sans-serif'],
+      'ar' => const ['Noto Naskh Arabic', 'Segoe UI', 'sans-serif'],
+      _ => const ['Noto Sans', 'Arial Unicode MS', 'sans-serif'],
+    };
+    return TextStyle(
+      fontSize: 36,
+      height: 1.45,
+      fontWeight: FontWeight.w700,
+      color: AppColors.ink,
+      fontFamilyFallback: fallbacks,
+    );
+  }
+
   // Body — Inter (clean, readable)
   static TextStyle get body => GoogleFonts.inter(
         fontSize: 16,

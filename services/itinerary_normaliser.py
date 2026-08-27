@@ -81,13 +81,15 @@ def decompose_trip(
         }
         raw_status = n.get("status", "pending")
         status = status_map.get(raw_status, "planned")
+        booking_type = n.get("booking_type")
+        node_type = booking_type if booking_type in {"flight", "hotel", "train"} else "activity"
 
         node_row = {
             "node_id": node_id,
             "trip_id": trip_id,
             "day_index": 0,  # single-day trips; future: derive from date
             "seq": (i + 1) * _SEQ_GAP,
-            "node_type": n.get("booking_type") or "activity",
+            "node_type": node_type,
             "venue_ref": n.get("venue_id"),
             "title": n.get("venue_name", "Untitled"),
             "scheduled_start": sched_start,
@@ -102,7 +104,7 @@ def decompose_trip(
             "vibe_tags": n.get("vibe_tags", []),
             "opening_hours": n.get("opening_hours"),
             "node_kind": n.get("node_kind", "activity"),
-            "booking_type": n.get("booking_type"),
+            "booking_type": booking_type,
             "confirmation_code": n.get("confirmation_code"),
             "booking_notes": n.get("booking_notes"),
             "import_source": n.get("import_source"),

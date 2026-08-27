@@ -117,6 +117,7 @@ class ItineraryController extends StateNotifier<ItineraryState> {
     String? targetNodeId,
     Map<String, dynamic>? preferences,
   }) async {
+    if (state.processing) return null;
     state = state.copyWith(processing: true, banner: null);
     try {
       final result = await _ref.read(tripRepoProvider).sendEvent(
@@ -134,14 +135,20 @@ class ItineraryController extends StateNotifier<ItineraryState> {
         processing: false,
         banner: _headsUp(result.message),
       );
+      _preCachePlaces(state.nodes);
+      _cacheUpdatedTripNodes(state.nodes);
       _ref.invalidate(userStatusProvider); // refresh reroute badge
       return result;
     } on RerouteLimitException {
       state = state.copyWith(processing: false, rerouteLimitHit: true);
       return null;
-    } catch (_) {
+    } catch (error) {
       state = state.copyWith(
-          processing: false, banner: 'Something went wrong. Please try again.');
+        processing: false,
+        banner: error is NetworkException
+            ? "Can't reach Travel Buddy \u2014 check your connection."
+            : 'Something went wrong. Please try again.',
+      );
       return null;
     }
   }
@@ -157,6 +164,24 @@ class ItineraryController extends StateNotifier<ItineraryState> {
     state = state.copyWith(
       lovedPlaceRefs: {...state.lovedPlaceRefs, placeRef},
     );
+  }
+
+  void _cacheUpdatedTripNodes(List<TripNode> nodes) {
+    try {
+      final db = _ref.read(offlineDatabaseProvider);
+      db.getCachedTrip(tripId).then((cachedJson) {
+        if (cachedJson == null) return;
+        final cached = (jsonDecode(cachedJson) as Map).cast<String, dynamic>();
+        cached['nodes'] = nodes.map((node) => node.toJson()).toList();
+        db.cacheTrip(tripId, jsonEncode(cached)).catchError((error) {
+          debugPrint('[ItineraryController] Updated trip cache error: $error');
+        });
+      }).catchError((error) {
+        debugPrint('[ItineraryController] Trip cache read error: $error');
+      });
+    } catch (error) {
+      debugPrint('[ItineraryController] Updated trip cache error: $error');
+    }
   }
 
   String? _headsUp(String msg) {

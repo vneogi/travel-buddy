@@ -86,6 +86,31 @@ void main() {
     });
   });
 
+  test('HomeSnapshot parses lightweight trips and cache provenance', () {
+    final snapshot = HomeSnapshot.fromJson(
+      {
+        'supported_regions': ['dubai_uae'],
+        'trips': [
+          {
+            'trip_id': 'trip-1',
+            'geo_region': 'dubai_uae',
+            'starts_at': '2026-10-04T09:00:00Z',
+            'ends_at': '2026-10-04T18:00:00Z',
+            'node_count': 5,
+            'booking_count': 2,
+            'updated_at': '2026-08-27T10:00:00Z',
+          },
+        ],
+      },
+      fromCache: true,
+    );
+
+    expect(snapshot.fromCache, isTrue);
+    expect(snapshot.supportedRegions, ['dubai_uae']);
+    expect(snapshot.trips.single.tripId, 'trip-1');
+    expect(snapshot.trips.single.bookingCount, 2);
+  });
+
   test('EventType wire values match backend contract', () {
     expect(EventType.swapActivity.wire, 'swap_activity');
     expect(EventType.askInfo.wire, 'ask_info');

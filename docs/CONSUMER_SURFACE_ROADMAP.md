@@ -11,12 +11,11 @@ nobody would guess from looking at the screens.
 
 Every intelligent path in this backend is reachable only through a trip.
 
-The API surface today is `health`, `user/status`, `trip/create`,
+The API surface today includes `health`, `user/status`, `trips`, `trip/create`,
 `trip/{trip_id}`, `trip/event`, `venues/search`, `stats`, `signals`, and the
-payment routes. Free text does reach the engine, through `trip/event`, which
-carries a `message` and runs intent classification -- but it requires a
-`trip_id`. There is no trip-less way in, and no way to list a user's trips at
-all.
+payment routes. Free text reaches the engine through `trip/event`, which
+requires a `trip_id`. The authenticated `trips` projection now supports the
+home thin slice; there is still no trip-less ask path or richer home aggregate.
 
 That shapes every item below. A home screen, a search box, and a signed-in
 account are not decorations on the existing API; they each need a route that does

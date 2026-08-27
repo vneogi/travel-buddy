@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:travel_buddy/core/api_client.dart';
+import 'package:travel_buddy/core/api_exception.dart';
 
 // ---------------------------------------------------------------------------
 // Interceptor that captures the final request headers then rejects (no HTTP).
@@ -112,5 +113,70 @@ void main() {
         reason: 'Anonymous must not appear when Bearer is active',
       );
     });
+  });
+
+  test('maps Chrome failed-to-fetch unknown errors to NetworkException', () async {
+    final dio = Dio(BaseOptions(baseUrl: 'http://localhost:9999/api/v1'));
+    final client = ApiClient(
+      tokenProvider: () async => null,
+      deviceIdProvider: () async => 'device-id',
+      dioOverride: dio,
+    );
+    dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) => handler.reject(
+          DioException(
+            requestOptions: options,
+            type: DioExceptionType.unknown,
+            message: 'Failed to fetch',
+          ),
+        ),
+      ),
+    );
+
+    await expectLater(
+      client.get('/health'),
+      throwsA(isA<NetworkException>()),
+    );
+  });
+
+  test('maps unsupported region response to actionable exception', () async {
+    final dio = Dio(BaseOptions(baseUrl: 'http://localhost:9999/api/v1'));
+    final client = ApiClient(
+      tokenProvider: () async => null,
+      deviceIdProvider: () async => 'device-id',
+      dioOverride: dio,
+    );
+    dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) => handler.reject(
+          DioException(
+            requestOptions: options,
+            response: Response(
+              requestOptions: options,
+              statusCode: 422,
+              data: {
+                'detail': {
+                  'error': 'unsupported_region',
+                  'message': 'Travel Buddy is not ready for Paris yet.',
+                },
+              },
+            ),
+            type: DioExceptionType.badResponse,
+          ),
+        ),
+      ),
+    );
+
+    await expectLater(
+      client.post('/trip/create', body: const {}),
+      throwsA(
+        isA<UnsupportedRegionException>().having(
+          (error) => error.message,
+          'message',
+          contains('Paris'),
+        ),
+      ),
+    );
   });
 }

@@ -25,7 +25,9 @@ Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 | Migration 0020 driver_card_signals | landed `a2da64a`, unapplied | Apply via Supabase SQL editor; then signal_types drift tests |
 | Migration 0021 booking_anchors | landed `f6328e9`, unapplied | Apply via Supabase SQL editor; then signal_types drift tests |
 | Migration 0022 trip_node_local_names | landed, unapplied | Apply via Supabase SQL editor; adds names_local, landmarks_local, nearest_landmark to trip_node |
+| Migration 0023 driver_card_search_fields | uncommitted, unapplied | Apply after 0022; updates hybrid_venue_search to return geo/localized driver-card fields and accept filter_geo_region |
 | PowerShell scripts | Aug 9 | `.\scripts\smoke-test.ps1` on Windows |
+| Laptop-feedback hardening | Aug 27 | Run the matrix below on Windows desktop or Android with Supabase configured |
 | `hybrid_venue_search` geo_region parameter | Observed Aug 17 2026 | Live signature matches 0001: no geo_region arg (radius-only). Multi-city RPC filter still absent |
 | Dubai row contents, including AED magnitudes | Cleared Aug 17 2026 | 16 Dubai venues live (null price_band). dubai_dishes=0 -- nothing to inspect for AED; food data is greenfield |
 | `pg_description` non-ASCII | Cleared Aug 17 2026 | Step 7c returned 0 rows |
@@ -33,6 +35,34 @@ Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 The five Supabase integration tests ran green on device day 2026-08-17 with
 `TB_SUPABASE_URL` set (`280 passed` suite). Remaining credential-gated gaps
 are Flutter, smoke-test.ps1, and deliberate VALIDATE of NOT VALID CHECKs.
+
+## Aug 27 laptop-feedback verification matrix
+
+Automated tests cover projection ownership, booking round-trip, parser fixtures,
+fare/map helpers, ask intent boundaries, offline list serialization, and calm
+generic errors. The following still require Vikrant's Windows/device run:
+
+1. Confirm the uvicorn startup log says `supabase_configured=True`.
+2. Create a trip, return to Trips, kill/relaunch, and confirm the same trip id
+   and card remain visible.
+3. Paste the Mad Monkey Booking.com email. Confirm hotel type, title
+   `Mad Monkey Vang Vieng`, start `4 Oct 2026 14:00`, checkout-derived duration,
+   locked timeline card, and hotel-rescue discovery.
+4. Open a Laos driver card in airplane mode. Confirm native script and raw
+   coordinates render, there is no fare band, Open in Maps uses the device map
+   app (`geo:`), and the card does not ask for a screenshot.
+5. Open a Dubai driver card. Confirm no fare is shown. If curated
+   `names_local.ar` exists, confirm Arabic is the headline; absence must say the
+   local name is unavailable rather than fabricate one.
+6. Stop the backend. Confirm home/itinerary use cached content where present,
+   errors contain no Dart/Dio/SQLite internals, and retry recovers after restart.
+7. Double-click Create and repeatedly tap Swap during a slow request. Confirm
+   only one create/event is sent and progress remains visible.
+8. From the composer, verify ordinary questions use ask-info, `cancel next stop`
+   and `swap next stop` change one unlocked node, and multi-stop commands refuse.
+
+Chrome remains useful for layout, but Windows desktop or Android is the field
+verification target while the web SQLite adapter remains experimental.
 
 ## Open issues that need a person, not a test
 

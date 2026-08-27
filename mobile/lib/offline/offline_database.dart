@@ -8,11 +8,12 @@ import 'package:sqflite/sqflite.dart';
 /// - outbox: outbound signal queue (persist before network, sync later)
 /// - cache_trip: cached trip state for offline reads
 /// - cache_place: cached venue data for offline reads
+/// - cache_trip_list: the self-contained home projection
 ///
 /// Invariant: a user action is durable in outbox BEFORE any network attempt.
 class OfflineDatabase {
   static const _dbName = 'travel_buddy_offline.db';
-  static const _dbVersion = 1;
+  static const _dbVersion = 2;
 
   /// Optional path override for testing (pass inMemoryDatabasePath for isolation).
   final String? _testPath;
@@ -42,6 +43,7 @@ class OfflineDatabase {
       path,
       version: _dbVersion,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
   }
 
@@ -72,6 +74,23 @@ class OfflineDatabase {
       '  place_ref   TEXT PRIMARY KEY,'
       '  data_json   TEXT NOT NULL,'
       '  cached_at   TEXT NOT NULL'
+      ')',
+    );
+    await _createTripListCache(db);
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await _createTripListCache(db);
+    }
+  }
+
+  Future<void> _createTripListCache(Database db) async {
+    await db.execute(
+      'CREATE TABLE cache_trip_list ('
+      '  cache_key    TEXT PRIMARY KEY,'
+      '  list_json    TEXT NOT NULL,'
+      '  cached_at    TEXT NOT NULL'
       ')',
     );
   }
@@ -232,6 +251,35 @@ class OfflineDatabase {
       whereArgs: [tripId],
     );
     return rows.isEmpty ? null : rows.first['state_json'] as String;
+  }
+
+  Future<void> cacheTripList(String cacheKey, String listJson) async {
+    final database = await db;
+    await database.insert(
+      'cache_trip_list',
+      {
+        'cache_key': cacheKey,
+        'list_json': listJson,
+        'cached_at': DateTime.now().toUtc().toIso8601String(),
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<({String json, DateTime cachedAt})?> getCachedTripList(
+    String cacheKey,
+  ) async {
+    final database = await db;
+    final rows = await database.query(
+      'cache_trip_list',
+      where: 'cache_key = ?',
+      whereArgs: [cacheKey],
+    );
+    if (rows.isEmpty) return null;
+    return (
+      json: rows.first['list_json'] as String,
+      cachedAt: DateTime.parse(rows.first['cached_at'] as String),
+    );
   }
 
   /// Cache a place/venue.

@@ -21,6 +21,7 @@ class FactView extends StatelessWidget {
   final bool showRecency;
   final VoidCallback? onConfirm;
   final DismissHandler? onDismiss;
+  final TextStyle? valueStyle;
 
   const FactView({
     super.key,
@@ -30,6 +31,7 @@ class FactView extends StatelessWidget {
     this.showRecency = false,
     this.onConfirm,
     this.onDismiss,
+    this.valueStyle,
   });
 
   void _handleDismiss() {
@@ -57,7 +59,7 @@ class FactView extends StatelessWidget {
   Widget _buildTierContent() {
     switch (envelope.tier) {
       case FactTier.assert_:
-        return Text(_valueAsString(), style: AppTypography.body);
+        return Text(_valueAsString(), style: valueStyle ?? AppTypography.body);
 
       case FactTier.hedge:
         return Text(
@@ -80,7 +82,10 @@ class FactView extends StatelessWidget {
                 style: AppTypography.bodyMedium.copyWith(color: AppColors.muted),
               ),
               SizedBox(height: AppSpacing.xs),
-              Text(_valueAsString(), style: AppTypography.body),
+              Text(
+                _valueAsString(),
+                style: valueStyle ?? AppTypography.body,
+              ),
               SizedBox(height: AppSpacing.sm),
               ConfirmAffordance(onConfirm: onConfirm, onDismiss: _handleDismiss),
             ],

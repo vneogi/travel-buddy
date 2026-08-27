@@ -51,6 +51,53 @@ void main() {
       final gibberish = extractBookingFromText('gibberish 123456789 !!!');
       expect(gibberish.bookingType, isNull);
     });
+
+    test('extracts Booking.com hostel name and stay dates from email', () {
+      const email = '''
+Thanks Vikrant Vilas! Your booking in Vang Vieng is confirmed.
+Mad Monkey Vang Vieng is expecting you on Sun 4 Oct 2026
+Reservation details
+Check-in  Sunday, 4 October 2026 (14:00 - 00:00)
+Check-out Tuesday, 6 October 2026 (until 12:00)
+Your reservation 2 nights, Large Double Room
+Location
+Laos, Vang Vieng, 20/1 Ban Vang Vieng, Vang Vieng, Laos
+''';
+
+      final result = extractBookingFromText(email);
+
+      expect(result.bookingType, equals('hotel'));
+      expect(result.venueName, equals('Mad Monkey Vang Vieng'));
+      expect(result.scheduledStart, equals(DateTime(2026, 10, 4, 14)));
+      expect(result.durationMinutes, equals(46 * 60));
+      expect(result.confirmationCode, isNull);
+      expect(result.confirmationCode, isNot(equals('details')));
+      expect(result.geoRegion, equals('vang_vieng_laos'));
+    });
+
+    test('does not treat Reservation details as a confirmation code', () {
+      const email = '''
+Thanks Vikrant Vilas! Your booking in Vang Vieng is confirmed.
+Mad Monkey Vang Vieng is expecting you on Sun 4 Oct 2026
+Reservation details
+Check-in  Sunday, 4 October 2026 (14:00 - 00:00)
+''';
+      expect(extractBookingFromText(email).confirmationCode, isNot(equals('details')));
+      expect(extractBookingFromText(email).confirmationCode, isNull);
+    });
+
+    test('supports dotted Booking.com references and explicit PIN labels', () {
+      expect(
+        extractBookingFromText(
+          'Hotel stay\nBooking reference: 1234.567.890',
+        ).confirmationCode,
+        '1234.567.890',
+      );
+      expect(
+        extractBookingFromText('Hotel stay\nPIN code: 9876').confirmationCode,
+        '9876',
+      );
+    });
   });
 
   // =========================================================

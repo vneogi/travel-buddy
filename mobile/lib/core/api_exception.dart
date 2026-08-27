@@ -26,6 +26,12 @@ class NetworkException extends ApiException {
   const NetworkException([super.m = 'No connection. Check your network.']);
 }
 
+class UnsupportedRegionException extends ApiException {
+  const UnsupportedRegionException([
+    super.m = 'Travel Buddy is not ready for that destination yet.',
+  ]);
+}
+
 /// Lever 1: raised on HTTP 403 with error == "daily_reroute_limit_reached".
 /// The UI should show the upgrade CTA, not a generic error.
 class RerouteLimitException extends ApiException {

@@ -1,6 +1,7 @@
 # SPEC-26: Home Surface and Trip Creation
 
-> Status: SPECIFIED. Not implemented.
+> Status: PARTIAL. The authenticated trip-list/home thin slice is implemented;
+> the richer active-trip aggregate and full SPEC-22 migration remain.
 >
 > Depends on SPEC-16 for nodes as rows, which is what makes a cheap list
 > projection possible, and on SPEC-22 for how the screen is allowed to render.
@@ -13,9 +14,10 @@ not interrogate the user before it does anything for them.
 
 ## What is missing, precisely
 
-The service layer already has `get_active_trips(user_id)`. No router exposes it.
-The only trip route that reads is `GET /api/v1/trip/{trip_id}`, which requires
-already knowing the id.
+The service layer has `get_active_trips(user_id)`, now exposed as the
+authenticated `GET /api/v1/trips` lightweight projection. The Flutter home
+screen caches and renders that list per identity. The richer one-request
+aggregate described below is still missing.
 
 So the gap on the home screen is one route, not a subsystem -- but until that
 route exists, a returning user opening the app has no way to be shown their own

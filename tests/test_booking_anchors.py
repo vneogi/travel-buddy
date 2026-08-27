@@ -11,7 +11,8 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from models.schemas import EventType, NodeStatus, TripNode
+from agents.router_agent import router_agent
+from models.schemas import EventType, NodeStatus, RoutingTier, TripNode
 from models.signal_types import PAYLOAD_SHAPES, SIGNAL_TYPES
 from services.itinerary_normaliser import (
     compose_trip_nodes,
@@ -140,6 +141,25 @@ class TestNormaliserBookingMetadata:
         # round_trip_equal should also pass
         assert round_trip_equal(trip_state) is True
 
+    def test_tour_booking_uses_allowed_activity_node_type(self):
+        trip_state = {
+            "trip_id": "tour_trip",
+            "nodes": [
+                {
+                    "node_id": "tour-1",
+                    "venue_name": "Mekong tour",
+                    "scheduled_start": "2026-10-05T14:00:00+00:00",
+                    "node_kind": "booking",
+                    "booking_type": "tour",
+                }
+            ],
+        }
+
+        nodes, _edges = decompose_trip(trip_state)
+
+        assert nodes[0]["node_type"] == "activity"
+        assert nodes[0]["booking_type"] == "tour"
+
 
 class TestBookingSignal:
     def test_booking_added_signal_drift_guard_and_ingest(self):
@@ -160,3 +180,10 @@ class TestEventTypeExists:
     def test_add_booking_event_type_exists(self):
         """ADD_BOOKING is a valid EventType."""
         assert EventType.ADD_BOOKING.value == "add_booking"
+
+    def test_add_booking_stays_light_and_never_needs_trip_state_in_an_llm(self):
+        tier, _confidence = router_agent.classify_intent(
+            "Add booking anchor",
+            EventType.ADD_BOOKING.value,
+        )
+        assert tier == RoutingTier.LIGHT

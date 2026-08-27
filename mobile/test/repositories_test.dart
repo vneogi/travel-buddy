@@ -34,6 +34,49 @@ void main() {
     verify(() => api.get('/trip/t1')).called(1);
   });
 
+  test('getHomeSnapshot parses supported regions and trip projections', () async {
+    when(() => api.get('/trips')).thenAnswer((_) async => {
+          'supported_regions': ['dubai_uae'],
+          'trips': [
+            {
+              'trip_id': 't1',
+              'geo_region': 'dubai_uae',
+              'starts_at': '2026-10-04T09:00:00Z',
+              'ends_at': '2026-10-04T18:00:00Z',
+              'node_count': 5,
+              'booking_count': 1,
+              'updated_at': '2026-08-27T09:00:00Z',
+            },
+          ],
+        });
+
+    final home = await trips.getHomeSnapshot();
+
+    expect(home.supportedRegions, ['dubai_uae']);
+    expect(home.trips.single.bookingCount, 1);
+  });
+
+  test('create sends the selected supported region', () async {
+    when(() => api.post('/trip/create', body: any(named: 'body')))
+        .thenAnswer((_) async => {'trip_id': 't1'});
+    when(() => api.get('/trip/t1')).thenAnswer((_) async => {
+          'trip_id': 't1',
+          'user_id': 'u1',
+          'nodes': <Map<String, dynamic>>[],
+        });
+
+    await trips.create(
+      startDate: DateTime.utc(2026, 10, 4),
+      geoRegion: 'dubai_uae',
+    );
+
+    final body = verify(() => api.post(
+          '/trip/create',
+          body: captureAny(named: 'body'),
+        )).captured.single as Map;
+    expect(body['geo_region'], 'dubai_uae');
+  });
+
   test('sendEvent posts correct body shape', () async {
     when(() => api.post('/trip/event', body: any(named: 'body')))
         .thenAnswer((_) async => {

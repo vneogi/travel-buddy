@@ -475,6 +475,10 @@ class SupabaseService:
                 lng=r.get("lng", user_lng),
                 vibe_tags=r.get("vibe_tags") or [],
                 opening_hours=r.get("opening_hours", "09:00-23:00"),
+                geo_region=r.get("geo_region"),
+                names_local=r.get("names_local"),
+                landmarks_local=r.get("landmarks_local"),
+                nearest_landmark=r.get("nearest_landmark"),
             )
             results.append(
                 VenueSearchResult(

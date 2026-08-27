@@ -15,7 +15,8 @@
   requirements. Naming a class in a `filterwarnings` entry requires that class
   to exist, and `PytestReturnNotNoneWarning` is absent from pytest 8.4.0 --
   present in 7.2 through 8.3, deleted by accident in 8.4.0, restored in 8.4.1.
-- Flutter 3.2+: install the SDK, run `flutter doctor`, fix anything red.
+- Flutter 3.35+ with Dart 3.9+: required by the SQLite 3 web worker adapter.
+  Install the SDK, run `flutter doctor`, and fix anything red.
 - For device testing: Android Studio with an AVD, or a physical phone with USB
   debugging. Chrome needs no emulator.
 - Optional: `pip install pytest-cov schemathesis`.

@@ -7,6 +7,7 @@ import '../../theme/typography.dart';
 import '../../theme/spacing.dart';
 import '../../widgets/activity_card.dart';
 import '../booking/add_booking_sheet.dart';
+import '../chat/ask_entry_bar.dart';
 import '../rescue/hotel_rescue_sheet.dart';
 import '../../widgets/reroute_badge.dart';
 import '../../widgets/shimmer_card.dart';
@@ -138,6 +139,12 @@ class ItineraryScreen extends ConsumerWidget {
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.chat_bubble_outline, color: Colors.white),
       ),
+      bottomNavigationBar: AskEntryBar(
+        enabled: !state.processing,
+        onSubmit: (question) => context.push(
+          '/trip/$tripId/chat?q=${Uri.encodeQueryComponent(question)}',
+        ),
+      ),
       body: state.loading
           ? const ShimmerList(count: 5)
           : state.error != null
@@ -195,10 +202,16 @@ class ItineraryScreen extends ConsumerWidget {
                                     nextNode: next,
                                     isLoved: state.lovedPlaceRefs
                                         .contains(node.venueId ?? node.venueName),
-                                    onTapSwap: () => _swap(ref, node),
-                                    onTapCancel: () => _cancel(ref, node),
+                                    onTapSwap: state.processing
+                                        ? null
+                                        : () => _swap(ref, node),
+                                    onTapCancel: state.processing
+                                        ? null
+                                        : () => _cancel(ref, node),
                                     onTapVisited: () => _confirmVisited(ref, node),
-                                    onTapSkip: () => _showSkipReasonPicker(context, ref, node),
+                                    onTapSkip: state.processing
+                                        ? null
+                                        : () => _showSkipReasonPicker(context, ref, node),
                                     onTapLoved: () {
                                       final placeRef = node.venueId ?? node.venueName;
                                       ref.read(signalServiceProvider).emitUserLoved(

@@ -32,6 +32,9 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
   final _pasteController = TextEditingController();
   DateTime _scheduledStart = DateTime.now().add(const Duration(hours: 24));
   int _durationMinutes = 180;
+  bool _saving = false;
+  String? _saveError;
+  String? _parsedGeoRegion;
 
   @override
   void initState() {
@@ -77,6 +80,10 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
       if (parsed.durationMinutes != null) {
         _durationMinutes = parsed.durationMinutes!;
       }
+      if (parsed.scheduledStart != null) {
+        _scheduledStart = parsed.scheduledStart!;
+      }
+      _parsedGeoRegion = parsed.geoRegion;
     });
   }
 
@@ -105,11 +112,15 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
   }
 
   Future<void> _save() async {
+    if (_saving) return;
     final title = _titleController.text.trim().isEmpty
         ? 'Booking'
         : _titleController.text.trim();
-
-    await ref
+    setState(() {
+      _saving = true;
+      _saveError = null;
+    });
+    final result = await ref
         .read(itineraryControllerProvider(widget.tripId).notifier)
         .applyEvent(
       type: EventType.addBooking,
@@ -119,6 +130,7 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
         'scheduled_start': _scheduledStart.toIso8601String(),
         'duration_minutes': _durationMinutes,
         'booking_type': _bookingType,
+        if (_parsedGeoRegion != null) 'geo_region': _parsedGeoRegion,
         'confirmation_code': _codeController.text.trim().isEmpty
             ? null
             : _codeController.text.trim(),
@@ -129,6 +141,16 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
             _pasteController.text.isEmpty ? 'manual' : 'email',
       },
     );
+    if (result == null) {
+      if (mounted) {
+        setState(() {
+          _saving = false;
+          _saveError =
+              'Could not save this booking. Check your connection and try again.';
+        });
+      }
+      return;
+    }
 
     ref.read(signalServiceProvider).emitBookingAdded(
           bookingType: _bookingType,
@@ -140,16 +162,15 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
     // SPEC-04: Pre-cache place data for offline driver cards
     try {
       final db = ref.read(offlineDatabaseProvider);
-      final placeData = PlaceDriverCardData(
-        placeRef: title,
-        venueName: title,
-        microLocation: _codeController.text.trim().isNotEmpty
-            ? 'Confirmation: ${_codeController.text.trim()}'
-            : null,
-        nearestLandmark: _notesController.text.trim().isNotEmpty
-            ? _notesController.text.trim()
-            : null,
-      );
+      final savedNode = result.updatedNodes
+          .where((node) =>
+              node.nodeKind == 'booking' &&
+              node.bookingType == _bookingType &&
+              node.venueName == title)
+          .firstOrNull;
+      final placeData = savedNode == null
+          ? PlaceDriverCardData(placeRef: title, venueName: title)
+          : PlaceDriverCardData.fromTripNode(savedNode);
       db.cachePlace(title, placeData.serialize()).catchError((_) {});
     } catch (_) {}
 
@@ -237,12 +258,27 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
               ],
             ),
             const SizedBox(height: AppSpacing.lg),
+            if (_saveError != null) ...[
+              Text(
+                _saveError!,
+                style: AppTypography.caption.copyWith(
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+            ],
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
-                onPressed: _save,
-                icon: const Icon(Icons.anchor),
-                label: const Text('Save Anchor'),
+                onPressed: _saving ? null : _save,
+                icon: _saving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.anchor),
+                label: Text(_saving ? 'Saving\u2026' : 'Save Anchor'),
               ),
             ),
             const SizedBox(height: AppSpacing.lg),

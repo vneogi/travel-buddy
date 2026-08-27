@@ -8,9 +8,14 @@ class TripRepository {
 
   /// NOTE: backend currently returns a FIXED sample itinerary; `mood` is stored
   /// but preferences don't yet personalize generation.
-  Future<TripState> create({required DateTime startDate, String? mood}) async {
+  Future<TripState> create({
+    required DateTime startDate,
+    required String geoRegion,
+    String? mood,
+  }) async {
     final data = await _api.post('/trip/create', body: {
       'start_date': startDate.toIso8601String(),
+      'geo_region': geoRegion,
       if (mood != null) 'initial_mood': mood,
     });
     // create returns {trip_id, nodes[...], ...}; fetch full state for consistency.
@@ -20,6 +25,11 @@ class TripRepository {
   Future<TripState> getTrip(String tripId) async => TripState.fromJson(
         await _api.get('/trip/$tripId') as Map<String, dynamic>,
       );
+
+  Future<HomeSnapshot> getHomeSnapshot() async {
+    final data = await _api.get('/trips') as Map<String, dynamic>;
+    return HomeSnapshot.fromJson(data);
+  }
 
   /// The one endpoint for cancel/swap/add/reroute/translate/ask_info/etc.
   /// There is NO WebSocket — chat is this REST call.

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -129,6 +130,62 @@ void main() {
     final s = container.read(itineraryControllerProvider('t1'));
     expect(s.banner, isNotNull);
     expect(s.nodes.single.venueName, 'Old');
+  });
+
+  test('network event error uses connection copy without leaking internals',
+      () async {
+    when(() => repo.sendEvent(
+          tripId: any(named: 'tripId'),
+          type: any(named: 'type'),
+          message: any(named: 'message'),
+          targetNodeId: any(named: 'targetNodeId'),
+          preferences: any(named: 'preferences'),
+        )).thenThrow(const NetworkException());
+
+    final controller = await ready();
+    await controller.applyEvent(type: EventType.askInfo, message: 'nearby');
+
+    expect(controller.state.banner, contains("Can't reach Travel Buddy"));
+    expect(controller.state.banner, isNot(contains('NetworkException')));
+  });
+
+  test('ignores a second event while the first is processing', () async {
+    final pending = Completer<TripEventResult>();
+    when(() => repo.sendEvent(
+          tripId: any(named: 'tripId'),
+          type: any(named: 'type'),
+          message: any(named: 'message'),
+          targetNodeId: any(named: 'targetNodeId'),
+          preferences: any(named: 'preferences'),
+        )).thenAnswer((_) => pending.future);
+
+    final controller = await ready();
+    final first = controller.applyEvent(
+      type: EventType.swapActivity,
+      message: 'first',
+      targetNodeId: 'n1',
+    );
+    final second = await controller.applyEvent(
+      type: EventType.swapActivity,
+      message: 'second',
+      targetNodeId: 'n1',
+    );
+
+    expect(second, isNull);
+    verify(() => repo.sendEvent(
+          tripId: any(named: 'tripId'),
+          type: any(named: 'type'),
+          message: any(named: 'message'),
+          targetNodeId: any(named: 'targetNodeId'),
+          preferences: any(named: 'preferences'),
+        )).called(1);
+    pending.complete(TripEventResult(
+      message: 'Done',
+      updatedNodes: [_node('n1', 'New')],
+      routingTier: 'heavy',
+      fromCache: false,
+    ));
+    await first;
   });
 
   test('load error populates error state', () async {

@@ -47,15 +47,11 @@ FactTier tierForNameSource(String source) {
   }
 }
 
-/// SPEC-12 Decision 6: fair fare band per region.
-String resolveFairFareBand(String? geoRegion) {
-  final region = (geoRegion ?? '').toLowerCase();
-  if (region.contains('laos')) {
-    return '20,000 - 50,000 LAK (Tuk-tuk / Loca)';
-  } else if (region.contains('dubai')) {
-    return '20 - 40 AED (Meter taxi short trip)';
-  }
-  return 'Standard meter / local fare';
+/// Offline map hand-off. `geo:` opens the device map app on Android without a
+/// Google dependency; coordinates stay on the card as the last-resort fallback.
+Uri? buildMapsUri(double? lat, double? lng) {
+  if (lat == null || lng == null) return null;
+  return Uri.parse('geo:$lat,$lng?q=$lat,$lng');
 }
 
 /// Data class for offline driver card rendering from SQLite cache_place.

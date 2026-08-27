@@ -154,6 +154,86 @@ class TripState {
       };
 }
 
+class TripSummary {
+  final String tripId;
+  final String geoRegion;
+  final DateTime? startsAt;
+  final DateTime? endsAt;
+  final int nodeCount;
+  final int bookingCount;
+  final DateTime updatedAt;
+
+  const TripSummary({
+    required this.tripId,
+    required this.geoRegion,
+    required this.nodeCount,
+    required this.bookingCount,
+    required this.updatedAt,
+    this.startsAt,
+    this.endsAt,
+  });
+
+  factory TripSummary.fromJson(Map<String, dynamic> json) => TripSummary(
+        tripId: json['trip_id'] as String,
+        geoRegion: json['geo_region'] as String,
+        startsAt: json['starts_at'] == null
+            ? null
+            : DateTime.parse(json['starts_at'] as String),
+        endsAt: json['ends_at'] == null
+            ? null
+            : DateTime.parse(json['ends_at'] as String),
+        nodeCount: (json['node_count'] as num).toInt(),
+        bookingCount: (json['booking_count'] as num).toInt(),
+        updatedAt: DateTime.parse(json['updated_at'] as String),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'trip_id': tripId,
+        'geo_region': geoRegion,
+        'starts_at': startsAt?.toUtc().toIso8601String(),
+        'ends_at': endsAt?.toUtc().toIso8601String(),
+        'node_count': nodeCount,
+        'booking_count': bookingCount,
+        'updated_at': updatedAt.toUtc().toIso8601String(),
+      };
+}
+
+class HomeSnapshot {
+  final List<String> supportedRegions;
+  final List<TripSummary> trips;
+  final bool fromCache;
+  final DateTime? cachedAt;
+
+  const HomeSnapshot({
+    required this.supportedRegions,
+    required this.trips,
+    this.fromCache = false,
+    this.cachedAt,
+  });
+
+  factory HomeSnapshot.fromJson(
+    Map<String, dynamic> json, {
+    bool fromCache = false,
+    DateTime? cachedAt,
+  }) =>
+      HomeSnapshot(
+        supportedRegions:
+            ((json['supported_regions'] as List?) ?? const []).cast<String>(),
+        trips: ((json['trips'] as List?) ?? const [])
+            .map((trip) => TripSummary.fromJson(
+                  (trip as Map).cast<String, dynamic>(),
+                ))
+            .toList(),
+        fromCache: fromCache,
+        cachedAt: cachedAt,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'supported_regions': supportedRegions,
+        'trips': trips.map((trip) => trip.toJson()).toList(),
+      };
+}
+
 class TripEventResult {
   /// May include a "Heads up: ..." scheduler note at the end.
   final String message;

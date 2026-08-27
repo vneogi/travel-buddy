@@ -9,7 +9,12 @@ import '../itinerary/itinerary_notifier.dart';
 /// Natural language chat. Uses REST POST /trip/event (NO WebSocket).
 class ChatScreen extends ConsumerStatefulWidget {
   final String tripId;
-  const ChatScreen({super.key, required this.tripId});
+  final String? initialQuestion;
+  const ChatScreen({
+    super.key,
+    required this.tripId,
+    this.initialQuestion,
+  });
   @override
   ConsumerState<ChatScreen> createState() => _ChatScreenState();
 }
@@ -18,6 +23,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _controller = TextEditingController();
   final _messages = <_ChatMessage>[];
   bool _isThinking = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initialQuestion?.trim();
+    if (initial != null && initial.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _send(initial));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -56,8 +70,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
-  Future<void> _send() async {
-    final text = _controller.text.trim();
+  Future<void> _send([String? suppliedText]) async {
+    if (_isThinking) return;
+    final text = suppliedText?.trim() ?? _controller.text.trim();
     if (text.isEmpty) return;
     _controller.clear();
 
@@ -67,24 +82,86 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     });
 
     try {
+      final intent = classifyAskIntent(text);
+      if (intent == AskIntent.multipleChanges) {
+        setState(() {
+          _isThinking = false;
+          _messages.add(const _ChatMessage(
+            text: 'I can safely change one stop at a time. '
+                'Try "cancel next stop" or "swap next stop".',
+            isUser: false,
+          ));
+        });
+        return;
+      }
+      final state = ref.read(itineraryControllerProvider(widget.tripId));
+      final target = state.nodes
+          .where((node) =>
+              node.status == NodeStatus.pending &&
+              !node.isLocked)
+          .firstOrNull;
+      if (intent != AskIntent.question && target == null) {
+        setState(() {
+          _isThinking = false;
+          _messages.add(const _ChatMessage(
+            text: 'There is no movable upcoming stop to change.',
+            isUser: false,
+          ));
+        });
+        return;
+      }
       final result = await ref.read(tripEventProvider).sendEvent(
         tripId: widget.tripId,
-        type: EventType.askInfo, // classifier on backend picks the real intent
+        type: switch (intent) {
+          AskIntent.cancelNext => EventType.cancelActivity,
+          AskIntent.swapNext => EventType.swapActivity,
+          _ => EventType.askInfo,
+        },
         message: text,
+        targetNodeId: intent == AskIntent.question ? null : target?.nodeId,
       );
       setState(() {
         _isThinking = false;
         if (result != null) {
           _messages.add(_ChatMessage(text: result.message, isUser: false));
+        } else {
+          _messages.add(const _ChatMessage(
+            text: 'I could not complete that request. Please try again.',
+            isUser: false,
+          ));
         }
       });
-    } catch (e) {
+    } catch (_) {
       setState(() {
         _isThinking = false;
-        _messages.add(_ChatMessage(text: 'Error: $e', isUser: false));
+        _messages.add(const _ChatMessage(
+          text: 'I could not reach Travel Buddy. Check your connection and try again.',
+          isUser: false,
+        ));
       });
     }
   }
+}
+
+enum AskIntent { question, cancelNext, swapNext, multipleChanges }
+
+AskIntent classifyAskIntent(String text) {
+  final normalized = text.trim().toLowerCase();
+  final commandPrefix = r"(?:^|[,;]\s*)(?:please\s+|let'?s\s+)?";
+  if (RegExp('$commandPrefix(cancel|skip|remove|swap|change|replace)\\b')
+          .hasMatch(normalized) &&
+      RegExp(r'\b(next few|several|all)\b').hasMatch(normalized)) {
+    return AskIntent.multipleChanges;
+  }
+  if (RegExp('$commandPrefix(cancel|skip|remove)\\s+(the\\s+)?next(\\s+stop)?\\b')
+      .hasMatch(normalized)) {
+    return AskIntent.cancelNext;
+  }
+  if (RegExp('$commandPrefix(swap|change|replace)\\s+(the\\s+)?next(\\s+stop)?\\b')
+      .hasMatch(normalized)) {
+    return AskIntent.swapNext;
+  }
+  return AskIntent.question;
 }
 
 class _ChatMessage {

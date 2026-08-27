@@ -41,6 +41,15 @@ void main() {
     await db.close();
   });
 
+  test('home trip projection round-trips for offline launch', () async {
+    const snapshot = '{"supported_regions":["dubai_uae"],"trips":[]}';
+    await db.cacheTripList('anonymous:device-a', snapshot);
+    final cached = await db.getCachedTripList('anonymous:device-a');
+    expect(cached?.json, snapshot);
+    expect(cached?.cachedAt, isNotNull);
+    expect(await db.getCachedTripList('anonymous:device-b'), isNull);
+  });
+
   // ============================================================
   // Test 1: emit with network DOWN -> row in outbox, no throw
   // ============================================================

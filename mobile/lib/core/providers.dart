@@ -18,6 +18,18 @@ final deviceIdentityProvider = Provider<DeviceIdentity>(
 /// Resolved device UUID string. Set by main() after getOrCreate().
 final deviceIdProvider = StateProvider<String>((ref) => '');
 
+/// Stable local cache namespace. Prevents a stale anonymous/account trip list
+/// from being shown after an identity switch on the same installation.
+final identityCacheScopeProvider = Provider<String>((ref) {
+  if (Env.supabaseUrl.isNotEmpty && Env.supabaseAnonKey.isNotEmpty) {
+    try {
+      final userId = Supabase.instance.client.auth.currentUser?.id;
+      if (userId != null && userId.isNotEmpty) return 'account:$userId';
+    } catch (_) {}
+  }
+  return 'anonymous:${ref.watch(deviceIdProvider)}';
+});
+
 /// Supabase access token provider (null when no Supabase session).
 final tokenProvider = Provider<TokenProvider>((ref) {
   return () async {

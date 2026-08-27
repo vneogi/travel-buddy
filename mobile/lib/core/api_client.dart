@@ -71,9 +71,21 @@ class ApiClient {
       return const ForbiddenException();
     }
     if (code == 404) return const NotFoundException();
+    if (code == 422 && data is Map) {
+      final detail = data['detail'];
+      if (detail is Map && detail['error'] == 'unsupported_region') {
+        return UnsupportedRegionException(
+          detail['message']?.toString() ??
+              'Travel Buddy is not ready for that destination yet.',
+        );
+      }
+    }
     if (code != null && code >= 500) return const ServerException();
     if (e.type == DioExceptionType.connectionError ||
-        e.type == DioExceptionType.connectionTimeout) {
+        e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.receiveTimeout ||
+        e.type == DioExceptionType.sendTimeout ||
+        e.type == DioExceptionType.unknown) {
       return const NetworkException();
     }
     return const ServerException();

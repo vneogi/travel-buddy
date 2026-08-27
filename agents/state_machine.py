@@ -85,7 +85,10 @@ class TripStateMachine:
             state = self._node_apply_structural(state)
             state = await self._node_generate_response(state)
             # Only cache LIGHT (informational) responses \u2014 never mutations.
-            if state["routing_tier"] == RoutingTier.LIGHT:
+            if (
+                state["routing_tier"] == RoutingTier.LIGHT
+                and state["event_type"] not in STRUCTURAL_EDIT_EVENTS
+            ):
                 cache_service.store_response(state["message"], state["response"])
 
         return {
@@ -108,7 +111,10 @@ class TripStateMachine:
 
     def _node_check_cache(self, state: Dict) -> Dict:
         """Light requests only \u2014 structural edits always need fresh processing."""
-        if state["routing_tier"] == RoutingTier.LIGHT:
+        if (
+            state["routing_tier"] == RoutingTier.LIGHT
+            and state["event_type"] not in STRUCTURAL_EDIT_EVENTS
+        ):
             cache_result = cache_service.check_cache(state["message"])
             if cache_result:
                 response_text, _ = cache_result
@@ -185,6 +191,10 @@ class TripStateMachine:
                     start_dt = datetime.fromisoformat(raw_start.replace("Z", "+00:00"))
                 else:
                     start_dt = raw_start or datetime.now(tz=timezone.utc)
+                if start_dt.tzinfo is None:
+                    start_dt = start_dt.replace(tzinfo=timezone.utc)
+                else:
+                    start_dt = start_dt.astimezone(timezone.utc)
             except Exception:
                 start_dt = datetime.now(tz=timezone.utc)
 
@@ -197,6 +207,7 @@ class TripStateMachine:
                 micro_location=prefs.get("micro_location"),
                 lat=prefs.get("lat"),
                 lng=prefs.get("lng"),
+                geo_region=prefs.get("geo_region") or trip_state.geo_region,
                 node_kind="booking",
                 booking_type=prefs.get("booking_type", "flight"),
                 confirmation_code=prefs.get("confirmation_code"),
@@ -348,6 +359,13 @@ class TripStateMachine:
 
     async def _node_generate_response(self, state: Dict) -> Dict:
         """Node: produce the user-facing text (LLM when configured, else canned)."""
+        if state["event_type"] == EventType.ADD_BOOKING.value:
+            state["response"] = "Booking saved as a locked itinerary anchor."
+            warnings = state.get("schedule_warnings") or []
+            if warnings:
+                state["response"] += "\n\nHeads up: " + " ".join(warnings)
+            return state
+
         if state.get("breaker_tripped"):
             state["response"] = self._fallback_response(state)
             return state

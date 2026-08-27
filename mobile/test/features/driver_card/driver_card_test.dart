@@ -1,12 +1,16 @@
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:sqflite/sqflite.dart';
 
 import 'package:travel_buddy/data/models.dart';
+import 'package:travel_buddy/core/providers.dart';
 import 'package:travel_buddy/features/driver_card/driver_card_helpers.dart';
+import 'package:travel_buddy/features/driver_card/driver_card_screen.dart';
 import 'package:travel_buddy/offline/offline_database.dart';
 import 'package:travel_buddy/offline/sync_engine.dart';
 import 'package:travel_buddy/render/fact_envelope.dart';
@@ -82,24 +86,17 @@ void main() {
     });
   });
 
-  group('resolveFairFareBand', () {
-    // Sabotage 3: change resolveFairFareBand to return empty for Laos.
-    // This test must FAIL.
-    test('Laos returns LAK fare band', () {
-      final fare = resolveFairFareBand('luang_prabang_laos');
-      expect(fare, contains('LAK'));
-      expect(fare, isNotEmpty);
+  group('buildMapsUri', () {
+    test('builds a geo URI that does not depend on Google Maps', () {
+      final uri = buildMapsUri(19.89758, 102.14321);
+      expect(uri, isNotNull);
+      expect(uri!.scheme, equals('geo'));
+      expect(uri.toString(), contains('19.89758,102.14321'));
     });
 
-    test('Dubai returns AED fare band', () {
-      final fare = resolveFairFareBand('dubai_uae');
-      expect(fare, contains('AED'));
-    });
-
-    test('unknown region returns generic fare', () {
-      final fare = resolveFairFareBand(null);
-      expect(fare, isNotEmpty);
-      expect(fare, contains('fare'));
+    test('does not offer maps when either coordinate is absent', () {
+      expect(buildMapsUri(null, 102.1), isNull);
+      expect(buildMapsUri(19.5, null), isNull);
     });
   });
 
@@ -233,10 +230,6 @@ void main() {
       final tier = tierForNameSource(entry.value['source'] as String);
       expect(tier, equals(FactTier.assert_));
 
-      // Fare band
-      final fare = resolveFairFareBand(loaded.geoRegion);
-      expect(fare, contains('LAK'));
-
       // All assertions pass with ZERO network calls
     });
   });
@@ -266,7 +259,7 @@ void main() {
   });
   group('geoRegion threading', () {
     test(
-      'TripNode with geo_region luang_prabang_laos resolves Lao script and LAK fare via fromTripNode',
+      'TripNode with geo_region luang_prabang_laos resolves Lao script via fromTripNode',
       () {
         final node = TripNode.fromJson({
           'node_id': 'n1',
@@ -288,11 +281,90 @@ void main() {
         expect(entry, isNotNull);
         expect(entry!.key, equals('lo'));
         expect(entry.value['value'], equals('Lao Name'));
-
-        final fare = resolveFairFareBand(placeData.geoRegion);
-        expect(fare, contains('LAK'));
       },
     );
+    test('Dubai geo region resolves Arabic local name', () {
+      final node = TripNode.fromJson({
+        'node_id': 'n2',
+        'venue_name': 'Dubai Museum',
+        'scheduled_start': '2026-10-05T09:00:00Z',
+        'geo_region': 'dubai_uae',
+        'names_local': {
+          'ar': {
+            'value': '\u0645\u062A\u062D\u0641 \u062F\u0628\u064A',
+            'source': 'official',
+          },
+          'en': {'value': 'Dubai Museum', 'source': 'official'},
+        },
+      });
+
+      final placeData = PlaceDriverCardData.fromTripNode(node);
+      final entry = resolvePreferredLocalEntry(
+        localizedMap: placeData.namesLocal,
+        geoRegion: placeData.geoRegion,
+      );
+
+      expect(entry, isNotNull);
+      expect(entry!.key, equals('ar'));
+      expect(
+        entry.value['value'],
+        equals('\u0645\u062A\u062D\u0641 \u062F\u0628\u064A'),
+      );
+      expect(tierForNameSource(entry.value['source'] as String),
+          equals(FactTier.assert_));
+    });
+  });
+
+  testWidgets('Dubai card renders Arabic, coordinates, maps, and no fare guess',
+      (tester) async {
+    final db = OfflineDatabase(testPath: inMemoryDatabasePath);
+    final mockSync = MockSyncEngine();
+    final signalService = SignalService(db: db, syncEngine: mockSync);
+    await db.cachePlace(
+      'dubai_museum',
+      const PlaceDriverCardData(
+        placeRef: 'dubai_museum',
+        venueName: 'Dubai Museum',
+        namesLocal: {
+          'ar': {
+            'value': '\u0645\u062A\u062D\u0641 \u062F\u0628\u064A',
+            'source': 'official',
+          },
+        },
+        lat: 25.2637,
+        lng: 55.2972,
+        geoRegion: 'dubai_uae',
+      ).serialize(),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          offlineDatabaseProvider.overrideWithValue(db),
+          signalServiceProvider.overrideWithValue(signalService),
+        ],
+        child: const MaterialApp(
+          home: DriverCardScreen(
+            tripId: 'trip-1',
+            nodeId: 'dubai_museum',
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    const arabicName = '\u0645\u062A\u062D\u0641 \u062F\u0628\u064A';
+    expect(find.text(arabicName), findsOneWidget);
+    expect(
+      tester.widget<Text>(find.text(arabicName)).style?.fontSize,
+      greaterThanOrEqualTo(32),
+    );
+    expect(find.text('25.26370, 55.29720'), findsOneWidget);
+    expect(find.text('Open in Maps'), findsOneWidget);
+    expect(find.text('Typical local fare'), findsNothing);
+    expect(find.text('Screenshot this card for offline safety'), findsNothing);
+    expect(find.textContaining('fare'), findsNothing);
+    await db.close();
   });
 
 }

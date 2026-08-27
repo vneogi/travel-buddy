@@ -117,6 +117,18 @@ class TripState(BaseModel):
     updated_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
 
 
+class TripSummary(BaseModel):
+    """Small projection used by the home/trip list."""
+
+    trip_id: str
+    geo_region: str
+    starts_at: Optional[datetime] = None
+    ends_at: Optional[datetime] = None
+    node_count: int
+    booking_count: int
+    updated_at: datetime
+
+
 # TypedDict version for LangGraph state
 class GraphState(TypedDict):
     """LangGraph-compatible state dict."""
@@ -167,6 +179,7 @@ class CreateTripRequest(BaseModel):
     # NOTE: user_id is derived from the auth token server-side; ignored if sent.
     user_id: Optional[str] = None
     start_date: datetime
+    geo_region: Optional[str] = None
     preferences: dict = {}
     initial_mood: Optional[str] = "exploratory"
     party: Optional[TripPartyIn] = None  # SPEC-03: defaults to solo if absent
@@ -241,6 +254,10 @@ class VenueRAG(BaseModel):
     is_sponsored: bool = False
     bid_weight: float = 0.0
     opening_hours: str = "09:00-23:00"
+    geo_region: Optional[str] = None
+    names_local: Optional[Dict[str, Any]] = None
+    landmarks_local: Optional[Dict[str, Any]] = None
+    nearest_landmark: Optional[str] = None
     embedding: Optional[List[float]] = None  # 1536-dim vector
 
 

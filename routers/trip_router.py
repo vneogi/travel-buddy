@@ -11,13 +11,14 @@ All user/trip endpoints require a verified identity (see security.py); the
 authenticated user_id is the source of truth and trip ownership is enforced.
 """
 
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from config.settings import settings
 from models.schemas import (
     TripState,
+    TripSummary,
     TripNode,
     TripEventRequest,
     TripEventResponse,
@@ -32,6 +33,7 @@ from agents.state_machine import state_machine
 from security import get_current_user_id, resolve_identity, ResolvedIdentity, require_trip_owner
 
 router = APIRouter(prefix="/api/v1", tags=["trip"])
+TRIP_TEMPLATE_REGION = "dubai_uae"
 
 
 # ==============================================================================
@@ -77,15 +79,30 @@ async def create_trip(
     request: CreateTripRequest,
     identity: ResolvedIdentity = Depends(resolve_identity),
 ):
-    """Create a new trip with a sample Dubai itinerary for the caller."""
+    """Create a sample itinerary for the server's configured region."""
     user_id = identity.user_id
     db_service.get_or_create_user(user_id, identity.identity_kind)
+    geo_region = request.geo_region or TRIP_TEMPLATE_REGION
+    if geo_region != TRIP_TEMPLATE_REGION:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "error": "unsupported_region",
+                "message": f"Travel Buddy is not ready for {geo_region} yet.",
+                "supported_regions": [TRIP_TEMPLATE_REGION],
+            },
+        )
 
-    start = request.start_date.replace(hour=9, minute=0, second=0)
+    start = request.start_date
+    if start.tzinfo is None:
+        start = start.replace(tzinfo=timezone.utc)
+    else:
+        start = start.astimezone(timezone.utc)
+    start = start.replace(hour=9, minute=0, second=0)
     nodes = [
         TripNode(
             venue_name="Dubai Museum (Al Fahidi Fort)",
-            geo_region=settings.geo_fence,
+            geo_region=geo_region,
             scheduled_start=start,
             duration_minutes=90,
             micro_location="Al Fahidi",
@@ -95,7 +112,7 @@ async def create_trip(
         ),
         TripNode(
             venue_name="XVA Art Gallery & Cafe",
-            geo_region=settings.geo_fence,
+            geo_region=geo_region,
             scheduled_start=start + timedelta(hours=2),
             duration_minutes=60,
             micro_location="Al Fahidi",
@@ -105,7 +122,7 @@ async def create_trip(
         ),
         TripNode(
             venue_name="La Petite Maison (DIFC)",
-            geo_region=settings.geo_fence,
+            geo_region=geo_region,
             scheduled_start=start + timedelta(hours=3, minutes=30),
             duration_minutes=90,
             is_locked=True,  # Locked reservation!
@@ -116,7 +133,7 @@ async def create_trip(
         ),
         TripNode(
             venue_name="Alserkal Avenue Galleries",
-            geo_region=settings.geo_fence,
+            geo_region=geo_region,
             scheduled_start=start + timedelta(hours=5, minutes=30),
             duration_minutes=120,
             micro_location="Al Quoz",
@@ -126,7 +143,7 @@ async def create_trip(
         ),
         TripNode(
             venue_name="Drift Beach Dubai",
-            geo_region=settings.geo_fence,
+            geo_region=geo_region,
             scheduled_start=start + timedelta(hours=8),
             duration_minutes=180,
             micro_location="Jumeirah",
@@ -138,7 +155,7 @@ async def create_trip(
 
     trip = TripState(
         user_id=user_id,
-        geo_region=settings.geo_fence,  # per-trip; unlocks multi-city
+        geo_region=geo_region,  # per-trip; unlocks multi-city
         current_context=CurrentContext(mood=request.initial_mood or "exploratory"),
         nodes=nodes,
     )
@@ -155,6 +172,40 @@ async def create_trip(
         "nodes": [n.model_dump(mode="json") for n in nodes],
         "locked_count": sum(1 for n in nodes if n.is_locked),
         "party": party.model_dump(mode="json"),
+    }
+
+
+def _summarize_trip(trip: TripState) -> TripSummary:
+    starts_at = min((node.scheduled_start for node in trip.nodes), default=None)
+    ends_at = max(
+        (
+            node.scheduled_start + timedelta(minutes=node.duration_minutes)
+            for node in trip.nodes
+        ),
+        default=None,
+    )
+    return TripSummary(
+        trip_id=trip.trip_id,
+        geo_region=trip.geo_region,
+        starts_at=starts_at,
+        ends_at=ends_at,
+        node_count=len(trip.nodes),
+        booking_count=sum(node.node_kind == "booking" for node in trip.nodes),
+        updated_at=trip.updated_at,
+    )
+
+
+@router.get("/trips")
+async def list_trips(user_id: str = Depends(get_current_user_id)):
+    """Return only the caller's active trips as a lightweight home projection."""
+    trips = sorted(
+        db_service.get_active_trips(user_id),
+        key=lambda trip: trip.updated_at,
+        reverse=True,
+    )
+    return {
+        "supported_regions": [TRIP_TEMPLATE_REGION],
+        "trips": [_summarize_trip(trip).model_dump(mode="json") for trip in trips],
     }
 
 
@@ -223,6 +274,7 @@ async def process_trip_event(
     )
 
     updated_trip = result["updated_trip_state"]
+    updated_trip.updated_at = datetime.now(tz=timezone.utc)
     db_service.save_trip(updated_trip)
 
     db_service.log_event(
