@@ -135,18 +135,14 @@ def test_booking_anchor_remains_on_same_trip_after_fetch(client):
 
     fetched = client.get(f"/api/v1/trip/{trip_id}", headers=auth("u1"))
     hotel = next(
-        node
-        for node in fetched.json()["nodes"]
-        if node["venue_name"] == "Mad Monkey Vang Vieng"
+        node for node in fetched.json()["nodes"] if node["venue_name"] == "Mad Monkey Vang Vieng"
     )
     assert hotel["node_kind"] == "booking"
     assert hotel["booking_type"] == "hotel"
     assert hotel["is_locked"] is True
     assert hotel["geo_region"] == "vang_vieng_laos"
     booking_names = {
-        node["venue_name"]
-        for node in fetched.json()["nodes"]
-        if node["node_kind"] == "booking"
+        node["venue_name"] for node in fetched.json()["nodes"] if node["node_kind"] == "booking"
     }
     assert {"Mad Monkey Vang Vieng", "Train to Luang Prabang"} <= booking_names
 
