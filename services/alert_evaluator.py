@@ -213,8 +213,9 @@ def _evaluate_block(
             )
         )
 
-    # High humidity info: humidity >= 80 AND feels_like >= 35 (but < 40)
-    if block.humidity >= 80 and block.feels_like_c >= 35 and block.feels_like_c < 40:
+    # High humidity info: humidity >= 80 AND feels_like >= 35
+    # Heat and humidity alerts may coexist (no upper bound on feels_like).
+    if block.humidity >= 80 and block.feels_like_c >= 35:
         alert_id = make_alert_id(trip_id, "high_humidity", valid_from, node_ids)
         names_str = ", ".join(node_names)
         alerts.append(

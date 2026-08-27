@@ -250,19 +250,17 @@ def test_alert_endpoint_does_not_consume_reroute_quota(client):
     resp = client.post("/api/v1/trip/create", json={"start_date": "2026-10-05"}, headers=_auth())
     trip_id = resp.json()["trip_id"]
 
-    trip_before = client.get(f"/api/v1/trip/{trip_id}", headers=_auth()).json()
-
     unconfigured = WeatherProvider(api_key="")
     app.dependency_overrides[get_weather_provider] = lambda: unconfigured
     try:
-        client.get(f"/api/v1/trip/{trip_id}/alerts", headers=_auth())
+        with patch(
+            "services.db_provider.db_service.consume_reroute",
+            side_effect=AssertionError("consume_reroute must not be called by alert endpoint"),
+        ):
+            resp = client.get(f"/api/v1/trip/{trip_id}/alerts", headers=_auth())
+            assert resp.status_code == 200
     finally:
         app.dependency_overrides.pop(get_weather_provider, None)
-
-    trip_after = client.get(f"/api/v1/trip/{trip_id}", headers=_auth()).json()
-    assert trip_before.get("execution_control", {}).get("reroutes_used", 0) == trip_after.get(
-        "execution_control", {}
-    ).get("reroutes_used", 0)
 
 
 # =========================================================================
@@ -433,3 +431,36 @@ def test_empty_string_api_key_is_unconfigured():
 
     provider3 = WeatherProvider(api_key="real-key")
     assert provider3.is_configured
+
+
+# =========================================================================
+# Test 17: Unauthenticated request returns 401 (not just cross-user 403)
+# =========================================================================
+
+
+def test_alert_endpoint_unauthenticated_returns_401(client):
+    """No auth header at all -> 401."""
+    resp = client.post("/api/v1/trip/create", json={"start_date": "2026-10-05"}, headers=_auth())
+    trip_id = resp.json()["trip_id"]
+
+    # Request with NO auth headers
+    resp = client.get(f"/api/v1/trip/{trip_id}/alerts")
+    assert resp.status_code == 401
+
+
+# =========================================================================
+# Test 18: High humidity coexists with heat (no feels_like < 40 upper bound)
+# =========================================================================
+
+
+def test_humidity_and_heat_alerts_coexist():
+    """Humidity >= 80 at feels_like 42 C should produce BOTH heat and humidity."""
+    trip = _trip(nodes=[_node("Beach Walk", start_hour=14)])
+    # feels_like=42 triggers high_heat; humidity=85 + feels_like>=35 triggers high_humidity
+    blocks = [_block(hour=14, feels_like=42.0, temp=39.0, humidity=85)]
+
+    alerts = evaluate_alerts(trip, blocks, SOURCE_UPDATED, now=NOW)
+
+    types = {a.alert_type for a in alerts}
+    assert "high_heat" in types, f"Expected high_heat, got {types}"
+    assert "high_humidity" in types, f"Expected high_humidity, got {types}"
