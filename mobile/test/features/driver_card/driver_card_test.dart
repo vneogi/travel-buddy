@@ -315,10 +315,12 @@ void main() {
     });
   });
 
-  testWidgets('Dubai card renders Arabic, coordinates, maps, and no fare guess',
-      (tester) async {
+  testWidgets(
+    'Dubai card renders Arabic, coordinates, maps, and no fare guess',
+    (tester) async {
     final db = OfflineDatabase(testPath: inMemoryDatabasePath);
     final mockSync = MockSyncEngine();
+    when(() => mockSync.triggerSync()).thenReturn(null);
     final signalService = SignalService(db: db, syncEngine: mockSync);
     await db.cachePlace(
       'dubai_museum',
@@ -366,7 +368,10 @@ void main() {
     expect(find.text('Typical local fare'), findsNothing);
     expect(find.text('Screenshot this card for offline safety'), findsNothing);
     expect(find.textContaining('fare'), findsNothing);
+    await tester.pumpWidget(const SizedBox.shrink());
     await db.close();
-  });
+    },
+    timeout: const Timeout(Duration(seconds: 20)),
+  );
 
 }

@@ -27,7 +27,7 @@ void main() {
     expect(find.text('Where to next?'), findsOneWidget);
     expect(find.text('Create a trip'), findsOneWidget);
     expect(find.textContaining('No trips yet'), findsOneWidget);
-  });
+  }, timeout: const Timeout(Duration(seconds: 20)));
 
   testWidgets('home shows cached trip projection and offline state', (tester) async {
     final snapshot = HomeSnapshot(
@@ -58,5 +58,5 @@ void main() {
     expect(find.text('Dubai Uae'), findsOneWidget);
     expect(find.textContaining('2 bookings'), findsOneWidget);
     expect(find.textContaining('Showing saved trips while offline'), findsOneWidget);
-  });
+  }, timeout: const Timeout(Duration(seconds: 20)));
 }
