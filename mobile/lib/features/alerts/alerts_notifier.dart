@@ -13,14 +13,14 @@ class AlertsState {
   final List<ContextAlert> alerts;
   final bool loading;
   final String? status;
-  final Set<String> _dismissed;
+  final Set<String> dismissed;
 
   const AlertsState({
     this.alerts = const [],
     this.loading = false,
     this.status,
-    Set<String> dismissed = const {},
-  }) : _dismissed = dismissed;
+    this.dismissed = const {},
+  });
 
   AlertsState copyWith({
     List<ContextAlert>? alerts,
@@ -32,45 +32,45 @@ class AlertsState {
         alerts: alerts ?? this.alerts,
         loading: loading ?? this.loading,
         status: status ?? this.status,
-        dismissed: dismissed ?? _dismissed,
+        dismissed: dismissed ?? this.dismissed,
       );
 
   /// Visible alerts (not dismissed, not expired).
   List<ContextAlert> get visible => alerts
-      .where((a) => !_dismissed.contains(a.alertId) && !a.isExpired)
+      .where((a) => !dismissed.contains(a.alertId) && !a.isExpired)
       .toList();
 }
 
 /// SPEC-29: Fetches alerts for a trip without blocking itinerary.
 ///
+/// autoDispose: leave and reopen the same trip refetches alerts.
 /// - 401/403 never falls back to cache.
-/// - Only network errors use unexpired, identity-scoped cache.
-/// - JSON/parse errors do not silently use stale cache.
-class AlertsNotifier extends FamilyAsyncNotifier<AlertsState, String> {
+/// - NetworkException and WeatherUnavailableException use unexpired cache.
+/// - JSON/parse/programming errors do not silently use stale cache.
+class AlertsNotifier extends AutoDisposeFamilyAsyncNotifier<AlertsState, String> {
   @override
   Future<AlertsState> build(String arg) async {
     return _load(arg);
   }
 
-  String get _identityScope {
-    try {
-      return ref.read(currentUserIdProvider);
-    } catch (_) {
-      return 'anonymous';
-    }
-  }
+  String get _identityScope => ref.read(identityCacheScopeProvider);
 
   OfflineDatabase get _db => ref.read(offlineDatabaseProvider);
 
   Future<AlertsState> _load(String tripId) async {
-    // Load persisted dismissals first.
-    Set<String> dismissed;
+    // Prune expired cache/dismissals safely (never blocks alerts).
     try {
-      dismissed = await _db.getDismissedAlertIds(
+      await _db.pruneAlertData();
+    } catch (_) {}
+
+    // Load persisted dismissals.
+    Set<String> dismissedIds;
+    try {
+      dismissedIds = await _db.getDismissedAlertIds(
         identityScope: _identityScope,
       );
     } catch (_) {
-      dismissed = {};
+      dismissedIds = {};
     }
 
     try {
@@ -78,7 +78,7 @@ class AlertsNotifier extends FamilyAsyncNotifier<AlertsState, String> {
       final resp = await client.get('/trip/$tripId/alerts');
       final parsed = TripAlertsResponse.fromJson(resp);
       if (parsed.status == 'unconfigured') {
-        return AlertsState(status: 'unconfigured', dismissed: dismissed);
+        return AlertsState(status: 'unconfigured', dismissed: dismissedIds);
       }
       final valid = parsed.alerts.where((a) => !a.isExpired).toList();
 
@@ -100,25 +100,28 @@ class AlertsNotifier extends FamilyAsyncNotifier<AlertsState, String> {
       return AlertsState(
         alerts: valid,
         status: 'available',
-        dismissed: dismissed,
+        dismissed: dismissedIds,
       );
     } on UnauthorizedException {
-      // 401/403 never falls back to cache.
-      return AlertsState(status: 'auth_error', dismissed: dismissed);
+      // 401/403 NEVER fall back to cache.
+      return AlertsState(status: 'auth_error', dismissed: dismissedIds);
     } on ForbiddenException {
-      return AlertsState(status: 'auth_error', dismissed: dismissed);
+      return AlertsState(status: 'auth_error', dismissed: dismissedIds);
     } on NetworkException {
-      // Only network errors may use unexpired cache.
-      return _loadFromCache(tripId, dismissed);
+      // Network failure: use unexpired identity-scoped cache.
+      return _loadFromCache(tripId, dismissedIds);
+    } on WeatherUnavailableException {
+      // Weather provider 503: use unexpired identity-scoped cache.
+      return _loadFromCache(tripId, dismissedIds);
     } catch (e) {
       // JSON/parse/programming errors: do NOT use stale cache.
-      return AlertsState(status: 'error', dismissed: dismissed);
+      return AlertsState(status: 'error', dismissed: dismissedIds);
     }
   }
 
   Future<AlertsState> _loadFromCache(
     String tripId,
-    Set<String> dismissed,
+    Set<String> dismissedIds,
   ) async {
     try {
       final cached = await _db.getCachedAlerts(
@@ -133,17 +136,17 @@ class AlertsNotifier extends FamilyAsyncNotifier<AlertsState, String> {
         return AlertsState(
           alerts: valid,
           status: 'cached',
-          dismissed: dismissed,
+          dismissed: dismissedIds,
         );
       }
     } catch (_) {}
-    return AlertsState(dismissed: dismissed);
+    return AlertsState(dismissed: dismissedIds);
   }
 
   /// Dismiss an alert locally and persist the dismissal.
   Future<void> dismiss(String alertId) async {
     final current = state.valueOrNull ?? const AlertsState();
-    final newDismissed = {...current._dismissed, alertId};
+    final newDismissed = {...current.dismissed, alertId};
     state = AsyncValue.data(current.copyWith(dismissed: newDismissed));
     try {
       await _db.dismissAlert(
@@ -153,7 +156,7 @@ class AlertsNotifier extends FamilyAsyncNotifier<AlertsState, String> {
     } catch (_) {}
   }
 
-  /// Manual refresh (pull-to-refresh or resume).
+  /// Manual refresh (pull-to-refresh or explicit tap).
   Future<void> refresh() async {
     state = AsyncValue.data(
       (state.valueOrNull ?? const AlertsState()).copyWith(loading: true),
@@ -162,7 +165,8 @@ class AlertsNotifier extends FamilyAsyncNotifier<AlertsState, String> {
   }
 }
 
+/// autoDispose: leaving the trip screen disposes, reopening refetches.
 final alertsNotifierProvider =
-    AsyncNotifierProvider.family<AlertsNotifier, AlertsState, String>(
+    AsyncNotifierProvider.autoDispose.family<AlertsNotifier, AlertsState, String>(
   AlertsNotifier.new,
 );

@@ -115,19 +115,29 @@ class WeatherProvider:
         if not isinstance(raw_list, list):
             raise WeatherProviderError("Malformed forecast response: missing list field")
         for item in raw_list:
-            dt = datetime.fromtimestamp(item["dt"], tz=timezone.utc)
-            blocks.append(
-                ForecastBlock(
-                    dt=dt,
-                    temp_c=item["main"]["temp"],
-                    feels_like_c=item["main"]["feels_like"],
-                    humidity=item["main"]["humidity"],
-                    condition_code=item["weather"][0]["id"],
-                    condition_main=item["weather"][0]["main"],
-                    rain_probability=max(0.0, min(1.0, float(item.get("pop", 0.0)))),
-                    wind_speed_kmh=item["wind"]["speed"] * 3.6,
+            if not isinstance(item, dict):
+                continue
+            try:
+                main = item["main"]
+                weather_list = item["weather"]
+                if not isinstance(weather_list, list) or not weather_list:
+                    continue
+                wind = item.get("wind") or {}
+                dt = datetime.fromtimestamp(int(item["dt"]), tz=timezone.utc)
+                blocks.append(
+                    ForecastBlock(
+                        dt=dt,
+                        temp_c=float(main["temp"]),
+                        feels_like_c=float(main["feels_like"]),
+                        humidity=int(main["humidity"]),
+                        condition_code=int(weather_list[0]["id"]),
+                        condition_main=str(weather_list[0].get("main", "")),
+                        rain_probability=max(0.0, min(1.0, float(item.get("pop", 0.0)))),
+                        wind_speed_kmh=float(wind.get("speed", 0)) * 3.6,
+                    )
                 )
-            )
+            except (KeyError, IndexError, TypeError, ValueError, OverflowError) as exc:
+                raise WeatherProviderError("Malformed forecast item in weather response") from exc
 
         source_updated_at = datetime.now(tz=timezone.utc)
         self._cache[cache_key] = (blocks, source_updated_at, time.time())

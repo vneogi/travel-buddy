@@ -12,7 +12,6 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 
 from config.regions import REGIONS
-from config.settings import settings
 from models.alerts import TripAlertsResponse
 from models.schemas import NodeStatus
 from security import get_current_user_id, require_trip_owner
@@ -30,7 +29,7 @@ def get_weather_provider() -> WeatherProvider:
     return _weather_provider
 
 
-@router.get("/trip/{trip_id}/alerts")
+@router.get("/trip/{trip_id}/alerts", response_model=TripAlertsResponse)
 async def get_trip_alerts(
     trip_id: str,
     user_id: str = Depends(get_current_user_id),
@@ -120,4 +119,4 @@ async def get_trip_alerts(
         status="available",
         alerts=final_alerts,
         refreshed_at=now,
-    ).model_dump(mode="json")
+    )

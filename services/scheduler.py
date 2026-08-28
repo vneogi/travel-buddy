@@ -65,12 +65,8 @@ def reschedule_and_validate(nodes: List[TripNode]) -> ScheduleResult:
         if node.is_locked:
             if earliest is not None and earliest > node.scheduled_start:
                 has_hard_conflict = True
-                over = int((earliest - node.scheduled_start).total_seconds() // 60)
-                warnings.append(
-                    f"Locked '{node.venue_name}' at "
-                    f"{node.scheduled_start.strftime('%H:%M')} is unreachable -- "
-                    f"the previous stop + {transit_min} min transit runs {over} min over."
-                )
+                # Internal feasibility flag only. Synthetic transit claims
+                # (minutes, distance, "unreachable") must never reach user copy.
             start = node.scheduled_start  # anchor stays fixed
         else:
             if earliest is not None and earliest > node.scheduled_start:

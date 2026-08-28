@@ -352,6 +352,27 @@ class _AlertsSectionState extends ConsumerState<_AlertsSection>
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Manual refresh action
+            Align(
+              alignment: Alignment.centerRight,
+              child: IconButton(
+                icon: alertsState.loading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.refresh, size: 18),
+                tooltip: 'Refresh alerts',
+                onPressed: alertsState.loading
+                    ? null
+                    : () => ref
+                        .read(alertsNotifierProvider(widget.tripId).notifier)
+                        .refresh(),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+            ),
             for (final alert in visible)
               AlertCard(
                 alert: alert,

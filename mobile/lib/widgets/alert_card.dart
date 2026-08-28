@@ -61,6 +61,16 @@ class AlertCard extends StatelessWidget {
     );
   }
 
+  /// Data-driven source label. Evidence source on the model is authoritative.
+  String _sourceDisplayName(String source) {
+    const labels = {
+      'openweather': 'OpenWeather',
+      'met_office': 'Met Office',
+      'weather_gov': 'Weather.gov',
+    };
+    return labels[source] ?? source;
+  }
+
   Color _severityColor(String severity) {
     switch (severity) {
       case 'warning':

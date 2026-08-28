@@ -244,6 +244,26 @@ async def process_trip_event(
     }
 
     if request.event_type in structural_events:
+        # SPEC-29 D6: Locked cancel refusal must not consume quota.
+        # Validate target before reserving for CANCEL_ACTIVITY.
+        if request.event_type == EventType.CANCEL_ACTIVITY and request.target_node_id:
+            target = next(
+                (n for n in trip.nodes if n.node_id == request.target_node_id),
+                None,
+            )
+            if target and target.is_locked:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail={
+                        "error": "locked_cancel_refused",
+                        "message": (
+                            f"'{target.venue_name}' is a locked booking and "
+                            "cannot be canceled. Unlock it first if you need "
+                            "to remove it."
+                        ),
+                    },
+                )
+
         # Atomic reserve -- closes the check-then-increment race. Structural
         # events are always HEAVY and never served from cache, so reserving
         # up front never over-charges a cache hit.

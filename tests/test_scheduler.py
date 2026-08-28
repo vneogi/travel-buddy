@@ -39,7 +39,8 @@ def test_unreachable_locked_reservation_flagged(monkeypatch):
     result = reschedule_and_validate(nodes)
     # A ends 10:00, +90 transit = 11:30 > locked 11:00 -> unreachable.
     assert result.has_hard_conflict is True
-    assert any("unreachable" in w for w in result.warnings)
+    # D3: synthetic transit no longer surfaces in warnings; only internal flag.
+    assert result.has_hard_conflict is True
 
 
 def test_feasible_keeps_planned_times(monkeypatch):

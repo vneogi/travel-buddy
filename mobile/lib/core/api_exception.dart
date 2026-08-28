@@ -39,3 +39,11 @@ class UnsupportedRegionException extends ApiException {
 class RerouteLimitException extends ApiException {
   const RerouteLimitException([super.m = 'Daily reroute limit reached.']);
 }
+
+/// SPEC-29: Weather provider returned 503 (structured unavailable).
+/// Alert cache fallback is allowed for this exception only.
+class WeatherUnavailableException extends ApiException {
+  const WeatherUnavailableException([
+    super.m = 'Weather data temporarily unavailable.',
+  ]);
+}

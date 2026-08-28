@@ -464,3 +464,80 @@ def test_humidity_and_heat_alerts_coexist():
     types = {a.alert_type for a in alerts}
     assert "high_heat" in types, f"Expected high_heat, got {types}"
     assert "high_humidity" in types, f"Expected high_humidity, got {types}"
+
+
+# =========================================================================
+# Test 19: Locked cancel does not consume quota (endpoint-level)
+# =========================================================================
+
+
+def test_locked_cancel_does_not_consume_reroute(client):
+    """Locked cancel returns 409 before consume_reroute is called."""
+    from unittest.mock import patch
+
+    from services.db_provider import db_service
+
+    resp = client.post("/api/v1/trip/create", json={"start_date": "2026-10-05"}, headers=_auth())
+    trip_id = resp.json()["trip_id"]
+
+    # Directly lock the first node in the trip state
+    trip = db_service.get_trip(trip_id)
+    target_id = trip.nodes[0].node_id
+    trip.nodes[0].is_locked = True
+    db_service.save_trip(trip)
+
+    # Verify locked via API
+    trip_resp = client.get(f"/api/v1/trip/{trip_id}", headers=_auth())
+    locked = next(n for n in trip_resp.json()["nodes"] if n["node_id"] == target_id)
+    assert locked["is_locked"] is True
+
+    # Cancel the locked node -- consume_reroute MUST NOT be called.
+    with patch(
+        "services.db_provider.db_service.consume_reroute",
+        side_effect=AssertionError("consume_reroute must not be called for locked cancel"),
+    ) as spy:
+        resp = client.post(
+            "/api/v1/trip/event",
+            json={
+                "trip_id": trip_id,
+                "event_type": "cancel_activity",
+                "message": "Cancel it",
+                "target_node_id": target_id,
+            },
+            headers=_auth(),
+        )
+        assert resp.status_code == 409, f"Expected 409, got {resp.status_code}: {resp.json()}"
+        assert "locked" in resp.json()["detail"]["error"]
+        spy.assert_not_called()
+
+
+# =========================================================================
+# Test 20: Malformed forecast item returns WeatherProviderError (not 500)
+# =========================================================================
+
+
+def test_weather_provider_malformed_item():
+    """Malformed individual forecast item raises WeatherProviderError."""
+    import asyncio
+
+    class FakeResponse:
+        status_code = 200
+
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {
+                "list": [
+                    {"dt": 1000, "main": "not_a_dict"},  # main should be dict
+                ]
+            }
+
+    class FakeClient:
+        async def get(self, url, params=None, **kwargs):
+            return FakeResponse()
+
+    provider = WeatherProvider(api_key="test", http_client=FakeClient())
+    with pytest.raises(WeatherProviderError) as exc_info:
+        asyncio.run(provider.get_forecast(25.2, 55.3))
+    assert "Malformed" in str(exc_info.value)
