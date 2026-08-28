@@ -42,7 +42,7 @@ class AlertCard extends StatelessWidget {
                   Text(alert.message, style: AppTypography.body),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
-                    'OpenWeather - Updated $ago',
+                    '${_sourceDisplayName(alert.source)} - Updated $ago',
                     style: AppTypography.caption,
                   ),
                 ],

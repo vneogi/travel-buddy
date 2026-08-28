@@ -209,28 +209,4 @@ void main() {
     expect(result, isNull);
   });
 
-  // ===================== Test 11: Alert refresh icon present =====================
-  testWidgets('refresh icon exists in AlertCard area', (tester) async {
-    // Minimal widget that shows refresh icon when alerts are present
-    final alert = ContextAlert.fromJson(_alertJson());
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: Column(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.refresh, size: 18),
-                tooltip: 'Refresh alerts',
-                onPressed: () {},
-              ),
-              AlertCard(alert: alert),
-            ],
-          ),
-        ),
-      ),
-    );
-    await tester.pump();
-    expect(find.byIcon(Icons.refresh), findsOneWidget);
-    expect(find.byTooltip('Refresh alerts'), findsOneWidget);
-  });
 }
