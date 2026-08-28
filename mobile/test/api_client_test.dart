@@ -179,4 +179,38 @@ void main() {
       ),
     );
   });
+
+  test('maps weather 503 to WeatherUnavailableException', () async {
+    final dio = Dio(BaseOptions(baseUrl: 'http://localhost:9999/api/v1'));
+    final client = ApiClient(
+      tokenProvider: () async => null,
+      deviceIdProvider: () async => 'device-id',
+      dioOverride: dio,
+    );
+    dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) => handler.reject(
+          DioException(
+            requestOptions: options,
+            response: Response(
+              requestOptions: options,
+              statusCode: 503,
+              data: {
+                'detail': {
+                  'error': 'weather_provider_unavailable',
+                  'message': 'Weather data temporarily unavailable.',
+                },
+              },
+            ),
+            type: DioExceptionType.badResponse,
+          ),
+        ),
+      ),
+    );
+
+    await expectLater(
+      client.get('/trip/t1/alerts'),
+      throwsA(isA<WeatherUnavailableException>()),
+    );
+  });
 }

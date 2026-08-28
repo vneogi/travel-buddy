@@ -35,9 +35,9 @@ def test_venue_model_and_trip_node_preserve_driver_card_fields():
 
 
 def test_live_search_migration_returns_driver_card_fields_and_region_filter():
-    sql = (
-        REPO_ROOT / "supabase" / "migrations" / "0023_driver_card_search_fields.sql"
-    ).read_text(encoding="utf-8")
+    sql = (REPO_ROOT / "supabase" / "migrations" / "0023_driver_card_search_fields.sql").read_text(
+        encoding="utf-8"
+    )
 
     for field in (
         "filter_geo_region",

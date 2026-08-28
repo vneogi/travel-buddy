@@ -80,6 +80,15 @@ class ApiClient {
         );
       }
     }
+    if (code == 503) {
+      final detail = (data is Map) ? data['detail'] : null;
+      if (detail is Map && detail['error'] == 'weather_provider_unavailable') {
+        return WeatherUnavailableException(
+          detail['message']?.toString() ??
+              'Weather data temporarily unavailable.',
+        );
+      }
+    }
     if (code != null && code >= 500) return const ServerException();
     if (e.type == DioExceptionType.connectionError ||
         e.type == DioExceptionType.connectionTimeout ||
