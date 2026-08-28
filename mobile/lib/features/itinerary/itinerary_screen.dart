@@ -14,7 +14,6 @@ import '../../widgets/shimmer_card.dart';
 import '../../widgets/error_view.dart';
 import 'itinerary_notifier.dart';
 import 'replacement_ref.dart';
-import '../../core/providers.dart';
 import '../alerts/alerts_notifier.dart';
 import '../../widgets/alert_card.dart';
 
