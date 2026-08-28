@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 /// SPEC-29: Structured context alert from the backend.
 class AlertEvidence {
   final double? rainProbability;

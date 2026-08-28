@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/api_client.dart';
 import '../../core/api_exception.dart';
 import '../../core/providers.dart';
 import '../../data/context_alert.dart';
