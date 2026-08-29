@@ -11,9 +11,8 @@ Device Day (`docs/briefs/DEVICE_DAY.md`) is CLOSED. Do not re-apply
 0011-0018. Do not re-export Dubai. Do not `VALIDATE CONSTRAINT` on
 0015/0017 (that remains a separate non-blocking follow-up).
 
-`docs/TESTING_GUIDE.md` section 4 still mentions
-`--dart-define=TB_DEBUG_USER_ID=...`. That flag was removed in SPEC-09
-(`7173a3f`). Ignore it. Identity is `Authorization: Anonymous <uuid>`.
+Identity is `Authorization: Anonymous <uuid>`. Never pass the removed
+`TB_DEBUG_USER_ID` dart-define.
 
 ## What this day verifies
 
@@ -27,14 +26,16 @@ Prove, on the Windows machine, in this order:
    restore, do not commit the break
 6. Local API + `smoke-test.ps1`
 7. Anonymous identity E2E (`TB_ALLOW_ANONYMOUS=true`, JWT secret unset)
-8. Flutter UI verification in Chrome:
+8. Flutter UI verification on Windows desktop or Android (Chrome is optional
+   for layout only):
    - 8a: Dev gate / Home on `/`
    - 8b: Real anon Supabase defines -- no onboarding redirect loop
    - 8c: Profile device ID (UUID v4 format, persisted)
    - 8d: Live swap on itinerary reflows timeline
    - 8e: Visited / NOW badge on current-window node
    - 8f: Chat empty-state is a question (not a swap promise)
-   - 8g: SPEC-12 Driver Card: Lao script, landmark, fair fare band (`20,000 - 50,000 LAK`), one-tap confirm
+   - 8g: SPEC-12 Driver Card: native script, landmark, coordinates, no fare
+     claim, no screenshot instruction, one-tap confirm
    - 8h: SPEC-10 Booking Anchors: `+ Add Booking` in AppBar, paste auto-fill, locked booking card with icon & badge
    - 8i: SPEC-04 Hotel Rescue: Shield icon in AppBar opens Hotel Driver Card or calm empty state
    - 8j: Offline Itinerary Cache: load trip, stop API, reload screen -> renders cached itinerary with `"Offline: showing saved itinerary"` banner
@@ -72,13 +73,13 @@ Step 4 flutter test exit (expect 92 passed):
 Step 5 sabotage proofs (named tests failed when broken, passed after restore):
 Step 6 smoke-test.ps1 pass/fail counts:
 Step 7 Anonymous curl HTTP codes (v4 / v1 / flag-off):
-Step 8a Chrome no supabase defines -- reached / ? yes/no
-Step 8b Chrome WITH anon dart-defines -- onboarding loop? yes/no
+Step 8a Windows/Android no supabase defines -- reached / ? yes/no
+Step 8b Windows/Android WITH anon dart-defines -- onboarding loop? yes/no
 Step 8c Profile device id (UUID v4 shape, stable on reload):
 Step 8d Swap: itinerary row changed? yes/no
 Step 8e Visited / NOW visible on node in current window:
 Step 8f Chat empty-state text:
-Step 8g Driver Card: Lao script, landmark, LAK fare band visible? yes/no
+Step 8g Driver Card: native script + coordinates; no fare; Maps pass/fail:
 Step 8h Booking Anchors: Add Booking sheet auto-fills, card shows locked badge? yes/no
 Step 8i Hotel Rescue: Shield icon opens hotel card or rescue sheet? yes/no
 Step 8j Offline Cache: stopping API renders cached itinerary with offline banner? yes/no
@@ -298,7 +299,7 @@ File: `mobile/lib/features/driver_card/driver_card_helpers.dart`
 In `PlaceDriverCardData.fromTripNode`, change `geoRegion: node.geoRegion` back to `geoRegion: null`.
 ```powershell
 cd mobile
-flutter test --name "TripNode with geo_region luang_prabang_laos resolves Lao script and LAK fare"
+flutter test --name "TripNode with geo_region luang_prabang_laos resolves Lao script via fromTripNode"
 # Expect FAIL
 cd ..
 git checkout -- mobile/lib/features/driver_card/driver_card_helpers.dart
@@ -386,12 +387,15 @@ Save the printed `trip_id` for Step 8.
 
 ---
 
-## Step 8 -- Flutter UI verification (Chrome)
+## Step 8 -- Flutter UI verification (Windows desktop or Android)
+
+Chrome may be used for layout checks only. It is not the acceptance target for
+SQLite durability, airplane mode or Maps hand-off.
 
 ### 8a No Supabase defines (dev gate off)
 ```powershell
 cd C:\Users\ariav\travel-buddy\mobile
-flutter run -d chrome --dart-define=TB_API_BASE_URL=http://localhost:8000
+flutter run -d windows --dart-define=TB_API_BASE_URL=http://127.0.0.1:8000
 ```
 - App opens on `/` (Trips).
 - Profile shows Device ID (UUID v4 format).
@@ -399,15 +403,15 @@ flutter run -d chrome --dart-define=TB_API_BASE_URL=http://localhost:8000
 ### 8b WITH anon Supabase dart-defines (softlock check)
 Use the **anon key** from Supabase Settings > API:
 ```powershell
-flutter run -d chrome `
-  --dart-define=TB_API_BASE_URL=http://localhost:8000 `
+flutter run -d windows `
+  --dart-define=TB_API_BASE_URL=http://127.0.0.1:8000 `
   --dart-define=TB_SUPABASE_URL=https://YOUR_PROJECT.supabase.co `
   --dart-define=TB_SUPABASE_ANON_KEY=YOUR_ANON_KEY
 ```
 - App opens on `/` and stays (no redirect bounce).
 
 ### 8c Device ID stability
-Reload/restart Chrome; device ID on Profile must stay identical.
+Reload/restart the app; device ID on Profile must stay identical.
 
 ### 8d Swap reflow
 On an unlocked card, tap swap icon. Venue updates and timeline reflows.
@@ -422,7 +426,10 @@ Open Chat; empty-state shows questions (hours/nearby), not swap suggestions.
 On any activity card, tap the car icon (`Show driver card`):
 - Full-screen high-contrast card opens.
 - Native script headline rendered via `FactView`.
-- Landmarks (native script + English), coordinates, and fair fare band visible.
+- Landmarks (native script + English) and small last-resort coordinates render.
+- No fare or Fair Fare claim is shown until a source supports it.
+- `geo:` is expected to fail on Windows today; record it rather than hiding the
+  coordinates. The card must not ask for an offline screenshot.
 - If unconfirmed: tap `Confirm` -> promotes to verified and enqueues `name_confirmed`.
 
 ### 8h SPEC-10 Booking Anchors
@@ -438,9 +445,9 @@ In itinerary AppBar, tap the Shield icon (`shield_outlined`):
 - If no hotel is saved: opens calm `HotelRescueSheet` with `"+ Add Hotel Booking"` button.
 
 ### 8j Offline itinerary caching
-With the trip loaded in Chrome:
+With the trip loaded on Windows or Android:
 - Stop the uvicorn backend server in terminal (simulating lost connectivity).
-- Refresh the Chrome browser / reload the trip screen.
+- Reload the trip screen.
 - Screen renders the cached itinerary from SQLite with banner:
   `"Offline: showing saved itinerary"` (no blank screen, no crash).
 - Restart uvicorn.

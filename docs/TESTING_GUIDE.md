@@ -17,8 +17,8 @@
   present in 7.2 through 8.3, deleted by accident in 8.4.0, restored in 8.4.1.
 - Flutter 3.35+ with Dart 3.9+: required by the SQLite 3 web worker adapter.
   Install the SDK, run `flutter doctor`, and fix anything red.
-- For device testing: Android Studio with an AVD, or a physical phone with USB
-  debugging. Chrome needs no emulator.
+- For client testing: Windows desktop or Android (AVD or physical phone) is the
+  field target. Chrome is optional for layout only; web SQLite is experimental.
 - Optional: `pip install pytest-cov schemathesis`.
 
 ## 1. Backend unit tests
@@ -84,18 +84,19 @@ restart, no matter what the API returns (R11).
 Property-tests every endpoint against its OpenAPI schema. Good at finding the
 serialization mismatches the Flutter client would otherwise hit first.
 
-## 4. Flutter, fastest loop (Chrome)
+## 4. Flutter, fastest loop (Windows desktop or Android)
 
     cd mobile
     flutter pub get
     flutter analyze
-    flutter run -d chrome \
-      --dart-define=TB_API_BASE_URL=http://localhost:8000 \
-      --dart-define=TB_DEBUG_USER_ID=11111111-1111-1111-1111-111111111111
+    flutter run -d windows \
+      --dart-define=TB_API_BASE_URL=http://127.0.0.1:8000
 
 Run `flutter analyze` before anything else; it catches the compile errors that
-have repeatedly reached commits. Maps and RevenueCat are stubbed, so web is fine
-for UI work. Start the backend from section 2 in another terminal first.
+have repeatedly reached commits. Start the backend from section 2 in another
+terminal first. Chrome is useful for layout only, not Maps, airplane-mode or
+durability acceptance. Flutter must not receive `TB_DEBUG_USER_ID`; SPEC-09
+uses the persisted device UUID in `Authorization: Anonymous <uuid>`.
 
 After any edit to a `.dart` file, run:
 
@@ -109,8 +110,7 @@ on three separate occasions (R1).
 
     flutter devices
     flutter run -d <deviceId> \
-      --dart-define=TB_API_BASE_URL=http://10.0.2.2:8000 \
-      --dart-define=TB_DEBUG_USER_ID=11111111-1111-1111-1111-111111111111
+      --dart-define=TB_API_BASE_URL=http://10.0.2.2:8000
 
 `10.0.2.2` is the emulator's route to the host. A physical device needs the
 laptop's LAN IP instead, which also matters for section 6.
@@ -137,8 +137,7 @@ supposedly disconnected server (R7).
 Build against the laptop's LAN IP, not `10.0.2.2` and not a USB tunnel:
 
     flutter run -d <deviceId> \
-      --dart-define=TB_API_BASE_URL=http://<laptop-lan-ip>:8000 \
-      --dart-define=TB_DEBUG_USER_ID=11111111-1111-1111-1111-111111111111
+      --dart-define=TB_API_BASE_URL=http://<laptop-lan-ip>:8000
 
 Then:
 
@@ -146,8 +145,10 @@ Then:
    log show no incoming requests. If requests still arrive, stop -- the drill is
    invalid.
 2. Tap loved on five venues.
-3. Force-kill the app. Reopen it. The sync screen at `/profile/sync` must still
-   show five pending.
+3. Force-kill the app. Reopen it. Today this is expected to expose a known gap:
+   hearts are held by an auto-disposed itinerary controller, not a durable
+   outbox path. Sync Status also calls `syncOnce()` without awaiting it before
+   reading counts. Do not classify this only as a USB/network mistake.
 4. Re-enable the network. All five must sync.
 5. Query the destination store for five rows. An `accepted=1` log line is not
    proof of persistence -- the sync engine once reported exactly that while
@@ -189,7 +190,8 @@ same failure as never having fixed the bug (R10):
 
 - In-memory mode resets on restart and is not shared across processes. Check the
   startup log to see which backend resolved.
-- `weather_service`, `cost_tracker` and `rag_ingestion` are scaffolding and are
-  not wired into the request path.
+- Legacy `weather_service.py` is still scaffolding. Context alerts use
+  `weather_provider.py` with OpenWeather as of SPEC-29. `cost_tracker` and
+  `rag_ingestion` remain unwired.
 - Current open defects, including the venue loader ones, are listed in
   `docs/AWAITING_VERIFICATION.md`.

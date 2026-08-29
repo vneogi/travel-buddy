@@ -20,49 +20,64 @@ Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 |---|---|---|
 | Migrations 0011 to 0018 | applied device day 2026-08-17 | VALIDATE on NOT VALID CHECKs still deferred; confirm via Step 7 |
 | The five Supabase tests | ran green 2026-08-17 | `280 passed` suite with TB_SUPABASE_URL; see finding below |
-| Flutter client | Aug 9 | Run docs/briefs/LAPTOP_VERIFY.md (analyze, test, sabotage, Chrome E2E) |
+| Flutter client follow-ups | Aug 27-28 2026 Windows run | Windows desktop or Android. Chrome is layout-only while web SQLite remains experimental. Profile/Skip exact errors and durable hearts remain open |
 | Migration 0019 prompt_dismissed | landed `1b9b1b3`, unapplied | LAPTOP_VERIFY Step 3; then signal_types tests |
 | Migration 0020 driver_card_signals | landed `a2da64a`, unapplied | Apply via Supabase SQL editor; then signal_types drift tests |
 | Migration 0021 booking_anchors | landed `f6328e9`, unapplied | Apply via Supabase SQL editor; then signal_types drift tests |
 | Migration 0022 trip_node_local_names | landed, unapplied | Apply via Supabase SQL editor; adds names_local, landmarks_local, nearest_landmark to trip_node |
 | Migration 0023 driver_card_search_fields | uncommitted, unapplied | Apply after 0022; updates hybrid_venue_search to return geo/localized driver-card fields and accept filter_geo_region |
 | PowerShell scripts | Aug 9 | `.\scripts\smoke-test.ps1` on Windows |
-| Laptop-feedback hardening | Aug 27 | Run the matrix below on Windows desktop or Android with Supabase configured |
+| Laptop-feedback product gaps | Aug 27-28 | Date grouping, booking edit/delete/notes, hotel rescue selection, Windows Maps hand-off, durable hearts, real location and real Laos creation remain open |
 | `hybrid_venue_search` geo_region parameter | Observed Aug 17 2026 | Live signature matches 0001: no geo_region arg (radius-only). Multi-city RPC filter still absent |
 | Dubai row contents, including AED magnitudes | Cleared Aug 17 2026 | 16 Dubai venues live (null price_band). dubai_dishes=0 -- nothing to inspect for AED; food data is greenfield |
 | `pg_description` non-ASCII | Cleared Aug 17 2026 | Step 7c returned 0 rows |
 
 The five Supabase integration tests ran green on device day 2026-08-17 with
 `TB_SUPABASE_URL` set (`280 passed` suite). Remaining credential-gated gaps
-are Flutter, smoke-test.ps1, and deliberate VALIDATE of NOT VALID CHECKs.
+are smoke-test.ps1, any unrecorded Anonymous E2E, and deliberate VALIDATE of
+NOT VALID CHECKs.
 
-## Aug 27 laptop-feedback verification matrix
+## Finding -- Aug 27-28 2026 -- Owner laptop verification (Windows)
 
-Automated tests cover projection ownership, booking round-trip, parser fixtures,
-fare/map helpers, ask intent boundaries, offline list serialization, and calm
-generic errors. The following still require Vikrant's Windows/device run:
+Recorded against `main`; SPEC-29 subsequently landed as `aedbc03` in PR #25.
 
-1. Confirm the uvicorn startup log says `supabase_configured=True`.
-2. Create a trip, return to Trips, kill/relaunch, and confirm the same trip id
-   and card remain visible.
-3. Paste the Mad Monkey Booking.com email. Confirm hotel type, title
-   `Mad Monkey Vang Vieng`, start `4 Oct 2026 14:00`, checkout-derived duration,
-   locked timeline card, and hotel-rescue discovery.
-4. Open a Laos driver card in airplane mode. Confirm native script and raw
-   coordinates render, there is no fare band, Open in Maps uses the device map
-   app (`geo:`), and the card does not ask for a screenshot.
-5. Open a Dubai driver card. Confirm no fare is shown. If curated
-   `names_local.ar` exists, confirm Arabic is the headline; absence must say the
-   local name is unavailable rather than fabricate one.
-6. Stop the backend. Confirm home/itinerary use cached content where present,
-   errors contain no Dart/Dio/SQLite internals, and retry recovers after restart.
-7. Double-click Create and repeatedly tap Swap during a slow request. Confirm
-   only one create/event is sent and progress remains visible.
-8. From the composer, verify ordinary questions use ask-info, `cancel next stop`
-   and `swap next stop` change one unlocked node, and multi-stop commands refuse.
+Passed:
 
+- A trip survived app kill and uvicorn restart with the same trip id and card
+  when startup reported `supabase_configured=True`.
+- The Mad Monkey Booking.com paste produced hotel type, `Mad Monkey Vang
+  Vieng`, the expected dates and a locked booking.
+- The Dubai driver card behaved honestly in airplane mode: no fare claim and
+  no screenshot-for-offline instruction.
+- Backend-down states used cached content where available and human copy rather
+  than Dart, Dio or SQLite internals.
+
+Addressed after the run by SPEC-29:
+
+- Heads-up alerts now use OpenWeather evidence. Synthetic transit estimates,
+  including random traffic and "unreachable" copy, cannot be presented as
+  traveller facts.
+- Cancel is a deterministic skip that preserves the node's position; it no
+  longer looks like a swap. Locked cancellation is refused before quota use.
+
+Open product gaps:
+
+- Hotel rescue selects the first hotel-like node instead of the current or next
+  date-appropriate stay.
+- Bookings have no edit/delete flow, notes are absent from cards, and the
+  itinerary has no date grouping.
+- Create-trip still seeds the Dubai template; it cannot create a real Laos trip.
+- `geo:` Maps hand-off fails on Windows. Keep coordinates available until a
+  platform-specific hand-off exists.
+- Hearts live in the auto-disposed itinerary controller and are not durable.
+  Sync Status starts `syncOnce()` without awaiting it before reading counts.
+- Near-me uses default Dubai coordinates rather than device location, and chat
+  recommendations have no add-to-trip control.
+- Exact Profile and Skip error strings remain unknown.
+
+Windows AXTree console spam was Flutter engine noise; the app continued to run.
 Chrome remains useful for layout, but Windows desktop or Android is the field
-verification target while the web SQLite adapter remains experimental.
+verification target.
 
 ## Open issues that need a person, not a test
 
@@ -115,14 +130,14 @@ October spine: all 7 items complete on main (Device Day, SPEC-09 client,
 SPEC-22, fixes PR #18, SPEC-12 `a2da64a`, SPEC-10 `f6328e9`, and SPEC-04
 `b7e10c3`). Hardening landed in PR #23 (`dab16c0`). Owner laptop runbook:
 docs/briefs/LAPTOP_VERIFY.md (0019, 0020, 0021, Anonymous E2E, sabotage,
-Chrome). Planning-agent handoff: docs/HANDOFF_PLANNING_AGENT.md.
+Windows/Android). Planning-agent handoff: docs/HANDOFF_PLANNING_AGENT.md.
 
 ## Finding -- Aug 20 2026 -- PR #23 Post-Spine Hardening
 
 PR #23 squash-merged as `dab16c0`. All CI checks passed (pytest 287 passed,
 ruff clean, flutter analyze 0 errors/0 warnings, flutter test 92 passed):
 - `geoRegion` threaded from `TripNode` to `PlaceDriverCardData.fromTripNode`
-  so Lao script & LAK fares resolve live.
+  so native script resolves. The later laptop run correctly showed no fare.
 - `resetAuthHalted()` on `SyncEngine` + `SyncStatusScreen` `HALTED (401)` status
   card.
 - `findHotelNode` matches villa/guesthouse accommodation.

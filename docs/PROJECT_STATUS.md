@@ -25,8 +25,9 @@
 - Signals: the registry in models/signal_types.py is the source of truth for
   which types exist. A drift guard test enforces it.
 - Flutter: offline-first with a SQLite outbox, sync engine, and typed exception
-  hierarchy. Signal emission is wired for most but not all registered types --
-  see the SPEC-07 row below.
+  hierarchy. Signal emission is wired for most but not all registered types.
+  Hearts are still controller-local and Sync Status does not await `syncOnce()`,
+  so the SPEC-02 user path is not yet durable -- see the rows below.
 - Migrations 0011 to 0018 are applied on the hosted database (device day
   2026-08-17, Supabase SQL editor). 0011 was gated on a live OpenAPI schema
   dump (no name_local dual-column conflict). 0015/0017 CHECKs remain NOT
@@ -59,7 +60,7 @@
 | Localized names | PARTLY VERIFIED | Ten of 58 venues carry a name confirmed against Wikidata or OSM, with source and ref recorded. Three classes of wrong-script token are fixed. The remaining 48 stay source=generated |
 | Curation round-trip | DONE | scripts/format_venue_json.py converts between the ASCII-escaped repo form and a readable UTF-8 copy under curation/, which is gitignored. Byte-identical round-trip is asserted |
 | Signal capture (SPEC-01) | DONE | All registered types accepted, both backends |
-| Offline queue (SPEC-02) | DONE | SQLite outbox, sync engine, crash recovery. PR #23 (`dab16c0`): resetAuthHalted() on SyncEngine, HALTED (401) indicator on SyncStatusScreen |
+| Offline queue (SPEC-02) | PARTIAL | SQLite outbox, sync engine and crash recovery are done. PR #23 (`dab16c0`) added resetAuthHalted() and HALTED (401). The hearts path is not durable: `lovedPlaceRefs` is held by an auto-disposed controller, and Sync Status does not await `syncOnce()` before reading counts |
 | Party context (SPEC-03) | DONE | Server-side stamping, both backends, migration 0003 applied |
 | Observability (SPEC-05) | DONE | Ring buffer, request IDs, debug endpoint |
 | Signal registry (SPEC-06) | DONE | models/signal_types.py plus drift test |
@@ -69,11 +70,11 @@
 | Docs hygiene guard | DONE | tests/test_docs_hygiene.py walks every markdown file outside build and vendor directories, and the SPEC-reference check also scans .py and .sql. Known non-ASCII files are allowlisted; the list may only shrink. The ASCII check itself still covers markdown only |
 | Data format guard | DONE | Every data/ file is ASCII by byte count, venue and glossary files round-trip byte-identically, and Lao-script fields are checked for foreign script |
 | Offline vault (SPEC-04) | DONE (October slice) | PR #22 (`b7e10c3`) + PR #23 (`dab16c0`). <=2-tap hotel rescue entry to DriverCardScreen, offline itinerary cache fallback in ItineraryController.load(), robust hotel matching (villa/guesthouse), pre-caching hotel place data in cache_place, honest empty state. Full vault post-field-test -- see SPEC-04 |
-| Anonymous identity (SPEC-09) | DONE (client + server) | Client half landed PR #16 (`7173a3f`): UUID v4 in flutter_secure_storage, Anonymous header, TB_DEBUG_USER_ID removed. Server half already verified. Owner device E2E with TB_ALLOW_ANONYMOUS=true still deferred until laptop |
+| Anonymous identity (SPEC-09) | DONE (client + server) | Client half landed PR #16 (`7173a3f`): UUID v4 in flutter_secure_storage, Anonymous header, TB_DEBUG_USER_ID removed. Server half already verified. Record any remaining Anonymous E2E gap explicitly; the laptop is available |
 | Itinerary normalisation (SPEC-16) | IMPLEMENTED | Decompose and compose land in services/itinerary_normaliser.py, dual-write in both backends, round-trip equality asserted, wire format unchanged. node_id is stable across reschedules via state_json and now comes from models/ids.py. One gap remains: observed_duration_minutes has no writer, so no transition data is accumulating |
-| Booking anchors (SPEC-10) | DONE (October slice) | PR #20 squash-merged as `f6328e9`. Immovable locked nodes on timeline, booking metadata on trip_node (migration 0021), scheduler conflict rules, on-device parsing floor, AddBookingSheet UI, booking_added signal registered in migration 0021 (unapplied live until laptop) |
+| Booking anchors (SPEC-10) | DONE (October slice) | PR #20 squash-merged as `f6328e9`. Immovable locked nodes, booking metadata, scheduler rules, parser and AddBookingSheet. Mad Monkey Booking.com dates were verified Aug 27-28. Edit/delete and notes on cards remain absent; migration 0021 remains unapplied unless separately recorded |
 | Forced-choice preferences (SPEC-11) | SPECIFIED | Not implemented. Cold-start preference capture |
-| Show driver cards (SPEC-12) | DONE (October slice) | Full-screen offline card from SQLite cache_place, FactView assert/ask/refuse tiers, geoRegion-threaded native script, driver_card_shown/name_confirmed signals. Laptop feedback: no Fair Fare until sourced, `geo:` Maps hand-off, small last-resort coordinates, large Lao/Arabic text, no screenshot-for-offline copy. Migration 0023 (unapplied) carries localized fields through live venue search |
+| Show driver cards (SPEC-12) | DONE (October slice) | Full-screen offline card from SQLite cache_place, FactView assert/ask/refuse tiers, geoRegion-threaded native script, driver_card_shown/name_confirmed signals. Dubai airplane behavior was verified Aug 27-28: no fare and no screenshot copy. No Fair Fare until sourced; Windows `geo:` hand-off failed, so keep small last-resort coordinates. Migration 0023 (unapplied) carries localized fields through live venue search |
 | Region and locale registry (SPEC-13) | SPECIFIED | Not implemented. Rising in priority: a city-onboarding pipeline needs it for bounding box, languages, currency and fare bands. Makes adding a city a row rather than a code change |
 | Dietary model (SPEC-14) | DECIDED, DESCOPED | Not a feature. The spec is now a decision record: the app makes no dietary suitability claim, because no data source can support one. Ingredient facts stay as facts with a disclaimer. This is also how the halal-versus-pork hole closes |
 | Trip checklist (SPEC-15) | SPECIFIED | Not implemented. Raw item text stays on the device; only a derived record syncs |
@@ -86,10 +87,11 @@
 | Money as a dimension (SPEC-23) | SPECIFIED | Not implemented. The engineering contract under VISION section 20, and roadmap concern 7. A band and an amount are different things and both are needed; no amount is storable without its currency; a band is meaningless until anchored to a region, which is what makes price tolerance portable between cities; transport cost belongs on trip_edge; budget is revealed from rejections rather than asked for, with a volunteered hard cap honoured exactly; amounts are SPEC-17 claims on a weeks-scale horizon and degrade to a band when stale. Depends on SPEC-13, SPEC-16 and SPEC-17 |
 
 | Identity lifecycle (SPEC-24) | SPECIFIED | Not implemented, and the design is deliberately settled ahead of the build. Sign-in itself is nearly free because Supabase Auth owns the provider flow and security.py already verifies the token; the work is what happens to the anonymous history. Owns credential aliases, the anonymous-to-account merge, multi-device, and sign-out. Merge direction is fixed one way, which extends the upgrade-on-sight rule already live on identity_kind. Union rather than dedupe; tier and quota both resolve to the maximum, since taking the minimum makes sign-in a way to refill the daily reroute allowance |
-| Ask Anything surface (SPEC-25) | PARTIAL (trip-scoped slice) | An itinerary composer and per-trip home entry open the existing trip chat. Explicit one-stop cancel/swap commands use structural events; broad multi-stop mutations refuse. The required trip-optional endpoint, pre-model budgets, SPEC-17 envelopes, discovery path and offline answer contract remain unimplemented |
-| Home surface (SPEC-26) | PARTIAL (thin slice) | Authenticated GET /trips exposes an owner-only lightweight projection plus the currently supported region. Home lists and caches that projection, renders an offline list, accepts destination plus start date, and no longer hardcodes Dubai copy. The richer active-trip/decision aggregate remains |
+| Ask Anything surface (SPEC-25) | PARTIAL (trip-scoped October slice) | The itinerary composer and per-trip home entry use existing trip chat. One-stop cancel/swap are structural; cancel is a skip, not a swap, as of SPEC-29. Broad mutations refuse. No add-from-chat control; near-me uses default Dubai coordinates. Trip-optional ask, pre-model budgets, SPEC-17 envelopes, discovery and offline answer contract remain |
+| Home surface (SPEC-26) | PARTIAL (thin October slice) | Authenticated GET /trips exposes an owner-only projection; Home lists and identity-caches it and accepts destination plus start date. Copy is destination-agnostic, but create still seeds only the Dubai template and rejects unsupported regions. The richer active-trip/decision aggregate remains |
 | App lifecycle and data rights (SPEC-27) | SPECIFIED | Not implemented. The three consumer obligations with no owner: push transport with tokens that survive the SPEC-24 merge and delivery through the SPEC-22 interruption budget enforced server-side, deletion and export under DPDP and GDPR, and a minimum supported client that blocks writes but never reads. States the position that raw signals are deleted while non-identifying derived aggregates survive |
 | Trip inspiration (SPEC-28) | DECIDED, NOT SCHEDULED | Opt-in, delayed, region-level public trip snapshots as inspiration. No live people/location, DMs or comments in v1. Requires identity, deletion/export and moderation gates |
+| Context alerts (SPEC-29) | DONE (phase 1) | PR #25 squash-merged as `aedbc03`. OpenWeather evidence is matched to upcoming nodes, cached by identity and shown with provenance. Alerts never mutate or consume reroute quota. Synthetic transit is not user copy; cancel preserves position and locked cancel returns 409 before quota. Watcher/push phase not started |
 
 Migration numbers are assigned when a spec is implemented, not when it is
 written. SPEC-11, SPEC-13, SPEC-14 and SPEC-15 each claimed a number, and the
@@ -100,8 +102,9 @@ numbers were taken by other work while they sat unimplemented.
 ### October path (forcing function: Laos field test, Oct 2)
 
 Interim R5 relocate of VALID_DISH_CONTAINS landed in PR #15 (d061222). Device
-day is closed; remaining device work is Flutter test, apply 0019, and
-SPEC-09 Anonymous E2E when the laptop is back.
+day is closed and the Windows laptop ran the product matrix on Aug 27-28.
+Remaining device work must be named explicitly: unapplied migrations,
+Profile/Skip exact errors, durable hearts, and any unrecorded Anonymous E2E.
 
 Success means an installable build whose engine knows a real trip anchored on
 real flight and hotel bookings, and whose driver card works without
@@ -114,11 +117,13 @@ SPEC-02 plus SPEC-12.
    live pytest ran green with TB_SUPABASE_URL (five Supabase integration
    tests included); dubai_dishes=0. Loader-valid
    data/dubai_uae.json remains a follow-up (not Oct-spine blocking).
-2. SPEC-09 client half -- **DONE** PR #16 (`7173a3f`). Device E2E with
-   `TB_ALLOW_ANONYMOUS=true` deferred until laptop (not blocking next specs).
+2. SPEC-09 client half -- **DONE** PR #16 (`7173a3f`). Record any remaining
+   `TB_ALLOW_ANONYMOUS=true` E2E gap explicitly; laptop access is no longer the
+   blocker.
 3. SPEC-22 client render contract -- **DONE** PR #17 (`1b9b1b3`). October
-   slice only; SPEC-17 backend still stubbed. Apply 0019 and `flutter test`
-   when the laptop is back.
+   slice only; SPEC-17 backend still stubbed. Migration 0019 remains unapplied
+   unless separately recorded; Flutter verification is tracked by current CI
+   and the Windows runbook.
 4. Itinerary signal, auth-gate, and Flutter CI -- **DONE** PR #18
    (`ce8fedb`). Flutter job green; owner laptop `flutter analyze
    --no-fatal-infos` (infos only) and `flutter test` green on `d7eb853`.
@@ -136,7 +141,7 @@ SPEC-02 plus SPEC-12.
    reads from SQLite cache_trip, hotel rescue sheet / direct driver card
    navigation, pre-caching hotel place data.
    Post-spine hardening merged in PR #23 (`dab16c0`): geoRegion threading
-   to driver card (Lao script & LAK fares resolve live), authHalted reset
+   to driver card (native script resolves; no fare is claimed), authHalted reset
    and UI status card, and robust hotel matching.
    **All 7 items on the October field-test spine are complete & hardened!**
 
@@ -150,8 +155,9 @@ SPEC-02 plus SPEC-12.
 11. reroute_rejected plus swap sheet UI -- last unwired behavioural signal.
 12. Full SPEC-04 remainder (cache_vault, passes, emergency grid, phrase
     packs) if still wanted.
-13. Consumer surface per docs/CONSUMER_SURFACE_ROADMAP.md (SPEC-26, then
-    SPEC-25, then SPEC-27; SPEC-24 design settled, build later).
+13. Finish the consumer slices already on the October path: durable hearts,
+    date-scoped itinerary and bookings, real Laos creation, trip-less Ask and
+    the richer Home aggregate. SPEC-27 follows; SPEC-24 design is settled.
 14. Swappable LLM provider -- no owning spec yet; next free number. Every
     intelligent path is one hosted vendor today.
 

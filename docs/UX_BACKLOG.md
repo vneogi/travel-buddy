@@ -33,6 +33,8 @@ Also **rejected** from the source doc:
 Implements **capability #7 (calm in the unexpected)**. Full spec: `docs/specs/SPEC-04-offline-vault.md`.
 The one genuine *gap* the source doc exposed: our specs covered offline **data sync** thoroughly but
 never asked "what does the user need to **do** when stranded?"
+The thin hotel rescue entry exists, but it still chooses the first hotel-like
+node rather than the current or next date-appropriate stay.
 
 ### P1 — Map-first split shell (hero screen IA)
 Spatial context always visible, timeline a thumb-drag away.
@@ -50,8 +52,10 @@ Spatial context always visible, timeline a thumb-drag away.
 ("Family — kids 3, 6"); tap to adjust **fatigue / dietary / transport** mid-trip.
 
 ### P2 — Proactive context banner
-**Capability #2**, proactive not reactive: amber banner above the timeline — *"41°C peak at 14:30 —
-suggest indoor reflow"* + one-tap Review. Pairs with the existing `Heads up:` scheduler notes.
+**Capability #2**, proactive not reactive. SPEC-29 now renders provider-backed
+weather alerts above the timeline with provenance and a Review action. Climate
+comfort remains UX polish; random traffic and synthetic transit must never
+become alert copy.
 
 ### P3 — `SplitGroupCard` — split itineraries for diverging desires
 **Capability #6**, made visible: "Group A: Old Souk / Group B: Mall, reconverge 17:00." Almost nobody
@@ -72,14 +76,17 @@ grid) is close to ours but more complete. Fold in when the designer engages.
 ---
 
 ## 2. Sequencing rule (important)
-**UX polish does not capture moat data.** Order stays:
-1. Airplane-mode drill (real device) — proves offline durability
-2. Supabase flip — real persistence
-3. SPEC-03 `trip_party` + `party_context` stamping — segmentation, cannot be backfilled
-4. Behavioral signal types (`reroute_accepted/rejected`, `visited_confirmed`, `dwell`, `arrival_delta`)
-5. **then** SPEC-12 driver card + SPEC-10 anchors; SPEC-04 only as the thin
-   hotel-card rescue entry (see SPEC-04 October scope). Full Vault and
-   map-first shell are post-field-test unless spare capacity appears.
+**UX polish does not capture moat data.** The spine work above is shipped. The
+remaining product order is:
+
+1. Preserve evidence-backed alerts (SPEC-29 landed; no synthetic transit).
+2. Add date-scoped itinerary grouping and date-aware stay selection.
+3. Make hearts durable and await `syncOnce()` before showing status counts.
+4. Create real Laos trips instead of stamping destinations onto the Dubai
+   template.
+
+Full Vault and the map-first shell remain post-field-test unless spare capacity
+appears.
 
 If it's full Vault vs the October spine (identity, card, anchors), **the
 spine wins.** Behavioral signals that are already registered still beat

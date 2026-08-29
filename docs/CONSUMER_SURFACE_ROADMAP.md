@@ -17,9 +17,10 @@ payment routes. Free text reaches the engine through `trip/event`, which
 requires a `trip_id`. The authenticated `trips` projection now supports the
 home thin slice; there is still no trip-less ask path or richer home aggregate.
 
-That shapes every item below. A home screen, a search box, and a signed-in
-account are not decorations on the existing API; they each need a route that does
-not exist.
+That shapes every item below. The Home thin slice now has authenticated
+`GET /trips`, and the Ask thin slice has a trip-scoped composer over
+`trip/event`. Still missing are a trip-less Ask route, a richer Home aggregate
+and the anonymous-to-account merge.
 
 ## What is client-only and what is not
 
@@ -27,9 +28,9 @@ not exist.
 |---|---|---|
 | Social sign-in | Provider flow via Supabase Auth | JWT verification already exists |
 | Account linking and merge | Trigger and sign-out | **All of it** -- SPEC-24 |
-| Home screen layout | Yes | Trip list route and a home aggregate -- SPEC-26 |
+| Home screen layout | Thin list shipped on the October path | Rich home aggregate and Laos-capable creation -- SPEC-26 / SPEC-13 |
 | Add trip journey | Yes | Region validity -- SPEC-13 gates it |
-| Ask Anything box | Yes | **A new endpoint and intent router** -- SPEC-25 |
+| Ask Anything box | Trip-scoped composer shipped on the October path | Trip-optional endpoint, budgets and SPEC-17 envelopes -- SPEC-25 |
 | Push notifications | Permission and display | Token store and send path -- SPEC-27 |
 | Delete and export | Entry point | **All of it** -- SPEC-27 |
 | Forced upgrade | Refusal state | Minimum version declaration -- SPEC-27 |
@@ -74,24 +75,22 @@ allowed to render.
 
 ## Sequencing
 
-None of this is on the October 2 path. That trip is one known user testing
-whether a driver card survives a day without connectivity on a real trip
-anchored by real bookings. The October spine is device day, SPEC-09 client,
-SPEC-22, SPEC-12, SPEC-10, then a thin SPEC-04 rescue entry to the hotel
-card -- not the full Offline Vault. SPEC-02 already delivered the offline
-substrate; SPEC-12 already owns the venue card on that cache. See SPEC-04
-("What SPEC-04 still adds" and "October scope") and docs/PROJECT_STATUS.md.
-Consumer surface follows the field test.
+The October path now includes the thin SPEC-26 trip list/create surface and the
+thin SPEC-25 trip-scoped Ask surface alongside identity, render, driver cards,
+booking anchors and hotel rescue. The Home list and Ask composer exist.
+
+Still outside that thin path: SPEC-24 identity merge, SPEC-27 lifecycle rights,
+trip-less Ask, the rich Home aggregate and real Laos creation. SPEC-02 supplied
+the offline substrate, but durable hearts remain unfinished.
 
 The exception is the SPEC-24 design, which is settled now and built later, for
 the reason above.
 
-After the field test the order is driven by dependency rather than by appeal.
-SPEC-26 is mostly cheap -- the trip list is one route over a service method that
-already exists -- and it unblocks having a first screen at all. SPEC-25 wants
-SPEC-17's envelope to be real before it can honour it, so it follows the trust
-work rather than leading it. SPEC-27 is last, and should not be later than the
-first build that goes to people who are not us.
+The remaining order is driven by dependency rather than appeal. Finish durable
+hearts, date-scoped itinerary/bookings and real Laos creation first. The full
+SPEC-25 contract still needs SPEC-17's real envelope, so trip-less Ask follows
+the trust work. SPEC-27 should not be later than the first build that goes to
+people who are not us.
 
 ## Deliberately not specified here
 
