@@ -174,9 +174,6 @@ class ItineraryController extends StateNotifier<ItineraryState> {
   void clearRerouteLimit() => state = state.copyWith(rerouteLimitHit: false);
   void clearBanner() => state = state.copyWith(banner: null);
 
-  /// Mark a venue as loved (local UI state — the signal itself goes through
-  /// SignalService/outbox). The backend doesn't return love state, so we track
-  /// it client-side for the filled-heart affordance.
   /// Mark a venue as loved: optimistic UI update, then persist.
   /// A cache write failure must not crash the itinerary.
   void markLoved(String placeRef) {
@@ -206,7 +203,7 @@ class ItineraryController extends StateNotifier<ItineraryState> {
     try {
       final db = _ref.read(offlineDatabaseProvider);
       final scope = _ref.read(identityCacheScopeProvider);
-      return db.getLovedPlaceRefs(identityScope: scope, tripId: tripId);
+      return await db.getLovedPlaceRefs(identityScope: scope, tripId: tripId);
     } catch (e) {
       debugPrint('[ItineraryController] Restore loved refs error: $e');
       return {};

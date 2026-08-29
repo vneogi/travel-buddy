@@ -204,6 +204,47 @@ void main() {
       );
       expect(correct, contains('souk-ref'));
     });
+
+    // ----------------------------------------------------------
+    // Test 5: DB failure in restore does not break trip loading
+    // ----------------------------------------------------------
+    test('getLovedPlaceRefs failure still loads trip with empty loved refs', () async {
+      // Use a fresh DB that we sabotage after setup
+      final brokenDb = OfflineDatabase(testPath: inMemoryDatabasePath);
+      addTearDown(() async => await brokenDb.close());
+
+      final brokenRepo = MockTripRepository();
+      when(() => brokenRepo.getTrip('t1'))
+          .thenAnswer((_) async => _trip([_node('n1', 'Old Souk')]));
+
+      // Close the DB to make getLovedPlaceRefs throw
+      await brokenDb.db; // force open first
+      await brokenDb.close();
+
+      final c = ProviderContainer(
+        overrides: [
+          tripRepoProvider.overrideWithValue(brokenRepo),
+          offlineDatabaseProvider.overrideWithValue(brokenDb),
+          identityCacheScopeProvider.overrideWithValue('account:user-a'),
+        ],
+      );
+      addTearDown(c.dispose);
+
+      final sub = c.listen(
+        itineraryControllerProvider('t1'),
+        (_, __) {},
+        fireImmediately: true,
+      );
+      addTearDown(sub.close);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      final state = c.read(itineraryControllerProvider('t1'));
+      // Trip must still load successfully (nodes present, no error)
+      expect(state.loading, false);
+      expect(state.error, isNull);
+      expect(state.nodes, isNotEmpty);
+      expect(state.lovedPlaceRefs, isEmpty);
+    });
   });
 
   // ============================================================

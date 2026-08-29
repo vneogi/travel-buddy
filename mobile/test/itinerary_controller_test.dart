@@ -49,6 +49,7 @@ void main() {
       tripId: any(named: 'tripId'),
       placeRef: any(named: 'placeRef'),
     )).thenAnswer((_) async {});
+    when(() => mockDb.getCachedTrip(any())).thenAnswer((_) async => null);
     container = ProviderContainer(
       overrides: [
         tripRepoProvider.overrideWithValue(repo),
@@ -228,6 +229,7 @@ void main() {
       tripId: any(named: 'tripId'),
       placeRef: any(named: 'placeRef'),
     )).thenAnswer((_) async {});
+    when(() => mockDb.getCachedTrip(any())).thenAnswer((_) async => null);
 
       final c = await ready();
       await Future.delayed(const Duration(milliseconds: 50));
@@ -250,6 +252,7 @@ void main() {
       tripId: any(named: 'tripId'),
       placeRef: any(named: 'placeRef'),
     )).thenAnswer((_) async {});
+    when(() => mockDb.getCachedTrip(any())).thenAnswer((_) async => null);
 
       await ready();
       await Future.delayed(const Duration(milliseconds: 50));
