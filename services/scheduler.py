@@ -96,13 +96,11 @@ def reschedule_and_validate(nodes: List[TripNode]) -> ScheduleResult:
                 )
 
         prev_active = node
-        if _is_background_anchor(node):
-            # Hotel bookings anchor the calendar but do not push later
-            # activities past checkout.  prev_active_end stays unchanged
-            # so the next unlocked node keeps its planned start.
-            pass
-        else:
-            prev_active_end = start + timedelta(minutes=node.duration_minutes)
+        prev_active_end = (
+            start
+            if _is_background_anchor(node)
+            else start + timedelta(minutes=node.duration_minutes)
+        )
 
     return ScheduleResult(
         nodes=nodes,
