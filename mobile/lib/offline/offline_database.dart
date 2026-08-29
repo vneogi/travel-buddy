@@ -13,7 +13,7 @@ import 'package:sqflite/sqflite.dart';
 /// Invariant: a user action is durable in outbox BEFORE any network attempt.
 class OfflineDatabase {
   static const _dbName = 'travel_buddy_offline.db';
-  static const _dbVersion = 3;
+  static const _dbVersion = 4;
 
   /// Optional path override for testing (pass inMemoryDatabasePath for isolation).
   final String? _testPath;
@@ -78,6 +78,7 @@ class OfflineDatabase {
     );
     await _createTripListCache(db);
     await _createAlertTables(db);
+    await _createLovedPlacesTable(db);
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -86,6 +87,9 @@ class OfflineDatabase {
     }
     if (oldVersion < 3) {
       await _createAlertTables(db);
+    }
+    if (oldVersion < 4) {
+      await _createLovedPlacesTable(db);
     }
   }
 
@@ -331,6 +335,58 @@ class OfflineDatabase {
       whereArgs: [placeRef],
     );
     return rows.isEmpty ? null : rows.first['data_json'] as String;
+  }
+
+
+  /// Durable heart storage (identity-scoped, per-trip).
+  Future<void> _createLovedPlacesTable(Database db) async {
+    await db.execute(
+      'CREATE TABLE loved_places ('
+      '  identity_scope TEXT NOT NULL,'
+      '  trip_id        TEXT NOT NULL,'
+      '  place_ref      TEXT NOT NULL,'
+      '  loved_at       TEXT NOT NULL,'
+      '  PRIMARY KEY (identity_scope, trip_id, place_ref)'
+      ')',
+    );
+  }
+
+  // ============================================================
+  // Loved-place operations (durable hearts)
+  // ============================================================
+
+  /// Persist a loved place (insert-or-ignore: idempotent).
+  Future<void> upsertLovedPlace({
+    required String identityScope,
+    required String tripId,
+    required String placeRef,
+  }) async {
+    final database = await db;
+    await database.insert(
+      'loved_places',
+      {
+        'identity_scope': identityScope,
+        'trip_id': tripId,
+        'place_ref': placeRef,
+        'loved_at': DateTime.now().toUtc().toIso8601String(),
+      },
+      conflictAlgorithm: ConflictAlgorithm.ignore,
+    );
+  }
+
+  /// Retrieve all loved place refs for this identity + trip.
+  Future<Set<String>> getLovedPlaceRefs({
+    required String identityScope,
+    required String tripId,
+  }) async {
+    final database = await db;
+    final rows = await database.query(
+      'loved_places',
+      columns: ['place_ref'],
+      where: 'identity_scope = ? AND trip_id = ?',
+      whereArgs: [identityScope, tripId],
+    );
+    return rows.map((r) => r['place_ref'] as String).toSet();
   }
 
   // ============================================================

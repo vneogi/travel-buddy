@@ -56,11 +56,20 @@ class ItineraryController extends StateNotifier<ItineraryState> {
   }
 
   Future<void> load() async {
-    state = const ItineraryState(loading: true);
+    // Preserve already-filled hearts through reload.
+    final priorLoved = state.lovedPlaceRefs;
+    state = ItineraryState(loading: true, lovedPlaceRefs: priorLoved);
     try {
       final trip = await _ref.read(tripRepoProvider).getTrip(tripId);
       if (!mounted) return;
-      state = ItineraryState(nodes: trip.nodes, loading: false);
+      // Restore persisted hearts (state hydration only -- no signal emission).
+      final restored = await _restoreLovedRefs();
+      final merged = {...priorLoved, ...restored};
+      state = ItineraryState(
+        nodes: trip.nodes,
+        loading: false,
+        lovedPlaceRefs: merged,
+      );
       _preCachePlaces(trip.nodes);
       // SPEC-04: Persist to SQLite cache_trip for offline reads
       try {
@@ -78,10 +87,13 @@ class ItineraryController extends StateNotifier<ItineraryState> {
         if (cachedJson != null && mounted) {
           final cachedMap = jsonDecode(cachedJson) as Map<String, dynamic>;
           final cachedTrip = TripState.fromJson(cachedMap);
+          final restored = await _restoreLovedRefs();
+          final merged = {...priorLoved, ...restored};
           state = ItineraryState(
             nodes: cachedTrip.nodes,
             loading: false,
             banner: 'Offline: showing saved itinerary',
+            lovedPlaceRefs: merged,
           );
           _preCachePlaces(cachedTrip.nodes);
           return;
@@ -89,7 +101,11 @@ class ItineraryController extends StateNotifier<ItineraryState> {
       } catch (cacheErr) {
         debugPrint('[ItineraryController] Offline cache read error: $cacheErr');
       }
-      state = ItineraryState(loading: false, error: e);
+      state = ItineraryState(
+        loading: false,
+        error: e,
+        lovedPlaceRefs: priorLoved,
+      );
     }
   }
 
@@ -134,6 +150,8 @@ class ItineraryController extends StateNotifier<ItineraryState> {
         nodes: result.updatedNodes.isNotEmpty ? result.updatedNodes : state.nodes,
         processing: false,
         banner: _headsUp(result.message),
+        // Preserve loved refs through event application.
+        lovedPlaceRefs: state.lovedPlaceRefs,
       );
       _preCachePlaces(state.nodes);
       _cacheUpdatedTripNodes(state.nodes);
@@ -156,14 +174,40 @@ class ItineraryController extends StateNotifier<ItineraryState> {
   void clearRerouteLimit() => state = state.copyWith(rerouteLimitHit: false);
   void clearBanner() => state = state.copyWith(banner: null);
 
-  /// Mark a venue as loved (local UI state — the signal itself goes through
-  /// SignalService/outbox). The backend doesn't return love state, so we track
-  /// it client-side for the filled-heart affordance.
+  /// Mark a venue as loved: optimistic UI update, then persist.
+  /// A cache write failure must not crash the itinerary.
   void markLoved(String placeRef) {
     if (!mounted) return;
     state = state.copyWith(
       lovedPlaceRefs: {...state.lovedPlaceRefs, placeRef},
     );
+    // Persist to SQLite (fire-and-forget, never crash the itinerary).
+    try {
+      final db = _ref.read(offlineDatabaseProvider);
+      final scope = _ref.read(identityCacheScopeProvider);
+      db.upsertLovedPlace(
+        identityScope: scope,
+        tripId: tripId,
+        placeRef: placeRef,
+      ).catchError((e) {
+        debugPrint('[ItineraryController] Persist loved error: $e');
+      });
+    } catch (e) {
+      debugPrint('[ItineraryController] Persist loved error: $e');
+    }
+  }
+
+  /// Restore persisted loved refs from SQLite.
+  /// This is state hydration only -- it must NEVER emit a signal.
+  Future<Set<String>> _restoreLovedRefs() async {
+    try {
+      final db = _ref.read(offlineDatabaseProvider);
+      final scope = _ref.read(identityCacheScopeProvider);
+      return await db.getLovedPlaceRefs(identityScope: scope, tripId: tripId);
+    } catch (e) {
+      debugPrint('[ItineraryController] Restore loved refs error: $e');
+      return {};
+    }
   }
 
   void _cacheUpdatedTripNodes(List<TripNode> nodes) {

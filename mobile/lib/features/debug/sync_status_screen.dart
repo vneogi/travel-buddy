@@ -2,6 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers.dart';
+import '../../offline/sync_engine.dart';
+
+/// Extracted helper: reset auth halt, await sync, then read counts.
+/// Testable without pumping the widget tree.
+Future<Map<String, int>> refreshSyncStatus(SyncEngine engine) async {
+  engine.resetAuthHalted();
+  await engine.syncOnce();
+  return engine.getStatusCounts();
+}
 
 /// Sync status debug screen (SPEC-02 B.5).
 ///
@@ -27,12 +36,10 @@ class _SyncStatusScreenState extends ConsumerState<SyncStatusScreen> {
 
   Future<void> _refresh() async {
     setState(() => _loading = true);
-    ref.read(syncEngineProvider).resetAuthHalted();
-    ref.read(syncEngineProvider).syncOnce();
-    final counts = await ref.read(syncEngineProvider).getStatusCounts();
+    final result = await refreshSyncStatus(ref.read(syncEngineProvider));
     if (mounted) {
       setState(() {
-        _counts = counts;
+        _counts = result;
         _loading = false;
       });
     }
