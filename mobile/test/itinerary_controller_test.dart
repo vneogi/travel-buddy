@@ -40,10 +40,20 @@ void main() {
     when(() => repo.getTrip('t1'))
         .thenAnswer((_) async => _trip([_node('n1', 'Old')]));
     when(() => mockDb.cachePlace(any(), any())).thenAnswer((_) async {});
+    when(() => mockDb.getLovedPlaceRefs(
+      identityScope: any(named: 'identityScope'),
+      tripId: any(named: 'tripId'),
+    )).thenAnswer((_) async => <String>{});
+    when(() => mockDb.upsertLovedPlace(
+      identityScope: any(named: 'identityScope'),
+      tripId: any(named: 'tripId'),
+      placeRef: any(named: 'placeRef'),
+    )).thenAnswer((_) async {});
     container = ProviderContainer(
       overrides: [
         tripRepoProvider.overrideWithValue(repo),
         offlineDatabaseProvider.overrideWithValue(mockDb),
+        identityCacheScopeProvider.overrideWithValue('account:test'),
       ],
     );
     addTearDown(container.dispose);
@@ -209,6 +219,15 @@ void main() {
       when(() => mockDb.getCachedTrip('t1'))
           .thenAnswer((_) async => jsonEncode(cachedTrip.toJson()));
       when(() => mockDb.cachePlace(any(), any())).thenAnswer((_) async {});
+    when(() => mockDb.getLovedPlaceRefs(
+      identityScope: any(named: 'identityScope'),
+      tripId: any(named: 'tripId'),
+    )).thenAnswer((_) async => <String>{});
+    when(() => mockDb.upsertLovedPlace(
+      identityScope: any(named: 'identityScope'),
+      tripId: any(named: 'tripId'),
+      placeRef: any(named: 'placeRef'),
+    )).thenAnswer((_) async {});
 
       final c = await ready();
       await Future.delayed(const Duration(milliseconds: 50));
@@ -222,6 +241,15 @@ void main() {
     test('successful load caches trip to SQLite cache_trip', () async {
       when(() => mockDb.cacheTrip(any(), any())).thenAnswer((_) async {});
       when(() => mockDb.cachePlace(any(), any())).thenAnswer((_) async {});
+    when(() => mockDb.getLovedPlaceRefs(
+      identityScope: any(named: 'identityScope'),
+      tripId: any(named: 'tripId'),
+    )).thenAnswer((_) async => <String>{});
+    when(() => mockDb.upsertLovedPlace(
+      identityScope: any(named: 'identityScope'),
+      tripId: any(named: 'tripId'),
+      placeRef: any(named: 'placeRef'),
+    )).thenAnswer((_) async {});
 
       await ready();
       await Future.delayed(const Duration(milliseconds: 50));
