@@ -36,6 +36,13 @@ def _has_coords(node: TripNode) -> bool:
     return node.lat is not None and node.lng is not None
 
 
+def _is_background_anchor(node: TripNode) -> bool:
+    """True for bookings that occupy a calendar slot but should not push
+    later activities (e.g. multi-night hotels).  Flights, trains and tours
+    still occupy the timeline."""
+    return node.node_kind == "booking" and node.booking_type == "hotel"
+
+
 def reschedule_and_validate(nodes: List[TripNode]) -> ScheduleResult:
     """Recompute start times preserving original positions.
 
@@ -89,7 +96,13 @@ def reschedule_and_validate(nodes: List[TripNode]) -> ScheduleResult:
                 )
 
         prev_active = node
-        prev_active_end = start + timedelta(minutes=node.duration_minutes)
+        if _is_background_anchor(node):
+            # Hotel bookings anchor the calendar but do not push later
+            # activities past checkout.  prev_active_end stays unchanged
+            # so the next unlocked node keeps its planned start.
+            pass
+        else:
+            prev_active_end = start + timedelta(minutes=node.duration_minutes)
 
     return ScheduleResult(
         nodes=nodes,

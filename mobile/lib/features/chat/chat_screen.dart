@@ -95,11 +95,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         return;
       }
       final state = ref.read(itineraryControllerProvider(widget.tripId));
-      final target = state.nodes
-          .where((node) =>
-              node.status == NodeStatus.pending &&
-              !node.isLocked)
-          .firstOrNull;
+      final target = nextMovableStop(state.nodes, DateTime.now().toUtc());
       if (intent != AskIntent.question && target == null) {
         setState(() {
           _isThinking = false;
