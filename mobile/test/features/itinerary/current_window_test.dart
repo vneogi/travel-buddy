@@ -53,4 +53,97 @@ void main() {
       expect(nodeIsCurrentWindow(node, now), isFalse);
     });
   });
+
+  _nextMovableStopTests();
+}
+
+TripNode _movableNode({
+  required String id,
+  required DateTime start,
+  int duration = 60,
+  NodeStatus status = NodeStatus.pending,
+  bool isLocked = false,
+}) => TripNode(
+      nodeId: id,
+      venueName: 'Venue $id',
+      scheduledStart: start,
+      durationMinutes: duration,
+      isLocked: isLocked,
+      status: status,
+      vibeTags: const [],
+    );
+
+void _nextMovableStopTests() {
+  group('nextMovableStop', () {
+    // Scenario: 09:00 (60m), 13:00 (60m), 17:00 (60m), now = 15:00
+    // 09:00 window ends 10:00 (past), 13:00 ends 14:00 (past), 17:00 ends 18:00 (future)
+    test('at 15:00, returns the 17:00 node (past windows skipped)', () {
+      final now = DateTime.utc(2026, 8, 19, 15, 0);
+      final nodes = [
+        _movableNode(id: 'a', start: DateTime.utc(2026, 8, 19, 9, 0)),
+        _movableNode(id: 'b', start: DateTime.utc(2026, 8, 19, 13, 0)),
+        _movableNode(id: 'c', start: DateTime.utc(2026, 8, 19, 17, 0)),
+      ];
+      final target = nextMovableStop(nodes, now);
+      expect(target, isNotNull);
+      expect(target!.nodeId, 'c');
+    });
+
+    // Scenario: now = 09:30, 09:00 node window still open (ends 10:00)
+    test('at 09:30, returns 09:00 node (window still open)', () {
+      final now = DateTime.utc(2026, 8, 19, 9, 30);
+      final nodes = [
+        _movableNode(id: 'a', start: DateTime.utc(2026, 8, 19, 9, 0)),
+        _movableNode(id: 'b', start: DateTime.utc(2026, 8, 19, 13, 0)),
+        _movableNode(id: 'c', start: DateTime.utc(2026, 8, 19, 17, 0)),
+      ];
+      final target = nextMovableStop(nodes, now);
+      expect(target, isNotNull);
+      expect(target!.nodeId, 'a');
+    });
+
+    // Scenario: all windows already ended
+    test('all windows ended returns null', () {
+      final now = DateTime.utc(2026, 8, 19, 20, 0);
+      final nodes = [
+        _movableNode(id: 'a', start: DateTime.utc(2026, 8, 19, 9, 0)),
+        _movableNode(id: 'b', start: DateTime.utc(2026, 8, 19, 13, 0)),
+        _movableNode(id: 'c', start: DateTime.utc(2026, 8, 19, 17, 0)),
+      ];
+      final target = nextMovableStop(nodes, now);
+      expect(target, isNull);
+    });
+
+    // Edge: locked nodes are skipped even if window is open
+    test('locked node with open window is skipped', () {
+      final now = DateTime.utc(2026, 8, 19, 9, 30);
+      final nodes = [
+        _movableNode(
+          id: 'locked',
+          start: DateTime.utc(2026, 8, 19, 9, 0),
+          isLocked: true,
+        ),
+        _movableNode(id: 'b', start: DateTime.utc(2026, 8, 19, 13, 0)),
+      ];
+      final target = nextMovableStop(nodes, now);
+      expect(target, isNotNull);
+      expect(target!.nodeId, 'b');
+    });
+
+    // Edge: skipped node is not a target
+    test('skipped node is not a target', () {
+      final now = DateTime.utc(2026, 8, 19, 9, 30);
+      final nodes = [
+        _movableNode(
+          id: 'skipped',
+          start: DateTime.utc(2026, 8, 19, 9, 0),
+          status: NodeStatus.skipped,
+        ),
+        _movableNode(id: 'b', start: DateTime.utc(2026, 8, 19, 13, 0)),
+      ];
+      final target = nextMovableStop(nodes, now);
+      expect(target, isNotNull);
+      expect(target!.nodeId, 'b');
+    });
+  });
 }

@@ -13,3 +13,20 @@ bool nodeIsCurrentWindow(TripNode node, DateTime now) {
   final end = node.scheduledStart.add(Duration(minutes: node.durationMinutes));
   return !now.isBefore(node.scheduledStart) && now.isBefore(end);
 }
+
+/// Returns the first unlocked pending node whose time window has not ended,
+/// or null if no such node exists.
+///
+/// A node whose window contains [now] (currently in progress) IS a valid
+/// target.  A node whose entire window is in the past is not.
+///
+/// [now] is injected for testability -- callers pass DateTime.now().toUtc().
+TripNode? nextMovableStop(List<TripNode> nodes, DateTime now) {
+  for (final node in nodes) {
+    if (node.status != NodeStatus.pending) continue;
+    if (node.isLocked) continue;
+    final end = node.scheduledStart.add(Duration(minutes: node.durationMinutes));
+    if (now.isBefore(end)) return node;
+  }
+  return null;
+}
