@@ -1,6 +1,9 @@
 # SPEC-29: Context Alerts
 
-## Status: IN PROGRESS
+## Status: PHASE 1 DONE
+
+Merged in PR #25 as `aedbc03`. Provider-backed pull alerts are live; watcher
+and push delivery remain future work.
 
 ## Summary
 

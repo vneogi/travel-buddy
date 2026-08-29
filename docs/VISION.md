@@ -83,7 +83,7 @@ whose *data* is proprietary and outcome-linked, not the ones that are generic gl
 | # | Capability | How it's built | Signal it feeds/consumes | Moat strength |
 |---|---|---|---|---|
 | 1 | Reads the group, adjusts silently | Audience model (profile + per-trip party) as recommender input | audience-segmented accept/reject | segmented data |
-| 2 | Owns "what now?" — **proactive** reroute | Context watcher (weather/hours/popular_times) surfaces plan-B before pain | reroute_suggested/accepted/rejected | acceptance-rate data (capture pre-Laos) |
+| 2 | Owns "what now?" — **proactive** reroute | Provider-backed context alerts surface evidence before pain; synthetic transit is never a traveller fact and any mutation requires confirmation | reroute_suggested/accepted/rejected | acceptance-rate data (capture pre-Laos) |
 | 3 | Invisible logistics (food/toilet/fare) | Micro-intent handlers on location+time, ranked by fused score | acted-on micro-suggestions | table-stakes glue |
 | 4 | Right *time*, not just place | Time as first-class ranking dim; scheduler slots optimal time | arrival_delta, dwell, timed crowding | outcome-linked timing |
 | 5 | Protects against regret (anti-trap) | Fused quality + trap-score + user disappointment signals steer gently | not_as_described, disliked | on-brand, core |
@@ -171,6 +171,17 @@ native-script address card (show the taxi driver your hotel, offline) is the emb
 This is capability #7 made concrete and a **structural** advantage: online-only incumbents cannot
 serve this moment.
 
+Near-term product gates after the Aug 27-28 laptop run:
+
+1. Keep alerts evidence-backed. SPEC-29 phase 1 is live with OpenWeather; do
+   not regress to random traffic or synthetic transit copy.
+2. Make the itinerary date-scoped so stays and activities are selected for the
+   current day rather than by first match.
+3. Persist filled-heart UI state by identity and trip without re-emitting; the
+   `user_loved` event already uses the outbox. Await sync before reporting
+   status counts.
+4. Build real Laos trip creation. The current create path still seeds Dubai.
+
 
 ---
 
@@ -207,8 +218,9 @@ respondents selected. Both rated over-packed schedules 2-3/5.
 
 ## 26. Show Driver Cards (Offline)
 
-Full-screen card: venue name in large native script, nearest landmark,
-GPS pin, fair-fare band. Works fully offline; lives in the Offline Vault.
+Full-screen card: venue name in large native script, nearest landmark and a
+Maps hand-off with small last-resort coordinates. It works fully offline and
+lives in the Offline Vault. No Fair Fare is shown until a source supports it.
 
 Evidence: asked what they struggled with most in an unfamiliar place with no
 internet, respondents named money and payments more than anything else, along
