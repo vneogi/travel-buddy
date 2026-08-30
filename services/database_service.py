@@ -403,6 +403,39 @@ class DatabaseService:
         """Get a signal by ID (for testing)."""
         return self._signals.get(signal_id)
 
+    # =========================================================================
+    # SPEC-30: Observed duration derivation helpers
+    # =========================================================================
+
+    def get_visited_confirmed_for_node(self, trip_id: str, place_ref: str) -> Optional[dict]:
+        """Get the most recent visited_confirmed signal for a trip+place.
+
+        Returns the signal dict if found, None otherwise.
+        """
+        matches = [
+            s
+            for s in self._signals.values()
+            if s["signal_type"] == "visited_confirmed"
+            and s["trip_id"] == trip_id
+            and s["place_ref"] == place_ref
+        ]
+        if not matches:
+            return None
+        return max(matches, key=lambda s: s["captured_at"])
+
+    def update_node_observed_duration(
+        self, trip_id: str, node_id: str, duration_minutes: float
+    ) -> bool:
+        """Set observed_duration_minutes on a trip node. Returns True if updated."""
+        trip_dict = self._trips.get(trip_id)
+        if not trip_dict:
+            return False
+        for node in trip_dict.get("nodes", []):
+            if node.get("node_id") == node_id:
+                node["observed_duration_minutes"] = duration_minutes
+                return True
+        return False
+
 
 # Singleton instance
 db_service = DatabaseService()

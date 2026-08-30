@@ -18,6 +18,7 @@ Requires:
 """
 
 import json
+import logging
 import uuid
 from datetime import date, datetime, timedelta, timezone
 from typing import Dict, List, Optional, Tuple
@@ -34,6 +35,9 @@ from models.schemas import (
     VenueRAG,
     VenueSearchResult,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 class SupabaseService:
@@ -692,6 +696,41 @@ class SupabaseService:
         """Get a signal by ID (for diagnostics/testing)."""
         result = self.client.table("signal").select("*").eq("signal_id", signal_id).execute()
         return result.data[0] if result.data else None
+
+    # =========================================================================
+    # SPEC-30: Observed duration derivation helpers
+    # =========================================================================
+
+    def get_visited_confirmed_for_node(self, trip_id: str, place_ref: str) -> Optional[dict]:
+        """Get the most recent visited_confirmed signal for a trip+place."""
+        try:
+            resp = (
+                self.client.table("signal")
+                .select("*")
+                .eq("signal_type", "visited_confirmed")
+                .eq("trip_id", trip_id)
+                .eq("place_ref", place_ref)
+                .order("captured_at", desc=True)
+                .limit(1)
+                .execute()
+            )
+            return resp.data[0] if resp.data else None
+        except Exception as e:
+            logger.warning("get_visited_confirmed_for_node failed: %s", e)
+            return None
+
+    def update_node_observed_duration(
+        self, trip_id: str, node_id: str, duration_minutes: float
+    ) -> bool:
+        """Set observed_duration_minutes on a trip node."""
+        try:
+            self.client.table("trip_node").update(
+                {"observed_duration_minutes": duration_minutes}
+            ).eq("trip_id", trip_id).eq("node_id", node_id).execute()
+            return True
+        except Exception as e:
+            logger.warning("update_node_observed_duration failed: %s", e)
+            return False
 
     # =========================================================================
     # Additional SQL Functions (to be created via migration)

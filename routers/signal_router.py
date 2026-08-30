@@ -347,6 +347,17 @@ async def ingest_signals(
                     captured_at=sig.captured_at,
                     trip_id=sig.trip_id,
                 )
+                from services.observed_duration_service import (
+                    derive_observed_duration,
+                )
+
+                derive_observed_duration(
+                    source_signal_id=sig.signal_id,
+                    user_id=user_id,
+                    place_ref=sig.place_ref,
+                    captured_at=sig.captured_at,
+                    trip_id=sig.trip_id,
+                )
         else:
             duplicates += 1
 
