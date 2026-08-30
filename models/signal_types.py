@@ -46,6 +46,8 @@ SIGNAL_TYPES: dict[str, str] = {
     "name_confirmed": "json",
     # SPEC-10: booking lifecycle signal
     "booking_added": "json",
+    # SPEC-30: retention instrumentation
+    "session_start": "json",
 }
 
 # What value_json carries for each type. This is DOCUMENTATION -- not validated
@@ -64,6 +66,7 @@ PAYLOAD_SHAPES: dict[str, str] = {
     "driver_card_shown": "json: {place_ref: str, was_offline: bool, name_source: str}",
     "name_confirmed": "json: {place_ref: str, lang: str, shown_value: str, verdict: str} -- verdict is confirmed or rejected",
     "booking_added": "json: {booking_type: str, import_source: str}",
+    "session_start": "json: {trip_id: optional str, trip_day: optional int, minutes_since_last_open: optional int, cold_start: bool}",
 }
 
 

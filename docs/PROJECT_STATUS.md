@@ -92,6 +92,7 @@
 | App lifecycle and data rights (SPEC-27) | SPECIFIED | Not implemented. The three consumer obligations with no owner: push transport with tokens that survive the SPEC-24 merge and delivery through the SPEC-22 interruption budget enforced server-side, deletion and export under DPDP and GDPR, and a minimum supported client that blocks writes but never reads. States the position that raw signals are deleted while non-identifying derived aggregates survive |
 | Trip inspiration (SPEC-28) | DECIDED, NOT SCHEDULED | Opt-in, delayed, region-level public trip snapshots as inspiration. No live people/location, DMs or comments in v1. Requires identity, deletion/export and moderation gates |
 | Context alerts (SPEC-29) | DONE (phase 1) | PR #25 squash-merged as `aedbc03`. OpenWeather evidence is matched to upcoming nodes, cached by identity and shown with provenance. Alerts never mutate or consume reroute quota. Synthetic transit is not user copy; cancel preserves position and locked cancel returns 409 before quota. Watcher/push phase not started |
+| Retention instrumentation (SPEC-30) | SPECIFIED, PRE-OCT GATE | Not implemented, and the north-star it measures does not exist in code yet. A `session_start` / trip-open signal with trip-relative timing, plus a "did this happen" node state that gives `observed_duration_minutes` its writer and makes "cancel next stop" target the next movable node. Hard pre-Oct-2 requirement; ~1-2 days |
 
 Migration numbers are assigned when a spec is implemented, not when it is
 written. SPEC-11, SPEC-13, SPEC-14 and SPEC-15 each claimed a number, and the
@@ -145,6 +146,27 @@ SPEC-02 plus SPEC-12.
    and UI status card, and robust hotel matching.
    **All 7 items on the October field-test spine are complete & hardened!**
 
+### Pre-field-test instrumentation gate (added Aug 2026)
+
+The seven-item spine proves the *engine* works on the trip. It does not prove the
+*business*, because the north-star (VISION section 7) is uninstrumented: no
+session, app-open or reopen event exists anywhere in `.py`, `.dart` or `.sql`. A
+field test without it produces a story, not a retention shape, and retention is
+the gate a Seed round is judged on. This is a hard pre-Oct-2 requirement, not a
+post-spine nicety -- the one strategic task on the list with a real deadline.
+
+- **SPEC-30 retention and "did this happen" instrumentation.** A `session_start` /
+  trip-open signal carrying trip-relative timing (trip day N, minutes since last
+  open) through the existing outbox. Bundled with it, a "did this happen" state on
+  nodes -- the single change that gives `observed_duration_minutes` its missing
+  writer (closing the SPEC-16 defect below), makes `visited_confirmed` reachable,
+  and fixes "cancel next stop" targeting the next *movable* node rather than the
+  first of the day. One primitive, several payoffs. ~1-2 days.
+- **Sponsored-placement disclosure (SPEC-17 decision 15).** Sponsored boost is
+  live in the ranker with no client disclosure, and Pro is sold as removing it.
+  Decide and land the disclosure surface before adding any affiliate revenue; it
+  gates the monetization path in VISION section 9. Not code-heavy.
+
 ### After the field-test spine (still important, not Oct-critical)
 
 8. Give observed_duration_minutes a writer from arrival signals on sync.
@@ -187,6 +209,7 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 | deploy fails: there is no deployment target | Medium | ci.yml chains lint, test, build and deploy, each needing the one before, and lint failed on every run as far back as the retained history, so build and deploy had never executed once in the life of this repository. Both ran for the first time on 8ed6c16. build passed and pushed an image to the container registry, which is the first artifact this project has ever produced. deploy failed after one second at the Railway step, which needs a RAILWAY_TOKEN secret and a service named travel-buddy-api; the health check reads a PRODUCTION_URL secret. Nothing here is a regression -- it is scaffolding written early and never once exercised. Resolved by gating: deploy now requires workflow_dispatch, so main stays green and deploying becomes a deliberate act from the Actions tab once a target exists. build still runs on every push to main, so the image is proven continuously and only the release step is manual. Left ungated it would have made main permanently red, which is the exact condition that let lint stay broken and unnoticed for a week |
 | Signal provenance was silently unwritten until today | Low | _compute_provenance computed clock skew and its return was discarded, while both backends defaulted provenance to a constant. So clock_skew_seconds was never persisted for any signal and SPEC-02 Part C was unmet in the live write path. Fixed and guarded by a test that drives the ingest endpoint rather than the storage layer. Recorded because the gap was invisible for months: nothing failed, the column had a default, and the only symptom was analytics that could not exist |
 | The scheduler is money-blind | Medium | services/scheduler.py contains no reference to price, cost, budget or fare, and no model carries traveller spend capacity, so affordability cannot be ranked on at all. The only price in config is Stripe subscription pricing, which is our revenue rather than the traveller's spend. Specified as SPEC-23 and roadmap concern 7; the cost of delay compounds with venues, regions and trips simultaneously. The venues_rag.price_band half of this row was closed by 0017 |
+| Sponsored placement is undisclosed in the client | Medium, gates affiliate | database_service.py adds bid_weight * sponsored_boost_multiplier (0.15) to a venue's similarity score, seed venues ship is_sponsored=True, cost_tracker prices a sponsored_impression, and payment_service sells "No sponsored results" as a paid benefit -- so the free tier ranks paid venues higher and nothing in the client says so. This is a live contradiction with "trust is the product" (VISION section 10). Decision: disclose sponsored contribution at render and make it inspectable before any affiliate revenue is added. Recorded as SPEC-17 decision 15 and in the VISION section 9 monetization rewrite. Not a regression; it has been latent since 0001 |
 | The price_band vocabulary is declared in three places and linked by one test | Low | 0017 constrains venues_rag.price_band, which was the last unconstrained one, but a CHECK duplicates the taxonomy rather than referencing it. What actually binds them is test_venues_rag_price_band_check_matches_taxonomy, which parses both files and compares sets. That guard is hardcoded to one filename, so a fourth price_band CHECK added later is unguarded, and 0005 still declares the superseded vocabulary including premium. The claim in 0017 that any future table is now taxonomy-aligned is not true as written |
 | price_band CHECK is added but not validated | Low | 0015 adds the CHECK as NOT VALID so it cannot abort, which means existing rows are never checked against it. New and updated rows are. The VALIDATE CONSTRAINT statement is present but commented out; run it after reading the distinct live price_band values |
 | node_id carries 32 bits of entropy | Low | generate_node_id truncates a UUID to 8 hex characters, and node_id is a primary key with foreign key references from trip_edge. Collision probability is not negligible at scale. Both generators now live in models/ids.py, so widening it is a one-line change plus a backfill decision |

@@ -5,6 +5,7 @@ import '../../theme/colors.dart';
 import '../../theme/typography.dart';
 import '../../theme/spacing.dart';
 import '../itinerary/itinerary_notifier.dart';
+import '../itinerary/current_window.dart';
 
 /// Natural language chat. Uses REST POST /trip/event (NO WebSocket).
 class ChatScreen extends ConsumerStatefulWidget {

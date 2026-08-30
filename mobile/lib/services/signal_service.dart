@@ -171,5 +171,27 @@ class SignalService {
     );
   }
 
+  // ===========================================================
+  // SPEC-30: Retention instrumentation
+  // ===========================================================
+
+  Future<void> emitSessionStart({
+    required bool coldStart,
+    int? minutesSinceLastOpen,
+    int? tripDay,
+    String? tripId,
+  }) =>
+      emit(
+        signalType: 'session_start',
+        placeRef: 'session',
+        tripId: tripId,
+        valueJson: {
+          'cold_start': coldStart,
+          if (minutesSinceLastOpen != null)
+            'minutes_since_last_open': minutesSinceLastOpen,
+          if (tripDay != null) 'trip_day': tripDay,
+        },
+      );
+
   static const validSkipReasons = {'too_far', 'too_tired', 'closed', 'crowded', 'not_interested', 'ran_out_of_time', 'weather'};
 }

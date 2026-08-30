@@ -17,6 +17,8 @@ import 'package:travel_buddy/render/fact_envelope.dart';
 import 'package:travel_buddy/services/signal_service.dart';
 
 class MockSyncEngine extends Mock implements SyncEngine {}
+class MockSignalService extends Mock implements SignalService {}
+class MockOfflineDatabase extends Mock implements OfflineDatabase {}
 
 void main() {
   sqfliteFfiInit();
@@ -318,13 +320,15 @@ void main() {
   testWidgets(
     'Dubai card renders Arabic, coordinates, maps, and no fare guess',
     (tester) async {
-    final db = OfflineDatabase(testPath: inMemoryDatabasePath);
-    final mockSync = MockSyncEngine();
-    when(() => mockSync.triggerSync()).thenReturn(null);
-    final signalService = SignalService(db: db, syncEngine: mockSync);
-    await db.cachePlace(
-      'dubai_museum',
-      const PlaceDriverCardData(
+      final db = MockOfflineDatabase();
+      final signalService = MockSignalService();
+      when(() => signalService.emitDriverCardShown(
+            placeRef: any(named: 'placeRef'),
+            wasOffline: any(named: 'wasOffline'),
+            nameSource: any(named: 'nameSource'),
+            tripId: any(named: 'tripId'),
+          )).thenAnswer((_) async {});
+      final cachedPlace = const PlaceDriverCardData(
         placeRef: 'dubai_museum',
         venueName: 'Dubai Museum',
         namesLocal: {
@@ -336,42 +340,50 @@ void main() {
         lat: 25.2637,
         lng: 55.2972,
         geoRegion: 'dubai_uae',
-      ).serialize(),
-    );
+      ).serialize();
+      when(() => db.getCachedPlace('dubai_museum'))
+          .thenAnswer((_) async => cachedPlace);
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          offlineDatabaseProvider.overrideWithValue(db),
-          signalServiceProvider.overrideWithValue(signalService),
-        ],
-        child: const MaterialApp(
-          home: DriverCardScreen(
-            tripId: 'trip-1',
-            nodeId: 'dubai_museum',
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            offlineDatabaseProvider.overrideWithValue(db),
+            signalServiceProvider.overrideWithValue(signalService),
+          ],
+          child: const MaterialApp(
+            home: DriverCardScreen(
+              tripId: 'trip-1',
+              nodeId: 'dubai_museum',
+            ),
           ),
         ),
-      ),
-    );
-    // Do not pumpAndSettle: the loading spinner is an infinite animation.
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 50));
+      );
+      // Do not pumpAndSettle: the loading spinner is an infinite animation.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
 
-    const arabicName = '\u0645\u062A\u062D\u0641 \u062F\u0628\u064A';
-    expect(find.text(arabicName), findsOneWidget);
-    expect(
-      tester.widget<Text>(find.text(arabicName)).style?.fontSize,
-      greaterThanOrEqualTo(32),
-    );
-    expect(find.text('25.26370, 55.29720'), findsOneWidget);
-    expect(find.text('Open in Maps'), findsOneWidget);
-    expect(find.text('Typical local fare'), findsNothing);
-    expect(find.text('Screenshot this card for offline safety'), findsNothing);
-    expect(find.textContaining('fare'), findsNothing);
-    await tester.pumpWidget(const SizedBox.shrink());
-    await db.close();
+      const arabicName = '\u0645\u062A\u062D\u0641 \u062F\u0628\u064A';
+      expect(find.text(arabicName), findsOneWidget);
+      expect(
+        tester.widget<Text>(find.text(arabicName)).style?.fontSize,
+        greaterThanOrEqualTo(32),
+      );
+      expect(find.text('25.26370, 55.29720'), findsOneWidget);
+      expect(find.text('Open in Maps'), findsOneWidget);
+      expect(find.text('Typical local fare'), findsNothing);
+      expect(
+        find.text('Screenshot this card for offline safety'),
+        findsNothing,
+      );
+      expect(find.textContaining('fare'), findsNothing);
+      verify(() => signalService.emitDriverCardShown(
+            placeRef: 'dubai_museum',
+            wasOffline: true,
+            nameSource: 'official',
+            tripId: 'trip-1',
+          )).called(1);
+      await tester.pumpWidget(const SizedBox.shrink());
     },
     timeout: const Timeout(Duration(seconds: 20)),
   );
-
 }

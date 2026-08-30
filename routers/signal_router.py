@@ -321,6 +321,18 @@ async def ingest_signals(
             if party_context:
                 value_json["party_context"] = party_context
 
+        # SPEC-30: stamp authoritative trip_day on session_start
+        if sig.signal_type == "session_start" and sig.trip_id:
+            trip = db_service.get_trip(sig.trip_id)
+            if trip:
+                start = trip.created_at
+                if start.tzinfo is None:
+                    start = start.replace(tzinfo=timezone.utc)
+                cap = sig.captured_at
+                if cap.tzinfo is None:
+                    cap = cap.replace(tzinfo=timezone.utc)
+                value_json["trip_day"] = (cap.date() - start.date()).days
+
         # Record signal (idempotent -- duplicates counted, not errors)
         was_new = db_service.record_signal(
             user_id=user_id,
@@ -341,6 +353,17 @@ async def ingest_signals(
                 from services.arrival_delta_service import derive_arrival_delta
 
                 derive_arrival_delta(
+                    source_signal_id=sig.signal_id,
+                    user_id=user_id,
+                    place_ref=sig.place_ref,
+                    captured_at=sig.captured_at,
+                    trip_id=sig.trip_id,
+                )
+                from services.observed_duration_service import (
+                    derive_observed_duration,
+                )
+
+                derive_observed_duration(
                     source_signal_id=sig.signal_id,
                     user_id=user_id,
                     place_ref=sig.place_ref,

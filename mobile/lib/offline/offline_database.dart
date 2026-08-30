@@ -13,7 +13,7 @@ import 'package:sqflite/sqflite.dart';
 /// Invariant: a user action is durable in outbox BEFORE any network attempt.
 class OfflineDatabase {
   static const _dbName = 'travel_buddy_offline.db';
-  static const _dbVersion = 4;
+  static const _dbVersion = 5;
 
   /// Optional path override for testing (pass inMemoryDatabasePath for isolation).
   final String? _testPath;
@@ -26,14 +26,17 @@ class OfflineDatabase {
 
   /// Lazy-open the database (creates tables on first run).
   Future<Database> get db async {
-    _db ??= await _open();
-    return _db!;
+    final existing = _db;
+    if (existing != null) return existing;
+    final opened = await _open();
+    _db = opened;
+    return opened;
   }
 
   Future<Database> _open() async {
     final String path;
     if (_testPath != null) {
-      path = _testPath!;
+      path = _testPath;
     } else if (kIsWeb) {
       path = _dbName;
     } else {
@@ -79,6 +82,7 @@ class OfflineDatabase {
     await _createTripListCache(db);
     await _createAlertTables(db);
     await _createLovedPlacesTable(db);
+    await _createAppKvTable(db);
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -90,6 +94,9 @@ class OfflineDatabase {
     }
     if (oldVersion < 4) {
       await _createLovedPlacesTable(db);
+    }
+    if (oldVersion < 5) {
+      await _createAppKvTable(db);
     }
   }
 
@@ -387,6 +394,43 @@ class OfflineDatabase {
       whereArgs: [identityScope, tripId],
     );
     return rows.map((r) => r['place_ref'] as String).toSet();
+  }
+
+
+  /// Minimal durable key-value store for app-level state (e.g. last_session_at).
+  Future<void> _createAppKvTable(Database db) async {
+    await db.execute(
+      'CREATE TABLE app_kv ('
+      '  key   TEXT PRIMARY KEY,'
+      '  value TEXT NOT NULL'
+      ')',
+    );
+  }
+
+  // ============================================================
+  // App key-value operations
+  // ============================================================
+
+  /// Read a value from the app_kv table (returns null if key absent).
+  Future<String?> getAppValue(String key) async {
+    final database = await db;
+    final rows = await database.query(
+      'app_kv',
+      columns: ['value'],
+      where: 'key = ?',
+      whereArgs: [key],
+    );
+    return rows.isEmpty ? null : rows.first['value'] as String?;
+  }
+
+  /// Write a value to the app_kv table (upsert).
+  Future<void> setAppValue(String key, String value) async {
+    final database = await db;
+    await database.insert(
+      'app_kv',
+      {'key': key, 'value': value},
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
   // ============================================================

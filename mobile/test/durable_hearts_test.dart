@@ -108,7 +108,7 @@ void main() {
       // Dispose and recreate (simulates navigation away + back)
       c1.dispose();
       final c2 = _container();
-      final ctrl2 = await ready(c2);
+      await ready(c2);
 
       // Heart must be restored from SQLite
       expect(

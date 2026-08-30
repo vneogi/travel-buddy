@@ -133,6 +133,21 @@ reviewers remembering.
     as authoritative, which is the failure this spec exists to prevent arriving
     by a slower route.
 
+15. **Sponsored placement is disclosed at render, and its contribution to ranking
+    is inspectable.** This spec governs factual provenance; commercial provenance
+    is the same problem wearing a different hat. Sponsored boost is already live --
+    `database_service.py` adds `bid_weight * sponsored_boost_multiplier` to a
+    venue's score -- and the client says nothing about it, while Pro is sold partly
+    as removing it. That is the exact failure this contract exists to prevent,
+    moved from facts to money: a value shaped by an interest the traveller cannot
+    see. A result whose ranking includes a sponsored contribution carries a
+    sponsored flag in its envelope, the client labels it, and a test asserts the
+    render layer refuses to present a boosted result without the label -- the same
+    mechanism as decision 2, applied to the boost rather than the source. This is a
+    precondition for any affiliate revenue (VISION section 9), not a later polish:
+    the moment a venue can pay for rank with no disclosure, "trust is the product"
+    becomes unfalsifiable.
+
 ## Shape
 
     attribute_claim(
@@ -224,6 +239,8 @@ rather than a formality.
   submission happens and credit does not
 - Contributor weight falls when a past confirmation is contradicted
 - A `source` outside the closed vocabulary is rejected
+- A result whose score includes a sponsored boost is not presented without the
+  sponsored flag, asserted at the render layer
 - A claim past its attribute's staleness horizon does not resolve to `assert`
 - Re-confirmation appends a claim and restores the tier, and the superseded claim
   is still present afterwards
@@ -245,4 +262,6 @@ rather than a formality.
 - [ ] Attribute registry exists as data, carrying a staleness horizon and a safety
       flag per attribute; an unregistered attribute cannot be displayed
 - [ ] Staleness degrades the tier by one step, with a test per attribute class
+- [ ] Sponsored contribution to ranking is carried in the envelope and labelled at
+      render, with a test that a boosted result cannot display unlabelled
 - [ ] Suite green (R8); verified from `origin/main` (R10)

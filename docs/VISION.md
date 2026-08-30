@@ -26,6 +26,35 @@ Every major travel product — Google, Booking, Expedia, Tripadvisor, Kayak, and
 
 **Beachhead cities:** Dubai (polished demo) + the founder's field routes (Laos/SE-Asia, Oct 2026). We go **deep in a few**, not wide. (See S6.)
 
+**Beachhead traveller and the acquisition wedge (Aug 2026).** The umbrella above
+is unchanged. Within it, the segment we seed *first* is the solo or paired budget
+backpacker on the SE-Asian overland corridor — Luang Prabang, Vang Vieng,
+Vientiane, extending to Chiang Mai and Pai. Not because they pay the most (they
+pay the least), but because they are the only segment where distribution and
+on-trip signal density are effectively free. They cluster in a handful of hostels
+per town, improvise constantly when plans break, and hit a new plan every two or
+three days — the exact conditions the flywheel (§4) and the north-star (§7) need.
+
+This segment also answers a problem the on-trip thesis otherwise leaves open:
+**you cannot acquire a user mid-trip.** Nobody stranded in Vang Vieng searches an
+app store, installs, onboards and enters bookings. The install has to happen
+before the value lands — for most travellers, in the pre-trip window we
+deliberately don't compete in. But the backpacker corridor *is* its own funnel:
+someone in a Luang Prabang hostel choosing tomorrow's stop is pre-trip for the
+next leg and on-trip for this one, and a hostel common-area QR reaches them at
+that moment, for weeks. The acquisition wedge is therefore ICP-specific: for
+backpackers it is the **Offline Vault** (§16 / SPEC-04) — a standalone, no-signal
+rescue kit worth installing before departure; for the booking-heavy traveller it
+is confirmation import (§27 / SPEC-10). For this beachhead the Vault is not a
+feature, it is the tip of the spear.
+
+The Indian-outbound corridor decided in `docs/MARKET_STRATEGY.md` is not
+discarded by this. It remains the **pipeline and monetization corridor** — the
+cities the data layer must support and the traveller whose spend is worth
+monetizing — but it is under-evidenced (effective n<8) and carries no zero-CAC
+acquisition story of its own, so it sits *behind* the backpacker beachhead for
+seeding and is revisited after the field test. See the MARKET_STRATEGY addendum.
+
 ## 4. The moat: a flywheel, not a feature
 
 The state-loop is a strong product wedge, but any funded team can copy a software feature. The durable moat is a **compounding data flywheel** no competitor can copy overnight:
@@ -50,6 +79,14 @@ Our users are frequently in low- or no-connectivity areas. An on-trip companion 
 
 **On-trip retention** — do people reopen Travel Buddy *during* a trip, and again on the *next* trip? Every roadmap decision is judged against this. Not downloads, not city count, not MAU vanity.
 
+**This metric is not yet instrumented.** No session, app-open or reopen event
+exists anywhere in the code today, so the field test can capture that a trip went
+well but not the retention *shape* a Seed round is judged on. `SPEC-30` adds a
+`session_start` / trip-open signal with trip-relative timing before Oct 2; it is
+the one instrumentation task with a hard deadline. And one traveller on one trip
+cannot *validate* retention — that needs cohorts — so the field test proves the
+software, not the curve. Do not walk into a Seed conversation claiming otherwise.
+
 ## 8. The endgame
 
 Build toward an outcome a global travel company (Trip.com, Expedia, Booking) would acquire. They buy for exactly three things — we compound at least one every month:
@@ -61,10 +98,27 @@ They will never pay for a pre-revenue, no-retention, shallow-multi-city GPT wrap
 
 ## 9. Monetization (later, plumbing already built)
 
-Freemium. Assume no paying users for the first ~6 months — that's fine and expected.
-- **Pro subscription** (reroute limits lifted, heavy model, ad-free).
-- **Affiliate / booking commissions** (hotels, tours) via affiliate networks — the incumbents' actual model, reachable without per-city BD.
-- Sponsored placements only where they don't erode trust (trust is the brand).
+Freemium, sequenced to the beachhead. Assume no paying users for the first ~6
+months — expected and fine.
+- **For the backpacker beachhead, subscription is not the lever.** This segment
+  will not pay $4.99/mo. Its viable revenue is affiliate at the on-trip
+  micro-moment: **eSIM** in the Offline Vault (the highest-intent purchase for a
+  traveller who just lost signal — the offline irony) and **activity affiliate**
+  (Klook / GetYourGuide) attached to a weather reroute (SPEC-29) at the point of
+  intent. Near-zero fulfilment on our side.
+- **Pro subscription** (reroute limits lifted, heavy model, ad-free) is a lever
+  for the higher-budget traveller, not the beachhead. Prove its unit economics
+  against LLM cost *before* pricing is public — pull current rates from the
+  LiteLLM dashboard, not memory. Note the free tier's 5 heavy reroutes/day is
+  itself a real per-user burn, unlike most freemium travel apps.
+- **Sponsored placement is already live in the ranker, and is a standing trust
+  risk.** `services/database_service.py` adds `bid_weight * 0.15` to a venue's
+  score and Pro is partly sold as "no sponsored results" — i.e. the free tier
+  ranks paid venues higher with no disclosure in the client. Before *any*
+  affiliate revenue is added, sponsored contribution must be disclosed at render
+  and be inspectable (SPEC-17 decision 15). "Trust is the product" (§10) has to be
+  auditable, not aspirational, or the anti-tourist-trap positioning is
+  unfalsifiable the moment a venue pays us.
 
 ## 10. Guiding principles
 
@@ -181,6 +235,11 @@ Near-term product gates after the Aug 27-28 laptop run:
    `user_loved` event already uses the outbox. Await sync before reporting
    status counts.
 4. Build real Laos trip creation. The current create path still seeds Dubai.
+5. Instrument retention before the trip (`SPEC-30`): a `session_start` / trip-open
+   signal with trip-relative timing, plus a "did this happen" state on nodes that
+   finally gives `observed_duration_minutes` a writer and makes "cancel next stop"
+   target the next *movable* node rather than the first of the day. One primitive,
+   several payoffs. This is the only near-term gate with a funding-shaped deadline.
 
 
 ---
