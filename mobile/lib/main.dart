@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/env.dart';
 import 'core/providers.dart';
 import 'offline/db_init.dart';
+import 'offline/offline_database.dart';
 import 'routing/app_router.dart';
 import 'theme/app_theme.dart';
 
@@ -53,11 +54,22 @@ class _TravelBuddyAppState extends State<TravelBuddyApp>
     with WidgetsBindingObserver {
   DateTime? _lastResumeSync;
   static const _resumeDebounce = Duration(seconds: 30);
+  bool _coldStartEmitted = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // SPEC-30: emit cold-start session_start on first foreground.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_coldStartEmitted) {
+        _coldStartEmitted = true;
+        _emitSessionStart(
+          ProviderScope.containerOf(context),
+          coldStart: true,
+        );
+      }
+    });
   }
 
   @override
@@ -75,8 +87,45 @@ class _TravelBuddyAppState extends State<TravelBuddyApp>
         return;
       }
       _lastResumeSync = now;
-      ProviderScope.containerOf(context).read(syncEngineProvider).triggerSync();
+      final container = ProviderScope.containerOf(context);
+      container.read(syncEngineProvider).triggerSync();
+      _emitSessionStart(container, coldStart: false);
     }
+  }
+
+  /// SPEC-30: emit session_start on foreground (cold or resume).
+  /// Rides the existing outbox; never blocks the UI thread.
+  void _emitSessionStart(
+    ProviderContainer container, {
+    required bool coldStart,
+  }) {
+    // Fire-and-forget -- SignalService.emit never throws.
+    () async {
+      final db = container.read(offlineDatabaseProvider);
+      final signal = container.read(signalServiceProvider);
+
+      // Compute minutes_since_last_open from durable storage.
+      final lastStr = await db.getAppValue('last_session_at');
+      int? minutesSinceLastOpen;
+      if (lastStr != null) {
+        final last = DateTime.tryParse(lastStr);
+        if (last != null) {
+          minutesSinceLastOpen =
+              DateTime.now().toUtc().difference(last).inMinutes;
+        }
+      }
+
+      // Persist current timestamp for next open.
+      await db.setAppValue(
+        'last_session_at',
+        DateTime.now().toUtc().toIso8601String(),
+      );
+
+      await signal.emitSessionStart(
+        coldStart: coldStart,
+        minutesSinceLastOpen: minutesSinceLastOpen,
+      );
+    }();
   }
 
   @override
