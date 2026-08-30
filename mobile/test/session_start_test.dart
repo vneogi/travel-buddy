@@ -9,6 +9,7 @@ import 'package:travel_buddy/offline/offline_database.dart';
 import 'package:travel_buddy/offline/sync_engine.dart';
 import 'package:travel_buddy/services/signal_service.dart';
 import 'package:travel_buddy/core/api_client.dart';
+import 'package:travel_buddy/core/api_exception.dart';
 import 'package:travel_buddy/data/models.dart';
 import 'package:travel_buddy/main.dart';
 
@@ -20,16 +21,22 @@ void main() {
   databaseFactory = databaseFactoryFfi;
 
   late OfflineDatabase db;
+  late SyncEngine syncEngine;
   late SignalService signalService;
 
   setUp(() async {
     db = OfflineDatabase(testPath: inMemoryDatabasePath);
     final mockApi = MockApiClient();
-    final syncEngine = SyncEngine(db: db, api: mockApi);
+    // Default stub: simulate offline so background triggerSync doesn't crash
+    when(() => mockApi.post(any(), body: any(named: 'body')))
+        .thenThrow(const NetworkException());
+    syncEngine = SyncEngine(db: db, api: mockApi);
     signalService = SignalService(db: db, syncEngine: syncEngine);
   });
 
   tearDown(() async {
+    syncEngine.stop();
+    await Future.delayed(const Duration(milliseconds: 50));
     await db.close();
   });
 
