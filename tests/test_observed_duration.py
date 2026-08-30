@@ -263,7 +263,8 @@ class TestObservedDuration:
                 return self.query
 
         service = object.__new__(SupabaseService)
-        service.client = RecordingClient()
+        # client is a read-only property over _client; do not assign .client.
+        service._client = RecordingClient()
 
         assert service.update_edge_observed_duration(
             trip_id="trip-1",
