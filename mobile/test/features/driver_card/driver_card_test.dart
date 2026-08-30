@@ -18,6 +18,7 @@ import 'package:travel_buddy/services/signal_service.dart';
 
 class MockSyncEngine extends Mock implements SyncEngine {}
 class MockSignalService extends Mock implements SignalService {}
+class MockOfflineDatabase extends Mock implements OfflineDatabase {}
 
 void main() {
   sqfliteFfiInit();
@@ -319,7 +320,7 @@ void main() {
   testWidgets(
     'Dubai card renders Arabic, coordinates, maps, and no fare guess',
     (tester) async {
-      final db = OfflineDatabase(testPath: inMemoryDatabasePath);
+      final db = MockOfflineDatabase();
       final signalService = MockSignalService();
       when(() => signalService.emitDriverCardShown(
             placeRef: any(named: 'placeRef'),
@@ -327,22 +328,21 @@ void main() {
             nameSource: any(named: 'nameSource'),
             tripId: any(named: 'tripId'),
           )).thenAnswer((_) async {});
-      await db.cachePlace(
-        'dubai_museum',
-        const PlaceDriverCardData(
-          placeRef: 'dubai_museum',
-          venueName: 'Dubai Museum',
-          namesLocal: {
-            'ar': {
-              'value': '\u0645\u062A\u062D\u0641 \u062F\u0628\u064A',
-              'source': 'official',
-            },
+      final cachedPlace = const PlaceDriverCardData(
+        placeRef: 'dubai_museum',
+        venueName: 'Dubai Museum',
+        namesLocal: {
+          'ar': {
+            'value': '\u0645\u062A\u062D\u0641 \u062F\u0628\u064A',
+            'source': 'official',
           },
-          lat: 25.2637,
-          lng: 55.2972,
-          geoRegion: 'dubai_uae',
-        ).serialize(),
-      );
+        },
+        lat: 25.2637,
+        lng: 55.2972,
+        geoRegion: 'dubai_uae',
+      ).serialize();
+      when(() => db.getCachedPlace('dubai_museum'))
+          .thenAnswer((_) async => cachedPlace);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -383,7 +383,6 @@ void main() {
             tripId: 'trip-1',
           )).called(1);
       await tester.pumpWidget(const SizedBox.shrink());
-      await db.close();
     },
     timeout: const Timeout(Duration(seconds: 20)),
   );
