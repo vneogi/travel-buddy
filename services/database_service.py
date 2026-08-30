@@ -202,9 +202,7 @@ class DatabaseService:
         }
         merged = [dict(edge) for edge in replacement]
         for edge in merged:
-            observed = observed_by_pair.get(
-                (edge.get("from_node_id"), edge.get("to_node_id"))
-            )
+            observed = observed_by_pair.get((edge.get("from_node_id"), edge.get("to_node_id")))
             if observed is not None:
                 edge["observed_duration_minutes"] = observed
         return merged
@@ -455,10 +453,7 @@ class DatabaseService:
     ) -> bool:
         """Set observed duration on the matching normalised itinerary edge."""
         for edge in self._trip_edges.get(trip_id, []):
-            if (
-                edge.get("from_node_id") == from_node_id
-                and edge.get("to_node_id") == to_node_id
-            ):
+            if edge.get("from_node_id") == from_node_id and edge.get("to_node_id") == to_node_id:
                 edge["observed_duration_minutes"] = duration_minutes
                 return True
         return False

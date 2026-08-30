@@ -62,8 +62,7 @@ def _edge_between(trip_id: str, from_venue: str, to_venue: str) -> dict:
     return next(
         edge
         for edge in db_service.get_trip_edges(trip_id)
-        if edge["from_node_id"] == node_ids[from_venue]
-        and edge["to_node_id"] == node_ids[to_venue]
+        if edge["from_node_id"] == node_ids[from_venue] and edge["to_node_id"] == node_ids[to_venue]
     )
 
 
@@ -129,9 +128,9 @@ class TestObservedDuration:
         arrived_b = datetime(2026, 8, 25, 12, 15, tzinfo=timezone.utc)
         sig_id = _confirm_visit(trip_id, "vid-idem-b", arrived_b)
 
-        first_value = _edge_between(
-            trip_id, "vid-idem-a", "vid-idem-b"
-        )["observed_duration_minutes"]
+        first_value = _edge_between(trip_id, "vid-idem-a", "vid-idem-b")[
+            "observed_duration_minutes"
+        ]
         assert first_value == 130
 
         # Re-derive with same data -> same value
@@ -143,9 +142,7 @@ class TestObservedDuration:
             trip_id=trip_id,
         )
         assert (
-            _edge_between(
-                trip_id, "vid-idem-a", "vid-idem-b"
-            )["observed_duration_minutes"]
+            _edge_between(trip_id, "vid-idem-a", "vid-idem-b")["observed_duration_minutes"]
             == first_value
         )
 
@@ -194,9 +191,7 @@ class TestObservedDuration:
             datetime(2026, 8, 25, 12, 15, tzinfo=timezone.utc),
         )
         assert (
-            _edge_between(
-                trip_id, "vid-durable-a", "vid-durable-b"
-            )["observed_duration_minutes"]
+            _edge_between(trip_id, "vid-durable-a", "vid-durable-b")["observed_duration_minutes"]
             == 130
         )
 
@@ -205,9 +200,7 @@ class TestObservedDuration:
         db_service.save_trip(trip)
 
         assert (
-            _edge_between(
-                trip_id, "vid-durable-a", "vid-durable-b"
-            )["observed_duration_minutes"]
+            _edge_between(trip_id, "vid-durable-a", "vid-durable-b")["observed_duration_minutes"]
             == 130
         )
 
@@ -273,9 +266,7 @@ class TestObservedDuration:
             duration_minutes=130,
         )
         assert service.client.table_name == "trip_edge"
-        assert service.client.query.payload == {
-            "observed_duration_minutes": 130
-        }
+        assert service.client.query.payload == {"observed_duration_minutes": 130}
         assert service.client.query.filters == [
             ("trip_id", "trip-1"),
             ("from_node_id", "node-a"),
@@ -299,8 +290,6 @@ class TestObservedDuration:
             }
         ]
 
-        merged = SupabaseService._preserve_observed_edge_durations(
-            existing, regenerated
-        )
+        merged = SupabaseService._preserve_observed_edge_durations(existing, regenerated)
 
         assert merged[0]["observed_duration_minutes"] == 130

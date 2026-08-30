@@ -315,9 +315,7 @@ class SupabaseService:
         if not edges:
             self.client.table("trip_edge").delete().eq("trip_id", trip_id).execute()
             return 0
-        edges = self._preserve_observed_edge_durations(
-            self.get_trip_edges(trip_id), edges
-        )
+        edges = self._preserve_observed_edge_durations(self.get_trip_edges(trip_id), edges)
         self.client.table("trip_edge").delete().eq("trip_id", trip_id).execute()
         for edge in edges:
             row = dict(edge)
@@ -341,9 +339,7 @@ class SupabaseService:
         }
         merged = [dict(edge) for edge in replacement]
         for edge in merged:
-            observed = observed_by_pair.get(
-                (edge.get("from_node_id"), edge.get("to_node_id"))
-            )
+            observed = observed_by_pair.get((edge.get("from_node_id"), edge.get("to_node_id")))
             if observed is not None:
                 edge["observed_duration_minutes"] = observed
         return merged

@@ -27,7 +27,7 @@ class OfflineDatabase {
   /// Lazy-open the database (creates tables on first run).
   Future<Database> get db async {
     _db ??= await _open();
-    return _db!;
+    return _db;
   }
 
   Future<Database> _open() async {
