@@ -220,16 +220,15 @@ void main() {
       when(() => mockDb.getCachedTrip('t1'))
           .thenAnswer((_) async => jsonEncode(cachedTrip.toJson()));
       when(() => mockDb.cachePlace(any(), any())).thenAnswer((_) async {});
-    when(() => mockDb.getLovedPlaceRefs(
-      identityScope: any(named: 'identityScope'),
-      tripId: any(named: 'tripId'),
-    )).thenAnswer((_) async => <String>{});
-    when(() => mockDb.upsertLovedPlace(
-      identityScope: any(named: 'identityScope'),
-      tripId: any(named: 'tripId'),
-      placeRef: any(named: 'placeRef'),
-    )).thenAnswer((_) async {});
-    when(() => mockDb.getCachedTrip(any())).thenAnswer((_) async => null);
+      when(() => mockDb.getLovedPlaceRefs(
+            identityScope: any(named: 'identityScope'),
+            tripId: any(named: 'tripId'),
+          )).thenAnswer((_) async => <String>{});
+      when(() => mockDb.upsertLovedPlace(
+            identityScope: any(named: 'identityScope'),
+            tripId: any(named: 'tripId'),
+            placeRef: any(named: 'placeRef'),
+          )).thenAnswer((_) async {});
 
       final c = await ready();
       await Future.delayed(const Duration(milliseconds: 50));
