@@ -148,3 +148,38 @@ the most damage.
 - **No change to the Oct 2 Laos scope.** Both new specs are post-Laos.
 - **No pre-trip or booking-funnel expansion.** Vision section 6 still wins over
   the Part III hypotheses.
+
+## Addendum, Aug 2026: the acquisition beachhead
+
+This document decided *which traveller to monetize* and *which cities the
+pipeline must support*. It did not decide *how the first users are acquired*, and
+that omission matters more than it looks: the whole thesis is on-trip, but an
+on-trip user cannot be acquired on-trip. The install has to happen before the
+value lands, in a window this document is silent about.
+
+The Indian-outbound traveller has no zero-CAC acquisition path. They do not
+cluster physically, they book through the pre-trip funnel we chose not to compete
+in, and reaching them means paid performance marketing a single founder cannot
+fund. The monetization thesis stands, but it cannot bootstrap itself.
+
+The seeding beachhead is therefore a *different* traveller, chosen for
+distribution and data density rather than spend: the **solo or paired budget
+backpacker on the SE-Asian overland corridor** -- Luang Prabang, Vang Vieng,
+Vientiane, then Chiang Mai and Pai. This is the one segment where the corridor is
+its own funnel: a hostel common-area QR reaches a traveller who is simultaneously
+pre-trip for the next leg and on-trip for this one, and a few thousand users
+across a handful of towns reach the density the flywheel needs. Its revenue is
+affiliate -- eSIM and activities -- not subscription; see VISION section 9.
+
+**This does not overturn the decision above; it layers under it.** The corridor
+of six cities remains what the pipeline is built for. The India-outbound
+traveller remains who the money thesis targets -- but that thesis is
+under-evidenced (effective n<8, one respondent a family member, per
+`SURVEY_FINDINGS.md`) and is revisited after the Laos field test, exactly like the
+Part III hypotheses in the vision. Where seeding and monetization pull in
+different directions before then, seeding wins: there is nothing to monetize
+without density first.
+
+Bangkok is the one city on both paths, which is convenient rather than
+load-bearing. Laos (Oct 2) is unaffected either way -- still a field test of the
+engine, not a market entry.
