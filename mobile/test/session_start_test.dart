@@ -9,6 +9,8 @@ import 'package:travel_buddy/offline/offline_database.dart';
 import 'package:travel_buddy/offline/sync_engine.dart';
 import 'package:travel_buddy/services/signal_service.dart';
 import 'package:travel_buddy/core/api_client.dart';
+import 'package:travel_buddy/data/models.dart';
+import 'package:travel_buddy/main.dart';
 
 class MockApiClient extends Mock implements ApiClient {}
 
@@ -122,29 +124,81 @@ void main() {
     expect((p2['value_json'] as Map)['cold_start'], false);
   });
 
-  // ----------------------------------------------------------
-  // Test 5: debounce -- resume within window does not enqueue
-  // ----------------------------------------------------------
-  test('debounce: resume within 30s window does not double-count', () async {
-    // This tests the app_kv + debounce logic at the DB level.
-    // The debounce itself lives in main.dart (_lastResumeSync), but
-    // we verify the signal_service level: two rapid emits DO enqueue
-    // two rows (debounce is in main.dart, not signal_service).
-    // The main.dart debounce is tested structurally (the 30s guard).
+  test('activeTripIdFromUri recognizes all trip routes', () {
+    expect(activeTripIdFromUri(Uri.parse('/')), isNull);
+    expect(activeTripIdFromUri(Uri.parse('/profile')), isNull);
+    expect(activeTripIdFromUri(Uri.parse('/trip/trip-1')), 'trip-1');
+    expect(activeTripIdFromUri(Uri.parse('/trip/trip-1/chat')), 'trip-1');
+    expect(
+      activeTripIdFromUri(Uri.parse('/trip/trip-1/card/node-1')),
+      'trip-1',
+    );
+  });
 
-    // Instead, test that app_kv stores and retrieves timestamps correctly
-    // for the debounce computation.
-    final t1 = DateTime.now().toUtc();
-    await db.setAppValue('last_session_at', t1.toIso8601String());
+  test('resume debounce suppresses rapid lifecycle flicker', () {
+    final coldStartAt = DateTime.utc(2026, 10, 2, 8);
+    expect(
+      shouldEmitSessionStartOnResume(
+        lastEmitAt: coldStartAt,
+        now: coldStartAt.add(const Duration(seconds: 5)),
+        debounce: const Duration(seconds: 30),
+      ),
+      isFalse,
+    );
+    expect(
+      shouldEmitSessionStartOnResume(
+        lastEmitAt: coldStartAt,
+        now: coldStartAt.add(const Duration(seconds: 31)),
+        debounce: const Duration(seconds: 30),
+      ),
+      isTrue,
+    );
+  });
 
-    // Immediate "second open"
-    final lastStr = await db.getAppValue('last_session_at');
-    final last = DateTime.parse(lastStr!);
-    final gap = DateTime.now().toUtc().difference(last).inSeconds;
+  test('tripDayFromCachedTrip uses earliest scheduled node date', () async {
+    final trip = TripState(
+      tripId: 'trip-1',
+      userId: 'user-1',
+      nodes: [
+        TripNode(
+          nodeId: 'node-2',
+          venueName: 'Second stop',
+          scheduledStart: DateTime.utc(2026, 10, 4, 9),
+          durationMinutes: 60,
+          isLocked: false,
+          status: NodeStatus.pending,
+          vibeTags: const [],
+        ),
+        TripNode(
+          nodeId: 'node-1',
+          venueName: 'First stop',
+          scheduledStart: DateTime.utc(2026, 10, 2, 18),
+          durationMinutes: 60,
+          isLocked: false,
+          status: NodeStatus.pending,
+          vibeTags: const [],
+        ),
+      ],
+    );
+    await db.cacheTrip('trip-1', jsonEncode(trip.toJson()));
 
-    // Gap should be essentially zero (< 2 seconds)
-    expect(gap, lessThan(2));
-    // The 30s debounce in main.dart would skip this resume.
-    // We verify the data layer supports this check.
+    final tripDay = await tripDayFromCachedTrip(
+      db,
+      'trip-1',
+      DateTime.utc(2026, 10, 4, 8),
+    );
+
+    expect(tripDay, 2);
+  });
+
+  test('tripDayFromCachedTrip is null without a usable cache', () async {
+    expect(
+      await tripDayFromCachedTrip(
+        db,
+        'missing-trip',
+        DateTime.utc(2026, 10, 4),
+      ),
+      isNull,
+    );
   });
 }
