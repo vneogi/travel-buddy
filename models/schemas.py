@@ -84,6 +84,8 @@ class TripNode(BaseModel):
     confirmation_code: Optional[str] = None
     booking_notes: Optional[str] = None
     import_source: Optional[str] = None  # "manual" | "email" | "pdf" | "screenshot"
+    # SPEC-16: observed dwell time derived from consecutive visited_confirmed.
+    observed_duration_minutes: Optional[float] = None
 
 
 class CurrentContext(BaseModel):
