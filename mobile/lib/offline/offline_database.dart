@@ -26,14 +26,17 @@ class OfflineDatabase {
 
   /// Lazy-open the database (creates tables on first run).
   Future<Database> get db async {
-    _db ??= await _open();
-    return _db;
+    final existing = _db;
+    if (existing != null) return existing;
+    final opened = await _open();
+    _db = opened;
+    return opened;
   }
 
   Future<Database> _open() async {
     final String path;
     if (_testPath != null) {
-      path = _testPath!;
+      path = _testPath;
     } else if (kIsWeb) {
       path = _dbName;
     } else {
