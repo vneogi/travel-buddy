@@ -246,7 +246,12 @@ class SupabaseService:
         # SPEC-16 phase 1: dual-write normalised rows
         from services.itinerary_normaliser import decompose_trip
 
+        # save_trip_nodes deletes prior nodes and cascades to their edges. Read
+        # derived observations first so a later itinerary save cannot erase
+        # field data collected on unchanged node pairs.
+        existing_edges = self.get_trip_edges(trip_state.trip_id)
         nodes, edges = decompose_trip(trip_dict)
+        edges = self._preserve_observed_edge_durations(existing_edges, edges)
         self.save_trip_nodes(trip_state.trip_id, nodes)
         self.save_trip_edges(trip_state.trip_id, edges)
         return trip_state.trip_id
@@ -306,9 +311,13 @@ class SupabaseService:
         return result.data or []
 
     def save_trip_edges(self, trip_id: str, edges: list) -> int:
-        """Save normalised trip_edge rows. Idempotent: delete + re-insert."""
+        """Save normalised edges without erasing derived observations."""
         if not edges:
+            self.client.table("trip_edge").delete().eq("trip_id", trip_id).execute()
             return 0
+        edges = self._preserve_observed_edge_durations(
+            self.get_trip_edges(trip_id), edges
+        )
         self.client.table("trip_edge").delete().eq("trip_id", trip_id).execute()
         for edge in edges:
             row = dict(edge)
@@ -320,6 +329,24 @@ class SupabaseService:
         """Get normalised trip_edge rows for a trip."""
         result = self.client.table("trip_edge").select("*").eq("trip_id", trip_id).execute()
         return result.data or []
+
+    @staticmethod
+    def _preserve_observed_edge_durations(existing: list, replacement: list) -> list:
+        observed_by_pair = {
+            (edge.get("from_node_id"), edge.get("to_node_id")): edge.get(
+                "observed_duration_minutes"
+            )
+            for edge in existing
+            if edge.get("observed_duration_minutes") is not None
+        }
+        merged = [dict(edge) for edge in replacement]
+        for edge in merged:
+            observed = observed_by_pair.get(
+                (edge.get("from_node_id"), edge.get("to_node_id"))
+            )
+            if observed is not None:
+                edge["observed_duration_minutes"] = observed
+        return merged
 
         # =========================================================================
 
@@ -719,17 +746,23 @@ class SupabaseService:
             logger.warning("get_visited_confirmed_for_node failed: %s", e)
             return None
 
-    def update_node_observed_duration(
-        self, trip_id: str, node_id: str, duration_minutes: float
+    def update_edge_observed_duration(
+        self,
+        trip_id: str,
+        from_node_id: str,
+        to_node_id: str,
+        duration_minutes: int,
     ) -> bool:
-        """Set observed_duration_minutes on a trip node."""
+        """Set observed duration on the matching normalised itinerary edge."""
         try:
-            self.client.table("trip_node").update(
+            self.client.table("trip_edge").update(
                 {"observed_duration_minutes": duration_minutes}
-            ).eq("trip_id", trip_id).eq("node_id", node_id).execute()
+            ).eq("trip_id", trip_id).eq("from_node_id", from_node_id).eq(
+                "to_node_id", to_node_id
+            ).execute()
             return True
         except Exception as e:
-            logger.warning("update_node_observed_duration failed: %s", e)
+            logger.warning("update_edge_observed_duration failed: %s", e)
             return False
 
     # =========================================================================

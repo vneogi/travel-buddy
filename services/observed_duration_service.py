@@ -1,8 +1,9 @@
-"""Server-side derivation of observed_duration_minutes from visited_confirmed pairs.
+"""Derive edge observed_duration_minutes from visited_confirmed pairs.
 
-When a node's arrival is confirmed and the PREVIOUS scheduled node's arrival
-was also confirmed, the previous node's observed duration = the span between
-the two confirmed arrivals.
+When consecutive nodes both have confirmed arrivals, their connecting edge
+stores the whole-minute span between those confirmations. This is an observed
+transition span, not a pure transit-time measurement: it can include dwell at
+the first node.
 
 Design:
   - Never fails ingest of the source signal. If derivation fails (trip not
@@ -29,10 +30,10 @@ def derive_observed_duration(
     place_ref: str,
     captured_at: datetime,
     trip_id: Optional[str],
-) -> Optional[float]:
-    """Derive and persist observed_duration_minutes on the previous node.
+) -> Optional[int]:
+    """Derive and persist observed_duration_minutes on the connecting edge.
 
-    Returns the duration in minutes if successfully derived, None otherwise.
+    Returns the whole-minute duration if successfully derived, None otherwise.
     Never raises -- derivation failure must not break ingest.
     """
     if not trip_id:
@@ -105,19 +106,29 @@ def derive_observed_duration(
             )
             return None
 
-        duration_minutes = round(duration_seconds / 60.0, 1)
+        duration_minutes = max(1, int(round(duration_seconds / 60.0)))
 
-        # Write on the PREVIOUS node (not the target)
-        db_service.update_node_observed_duration(
+        # The schema owns this measurement on the transition edge, not a node.
+        was_updated = db_service.update_edge_observed_duration(
             trip_id=trip_id,
-            node_id=prev_node.node_id,
+            from_node_id=prev_node.node_id,
+            to_node_id=target_node.node_id,
             duration_minutes=duration_minutes,
         )
+        if not was_updated:
+            logger.debug(
+                "observed_duration: edge %s -> %s not found in trip %s",
+                prev_node.node_id,
+                target_node.node_id,
+                trip_id,
+            )
+            return None
 
         logger.info(
-            "observed_duration: %.1f min on node %s (triggered by signal %s)",
+            "observed_duration: %d min on edge %s -> %s (signal %s)",
             duration_minutes,
             prev_node.node_id,
+            target_node.node_id,
             source_signal_id,
         )
         return duration_minutes

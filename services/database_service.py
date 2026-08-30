@@ -149,6 +149,9 @@ class DatabaseService:
         from services.itinerary_normaliser import decompose_trip
 
         nodes, edges = decompose_trip(trip_dict)
+        edges = self._preserve_observed_edge_durations(
+            self._trip_edges.get(trip_state.trip_id, []), edges
+        )
         self._trip_nodes[trip_state.trip_id] = nodes
         self._trip_edges[trip_state.trip_id] = edges
         return trip_state.trip_id
@@ -178,13 +181,33 @@ class DatabaseService:
         return sorted(rows, key=lambda r: (r.get("day_index", 0), r.get("seq", 0)))
 
     def save_trip_edges(self, trip_id: str, edges: list) -> int:
-        """Save normalised trip_edge rows. Idempotent: replaces existing."""
-        self._trip_edges[trip_id] = list(edges)
+        """Save normalised trip_edge rows without erasing derived observations."""
+        self._trip_edges[trip_id] = self._preserve_observed_edge_durations(
+            self._trip_edges.get(trip_id, []), edges
+        )
         return len(edges)
 
     def get_trip_edges(self, trip_id: str) -> list:
         """Get normalised trip_edge rows for a trip."""
         return list(self._trip_edges.get(trip_id, []))
+
+    @staticmethod
+    def _preserve_observed_edge_durations(existing: list, replacement: list) -> list:
+        observed_by_pair = {
+            (edge.get("from_node_id"), edge.get("to_node_id")): edge.get(
+                "observed_duration_minutes"
+            )
+            for edge in existing
+            if edge.get("observed_duration_minutes") is not None
+        }
+        merged = [dict(edge) for edge in replacement]
+        for edge in merged:
+            observed = observed_by_pair.get(
+                (edge.get("from_node_id"), edge.get("to_node_id"))
+            )
+            if observed is not None:
+                edge["observed_duration_minutes"] = observed
+        return merged
 
         # =========================================================================
 
@@ -423,16 +446,20 @@ class DatabaseService:
             return None
         return max(matches, key=lambda s: s["captured_at"])
 
-    def update_node_observed_duration(
-        self, trip_id: str, node_id: str, duration_minutes: float
+    def update_edge_observed_duration(
+        self,
+        trip_id: str,
+        from_node_id: str,
+        to_node_id: str,
+        duration_minutes: int,
     ) -> bool:
-        """Set observed_duration_minutes on a trip node. Returns True if updated."""
-        trip_dict = self._trips.get(trip_id)
-        if not trip_dict:
-            return False
-        for node in trip_dict.get("nodes", []):
-            if node.get("node_id") == node_id:
-                node["observed_duration_minutes"] = duration_minutes
+        """Set observed duration on the matching normalised itinerary edge."""
+        for edge in self._trip_edges.get(trip_id, []):
+            if (
+                edge.get("from_node_id") == from_node_id
+                and edge.get("to_node_id") == to_node_id
+            ):
+                edge["observed_duration_minutes"] = duration_minutes
                 return True
         return False
 

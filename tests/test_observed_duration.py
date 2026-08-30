@@ -1,8 +1,4 @@
-"""SPEC-30 slice 2: observed_duration_minutes writer tests.
-
-Verifies that derive_observed_duration correctly writes dwell time on the
-PREVIOUS node when consecutive visited_confirmed signals are available.
-"""
+"""SPEC-30 slice 2: trip-edge observed-duration writer tests."""
 
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -14,6 +10,7 @@ from main import app
 from models.schemas import TripNode, TripState
 from services.db_provider import db_service
 from services.observed_duration_service import derive_observed_duration
+from services.supabase_service import SupabaseService
 
 client = TestClient(app)
 HEADERS = {"X-Debug-User-Id": "test-user-observed-dur"}
@@ -59,13 +56,22 @@ def _confirm_visit(trip_id: str, place_ref: str, captured_at: datetime) -> str:
     return signal_id
 
 
+def _edge_between(trip_id: str, from_venue: str, to_venue: str) -> dict:
+    nodes = db_service.get_trip_nodes(trip_id)
+    node_ids = {node["venue_ref"]: node["node_id"] for node in nodes}
+    return next(
+        edge
+        for edge in db_service.get_trip_edges(trip_id)
+        if edge["from_node_id"] == node_ids[from_venue]
+        and edge["to_node_id"] == node_ids[to_venue]
+    )
+
+
 class TestObservedDuration:
     """Integration tests for observed_duration_minutes derivation."""
 
     def test_consecutive_pair_writes_duration(self):
-        """Two confirmed arrivals on consecutive nodes write the first node's
-        observed_duration_minutes as the minute span between them.
-        """
+        """Two confirmed arrivals write their span on the connecting edge."""
         t0 = datetime(2026, 8, 25, 10, 0, tzinfo=timezone.utc)
         t1 = datetime(2026, 8, 25, 12, 0, tzinfo=timezone.utc)
         trip_id = _make_trip(
@@ -79,14 +85,12 @@ class TestObservedDuration:
         arrived_a = datetime(2026, 8, 25, 10, 5, tzinfo=timezone.utc)
         _confirm_visit(trip_id, "vid-a", arrived_a)
 
-        # Confirm arrival at node B at 12:15 -> duration on A = 130 minutes
+        # Confirm arrival at node B at 12:15 -> edge A->B = 130 minutes
         arrived_b = datetime(2026, 8, 25, 12, 15, tzinfo=timezone.utc)
         _confirm_visit(trip_id, "vid-b", arrived_b)
 
-        # Check: node A should have observed_duration_minutes = 130.0
-        trip = db_service.get_trip(trip_id)
-        node_a = [n for n in trip.nodes if n.venue_id == "vid-a"][0]
-        assert node_a.observed_duration_minutes == 130.0
+        edge = _edge_between(trip_id, "vid-a", "vid-b")
+        assert edge["observed_duration_minutes"] == 130
 
     def test_single_confirmation_writes_nothing(self):
         """A single confirmation writes nothing (pair incomplete).
@@ -105,10 +109,8 @@ class TestObservedDuration:
         arrived_b = datetime(2026, 8, 25, 12, 10, tzinfo=timezone.utc)
         _confirm_visit(trip_id, "vid-solo-b", arrived_b)
 
-        # Node A should have NO observed_duration_minutes (None, not 0)
-        trip = db_service.get_trip(trip_id)
-        node_a = [n for n in trip.nodes if n.venue_id == "vid-solo-a"][0]
-        assert node_a.observed_duration_minutes is None
+        edge = _edge_between(trip_id, "vid-solo-a", "vid-solo-b")
+        assert edge["observed_duration_minutes"] is None
 
     def test_idempotent_repost(self):
         """Re-posting the same visited_confirmed does not change the value."""
@@ -127,10 +129,10 @@ class TestObservedDuration:
         arrived_b = datetime(2026, 8, 25, 12, 15, tzinfo=timezone.utc)
         sig_id = _confirm_visit(trip_id, "vid-idem-b", arrived_b)
 
-        trip = db_service.get_trip(trip_id)
-        node_a = [n for n in trip.nodes if n.venue_id == "vid-idem-a"][0]
-        first_value = node_a.observed_duration_minutes
-        assert first_value == 130.0
+        first_value = _edge_between(
+            trip_id, "vid-idem-a", "vid-idem-b"
+        )["observed_duration_minutes"]
+        assert first_value == 130
 
         # Re-derive with same data -> same value
         derive_observed_duration(
@@ -140,9 +142,12 @@ class TestObservedDuration:
             captured_at=arrived_b,
             trip_id=trip_id,
         )
-        trip2 = db_service.get_trip(trip_id)
-        node_a2 = [n for n in trip2.nodes if n.venue_id == "vid-idem-a"][0]
-        assert node_a2.observed_duration_minutes == first_value
+        assert (
+            _edge_between(
+                trip_id, "vid-idem-a", "vid-idem-b"
+            )["observed_duration_minutes"]
+            == first_value
+        )
 
     def test_negative_span_writes_nothing(self):
         """A confirmation whose computed span is negative (clock skew)
@@ -165,9 +170,46 @@ class TestObservedDuration:
         arrived_b = datetime(2026, 8, 25, 11, 0, tzinfo=timezone.utc)
         _confirm_visit(trip_id, "vid-skew-b", arrived_b)
 
+        edge = _edge_between(trip_id, "vid-skew-a", "vid-skew-b")
+        assert edge["observed_duration_minutes"] is None
+
+    def test_later_trip_save_preserves_observed_duration(self):
+        """Dual-writing a changed trip cannot erase collected edge evidence."""
+        t0 = datetime(2026, 8, 25, 10, 0, tzinfo=timezone.utc)
+        t1 = datetime(2026, 8, 25, 12, 0, tzinfo=timezone.utc)
+        trip_id = _make_trip(
+            [
+                ("Durable A", "vid-durable-a", t0),
+                ("Durable B", "vid-durable-b", t1),
+            ]
+        )
+        _confirm_visit(
+            trip_id,
+            "vid-durable-a",
+            datetime(2026, 8, 25, 10, 5, tzinfo=timezone.utc),
+        )
+        _confirm_visit(
+            trip_id,
+            "vid-durable-b",
+            datetime(2026, 8, 25, 12, 15, tzinfo=timezone.utc),
+        )
+        assert (
+            _edge_between(
+                trip_id, "vid-durable-a", "vid-durable-b"
+            )["observed_duration_minutes"]
+            == 130
+        )
+
         trip = db_service.get_trip(trip_id)
-        node_a = [n for n in trip.nodes if n.venue_id == "vid-skew-a"][0]
-        assert node_a.observed_duration_minutes is None
+        assert trip is not None
+        db_service.save_trip(trip)
+
+        assert (
+            _edge_between(
+                trip_id, "vid-durable-a", "vid-durable-b"
+            )["observed_duration_minutes"]
+            == 130
+        )
 
     def test_derivation_failure_does_not_reject_source(self):
         """Derivation failure (unknown trip) never rejects the source
@@ -191,3 +233,73 @@ class TestObservedDuration:
         # Source signal is ACCEPTED, not rejected
         assert data["accepted"] == 1
         assert len(data["rejected"]) == 0
+
+    def test_supabase_writer_targets_trip_edge(self):
+        """Production backend must write the real SPEC-16 edge column."""
+
+        class RecordingQuery:
+            def __init__(self):
+                self.payload = None
+                self.filters = []
+
+            def update(self, payload):
+                self.payload = payload
+                return self
+
+            def eq(self, key, value):
+                self.filters.append((key, value))
+                return self
+
+            def execute(self):
+                return None
+
+        class RecordingClient:
+            def __init__(self):
+                self.table_name = None
+                self.query = RecordingQuery()
+
+            def table(self, name):
+                self.table_name = name
+                return self.query
+
+        service = object.__new__(SupabaseService)
+        service.client = RecordingClient()
+
+        assert service.update_edge_observed_duration(
+            trip_id="trip-1",
+            from_node_id="node-a",
+            to_node_id="node-b",
+            duration_minutes=130,
+        )
+        assert service.client.table_name == "trip_edge"
+        assert service.client.query.payload == {
+            "observed_duration_minutes": 130
+        }
+        assert service.client.query.filters == [
+            ("trip_id", "trip-1"),
+            ("from_node_id", "node-a"),
+            ("to_node_id", "node-b"),
+        ]
+
+    def test_supabase_edge_regeneration_preserves_observation(self):
+        existing = [
+            {
+                "from_node_id": "node-a",
+                "to_node_id": "node-b",
+                "observed_duration_minutes": 130,
+            }
+        ]
+        regenerated = [
+            {
+                "edge_id": "new-edge-id",
+                "from_node_id": "node-a",
+                "to_node_id": "node-b",
+                "observed_duration_minutes": None,
+            }
+        ]
+
+        merged = SupabaseService._preserve_observed_edge_durations(
+            existing, regenerated
+        )
+
+        assert merged[0]["observed_duration_minutes"] == 130
