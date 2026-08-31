@@ -1,6 +1,7 @@
 # SPEC-10: Manual Booking Anchors
 
-> Status: SPECIFIED. Not implemented.
+> Status: OCTOBER CREATE SLICE IMPLEMENTED in PR #20 (`f6328e9`).
+> Edit/delete remains specified below and must ship separately from SPEC-31.
 >
 > Resequenced to follow SPEC-16. A booking anchor is a locked node. Once nodes
 > are rows rather than keys inside a JSON blob, this spec is a few columns and a
@@ -121,16 +122,110 @@ that could identify an individual reservation.
 
 ## Acceptance
 
-- [ ] node_kind, booking_type, confirmation_code, booking_notes, import_source on
+- [x] node_kind, booking_type, confirmation_code, booking_notes, import_source on
       the node, all defaulted
-- [ ] Old trip JSON loads, with a test that proves it
-- [ ] Booking nodes locked and unmovable
+- [x] Old trip JSON loads, with a test that proves it
+- [x] Booking nodes locked and unmovable
 - [ ] Flight constrains the preceding evening; hotel acts as a daily anchor
 - [ ] `confirmation_code` absent from all logs
-- [ ] `booking_added` in the registry and the seeding migration; drift guard green
-- [ ] At least one import path shipped end to end, degrading to manual entry
-- [ ] That path extracts on the device, proven by the no-network test
+- [x] `booking_added` in the registry and migration 0021; drift guard green
+- [x] Text paste plus manual entry shipped end to end, degrading to manual entry
+- [x] Text extraction runs on the device, proven by the no-network test
 - [ ] Server-side fallback gated on per-import consent, deleting the document once
       the fields are out
-- [ ] UI: entry form plus visually distinct locked booking nodes
-- [ ] Suite green (R8); verified from `origin/main` (R10)
+- [x] UI: entry form plus visually distinct locked booking nodes
+- [x] Create-slice suite green from `origin/main`
+- [ ] Existing booking can be reopened and edited without changing `node_id`
+- [ ] Existing booking can be deleted after explicit confirmation
+- [ ] Edit/delete never consume reroute quota or route reservation data to an LLM
+
+## Remainder: edit and delete existing bookings
+
+This is a separate structural-mutation slice after SPEC-31. Date grouping and
+booking mutation share a screen but not a failure model; mixing them makes
+locked-node and privacy review harder.
+
+### API
+
+Keep `POST /trip/event`. Add:
+
+```text
+edit_booking
+delete_booking
+```
+
+Both require `target_node_id`. The target must exist and have
+`node_kind == "booking"`; otherwise return a typed 404/409 rather than mutating
+an activity.
+
+Do not reuse `add_booking`: it creates a new `node_id`. Do not reuse
+`cancel_activity`: locked cancel correctly refuses and skip-in-place is not
+deletion.
+
+Edit/delete are structural events but are not reroutes:
+
+- no daily reroute quota,
+- no heavy-model route,
+- canned deterministic response,
+- no trip-state dump to an LLM.
+
+### Edit
+
+Patch only the booking fields supplied by the client. Preserve:
+
+- `node_id`,
+- `node_kind == "booking"`,
+- `is_locked == true`,
+- fields omitted from the patch.
+
+If start or duration changes, reinsert the same node into chronological order
+and run `reschedule_and_validate`. A hotel remains a background anchor. Return
+hard-conflict warnings through the existing response shape.
+
+The edit form reuses AddBookingSheet in an explicit edit mode, prefilled from
+the target node. It must allow an already-started booking date to remain
+selected; the create form may continue to prevent accidental past dates.
+
+### Delete
+
+Delete removes the booking node, then reschedules the remaining itinerary. It
+does not mark the node skipped and does not call locked cancel.
+
+The client names the booking in an explicit destructive confirmation. Dismiss
+and Keep make zero event calls. Confirm sends exactly one `delete_booking` for
+the displayed `node_id`.
+
+### Privacy and signals
+
+No lifecycle signal is required for this bounded slice. If later added, it must
+carry only booking type and import source, with Python registry and a migration
+in one commit. It must never include confirmation code, notes, place name, or
+raw source text.
+
+No log, model prompt, or error detail may contain `confirmation_code`.
+
+### Tests
+
+- edit preserves `node_id` and lock,
+- omitted fields survive a partial edit,
+- time edit reorders the same node,
+- hotel edit remains a background anchor,
+- delete removes rather than skips,
+- non-booking target refuses,
+- missing target refuses,
+- edit/delete do not consume reroute quota,
+- router classifies both deterministic/light and never invokes the LLM,
+- confirmation code is absent from logs and model input,
+- edit form prefills all current fields,
+- delete Keep/dismiss makes zero calls; confirm sends the displayed node ID,
+- SPEC-30 locked outcome behavior remains unchanged.
+
+### Explicitly out
+
+- `trip_stay`,
+- check-in/check-out columns,
+- multi-night UI redesign,
+- `day_index`,
+- date grouping,
+- Laos creation,
+- PDF/screenshot/email-provider ingestion.

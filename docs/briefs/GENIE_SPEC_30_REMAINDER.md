@@ -1,8 +1,6 @@
 # Genie Brief -- SPEC-30 Remainder
 
-> Status: IMPLEMENTED ON `feat/spec30-remainder`; AWAITING GENIE REVIEW.
-> Do not re-implement from this brief. Use
-> `docs/briefs/GENIE_SPEC_30_REMAINDER_REVIEW.md` for the review-only handoff.
+> Status: MERGED in PR #34 as `83c825f`. Do not re-implement.
 > Base every implementation branch on `origin/main` at or after `e689346`.
 > SPEC-30 phase 1 landed in PR #32 (`f8349a8`). Do not rebuild
 > `session_start`, migration 0024, or the `trip_edge` observed-duration writer.

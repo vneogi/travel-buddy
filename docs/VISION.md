@@ -82,7 +82,7 @@ Our users are frequently in low- or no-connectivity areas. An on-trip companion 
 **session_start is instrumented as of `f8349a8` (PR #32).** It rides the SPEC-02
 outbox. The field test can now capture reopen timing; it still cannot *validate*
 retention -- that needs cohorts. Do not walk into a Seed conversation claiming
-otherwise. SPEC-30 remainder is past-node confirmation UI, not the signal itself.
+otherwise. SPEC-30 was completed by PR #34 (`83c825f`).
 
 ## 8. The endgame
 
@@ -226,14 +226,12 @@ Near-term product gates after the Aug 27-28 laptop run:
 
 1. Keep alerts evidence-backed. SPEC-29 phase 1 is live with OpenWeather; do
    not regress to random traffic or synthetic transit copy.
-2. Make the itinerary date-scoped so stays and activities are selected for the
-   current day rather than by first match.
+2. Build SPEC-31: group the itinerary by date and choose the active/current
+   adjacent hotel for rescue rather than the first match.
 3. Hearts persist across process death (verified Aug 30). Keep awaiting sync
    before reporting status counts.
 4. Build real Laos trip creation. The current create path still seeds Dubai.
-5. SPEC-30 remainder: past-node "did this happen" and an explicit cancel-target
-   confirmation. `session_start` and the `trip_edge` observed-duration writer
-   already landed in `f8349a8`.
+5. SPEC-30 is complete (`f8349a8`, `83c825f`).
 
 
 ---
