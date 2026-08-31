@@ -65,6 +65,16 @@ class _FailingEnqueueDatabase extends OfflineDatabase {
       Future<void>.error(StateError('outbox write failed'));
 }
 
+class _NoOpSyncEngine extends SyncEngine {
+  _NoOpSyncEngine({required super.db, required super.api});
+
+  @override
+  void triggerSync() {
+    // Intentional no-op: these tests verify outbox persistence,
+    // not background synchronization.
+  }
+}
+
 TripNode _node({
   String id = 'node-1',
   bool locked = false,
@@ -106,7 +116,7 @@ void main() {
     repository = _MockTripRepository();
     api = _MockApiClient();
     database = OfflineDatabase(testPath: inMemoryDatabasePath);
-    syncEngine = SyncEngine(db: database, api: api);
+    syncEngine = _NoOpSyncEngine(db: database, api: api);
     node = _node();
     when(() => repository.getTrip('trip-1')).thenAnswer(
       (_) async => TripState(
@@ -218,7 +228,7 @@ void main() {
     syncEngine.stop();
     await database.close();
     database = _BlockingEnqueueDatabase();
-    syncEngine = SyncEngine(db: database, api: api);
+    syncEngine = _NoOpSyncEngine(db: database, api: api);
     makeContainer();
     final controller = await ready();
     final blockingDb = database as _BlockingEnqueueDatabase;
@@ -237,7 +247,7 @@ void main() {
     syncEngine.stop();
     await database.close();
     database = _FailingEnqueueDatabase();
-    syncEngine = SyncEngine(db: database, api: api);
+    syncEngine = _NoOpSyncEngine(db: database, api: api);
     makeContainer();
     final controller = await ready();
 
@@ -339,7 +349,7 @@ void main() {
     syncEngine.stop();
     await database.close();
     database = _FailingOutcomeDatabase();
-    syncEngine = SyncEngine(db: database, api: api);
+    syncEngine = _NoOpSyncEngine(db: database, api: api);
     makeContainer();
     final controller = await ready();
 
@@ -355,7 +365,7 @@ void main() {
     syncEngine.stop();
     await database.close();
     database = _FailingOutcomeDatabase();
-    syncEngine = SyncEngine(db: database, api: api);
+    syncEngine = _NoOpSyncEngine(db: database, api: api);
     when(() => repository.sendEvent(
           tripId: any(named: 'tripId'),
           type: any(named: 'type'),

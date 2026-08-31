@@ -62,6 +62,7 @@ void _stubDatabase(
       )).thenAnswer((_) async => outcomes);
   when(() => database.cachePlace(any(), any())).thenAnswer((_) async {});
   when(() => database.cacheTrip(any(), any())).thenAnswer((_) async {});
+  when(() => database.getCachedTrip(any())).thenAnswer((_) async => null);
   when(() => database.pruneAlertData()).thenAnswer((_) async {});
   when(() => database.getDismissedAlertIds(
         identityScope: any(named: 'identityScope'),
@@ -132,7 +133,7 @@ void main() {
       await harness.pump(tester);
 
       await tester.tap(find.text('Did this happen?'));
-      await tester.pump();
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Yes, I went'));
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump(const Duration(milliseconds: 250));
@@ -154,9 +155,9 @@ void main() {
       await harness.pump(tester);
 
       await tester.tap(find.text('Did this happen?'));
-      await tester.pump();
+      await tester.pumpAndSettle();
       await tester.tap(find.text('No, I skipped it'));
-      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
       expect(find.text('Why are you skipping?'), findsOneWidget);
       await tester.tap(find.text('Bad weather'));
       await tester.pump(const Duration(milliseconds: 300));
@@ -427,6 +428,15 @@ class _ChatHarness {
         tripRepoProvider.overrideWithValue(repository),
         offlineDatabaseProvider.overrideWithValue(database),
         identityCacheScopeProvider.overrideWithValue('account:user-1'),
+        userStatusProvider.overrideWith(
+          (_) async => const UserStatus(
+            userId: 'user-1',
+            tier: 'free',
+            used: 0,
+            remaining: 3,
+            max: 3,
+          ),
+        ),
       ],
     );
     final loaded = Completer<void>();
