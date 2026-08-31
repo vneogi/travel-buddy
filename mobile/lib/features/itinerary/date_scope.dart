@@ -17,23 +17,32 @@ class ItineraryDayGroup {
 /// sequence, and groups appear in the order of their first node.
 /// The input list is never sorted or mutated.
 List<ItineraryDayGroup> groupNodesByCalendarDate(List<TripNode> nodes) {
-  final groups = <int, List<TripNode>>{};
-  final order = <int>[];
+  final result = <ItineraryDayGroup>[];
+  int? currentKey;
+  List<TripNode>? currentNodes;
+
   for (final node in nodes) {
     final key = _dateKey(node.scheduledStart);
-    if (!groups.containsKey(key)) {
-      groups[key] = [];
-      order.add(key);
+    if (key != currentKey) {
+      if (currentNodes != null) {
+        result.add(ItineraryDayGroup(
+          date: _dateFromKey(currentKey!),
+          nodes: List<TripNode>.unmodifiable(currentNodes),
+        ));
+      }
+      currentKey = key;
+      currentNodes = [node];
+    } else {
+      currentNodes!.add(node);
     }
-    groups[key]!.add(node);
   }
-  return [
-    for (final key in order)
-      ItineraryDayGroup(
-        date: _dateFromKey(key),
-        nodes: List<TripNode>.unmodifiable(groups[key]!),
-      ),
-  ];
+  if (currentNodes != null) {
+    result.add(ItineraryDayGroup(
+      date: _dateFromKey(currentKey!),
+      nodes: List<TripNode>.unmodifiable(currentNodes),
+    ));
+  }
+  return result;
 }
 
 /// Whether [node] represents a hotel-like accommodation.

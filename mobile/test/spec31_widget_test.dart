@@ -168,6 +168,15 @@ void main() {
   setUpAll(() => registerFallbackValue(EventType.askInfo));
 
   group('SPEC-31 date-scoped itinerary', () {
+    setUp(() {
+      final binding = TestWidgetsFlutterBinding.ensureInitialized();
+      binding.setSurfaceSize(const Size(800, 600));
+    });
+    tearDown(() {
+      final binding = TestWidgetsFlutterBinding.ensureInitialized();
+      binding.setSurfaceSize(null);
+    });
+
     testWidgets('AppBar says Your Trip', (tester) async {
       final harness = await _Harness.create([
         _node(id: 'a', name: 'Museum', start: DateTime(2026, 10, 5, 9)),
@@ -292,11 +301,43 @@ void main() {
       addTearDown(harness.dispose);
       await harness.pump(tester);
 
-      // Both cards render under the same date header
+      // Two cards under the same date header
       expect(find.byType(ActivityCard), findsNWidgets(2));
-      // The card key includes outcome fields, proving wiring is intact.
-      // If the key expression were broken, AnimatedSwitcher would not
-      // rebuild on outcome changes.
+
+      // The elapsed node should show "Did this happen?"
+      expect(find.text('Did this happen?'), findsOneWidget);
+
+      // Tap "Did this happen?" -> opens outcome sheet
+      await tester.tap(find.text('Did this happen?'));
+      await tester.pumpAndSettle();
+
+      // Tap "Yes, I went" -> records visited
+      await tester.tap(find.text('Yes, I went'));
+      await tester.pumpAndSettle();
+
+      // Verify signal was emitted for the elapsed node, not the future one
+      final signalService = harness.container.read(signalServiceProvider);
+      verify(() => signalService.emitVisitedConfirmedWithResult(
+            placeRef: 'elapsed-ref',
+            tripId: 'trip-1',
+          )).called(1);
+
+      // Verify persistence was called for the elapsed node
+      final db = harness.container.read(offlineDatabaseProvider);
+      verify(() => db.upsertNodeOutcome(
+            identityScope: any(named: 'identityScope'),
+            tripId: 'trip-1',
+            nodeId: 'elapsed',
+            outcome: any(named: 'outcome'),
+            reason: any(named: 'reason'),
+            recordedAt: any(named: 'recordedAt'),
+          )).called(1);
+
+      // The future node should NOT have had its outcome recorded
+      verifyNever(() => signalService.emitVisitedConfirmedWithResult(
+            placeRef: 'future-ref',
+            tripId: 'trip-1',
+          ));
     });
   });
 }

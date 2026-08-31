@@ -366,7 +366,7 @@ class _DateHeader extends StatelessWidget {
       ),
       child: Text(
         '$weekday, $day $month $year',
-        style: AppTypography.h3.copyWith(color: AppColors.muted),
+        style: AppTypography.label.copyWith(color: AppColors.muted),
       ),
     );
   }

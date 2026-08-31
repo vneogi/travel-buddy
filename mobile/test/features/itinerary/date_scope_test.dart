@@ -85,20 +85,51 @@ void main() {
       expect(groups[1].date, DateTime(2027, 1, 1));
     });
 
+    test('non-contiguous same date produces separate groups (A/B/A)', () {
+      final nodes = [
+        _node('a1', start: DateTime(2026, 10, 5, 9)),
+        _node('b1', start: DateTime(2026, 10, 6, 10)),
+        _node('a2', start: DateTime(2026, 10, 5, 15)),
+      ];
+      final groups = groupNodesByCalendarDate(nodes);
+      expect(groups, hasLength(3));
+      expect(groups[0].date, DateTime(2026, 10, 5));
+      expect(groups[0].nodes.map((n) => n.nodeId), ['a1']);
+      expect(groups[1].date, DateTime(2026, 10, 6));
+      expect(groups[1].nodes.map((n) => n.nodeId), ['b1']);
+      expect(groups[2].date, DateTime(2026, 10, 5));
+      expect(groups[2].nodes.map((n) => n.nodeId), ['a2']);
+    });
+
     test('offset DateTime is grouped from its fields without conversion', () {
-      // A DateTime with a +05:30 offset should group under the date
-      // represented by its fields, not after toUtc() conversion.
-      // DateTime.parse preserves the offset in the represented fields.
-      final late = DateTime.parse('2026-10-06T01:30:00+05:30');
-      // That instant is 2026-10-05T20:00:00Z, but the fields say Oct 6.
+      // Dart DateTime.parse normalizes offset timestamps to UTC, so
+      // '2026-10-06T01:30:00+05:30' becomes 2026-10-05T20:00Z (fields
+      // show Oct 5, not Oct 6).  The grouping helper reads .year/.month/.day
+      // directly -- no toUtc()/toLocal() -- so a local-like DateTime(Oct 6)
+      // stays on Oct 6 while a UTC-normalized parse lands on Oct 5.
+      //
+      // This test verifies the helper never calls toUtc() before grouping:
+      // a non-UTC DateTime(Oct 6, 1, 30) keeps its fields intact.
+      final localLike = DateTime(2026, 10, 6, 1, 30);
       final nodes = [
         _node('day5', start: DateTime(2026, 10, 5, 18)),
-        _node('late', start: late),
+        _node('late', start: localLike),
       ];
       final groups = groupNodesByCalendarDate(nodes);
       expect(groups, hasLength(2));
       expect(groups[0].date, DateTime(2026, 10, 5));
       expect(groups[1].date, DateTime(2026, 10, 6));
+      // Sabotage proof: if the helper called .toUtc() on localLike,
+      // it would still be Oct 6 (non-UTC DateTime.toUtc() is identity),
+      // so we also verify the UTC-parsed variant groups under Oct 5.
+      final utcParsed = DateTime.parse('2026-10-06T01:30:00+05:30');
+      expect(utcParsed.day, 5, reason: 'Dart normalizes offset to UTC');
+      final groups2 = groupNodesByCalendarDate([
+        _node('day5', start: DateTime(2026, 10, 5, 18)),
+        _node('utc', start: utcParsed),
+      ]);
+      // Both land on Oct 5 because Dart already normalized
+      expect(groups2, hasLength(1));
     });
   });
 
@@ -212,17 +243,20 @@ void main() {
     test('exact checkout boundary is not active (half-open)', () {
       // Hotel: Oct 5 14:00 to Oct 6 14:00 (1440 min).
       // now == Oct 6 14:00 exactly -> NOT active (end is exclusive).
+      // A future stay is present so if 'h' were wrongly still active
+      // it would beat 'future'; selecting 'future' proves 'h' is elapsed.
       final checkout = DateTime(2026, 10, 6, 14);
       final nodes = [
         _node('h', start: DateTime(2026, 10, 5, 14), duration: 1440,
             nodeKind: 'booking', bookingType: 'hotel'),
+        _node('future', start: DateTime(2026, 10, 8, 14), duration: 720,
+            nodeKind: 'booking', bookingType: 'hotel'),
       ];
-      final result = selectRescueStay(nodes, checkout);
-      // Should be elapsed, not active.
-      expect(result!.nodeId, 'h');
-      // Verify it was selected as elapsed (no future, no active).
-      // If it were active we'd be OK too, but let's verify the boundary:
-      // Immediately before checkout should be active.
+      // At checkout moment: 'h' is elapsed, 'future' is future.
+      // Precedence: active > future > elapsed -> selects 'future'.
+      expect(selectRescueStay(nodes, checkout)!.nodeId, 'future');
+
+      // One second before checkout: 'h' is still active -> wins.
       final justBefore = checkout.subtract(const Duration(seconds: 1));
       expect(selectRescueStay(nodes, justBefore)!.nodeId, 'h');
     });
