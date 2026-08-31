@@ -26,8 +26,9 @@
   which types exist. A drift guard test enforces it.
 - Flutter: offline-first with a SQLite outbox, sync engine, and typed exception
   hierarchy. Signal emission is wired for most but not all registered types.
-  Hearts are still controller-local and Sync Status does not await `syncOnce()`,
-  so the SPEC-02 user path is not yet durable -- see the rows below.
+  Hearts persist across process death (verified Aug 30 on Windows).
+  `session_start` emits from the app lifecycle (SPEC-30, `f8349a8`).
+  Sync Status must still await `syncOnce()` before reading counts.
 - Migrations 0011 to 0018 are applied on the hosted database (device day
   2026-08-17, Supabase SQL editor). 0011 was gated on a live OpenAPI schema
   dump (no name_local dual-column conflict). 0015/0017 CHECKs remain NOT
@@ -60,7 +61,7 @@
 | Localized names | PARTLY VERIFIED | Ten of 58 venues carry a name confirmed against Wikidata or OSM, with source and ref recorded. Three classes of wrong-script token are fixed. The remaining 48 stay source=generated |
 | Curation round-trip | DONE | scripts/format_venue_json.py converts between the ASCII-escaped repo form and a readable UTF-8 copy under curation/, which is gitignored. Byte-identical round-trip is asserted |
 | Signal capture (SPEC-01) | DONE | All registered types accepted, both backends |
-| Offline queue (SPEC-02) | PARTIAL | SQLite outbox, sync engine and crash recovery are done. PR #23 (`dab16c0`) added resetAuthHalted() and HALTED (401). The hearts path is not durable: `lovedPlaceRefs` is held by an auto-disposed controller, and Sync Status does not await `syncOnce()` before reading counts |
+| Offline queue (SPEC-02) | PARTIAL | SQLite outbox, sync engine and crash recovery are done. PR #23 (`dab16c0`) added resetAuthHalted() and HALTED (401). Hearts survive app kill (Aug 30 Windows). Sync Status still does not await `syncOnce()` before reading counts |
 | Party context (SPEC-03) | DONE | Server-side stamping, both backends, migration 0003 applied |
 | Observability (SPEC-05) | DONE | Ring buffer, request IDs, debug endpoint |
 | Signal registry (SPEC-06) | DONE | models/signal_types.py plus drift test |
@@ -71,7 +72,7 @@
 | Data format guard | DONE | Every data/ file is ASCII by byte count, venue and glossary files round-trip byte-identically, and Lao-script fields are checked for foreign script |
 | Offline vault (SPEC-04) | DONE (October slice) | PR #22 (`b7e10c3`) + PR #23 (`dab16c0`). <=2-tap hotel rescue entry to DriverCardScreen, offline itinerary cache fallback in ItineraryController.load(), robust hotel matching (villa/guesthouse), pre-caching hotel place data in cache_place, honest empty state. Full vault post-field-test -- see SPEC-04 |
 | Anonymous identity (SPEC-09) | DONE (client + server) | Client half landed PR #16 (`7173a3f`): UUID v4 in flutter_secure_storage, Anonymous header, TB_DEBUG_USER_ID removed. Server half already verified. Record any remaining Anonymous E2E gap explicitly; the laptop is available |
-| Itinerary normalisation (SPEC-16) | IMPLEMENTED | Decompose and compose land in services/itinerary_normaliser.py, dual-write in both backends, round-trip equality asserted, wire format unchanged. node_id is stable across reschedules via state_json and now comes from models/ids.py. One gap remains: observed_duration_minutes has no writer, so no transition data is accumulating |
+| Itinerary normalisation (SPEC-16) | IMPLEMENTED | Decompose and compose land in services/itinerary_normaliser.py, dual-write in both backends, round-trip equality asserted, wire format unchanged. node_id is stable across reschedules via state_json and now comes from models/ids.py. SPEC-30 (`f8349a8`) writes `trip_edge.observed_duration_minutes` from consecutive arrivals |
 | Booking anchors (SPEC-10) | DONE (October slice) | PR #20 squash-merged as `f6328e9`. Immovable locked nodes, booking metadata, scheduler rules, parser and AddBookingSheet. Mad Monkey Booking.com dates were verified Aug 27-28. Edit/delete and notes on cards remain absent; migration 0021 remains unapplied unless separately recorded |
 | Forced-choice preferences (SPEC-11) | SPECIFIED | Not implemented. Cold-start preference capture |
 | Show driver cards (SPEC-12) | DONE (October slice) | Full-screen offline card from SQLite cache_place, FactView assert/ask/refuse tiers, geoRegion-threaded native script, driver_card_shown/name_confirmed signals. Dubai airplane behavior was verified Aug 27-28: no fare and no screenshot copy. No Fair Fare until sourced; Windows `geo:` hand-off failed, so keep small last-resort coordinates. Migration 0023 (unapplied) carries localized fields through live venue search |
@@ -92,7 +93,7 @@
 | App lifecycle and data rights (SPEC-27) | SPECIFIED | Not implemented. The three consumer obligations with no owner: push transport with tokens that survive the SPEC-24 merge and delivery through the SPEC-22 interruption budget enforced server-side, deletion and export under DPDP and GDPR, and a minimum supported client that blocks writes but never reads. States the position that raw signals are deleted while non-identifying derived aggregates survive |
 | Trip inspiration (SPEC-28) | DECIDED, NOT SCHEDULED | Opt-in, delayed, region-level public trip snapshots as inspiration. No live people/location, DMs or comments in v1. Requires identity, deletion/export and moderation gates |
 | Context alerts (SPEC-29) | DONE (phase 1) | PR #25 squash-merged as `aedbc03`. OpenWeather evidence is matched to upcoming nodes, cached by identity and shown with provenance. Alerts never mutate or consume reroute quota. Synthetic transit is not user copy; cancel preserves position and locked cancel returns 409 before quota. Watcher/push phase not started |
-| Retention instrumentation (SPEC-30) | SPECIFIED, PRE-OCT GATE | Not implemented, and the north-star it measures does not exist in code yet. A `session_start` / trip-open signal with trip-relative timing, plus a "did this happen" node state that gives `observed_duration_minutes` its writer and makes "cancel next stop" target the next movable node. Hard pre-Oct-2 requirement; ~1-2 days |
+| Retention instrumentation (SPEC-30) | PHASE 1 DONE (`f8349a8`) | PR #32. `session_start` in registry + migration 0024; client emit via outbox (cold start and resume, 30s debounce). Server stamps trip_day when trip_id is present. `trip_edge.observed_duration_minutes` writer on ingest. Remaining: past-node confirm/skip UI and explicit cancel-target confirmation |
 
 Migration numbers are assigned when a spec is implemented, not when it is
 written. SPEC-11, SPEC-13, SPEC-14 and SPEC-15 each claimed a number, and the
@@ -104,8 +105,10 @@ numbers were taken by other work while they sat unimplemented.
 
 Interim R5 relocate of VALID_DISH_CONTAINS landed in PR #15 (d061222). Device
 day is closed and the Windows laptop ran the product matrix on Aug 27-28.
-Remaining device work must be named explicitly: unapplied migrations,
-Profile/Skip exact errors, durable hearts, and any unrecorded Anonymous E2E.
+Remaining device work must be named explicitly: unapplied migrations
+(0023 and any earlier unapplied except 0024 if already applied on hosted),
+Profile/Skip exact errors, and any unrecorded Anonymous E2E. Durable hearts
+passed on Windows Aug 30.
 
 Success means an installable build whose engine knows a real trip anchored on
 real flight and hotel bookings, and whose driver card works without
@@ -148,20 +151,13 @@ SPEC-02 plus SPEC-12.
 
 ### Pre-field-test instrumentation gate (added Aug 2026)
 
-The seven-item spine proves the *engine* works on the trip. It does not prove the
-*business*, because the north-star (VISION section 7) is uninstrumented: no
-session, app-open or reopen event exists anywhere in `.py`, `.dart` or `.sql`. A
-field test without it produces a story, not a retention shape, and retention is
-the gate a Seed round is judged on. This is a hard pre-Oct-2 requirement, not a
-post-spine nicety -- the one strategic task on the list with a real deadline.
+The seven-item spine proves the *engine* works on the trip. Phase 1 of SPEC-30
+(`f8349a8`) records `session_start` and writes observed minutes on `trip_edge`.
+That is instrumentation, not a validated retention curve: one field-test trip
+still cannot prove Seed-shaped cohorts.
 
-- **SPEC-30 retention and "did this happen" instrumentation.** A `session_start` /
-  trip-open signal carrying trip-relative timing (trip day N, minutes since last
-  open) through the existing outbox. Bundled with it, a "did this happen" state on
-  nodes -- the single change that gives `observed_duration_minutes` its missing
-  writer (closing the SPEC-16 defect below), makes `visited_confirmed` reachable,
-  and fixes "cancel next stop" targeting the next *movable* node rather than the
-  first of the day. One primitive, several payoffs. ~1-2 days.
+- **SPEC-30 remainder.** Past-node "did this happen" and an explicit "which
+  stop?" cancel confirmation. `nextMovableStop` already exists; do not rebuild it.
 - **Sponsored-placement disclosure (SPEC-17 decision 15).** Sponsored boost is
   live in the ranker with no client disclosure, and Pro is sold as removing it.
   Decide and land the disclosure surface before adding any affiliate revenue; it
@@ -169,7 +165,8 @@ post-spine nicety -- the one strategic task on the list with a real deadline.
 
 ### After the field-test spine (still important, not Oct-critical)
 
-8. Give observed_duration_minutes a writer from arrival signals on sync.
+8. Date-scoped itinerary, booking edit/delete, and real Laos creation
+   (near-term product gates after the Aug 27-30 laptop runs).
 9. Retire the dietary suitability claim (SPEC-14). Closes the
    halal-versus-pork hole by removing the claim.
 10. SPEC-17 trust and verification -- gates SPEC-18/19/20; behind the
@@ -177,8 +174,8 @@ post-spine nicety -- the one strategic task on the list with a real deadline.
 11. reroute_rejected plus swap sheet UI -- last unwired behavioural signal.
 12. Full SPEC-04 remainder (cache_vault, passes, emergency grid, phrase
     packs) if still wanted.
-13. Finish the consumer slices already on the October path: durable hearts,
-    date-scoped itinerary and bookings, real Laos creation, trip-less Ask and
+13. Finish the consumer slices already on the October path: date-scoped
+    itinerary and bookings, real Laos creation, trip-less Ask and
     the richer Home aggregate. SPEC-27 follows; SPEC-24 design is settled.
 14. Swappable LLM provider -- no owning spec yet; next free number. Every
     intelligent path is one hosted vendor today.
@@ -203,7 +200,7 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 | reroute_accepted.replacement_ref is inverted | Closed PR #18 (`ce8fedb`) | Client helper replacementRefForSwap matches node_id and changed venue key. Production `_swap` calls it |
 | Supabase session gate softlocks the app | Closed PR #18 (`ce8fedb`) | app_router calls redirectForAuth; anonymous device needs no session. Owner E2E with dart-defines still in LAPTOP_VERIFY Step 8b |
 | Anonymous data has no path into an account, and signal sits outside referential integrity | Medium | SPEC-09 starts accumulating trip_states, event_log and signal rows under a device UUID that belongs to a device rather than a person. Until SPEC-24 exists, the first sign-in strands all of it, and from the user's side that looks like an app that lost their trip. The schema makes it sharper: trip_states.user_id and event_log.user_id are UUID REFERENCES user_tiers, while signal.user_id is TEXT with no foreign key and no type match, so the table holding the asset is the one table outside the constraint system. Neither a merge nor a SPEC-27 deletion can rely on a cascade, and nothing will complain when a future table is missed -- which is why both specs walk the schema instead of keeping a list. The engineering does not get harder with time; the data does |
-| observed_duration_minutes has no writer | Medium | The column exists and is honestly documented as starting empty, but nothing populates it. It cannot be computed when a trip is saved, only derived from arrival signals on sync, so the transition data the convenience layer depends on is not accumulating. This is the last open defect from the SPEC-16 work |
+| observed_duration_minutes writer | Closed PR #32 (`f8349a8`) | Consecutive arrivals update `trip_edge.observed_duration_minutes`. Dual-write preserves the value. Transport cost on the same table is still unwritten (SPEC-23) |
 | The five Supabase tests have never run | Closed Aug 17 2026 | Live device-day pytest with TB_SUPABASE_URL set; tests/test_supabase_integration.py included. Run pytest -q -ra to confirm |
 | Non-Laos local dish names remain unbackfilled | Low | 0015's names_local backfill is correctly scoped to the three Laos regions, so any Dubai dish carrying a name_local keeps a null names_local rather than a wrong language tag. That is the right trade, but it leaves a second pass owed once the Dubai rows are exported and their language confirmed |
 | deploy fails: there is no deployment target | Medium | ci.yml chains lint, test, build and deploy, each needing the one before, and lint failed on every run as far back as the retained history, so build and deploy had never executed once in the life of this repository. Both ran for the first time on 8ed6c16. build passed and pushed an image to the container registry, which is the first artifact this project has ever produced. deploy failed after one second at the Railway step, which needs a RAILWAY_TOKEN secret and a service named travel-buddy-api; the health check reads a PRODUCTION_URL secret. Nothing here is a regression -- it is scaffolding written early and never once exercised. Resolved by gating: deploy now requires workflow_dispatch, so main stays green and deploying becomes a deliberate act from the Actions tab once a target exists. build still runs on every push to main, so the image is proven continuously and only the release step is manual. Left ungated it would have made main permanently red, which is the exact condition that let lint stay broken and unnoticed for a week |

@@ -1,20 +1,24 @@
 # SPEC-30: Retention Instrumentation and the "Did This Happen" Node State
 
-> Status: SPECIFIED. Not implemented. **Pre-Oct-2 gate.**
+> Status: PHASE 1 ON MAIN. Squash-merged PR #32 as `f8349a8` (2026-08-31).
+> Remaining product: past-node "did this happen" UI and an explicit cancel-target
+> confirmation. Those are not required to emit `session_start` or to write
+> `trip_edge.observed_duration_minutes`.
 >
 > Depends on SPEC-02 (the outbox that transports it), SPEC-06/07 (the signal
 > registry and emission path), and SPEC-16 (the observed_duration_minutes column
-> this finally writes to). It exists to make the VISION section 7 north-star
-> measurable before the field test rather than after.
+> this writes on `trip_edge`, not `trip_node`).
 >
-> No migration number is claimed. Numbers are taken at implementation time.
+> Migration 0024 registers `session_start`. Apply on hosted Postgres before the
+> first live ingest; until then ingest reports `rejected=1`.
 
 ## Goal
 
 Make the north-star measurable, and give the transition-data column its missing
 writer, with the smallest set of changes that survives the field test. The
 metric that decides a Seed round -- do people reopen during a trip, and again on
-the next one -- cannot be computed today because nothing records an app open.
+the next one -- is recorded as `session_start`. Cohorts still cannot validate
+retention; one traveller on one trip proves the software, not the curve.
 
 ## Why these are one spec
 
@@ -22,7 +26,7 @@ Three gaps share a shape: a signal that is registered but never emitted, a
 metric that is stated but never measured, and a column that exists but has no
 writer. They are one traveller action apart from each other. "I opened the app"
 and "I actually did this stop" are the two facts the whole retention and
-transition story is built on, and neither is captured now. Bundling them means
+transition story is built on. Bundling them means
 one lifecycle hook and one derivation pass instead of three, and it stops the
 observed_duration writer being deferred a fourth time behind a bigger spec.
 
@@ -58,9 +62,9 @@ observed_duration writer being deferred a fourth time behind a bigger spec.
 5. **observed_duration_minutes is derived from that confirmation, on sync,
    server-side.** When a node is confirmed visited, observed duration is the span
    from its confirmed arrival to the next node's confirmed arrival, written to the
-   SPEC-16 column that currently has no writer. It cannot be computed at save time,
+   SPEC-16 column on `trip_edge`. It cannot be computed at save time,
    only from arrival signals, which is exactly why SPEC-16 named it and left it
-   open. It is absent, not zero, while the next node is unconfirmed.
+   empty until SPEC-30. It is absent, not zero, while the next node is unconfirmed.
 
 6. **The "cancel next stop" bug is fixed by the same node state, not separately.**
    The client already has the node-window helper; targeting the next *movable*
@@ -115,12 +119,32 @@ value here and a missing measurement is not.
 
 ## Acceptance
 
-- [ ] session_start in the registry (Python plus migration), behavioral, decay
-      none, drift guard green
-- [ ] Client emits session_start on foreground through the outbox, carrying
-      trip-relative timing
-- [ ] A UI affordance emits visited_confirmed / node_skipped for active and past
-      nodes
-- [ ] observed_duration_minutes derived on sync, closing the SPEC-16 defect
-- [ ] "cancel next stop" targets the next movable node, with a test
-- [ ] Suite green (R8); verified from `origin/main` (R10)
+- [x] session_start in the registry (Python plus migration 0024), behavioral,
+      decay none, drift guard green (`f8349a8`)
+- [x] Client emits session_start on foreground through the outbox, carrying
+      trip-relative timing (cold start and resume, 30s debounce; tripId from
+      `/trip/:id`; client trip_day from cached itinerary)
+- [ ] A UI affordance emits visited_confirmed / node_skipped for *past* nodes.
+      Active-node confirm/skip already shipped before this spec.
+- [x] observed_duration_minutes written on `trip_edge` on ingest of consecutive
+      arrivals (`update_edge_observed_duration`); dual-write preserves observed
+      minutes on matching from/to pairs
+- [x] "cancel next stop" uses `nextMovableStop` (already in tree; not rebuilt)
+- [x] Suite green on origin/main at `f8349a8` (lint, pytest, Flutter analyze,
+      Flutter test)
+
+## As built (PR #32)
+
+Do not write observed minutes onto `trip_node`. The column lives on
+`trip_edge.observed_duration_minutes` (SPEC-16 / migration 0014). An early Genie
+draft targeted a non-existent node column; the merge retargeted the writer.
+
+When `trip_id` is present, the server stamps authoritative `trip_day` from
+`captured_at` versus `trip.created_at`. Client `trip_day` is still sent from
+cached itinerary for offline honesty.
+
+Emit is fire-and-forget with a catch-all; a failed open must not block launch.
+
+Owner laptop: first ingest `rejected=1` until 0024 was applied on hosted
+Postgres; after apply, `accepted=1 rejected=0`. Flutter `session_start` tests
+need `NetworkException` mocked and `syncEngine.stop()` before `db.close()`.

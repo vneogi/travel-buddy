@@ -1,9 +1,11 @@
 # Genie Brief -- SPEC-30 Retention Instrumentation
 
-> Status: READY TO IMPLEMENT.
-> Land through feature branches and PRs to `main`; do not push directly to
-> `main`. Two independent slices -- **ship slice 1 first, as its own PR.**
-> Spec: `docs/specs/SPEC-30-retention-instrumentation.md`.
+> Status: LANDED on `main` as `f8349a8` (PR #32). Do not re-implement.
+> Observed duration writes **`trip_edge.observed_duration_minutes`**, not a
+> column on `trip_node` (that column does not exist). Remainder of the spec is
+> past-node confirm/skip UI and explicit cancel-target confirmation.
+>
+> Historical brief below is kept so the original slice split is readable.
 
 ## Why this brief is smaller than the spec
 

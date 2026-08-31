@@ -79,13 +79,10 @@ Our users are frequently in low- or no-connectivity areas. An on-trip companion 
 
 **On-trip retention** — do people reopen Travel Buddy *during* a trip, and again on the *next* trip? Every roadmap decision is judged against this. Not downloads, not city count, not MAU vanity.
 
-**This metric is not yet instrumented.** No session, app-open or reopen event
-exists anywhere in the code today, so the field test can capture that a trip went
-well but not the retention *shape* a Seed round is judged on. `SPEC-30` adds a
-`session_start` / trip-open signal with trip-relative timing before Oct 2; it is
-the one instrumentation task with a hard deadline. And one traveller on one trip
-cannot *validate* retention — that needs cohorts — so the field test proves the
-software, not the curve. Do not walk into a Seed conversation claiming otherwise.
+**session_start is instrumented as of `f8349a8` (PR #32).** It rides the SPEC-02
+outbox. The field test can now capture reopen timing; it still cannot *validate*
+retention -- that needs cohorts. Do not walk into a Seed conversation claiming
+otherwise. SPEC-30 remainder is past-node confirmation UI, not the signal itself.
 
 ## 8. The endgame
 
@@ -231,15 +228,12 @@ Near-term product gates after the Aug 27-28 laptop run:
    not regress to random traffic or synthetic transit copy.
 2. Make the itinerary date-scoped so stays and activities are selected for the
    current day rather than by first match.
-3. Persist filled-heart UI state by identity and trip without re-emitting; the
-   `user_loved` event already uses the outbox. Await sync before reporting
-   status counts.
+3. Hearts persist across process death (verified Aug 30). Keep awaiting sync
+   before reporting status counts.
 4. Build real Laos trip creation. The current create path still seeds Dubai.
-5. Instrument retention before the trip (`SPEC-30`): a `session_start` / trip-open
-   signal with trip-relative timing, plus a "did this happen" state on nodes that
-   finally gives `observed_duration_minutes` a writer and makes "cancel next stop"
-   target the next *movable* node rather than the first of the day. One primitive,
-   several payoffs. This is the only near-term gate with a funding-shaped deadline.
+5. SPEC-30 remainder: past-node "did this happen" and an explicit cancel-target
+   confirmation. `session_start` and the `trip_edge` observed-duration writer
+   already landed in `f8349a8`.
 
 
 ---

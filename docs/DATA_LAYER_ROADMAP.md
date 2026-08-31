@@ -189,8 +189,8 @@ Two consequences beyond the obvious one. A band that is not anchored to a region
 not a transfer carrier at all, which undercuts concern 6: `budget` is the same
 string in Luang Prabang and Dubai and a different amount, so a tolerance learned
 in one city means nothing in the next. And transport cost is a property of an
-edge, so concern 5 is where it belongs, inheriting the writer problem that
-`observed_duration_minutes` still has.
+edge, so concern 5 is where it belongs. Duration on that edge is now written
+by SPEC-30; transport cost still has no writer.
 
     venues_rag  entry_amount_minor, entry_currency_code, constrained price_band
     trip_edge   transport_cost_estimate_minor, transport_cost_observed_minor
