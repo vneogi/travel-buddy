@@ -2,23 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/models.dart';
+import '../itinerary/date_scope.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../booking/add_booking_sheet.dart';
 
-/// Finds the primary accommodation/hotel node in an itinerary.
-TripNode? findHotelNode(List<TripNode> nodes) {
-  return nodes.where((n) {
-    if (n.nodeKind == 'booking' && n.bookingType == 'hotel') return true;
-    if (n.bookingType == 'hotel') return true;
-    final name = n.venueName.toLowerCase();
-    return name.contains('hotel') ||
-        name.contains('resort') ||
-        name.contains('hostel') ||
-        name.contains('villa') ||
-        name.contains('guesthouse');
-  }).firstOrNull;
+/// Finds the best accommodation for Hotel Rescue using date-aware selection.
+///
+/// Delegates to [selectRescueStay] which applies the SPEC-31 precedence:
+/// active stay > earliest future > most recently elapsed.
+/// [now] defaults to [DateTime.now] for production; tests inject it.
+TripNode? findHotelNode(List<TripNode> nodes, {DateTime? now}) {
+  return selectRescueStay(nodes, now ?? DateTime.now());
 }
 
 /// Helper to execute <= 2-tap hotel rescue navigation.

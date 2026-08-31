@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:travel_buddy/data/models.dart';
 import 'package:travel_buddy/features/rescue/hotel_rescue_sheet.dart';
+import 'package:travel_buddy/features/itinerary/date_scope.dart';
 
 TripNode _node(String name, {String nodeKind = 'activity', String? bookingType}) =>
     TripNode(
@@ -102,6 +103,100 @@ void main() {
       final decoded = jsonDecode(encoded) as Map<String, dynamic>;
       final restored2 = TripState.fromJson(decoded);
       expect(restored2.nodes.first.venueName, equals('Hilton'));
+    });
+  });
+
+  // -----------------------------------------------------------
+  // SPEC-31: Date-aware rescue selection via findHotelNode
+  // -----------------------------------------------------------
+  group('SPEC-31 date-aware findHotelNode', () {
+    test('two stays on different dates selects the active one', () {
+      final now = DateTime(2026, 10, 6, 20);
+      final nodes = [
+        _node('Hotel A', nodeKind: 'booking', bookingType: 'hotel'),
+        TripNode(
+          nodeId: 'Hotel B',
+          venueName: 'Hotel B',
+          scheduledStart: DateTime(2026, 10, 6, 14),
+          durationMinutes: 720,
+          isLocked: true,
+          status: NodeStatus.pending,
+          vibeTags: const [],
+          nodeKind: 'booking',
+          bookingType: 'hotel',
+        ),
+      ];
+      final result = findHotelNode(nodes, now: now);
+      expect(result, isNotNull);
+      expect(result!.venueName, 'Hotel B');
+    });
+
+    test('before both stays selects the earliest future one', () {
+      final now = DateTime(2026, 10, 1, 12);
+      final nodes = [
+        TripNode(
+          nodeId: 'Hotel Late',
+          venueName: 'Hotel Late',
+          scheduledStart: DateTime(2026, 10, 8, 14),
+          durationMinutes: 720,
+          isLocked: true,
+          status: NodeStatus.pending,
+          vibeTags: const [],
+          nodeKind: 'booking',
+          bookingType: 'hotel',
+        ),
+        TripNode(
+          nodeId: 'Hotel Early',
+          venueName: 'Hotel Early',
+          scheduledStart: DateTime(2026, 10, 5, 14),
+          durationMinutes: 720,
+          isLocked: true,
+          status: NodeStatus.pending,
+          vibeTags: const [],
+          nodeKind: 'booking',
+          bookingType: 'hotel',
+        ),
+      ];
+      final result = findHotelNode(nodes, now: now);
+      expect(result!.venueName, 'Hotel Early');
+    });
+
+    test('after both stays selects the most recently elapsed one', () {
+      final now = DateTime(2026, 10, 20, 12);
+      final nodes = [
+        TripNode(
+          nodeId: 'Hotel Old',
+          venueName: 'Hotel Old',
+          scheduledStart: DateTime(2026, 10, 5, 14),
+          durationMinutes: 720,
+          isLocked: true,
+          status: NodeStatus.pending,
+          vibeTags: const [],
+          nodeKind: 'booking',
+          bookingType: 'hotel',
+        ),
+        TripNode(
+          nodeId: 'Hotel Recent',
+          venueName: 'Hotel Recent',
+          scheduledStart: DateTime(2026, 10, 8, 14),
+          durationMinutes: 720,
+          isLocked: true,
+          status: NodeStatus.pending,
+          vibeTags: const [],
+          nodeKind: 'booking',
+          bookingType: 'hotel',
+        ),
+      ];
+      final result = findHotelNode(nodes, now: now);
+      expect(result!.venueName, 'Hotel Recent');
+    });
+
+    test('empty state unchanged when no hotel exists', () {
+      final nodes = [
+        _node('Cafe Latte'),
+        _node('Museum Tour'),
+      ];
+      expect(findHotelNode(nodes, now: DateTime(2026, 10, 5, 12)), isNull);
     });
   });
 }

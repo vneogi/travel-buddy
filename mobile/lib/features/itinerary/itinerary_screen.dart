@@ -14,6 +14,7 @@ import '../../widgets/reroute_badge.dart';
 import '../../widgets/shimmer_card.dart';
 import '../../widgets/error_view.dart';
 import 'current_window.dart';
+import 'date_scope.dart';
 import 'itinerary_notifier.dart';
 import 'replacement_ref.dart';
 import '../alerts/alerts_notifier.dart';
@@ -111,7 +112,7 @@ class ItineraryScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Your Day', style: AppTypography.h2),
+        title: Text('Your Trip', style: AppTypography.h2),
         actions: [
           IconButton(
             icon: const Icon(Icons.shield_outlined),
@@ -182,74 +183,191 @@ class ItineraryScreen extends ConsumerWidget {
                                     .copyWith(color: AppColors.muted),
                               ),
                             )
-                          : ListView.builder(
-                              itemCount: state.nodes.length,
-                              padding: const EdgeInsets.only(
-                                top: AppSpacing.base,
-                                bottom: 100, // space for FAB
-                              ),
-                              itemBuilder: (context, i) {
-                                final node = state.nodes[i];
-                                final next = i < state.nodes.length - 1
-                                    ? state.nodes[i + 1]
-                                    : null;
-                                // Signature key → row rebuilds when its content
-                                // changes (swap/time-shift/status), stays stable
-                                // otherwise. Smooth 200ms cross-fade on change.
-                                return AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 220),
-                                  transitionBuilder: (child, anim) =>
-                                      FadeTransition(opacity: anim, child: child),
-                                  child: ActivityCard(
-                                    // Key includes loved flag — without it the
-                                    // AnimatedSwitcher won't rebuild when only
-                                    // isLoved changes, and the heart stays unfilled.
-                                    key: ValueKey(
-                                      '${_sig(node)}|'
-                                      '${state.lovedPlaceRefs.contains(node.venueId ?? node.venueName)}|'
-                                      '${state.nodeOutcomes[node.nodeId]?.outcome}|'
-                                      '${state.nodeOutcomes[node.nodeId]?.reason}|'
-                                      '${state.outcomeRecordingNodeIds.contains(node.nodeId)}',
-                                    ),
-                                    node: node,
-                                    nextNode: next,
-                                    isLoved: state.lovedPlaceRefs
-                                        .contains(node.venueId ?? node.venueName),
-                                    recordedOutcome:
-                                        state.nodeOutcomes[node.nodeId],
-                                    isRecordingOutcome: state
-                                        .outcomeRecordingNodeIds
-                                        .contains(node.nodeId),
-                                    onTapSwap: state.processing
-                                        ? null
-                                        : () => _swap(ref, node),
-                                    onTapCancel: state.processing
-                                        ? null
-                                        : () => _cancel(ref, node),
-                                    onTapRecordOutcome: state.processing
-                                        ? null
-                                        : () => _showOutcomePicker(
-                                              context,
-                                              ref,
-                                              node,
-                                            ),
-                                    onTapLoved: () {
-                                      final placeRef = node.venueId ?? node.venueName;
-                                      ref.read(signalServiceProvider).emitUserLoved(
-                                            placeRef: placeRef,
-                                            tripId: tripId,
-                                          );
-                                      ref
-                                          .read(itineraryControllerProvider(tripId).notifier)
-                                          .markLoved(placeRef);
-                                    },
-                                  ),
-                                );
+                          : _DateScopedTimeline(
+                              nodes: state.nodes,
+                              state: state,
+                              tripId: tripId,
+                              onSwap: (node) => _swap(ref, node),
+                              onCancel: (node) => _cancel(ref, node),
+                              onOutcome: (node) =>
+                                  _showOutcomePicker(context, ref, node),
+                              onLoved: (node) {
+                                final placeRef =
+                                    node.venueId ?? node.venueName;
+                                ref
+                                    .read(signalServiceProvider)
+                                    .emitUserLoved(
+                                      placeRef: placeRef,
+                                      tripId: tripId,
+                                    );
+                                ref
+                                    .read(
+                                        itineraryControllerProvider(tripId)
+                                            .notifier)
+                                    .markLoved(placeRef);
                               },
+                              sig: _sig,
                             ),
-                    ),
                   ],
                 ),
+    );
+  }
+}
+
+/// SPEC-31: Flattened date-grouped timeline.
+///
+/// Builds a single [ListView] of date-header + [ActivityCard] items.
+/// [nextNode] spans across date boundaries so the last card in one day
+/// still receives the first card of the next day.
+class _DateScopedTimeline extends StatelessWidget {
+  final List<TripNode> nodes;
+  final ItineraryState state;
+  final String tripId;
+  final void Function(TripNode) onSwap;
+  final void Function(TripNode) onCancel;
+  final void Function(TripNode) onOutcome;
+  final void Function(TripNode) onLoved;
+  final String Function(TripNode) sig;
+
+  const _DateScopedTimeline({
+    required this.nodes,
+    required this.state,
+    required this.tripId,
+    required this.onSwap,
+    required this.onCancel,
+    required this.onOutcome,
+    required this.onLoved,
+    required this.sig,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final groups = groupNodesByCalendarDate(nodes);
+
+    // Build a flat list of view items: headers + cards.
+    final items = <_TimelineItem>[];
+    for (final group in groups) {
+      items.add(_TimelineItem.header(group.date));
+      for (final node in group.nodes) {
+        items.add(_TimelineItem.card(node));
+      }
+    }
+
+    return ListView.builder(
+      itemCount: items.length,
+      padding: const EdgeInsets.only(
+        top: AppSpacing.base,
+        bottom: 100, // space for FAB
+      ),
+      itemBuilder: (context, i) {
+        final item = items[i];
+        if (item.isHeader) {
+          return _DateHeader(date: item.date!);
+        }
+        final node = item.node!;
+        // nextNode: next card-type item in the flat list (skipping headers),
+        // which crosses date boundaries.
+        TripNode? next;
+        for (var j = i + 1; j < items.length; j++) {
+          if (!items[j].isHeader) {
+            next = items[j].node;
+            break;
+          }
+        }
+
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 220),
+          transitionBuilder: (child, anim) =>
+              FadeTransition(opacity: anim, child: child),
+          child: ActivityCard(
+            key: ValueKey(
+              '${sig(node)}|'
+              '${state.lovedPlaceRefs.contains(node.venueId ?? node.venueName)}|'
+              '${state.nodeOutcomes[node.nodeId]?.outcome}|'
+              '${state.nodeOutcomes[node.nodeId]?.reason}|'
+              '${state.outcomeRecordingNodeIds.contains(node.nodeId)}',
+            ),
+            node: node,
+            nextNode: next,
+            isLoved: state.lovedPlaceRefs
+                .contains(node.venueId ?? node.venueName),
+            recordedOutcome: state.nodeOutcomes[node.nodeId],
+            isRecordingOutcome:
+                state.outcomeRecordingNodeIds.contains(node.nodeId),
+            onTapSwap: state.processing ? null : () => onSwap(node),
+            onTapCancel: state.processing ? null : () => onCancel(node),
+            onTapRecordOutcome:
+                state.processing ? null : () => onOutcome(node),
+            onTapLoved: () => onLoved(node),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// A flat-list item: either a date header or a node card.
+class _TimelineItem {
+  final DateTime? date;
+  final TripNode? node;
+
+  const _TimelineItem._({this.date, this.node});
+
+  factory _TimelineItem.header(DateTime date) =>
+      _TimelineItem._(date: date);
+  factory _TimelineItem.card(TripNode node) =>
+      _TimelineItem._(node: node);
+
+  bool get isHeader => date != null;
+}
+
+/// Calendar-date section header.
+class _DateHeader extends StatelessWidget {
+  final DateTime date;
+  const _DateHeader({required this.date});
+
+  static const _weekdays = [
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
+  ];
+
+  static const _months = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final weekday = _weekdays[date.weekday - 1];
+    final day = date.day;
+    final month = _months[date.month - 1];
+    final year = date.year;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.base,
+        AppSpacing.lg,
+        AppSpacing.base,
+        AppSpacing.sm,
+      ),
+      child: Text(
+        '$weekday, $day $month $year',
+        style: AppTypography.h3.copyWith(color: AppColors.muted),
+      ),
     );
   }
 }
