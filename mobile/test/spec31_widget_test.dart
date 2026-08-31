@@ -168,13 +168,13 @@ void main() {
   setUpAll(() => registerFallbackValue(EventType.askInfo));
 
   group('SPEC-31 date-scoped itinerary', () {
-    setUp(() {
+    setUp(() async {
       final binding = TestWidgetsFlutterBinding.ensureInitialized();
-      binding.setSurfaceSize(const Size(800, 600));
+      await binding.setSurfaceSize(const Size(800, 600));
     });
-    tearDown(() {
+    tearDown(() async {
       final binding = TestWidgetsFlutterBinding.ensureInitialized();
-      binding.setSurfaceSize(null);
+      await binding.setSurfaceSize(null);
     });
 
     testWidgets('AppBar says Your Trip', (tester) async {
@@ -285,7 +285,7 @@ void main() {
 
     testWidgets('SPEC-30 outcome wiring still reaches the correct node',
         (tester) async {
-      final now = DateTime(2026, 10, 5, 12);
+      final now = DateTime.now().toUtc();
       final harness = await _Harness.create([
         _node(
           id: 'elapsed',

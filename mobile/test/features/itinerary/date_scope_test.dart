@@ -119,9 +119,11 @@ void main() {
       expect(groups, hasLength(2));
       expect(groups[0].date, DateTime(2026, 10, 5));
       expect(groups[1].date, DateTime(2026, 10, 6));
-      // Sabotage proof: if the helper called .toUtc() on localLike,
-      // it would still be Oct 6 (non-UTC DateTime.toUtc() is identity),
-      // so we also verify the UTC-parsed variant groups under Oct 5.
+      // Sabotage proof: .toUtc() on a non-UTC DateTime is NOT identity
+      // -- it applies the local timezone offset, so in UTC+N zones
+      // 01:30 local could shift to the previous calendar day in UTC.
+      // The UTC-parsed variant below already lands on Oct 5 because
+      // Dart normalized the offset at parse time.
       final utcParsed = DateTime.parse('2026-10-06T01:30:00+05:30');
       expect(utcParsed.day, 5, reason: 'Dart normalizes offset to UTC');
       final groups2 = groupNodesByCalendarDate([
