@@ -159,12 +159,10 @@ void main() {
       await tester.tap(find.text('No, I skipped it'));
       await tester.pumpAndSettle();
       expect(find.text('Why are you skipping?'), findsOneWidget);
-      await tester.ensureVisible(find.text('Bad weather'));
-      await tester.tap(find.text('Bad weather'));
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.pump(const Duration(milliseconds: 250));
+      await tester.tap(find.text('Too far away'));
+      await tester.pumpAndSettle();
 
-      expect(find.text('Skipped: Bad weather'), findsOneWidget);
+      expect(find.text('Skipped: Too far away'), findsOneWidget);
       expect(harness.node.status, NodeStatus.pending);
     });
   });
