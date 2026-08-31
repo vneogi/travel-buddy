@@ -15,6 +15,18 @@ import 'package:travel_buddy/services/signal_service.dart';
 // Mocks
 class MockApiClient extends Mock implements ApiClient {}
 
+class FailingEnqueueDatabase extends OfflineDatabase {
+  FailingEnqueueDatabase() : super(testPath: inMemoryDatabasePath);
+
+  @override
+  Future<void> enqueue(
+    String signalId,
+    String payloadJson,
+    String capturedAt,
+  ) =>
+      Future<void>.error(StateError('outbox write failed'));
+}
+
 void main() {
   sqfliteFfiInit();
   databaseFactory = databaseFactoryFfi;
@@ -116,6 +128,32 @@ void main() {
         placeRef: 'some-place',
       );
       // If we get here without exception, test passes
+    });
+
+    test('result path reports enqueue failure while emit still never throws',
+        () async {
+      final failingDb = FailingEnqueueDatabase();
+      final failingEngine = SyncEngine(db: failingDb, api: mockApi);
+      final failingService = SignalService(
+        db: failingDb,
+        syncEngine: failingEngine,
+      );
+      addTearDown(() async {
+        failingEngine.stop();
+        await failingDb.close();
+      });
+
+      final result = await failingService.emitVisitedConfirmedWithResult(
+        placeRef: 'some-place',
+        tripId: 'trip-001',
+      );
+      await failingService.emit(
+        signalType: 'visited_confirmed',
+        placeRef: 'some-place',
+        tripId: 'trip-001',
+      );
+
+      expect(result, isFalse);
     });
   });
 }

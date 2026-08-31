@@ -2,6 +2,25 @@ import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
+@immutable
+class NodeOutcome {
+  static const visited = 'visited';
+  static const skipped = 'skipped';
+
+  final String outcome;
+  final String? reason;
+  final DateTime recordedAt;
+
+  const NodeOutcome({
+    required this.outcome,
+    required this.recordedAt,
+    this.reason,
+  });
+
+  bool get wasVisited => outcome == visited;
+  bool get wasSkipped => outcome == skipped;
+}
+
 /// Local SQLite database for offline-first queue + cache (SPEC-02 Part A).
 ///
 /// Tables:
@@ -13,7 +32,7 @@ import 'package:sqflite/sqflite.dart';
 /// Invariant: a user action is durable in outbox BEFORE any network attempt.
 class OfflineDatabase {
   static const _dbName = 'travel_buddy_offline.db';
-  static const _dbVersion = 5;
+  static const _dbVersion = 6;
 
   /// Optional path override for testing (pass inMemoryDatabasePath for isolation).
   final String? _testPath;
@@ -83,6 +102,7 @@ class OfflineDatabase {
     await _createAlertTables(db);
     await _createLovedPlacesTable(db);
     await _createAppKvTable(db);
+    await _createNodeOutcomeTable(db);
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -97,6 +117,9 @@ class OfflineDatabase {
     }
     if (oldVersion < 5) {
       await _createAppKvTable(db);
+    }
+    if (oldVersion < 6) {
+      await _createNodeOutcomeTable(db);
     }
   }
 
@@ -405,6 +428,73 @@ class OfflineDatabase {
       '  value TEXT NOT NULL'
       ')',
     );
+  }
+
+  Future<void> _createNodeOutcomeTable(Database db) async {
+    await db.execute(
+      'CREATE TABLE node_outcome ('
+      '  identity_scope TEXT NOT NULL,'
+      '  trip_id        TEXT NOT NULL,'
+      '  node_id        TEXT NOT NULL,'
+      '  outcome        TEXT NOT NULL,'
+      '  reason         TEXT,'
+      '  recorded_at    TEXT NOT NULL,'
+      '  PRIMARY KEY (identity_scope, trip_id, node_id)'
+      ')',
+    );
+  }
+
+  Future<void> upsertNodeOutcome({
+    required String identityScope,
+    required String tripId,
+    required String nodeId,
+    required String outcome,
+    String? reason,
+    DateTime? recordedAt,
+  }) async {
+    if (outcome != NodeOutcome.visited && outcome != NodeOutcome.skipped) {
+      throw ArgumentError.value(outcome, 'outcome', 'must be visited or skipped');
+    }
+    if (outcome == NodeOutcome.skipped && (reason == null || reason.isEmpty)) {
+      throw ArgumentError.value(reason, 'reason', 'is required for skipped outcomes');
+    }
+    if (outcome == NodeOutcome.visited && reason != null) {
+      throw ArgumentError.value(reason, 'reason', 'must be null for visited outcomes');
+    }
+
+    final database = await db;
+    await database.insert(
+      'node_outcome',
+      {
+        'identity_scope': identityScope,
+        'trip_id': tripId,
+        'node_id': nodeId,
+        'outcome': outcome,
+        'reason': reason,
+        'recorded_at': (recordedAt ?? DateTime.now()).toUtc().toIso8601String(),
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<Map<String, NodeOutcome>> getNodeOutcomes({
+    required String identityScope,
+    required String tripId,
+  }) async {
+    final database = await db;
+    final rows = await database.query(
+      'node_outcome',
+      where: 'identity_scope = ? AND trip_id = ?',
+      whereArgs: [identityScope, tripId],
+    );
+    return {
+      for (final row in rows)
+        row['node_id'] as String: NodeOutcome(
+          outcome: row['outcome'] as String,
+          reason: row['reason'] as String?,
+          recordedAt: DateTime.parse(row['recorded_at'] as String),
+        ),
+    };
   }
 
   // ============================================================
