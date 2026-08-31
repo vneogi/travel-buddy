@@ -5,7 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/api_exception.dart';
 import '../../core/providers.dart';
 import '../../data/models.dart';
+import '../../offline/offline_database.dart';
+import '../../services/signal_service.dart';
 import '../driver_card/driver_card_helpers.dart';
+import 'current_window.dart';
 
 @immutable
 class ItineraryState {
@@ -16,6 +19,8 @@ class ItineraryState {
   final Object? error;         // load error → ErrorView
   final bool rerouteLimitHit;  // screen shows upgrade, then clears
   final Set<String> lovedPlaceRefs; // local-only: which venues the user loved
+  final Map<String, NodeOutcome> nodeOutcomes;
+  final Set<String> outcomeRecordingNodeIds;
 
   const ItineraryState({
     this.nodes = const [],
@@ -25,6 +30,8 @@ class ItineraryState {
     this.error,
     this.rerouteLimitHit = false,
     this.lovedPlaceRefs = const {},
+    this.nodeOutcomes = const {},
+    this.outcomeRecordingNodeIds = const {},
   });
 
   static const _keep = Object();
@@ -36,6 +43,8 @@ class ItineraryState {
     Object? error = _keep,
     bool? rerouteLimitHit,
     Set<String>? lovedPlaceRefs,
+    Map<String, NodeOutcome>? nodeOutcomes,
+    Set<String>? outcomeRecordingNodeIds,
   }) =>
       ItineraryState(
         nodes: nodes ?? this.nodes,
@@ -45,6 +54,9 @@ class ItineraryState {
         error: identical(error, _keep) ? this.error : error,
         rerouteLimitHit: rerouteLimitHit ?? this.rerouteLimitHit,
         lovedPlaceRefs: lovedPlaceRefs ?? this.lovedPlaceRefs,
+        nodeOutcomes: nodeOutcomes ?? this.nodeOutcomes,
+        outcomeRecordingNodeIds:
+            outcomeRecordingNodeIds ?? this.outcomeRecordingNodeIds,
       );
 }
 
@@ -58,17 +70,29 @@ class ItineraryController extends StateNotifier<ItineraryState> {
   Future<void> load() async {
     // Preserve already-filled hearts through reload.
     final priorLoved = state.lovedPlaceRefs;
-    state = ItineraryState(loading: true, lovedPlaceRefs: priorLoved);
+    final priorOutcomes = state.nodeOutcomes;
+    final priorRecording = state.outcomeRecordingNodeIds;
+    state = ItineraryState(
+      loading: true,
+      lovedPlaceRefs: priorLoved,
+      nodeOutcomes: priorOutcomes,
+      outcomeRecordingNodeIds: priorRecording,
+    );
     try {
       final trip = await _ref.read(tripRepoProvider).getTrip(tripId);
       if (!mounted) return;
       // Restore persisted hearts (state hydration only -- no signal emission).
       final restored = await _restoreLovedRefs();
+      if (!mounted) return;
       final merged = {...priorLoved, ...restored};
+      final restoredOutcomes = await _restoreNodeOutcomes();
+      if (!mounted) return;
       state = ItineraryState(
         nodes: trip.nodes,
         loading: false,
         lovedPlaceRefs: merged,
+        nodeOutcomes: {...restoredOutcomes, ...priorOutcomes},
+        outcomeRecordingNodeIds: priorRecording,
       );
       _preCachePlaces(trip.nodes);
       // SPEC-04: Persist to SQLite cache_trip for offline reads
@@ -84,16 +108,22 @@ class ItineraryController extends StateNotifier<ItineraryState> {
       try {
         final db = _ref.read(offlineDatabaseProvider);
         final cachedJson = await db.getCachedTrip(tripId);
-        if (cachedJson != null && mounted) {
+        if (!mounted) return;
+        if (cachedJson != null) {
           final cachedMap = jsonDecode(cachedJson) as Map<String, dynamic>;
           final cachedTrip = TripState.fromJson(cachedMap);
           final restored = await _restoreLovedRefs();
+          if (!mounted) return;
           final merged = {...priorLoved, ...restored};
+          final restoredOutcomes = await _restoreNodeOutcomes();
+          if (!mounted) return;
           state = ItineraryState(
             nodes: cachedTrip.nodes,
             loading: false,
             banner: 'Offline: showing saved itinerary',
             lovedPlaceRefs: merged,
+            nodeOutcomes: {...restoredOutcomes, ...priorOutcomes},
+            outcomeRecordingNodeIds: priorRecording,
           );
           _preCachePlaces(cachedTrip.nodes);
           return;
@@ -101,10 +131,13 @@ class ItineraryController extends StateNotifier<ItineraryState> {
       } catch (cacheErr) {
         debugPrint('[ItineraryController] Offline cache read error: $cacheErr');
       }
+      if (!mounted) return;
       state = ItineraryState(
         loading: false,
         error: e,
         lovedPlaceRefs: priorLoved,
+        nodeOutcomes: priorOutcomes,
+        outcomeRecordingNodeIds: priorRecording,
       );
     }
   }
@@ -152,6 +185,8 @@ class ItineraryController extends StateNotifier<ItineraryState> {
         banner: _headsUp(result.message),
         // Preserve loved refs through event application.
         lovedPlaceRefs: state.lovedPlaceRefs,
+        nodeOutcomes: state.nodeOutcomes,
+        outcomeRecordingNodeIds: state.outcomeRecordingNodeIds,
       );
       _preCachePlaces(state.nodes);
       _cacheUpdatedTripNodes(state.nodes);
@@ -208,6 +243,156 @@ class ItineraryController extends StateNotifier<ItineraryState> {
       debugPrint('[ItineraryController] Restore loved refs error: $e');
       return {};
     }
+  }
+
+  Future<Map<String, NodeOutcome>> _restoreNodeOutcomes() async {
+    try {
+      final db = _ref.read(offlineDatabaseProvider);
+      final scope = _ref.read(identityCacheScopeProvider);
+      return await db.getNodeOutcomes(
+        identityScope: scope,
+        tripId: tripId,
+      );
+    } catch (e) {
+      debugPrint('[ItineraryController] Restore node outcomes error: $e');
+      return {};
+    }
+  }
+
+  Future<void> recordVisited(TripNode node) async {
+    if (!nodeCanRecordOutcome(
+      node,
+      DateTime.now().toUtc(),
+      state.nodeOutcomes[node.nodeId],
+    )) {
+      return;
+    }
+    if (!_beginOutcomeRecording(node.nodeId)) return;
+    final outcome = NodeOutcome(
+      outcome: NodeOutcome.visited,
+      recordedAt: DateTime.now().toUtc(),
+    );
+    String? persistenceError;
+    try {
+      final enqueued =
+          await _ref.read(signalServiceProvider).emitVisitedConfirmedWithResult(
+            placeRef: node.venueId ?? node.venueName,
+            tripId: tripId,
+          );
+      if (!enqueued) {
+        if (mounted) {
+          state = state.copyWith(
+            banner: 'Could not record this outcome. Please try again.',
+          );
+        }
+        return;
+      }
+      try {
+        await _persistNodeOutcome(node.nodeId, outcome);
+      } catch (error) {
+        persistenceError = 'Could not save this outcome. Please try again later.';
+        debugPrint('[ItineraryController] Persist node outcome error: $error');
+      }
+      if (!mounted) return;
+      state = state.copyWith(
+        nodeOutcomes: {...state.nodeOutcomes, node.nodeId: outcome},
+        banner: persistenceError,
+      );
+    } finally {
+      _finishOutcomeRecording(node.nodeId);
+    }
+  }
+
+  Future<void> recordSkipped(TripNode node, String reason) async {
+    if (!SignalService.validSkipReasons.contains(reason)) {
+      throw ArgumentError.value(reason, 'reason', 'is not a valid skip reason');
+    }
+    if (!nodeCanRecordOutcome(
+      node,
+      DateTime.now().toUtc(),
+      state.nodeOutcomes[node.nodeId],
+    )) {
+      return;
+    }
+    if (!_beginOutcomeRecording(node.nodeId)) return;
+    final outcome = NodeOutcome(
+      outcome: NodeOutcome.skipped,
+      reason: reason,
+      recordedAt: DateTime.now().toUtc(),
+    );
+    String? persistenceError;
+    try {
+      final enqueued =
+          await _ref.read(signalServiceProvider).emitNodeSkippedWithResult(
+            placeRef: node.venueId ?? node.venueName,
+            reason: reason,
+            tripId: tripId,
+          );
+      if (!enqueued) {
+        if (mounted) {
+          state = state.copyWith(
+            banner: 'Could not record this outcome. Please try again.',
+          );
+        }
+        return;
+      }
+      try {
+        await _persistNodeOutcome(node.nodeId, outcome);
+      } catch (error) {
+        persistenceError = 'Could not save this outcome. Please try again later.';
+        debugPrint('[ItineraryController] Persist node outcome error: $error');
+      }
+      if (!mounted) return;
+      state = state.copyWith(
+        nodeOutcomes: {...state.nodeOutcomes, node.nodeId: outcome},
+        banner: persistenceError,
+      );
+
+      if (nodeIsCurrentWindow(node, DateTime.now().toUtc()) &&
+          !node.isLocked &&
+          node.status == NodeStatus.pending) {
+        await applyEvent(
+          type: EventType.cancelActivity,
+          message: 'Skip ${node.venueName} ($reason)',
+          targetNodeId: node.nodeId,
+        );
+        if (persistenceError != null && mounted) {
+          state = state.copyWith(banner: persistenceError);
+        }
+      }
+    } finally {
+      _finishOutcomeRecording(node.nodeId);
+    }
+  }
+
+  bool _beginOutcomeRecording(String nodeId) {
+    if (!mounted ||
+        state.nodeOutcomes.containsKey(nodeId) ||
+        state.outcomeRecordingNodeIds.contains(nodeId)) {
+      return false;
+    }
+    state = state.copyWith(
+      outcomeRecordingNodeIds: {...state.outcomeRecordingNodeIds, nodeId},
+    );
+    return true;
+  }
+
+  void _finishOutcomeRecording(String nodeId) {
+    if (!mounted || !state.outcomeRecordingNodeIds.contains(nodeId)) return;
+    state = state.copyWith(
+      outcomeRecordingNodeIds: {...state.outcomeRecordingNodeIds}..remove(nodeId),
+    );
+  }
+
+  Future<void> _persistNodeOutcome(String nodeId, NodeOutcome outcome) {
+    return _ref.read(offlineDatabaseProvider).upsertNodeOutcome(
+          identityScope: _ref.read(identityCacheScopeProvider),
+          tripId: tripId,
+          nodeId: nodeId,
+          outcome: outcome.outcome,
+          reason: outcome.reason,
+          recordedAt: outcome.recordedAt,
+        );
   }
 
   void _cacheUpdatedTripNodes(List<TripNode> nodes) {

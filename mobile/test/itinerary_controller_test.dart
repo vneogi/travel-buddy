@@ -44,6 +44,10 @@ void main() {
       identityScope: any(named: 'identityScope'),
       tripId: any(named: 'tripId'),
     )).thenAnswer((_) async => <String>{});
+    when(() => mockDb.getNodeOutcomes(
+      identityScope: any(named: 'identityScope'),
+      tripId: any(named: 'tripId'),
+    )).thenAnswer((_) async => <String, NodeOutcome>{});
     when(() => mockDb.upsertLovedPlace(
       identityScope: any(named: 'identityScope'),
       tripId: any(named: 'tripId'),

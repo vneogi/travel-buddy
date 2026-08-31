@@ -13,6 +13,7 @@ import '../rescue/hotel_rescue_sheet.dart';
 import '../../widgets/reroute_badge.dart';
 import '../../widgets/shimmer_card.dart';
 import '../../widgets/error_view.dart';
+import 'current_window.dart';
 import 'itinerary_notifier.dart';
 import 'replacement_ref.dart';
 import '../alerts/alerts_notifier.dart';
@@ -66,34 +67,31 @@ class ItineraryScreen extends ConsumerWidget {
         );
   }
 
-  /// SPEC-07: show skip-reason picker, emit node_skipped signal, then cancel.
-  void _showSkipReasonPicker(BuildContext context, WidgetRef ref, TripNode node) {
-    final placeRef = node.venueId ?? node.venueName;
-    showModalBottomSheet<String>(
+  Future<void> _showOutcomePicker(
+    BuildContext context,
+    WidgetRef ref,
+    TripNode node,
+  ) async {
+    final decision = await showModalBottomSheet<_OutcomeDecision>(
+      context: context,
+      builder: (_) => const _OutcomeSheet(),
+    );
+    if (decision == null || !context.mounted) return;
+
+    final controller =
+        ref.read(itineraryControllerProvider(tripId).notifier);
+    if (decision == _OutcomeDecision.visited) {
+      await controller.recordVisited(node);
+      return;
+    }
+
+    final reason = await showModalBottomSheet<String>(
       context: context,
       builder: (_) => const _SkipReasonSheet(),
-    ).then((reason) {
-      if (reason != null) {
-        ref.read(signalServiceProvider).emitNodeSkipped(
-              placeRef: placeRef,
-              reason: reason,
-              tripId: tripId,
-            );
-        ref.read(itineraryControllerProvider(tripId).notifier).applyEvent(
-              type: EventType.cancelActivity,
-              message: 'Skip ${node.venueName} ($reason)',
-              targetNodeId: node.nodeId,
-            );
-      }
-    });
-  }
-
-  /// SPEC-07: confirm user visited the active node.
-  void _confirmVisited(WidgetRef ref, TripNode node) {
-    ref.read(signalServiceProvider).emitVisitedConfirmed(
-          placeRef: node.venueId ?? node.venueName,
-          tripId: tripId,
-        );
+    );
+    if (reason != null) {
+      await controller.recordSkipped(node, reason);
+    }
   }
 
   @override
@@ -206,21 +204,35 @@ class ItineraryScreen extends ConsumerWidget {
                                     // Key includes loved flag — without it the
                                     // AnimatedSwitcher won't rebuild when only
                                     // isLoved changes, and the heart stays unfilled.
-                                    key: ValueKey('${_sig(node)}|${state.lovedPlaceRefs.contains(node.venueId ?? node.venueName)}'),
+                                    key: ValueKey(
+                                      '${_sig(node)}|'
+                                      '${state.lovedPlaceRefs.contains(node.venueId ?? node.venueName)}|'
+                                      '${state.nodeOutcomes[node.nodeId]?.outcome}|'
+                                      '${state.nodeOutcomes[node.nodeId]?.reason}|'
+                                      '${state.outcomeRecordingNodeIds.contains(node.nodeId)}',
+                                    ),
                                     node: node,
                                     nextNode: next,
                                     isLoved: state.lovedPlaceRefs
                                         .contains(node.venueId ?? node.venueName),
+                                    recordedOutcome:
+                                        state.nodeOutcomes[node.nodeId],
+                                    isRecordingOutcome: state
+                                        .outcomeRecordingNodeIds
+                                        .contains(node.nodeId),
                                     onTapSwap: state.processing
                                         ? null
                                         : () => _swap(ref, node),
                                     onTapCancel: state.processing
                                         ? null
                                         : () => _cancel(ref, node),
-                                    onTapVisited: () => _confirmVisited(ref, node),
-                                    onTapSkip: state.processing
+                                    onTapRecordOutcome: state.processing
                                         ? null
-                                        : () => _showSkipReasonPicker(context, ref, node),
+                                        : () => _showOutcomePicker(
+                                              context,
+                                              ref,
+                                              node,
+                                            ),
                                     onTapLoved: () {
                                       final placeRef = node.venueId ?? node.venueName;
                                       ref.read(signalServiceProvider).emitUserLoved(
@@ -273,15 +285,32 @@ class _HeadsUpBanner extends StatelessWidget {
 class _SkipReasonSheet extends StatelessWidget {
   const _SkipReasonSheet();
 
-  static const _reasons = {
-    'too_far': 'Too far away',
-    'too_tired': 'Too tired',
-    'closed': 'Place is closed',
-    'crowded': 'Too crowded',
-    'not_interested': 'Not interested',
-    'ran_out_of_time': 'Ran out of time',
-    'weather': 'Bad weather',
-  };
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: ListView(
+        shrinkWrap: true,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.base),
+            child: Text('Why are you skipping?', style: AppTypography.h2),
+          ),
+          ...skipReasonLabels.entries.map((e) => ListTile(
+                leading: const Icon(Icons.arrow_forward_ios, size: 14),
+                title: Text(e.value),
+                onTap: () => Navigator.pop(context, e.key),
+              )),
+          const SizedBox(height: AppSpacing.base),
+        ],
+      ),
+    );
+  }
+}
+
+enum _OutcomeDecision { visited, skipped }
+
+class _OutcomeSheet extends StatelessWidget {
+  const _OutcomeSheet();
 
   @override
   Widget build(BuildContext context) {
@@ -291,13 +320,23 @@ class _SkipReasonSheet extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.all(AppSpacing.base),
-            child: Text('Why are you skipping?', style: AppTypography.h2),
+            child: Text('Did this happen?', style: AppTypography.h2),
           ),
-          ..._reasons.entries.map((e) => ListTile(
-                leading: const Icon(Icons.arrow_forward_ios, size: 14),
-                title: Text(e.value),
-                onTap: () => Navigator.pop(context, e.key),
-              )),
+          ListTile(
+            leading: const Icon(Icons.check_circle_outline),
+            title: const Text('Yes, I went'),
+            onTap: () => Navigator.pop(context, _OutcomeDecision.visited),
+          ),
+          ListTile(
+            leading: const Icon(Icons.skip_next),
+            title: const Text('No, I skipped it'),
+            onTap: () => Navigator.pop(context, _OutcomeDecision.skipped),
+          ),
+          ListTile(
+            leading: const Icon(Icons.schedule),
+            title: const Text('Not sure yet'),
+            onTap: () => Navigator.pop(context),
+          ),
           const SizedBox(height: AppSpacing.base),
         ],
       ),

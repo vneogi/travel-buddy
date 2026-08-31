@@ -44,12 +44,34 @@ class SignalService {
     String entityType = 'venue',
     String? entityId,
   }) async {
+    await _emitWithResult(
+      signalType: signalType,
+      placeRef: placeRef,
+      valueText: valueText,
+      valueNumeric: valueNumeric,
+      valueJson: valueJson,
+      tripId: tripId,
+      entityType: entityType,
+      entityId: entityId,
+    );
+  }
+
+  Future<bool> _emitWithResult({
+    required String signalType,
+    required String placeRef,
+    String? valueText,
+    double? valueNumeric,
+    Map<String, dynamic>? valueJson,
+    String? tripId,
+    String entityType = 'venue',
+    String? entityId,
+  }) async {
     try {
       // Queue cap check (SPEC-02 B.3): protect unbounded growth
       final size = await _db.getOutboxSize();
       if (size >= _queueCap) {
         debugPrint('[SignalService] Queue at capacity ($size) -- signal throttled');
-        return;
+        return false;
       }
 
       // Build signal with client-generated UUID (idempotency key)
@@ -78,10 +100,16 @@ class SignalService {
       );
 
       // STEP 2: Trigger background sync (non-awaited -- never block UI)
-      _syncEngine.triggerSync();
+      try {
+        _syncEngine.triggerSync();
+      } catch (e) {
+        debugPrint('[SignalService] sync trigger error: $e');
+      }
+      return true;
     } catch (e) {
       // NEVER throw from emit -- fire-and-forget with local persistence
       debugPrint('[SignalService] emit error (signal may be lost): $e');
+      return false;
     }
   }
 
@@ -101,9 +129,34 @@ class SignalService {
   Future<void> emitVisitedConfirmed({required String placeRef, String? tripId}) =>
       emit(signalType: 'visited_confirmed', placeRef: placeRef, tripId: tripId, valueText: 'true');
 
+  Future<bool> emitVisitedConfirmedWithResult({
+    required String placeRef,
+    String? tripId,
+  }) =>
+      _emitWithResult(
+        signalType: 'visited_confirmed',
+        placeRef: placeRef,
+        tripId: tripId,
+        valueText: 'true',
+      );
+
   Future<void> emitNodeSkipped({required String placeRef, required String reason, String? tripId}) {
     assert(validSkipReasons.contains(reason), 'Invalid skip reason: $reason');
     return emit(signalType: 'node_skipped', placeRef: placeRef, tripId: tripId, valueJson: {'reason': reason});
+  }
+
+  Future<bool> emitNodeSkippedWithResult({
+    required String placeRef,
+    required String reason,
+    String? tripId,
+  }) {
+    assert(validSkipReasons.contains(reason), 'Invalid skip reason: $reason');
+    return _emitWithResult(
+      signalType: 'node_skipped',
+      placeRef: placeRef,
+      tripId: tripId,
+      valueJson: {'reason': reason},
+    );
   }
 
   Future<void> emitDishLoved({required String placeRef, required String dishName, required String dishId, String? tripId}) =>

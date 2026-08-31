@@ -96,7 +96,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         return;
       }
       final state = ref.read(itineraryControllerProvider(widget.tripId));
-      final target = nextMovableStop(state.nodes, DateTime.now().toUtc());
+      final target = nextMovableStop(
+        state.nodes,
+        DateTime.now().toUtc(),
+        excludedNodeIds: state.nodeOutcomes.keys.toSet(),
+      );
       if (intent != AskIntent.question && target == null) {
         setState(() {
           _isThinking = false;
@@ -106,6 +110,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ));
         });
         return;
+      }
+      if (intent == AskIntent.cancelNext) {
+        final confirmed = await _confirmCancellation(target!);
+        if (!mounted) return;
+        if (!confirmed) {
+          setState(() {
+            _isThinking = false;
+            _messages.add(_ChatMessage(
+              text: 'Kept ${target.venueName}.',
+              isUser: false,
+            ));
+          });
+          return;
+        }
       }
       final result = await ref.read(tripEventProvider).sendEvent(
         tripId: widget.tripId,
@@ -137,6 +155,31 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         ));
       });
     }
+  }
+
+  Future<bool> _confirmCancellation(TripNode target) async {
+    final localStart = target.scheduledStart.toLocal();
+    final localTime = TimeOfDay.fromDateTime(localStart).format(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Cancel this stop?'),
+        content: Text(
+          '${target.venueName} is scheduled for $localTime.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Keep it'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Cancel this stop'),
+          ),
+        ],
+      ),
+    );
+    return confirmed ?? false;
   }
 }
 
@@ -292,10 +335,9 @@ class _AnimatedDotState extends State<_AnimatedDot>
     _ctrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
-    )..repeat(reverse: true);
-    Future.delayed(Duration(milliseconds: widget.delay), () {
-      if (mounted) _ctrl.forward();
-    });
+    );
+    _ctrl.value = widget.delay / 600;
+    _ctrl.repeat(reverse: true);
   }
   @override
   void dispose() { _ctrl.dispose(); super.dispose(); }

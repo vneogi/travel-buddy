@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:travel_buddy/data/models.dart';
 import 'package:travel_buddy/features/itinerary/current_window.dart';
+import 'package:travel_buddy/offline/offline_database.dart';
 
 TripNode _node({
   required DateTime start,
@@ -51,6 +52,44 @@ void main() {
       // start 09:00, duration 90min -> end 10:30 == now -> false
       final node = _node(start: DateTime.utc(2026, 8, 19, 9, 0));
       expect(nodeIsCurrentWindow(node, now), isFalse);
+    });
+  });
+
+  group('outcome eligibility', () {
+    test('active pending node can record an outcome', () {
+      final node = _node(start: DateTime.utc(2026, 8, 19, 10));
+      expect(nodeCanRecordOutcome(node, now, null), isTrue);
+      expect(nodeIsElapsed(node, now), isFalse);
+    });
+
+    test('elapsed pending node can record an outcome', () {
+      final node = _node(start: DateTime.utc(2026, 8, 19, 8));
+      expect(nodeCanRecordOutcome(node, now, null), isTrue);
+      expect(nodeIsElapsed(node, now), isTrue);
+    });
+
+    test('future pending node cannot record an outcome', () {
+      final node = _node(start: DateTime.utc(2026, 8, 19, 12));
+      expect(nodeCanRecordOutcome(node, now, null), isFalse);
+    });
+
+    test('completed and skipped nodes cannot record an outcome', () {
+      for (final status in [NodeStatus.completed, NodeStatus.skipped]) {
+        final node = _node(
+          start: DateTime.utc(2026, 8, 19, 10),
+          status: status,
+        );
+        expect(nodeCanRecordOutcome(node, now, null), isFalse);
+      }
+    });
+
+    test('locally recorded node cannot record another outcome', () {
+      final node = _node(start: DateTime.utc(2026, 8, 19, 10));
+      final outcome = NodeOutcome(
+        outcome: NodeOutcome.visited,
+        recordedAt: now,
+      );
+      expect(nodeCanRecordOutcome(node, now, outcome), isFalse);
     });
   });
 
@@ -144,6 +183,22 @@ void _nextMovableStopTests() {
       final target = nextMovableStop(nodes, now);
       expect(target, isNotNull);
       expect(target!.nodeId, 'b');
+    });
+
+    test('locally acknowledged active node is excluded', () {
+      final now = DateTime.utc(2026, 8, 19, 9, 30);
+      final nodes = [
+        _movableNode(id: 'active', start: DateTime.utc(2026, 8, 19, 9)),
+        _movableNode(id: 'next', start: DateTime.utc(2026, 8, 19, 13)),
+      ];
+
+      final target = nextMovableStop(
+        nodes,
+        now,
+        excludedNodeIds: {'active'},
+      );
+
+      expect(target?.nodeId, 'next');
     });
   });
 }

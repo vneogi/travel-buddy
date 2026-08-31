@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter/services.dart';
 import '../data/models.dart';
 import '../features/itinerary/current_window.dart';
+import '../offline/offline_database.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
 import '../theme/spacing.dart';
@@ -31,10 +32,12 @@ class ActivityCard extends StatelessWidget {
   final VoidCallback? onTapSwap;
   final VoidCallback? onTapCancel;
   final VoidCallback? onTapLoved;
-  final VoidCallback? onTapVisited;
-  final VoidCallback? onTapSkip;
+  final VoidCallback? onTapRecordOutcome;
   final bool isThinking; // show shimmer for heavy model calls
   final bool isLoved; // filled heart once the user has loved this venue
+  final NodeOutcome? recordedOutcome;
+  final bool isRecordingOutcome;
+  final DateTime? now;
 
   const ActivityCard({
     super.key,
@@ -43,17 +46,22 @@ class ActivityCard extends StatelessWidget {
     this.onTapSwap,
     this.onTapCancel,
     this.onTapLoved,
-    this.onTapVisited,
-    this.onTapSkip,
+    this.onTapRecordOutcome,
     this.isThinking = false,
     this.isLoved = false,
+    this.recordedOutcome,
+    this.isRecordingOutcome = false,
+    this.now,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isActive = nodeIsCurrentWindow(node, DateTime.now());
+    final currentTime = now ?? DateTime.now();
+    final isActive = nodeIsCurrentWindow(node, currentTime);
     final isCompleted = node.status == NodeStatus.completed;
     final isSkipped = node.status == NodeStatus.skipped;
+    final canRecordOutcome =
+        nodeCanRecordOutcome(node, currentTime, recordedOutcome);
 
     return Dismissible(
       key: ValueKey(node.nodeId),
@@ -196,21 +204,6 @@ class ActivityCard extends StatelessWidget {
                                 onTapLoved!.call();
                               },
                             ),
-                          // SPEC-07: visited_confirmed (active node only)
-                          if (onTapVisited != null && isActive)
-                            IconButton(
-                              icon: const Icon(Icons.check_circle_outline, size: 20),
-                              color: AppColors.accent,
-                              tooltip: "I'm here",
-                              visualDensity: VisualDensity.compact,
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                              onPressed: () {
-                                HapticFeedback.lightImpact();
-                                onTapVisited!.call();
-                              },
-                            ),
-                          // SPEC-07: node_skipped reason picker
                           // SPEC-12: Driver card button
         IconButton(
           icon: const Icon(Icons.directions_car_outlined, size: 20),
@@ -220,19 +213,6 @@ class ActivityCard extends StatelessWidget {
             context.push('/trip/$tripId/card/${node.venueId ?? node.venueName}');
           },
         ),
-        if (onTapSkip != null && !isCompleted && !isSkipped && !node.isLocked)
-                            IconButton(
-                              icon: const Icon(Icons.skip_next, size: 20),
-                              color: AppColors.muted,
-                              tooltip: 'Skip',
-                              visualDensity: VisualDensity.compact,
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                              onPressed: () {
-                                HapticFeedback.lightImpact();
-                                onTapSkip!.call();
-                              },
-                            ),
                         ],
                       ),
                       // SPEC-10: booking badge
@@ -257,6 +237,34 @@ class ActivityCard extends StatelessWidget {
                           spacing: AppSpacing.xs,
                           runSpacing: AppSpacing.xs,
                           children: node.vibeTags.map((tag) => _VibeChip(tag)).toList(),
+                        ),
+                      ],
+                      if (recordedOutcome != null) ...[
+                        const SizedBox(height: AppSpacing.sm),
+                        Text(
+                          recordedOutcome!.wasVisited
+                              ? 'Visited'
+                              : 'Skipped: ${skipReasonLabels[recordedOutcome!.reason] ?? recordedOutcome!.reason}',
+                          style: AppTypography.caption.copyWith(
+                            color: AppColors.ink,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ] else if (canRecordOutcome &&
+                          onTapRecordOutcome != null) ...[
+                        const SizedBox(height: AppSpacing.sm),
+                        OutlinedButton(
+                          onPressed: isRecordingOutcome
+                              ? null
+                              : () {
+                                  HapticFeedback.lightImpact();
+                                  onTapRecordOutcome!.call();
+                                },
+                          child: Text(
+                            isRecordingOutcome
+                                ? 'Saving outcome…'
+                                : 'Did this happen?',
+                          ),
                         ),
                       ],
                     ],
