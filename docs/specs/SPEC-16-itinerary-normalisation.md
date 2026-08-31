@@ -147,15 +147,14 @@ now live in `models/ids.py` so the format is declared once. Eight hex characters
 is 32 bits, which is an accepted limit for now rather than an oversight, and
 widening it is a one-file change plus a decision about existing rows.
 
-**`observed_duration_minutes` cannot be written when a trip is saved.** This spec
-named the column without naming who fills it, so the implementation reasonably
-wrote NULL and a comment claimed it would be populated from day one. It cannot
-be: the value is the gap between consecutive arrival signals, which is only known
-after the fact. It has to be derived on sync by a job that reads arrivals and
-updates the edge between the nodes they belong to. Until that job exists the
-column is honest but empty, and the convenience layer that depends on real
-transition cost has no input at all. This is an unmet requirement of this spec,
-not a future enhancement.
+**`observed_duration_minutes` is filled on ingest, not when a trip is saved.**
+This spec named the column without naming who fills it, so the first
+implementation wrote NULL. The value is the gap between consecutive arrival
+signals and is only known after the fact. SPEC-30 (`f8349a8`) writes it on
+`trip_edge` via `update_edge_observed_duration(trip_id, from_node_id,
+to_node_id, minutes)` when two confirmed arrivals land. Dual-write of itinerary
+JSON must preserve observed minutes on matching from/to pairs. Transport cost
+on the same table is still unwritten (SPEC-23).
 
 ## Tests
 

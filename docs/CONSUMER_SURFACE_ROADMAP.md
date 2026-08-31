@@ -81,13 +81,13 @@ booking anchors and hotel rescue. The Home list and Ask composer exist.
 
 Still outside that thin path: SPEC-24 identity merge, SPEC-27 lifecycle rights,
 trip-less Ask, the rich Home aggregate and real Laos creation. SPEC-02 supplied
-the offline substrate, but durable hearts remain unfinished.
+the offline substrate. Durable hearts passed on Windows Aug 30.
 
 The exception is the SPEC-24 design, which is settled now and built later, for
 the reason above.
 
-The remaining order is driven by dependency rather than appeal. Finish durable
-hearts, date-scoped itinerary/bookings and real Laos creation first. The full
+The remaining order is driven by dependency rather than appeal. Finish
+date-scoped itinerary/bookings and real Laos creation first. The full
 SPEC-25 contract still needs SPEC-17's real envelope, so trip-less Ask follows
 the trust work. SPEC-27 should not be later than the first build that goes to
 people who are not us.

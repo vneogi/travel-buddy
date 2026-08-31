@@ -145,10 +145,10 @@ Then:
    log show no incoming requests. If requests still arrive, stop -- the drill is
    invalid.
 2. Tap loved on five venues.
-3. Force-kill the app. Reopen it. Today this is expected to expose a known gap:
-   hearts are held by an auto-disposed itinerary controller, not a durable
-   outbox path. Sync Status also calls `syncOnce()` without awaiting it before
-   reading counts. Do not classify this only as a USB/network mistake.
+3. Force-kill the app. Reopen it. Hearts must still show as filled (SPEC-02
+   durable hearts; verified on Windows Aug 30). Sync Status still calls
+   `syncOnce()` without awaiting it before reading counts; do not treat a
+   stale count as a hearts-persistence failure.
 4. Re-enable the network. All five must sync.
 5. Query the destination store for five rows. An `accepted=1` log line is not
    proof of persistence -- the sync engine once reported exactly that while

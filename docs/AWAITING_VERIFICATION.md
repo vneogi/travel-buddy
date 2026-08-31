@@ -20,14 +20,15 @@ Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 |---|---|---|
 | Migrations 0011 to 0018 | applied device day 2026-08-17 | VALIDATE on NOT VALID CHECKs still deferred; confirm via Step 7 |
 | The five Supabase tests | ran green 2026-08-17 | `280 passed` suite with TB_SUPABASE_URL; see finding below |
-| Flutter client follow-ups | Aug 27-28 2026 Windows run | Windows desktop or Android. Chrome is layout-only while web SQLite remains experimental. Profile/Skip exact errors and durable hearts remain open |
+| Flutter client follow-ups | Aug 30 2026 Windows run | Windows desktop or Android. Chrome is layout-only while web SQLite remains experimental. Profile/Skip exact errors remain open; durable hearts passed Aug 30 |
 | Migration 0019 prompt_dismissed | landed `1b9b1b3`, unapplied | LAPTOP_VERIFY Step 3; then signal_types tests |
 | Migration 0020 driver_card_signals | landed `a2da64a`, unapplied | Apply via Supabase SQL editor; then signal_types drift tests |
 | Migration 0021 booking_anchors | landed `f6328e9`, unapplied | Apply via Supabase SQL editor; then signal_types drift tests |
 | Migration 0022 trip_node_local_names | landed, unapplied | Apply via Supabase SQL editor; adds names_local, landmarks_local, nearest_landmark to trip_node |
-| Migration 0023 driver_card_search_fields | uncommitted, unapplied | Apply after 0022; updates hybrid_venue_search to return geo/localized driver-card fields and accept filter_geo_region |
+| Migration 0023 driver_card_search_fields | in repo, unapplied | Apply via Supabase SQL editor; updates hybrid_venue_search to return geo/localized driver-card fields and accept filter_geo_region |
+| Migration 0024 session_start | applied hosted Aug 30-31 (owner SQL editor) | Required before live ingest accepts the type. After apply: session_start accepted=1 |
 | PowerShell scripts | Aug 9 | `.\scripts\smoke-test.ps1` on Windows |
-| Laptop-feedback product gaps | Aug 27-28 | Date grouping, booking edit/delete/notes, hotel rescue selection, Windows Maps hand-off, durable hearts, real location and real Laos creation remain open |
+| Laptop-feedback product gaps | Aug 30 2026 | Date grouping, booking edit/delete/notes, multi-night hotel UI, hotel rescue selection, Windows Maps hand-off, real location and real Laos creation remain open. Durable hearts closed Aug 30 |
 | `hybrid_venue_search` geo_region parameter | Observed Aug 17 2026 | Live signature matches 0001: no geo_region arg (radius-only). Multi-city RPC filter still absent |
 | Dubai row contents, including AED magnitudes | Cleared Aug 17 2026 | 16 Dubai venues live (null price_band). dubai_dishes=0 -- nothing to inspect for AED; food data is greenfield |
 | `pg_description` non-ASCII | Cleared Aug 17 2026 | Step 7c returned 0 rows |
@@ -36,6 +37,71 @@ The five Supabase integration tests ran green on device day 2026-08-17 with
 `TB_SUPABASE_URL` set (`280 passed` suite). Remaining credential-gated gaps
 are smoke-test.ps1, any unrecorded Anonymous E2E, and deliberate VALIDATE of
 NOT VALID CHECKs.
+
+## Finding -- Aug 31 2026 -- SPEC-30 on origin/main
+
+PR #32 squash-merged as `f8349a8`. CI lint, pytest, Flutter analyze, and Flutter
+test were green on that SHA. Deploy/build skipped on the PR (expected).
+
+Do not merge `feat/session-start-signal` or `feat/observed-duration-writer`.
+PR #30 and PR #31 were closed without merge because their contents were already
+in #32.
+
+Laptop (Windows, against the integration branch then main):
+
+- Pytest for session_start, observed_duration, backend_parity, and signal_types
+  passed. Local ruff was not installed; CI Ruff 0.16.3 is the format authority.
+- First `session_start` ingest was `rejected=1` until hosted `signal_type`
+  included the new row. After migration 0024 in the SQL editor: `accepted=1
+  rejected=0`.
+- Alerts `GET /trip/{id}/alerts` 503 is missing OpenWeather key, unrelated.
+- `flutter test test/session_start_test.dart`: mock `NetworkException` and call
+  `syncEngine.stop()` before `db.close()`.
+
+Product remainder (not a merge defect): past-node "did this happen", explicit
+cancel-target confirmation, date grouping, booking edit/delete, multi-night
+hotel UI.
+
+## Finding -- Aug 30 2026 -- Owner laptop verification (Windows, second laptop)
+
+Recorded against `fix/mobile-missing-imports` (`main` at `acad4b9` plus two
+restored imports). Backend on `127.0.0.1:8000`, `supabase_configured=True`.
+
+Build blocker, fixed:
+
+- `main` did not compile for Windows desktop. `itinerary_screen.dart` referenced
+  `signalServiceProvider` with no `core/providers.dart` import -- the import was
+  dropped in the SPEC-29 unused-import cleanup, where it was not unused -- and
+  `chat_screen.dart` referenced `nextMovableStop` with no `current_window.dart`
+  import. Five analyzer errors, desktop build failed. Fixed in PR #31 contents
+  (landed via PR #32). `flutter test` never caught it because the suite does not
+  compile the screen widgets, and `flutter analyze` was already red for an
+  unrelated reason, so the errors went unread.
+
+Passed:
+
+- Durable hearts survived a full app close and a fresh `flutter run`. The
+  SPEC-02 hearts slice works on device.
+
+Open product gaps observed (known near-term gates, not regressions):
+
+- No day separation. A Mad Monkey booking dated in October shows inside the
+  single "Your Day" list with no per-day grouping.
+- Booking nodes cannot be reopened, edited or deleted once created;
+  AddBookingSheet only creates. SPEC-10 remainder.
+- No multi-day hotel entry. AddBookingSheet models a booking as one
+  `scheduled_start` plus a duration (hotel defaults to 8h). The scheduler
+  background-anchor fix is correct for a single anchor node; `trip_stay`
+  check-in/check-out (VISION section 18) is Part III and unbuilt.
+- "Cancel next stop" infers the target from the schedule window versus now, so a
+  traveller running late can have the wrong stop cancelled. Owner wants an
+  explicit "which stop?" confirmation. Ties to SPEC-30 remainder and SPEC-25.
+
+Config note:
+
+- `GET /trip/{id}/alerts` returned 503 (`weather_provider_unavailable`) when
+  `OPENWEATHER_API_KEY` was unset. Client maps 503 to
+  `WeatherUnavailableException` and falls back to cache.
 
 ## Finding -- Aug 27-28 2026 -- Owner laptop verification (Windows)
 
