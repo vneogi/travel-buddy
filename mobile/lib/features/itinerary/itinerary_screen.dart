@@ -186,7 +186,6 @@ class ItineraryScreen extends ConsumerWidget {
                           : _DateScopedTimeline(
                               nodes: state.nodes,
                               state: state,
-                              tripId: tripId,
                               onSwap: (node) => _swap(ref, node),
                               onCancel: (node) => _cancel(ref, node),
                               onOutcome: (node) =>
@@ -222,7 +221,6 @@ class ItineraryScreen extends ConsumerWidget {
 class _DateScopedTimeline extends StatelessWidget {
   final List<TripNode> nodes;
   final ItineraryState state;
-  final String tripId;
   final void Function(TripNode) onSwap;
   final void Function(TripNode) onCancel;
   final void Function(TripNode) onOutcome;
@@ -232,7 +230,6 @@ class _DateScopedTimeline extends StatelessWidget {
   const _DateScopedTimeline({
     required this.nodes,
     required this.state,
-    required this.tripId,
     required this.onSwap,
     required this.onCancel,
     required this.onOutcome,

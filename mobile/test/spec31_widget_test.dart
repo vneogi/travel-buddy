@@ -168,16 +168,14 @@ void main() {
   setUpAll(() => registerFallbackValue(EventType.askInfo));
 
   group('SPEC-31 date-scoped itinerary', () {
-    setUp(() async {
-      final binding = TestWidgetsFlutterBinding.ensureInitialized();
-      await binding.setSurfaceSize(const Size(800, 600));
-    });
-    tearDown(() async {
-      final binding = TestWidgetsFlutterBinding.ensureInitialized();
-      await binding.setSurfaceSize(null);
-    });
-
     testWidgets('AppBar says Your Trip', (tester) async {
+      tester.view.physicalSize = const Size(800, 600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
       final harness = await _Harness.create([
         _node(id: 'a', name: 'Museum', start: DateTime(2026, 10, 5, 9)),
       ]);
@@ -188,6 +186,13 @@ void main() {
     });
 
     testWidgets('two dates render two headers and all cards', (tester) async {
+      tester.view.physicalSize = const Size(800, 600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
       final harness = await _Harness.create([
         _node(id: 'a', name: 'Morning Market', start: DateTime(2026, 10, 5, 9)),
         _node(id: 'b', name: 'Lunch Spot', start: DateTime(2026, 10, 5, 12)),
@@ -212,6 +217,13 @@ void main() {
     });
 
     testWidgets('date header includes year (New Year boundary)', (tester) async {
+      tester.view.physicalSize = const Size(800, 600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
       final harness = await _Harness.create([
         _node(id: 'nye', name: 'NYE Party', start: DateTime(2026, 12, 31, 22)),
         _node(id: 'nyd', name: 'Brunch', start: DateTime(2027, 1, 1, 10)),
@@ -225,6 +237,13 @@ void main() {
 
     testWidgets('ActivityCard keys survive: love updates the intended node',
         (tester) async {
+      tester.view.physicalSize = const Size(800, 600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
       final harness = await _Harness.create([
         _node(id: 'a', name: 'Market', start: DateTime(2026, 10, 5, 9)),
         _node(id: 'b', name: 'Temple', start: DateTime(2026, 10, 6, 10)),
@@ -252,6 +271,13 @@ void main() {
     testWidgets(
         'last node of one date receives first node of next date as nextNode',
         (tester) async {
+      tester.view.physicalSize = const Size(800, 600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
       final harness = await _Harness.create([
         _node(id: 'a', name: 'Market', start: DateTime(2026, 10, 5, 9)),
         _node(id: 'b', name: 'Temple', start: DateTime(2026, 10, 6, 10)),
@@ -270,6 +296,13 @@ void main() {
 
     testWidgets('no RenderFlex overflow at 800x600 with two date groups',
         (tester) async {
+      tester.view.physicalSize = const Size(800, 600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
       final harness = await _Harness.create([
         _node(id: 'a', name: 'Cafe', start: DateTime(2026, 10, 5, 9)),
         _node(id: 'b', name: 'Museum', start: DateTime(2026, 10, 5, 14)),
@@ -285,6 +318,13 @@ void main() {
 
     testWidgets('SPEC-30 outcome wiring still reaches the correct node',
         (tester) async {
+      tester.view.physicalSize = const Size(800, 600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
       final now = DateTime.now().toUtc();
       final harness = await _Harness.create([
         _node(
