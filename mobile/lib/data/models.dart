@@ -10,7 +10,9 @@ enum EventType {
   translate('translate'),
   askInfo('ask_info'),
   reroute('reroute'),
-  addBooking('add_booking');
+  addBooking('add_booking'),
+  editBooking('edit_booking'),
+  deleteBooking('delete_booking');
 
   final String wire;
   const EventType(this.wire);

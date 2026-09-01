@@ -13,11 +13,13 @@ import '../driver_card/driver_card_helpers.dart';
 class AddBookingSheet extends ConsumerStatefulWidget {
   final String tripId;
   final String initialBookingType;
+  final TripNode? editNode;
 
   const AddBookingSheet({
     super.key,
     required this.tripId,
     this.initialBookingType = 'flight',
+    this.editNode,
   });
 
   @override
@@ -32,15 +34,29 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
   final _pasteController = TextEditingController();
   DateTime _scheduledStart = DateTime.now().add(const Duration(hours: 24));
   int _durationMinutes = 180;
+  String _importSource = 'manual';
   bool _saving = false;
   String? _saveError;
   String? _parsedGeoRegion;
 
+  bool get _isEditMode => widget.editNode != null;
+
   @override
   void initState() {
     super.initState();
-    _bookingType = widget.initialBookingType;
-    _durationMinutes = _defaultDurations[_bookingType] ?? 180;
+    final edit = widget.editNode;
+    if (edit != null) {
+      _bookingType = edit.bookingType ?? 'flight';
+      _titleController.text = edit.venueName;
+      _codeController.text = edit.confirmationCode ?? '';
+      _notesController.text = edit.bookingNotes ?? '';
+      _scheduledStart = edit.scheduledStart;
+      _durationMinutes = edit.durationMinutes;
+      _importSource = edit.importSource ?? 'manual';
+    } else {
+      _bookingType = widget.initialBookingType;
+      _durationMinutes = _defaultDurations[_bookingType] ?? 180;
+    }
   }
 
   static const _typeIcons = {
@@ -84,6 +100,7 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
         _scheduledStart = parsed.scheduledStart!;
       }
       _parsedGeoRegion = parsed.geoRegion;
+      _importSource = 'email';
     });
   }
 
@@ -91,7 +108,11 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
     final date = await showDatePicker(
       context: context,
       initialDate: _scheduledStart,
-      firstDate: DateTime.now(),
+      firstDate: _isEditMode
+          ? _scheduledStart.isBefore(DateTime.now())
+              ? _scheduledStart
+              : DateTime.now()
+          : DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
     if (date == null || !mounted) return;
@@ -123,8 +144,9 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
     final result = await ref
         .read(itineraryControllerProvider(widget.tripId).notifier)
         .applyEvent(
-      type: EventType.addBooking,
-      message: 'Add booking anchor',
+      type: _isEditMode ? EventType.editBooking : EventType.addBooking,
+      message: _isEditMode ? 'Edit booking' : 'Add booking anchor',
+      targetNodeId: widget.editNode?.nodeId,
       preferences: {
         'venue_name': title,
         'scheduled_start': _scheduledStart.toIso8601String(),
@@ -137,8 +159,7 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
         'booking_notes': _notesController.text.trim().isEmpty
             ? null
             : _notesController.text.trim(),
-        'import_source':
-            _pasteController.text.isEmpty ? 'manual' : 'email',
+        'import_source': _importSource,
       },
     );
     if (result == null) {
@@ -152,12 +173,13 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
       return;
     }
 
-    ref.read(signalServiceProvider).emitBookingAdded(
-          bookingType: _bookingType,
-          importSource:
-              _pasteController.text.isEmpty ? 'manual' : 'email',
-          tripId: widget.tripId,
-        );
+    if (!_isEditMode) {
+      ref.read(signalServiceProvider).emitBookingAdded(
+            bookingType: _bookingType,
+            importSource: _importSource,
+            tripId: widget.tripId,
+          );
+    }
 
     // SPEC-04: Pre-cache place data for offline driver cards
     try {
@@ -191,7 +213,8 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Add Booking', style: AppTypography.h2),
+            Text(_isEditMode ? 'Edit Booking' : 'Add Booking',
+                style: AppTypography.h2),
             const SizedBox(height: AppSpacing.base),
             // Type picker
             Wrap(
@@ -278,7 +301,13 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.anchor),
-                label: Text(_saving ? 'Saving\u2026' : 'Save Anchor'),
+                label: Text(
+                  _saving
+                      ? 'Saving\u2026'
+                      : _isEditMode
+                          ? 'Save Changes'
+                          : 'Save Anchor',
+                ),
               ),
             ),
             const SizedBox(height: AppSpacing.lg),

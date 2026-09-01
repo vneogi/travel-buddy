@@ -33,6 +33,8 @@ class ActivityCard extends StatelessWidget {
   final VoidCallback? onTapCancel;
   final VoidCallback? onTapLoved;
   final VoidCallback? onTapRecordOutcome;
+  final VoidCallback? onTapEditBooking;
+  final VoidCallback? onTapDeleteBooking;
   final bool isThinking; // show shimmer for heavy model calls
   final bool isLoved; // filled heart once the user has loved this venue
   final NodeOutcome? recordedOutcome;
@@ -51,6 +53,8 @@ class ActivityCard extends StatelessWidget {
     this.isLoved = false,
     this.recordedOutcome,
     this.isRecordingOutcome = false,
+    this.onTapEditBooking,
+    this.onTapDeleteBooking,
     this.now,
   });
 
@@ -216,7 +220,7 @@ class ActivityCard extends StatelessWidget {
                         ],
                       ),
                       // SPEC-10: booking badge
-                      if (node.nodeKind == 'booking')
+                      if (node.nodeKind == 'booking') ...[
                         Padding(
                           padding: const EdgeInsets.only(top: 4),
                           child: Text(
@@ -227,9 +231,38 @@ class ActivityCard extends StatelessWidget {
                             ),
                           ),
                         ),
+                        Padding(
+                          padding: const EdgeInsets.only(top: AppSpacing.xs),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (onTapEditBooking != null)
+                                TextButton.icon(
+                                  onPressed: onTapEditBooking,
+                                  icon: const Icon(Icons.edit, size: 16),
+                                  label: const Text('Edit'),
+                                ),
+                              if (onTapDeleteBooking != null)
+                                TextButton.icon(
+                                  onPressed: onTapDeleteBooking,
+                                  icon: const Icon(Icons.delete_outline, size: 16),
+                                  label: const Text('Delete'),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: AppColors.danger,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
                       if (node.microLocation != null) ...[
                         const SizedBox(height: AppSpacing.xs),
                         Text(node.microLocation!, style: AppTypography.caption),
+                      ],
+                      if (node.bookingNotes != null &&
+                          node.bookingNotes!.isNotEmpty) ...[
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(node.bookingNotes!, style: AppTypography.caption),
                       ],
                       if (node.vibeTags.isNotEmpty) ...[
                         const SizedBox(height: AppSpacing.sm),

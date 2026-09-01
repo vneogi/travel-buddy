@@ -35,7 +35,7 @@ class ItineraryScreen extends ConsumerWidget {
   const ItineraryScreen({super.key, required this.tripId});
 
   String _sig(TripNode n) =>
-      '${n.nodeId}|${n.venueId}|${n.venueName}|${n.scheduledStart.toIso8601String()}|${n.status.name}|${n.isLocked}';
+      '${n.nodeId}|${n.venueId}|${n.venueName}|${n.scheduledStart.toIso8601String()}|${n.status.name}|${n.isLocked}|${n.bookingNotes}|${n.bookingType}';
 
   Future<void> _swap(WidgetRef ref, TripNode node) async {
     final placeRef = node.venueId ?? node.venueName;
@@ -66,6 +66,50 @@ class ItineraryScreen extends ConsumerWidget {
           message: 'Cancel ${node.venueName}',
           targetNodeId: node.nodeId,
         );
+  }
+
+  void _editBooking(BuildContext context, TripNode node) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => AddBookingSheet(tripId: tripId, editNode: node),
+    );
+  }
+
+  Future<void> _deleteBooking(
+    BuildContext context,
+    WidgetRef ref,
+    TripNode node,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete booking?'),
+        content: Text('Remove ${node.venueName} from your itinerary?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Keep'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.danger,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && context.mounted) {
+      await ref
+          .read(itineraryControllerProvider(tripId).notifier)
+          .applyEvent(
+            type: EventType.deleteBooking,
+            message: 'Delete ${node.venueName}',
+            targetNodeId: node.nodeId,
+          );
+    }
   }
 
   Future<void> _showOutcomePicker(
@@ -205,6 +249,10 @@ class ItineraryScreen extends ConsumerWidget {
                                             .notifier)
                                     .markLoved(placeRef);
                               },
+                              onEditBooking: (node) =>
+                                  _editBooking(context, node),
+                              onDeleteBooking: (node) =>
+                                  _deleteBooking(context, ref, node),
                               sig: _sig,
                             ),
                     ),
@@ -226,6 +274,8 @@ class _DateScopedTimeline extends StatelessWidget {
   final void Function(TripNode) onCancel;
   final void Function(TripNode) onOutcome;
   final void Function(TripNode) onLoved;
+  final void Function(TripNode) onEditBooking;
+  final void Function(TripNode) onDeleteBooking;
   final String Function(TripNode) sig;
 
   const _DateScopedTimeline({
@@ -235,6 +285,8 @@ class _DateScopedTimeline extends StatelessWidget {
     required this.onCancel,
     required this.onOutcome,
     required this.onLoved,
+    required this.onEditBooking,
+    required this.onDeleteBooking,
     required this.sig,
   });
 
@@ -294,6 +346,12 @@ class _DateScopedTimeline extends StatelessWidget {
                 state.outcomeRecordingNodeIds.contains(node.nodeId),
             onTapSwap: state.processing ? null : () => onSwap(node),
             onTapCancel: state.processing ? null : () => onCancel(node),
+            onTapEditBooking: (!state.processing && node.nodeKind == 'booking')
+                ? () => onEditBooking(node)
+                : null,
+            onTapDeleteBooking: (!state.processing && node.nodeKind == 'booking')
+                ? () => onDeleteBooking(node)
+                : null,
             onTapRecordOutcome:
                 state.processing ? null : () => onOutcome(node),
             onTapLoved: () => onLoved(node),

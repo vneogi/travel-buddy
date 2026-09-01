@@ -82,7 +82,12 @@ class RouterAgent:
         if event_type in [e.value for e in structural_events]:
             return (RoutingTier.HEAVY, 0.95)
 
-        light_events = {EventType.TRANSLATE, EventType.ASK_INFO}
+        light_events = {
+            EventType.TRANSLATE,
+            EventType.ASK_INFO,
+            EventType.EDIT_BOOKING,
+            EventType.DELETE_BOOKING,
+        }
         if event_type in [e.value for e in light_events]:
             return (RoutingTier.LIGHT, 0.95)
 

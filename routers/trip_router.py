@@ -233,6 +233,42 @@ async def process_trip_event(
     # --- Ownership: authorize before doing any work or consuming quota ---
     trip = require_trip_owner(db_service.get_trip(request.trip_id), user_id)
 
+    # --- SPEC-10: Booking mutations (no quota, no LLM) ---
+    booking_mutation_events = {EventType.EDIT_BOOKING, EventType.DELETE_BOOKING}
+    if request.event_type in booking_mutation_events:
+        if not request.target_node_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "error": "missing_target_node_id",
+                    "message": "edit_booking and delete_booking require target_node_id.",
+                },
+            )
+        target = next(
+            (n for n in trip.nodes if n.node_id == request.target_node_id),
+            None,
+        )
+        if target is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={
+                    "error": "target_not_found",
+                    "message": f"No node with id '{request.target_node_id}' in this trip.",
+                },
+            )
+        if target.node_kind != "booking":
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={
+                    "error": "target_not_a_booking",
+                    "message": (
+                        f"'{target.venue_name}' is not a booking "
+                        "(node_kind='{target.node_kind}'). "
+                        "Use cancel_activity for activities."
+                    ),
+                },
+            )
+
     # --- LEVER 1: Reroute Throttle (keyed on the authenticated user) ---
     structural_events = {
         EventType.CANCEL_ACTIVITY,
