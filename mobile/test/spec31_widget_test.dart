@@ -170,11 +170,7 @@ void main() {
   group('SPEC-31 date-scoped itinerary', () {
     testWidgets('AppBar says Your Trip', (tester) async {
       tester.view.physicalSize = const Size(800, 600);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() {
-        tester.view.resetPhysicalSize();
-        tester.view.resetDevicePixelRatio();
-      });
+      addTearDown(tester.view.resetPhysicalSize);
 
       final harness = await _Harness.create([
         _node(id: 'a', name: 'Museum', start: DateTime(2026, 10, 5, 9)),
@@ -187,11 +183,7 @@ void main() {
 
     testWidgets('two dates render two headers and all cards', (tester) async {
       tester.view.physicalSize = const Size(800, 600);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() {
-        tester.view.resetPhysicalSize();
-        tester.view.resetDevicePixelRatio();
-      });
+      addTearDown(tester.view.resetPhysicalSize);
 
       final harness = await _Harness.create([
         _node(id: 'a', name: 'Morning Market', start: DateTime(2026, 10, 5, 9)),
@@ -218,11 +210,7 @@ void main() {
 
     testWidgets('date header includes year (New Year boundary)', (tester) async {
       tester.view.physicalSize = const Size(800, 600);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() {
-        tester.view.resetPhysicalSize();
-        tester.view.resetDevicePixelRatio();
-      });
+      addTearDown(tester.view.resetPhysicalSize);
 
       final harness = await _Harness.create([
         _node(id: 'nye', name: 'NYE Party', start: DateTime(2026, 12, 31, 22)),
@@ -238,11 +226,7 @@ void main() {
     testWidgets('ActivityCard keys survive: love updates the intended node',
         (tester) async {
       tester.view.physicalSize = const Size(800, 600);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() {
-        tester.view.resetPhysicalSize();
-        tester.view.resetDevicePixelRatio();
-      });
+      addTearDown(tester.view.resetPhysicalSize);
 
       final harness = await _Harness.create([
         _node(id: 'a', name: 'Market', start: DateTime(2026, 10, 5, 9)),
@@ -272,11 +256,7 @@ void main() {
         'last node of one date receives first node of next date as nextNode',
         (tester) async {
       tester.view.physicalSize = const Size(800, 600);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() {
-        tester.view.resetPhysicalSize();
-        tester.view.resetDevicePixelRatio();
-      });
+      addTearDown(tester.view.resetPhysicalSize);
 
       final harness = await _Harness.create([
         _node(id: 'a', name: 'Market', start: DateTime(2026, 10, 5, 9)),
@@ -297,11 +277,7 @@ void main() {
     testWidgets('no RenderFlex overflow at 800x600 with two date groups',
         (tester) async {
       tester.view.physicalSize = const Size(800, 600);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() {
-        tester.view.resetPhysicalSize();
-        tester.view.resetDevicePixelRatio();
-      });
+      addTearDown(tester.view.resetPhysicalSize);
 
       final harness = await _Harness.create([
         _node(id: 'a', name: 'Cafe', start: DateTime(2026, 10, 5, 9)),
@@ -319,11 +295,7 @@ void main() {
     testWidgets('SPEC-30 outcome wiring still reaches the correct node',
         (tester) async {
       tester.view.physicalSize = const Size(800, 600);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() {
-        tester.view.resetPhysicalSize();
-        tester.view.resetDevicePixelRatio();
-      });
+      addTearDown(tester.view.resetPhysicalSize);
 
       final now = DateTime.now().toUtc();
       final harness = await _Harness.create([
