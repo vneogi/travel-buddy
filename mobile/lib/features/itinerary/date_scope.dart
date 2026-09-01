@@ -10,9 +10,9 @@ class ItineraryDayGroup {
   const ItineraryDayGroup({required this.date, required this.nodes});
 }
 
-/// Group [nodes] by the calendar date on their [scheduledStart].
+/// Group `nodes` by the calendar date on their `scheduledStart`.
 ///
-/// Date key uses year/month/day directly -- no [toLocal] or [toUtc] call.
+/// Date key uses year/month/day directly -- no toLocal or toUtc call.
 /// Preserves input order: nodes within a day keep the server-provided
 /// sequence, and groups appear in the order of their first node.
 /// The input list is never sorted or mutated.
@@ -45,7 +45,7 @@ List<ItineraryDayGroup> groupNodesByCalendarDate(List<TripNode> nodes) {
   return result;
 }
 
-/// Whether [node] represents a hotel-like accommodation.
+/// Whether `node` represents a hotel-like accommodation.
 ///
 /// Matches booking_type == 'hotel' first, then falls back to a
 /// case-insensitive name check for hotel, resort, hostel, villa,
@@ -65,7 +65,7 @@ bool isHotelLikeNode(TripNode node) {
 /// A hotel-like node occupies `[start, start + duration)`.
 ///
 /// Precedence:
-/// 1. Active stay containing [now] (latest start wins on overlap).
+/// 1. Active stay containing `now` (latest start wins on overlap).
 /// 2. Earliest future stay.
 /// 3. Most recently ended elapsed stay (latest end wins).
 /// 4. null.

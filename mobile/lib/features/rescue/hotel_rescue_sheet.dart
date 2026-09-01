@@ -10,9 +10,9 @@ import '../booking/add_booking_sheet.dart';
 
 /// Finds the best accommodation for Hotel Rescue using date-aware selection.
 ///
-/// Delegates to [selectRescueStay] which applies the SPEC-31 precedence:
-/// active stay > earliest future > most recently elapsed.
-/// [now] defaults to [DateTime.now] for production; tests inject it.
+/// Delegates to `selectRescueStay` which applies the SPEC-31 precedence:
+/// active stay, then earliest future, then most recently elapsed.
+/// `now` defaults to `DateTime.now()` for production; tests inject it.
 TripNode? findHotelNode(List<TripNode> nodes, {DateTime? now}) {
   return selectRescueStay(nodes, now ?? DateTime.now());
 }

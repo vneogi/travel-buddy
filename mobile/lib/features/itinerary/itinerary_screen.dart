@@ -215,8 +215,8 @@ class ItineraryScreen extends ConsumerWidget {
 
 /// SPEC-31: Flattened date-grouped timeline.
 ///
-/// Builds a single [ListView] of date-header + [ActivityCard] items.
-/// [nextNode] spans across date boundaries so the last card in one day
+/// Builds a single ListView of date-header and ActivityCard items.
+/// The `nextNode` spans across date boundaries so the last card in one day
 /// still receives the first card of the next day.
 class _DateScopedTimeline extends StatelessWidget {
   final List<TripNode> nodes;
