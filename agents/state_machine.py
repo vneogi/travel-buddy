@@ -273,9 +273,7 @@ class TripStateMachine:
                 raw = prefs["scheduled_start"]
                 try:
                     if isinstance(raw, str):
-                        new_start = datetime.fromisoformat(
-                            raw.replace("Z", "+00:00")
-                        )
+                        new_start = datetime.fromisoformat(raw.replace("Z", "+00:00"))
                     else:
                         new_start = raw
                     if new_start.tzinfo is None:
@@ -310,9 +308,7 @@ class TripStateMachine:
         # SPEC-10: Delete an existing booking (remove, not skip)
         if event_type == EventType.DELETE_BOOKING.value:
             target_id = state.get("target_node_id")
-            trip_state.nodes = [
-                n for n in trip_state.nodes if n.node_id != target_id
-            ]
+            trip_state.nodes = [n for n in trip_state.nodes if n.node_id != target_id]
             result = reschedule_and_validate(list(trip_state.nodes))
             trip_state.nodes = result.nodes
             state["schedule_warnings"] = result.warnings

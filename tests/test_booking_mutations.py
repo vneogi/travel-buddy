@@ -104,9 +104,7 @@ class TestEditBooking:
         assert edited["import_source"] == "manual"
         assert edited["venue_name"] == "EK501 to Dubai"
 
-    def test_unchanged_time_and_duration_do_not_reschedule(
-        self, client, trip_with_booking
-    ):
+    def test_unchanged_time_and_duration_do_not_reschedule(self, client, trip_with_booking):
         """The client submits unchanged schedule fields on a notes-only edit."""
         trip_id, booking = trip_with_booking
 
@@ -219,8 +217,7 @@ class TestDeleteBooking:
         nodes = r.json()["updated_nodes"]
         assert all(n["node_id"] != node_id for n in nodes)
         assert all(
-            not (n.get("node_kind") == "booking" and n.get("status") == "skipped")
-            for n in nodes
+            not (n.get("node_kind") == "booking" and n.get("status") == "skipped") for n in nodes
         )
 
     def test_delete_reschedules_remaining(self, client, trip_with_booking):
