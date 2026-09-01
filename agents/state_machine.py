@@ -39,6 +39,8 @@ STRUCTURAL_EDIT_EVENTS = {
     EventType.ADD_ACTIVITY.value,
     EventType.REROUTE.value,
     EventType.ADD_BOOKING.value,
+    EventType.EDIT_BOOKING.value,
+    EventType.DELETE_BOOKING.value,
 }
 VENUE_REQUIRED_EVENTS = {
     EventType.SWAP_ACTIVITY.value,
@@ -232,6 +234,87 @@ class TripStateMachine:
             state["schedule_warnings"] = result.warnings
             return state
 
+        # SPEC-10: Edit an existing booking (patch supplied fields only)
+        if event_type == EventType.EDIT_BOOKING.value:
+            target_id = state.get("target_node_id")
+            prefs = state.get("preferences") or {}
+            node = next(
+                (n for n in trip_state.nodes if n.node_id == target_id),
+                None,
+            )
+            if node is None:
+                return state
+            # Patch only supplied fields; preserve node_id, lock, omitted
+            if "venue_name" in prefs:
+                node.venue_name = prefs["venue_name"]
+            if "booking_type" in prefs:
+                node.booking_type = prefs["booking_type"]
+            if "confirmation_code" in prefs:
+                node.confirmation_code = prefs["confirmation_code"]
+            if "booking_notes" in prefs:
+                node.booking_notes = prefs["booking_notes"]
+            if "import_source" in prefs:
+                node.import_source = prefs["import_source"]
+            if "duration_minutes" in prefs:
+                node.duration_minutes = int(prefs["duration_minutes"])
+            if "micro_location" in prefs:
+                node.micro_location = prefs["micro_location"]
+            if "lat" in prefs:
+                node.lat = prefs["lat"]
+            if "lng" in prefs:
+                node.lng = prefs["lng"]
+            if "geo_region" in prefs:
+                node.geo_region = prefs["geo_region"]
+            time_changed = False
+            if "scheduled_start" in prefs:
+                raw = prefs["scheduled_start"]
+                try:
+                    if isinstance(raw, str):
+                        new_start = datetime.fromisoformat(
+                            raw.replace("Z", "+00:00")
+                        )
+                    else:
+                        new_start = raw
+                    if new_start.tzinfo is None:
+                        new_start = new_start.replace(tzinfo=timezone.utc)
+                    else:
+                        new_start = new_start.astimezone(timezone.utc)
+                    if new_start != node.scheduled_start:
+                        node.scheduled_start = new_start
+                        time_changed = True
+                except Exception:
+                    pass
+            # node_kind and is_locked are NEVER changed by edit
+            assert node.node_kind == "booking"
+            assert node.is_locked is True
+            if time_changed or "duration_minutes" in prefs:
+                # Re-sort into chronological order and reschedule
+                nodes = list(trip_state.nodes)
+                nodes.remove(node)
+                inserted = False
+                for i, n in enumerate(nodes):
+                    if n.scheduled_start > node.scheduled_start:
+                        nodes.insert(i, node)
+                        inserted = True
+                        break
+                if not inserted:
+                    nodes.append(node)
+                result = reschedule_and_validate(nodes)
+                trip_state.nodes = result.nodes
+                state["schedule_warnings"] = result.warnings
+            return state
+
+        # SPEC-10: Delete an existing booking (remove, not skip)
+        if event_type == EventType.DELETE_BOOKING.value:
+            target_id = state.get("target_node_id")
+            trip_state.nodes = [
+                n for n in trip_state.nodes if n.node_id != target_id
+            ]
+            result = reschedule_and_validate(list(trip_state.nodes))
+            trip_state.nodes = result.nodes
+            state["schedule_warnings"] = result.warnings
+            return state
+
         # SPEC-29 D4: Cancel uses a direct status-flip; no venue loop needed.
         if event_type == EventType.CANCEL_ACTIVITY.value:
             target = state.get("target_node_id")
@@ -399,6 +482,20 @@ class TripStateMachine:
 
         if state["event_type"] == EventType.ADD_BOOKING.value:
             state["response"] = "Booking saved as a locked itinerary anchor."
+            warnings = state.get("schedule_warnings") or []
+            if warnings:
+                state["response"] += "\n\nHeads up: " + " ".join(warnings)
+            return state
+
+        if state["event_type"] == EventType.EDIT_BOOKING.value:
+            state["response"] = "Booking updated."
+            warnings = state.get("schedule_warnings") or []
+            if warnings:
+                state["response"] += "\n\nHeads up: " + " ".join(warnings)
+            return state
+
+        if state["event_type"] == EventType.DELETE_BOOKING.value:
+            state["response"] = "Booking removed from your itinerary."
             warnings = state.get("schedule_warnings") or []
             if warnings:
                 state["response"] += "\n\nHeads up: " + " ".join(warnings)

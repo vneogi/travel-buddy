@@ -50,6 +50,8 @@ class EventType(str, Enum):
     ASK_INFO = "ask_info"
     REROUTE = "reroute"
     ADD_BOOKING = "add_booking"
+    EDIT_BOOKING = "edit_booking"
+    DELETE_BOOKING = "delete_booking"
 
 
 # ==============================================================================
