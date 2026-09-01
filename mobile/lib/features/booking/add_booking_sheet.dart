@@ -13,11 +13,13 @@ import '../driver_card/driver_card_helpers.dart';
 class AddBookingSheet extends ConsumerStatefulWidget {
   final String tripId;
   final String initialBookingType;
+  final TripNode? editNode;
 
   const AddBookingSheet({
     super.key,
     required this.tripId,
     this.initialBookingType = 'flight',
+    this.editNode,
   });
 
   @override
@@ -36,11 +38,23 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
   String? _saveError;
   String? _parsedGeoRegion;
 
+  bool get _isEditMode => widget.editNode != null;
+
   @override
   void initState() {
     super.initState();
-    _bookingType = widget.initialBookingType;
-    _durationMinutes = _defaultDurations[_bookingType] ?? 180;
+    final edit = widget.editNode;
+    if (edit != null) {
+      _bookingType = edit.bookingType ?? 'flight';
+      _titleController.text = edit.venueName;
+      _codeController.text = edit.confirmationCode ?? '';
+      _notesController.text = edit.bookingNotes ?? '';
+      _scheduledStart = edit.scheduledStart;
+      _durationMinutes = edit.durationMinutes;
+    } else {
+      _bookingType = widget.initialBookingType;
+      _durationMinutes = _defaultDurations[_bookingType] ?? 180;
+    }
   }
 
   static const _typeIcons = {
@@ -91,7 +105,11 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
     final date = await showDatePicker(
       context: context,
       initialDate: _scheduledStart,
-      firstDate: DateTime.now(),
+      firstDate: _isEditMode
+          ? _scheduledStart.isBefore(DateTime.now())
+              ? _scheduledStart
+              : DateTime.now()
+          : DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
     if (date == null || !mounted) return;
@@ -123,8 +141,9 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
     final result = await ref
         .read(itineraryControllerProvider(widget.tripId).notifier)
         .applyEvent(
-      type: EventType.addBooking,
-      message: 'Add booking anchor',
+      type: _isEditMode ? EventType.editBooking : EventType.addBooking,
+      message: _isEditMode ? 'Edit booking' : 'Add booking anchor',
+      targetNodeId: widget.editNode?.nodeId,
       preferences: {
         'venue_name': title,
         'scheduled_start': _scheduledStart.toIso8601String(),
