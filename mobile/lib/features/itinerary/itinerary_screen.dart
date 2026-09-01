@@ -207,6 +207,7 @@ class ItineraryScreen extends ConsumerWidget {
                               },
                               sig: _sig,
                             ),
+                    ),
                   ],
                 ),
     );
