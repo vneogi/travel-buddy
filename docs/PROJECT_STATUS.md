@@ -73,7 +73,7 @@
 | Offline vault (SPEC-04) | DONE (October slice) | PR #22 (`b7e10c3`) + PR #23 (`dab16c0`). <=2-tap hotel rescue entry to DriverCardScreen, offline itinerary cache fallback in ItineraryController.load(), robust hotel matching (villa/guesthouse), pre-caching hotel place data in cache_place, honest empty state. Full vault post-field-test -- see SPEC-04 |
 | Anonymous identity (SPEC-09) | DONE (client + server) | Client half landed PR #16 (`7173a3f`): UUID v4 in flutter_secure_storage, Anonymous header, TB_DEBUG_USER_ID removed. Server half already verified. Record any remaining Anonymous E2E gap explicitly; the laptop is available |
 | Itinerary normalisation (SPEC-16) | IMPLEMENTED | Decompose and compose land in services/itinerary_normaliser.py, dual-write in both backends, round-trip equality asserted, wire format unchanged. node_id is stable across reschedules via state_json and now comes from models/ids.py. SPEC-30 (`f8349a8`) writes `trip_edge.observed_duration_minutes` from consecutive arrivals |
-| Booking anchors (SPEC-10) | DONE (October slice) | PR #20 squash-merged as `f6328e9`. Immovable locked nodes, booking metadata, scheduler rules, parser and AddBookingSheet. Mad Monkey Booking.com dates were verified Aug 27-28. Edit/delete and notes on cards remain absent; migration 0021 remains unapplied unless separately recorded |
+| Booking anchors (SPEC-10) | PARTIAL (create slice done) | PR #20 squash-merged as `f6328e9`. Immovable locked nodes, booking metadata, parser and AddBookingSheet. Mad Monkey Booking.com dates were verified Aug 27-28. Edit/delete is now specified as a separate deterministic mutation slice; daily hotel anchor and preceding-evening flight rules remain |
 | Forced-choice preferences (SPEC-11) | SPECIFIED | Not implemented. Cold-start preference capture |
 | Show driver cards (SPEC-12) | DONE (October slice) | Full-screen offline card from SQLite cache_place, FactView assert/ask/refuse tiers, geoRegion-threaded native script, driver_card_shown/name_confirmed signals. Dubai airplane behavior was verified Aug 27-28: no fare and no screenshot copy. No Fair Fare until sourced; Windows `geo:` hand-off failed, so keep small last-resort coordinates. Migration 0023 (unapplied) carries localized fields through live venue search |
 | Region and locale registry (SPEC-13) | SPECIFIED | Not implemented. Rising in priority: a city-onboarding pipeline needs it for bounding box, languages, currency and fare bands. Makes adding a city a row rather than a code change |
@@ -93,7 +93,8 @@
 | App lifecycle and data rights (SPEC-27) | SPECIFIED | Not implemented. The three consumer obligations with no owner: push transport with tokens that survive the SPEC-24 merge and delivery through the SPEC-22 interruption budget enforced server-side, deletion and export under DPDP and GDPR, and a minimum supported client that blocks writes but never reads. States the position that raw signals are deleted while non-identifying derived aggregates survive |
 | Trip inspiration (SPEC-28) | DECIDED, NOT SCHEDULED | Opt-in, delayed, region-level public trip snapshots as inspiration. No live people/location, DMs or comments in v1. Requires identity, deletion/export and moderation gates |
 | Context alerts (SPEC-29) | DONE (phase 1) | PR #25 squash-merged as `aedbc03`. OpenWeather evidence is matched to upcoming nodes, cached by identity and shown with provenance. Alerts never mutate or consume reroute quota. Synthetic transit is not user copy; cancel preserves position and locked cancel returns 409 before quota. Watcher/push phase not started |
-| Retention instrumentation (SPEC-30) | PHASE 1 DONE (`f8349a8`) | PR #32. `session_start` in registry + migration 0024; client emit via outbox (cold start and resume, 30s debounce). Server stamps trip_day when trip_id is present. `trip_edge.observed_duration_minutes` writer on ingest. Remaining: past-node confirm/skip UI and explicit cancel-target confirmation |
+| Retention instrumentation (SPEC-30) | DONE | PR #32 (`f8349a8`) added `session_start` and the `trip_edge` observed-duration writer. PR #34 (`83c825f`) added durable node outcomes, active/past confirmation UI, outcome-aware targeting, and explicit cancel confirmation. Flutter CI and owner Windows full suite green |
+| Date-scoped itinerary and stay rescue (SPEC-31) | SPECIFIED | Client-only grouping under calendar-date headers plus active/future/elapsed hotel rescue selection. No `day_index`, timezone conversion, wire, schema, scheduler, or `trip_stay` change |
 
 Migration numbers are assigned when a spec is implemented, not when it is
 written. SPEC-11, SPEC-13, SPEC-14 and SPEC-15 each claimed a number, and the
@@ -151,13 +152,12 @@ SPEC-02 plus SPEC-12.
 
 ### Pre-field-test instrumentation gate (added Aug 2026)
 
-The seven-item spine proves the *engine* works on the trip. Phase 1 of SPEC-30
-(`f8349a8`) records `session_start` and writes observed minutes on `trip_edge`.
-That is instrumentation, not a validated retention curve: one field-test trip
-still cannot prove Seed-shaped cohorts.
+The seven-item spine proves the *engine* works on the trip. SPEC-30 is complete:
+PR #32 records `session_start` and observed edge duration; PR #34 adds durable
+node outcomes and explicit cancel-target confirmation. That is instrumentation,
+not a validated retention curve: one field-test trip still cannot prove
+Seed-shaped cohorts.
 
-- **SPEC-30 remainder.** Past-node "did this happen" and an explicit "which
-  stop?" cancel confirmation. `nextMovableStop` already exists; do not rebuild it.
 - **Sponsored-placement disclosure (SPEC-17 decision 15).** Sponsored boost is
   live in the ranker with no client disclosure, and Pro is sold as removing it.
   Decide and land the disclosure surface before adding any affiliate revenue; it
@@ -165,8 +165,8 @@ still cannot prove Seed-shaped cohorts.
 
 ### After the field-test spine (still important, not Oct-critical)
 
-8. Date-scoped itinerary, booking edit/delete, and real Laos creation
-   (near-term product gates after the Aug 27-30 laptop runs).
+8. SPEC-31 date-scoped itinerary and date-aware stay rescue, then SPEC-10
+   booking edit/delete as a separate mutation slice, then real Laos creation.
 9. Retire the dietary suitability claim (SPEC-14). Closes the
    halal-versus-pork hole by removing the claim.
 10. SPEC-17 trust and verification -- gates SPEC-18/19/20; behind the

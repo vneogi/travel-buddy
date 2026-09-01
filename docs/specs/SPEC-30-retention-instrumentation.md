@@ -1,9 +1,7 @@
 # SPEC-30: Retention Instrumentation and the "Did This Happen" Node State
 
-> Status: PHASE 1 ON MAIN. Squash-merged PR #32 as `f8349a8` (2026-08-31).
-> Remaining product: past-node "did this happen" UI and an explicit cancel-target
-> confirmation. Those are not required to emit `session_start` or to write
-> `trip_edge.observed_duration_minutes`.
+> Status: DONE. Phase 1 merged in PR #32 (`f8349a8`); durable node outcomes and
+> explicit cancel-target confirmation merged in PR #34 (`83c825f`).
 >
 > Depends on SPEC-02 (the outbox that transports it), SPEC-06/07 (the signal
 > registry and emission path), and SPEC-16 (the observed_duration_minutes column
@@ -124,8 +122,8 @@ value here and a missing measurement is not.
 - [x] Client emits session_start on foreground through the outbox, carrying
       trip-relative timing (cold start and resume, 30s debounce; tripId from
       `/trip/:id`; client trip_day from cached itinerary)
-- [ ] A UI affordance emits visited_confirmed / node_skipped for *past* nodes.
-      Active-node confirm/skip already shipped before this spec.
+- [x] A durable UI affordance emits visited_confirmed / node_skipped for active
+      and past nodes without re-emitting on restore (`83c825f`)
 - [x] observed_duration_minutes written on `trip_edge` on ingest of consecutive
       arrivals (`update_edge_observed_duration`); dual-write preserves observed
       minutes on matching from/to pairs

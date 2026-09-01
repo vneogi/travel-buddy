@@ -58,9 +58,14 @@ Laptop (Windows, against the integration branch then main):
 - `flutter test test/session_start_test.dart`: mock `NetworkException` and call
   `syncEngine.stop()` before `db.close()`.
 
-Product remainder (not a merge defect): past-node "did this happen", explicit
-cancel-target confirmation, date grouping, booking edit/delete, multi-night
-hotel UI.
+PR #34 completed the traveller-facing remainder as `83c825f`: durable
+identity/trip/node-scoped outcomes, active/past "did this happen", outcome-aware
+targeting, explicit cancel confirmation, and a scrollable skip-reason sheet.
+Owner Windows full Flutter suite: 176 passed. CI lint, pytest, backend test, and
+Flutter all green.
+
+Product remainder (not a merge defect): date grouping, date-aware hotel rescue,
+booking edit/delete, and multi-night hotel UI.
 
 ## Finding -- Aug 30 2026 -- Owner laptop verification (Windows, second laptop)
 
@@ -93,9 +98,8 @@ Open product gaps observed (known near-term gates, not regressions):
   `scheduled_start` plus a duration (hotel defaults to 8h). The scheduler
   background-anchor fix is correct for a single anchor node; `trip_stay`
   check-in/check-out (VISION section 18) is Part III and unbuilt.
-- "Cancel next stop" infers the target from the schedule window versus now, so a
-  traveller running late can have the wrong stop cancelled. Owner wants an
-  explicit "which stop?" confirmation. Ties to SPEC-30 remainder and SPEC-25.
+- "Cancel next stop" target confirmation was absent in this run. Closed by
+  SPEC-30 PR #34 (`83c825f`).
 
 Config note:
 

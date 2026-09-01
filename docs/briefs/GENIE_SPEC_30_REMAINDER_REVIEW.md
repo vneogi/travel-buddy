@@ -1,6 +1,7 @@
 # Genie Review Brief -- SPEC-30 Remainder
 
-> REVIEW ONLY. Do not implement, edit, commit, push, or open a PR.
+> Status: REVIEW COMPLETE. Merged in PR #34 as `83c825f`.
+> Historical review instructions below; do not run them as new work.
 > Review branch: `feat/spec30-remainder`
 > Base: `origin/main` at `e689346`
 > Product contract: `docs/briefs/GENIE_SPEC_30_REMAINDER.md`
