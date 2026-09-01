@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:travel_buddy/data/models.dart';
 import 'package:travel_buddy/features/rescue/hotel_rescue_sheet.dart';
-import 'package:travel_buddy/features/itinerary/date_scope.dart';
 
 TripNode _node(String name, {String nodeKind = 'activity', String? bookingType}) =>
     TripNode(

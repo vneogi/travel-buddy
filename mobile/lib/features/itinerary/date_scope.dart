@@ -1,6 +1,6 @@
 import '../../data/models.dart';
 
-/// SPEC-31: Date-scoped itinerary grouping and hotel-stay rescue selection.
+// SPEC-31: Date-scoped itinerary grouping and hotel-stay rescue selection.
 
 /// A calendar-date bucket of trip nodes.
 class ItineraryDayGroup {
