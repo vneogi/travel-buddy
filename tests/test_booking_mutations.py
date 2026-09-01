@@ -12,11 +12,12 @@ Sabotage proofs:
 
 import logging
 from datetime import datetime, timedelta, timezone
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
 from tests.conftest import auth
+from services.database_service import db_service
 
 
 @pytest.fixture()
@@ -102,6 +103,32 @@ class TestEditBooking:
         assert edited["booking_type"] == "flight"
         assert edited["import_source"] == "manual"
         assert edited["venue_name"] == "EK501 to Dubai"
+
+    def test_unchanged_time_and_duration_do_not_reschedule(
+        self, client, trip_with_booking
+    ):
+        """The client submits unchanged schedule fields on a notes-only edit."""
+        trip_id, booking = trip_with_booking
+
+        with patch("agents.state_machine.reschedule_and_validate") as reschedule:
+            r = client.post(
+                "/api/v1/trip/event",
+                headers=auth("mut-user"),
+                json={
+                    "trip_id": trip_id,
+                    "event_type": "edit_booking",
+                    "message": "Update notes",
+                    "target_node_id": booking["node_id"],
+                    "preferences": {
+                        "booking_notes": "Aisle now",
+                        "scheduled_start": booking["scheduled_start"],
+                        "duration_minutes": booking["duration_minutes"],
+                    },
+                },
+            )
+
+        assert r.status_code == 200
+        reschedule.assert_not_called()
 
     def test_time_edit_reorders_same_node(self, client, trip_with_booking):
         """Move booking to earlier time; same node_id ends up re-sorted."""
@@ -281,8 +308,8 @@ class TestQuotaAndRouting:
 
     def test_edit_does_not_consume_quota(self, client, trip_with_booking):
         trip_id, booking = trip_with_booking
+        before = db_service.get_or_create_user("mut-user").daily_reroute_count
 
-        # Edit should work regardless of quota state
         r = client.post(
             "/api/v1/trip/event",
             headers=auth("mut-user"),
@@ -295,9 +322,12 @@ class TestQuotaAndRouting:
             },
         )
         assert r.status_code == 200
+        after = db_service.get_or_create_user("mut-user").daily_reroute_count
+        assert after == before
 
     def test_delete_does_not_consume_quota(self, client, trip_with_booking):
         trip_id, booking = trip_with_booking
+        before = db_service.get_or_create_user("mut-user").daily_reroute_count
 
         r = client.post(
             "/api/v1/trip/event",
@@ -311,22 +341,29 @@ class TestQuotaAndRouting:
         )
         assert r.status_code == 200
         assert r.json()["routing_tier_used"] == "light"
+        after = db_service.get_or_create_user("mut-user").daily_reroute_count
+        assert after == before
 
     def test_edit_does_not_invoke_llm(self, client, trip_with_booking):
         """S3: The response is canned; no LLM call."""
         trip_id, booking = trip_with_booking
 
-        r = client.post(
-            "/api/v1/trip/event",
-            headers=auth("mut-user"),
-            json={
-                "trip_id": trip_id,
-                "event_type": "edit_booking",
-                "message": "Edit",
-                "target_node_id": booking["node_id"],
-                "preferences": {"booking_notes": "Test"},
-            },
-        )
+        with patch(
+            "agents.state_machine.llm_service.generate_info_response",
+            new_callable=AsyncMock,
+        ) as generate:
+            r = client.post(
+                "/api/v1/trip/event",
+                headers=auth("mut-user"),
+                json={
+                    "trip_id": trip_id,
+                    "event_type": "edit_booking",
+                    "message": "Edit",
+                    "target_node_id": booking["node_id"],
+                    "preferences": {"booking_notes": "Test"},
+                },
+            )
+        generate.assert_not_awaited()
         assert r.status_code == 200
         assert r.json()["routing_tier_used"] == "light"
         assert "Booking updated" in r.json()["message"]
@@ -334,16 +371,21 @@ class TestQuotaAndRouting:
     def test_delete_does_not_invoke_llm(self, client, trip_with_booking):
         trip_id, booking = trip_with_booking
 
-        r = client.post(
-            "/api/v1/trip/event",
-            headers=auth("mut-user"),
-            json={
-                "trip_id": trip_id,
-                "event_type": "delete_booking",
-                "message": "Delete",
-                "target_node_id": booking["node_id"],
-            },
-        )
+        with patch(
+            "agents.state_machine.llm_service.generate_info_response",
+            new_callable=AsyncMock,
+        ) as generate:
+            r = client.post(
+                "/api/v1/trip/event",
+                headers=auth("mut-user"),
+                json={
+                    "trip_id": trip_id,
+                    "event_type": "delete_booking",
+                    "message": "Delete",
+                    "target_node_id": booking["node_id"],
+                },
+            )
+        generate.assert_not_awaited()
         assert r.status_code == 200
         assert r.json()["routing_tier_used"] == "light"
         assert "removed" in r.json()["message"].lower()

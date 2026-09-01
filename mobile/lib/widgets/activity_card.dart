@@ -248,7 +248,7 @@ class ActivityCard extends StatelessWidget {
                                   icon: const Icon(Icons.delete_outline, size: 16),
                                   label: const Text('Delete'),
                                   style: TextButton.styleFrom(
-                                    foregroundColor: AppColors.error,
+                                    foregroundColor: AppColors.danger,
                                   ),
                                 ),
                             ],
@@ -258,6 +258,11 @@ class ActivityCard extends StatelessWidget {
                       if (node.microLocation != null) ...[
                         const SizedBox(height: AppSpacing.xs),
                         Text(node.microLocation!, style: AppTypography.caption),
+                      ],
+                      if (node.bookingNotes != null &&
+                          node.bookingNotes!.isNotEmpty) ...[
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(node.bookingNotes!, style: AppTypography.caption),
                       ],
                       if (node.vibeTags.isNotEmpty) ...[
                         const SizedBox(height: AppSpacing.sm),

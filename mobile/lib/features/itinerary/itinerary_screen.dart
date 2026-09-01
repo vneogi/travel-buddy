@@ -94,7 +94,7 @@ class ItineraryScreen extends ConsumerWidget {
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             style: TextButton.styleFrom(
-              foregroundColor: AppColors.error,
+              foregroundColor: AppColors.danger,
             ),
             child: const Text('Delete'),
           ),
@@ -102,7 +102,9 @@ class ItineraryScreen extends ConsumerWidget {
       ),
     );
     if (confirmed == true && context.mounted) {
-      ref.read(itineraryControllerProvider(tripId).notifier).applyEvent(
+      await ref
+          .read(itineraryControllerProvider(tripId).notifier)
+          .applyEvent(
             type: EventType.deleteBooking,
             message: 'Delete ${node.venueName}',
             targetNodeId: node.nodeId,

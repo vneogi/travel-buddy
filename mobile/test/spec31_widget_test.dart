@@ -30,6 +30,9 @@ TripNode _node({
   bool locked = false,
   String nodeKind = 'activity',
   String? bookingType,
+  String? confirmationCode,
+  String? bookingNotes,
+  String? importSource,
 }) =>
     TripNode(
       nodeId: id,
@@ -42,6 +45,9 @@ TripNode _node({
       vibeTags: const [],
       nodeKind: nodeKind,
       bookingType: bookingType,
+      confirmationCode: confirmationCode,
+      bookingNotes: bookingNotes,
+      importSource: importSource,
     );
 
 void _stubDatabase(_MockOfflineDatabase database) {
@@ -73,9 +79,14 @@ void _stubDatabase(_MockOfflineDatabase database) {
 /// Reusable harness for ItineraryScreen widget tests.
 class _Harness {
   final ProviderContainer container;
+  final _MockTripRepository repository;
   final void Function() closeSubscription;
 
-  _Harness._({required this.container, required this.closeSubscription});
+  _Harness._({
+    required this.container,
+    required this.repository,
+    required this.closeSubscription,
+  });
 
   static Future<_Harness> create(List<TripNode> nodes) async {
     final database = _MockOfflineDatabase();
@@ -143,6 +154,7 @@ class _Harness {
     await loaded.future;
     return _Harness._(
       container: container,
+      repository: repository,
       closeSubscription: subscription.close,
     );
   }
@@ -329,6 +341,136 @@ void main() {
             placeRef: 'future-ref',
             tripId: 'trip-1',
           ));
+    });
+  });
+
+  group('SPEC-10 booking mutations', () {
+    TripNode booking({String notes = 'Window seat'}) => _node(
+          id: 'booking-1',
+          name: 'EK501 to Dubai',
+          start: DateTime(2026, 10, 5, 14),
+          durationMinutes: 180,
+          locked: true,
+          nodeKind: 'booking',
+          bookingType: 'flight',
+          confirmationCode: 'AB12CD',
+          bookingNotes: notes,
+          importSource: 'email',
+        );
+
+    testWidgets('edit is prefilled and renders a notes-only response',
+        (tester) async {
+      final original = booking();
+      final edited = booking(notes: 'Aisle seat');
+      final harness = await _Harness.create([original]);
+      addTearDown(harness.dispose);
+      when(() => harness.repository.sendEvent(
+            tripId: 'trip-1',
+            type: EventType.editBooking,
+            message: any(named: 'message'),
+            targetNodeId: original.nodeId,
+            preferences: any(named: 'preferences'),
+          )).thenAnswer(
+        (_) async => TripEventResult(
+          message: 'Booking updated.',
+          updatedNodes: [edited],
+          routingTier: 'light',
+          fromCache: false,
+        ),
+      );
+      await harness.pump(tester);
+
+      expect(find.text('Window seat'), findsOneWidget);
+      await tester.tap(find.text('Edit'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Edit Booking'), findsOneWidget);
+      expect(find.text('EK501 to Dubai'), findsWidgets);
+      expect(find.text('AB12CD'), findsOneWidget);
+      await tester.enterText(find.byType(TextField).at(2), 'Aisle seat');
+      await tester.tap(find.text('Save Changes'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Aisle seat'), findsOneWidget);
+      final preferences = verify(() => harness.repository.sendEvent(
+            tripId: 'trip-1',
+            type: EventType.editBooking,
+            message: any(named: 'message'),
+            targetNodeId: original.nodeId,
+            preferences: captureAny(named: 'preferences'),
+          )).captured.single as Map<String, dynamic>;
+      expect(preferences['import_source'], 'email');
+
+      final signalService = harness.container.read(signalServiceProvider);
+      verifyNever(() => signalService.emitBookingAdded(
+            bookingType: any(named: 'bookingType'),
+            importSource: any(named: 'importSource'),
+            tripId: any(named: 'tripId'),
+          ));
+    });
+
+    testWidgets('keeping delete confirmation emits no event', (tester) async {
+      final node = booking();
+      final harness = await _Harness.create([node]);
+      addTearDown(harness.dispose);
+      await harness.pump(tester);
+
+      await tester.tap(find.text('Delete'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Remove EK501 to Dubai from your itinerary?'),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Keep'));
+      await tester.pumpAndSettle();
+
+      verifyNever(() => harness.repository.sendEvent(
+            tripId: any(named: 'tripId'),
+            type: any(named: 'type'),
+            message: any(named: 'message'),
+            targetNodeId: any(named: 'targetNodeId'),
+            preferences: any(named: 'preferences'),
+          ));
+    });
+
+    testWidgets('confirming delete emits one targeted event', (tester) async {
+      final node = booking();
+      final remaining = _node(
+        id: 'activity-1',
+        name: 'Museum',
+        start: DateTime(2026, 10, 5, 18),
+      );
+      final harness = await _Harness.create([node, remaining]);
+      addTearDown(harness.dispose);
+      when(() => harness.repository.sendEvent(
+            tripId: 'trip-1',
+            type: EventType.deleteBooking,
+            message: any(named: 'message'),
+            targetNodeId: node.nodeId,
+            preferences: any(named: 'preferences'),
+          )).thenAnswer(
+        (_) async => TripEventResult(
+          message: 'Booking removed from your itinerary.',
+          updatedNodes: [remaining],
+          routingTier: 'light',
+          fromCache: false,
+        ),
+      );
+      await harness.pump(tester);
+
+      await tester.tap(find.text('Delete'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Delete').last);
+      await tester.pumpAndSettle();
+
+      verify(() => harness.repository.sendEvent(
+            tripId: 'trip-1',
+            type: EventType.deleteBooking,
+            message: any(named: 'message'),
+            targetNodeId: node.nodeId,
+            preferences: any(named: 'preferences'),
+          )).called(1);
+      expect(find.text('EK501 to Dubai'), findsNothing);
     });
   });
 }

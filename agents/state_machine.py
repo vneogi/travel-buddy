@@ -255,8 +255,12 @@ class TripStateMachine:
                 node.booking_notes = prefs["booking_notes"]
             if "import_source" in prefs:
                 node.import_source = prefs["import_source"]
+            schedule_changed = False
             if "duration_minutes" in prefs:
-                node.duration_minutes = int(prefs["duration_minutes"])
+                new_duration = int(prefs["duration_minutes"])
+                if new_duration != node.duration_minutes:
+                    node.duration_minutes = new_duration
+                    schedule_changed = True
             if "micro_location" in prefs:
                 node.micro_location = prefs["micro_location"]
             if "lat" in prefs:
@@ -265,7 +269,6 @@ class TripStateMachine:
                 node.lng = prefs["lng"]
             if "geo_region" in prefs:
                 node.geo_region = prefs["geo_region"]
-            time_changed = False
             if "scheduled_start" in prefs:
                 raw = prefs["scheduled_start"]
                 try:
@@ -281,13 +284,13 @@ class TripStateMachine:
                         new_start = new_start.astimezone(timezone.utc)
                     if new_start != node.scheduled_start:
                         node.scheduled_start = new_start
-                        time_changed = True
+                        schedule_changed = True
                 except Exception:
                     pass
             # node_kind and is_locked are NEVER changed by edit
             assert node.node_kind == "booking"
             assert node.is_locked is True
-            if time_changed or "duration_minutes" in prefs:
+            if schedule_changed:
                 # Re-sort into chronological order and reschedule
                 nodes = list(trip_state.nodes)
                 nodes.remove(node)
