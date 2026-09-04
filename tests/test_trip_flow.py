@@ -15,7 +15,7 @@ def test_create_get_and_light_event(client):
         json={"start_date": "2026-08-05T09:00:00", "initial_mood": "relaxed"},
     ).json()
     trip_id = data["trip_id"]
-    assert data["locked_count"] >= 1
+    assert 4 <= len(data["nodes"]) <= 6
 
     r = client.post(
         "/api/v1/trip/event",
@@ -59,7 +59,7 @@ def test_trip_list_returns_only_callers_lightweight_projection(client):
         "booking_count",
         "updated_at",
     }
-    assert trips[0]["node_count"] == 5
+    assert 4 <= trips[0]["node_count"] <= 6
     assert "nodes" not in trips[0]
     assert "user_id" not in trips[0]
 

@@ -226,11 +226,12 @@ Near-term product gates after the Aug 27-28 laptop run:
 
 1. Keep alerts evidence-backed. SPEC-29 phase 1 is live with OpenWeather; do
    not regress to random traffic or synthetic transit copy.
-2. Build SPEC-31: group the itinerary by date and choose the active/current
-   adjacent hotel for rescue rather than the first match.
+2. Date-scoped itinerary grouping is on main (Windows Sep 4). Date-aware stay
+   selection (rescue) was not device-tested.
 3. Hearts persist across process death (verified Aug 30). Keep awaiting sync
    before reporting status counts.
-4. Build real Laos trip creation. The current create path still seeds Dubai.
+4. Build real Laos trip creation (SPEC-32). The create path must not stamp
+   Laos onto Dubai venues.
 5. SPEC-30 is complete (`f8349a8`, `83c825f`).
 
 

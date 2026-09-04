@@ -73,7 +73,7 @@
 | Offline vault (SPEC-04) | DONE (October slice) | PR #22 (`b7e10c3`) + PR #23 (`dab16c0`). <=2-tap hotel rescue entry to DriverCardScreen, offline itinerary cache fallback in ItineraryController.load(), robust hotel matching (villa/guesthouse), pre-caching hotel place data in cache_place, honest empty state. Full vault post-field-test -- see SPEC-04 |
 | Anonymous identity (SPEC-09) | DONE (client + server) | Client half landed PR #16 (`7173a3f`): UUID v4 in flutter_secure_storage, Anonymous header, TB_DEBUG_USER_ID removed. Server half already verified. Record any remaining Anonymous E2E gap explicitly; the laptop is available |
 | Itinerary normalisation (SPEC-16) | IMPLEMENTED | Decompose and compose land in services/itinerary_normaliser.py, dual-write in both backends, round-trip equality asserted, wire format unchanged. node_id is stable across reschedules via state_json and now comes from models/ids.py. SPEC-30 (`f8349a8`) writes `trip_edge.observed_duration_minutes` from consecutive arrivals |
-| Booking anchors (SPEC-10) | PARTIAL (create slice done) | PR #20 squash-merged as `f6328e9`. Immovable locked nodes, booking metadata, parser and AddBookingSheet. Mad Monkey Booking.com dates were verified Aug 27-28. Edit/delete is now specified as a separate deterministic mutation slice; daily hotel anchor and preceding-evening flight rules remain |
+| Booking anchors (SPEC-10) | PARTIAL (create plus edit/delete) | PR #20 (`f6328e9`) plus PR #37 (`364d873`). Immovable locked nodes, booking metadata, parser and AddBookingSheet. Windows Sep 4 verified notes, edit, and delete. Daily hotel anchor and preceding-evening flight rules remain |
 | Forced-choice preferences (SPEC-11) | SPECIFIED | Not implemented. Cold-start preference capture |
 | Show driver cards (SPEC-12) | DONE (October slice) | Full-screen offline card from SQLite cache_place, FactView assert/ask/refuse tiers, geoRegion-threaded native script, driver_card_shown/name_confirmed signals. Dubai airplane behavior was verified Aug 27-28: no fare and no screenshot copy. No Fair Fare until sourced; Windows `geo:` hand-off failed, so keep small last-resort coordinates. Migration 0023 (unapplied) carries localized fields through live venue search |
 | Region and locale registry (SPEC-13) | SPECIFIED | Not implemented. Rising in priority: a city-onboarding pipeline needs it for bounding box, languages, currency and fare bands. Makes adding a city a row rather than a code change |
@@ -89,12 +89,13 @@
 
 | Identity lifecycle (SPEC-24) | SPECIFIED | Not implemented, and the design is deliberately settled ahead of the build. Sign-in itself is nearly free because Supabase Auth owns the provider flow and security.py already verifies the token; the work is what happens to the anonymous history. Owns credential aliases, the anonymous-to-account merge, multi-device, and sign-out. Merge direction is fixed one way, which extends the upgrade-on-sight rule already live on identity_kind. Union rather than dedupe; tier and quota both resolve to the maximum, since taking the minimum makes sign-in a way to refill the daily reroute allowance |
 | Ask Anything surface (SPEC-25) | PARTIAL (trip-scoped October slice) | The itinerary composer and per-trip home entry use existing trip chat. One-stop cancel/swap are structural; cancel is a skip, not a swap, as of SPEC-29. Broad mutations refuse. No add-from-chat control; near-me uses default Dubai coordinates. Trip-optional ask, pre-model budgets, SPEC-17 envelopes, discovery and offline answer contract remain |
-| Home surface (SPEC-26) | PARTIAL (thin October slice) | Authenticated GET /trips exposes an owner-only projection; Home lists and identity-caches it and accepts destination plus start date. Copy is destination-agnostic, but create still seeds only the Dubai template and rejects unsupported regions. The richer active-trip/decision aggregate remains |
+| Home surface (SPEC-26) | PARTIAL (thin October slice) | Authenticated GET /trips exposes an owner-only projection; Home lists and identity-caches it and accepts destination plus start date. Copy is destination-agnostic. SPEC-32 expands create beyond the Dubai template. The richer active-trip/decision aggregate remains |
 | App lifecycle and data rights (SPEC-27) | SPECIFIED | Not implemented. The three consumer obligations with no owner: push transport with tokens that survive the SPEC-24 merge and delivery through the SPEC-22 interruption budget enforced server-side, deletion and export under DPDP and GDPR, and a minimum supported client that blocks writes but never reads. States the position that raw signals are deleted while non-identifying derived aggregates survive |
 | Trip inspiration (SPEC-28) | DECIDED, NOT SCHEDULED | Opt-in, delayed, region-level public trip snapshots as inspiration. No live people/location, DMs or comments in v1. Requires identity, deletion/export and moderation gates |
 | Context alerts (SPEC-29) | DONE (phase 1) | PR #25 squash-merged as `aedbc03`. OpenWeather evidence is matched to upcoming nodes, cached by identity and shown with provenance. Alerts never mutate or consume reroute quota. Synthetic transit is not user copy; cancel preserves position and locked cancel returns 409 before quota. Watcher/push phase not started |
 | Retention instrumentation (SPEC-30) | DONE | PR #32 (`f8349a8`) added `session_start` and the `trip_edge` observed-duration writer. PR #34 (`83c825f`) added durable node outcomes, active/past confirmation UI, outcome-aware targeting, and explicit cancel confirmation. Flutter CI and owner Windows full suite green |
-| Date-scoped itinerary and stay rescue (SPEC-31) | SPECIFIED | Client-only grouping under calendar-date headers plus active/future/elapsed hotel rescue selection. No `day_index`, timezone conversion, wire, schema, scheduler, or `trip_stay` change |
+| Date-scoped itinerary and stay rescue (SPEC-31) | PARTIAL | Grouping under date headers is on main (PR #36, Windows Sep 4 6A). Stay-rescue selection (6C) was not device-tested. No `day_index`, timezone conversion, wire, schema, scheduler, or `trip_stay` change |
+| Real Laos trip creation (SPEC-32) | IMPLEMENTED (this branch) | Catalog-backed one-city create for Dubai and the three Laos codes. Device-verify a Laos city remains |
 
 Migration numbers are assigned when a spec is implemented, not when it is
 written. SPEC-11, SPEC-13, SPEC-14 and SPEC-15 each claimed a number, and the
@@ -165,8 +166,8 @@ Seed-shaped cohorts.
 
 ### After the field-test spine (still important, not Oct-critical)
 
-8. SPEC-31 date-scoped itinerary and date-aware stay rescue, then SPEC-10
-   booking edit/delete as a separate mutation slice, then real Laos creation.
+8. SPEC-32 catalog-backed Laos create (this branch), then remaining stay-rescue
+   product cut and multi-night hotel UI.
 9. Retire the dietary suitability claim (SPEC-14). Closes the
    halal-versus-pork hole by removing the claim.
 10. SPEC-17 trust and verification -- gates SPEC-18/19/20; behind the
@@ -175,7 +176,7 @@ Seed-shaped cohorts.
 12. Full SPEC-04 remainder (cache_vault, passes, emergency grid, phrase
     packs) if still wanted.
 13. Finish the consumer slices already on the October path: date-scoped
-    itinerary and bookings, real Laos creation, trip-less Ask and
+    itinerary and bookings, trip-less Ask and
     the richer Home aggregate. SPEC-27 follows; SPEC-24 design is settled.
 14. Swappable LLM provider -- no owning spec yet; next free number. Every
     intelligent path is one hosted vendor today.

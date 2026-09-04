@@ -72,8 +72,23 @@ REGIONS: Dict[str, Region] = {
 DEFAULT_REGION = "dubai_uae"
 
 
+def require_region(code: str) -> Region:
+    """Look up a region by code. Unknown codes raise KeyError.
+
+    Create-trip must use this, not get_region. get_region falls back to Dubai
+    and would stamp a Laos trip onto Dubai venues.
+    """
+    if code not in REGIONS:
+        raise KeyError(code)
+    return REGIONS[code]
+
+
 def get_region(code: str) -> Region:
-    """Look up region by code, falling back to default."""
+    """Look up region by code, falling back to Dubai.
+
+    Unsafe as a create allowlist. Prefer require_region when the caller must
+    refuse unknown cities.
+    """
     return REGIONS.get(code, REGIONS[DEFAULT_REGION])
 
 

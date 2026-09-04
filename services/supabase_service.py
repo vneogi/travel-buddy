@@ -215,6 +215,20 @@ class SupabaseService:
         result = self.client.table("venues_rag").select("venue_id", count="exact").execute()
         return result.count or 0
 
+    def list_venues_for_region(self, geo_region: str) -> List[dict]:
+        """Return venues_rag rows for one city. No Dubai fallback."""
+        result = (
+            self.client.table("venues_rag")
+            .select(
+                "venue_id,name,description,micro_location,lat,lng,vibe_tags,"
+                "audience,category,opening_hours,geo_region,names_local,"
+                "landmarks_local,nearest_landmark,typical_dwell_minutes"
+            )
+            .eq("geo_region", geo_region)
+            .execute()
+        )
+        return list(result.data or [])
+
     def resolve_venue_by_name(self, place_ref: str) -> Optional[str]:
         """Resolve a venue name to venue_id via Supabase. Case-insensitive."""
         result = (

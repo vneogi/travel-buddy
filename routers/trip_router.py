@@ -15,17 +15,22 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 
+from config.regions import REGIONS
 from config.settings import settings
 from models.schemas import (
     TripState,
     TripSummary,
-    TripNode,
     TripEventRequest,
     TripEventResponse,
     CreateTripRequest,
     TripPartyIn,
-    CurrentContext,
     EventType,
+)
+from services.catalog_itinerary import (
+    InsufficientCatalog,
+    advertised_regions,
+    context_for_region,
+    nodes_from_catalog,
 )
 from services.db_provider import db_service
 from services.cache_service import cache_service
@@ -33,7 +38,6 @@ from agents.state_machine import state_machine
 from security import get_current_user_id, resolve_identity, ResolvedIdentity, require_trip_owner
 
 router = APIRouter(prefix="/api/v1", tags=["trip"])
-TRIP_TEMPLATE_REGION = "dubai_uae"
 
 
 # ==============================================================================
@@ -79,17 +83,20 @@ async def create_trip(
     request: CreateTripRequest,
     identity: ResolvedIdentity = Depends(resolve_identity),
 ):
-    """Create a sample itinerary for the server's configured region."""
+    """Create a catalog-backed one-day itinerary for a supported city."""
     user_id = identity.user_id
     db_service.get_or_create_user(user_id, identity.identity_kind)
-    geo_region = request.geo_region or TRIP_TEMPLATE_REGION
-    if geo_region != TRIP_TEMPLATE_REGION:
+    ready = advertised_regions(db_service.list_venues_for_region)
+    geo_region = request.geo_region or (ready[0] if ready else None)
+    if geo_region not in REGIONS or geo_region not in ready:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={
                 "error": "unsupported_region",
-                "message": f"Travel Buddy is not ready for {geo_region} yet.",
-                "supported_regions": [TRIP_TEMPLATE_REGION],
+                "message": (
+                    f"Travel Buddy is not ready for {request.geo_region or geo_region} yet."
+                ),
+                "supported_regions": ready,
             },
         )
 
@@ -99,64 +106,26 @@ async def create_trip(
     else:
         start = start.astimezone(timezone.utc)
     start = start.replace(hour=9, minute=0, second=0)
-    nodes = [
-        TripNode(
-            venue_name="Dubai Museum (Al Fahidi Fort)",
+    try:
+        nodes = nodes_from_catalog(
             geo_region=geo_region,
-            scheduled_start=start,
-            duration_minutes=90,
-            micro_location="Al Fahidi",
-            vibe_tags=["cultural", "authentic", "historical"],
-            lat=25.2637,
-            lng=55.2972,
-        ),
-        TripNode(
-            venue_name="XVA Art Gallery & Cafe",
-            geo_region=geo_region,
-            scheduled_start=start + timedelta(hours=2),
-            duration_minutes=60,
-            micro_location="Al Fahidi",
-            vibe_tags=["artistic", "leisurely", "premium_interiors"],
-            lat=25.2633,
-            lng=55.2975,
-        ),
-        TripNode(
-            venue_name="La Petite Maison (DIFC)",
-            geo_region=geo_region,
-            scheduled_start=start + timedelta(hours=3, minutes=30),
-            duration_minutes=90,
-            is_locked=True,  # Locked reservation!
-            micro_location="DIFC",
-            vibe_tags=["premium_interiors", "leisurely", "executive"],
-            lat=25.2100,
-            lng=55.2800,
-        ),
-        TripNode(
-            venue_name="Alserkal Avenue Galleries",
-            geo_region=geo_region,
-            scheduled_start=start + timedelta(hours=5, minutes=30),
-            duration_minutes=120,
-            micro_location="Al Quoz",
-            vibe_tags=["artistic", "authentic", "independent"],
-            lat=25.1436,
-            lng=55.2250,
-        ),
-        TripNode(
-            venue_name="Drift Beach Dubai",
-            geo_region=geo_region,
-            scheduled_start=start + timedelta(hours=8),
-            duration_minutes=180,
-            micro_location="Jumeirah",
-            vibe_tags=["leisurely", "premium_interiors", "energetic"],
-            lat=25.2103,
-            lng=55.2490,
-        ),
-    ]
+            start=start,
+            rows=db_service.list_venues_for_region(geo_region),
+        )
+    except InsufficientCatalog:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "error": "unsupported_region",
+                "message": f"Travel Buddy is not ready for {geo_region} yet.",
+                "supported_regions": ready,
+            },
+        )
 
     trip = TripState(
         user_id=user_id,
-        geo_region=geo_region,  # per-trip; unlocks multi-city
-        current_context=CurrentContext(mood=request.initial_mood or "exploratory"),
+        geo_region=geo_region,
+        current_context=context_for_region(geo_region, request.initial_mood),
         nodes=nodes,
     )
     db_service.save_trip(trip)
@@ -201,7 +170,7 @@ async def list_trips(user_id: str = Depends(get_current_user_id)):
         reverse=True,
     )
     return {
-        "supported_regions": [TRIP_TEMPLATE_REGION],
+        "supported_regions": advertised_regions(db_service.list_venues_for_region),
         "trips": [_summarize_trip(trip).model_dump(mode="json") for trip in trips],
     }
 
