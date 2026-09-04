@@ -167,11 +167,7 @@ class TestSignalIngest:
         SPEC-02 invariant #5: trust device clock for captured_at.
         """
         # Use a specific timestamp that we'll verify is stored exactly
-        ts = (
-            (datetime.now(tz=timezone.utc) - timedelta(days=2))
-            .replace(microsecond=0)
-            .isoformat()
-        )
+        ts = (datetime.now(tz=timezone.utc) - timedelta(days=2)).replace(microsecond=0).isoformat()
         sig = self._make_signal(signal_id="ts-test-001", captured_at=ts)
         resp = client.post(
             "/api/v1/signals",
