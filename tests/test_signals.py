@@ -42,12 +42,14 @@ class TestSignalIngest:
         place_ref="dubai-mall",
         captured_at=None,
     ):
+        if captured_at is None:
+            captured_at = datetime.now(tz=timezone.utc).isoformat()
         return {
             "signal_id": signal_id,
             "signal_type": signal_type,
             "place_ref": place_ref,
             "value_text": "loved",
-            "captured_at": captured_at or "2026-08-05T14:30:00Z",
+            "captured_at": captured_at,
             "trip_id": "trip-001",
         }
 
@@ -165,7 +167,7 @@ class TestSignalIngest:
         SPEC-02 invariant #5: trust device clock for captured_at.
         """
         # Use a specific timestamp that we'll verify is stored exactly
-        ts = "2026-08-03T09:15:33Z"
+        ts = (datetime.now(tz=timezone.utc) - timedelta(days=2)).replace(microsecond=0).isoformat()
         sig = self._make_signal(signal_id="ts-test-001", captured_at=ts)
         resp = client.post(
             "/api/v1/signals",
@@ -175,8 +177,7 @@ class TestSignalIngest:
         assert resp.status_code == 200
         stored = db_service.get_signal("ts-test-001")
         # The stored captured_at should match what the client sent
-        assert "2026-08-03" in stored["captured_at"]
-        assert "09:15:33" in stored["captured_at"]
+        assert datetime.fromisoformat(stored["captured_at"]) == datetime.fromisoformat(ts)
 
     def test_captured_at_old_but_within_30d_accepted(self):
         """A captured_at up to 30 days old is accepted (long offline is normal).

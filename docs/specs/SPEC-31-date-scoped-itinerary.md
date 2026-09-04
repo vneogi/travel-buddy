@@ -1,6 +1,7 @@
 # SPEC-31: Date-Scoped Itinerary and Stay Rescue
 
-> Status: SPECIFIED. Client-only.
+> Status: GROUPING IMPLEMENTED (PR #36). Windows Sep 4 verified date headers
+> (6A). Stay-rescue selection (6C) was not run on device.
 >
 > Depends on SPEC-10 booking anchors and the existing itinerary wire shape.
 > Does not depend on SPEC-16 phase-two reads, `day_index`, or `trip_stay`.
@@ -151,10 +152,10 @@ Hotel Rescue tests:
 
 ## Acceptance
 
-- [ ] Multi-day itinerary renders date headers without hiding nodes
-- [ ] Existing node order and card identity are preserved
-- [ ] Header date uses the same parsed clock fields as the card
+- [x] Multi-day itinerary renders date headers without hiding nodes
+- [x] Existing node order and card identity are preserved
+- [x] Header date uses the same parsed clock fields as the card
 - [ ] Hotel Rescue selects active, then future, then elapsed stay
 - [ ] Long hotel duration works across calendar days without cloned nodes
-- [ ] No API, schema, scheduler, or timezone conversion change
-- [ ] Flutter analyze and full Flutter test green from `origin/main`
+- [x] No API, schema, scheduler, or timezone conversion change
+- [x] Flutter analyze and full Flutter test green from `origin/main`

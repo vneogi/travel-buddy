@@ -1,7 +1,8 @@
 # SPEC-10: Manual Booking Anchors
 
-> Status: OCTOBER CREATE SLICE IMPLEMENTED in PR #20 (`f6328e9`).
-> Edit/delete remains specified below and must ship separately from SPEC-31.
+> Status: CREATE AND EDIT/DELETE IMPLEMENTED (PR #20, PR #37).
+> Windows Sep 4 verified notes on card, edit, and delete. Multi-night stays
+> remain out.
 >
 > Resequenced to follow SPEC-16. A booking anchor is a locked node. Once nodes
 > are rows rather than keys inside a JSON blob, this spec is a few columns and a
@@ -135,9 +136,9 @@ that could identify an individual reservation.
       the fields are out
 - [x] UI: entry form plus visually distinct locked booking nodes
 - [x] Create-slice suite green from `origin/main`
-- [ ] Existing booking can be reopened and edited without changing `node_id`
-- [ ] Existing booking can be deleted after explicit confirmation
-- [ ] Edit/delete never consume reroute quota or route reservation data to an LLM
+- [x] Existing booking can be reopened and edited without changing `node_id`
+- [x] Existing booking can be deleted after explicit confirmation
+- [x] Edit/delete never consume reroute quota or route reservation data to an LLM
 
 ## Remainder: edit and delete existing bookings
 

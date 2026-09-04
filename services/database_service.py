@@ -332,6 +332,10 @@ class DatabaseService:
         """Get total number of venues in store."""
         return len(self._venues)
 
+    def list_venues_for_region(self, geo_region: str) -> List[dict]:
+        """Return stored venue rows for one city. No Dubai fallback."""
+        return [dict(row) for row in self._venues if row.get("geo_region") == geo_region]
+
     # =========================================================================
     # Event Log
     # =========================================================================

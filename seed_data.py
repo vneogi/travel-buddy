@@ -5,8 +5,20 @@ refined acoustics, independent culture, and premium environments.
 Bypasses generic tourist spots in favor of locally-revered spaces.
 """
 
+import json
+import uuid
+from pathlib import Path
+
 from models.schemas import VenueRAG
+from services.catalog_itinerary import flatten_opening_hours
 from services.db_provider import db_service
+
+DATA_DIR = Path(__file__).resolve().parent / "data"
+LAOS_CATALOG_FILES = (
+    DATA_DIR / "laos_luang_prabang.json",
+    DATA_DIR / "laos_vang_vieng.json",
+    DATA_DIR / "laos_vientiane.json",
+)
 
 
 DUBAI_VENUES = [
@@ -196,7 +208,7 @@ DUBAI_VENUES = [
 
 
 def seed_venues() -> tuple:
-    """Seed the in-memory venue database with Dubai venues. Returns count.
+    """Seed the in-memory venue database with Dubai plus Laos catalogs.
 
     When the backend is SupabaseService, venues are already in the database
     (seeded once via seed_supabase.py with real embeddings). Skip the seed
@@ -214,8 +226,56 @@ def seed_venues() -> tuple:
         except Exception:
             return 0, "venues_rag unreachable"
     for venue in DUBAI_VENUES:
+        if not venue.geo_region:
+            venue.geo_region = "dubai_uae"
         db_service.add_venue(venue)
-    return len(DUBAI_VENUES), "seeded in-memory"
+    laos_count = _seed_laos_catalogs()
+    return len(DUBAI_VENUES) + laos_count, "seeded in-memory"
+
+
+def _local_map(value, source: str | None, lang: str) -> dict | None:
+    if not value:
+        return None
+    return {lang: {"value": value, "source": source or "generated"}}
+
+
+def _seed_laos_catalogs() -> int:
+    count = 0
+    for path in LAOS_CATALOG_FILES:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        geo_region = payload["geo_region"]
+        for row in payload.get("venues") or []:
+            name = (row.get("name") or "").strip()
+            if not name:
+                continue
+            hours = flatten_opening_hours(row.get("opening_hours")) or "09:00-17:00"
+            venue = VenueRAG(
+                venue_id=str(uuid.uuid5(uuid.NAMESPACE_URL, f"{geo_region}:{name}")),
+                name=name,
+                description=row.get("description") or name,
+                micro_location=row.get("micro_location") or "",
+                lat=float(row["lat"]),
+                lng=float(row["lng"]),
+                vibe_tags=list(row.get("vibe_tags") or []),
+                audience=list(row.get("audience") or []),
+                category=row.get("category") or "experience",
+                is_sponsored=bool(row.get("is_sponsored")),
+                bid_weight=float(row.get("bid_weight") or 0.0),
+                opening_hours=hours,
+                geo_region=geo_region,
+                names_local=_local_map(row.get("name_local"), row.get("name_local_source"), "lo"),
+                landmarks_local=(
+                    {"lo": row["nearest_landmark_local"]}
+                    if row.get("nearest_landmark_local")
+                    else None
+                ),
+                nearest_landmark=row.get("nearest_landmark"),
+            )
+            db_service.add_venue(venue)
+            stored = db_service._venues[-1]
+            stored["typical_dwell_minutes"] = row.get("typical_dwell_minutes")
+            count += 1
+    return count
 
 
 if __name__ == "__main__":

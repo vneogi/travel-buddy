@@ -75,16 +75,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Future<void> _createTrip(HomeSnapshot snapshot) async {
     final supportedRegions = snapshot.supportedRegions;
     if (_creating || supportedRegions.isEmpty) return;
-    setState(() => _creating = true);
     final selection = await _showCreateDialog(
       supportedRegions,
       createsAdditionalTrip: snapshot.trips.isNotEmpty,
     );
     if (selection == null) {
-      if (mounted) setState(() => _creating = false);
       return;
     }
     if (!mounted) return;
+    setState(() => _creating = true);
     try {
       final trip = await ref.read(tripRepoProvider).create(
             startDate: selection.$2,

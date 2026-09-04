@@ -108,8 +108,8 @@ SPEC-30 is complete (`f8349a8`, `83c825f`).
 Next tasks:
 1. Owner laptop verification for remaining unapplied migrations (0023; 0019-0022
    if not already applied), Anonymous E2E, and Chrome smoke.
-2. SPEC-31 date-scoped itinerary and date-aware stay rescue.
-3. SPEC-10 booking edit/delete as a separate structural-mutation slice.
+2. SPEC-32 catalog-backed Laos trip creation (this branch), then device-verify.
+3. Remaining stay-rescue product cut and multi-night hotel UI.
 4. Post-October consumer surface specs (SPEC-26 remainder, SPEC-25, SPEC-27).
 
 Do not start with another full-repo archaeology. The defects that

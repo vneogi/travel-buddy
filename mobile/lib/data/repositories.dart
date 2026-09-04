@@ -6,8 +6,7 @@ class TripRepository {
   final ApiClient _api;
   TripRepository(this._api);
 
-  /// NOTE: backend currently returns a FIXED sample itinerary; `mood` is stored
-  /// but preferences don't yet personalize generation.
+  /// Catalog-backed create: destination comes from GET /trips supported_regions.
   Future<TripState> create({
     required DateTime startDate,
     required String geoRegion,

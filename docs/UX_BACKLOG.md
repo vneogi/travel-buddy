@@ -80,10 +80,11 @@ grid) is close to ours but more complete. Fold in when the designer engages.
 remaining product order is:
 
 1. Preserve evidence-backed alerts (SPEC-29 landed; no synthetic transit).
-2. Add date-scoped itinerary grouping and date-aware stay selection.
+2. Date-scoped itinerary grouping is on main (Windows Sep 4). Date-aware stay
+   selection remains unverified.
 3. Make hearts durable and await `syncOnce()` before showing status counts.
-4. Create real Laos trips instead of stamping destinations onto the Dubai
-   template.
+4. Create real Laos trips (SPEC-32) instead of stamping destinations onto the
+   Dubai template.
 
 Full Vault and the map-first shell remain post-field-test unless spare capacity
 appears.

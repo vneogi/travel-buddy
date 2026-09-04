@@ -28,7 +28,7 @@ and the anonymous-to-account merge.
 |---|---|---|
 | Social sign-in | Provider flow via Supabase Auth | JWT verification already exists |
 | Account linking and merge | Trigger and sign-out | **All of it** -- SPEC-24 |
-| Home screen layout | Thin list shipped on the October path | Rich home aggregate and Laos-capable creation -- SPEC-26 / SPEC-13 |
+| Home screen layout | Thin list shipped on the October path | Rich home aggregate -- SPEC-26. Create is catalog-backed (SPEC-32) |
 | Add trip journey | Yes | Region validity -- SPEC-13 gates it |
 | Ask Anything box | Trip-scoped composer shipped on the October path | Trip-optional endpoint, budgets and SPEC-17 envelopes -- SPEC-25 |
 | Push notifications | Permission and display | Token store and send path -- SPEC-27 |
@@ -80,14 +80,15 @@ thin SPEC-25 trip-scoped Ask surface alongside identity, render, driver cards,
 booking anchors and hotel rescue. The Home list and Ask composer exist.
 
 Still outside that thin path: SPEC-24 identity merge, SPEC-27 lifecycle rights,
-trip-less Ask, the rich Home aggregate and real Laos creation. SPEC-02 supplied
-the offline substrate. Durable hearts passed on Windows Aug 30.
+trip-less Ask, and the rich Home aggregate. SPEC-32 catalog create is in this
+branch. SPEC-02 supplied the offline substrate. Durable hearts passed on
+Windows Aug 30.
 
 The exception is the SPEC-24 design, which is settled now and built later, for
 the reason above.
 
-The remaining order is driven by dependency rather than appeal. Finish
-date-scoped itinerary/bookings and real Laos creation first. The full
+The remaining order is driven by dependency rather than appeal. Device-verify
+SPEC-32 Laos create, then remaining stay-rescue and multi-night hotel UI. The full
 SPEC-25 contract still needs SPEC-17's real envelope, so trip-less Ask follows
 the trust work. SPEC-27 should not be later than the first build that goes to
 people who are not us.
