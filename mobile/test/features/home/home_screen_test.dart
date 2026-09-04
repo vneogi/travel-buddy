@@ -73,6 +73,7 @@ void main() {
       () => repository.create(
         startDate: any(named: 'startDate'),
         geoRegion: any(named: 'geoRegion'),
+        mood: any(named: 'mood'),
       ),
     ).thenAnswer(
       (_) async => const TripState(tripId: 'laos-1', userId: 'u1', nodes: []),
@@ -114,6 +115,7 @@ void main() {
       () => repository.create(
         startDate: any(named: 'startDate'),
         geoRegion: captureAny(named: 'geoRegion'),
+        mood: any(named: 'mood'),
       ),
     ).captured;
     expect(captured.single, 'luang_prabang_laos');
