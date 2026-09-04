@@ -37,6 +37,59 @@ The five Supabase integration tests ran green on device day 2026-08-17 with
 are smoke-test.ps1, any unrecorded Anonymous E2E, and deliberate VALIDATE of
 NOT VALID CHECKs.
 
+## Finding -- Aug 30 2026 -- Owner laptop verification (Windows, second laptop)
+
+Recorded against `fix/mobile-missing-imports` (= `main` at `acad4b9` plus two
+restored imports). Backend on `127.0.0.1:8000`, `supabase_configured=True`.
+
+Build blocker, fixed:
+
+- `main` did not compile for Windows desktop. `itinerary_screen.dart` referenced
+  `signalServiceProvider` with no `core/providers.dart` import -- the import was
+  dropped in the SPEC-29 unused-import cleanup, where it was not unused -- and
+  `chat_screen.dart` referenced `nextMovableStop` with no `current_window.dart`
+  import. Five analyzer errors, desktop build failed. Fixed in PR #31; the build
+  then succeeded. `flutter test` never caught it because the suite does not
+  compile the screen widgets, and `flutter analyze` was already red for an
+  unrelated reason, so the errors went unread.
+
+Passed:
+
+- Durable hearts survived a full app close and a fresh `flutter run`. The
+  SPEC-02 hearts slice works on device.
+
+Open product gaps observed (known near-term gates, not regressions):
+
+- No day separation. A Mad Monkey booking dated in October shows inside the
+  single "Your Day" list with no per-day grouping. This is the date-scoped
+  itinerary gate (VISION section 16, CONSUMER_SURFACE_ROADMAP).
+- Booking nodes cannot be reopened, edited or deleted once created;
+  AddBookingSheet only creates. SPEC-10 remainder.
+- No multi-day / check-in--check-out hotel entry. AddBookingSheet models a
+  booking as one `scheduled_start` plus a duration (hotel defaults to 8h), so a
+  multi-night stay is not representable in the UI. The scheduler background-anchor
+  fix (a hotel does not push the day) is correct for a single anchor node, but the
+  `trip_stay` check-in/check-out model (VISION section 18) is Part III and unbuilt.
+- "Cancel next stop" infers the target from the schedule window versus now, so a
+  traveller running late can have the wrong stop cancelled. Owner asks for an
+  explicit "which stop?" confirmation rather than a silent pick. Ties to SPEC-30
+  (a did-this-happen node state removes the guess) and SPEC-25 one-stop cancel.
+
+Config note:
+
+- `GET /trip/{id}/alerts` returned 503 (`weather_provider_unavailable`) on every
+  call. Consistent with `OPENWEATHER_API_KEY` unset locally; the client maps 503
+  to `WeatherUnavailableException` and falls back to cache, which is the designed
+  behaviour. The alert happy path needs the key set to verify on device.
+
+## Finding -- Aug 31 2026 -- SPEC-30 on origin/main
+
+The dated log for this merge also lives on branch `docs/post-spec-30` in the
+spec30 worktree (full living-doc update). Short form: PR #32 is `f8349a8`. Do
+not merge Genie slice branches. Hosted 0024 is required or ingest rejects
+`session_start`. Remainder is past-node confirm UI and explicit cancel-target
+confirmation, not the signal or the `trip_edge` writer.
+
 ## Finding -- Aug 27-28 2026 -- Owner laptop verification (Windows)
 
 Recorded against `main`; SPEC-29 subsequently landed as `aedbc03` in PR #25.
