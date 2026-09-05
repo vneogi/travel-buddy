@@ -189,7 +189,31 @@ class SwapSheetState extends ConsumerState<SwapSheet> {
       itemBuilder: (_, i) {
         final v = venues[i];
         return ListTile(
-          title: Text(v.name, style: AppTypography.body),
+          title: Row(
+            children: [
+              Expanded(child: Text(v.name, style: AppTypography.body)),
+              // SPEC-17 decision 15: label boosted results.
+              if (v.sponsoredBoostApplied)
+                Container(
+                  margin: const EdgeInsets.only(left: AppSpacing.sm),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.accent.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    'Sponsored',
+                    style: AppTypography.caption.copyWith(
+                      color: AppColors.accent,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+            ],
+          ),
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -197,6 +221,18 @@ class SwapSheetState extends ConsumerState<SwapSheet> {
                 v.microLocation,
                 style: AppTypography.caption.copyWith(color: AppColors.muted),
               ),
+              // SPEC-17 decision 15: explain ranking influence.
+              if (v.sponsoredBoostApplied)
+                Padding(
+                  padding: const EdgeInsets.only(top: AppSpacing.xs),
+                  child: Text(
+                    'Paid placement influenced this ranking.',
+                    style: AppTypography.caption.copyWith(
+                      color: AppColors.muted,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ),
               if (v.vibeTags.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: AppSpacing.xs),

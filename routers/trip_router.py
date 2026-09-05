@@ -474,21 +474,32 @@ async def search_venues(
         radius_km=radius_km,
         top_k=top_k,
     )
-    # SPEC-14: strip dietary suitability claims; add food disclaimer.
-    sanitized = []
+    # SPEC-17 decision 15 + SPEC-14: Flatten each result to the contract
+    # Flutter expects.  Never return the nested venue object.  Strip
+    # suitable_for (dietary claim).  Derive sponsored_boost_applied from
+    # an actual positive ranking contribution on the server -- never from
+    # client input.
+    flat_results = []
     for r in results:
-        d = r.model_dump(mode="json")
-        # suitable_for must never appear in API responses as a claim.
-        venue = d.get("venue", {})
-        venue.pop("suitable_for", None)
-        for dish in venue.get("dishes", []):
-            dish.pop("suitable_for", None)
-        sanitized.append(d)
+        v = r.venue
+        boost_applied = v.is_sponsored and v.bid_weight > 0 and r.final_score > r.similarity_score
+        flat_results.append(
+            {
+                "venue_id": v.venue_id,
+                "name": v.name,
+                "description": v.description,
+                "micro_location": v.micro_location,
+                "vibe_tags": v.vibe_tags,
+                "distance_km": None,
+                "is_sponsored": v.is_sponsored,
+                "sponsored_boost_applied": boost_applied,
+            }
+        )
 
     return {
         "query": query,
-        "results_count": len(sanitized),
-        "results": sanitized,
+        "results_count": len(flat_results),
+        "results": flat_results,
         "food_disclaimer": FOOD_DISCLAIMER,
     }
 
