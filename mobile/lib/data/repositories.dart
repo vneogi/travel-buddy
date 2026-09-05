@@ -50,12 +50,13 @@ class TripRepository {
   }
 
   /// RAG venue search for swap suggestions.
-  /// Backend param is `query` (NOT `q`). Vibe filtering is NOT a param here —
-  /// it's applied via the /trip/event `preferences.vibe_tags` path.
+  ///
+  /// SPEC-34: lat/lng are required -- callers resolve coordinates from the
+  /// trip's current_context or RegionDefaults. No hardcoded Dubai fallback.
   Future<List<VenueSearchResult>> searchVenues({
     required String query,
-    double lat = 25.1972,
-    double lng = 55.2744,
+    required double lat,
+    required double lng,
     int topK = 8,
   }) async {
     final data = await _api.get('/venues/search', query: {

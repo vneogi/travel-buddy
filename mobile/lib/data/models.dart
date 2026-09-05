@@ -130,6 +130,9 @@ class TripState {
   final String tripId;
   final String userId;
   final String? mood;
+  final String? geoRegion;
+  final double? locationLat;
+  final double? locationLng;
   final List<TripNode> nodes;
 
   const TripState({
@@ -137,21 +140,35 @@ class TripState {
     required this.userId,
     required this.nodes,
     this.mood,
+    this.geoRegion,
+    this.locationLat,
+    this.locationLng,
   });
 
-  factory TripState.fromJson(Map<String, dynamic> j) => TripState(
-        tripId: j['trip_id'] as String,
-        userId: j['user_id'] as String,
-        mood: (j['current_context'] as Map?)?['mood'] as String?,
-        nodes: ((j['nodes'] as List?) ?? const [])
-            .map((n) => TripNode.fromJson(n as Map<String, dynamic>))
-            .toList(),
-      );
+  factory TripState.fromJson(Map<String, dynamic> j) {
+    final ctx = j['current_context'] as Map?;
+    return TripState(
+      tripId: j['trip_id'] as String,
+      userId: j['user_id'] as String,
+      mood: ctx?['mood'] as String?,
+      geoRegion: j['geo_region'] as String?,
+      locationLat: (ctx?['location_lat'] as num?)?.toDouble(),
+      locationLng: (ctx?['location_lng'] as num?)?.toDouble(),
+      nodes: ((j['nodes'] as List?) ?? const [])
+          .map((n) => TripNode.fromJson(n as Map<String, dynamic>))
+          .toList(),
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         'trip_id': tripId,
         'user_id': userId,
-        'current_context': {'mood': mood},
+        if (geoRegion != null) 'geo_region': geoRegion,
+        'current_context': {
+          'mood': mood,
+          if (locationLat != null) 'location_lat': locationLat,
+          if (locationLng != null) 'location_lng': locationLng,
+        },
         'nodes': nodes.map((n) => n.toJson()).toList(),
       };
 }

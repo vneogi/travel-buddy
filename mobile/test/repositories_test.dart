@@ -119,7 +119,7 @@ void main() {
               ],
             });
 
-    final results = await trips.searchVenues(query: 'cafe');
+    final results = await trips.searchVenues(query: 'cafe', lat: 25.1972, lng: 55.2744);
     expect(results.single.name, 'Espresso Lab');
 
     final q = verify(() => api.get('/venues/search',
