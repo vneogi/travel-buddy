@@ -43,9 +43,28 @@ Spatial context always visible, timeline a thumb-drag away.
 - **Adopt with the existing placeholder map**; real tiles later (P3).
 - Cheap (no map dependency) and the right frame for every on-trip capability.
 
+### P1 — Multi-city Laos corridor
+The Oct field trip is one journey across Vientiane, Vang Vieng, and Luang
+Prabang, not three unrelated trip cards. Add cities with independent date
+ranges to one trip and group the itinerary into collapsible city/day sections.
+Past sections collapse without deleting their history. This needs an owning
+spec for corridor ordering and stay/transport boundaries; it must not be
+implemented by relabeling one city's venues.
+
 ### P2 — Side-by-side swap comparison (`SwapSheet`)
 **Capability #2.** Original vs proposed alternative showing the **delta**: time, distance, cost, and
 **"climate comfort"** (steal the term). Confirm → haptic → local update → queued sync.
+The Sep 5 field run also requested spatial context for previous, current, next,
+and candidate stops. Put that map in this comparison surface; do not leave a
+blank decorative map panel.
+
+### P2 — Inspectable recommendation reasons
+Trip creation and swap should distinguish editorial recommendation from paid
+placement. Candidate reasons can include party fit, season/time fit, popularity,
+and a sourced hidden-gem signal. "Recommended" and "hidden gem" are claims, not
+orange decoration: define the evidence and SPEC-17 envelope before rendering
+them. Sponsored remains a separate disclosure and never masquerades as the
+recommendation reason.
 
 ### P2 — `AudienceBadge` + quick-swap sheet
 **Capability #1.** Makes `trip_party` (DATA_MODEL §16) visible: shows active party mode

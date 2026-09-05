@@ -38,6 +38,66 @@ The five Supabase integration tests ran green on device day 2026-08-17 with
 are smoke-test.ps1, any unrecorded Anonymous E2E, and deliberate VALIDATE of
 NOT VALID CHECKs.
 
+## Finding -- Sep 5 2026 -- Laos create and swap (Windows)
+
+Recorded against `main` at `f84d981` with the Supabase backend, anonymous
+identity enabled, JWT auth disabled, and 74 live venues.
+
+Passed:
+
+- Catalog-backed Luang Prabang trip creation rendered real local venues.
+- Driver cards rendered local script and were useful.
+- Swap search returned flat, renderable Laos venue results.
+
+Failed or misleading:
+
+- Confirming a SwapSheet choice posted `swap_activity` successfully but did
+  not necessarily apply the venue that was tapped. The client sent the old
+  node's vibe tags but no replacement venue ID, causing the backend to run a
+  second search and potentially select the original venue.
+- The current venue could appear among its own replacement options.
+- SwapSheet showed filter chips whose callbacks were empty.
+- Windows had no handler for the Driver Card's `geo:` Maps URI.
+- Weather-provider failures returned 503 repeatedly as Windows resume events
+  refreshed alerts throughout the session.
+
+Deferred product requests, not treated as defects in the one-city slice:
+
+- One Laos trip spanning Vientiane, Vang Vieng, and Luang Prabang with
+  date-scoped, collapsible city sections.
+- Persona, season, popularity, hidden-gem, recommendation, and sponsored
+  composition in trip creation and SwapSheet.
+- A spatial swap comparison showing the previous, current, next, and candidate
+  stops. This belongs with the map-first/swap-comparison UX rather than an
+  unexplained blank panel.
+
+Sponsored payload and positive Sponsored-label checks were not run in the
+afternoon session. Hotel rescue 6C also remains unverified.
+
+## Finding -- Sep 5 2026 evening -- SPEC-17 tests 8 and 9 (Windows)
+
+Recorded on `fix/sep5-device-findings` at `835c7c8`. Hosted Supabase, 74
+venues, anonymous enabled, JWT auth disabled.
+
+Test 8 (live payload) passed:
+
+- `GET /venues/search` with Dubai coords returned eight flat rows.
+- No nested `venue` object. `sponsored_boost_applied` was present.
+- `boosted_count=3`: The Maine Oyster Bar and Grill, Zuma DIFC, Atmosphere
+  Burj Khalifa (`is_sponsored=true`, `sponsored_boost_applied=true`).
+- Organic rows (A4 Space, souks, Museum of the Future, The Lighthouse D3)
+  had both flags false.
+- Flattened item JSON omitted `similarity_score` / `final_score`, which is
+  the intended public contract.
+
+Test 9 (Sponsored UI) is incomplete in the attached log: after restarting
+uvicorn on this SHA, a Dubai trip was created
+(`d22bb6b6-1262-43d8-9010-f7f39373e906`) and SwapSheet search ran at
+25.144, 55.2245, but there is no written observation that the boosted rows
+showed `Sponsored` plus the paid-placement sentence. Alerts still returned
+503 (`weather_provider_unavailable`), which is the honest missing-forecast
+path, not a disclosure failure.
+
 ## Finding -- Sep 4 2026 -- Owner laptop verification (Windows)
 
 Recorded against `main` after PR #37 (`364d873`). Anonymous create/list needed

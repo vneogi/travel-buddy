@@ -89,16 +89,24 @@ void main() {
   });
 
   group('buildMapsUri', () {
-    test('builds a geo URI that does not depend on Google Maps', () {
+    test('keeps native geo URI and provides an HTTPS desktop fallback', () {
       final uri = buildMapsUri(19.89758, 102.14321);
       expect(uri, isNotNull);
       expect(uri!.scheme, equals('geo'));
-      expect(uri.toString(), contains('19.89758,102.14321'));
+
+      final fallback = buildMapsFallbackUri(19.89758, 102.14321);
+      expect(fallback, isNotNull);
+      expect(fallback!.scheme, equals('https'));
+      expect(fallback.host, equals('www.openstreetmap.org'));
+      expect(fallback.queryParameters['mlat'], equals('19.89758'));
+      expect(fallback.queryParameters['mlon'], equals('102.14321'));
     });
 
     test('does not offer maps when either coordinate is absent', () {
       expect(buildMapsUri(null, 102.1), isNull);
       expect(buildMapsUri(19.5, null), isNull);
+      expect(buildMapsFallbackUri(null, 102.1), isNull);
+      expect(buildMapsFallbackUri(19.5, null), isNull);
     });
   });
 

@@ -7,6 +7,11 @@ import '../../core/providers.dart';
 import '../../data/context_alert.dart';
 import '../../offline/offline_database.dart';
 
+const alertResumeRefreshInterval = Duration(minutes: 15);
+
+bool alertResumeRefreshDue(DateTime lastAttempt, DateTime now) =>
+    now.difference(lastAttempt) >= alertResumeRefreshInterval;
+
 /// SPEC-29: Alert state for a trip.
 class AlertsState {
   final List<ContextAlert> alerts;
@@ -164,7 +169,7 @@ class AlertsNotifier extends AutoDisposeFamilyAsyncNotifier<AlertsState, String>
   }
 }
 
-/// autoDispose: leaving the trip screen disposes, reopening refetches.
+/// autoDispose: leaving and reopening a trip performs a fresh alert check.
 final alertsNotifierProvider =
     AsyncNotifierProvider.autoDispose.family<AlertsNotifier, AlertsState, String>(
   AlertsNotifier.new,

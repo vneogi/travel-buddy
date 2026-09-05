@@ -242,6 +242,23 @@ class SupabaseService:
             return result.data[0]["venue_id"]
         return None
 
+    def get_venue_by_id(self, venue_id: str) -> Optional[VenueRAG]:
+        """Return one catalog venue by its stable ID."""
+        result = (
+            self.client.table("venues_rag")
+            .select(
+                "venue_id,name,description,micro_location,lat,lng,vibe_tags,"
+                "audience,category,is_sponsored,bid_weight,opening_hours,"
+                "geo_region,names_local,landmarks_local,nearest_landmark"
+            )
+            .eq("venue_id", venue_id)
+            .limit(1)
+            .execute()
+        )
+        if not result.data:
+            return None
+        return VenueRAG(**result.data[0])
+
     # =========================================================================
     # Trip State Operations
     # =========================================================================

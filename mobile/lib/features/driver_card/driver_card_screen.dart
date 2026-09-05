@@ -153,6 +153,7 @@ class _DriverCardScreenState extends ConsumerState<DriverCardScreen> {
   Widget _buildCard() {
     final data = _data!;
     final mapsUri = buildMapsUri(data.lat, data.lng);
+    final mapsFallbackUri = buildMapsFallbackUri(data.lat, data.lng);
     final hasCoords = data.lat != null && data.lng != null;
 
     return SingleChildScrollView(
@@ -168,7 +169,7 @@ class _DriverCardScreenState extends ConsumerState<DriverCardScreen> {
           if (mapsUri != null) ...[
             const SizedBox(height: AppSpacing.sm),
             OutlinedButton.icon(
-              onPressed: () => _openMaps(mapsUri),
+              onPressed: () => _openMaps(mapsUri, mapsFallbackUri),
               icon: const Icon(Icons.map_outlined),
               label: const Text('Open in Maps'),
             ),
@@ -201,12 +202,22 @@ class _DriverCardScreenState extends ConsumerState<DriverCardScreen> {
     );
   }
 
-  Future<void> _openMaps(Uri uri) async {
+  Future<void> _openMaps(Uri uri, Uri? fallbackUri) async {
     var opened = false;
     try {
       opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
     } catch (_) {
       opened = false;
+    }
+    if (!opened && fallbackUri != null) {
+      try {
+        opened = await launchUrl(
+          fallbackUri,
+          mode: LaunchMode.externalApplication,
+        );
+      } catch (_) {
+        opened = false;
+      }
     }
     if (!opened && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

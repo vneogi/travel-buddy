@@ -54,6 +54,18 @@ Uri? buildMapsUri(double? lat, double? lng) {
   return Uri.parse('geo:$lat,$lng?q=$lat,$lng');
 }
 
+/// Browser fallback for desktop platforms without a `geo:` URI handler.
+Uri? buildMapsFallbackUri(double? lat, double? lng) {
+  if (lat == null || lng == null) return null;
+  return Uri(
+    scheme: 'https',
+    host: 'www.openstreetmap.org',
+    path: '/',
+    queryParameters: {'mlat': '$lat', 'mlon': '$lng'},
+    fragment: 'map=17/$lat/$lng',
+  );
+}
+
 /// Data class for offline driver card rendering from SQLite cache_place.
 class PlaceDriverCardData {
   final String placeRef;

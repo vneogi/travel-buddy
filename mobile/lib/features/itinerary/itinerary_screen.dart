@@ -21,6 +21,15 @@ import 'replacement_ref.dart';
 import '../alerts/alerts_notifier.dart';
 import '../../widgets/alert_card.dart';
 
+Map<String, dynamic> preferencesForConfirmedSwap(
+  TripNode original,
+  VenueSearchResult replacement,
+) =>
+    {
+      'replacement_venue_id': replacement.venueId,
+      'vibe_tags': original.vibeTags,
+    };
+
 /// The hero screen — live timeline of activity cards.
 ///
 /// Reflow strategy: a keyed ListView driven directly by controller state.
@@ -67,7 +76,7 @@ class ItineraryScreen extends ConsumerWidget {
             type: EventType.swapActivity,
             message: 'Swap ${node.venueName} for ${venue.name}',
             targetNodeId: node.nodeId,
-            preferences: {'vibe_tags': node.vibeTags},
+            preferences: preferencesForConfirmedSwap(node, venue),
           );
       if (result != null && result.updatedNodes.isNotEmpty) {
         final replacement = replacementRefForSwap(
@@ -582,9 +591,12 @@ class _AlertsSection extends ConsumerStatefulWidget {
 
 class _AlertsSectionState extends ConsumerState<_AlertsSection>
     with WidgetsBindingObserver {
+  late DateTime _lastRefreshAttempt;
+
   @override
   void initState() {
     super.initState();
+    _lastRefreshAttempt = DateTime.now();
     WidgetsBinding.instance.addObserver(this);
   }
 
@@ -596,7 +608,10 @@ class _AlertsSectionState extends ConsumerState<_AlertsSection>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
+    final now = DateTime.now();
+    if (state == AppLifecycleState.resumed &&
+        alertResumeRefreshDue(_lastRefreshAttempt, now)) {
+      _lastRefreshAttempt = now;
       ref.read(alertsNotifierProvider(widget.tripId).notifier).refresh();
     }
   }

@@ -135,6 +135,36 @@ class TripStateMachine:
         trip_state: TripState = state["trip_state"]
         user_lat = trip_state.current_context.location_lat
         user_lng = trip_state.current_context.location_lng
+        target_node = next(
+            (node for node in trip_state.nodes if node.node_id == state.get("target_node_id")),
+            None,
+        )
+
+        # A sheet selection is an explicit choice, not another search prompt.
+        # Resolve the stable ID server-side so the event applies exactly the
+        # venue the traveller tapped without trusting client-supplied venue data.
+        replacement_id = state["preferences"].get("replacement_venue_id")
+        if state["event_type"] == EventType.SWAP_ACTIVITY.value and replacement_id:
+            if target_node and target_node.venue_id == replacement_id:
+                state["no_candidates"] = True
+                return state
+            replacement = db_service.get_venue_by_id(replacement_id)
+            target_region = (
+                target_node.geo_region if target_node else None
+            ) or trip_state.geo_region
+            if replacement is None or (
+                replacement.geo_region and target_region and replacement.geo_region != target_region
+            ):
+                state["no_candidates"] = True
+                return state
+            state["venues_found"] = [
+                VenueSearchResult(
+                    venue=replacement,
+                    similarity_score=0.0,
+                    final_score=0.0,
+                )
+            ]
+            return state
 
         search_query = state["message"]
         if state["preferences"].get("mood"):
@@ -142,10 +172,9 @@ class TripStateMachine:
         if state["preferences"].get("vibe"):
             search_query += f" {state['preferences']['vibe']}"
 
-        # Per-node geo_region for multi-city trips; fall back to trip's region
-        # Use the last node's geo_region as proxy for "current city"
-        current_node = trip_state.nodes[-1] if trip_state.nodes else None
-        geo_region = (current_node.geo_region if current_node else None) or trip_state.geo_region
+        # Use the target node's city for structural changes. The last itinerary
+        # node is not a safe proxy once a trip spans multiple cities.
+        geo_region = (target_node.geo_region if target_node else None) or trip_state.geo_region
 
         venues = db_service.hybrid_venue_search(
             query=search_query,
@@ -155,6 +184,8 @@ class TripStateMachine:
             audience_filter=state["preferences"].get("audience"),
             geo_region=geo_region,
         )
+        if state["event_type"] == EventType.SWAP_ACTIVITY.value and target_node:
+            venues = [result for result in venues if result.venue.venue_id != target_node.venue_id]
 
         if venues:
             venue_dicts = [

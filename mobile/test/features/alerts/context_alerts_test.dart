@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'package:travel_buddy/data/context_alert.dart';
+import 'package:travel_buddy/features/alerts/alerts_notifier.dart';
 import 'package:travel_buddy/offline/offline_database.dart';
 import 'package:travel_buddy/widgets/alert_card.dart';
 
@@ -54,6 +55,30 @@ Map<String, dynamic> _responseJson({
     };
 
 void main() {
+  group('alert resume refresh cooldown', () {
+    final lastAttempt = DateTime.utc(2026, 9, 5, 12);
+
+    test('does not refetch for repeated short Windows resume events', () {
+      expect(
+        alertResumeRefreshDue(
+          lastAttempt,
+          lastAttempt.add(const Duration(minutes: 1)),
+        ),
+        isFalse,
+      );
+    });
+
+    test('allows a refresh after fifteen minutes', () {
+      expect(
+        alertResumeRefreshDue(
+          lastAttempt,
+          lastAttempt.add(const Duration(minutes: 15)),
+        ),
+        isTrue,
+      );
+    });
+  });
+
   sqfliteFfiInit();
   databaseFactory = databaseFactoryFfi;
 
