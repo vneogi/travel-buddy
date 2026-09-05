@@ -55,8 +55,7 @@ void main() {
 
       confirmed = venue;
 
-      expect(confirmed, isNotNull);
-      expect(confirmed!.venueId, 'v1');
+      expect(confirmed.venueId, 'v1');
       expect(confirmed.name, 'Night Market');
       expect(dismissed, isNull, reason: 'Confirm must not also dismiss');
     });
