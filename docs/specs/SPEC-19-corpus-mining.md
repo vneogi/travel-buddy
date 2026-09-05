@@ -82,6 +82,13 @@ So this is the supply for three commitments already made.
     patterns, conduct requirements and anything on the SPEC-17 safety list are
     reviewed rather than published on extraction confidence alone.
 
+11. **Dish popularity is a claim, not a synonym for `is_signature`.**
+   SPEC-35 may use a curated signature dish with copy that names it as such.
+   Copy such as `popular`, `most ordered`, or `reviewers recommend` requires a
+   resolved `popular_dish` claim backed by at least two independent licensed
+   sources after content deduplication. Google and TripAdvisor remain excluded.
+   The cited references travel with the claim into the notification evidence.
+
 ## Tests
 
 - An extraction with no citable reference is discarded
@@ -94,6 +101,9 @@ So this is the supply for three commitments already made.
 - Near-duplicate claims across corpora collapse to one before evidence counting
 - A safety-list category cannot reach a displayable tier without human review
 - A weak claim about a high-traffic venue becomes a question card
+- A signature-only dish cannot resolve as a review-derived `popular_dish`
+- A `popular_dish` claim requires two independent licensed sources after
+  content deduplication
 
 ## Acceptance
 
@@ -105,4 +115,6 @@ So this is the supply for three commitments already made.
 - [ ] Idempotent re-extraction
 - [ ] Content-level deduplication before evidence counting
 - [ ] Human review required for the safety list
+- [ ] `popular_dish` extraction retains independent licensed references for
+      SPEC-35
 - [ ] Suite green (R8); verified from `origin/main` (R10)

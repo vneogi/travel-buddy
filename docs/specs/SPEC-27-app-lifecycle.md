@@ -4,6 +4,8 @@
 >
 > Depends on SPEC-22 for the interruption budget and SPEC-24 for the identity
 > model that both notification delivery and deletion have to address.
+> SPEC-35 supplies departure and meal notification candidates; this spec owns
+> their eventual closed-app transport, not their product rules.
 
 ## Goal
 
@@ -45,24 +47,30 @@ each reaches across the client and the server so neither side naturally owns it.
    This is the same test SPEC-15 applies to checklist prompts, and it belongs here
    too rather than being reinvented per sender.
 
+6. **Push reuses an owning capability's candidate; it does not re-evaluate the
+   world.** SPEC-35 computes departure and meal candidates, including evidence,
+   identity, eligibility and expiry. The watcher may refresh those candidates
+   and this spec may deliver them, but neither owns a second traffic, weather or
+   dish evaluator. This prevents in-app and closed-app messages disagreeing.
+
 ## Data rights
 
-6. **Export and deletion are endpoints, not a support process.** India's DPDP Act
+7. **Export and deletion are endpoints, not a support process.** India's DPDP Act
    covers the primary traveller and GDPR covers the corridor's inbound visitors,
    so this is not optional and the anonymous-first design makes it unusually
    cheap: with no PII collected, most of what we hold is already pseudonymous.
 
-7. **Deletion walks the schema, exactly like the SPEC-24 merge.** The same hole
+8. **Deletion walks the schema, exactly like the SPEC-24 merge.** The same hole
    applies for the same reason: `signal.user_id` has no foreign key, so nothing
    cascades and nothing complains when a new table is missed. One walk, shared by
    both specs, tested the same way.
 
-8. **Deletion covers the credential aliases.** A merged account has several
+9. **Deletion covers the credential aliases.** A merged account has several
    credentials pointing at it under SPEC-24, and deleting the surviving row while
    leaving an alias is the kind of miss that a schema walk catches and a
    hand-written list does not.
 
-9. **Raw signals are deleted; derived aggregates survive, and must not be
+10. **Raw signals are deleted; derived aggregates survive, and must not be
    reconstructible to a person.** This is the one genuine tension in the spec and
    it deserves a stated position rather than a quiet default. Behavioural signal
    is the asset, and honouring deletion removes it. The resolution is that the
@@ -72,19 +80,19 @@ each reaches across the client and the server so neither side naturally owns it.
    could be traced back to an individual is a defect in the derived layer, not a
    reason to weaken deletion.
 
-10. **Export is the same data in a form a human can read.** An export nobody can
+11. **Export is the same data in a form a human can read.** An export nobody can
     open satisfies the letter of the right and none of its purpose.
 
 ## Version and schema safety
 
-11. **The server declares a minimum supported client, and the client refuses to
+12. **The server declares a minimum supported client, and the client refuses to
     write below it -- never to read.** An offline client can hold cached data for
     weeks and its user may be in a place where updating is not possible. Blocking
     reads strands somebody in a foreign country with a phone that has their
     itinerary and will not show it. Blocking writes is enough, because the risk is
     a stale client writing a shape the server no longer understands.
 
-12. **The refusal explains itself and names what still works.** "Update to sync;
+13. **The refusal explains itself and names what still works.** "Update to sync;
     your saved trips are still here" is the difference between a bug report and an
     understood state.
 

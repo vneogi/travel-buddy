@@ -77,7 +77,10 @@ recommendation reason.
 **Capability #2**, proactive not reactive. SPEC-29 now renders provider-backed
 weather alerts above the timeline with provenance and a Review action. Climate
 comfort remains UX polish; random traffic and synthetic transit must never
-become alert copy.
+become alert copy. SPEC-35 adds the retention-oriented backend contract:
+provider-backed time-to-leave candidates that account for fresh traffic and an
+explicit rain buffer, plus evidence-safe pre-meal dish previews. The first
+slice is in-app on foreground/resume; OS push remains SPEC-27.
 
 ### P3 — `SplitGroupCard` — split itineraries for diverging desires
 **Capability #6**, made visible: "Group A: Old Souk / Group B: Mall, reconverge 17:00." Almost nobody

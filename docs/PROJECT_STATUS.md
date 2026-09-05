@@ -90,12 +90,13 @@
 | Identity lifecycle (SPEC-24) | SPECIFIED | Not implemented, and the design is deliberately settled ahead of the build. Sign-in itself is nearly free because Supabase Auth owns the provider flow and security.py already verifies the token; the work is what happens to the anonymous history. Owns credential aliases, the anonymous-to-account merge, multi-device, and sign-out. Merge direction is fixed one way, which extends the upgrade-on-sight rule already live on identity_kind. Union rather than dedupe; tier and quota both resolve to the maximum, since taking the minimum makes sign-in a way to refill the daily reroute allowance |
 | Ask Anything surface (SPEC-25) | PARTIAL (trip-scoped October slice) | The itinerary composer and per-trip home entry use existing trip chat. One-stop cancel/swap are structural; cancel is a skip, not a swap, as of SPEC-29. Broad mutations refuse. No add-from-chat control; near-me uses default Dubai coordinates. Trip-optional ask, pre-model budgets, SPEC-17 envelopes, discovery and offline answer contract remain |
 | Home surface (SPEC-26) | IMPLEMENTED (snapshot) | GET /trips now returns featured_trip: active trip (or earliest upcoming) with actionable stop (no state_json, no full nodes). Dart HomeSnapshot parses and caches it. Home renders Now/Up next card above trip list. Offline cache renders same card with cache age. Full SPEC-22 migration remains |
-| App lifecycle and data rights (SPEC-27) | SPECIFIED | Not implemented. The three consumer obligations with no owner: push transport with tokens that survive the SPEC-24 merge and delivery through the SPEC-22 interruption budget enforced server-side, deletion and export under DPDP and GDPR, and a minimum supported client that blocks writes but never reads. States the position that raw signals are deleted while non-identifying derived aggregates survive |
+| App lifecycle and data rights (SPEC-27) | SPECIFIED | Not implemented. Owns push transport for candidates produced by capabilities such as SPEC-35, with tokens that survive the SPEC-24 merge and delivery through the SPEC-22 interruption budget enforced server-side. Also owns deletion/export under DPDP and GDPR and a minimum supported client that blocks writes but never reads |
 | Trip inspiration (SPEC-28) | DECIDED, NOT SCHEDULED | Opt-in, delayed, region-level public trip snapshots as inspiration. No live people/location, DMs or comments in v1. Requires identity, deletion/export and moderation gates |
-| Context alerts (SPEC-29) | DONE (phase 1) | PR #25 squash-merged as `aedbc03`. OpenWeather evidence is matched to upcoming nodes, cached by identity and shown with provenance. Alerts never mutate or consume reroute quota. Synthetic transit is not user copy; cancel preserves position and locked cancel returns 409 before quota. Watcher/push phase not started |
+| Context alerts (SPEC-29) | DONE (phase 1) | PR #25 squash-merged as `aedbc03`. OpenWeather evidence is matched to upcoming nodes, cached by identity and shown with provenance. Alerts never mutate or consume reroute quota. SPEC-35 owns proactive in-app candidates; SPEC-27 owns watcher/push delivery |
 | Retention instrumentation (SPEC-30) | DONE | PR #32 (`f8349a8`) added `session_start` and the `trip_edge` observed-duration writer. PR #34 (`83c825f`) added durable node outcomes, active/past confirmation UI, outcome-aware targeting, and explicit cancel confirmation. Flutter CI and owner Windows full suite green |
 | Date-scoped itinerary (SPEC-31) | DONE; RESCUE REMOVAL PENDING | Grouping under date headers is on main (PR #36, Windows Sep 4 6A). Test 6C is canceled because the owner retired the dedicated rescue shortcut. Remove its selection helpers and tests; keep date grouping and the hotel booking's driver-card action |
 | Real Laos trip creation (SPEC-32) | VERIFIED (one-city slice) | Sep 5 Windows run created a real catalog-backed Luang Prabang itinerary with no Dubai fallback. Multi-city Laos corridors remain outside this slice |
+| Proactive itinerary notifications (SPEC-35) | SPECIFIED | Backend not implemented. Phase A brief: `docs/briefs/GENIE_SPEC_35_DEPARTURE_BACKEND.md`. In-app first: provider-backed time-to-leave candidates using traffic plus an explicit rain policy buffer. Meal previews remain suppressed until dish provenance exists; review-derived popularity waits for licensed SPEC-19 evidence and the SPEC-17 envelope. No background GPS, LLM, mutation or push |
 
 Migration numbers are assigned when a spec is implemented, not when it is
 written. SPEC-11, SPEC-13, SPEC-14 and SPEC-15 each claimed a number, and the
@@ -167,17 +168,20 @@ Seed-shaped cohorts.
 
 8. Remove the duplicate Hotel Rescue shortcut, then multi-night hotel UI.
    Preserve offline cache fallback and the driver-card action on hotel bookings.
-9. Retire the dietary suitability claim (SPEC-14). Closes the
+9. SPEC-35 Phase A proactive in-app notifications: provider-backed departure
+   timing. Keep meal previews suppressed until dish provenance exists, OS push
+   in SPEC-27, and review-derived popularity behind SPEC-17/19.
+10. Retire the dietary suitability claim (SPEC-14). Closes the
    halal-versus-pork hole by removing the claim.
-10. SPEC-17 trust and verification -- gates SPEC-18/19/20; behind the
+11. SPEC-17 trust and verification -- gates SPEC-18/19/20; behind the
    field-test installable app on purpose.
-11. reroute_rejected plus swap sheet UI -- last unwired behavioural signal.
-12. Full SPEC-04 remainder (cache_vault, passes, emergency grid, phrase
+12. reroute_rejected plus swap sheet UI -- last unwired behavioural signal.
+13. Full SPEC-04 remainder (cache_vault, passes, emergency grid, phrase
     packs) if still wanted.
-13. Finish the consumer slices already on the October path: date-scoped
+14. Finish the consumer slices already on the October path: date-scoped
     itinerary and bookings, trip-less Ask and
     the richer Home aggregate. SPEC-27 follows; SPEC-24 design is settled.
-14. Swappable LLM provider -- no owning spec yet; next free number. Every
+15. Swappable LLM provider -- no owning spec yet; next free number. Every
     intelligent path is one hosted vendor today.
 
 Export the Dubai rows before applying anything. A rebuild from migrations
