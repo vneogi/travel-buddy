@@ -10,6 +10,7 @@ import '../../widgets/activity_card.dart';
 import '../booking/add_booking_sheet.dart';
 import '../chat/ask_entry_bar.dart';
 import '../rescue/hotel_rescue_sheet.dart';
+import '../swap_sheet/swap_sheet.dart';
 import '../../widgets/reroute_badge.dart';
 import '../../widgets/shimmer_card.dart';
 import '../../widgets/error_view.dart';
@@ -37,27 +38,75 @@ class ItineraryScreen extends ConsumerWidget {
   String _sig(TripNode n) =>
       '${n.nodeId}|${n.venueId}|${n.venueName}|${n.scheduledStart.toIso8601String()}|${n.status.name}|${n.isLocked}|${n.bookingNotes}|${n.bookingType}';
 
-  Future<void> _swap(WidgetRef ref, TripNode node) async {
+  /// SPEC-07: Open the swap sheet. No swap_activity until the traveller
+  /// confirms a suggestion. Dismiss emits reroute_rejected.
+  Future<void> _swap(BuildContext context, WidgetRef ref, TripNode node) async {
+    final state = ref.read(itineraryControllerProvider(tripId));
+    final tripState = _tripStateForCoords(state);
+    final sheet = SwapSheet(
+      tripId: tripId,
+      targetNodeId: node.nodeId,
+      tripState: tripState,
+    );
+
+    final venue = await showModalBottomSheet<VenueSearchResult>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => sheet,
+    );
+
+    if (!context.mounted) return;
+
     final placeRef = node.venueId ?? node.venueName;
-    final result = await ref.read(itineraryControllerProvider(tripId).notifier).applyEvent(
-          type: EventType.swapActivity,
-          message: 'Swap ${node.venueName} for something similar nearby',
-          targetNodeId: node.nodeId,
-          preferences: {'vibe_tags': node.vibeTags},
-        );
-    // SPEC-07: emit reroute_accepted with the replacement ref
-    if (result != null && result.updatedNodes.isNotEmpty) {
-      final replacementRef = replacementRefForSwap(
-        originalNodeId: node.nodeId,
-        originalVenueKey: placeRef,
-        updatedNodes: result.updatedNodes,
-      );
-      ref.read(signalServiceProvider).emitRerouteAccepted(
-            placeRef: placeRef,
-            replacementRef: replacementRef,
-            tripId: tripId,
+
+    if (venue != null) {
+      // --- Confirm path ---
+      final result = await ref
+          .read(itineraryControllerProvider(tripId).notifier)
+          .applyEvent(
+            type: EventType.swapActivity,
+            message: 'Swap ${node.venueName} for ${venue.name}',
+            targetNodeId: node.nodeId,
+            preferences: {'vibe_tags': node.vibeTags},
           );
+      if (result != null && result.updatedNodes.isNotEmpty) {
+        final replacement = replacementRefForSwap(
+          originalNodeId: node.nodeId,
+          originalVenueKey: placeRef,
+          updatedNodes: result.updatedNodes,
+        );
+        ref.read(signalServiceProvider).emitRerouteAccepted(
+              placeRef: placeRef,
+              replacementRef: replacement,
+              tripId: tripId,
+            );
+      }
+    } else {
+      // --- Dismiss path ---
+      final offeredIds = sheet.offeredVenueIds;
+      if (offeredIds.isNotEmpty) {
+        ref.read(signalServiceProvider).emitRerouteRejected(
+              placeRef: placeRef,
+              rejectedRefs: offeredIds,
+              tripId: tripId,
+            );
+      }
     }
+  }
+
+  /// Build a TripState with coords for SwapSheet venue search.
+  TripState _tripStateForCoords(ItineraryState state) {
+    // ItineraryState only keeps nodes. Use the first node's geo/coords as
+    // the trip hint; resolveSwapSearchCoords then applies RegionDefaults.
+    final first = state.nodes.isNotEmpty ? state.nodes.first : null;
+    return TripState(
+      tripId: tripId,
+      userId: '',
+      nodes: state.nodes,
+      geoRegion: first?.geoRegion,
+      locationLat: first?.lat,
+      locationLng: first?.lng,
+    );
   }
 
   void _cancel(WidgetRef ref, TripNode node) {
@@ -230,7 +279,7 @@ class ItineraryScreen extends ConsumerWidget {
                           : _DateScopedTimeline(
                               nodes: state.nodes,
                               state: state,
-                              onSwap: (node) => _swap(ref, node),
+                              onSwap: (node) => _swap(context, ref, node),
                               onCancel: (node) => _cancel(ref, node),
                               onOutcome: (node) =>
                                   _showOutcomePicker(context, ref, node),
