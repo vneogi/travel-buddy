@@ -1,6 +1,8 @@
 # Genie Brief -- SPEC-31 Date-Scoped Itinerary and Stay Rescue
 
-> Status: READY TO IMPLEMENT.
+> Status: HISTORICAL, DO NOT IMPLEMENT. Date grouping landed in PR #36.
+> Stay-rescue behavior is retired; use
+> `docs/briefs/GENIE_REMOVE_HOTEL_RESCUE.md`.
 > Base on `origin/main` at or after `83c825f`.
 > Read `docs/specs/SPEC-31-date-scoped-itinerary.md` first.
 > One client-only PR. Do not mix booking edit/delete into this branch.

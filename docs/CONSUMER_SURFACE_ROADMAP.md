@@ -77,7 +77,9 @@ allowed to render.
 
 The October path now includes the thin SPEC-26 trip list/create surface and the
 thin SPEC-25 trip-scoped Ask surface alongside identity, render, driver cards,
-booking anchors and hotel rescue. The Home list and Ask composer exist.
+booking anchors and offline itinerary/place caching. The duplicate Hotel Rescue
+shortcut is being removed by owner decision. The Home list and Ask composer
+exist.
 
 Still outside that thin path: SPEC-24 identity merge, SPEC-27 lifecycle rights,
 trip-less Ask, and the rich Home aggregate. SPEC-32 catalog create is in this
@@ -87,8 +89,8 @@ Windows Aug 30.
 The exception is the SPEC-24 design, which is settled now and built later, for
 the reason above.
 
-The remaining order is driven by dependency rather than appeal. Device-verify
-SPEC-32 Laos create, then remaining stay-rescue and multi-night hotel UI. The full
+The remaining order is driven by dependency rather than appeal. Remove the
+dedicated Hotel Rescue shortcut, then finish multi-night hotel UI. The full
 SPEC-25 contract still needs SPEC-17's real envelope, so trip-less Ask follows
 the trust work. SPEC-27 should not be later than the first build that goes to
 people who are not us.

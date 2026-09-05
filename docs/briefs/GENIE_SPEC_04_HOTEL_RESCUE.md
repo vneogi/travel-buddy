@@ -1,6 +1,8 @@
 # Genie Brief -- SPEC-04 Hotel Rescue & Offline Itinerary Cache (October slice)
 
-> Status: READY TO IMPLEMENT. Paste this entire file to Genie Code.
+> Status: HISTORICAL, DO NOT IMPLEMENT. The cache floor landed in PR #22.
+> The owner retired the Hotel Rescue shortcut on Sep 5 2026. Use
+> `docs/briefs/GENIE_REMOVE_HOTEL_RESCUE.md`.
 > Land via PR to main, not direct push. Owner has no laptop -- unit and
 > widget tests + flutter analyze in CI.
 

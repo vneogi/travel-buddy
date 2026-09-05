@@ -65,12 +65,12 @@
 | Party context (SPEC-03) | DONE | Server-side stamping, both backends, migration 0003 applied |
 | Observability (SPEC-05) | DONE | Ring buffer, request IDs, debug endpoint |
 | Signal registry (SPEC-06) | DONE | models/signal_types.py plus drift test |
-| Signal emission (SPEC-07) | IMPLEMENTED | SwapSheet wired: tap Swap opens sheet with real venue search, confirm sends swap_activity + reroute_accepted, dismiss sends reroute_rejected. Remaining: dish_loved, dish_ordered UI |
+| Signal emission (SPEC-07) | IMPLEMENTED | SwapSheet wired: tap Swap opens real venue search, confirm sends the tapped stable venue ID plus reroute_accepted, dismiss sends reroute_rejected. Sep 5 Windows recheck verified the itinerary row changes to the chosen venue. Remaining: dish_loved, dish_ordered UI |
 | Laos curation (SPEC-08) | DONE | 58 venues curated including Lao script. The wrong-script contamination is fixed: appended Chinese, Thai spelling of a Lao word, and a Thai-style consonant cluster |
 | arrival_delta derivation | DONE | Server-derived from visited_confirmed vs scheduled_start |
 | Docs hygiene guard | DONE | tests/test_docs_hygiene.py walks every markdown file outside build and vendor directories, and the SPEC-reference check also scans .py and .sql. Known non-ASCII files are allowlisted; the list may only shrink. The ASCII check itself still covers markdown only |
 | Data format guard | DONE | Every data/ file is ASCII by byte count, venue and glossary files round-trip byte-identically, and Lao-script fields are checked for foreign script |
-| Offline vault (SPEC-04) | DONE (October slice) | PR #22 (`b7e10c3`) + PR #23 (`dab16c0`). <=2-tap hotel rescue entry to DriverCardScreen, offline itinerary cache fallback in ItineraryController.load(), robust hotel matching (villa/guesthouse), pre-caching hotel place data in cache_place, honest empty state. Full vault post-field-test -- see SPEC-04 |
+| Offline vault (SPEC-04) | CACHE FLOOR DONE; RESCUE REMOVAL DECIDED | PR #22 (`b7e10c3`) + PR #23 (`dab16c0`) shipped offline itinerary fallback and cached driver cards. Sep 5 owner decision retires the duplicate Hotel Rescue AppBar shortcut; code-removal brief: `docs/briefs/GENIE_REMOVE_HOTEL_RESCUE.md`. Keep the driver-card action on hotel bookings. Full vault remains post-field-test discovery |
 | Anonymous identity (SPEC-09) | DONE (client + server) | Client half landed PR #16 (`7173a3f`): UUID v4 in flutter_secure_storage, Anonymous header, TB_DEBUG_USER_ID removed. Server half already verified. Record any remaining Anonymous E2E gap explicitly; the laptop is available |
 | Itinerary normalisation (SPEC-16) | IMPLEMENTED | Decompose and compose land in services/itinerary_normaliser.py, dual-write in both backends, round-trip equality asserted, wire format unchanged. node_id is stable across reschedules via state_json and now comes from models/ids.py. SPEC-30 (`f8349a8`) writes `trip_edge.observed_duration_minutes` from consecutive arrivals |
 | Booking anchors (SPEC-10) | PARTIAL (create plus edit/delete) | PR #20 (`f6328e9`) plus PR #37 (`364d873`). Immovable locked nodes, booking metadata, parser and AddBookingSheet. Windows Sep 4 verified notes, edit, and delete. Daily hotel anchor and preceding-evening flight rules remain |
@@ -94,7 +94,7 @@
 | Trip inspiration (SPEC-28) | DECIDED, NOT SCHEDULED | Opt-in, delayed, region-level public trip snapshots as inspiration. No live people/location, DMs or comments in v1. Requires identity, deletion/export and moderation gates |
 | Context alerts (SPEC-29) | DONE (phase 1) | PR #25 squash-merged as `aedbc03`. OpenWeather evidence is matched to upcoming nodes, cached by identity and shown with provenance. Alerts never mutate or consume reroute quota. Synthetic transit is not user copy; cancel preserves position and locked cancel returns 409 before quota. Watcher/push phase not started |
 | Retention instrumentation (SPEC-30) | DONE | PR #32 (`f8349a8`) added `session_start` and the `trip_edge` observed-duration writer. PR #34 (`83c825f`) added durable node outcomes, active/past confirmation UI, outcome-aware targeting, and explicit cancel confirmation. Flutter CI and owner Windows full suite green |
-| Date-scoped itinerary and stay rescue (SPEC-31) | PARTIAL | Grouping under date headers is on main (PR #36, Windows Sep 4 6A). Stay-rescue selection (6C) was not device-tested. No `day_index`, timezone conversion, wire, schema, scheduler, or `trip_stay` change |
+| Date-scoped itinerary (SPEC-31) | DONE; RESCUE REMOVAL PENDING | Grouping under date headers is on main (PR #36, Windows Sep 4 6A). Test 6C is canceled because the owner retired the dedicated rescue shortcut. Remove its selection helpers and tests; keep date grouping and the hotel booking's driver-card action |
 | Real Laos trip creation (SPEC-32) | VERIFIED (one-city slice) | Sep 5 Windows run created a real catalog-backed Luang Prabang itinerary with no Dubai fallback. Multi-city Laos corridors remain outside this slice |
 
 Migration numbers are assigned when a spec is implemented, not when it is
@@ -142,10 +142,10 @@ SPEC-02 plus SPEC-12.
    locked nodes on timeline, scheduler hard conflict rules, on-device text
    extractor, AddBookingSheet, and booking_added signal in migration 0021
    (in repo, unapplied live).
-7. SPEC-04 October slice: <=2-tap rescue entry to hotel address card &
-   offline itinerary cache -- **DONE** PR #22 (`b7e10c3`). Offline itinerary
-   reads from SQLite cache_trip, hotel rescue sheet / direct driver card
-   navigation, pre-caching hotel place data.
+7. SPEC-04 October cache floor -- **DONE** PR #22 (`b7e10c3`). Offline
+   itinerary reads from SQLite cache_trip and pre-cached place data remain.
+   The same PR shipped a rescue shortcut that the owner retired Sep 5; its
+   code removal is next.
    Post-spine hardening merged in PR #23 (`dab16c0`): geoRegion threading
    to driver card (native script resolves; no fare is claimed), authHalted reset
    and UI status card, and robust hotel matching.
@@ -165,8 +165,8 @@ Seed-shaped cohorts.
 
 ### After the field-test spine (still important, not Oct-critical)
 
-8. SPEC-32 catalog-backed Laos create (this branch), then remaining stay-rescue
-   product cut and multi-night hotel UI.
+8. Remove the duplicate Hotel Rescue shortcut, then multi-night hotel UI.
+   Preserve offline cache fallback and the driver-card action on hotel bookings.
 9. Retire the dietary suitability claim (SPEC-14). Closes the
    halal-versus-pork hole by removing the claim.
 10. SPEC-17 trust and verification -- gates SPEC-18/19/20; behind the

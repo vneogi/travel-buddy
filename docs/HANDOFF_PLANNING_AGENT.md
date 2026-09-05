@@ -38,9 +38,10 @@ Done on the October spine:
 - SPEC-10 booking anchors. PR #20 (`f6328e9`). Immovable locked nodes,
   booking metadata on `trip_node` (migration 0021 in repo, unapplied live),
   on-device regex extractor, `AddBookingSheet`, `booking_added` signal.
-- SPEC-04 hotel rescue & offline cache. PR #22 (`b7e10c3`). <=2-tap hotel
-  rescue entry to `DriverCardScreen`, offline itinerary cache fallback in
-  `ItineraryController.load()`, pre-caching hotel place data.
+- SPEC-04 offline cache floor. PR #22 (`b7e10c3`). Offline itinerary cache
+  fallback in `ItineraryController.load()` and pre-cached place data remain.
+  Sep 5 owner decision retires the duplicate Hotel Rescue AppBar shortcut;
+  removal brief: `docs/briefs/GENIE_REMOVE_HOTEL_RESCUE.md`.
 - Post-spine hardening. PR #23 (`dab16c0`). `geoRegion` threaded from
   `TripNode` to `PlaceDriverCardData` (Lao script & LAK fares resolve live),
   `resetAuthHalted()` on `SyncEngine` + `SyncStatusScreen` `HALTED (401)` card,
@@ -109,7 +110,7 @@ Next tasks:
 1. Owner laptop verification for remaining unapplied migrations (0023; 0019-0022
    if not already applied), Anonymous E2E, and Chrome smoke.
 2. SPEC-32 catalog-backed Laos trip creation (this branch), then device-verify.
-3. Remaining stay-rescue product cut and multi-night hotel UI.
+3. Remove the dedicated Hotel Rescue shortcut, then finish multi-night hotel UI.
 4. Post-October consumer surface specs (SPEC-26 remainder, SPEC-25, SPEC-27).
 
 Do not start with another full-repo archaeology. The defects that
