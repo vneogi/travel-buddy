@@ -86,9 +86,9 @@ class TestSponsoredBoostDisclosure:
         unboosted = [r for r in body["results"] if not r["is_sponsored"]]
         assert len(unboosted) > 0, "test data must include organic venues"
         for item in unboosted:
-            assert (
-                item["sponsored_boost_applied"] is False
-            ), "non-sponsored venues must not have boost disclosure"
+            assert item["sponsored_boost_applied"] is False, (
+                "non-sponsored venues must not have boost disclosure"
+            )
 
 
 class TestSpec14NoSuitableFor:
