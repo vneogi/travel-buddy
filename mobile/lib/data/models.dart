@@ -257,11 +257,13 @@ class FeaturedTrip {
   final String geoRegion;
   final DateTime? startsAt;
   final DateTime? endsAt;
+  final bool isActive;
   final FeaturedStop? actionableStop;
 
   const FeaturedTrip({
     required this.tripId,
     required this.geoRegion,
+    this.isActive = false,
     this.startsAt,
     this.endsAt,
     this.actionableStop,
@@ -276,6 +278,7 @@ class FeaturedTrip {
         endsAt: json['ends_at'] == null
             ? null
             : DateTime.parse(json['ends_at'] as String),
+        isActive: json['is_active'] as bool? ?? false,
         actionableStop: json['actionable_stop'] == null
             ? null
             : FeaturedStop.fromJson(
@@ -287,6 +290,7 @@ class FeaturedTrip {
         'geo_region': geoRegion,
         'starts_at': startsAt?.toUtc().toIso8601String(),
         'ends_at': endsAt?.toUtc().toIso8601String(),
+        'is_active': isActive,
         'actionable_stop': actionableStop?.toJson(),
       };
 }

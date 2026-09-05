@@ -25,58 +25,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final home = ref.watch(homeSnapshotProvider);
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        child: home.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, _) => ErrorView(
+            error: error,
+            onRetry: () => ref.invalidate(homeSnapshotProvider),
+          ),
+          data: (snapshot) => ListView(
+            padding: const EdgeInsets.all(AppSpacing.lg),
             children: [
               const SizedBox(height: AppSpacing.lg),
               Text('Good morning', style: AppTypography.caption),
               const SizedBox(height: AppSpacing.xs),
               Text('Where to next?', style: AppTypography.display),
               const SizedBox(height: AppSpacing.xl),
-              home.maybeWhen(
-                data: (snapshot) => _CreateTripCard(
-                  creating: _creating,
-                  onTap: () => _createTrip(snapshot),
-                ),
-                orElse: () => const _CreateTripCard(
-                  creating: false,
-                  onTap: null,
-                ),
+              _CreateTripCard(
+                creating: _creating,
+                onTap: () => _createTrip(snapshot),
               ),
-              const SizedBox(height: AppSpacing.lg),
-              // SPEC-26: Featured trip card above trip list
-              home.maybeWhen(
-                data: (snapshot) => snapshot.featuredTrip != null
-                    ? _FeaturedTripCard(
-                        featured: snapshot.featuredTrip!,
-                        fromCache: snapshot.fromCache,
-                        cachedAt: snapshot.cachedAt,
-                      )
-                    : const SizedBox.shrink(),
-                orElse: () => const SizedBox.shrink(),
-              ),
+              if (snapshot.featuredTrip != null) ...[
+                const SizedBox(height: AppSpacing.lg),
+                _FeaturedTripCard(
+                  featured: snapshot.featuredTrip!,
+                  fromCache: snapshot.fromCache,
+                  cachedAt: snapshot.cachedAt,
+                ),
+              ],
               const SizedBox(height: AppSpacing.lg),
               Text('Your trips', style: AppTypography.h2),
               const SizedBox(height: AppSpacing.base),
-              Expanded(
-                child: home.when(
-                  loading: () =>
-                      const Center(child: CircularProgressIndicator()),
-                  error: (error, _) => ErrorView(
-                    error: error,
-                    onRetry: () => ref.invalidate(homeSnapshotProvider),
-                  ),
-                  data: (snapshot) => Column(
-                    children: [
-                      if (snapshot.fromCache)
-                        _OfflineHomeNotice(cachedAt: snapshot.cachedAt),
-                      Expanded(child: _TripList(trips: snapshot.trips)),
-                    ],
-                  ),
-                ),
-              ),
+              if (snapshot.fromCache)
+                _OfflineHomeNotice(cachedAt: snapshot.cachedAt),
+              _TripList(trips: snapshot.trips),
             ],
           ),
         ),
@@ -268,7 +248,7 @@ class _FeaturedTripCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final stop = featured.actionableStop;
-    final isActive = stop != null && stop.status == 'active';
+    final isActive = featured.isActive;
     final label = isActive ? 'Now' : 'Up next';
     final region = _displayRegion(featured.geoRegion);
 
@@ -353,6 +333,8 @@ class _TripList extends StatelessWidget {
       );
     }
     return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       itemCount: trips.length,
       separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
       itemBuilder: (context, index) {

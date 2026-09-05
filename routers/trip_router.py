@@ -165,68 +165,75 @@ def _summarize_trip(trip: TripState) -> TripSummary:
     )
 
 
-def _featured_trip(trips: list) -> "FeaturedTrip | None":
-    """Pick the featured trip: active trip wins, else earliest upcoming.
+def _as_utc(value: datetime) -> datetime:
+    """Normalize API datetimes for ordering without changing the wire value."""
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
 
-    An active trip has at least one ACTIVE node.
-    An upcoming trip has starts_at in the future.
-    The actionable stop is the first non-skipped, non-elapsed node
-    (status ACTIVE or PENDING with scheduled_start in the future).
+
+def _featured_trip(trips: list[TripState], *, now: datetime | None = None) -> FeaturedTrip | None:
+    """Pick the current trip, or the earliest upcoming trip.
+
+    The server does not continuously stamp ``NodeStatus.ACTIVE``. Time windows,
+    not that enum value, therefore determine whether a trip or stop is current.
     """
-    now = datetime.now(tz=timezone.utc)
-    active = None
-    earliest_upcoming = None
-
+    current_time = _as_utc(now or datetime.now(tz=timezone.utc))
+    candidates = []
     for trip in trips:
-        has_active_node = any(n.status == NodeStatus.ACTIVE for n in trip.nodes)
         summary = _summarize_trip(trip)
+        actionable = sorted(
+            (
+                node
+                for node in trip.nodes
+                if node.status not in {NodeStatus.SKIPPED, NodeStatus.COMPLETED}
+                and _as_utc(node.scheduled_start + timedelta(minutes=node.duration_minutes))
+                > current_time
+            ),
+            key=lambda node: _as_utc(node.scheduled_start),
+        )
+        if actionable:
+            candidates.append((trip, summary, actionable))
 
-        if has_active_node:
-            active = (trip, summary)
-            break  # active wins immediately
-
-        if summary.starts_at and summary.starts_at > now:
-            if earliest_upcoming is None or summary.starts_at < earliest_upcoming[1].starts_at:
-                earliest_upcoming = (trip, summary)
-
-    chosen = active or earliest_upcoming
+    active = [
+        candidate
+        for candidate in candidates
+        if candidate[1].starts_at is not None
+        and candidate[1].ends_at is not None
+        and _as_utc(candidate[1].starts_at) <= current_time < _as_utc(candidate[1].ends_at)
+    ]
+    upcoming = [
+        candidate
+        for candidate in candidates
+        if candidate[1].starts_at is not None and _as_utc(candidate[1].starts_at) > current_time
+    ]
+    chosen = (
+        max(active, key=lambda candidate: _as_utc(candidate[1].starts_at))
+        if active
+        else min(upcoming, key=lambda candidate: _as_utc(candidate[1].starts_at))
+        if upcoming
+        else None
+    )
     if chosen is None:
         return None
 
-    trip_obj, summary = chosen
-
-    # Find actionable stop: skip SKIPPED and elapsed nodes
-    stop = None
-    for node in trip_obj.nodes:
-        if node.status == NodeStatus.SKIPPED:
-            continue
-        if node.status == NodeStatus.COMPLETED:
-            continue
-        # ACTIVE node is always actionable
-        if node.status == NodeStatus.ACTIVE:
-            stop = node
-            break
-        # PENDING: only if not elapsed
-        node_end = node.scheduled_start + timedelta(minutes=node.duration_minutes)
-        if node_end > now:
-            stop = node
-            break
-
-    featured_stop = None
-    if stop is not None:
-        featured_stop = FeaturedStop(
-            node_id=stop.node_id,
-            venue_id=stop.venue_id,
-            venue_name=stop.venue_name,
-            scheduled_start=stop.scheduled_start,
-            status=stop.status,
-        )
+    trip_obj, summary, actionable = chosen
+    is_active = chosen in active
+    stop = actionable[0]
+    featured_stop = FeaturedStop(
+        node_id=stop.node_id,
+        venue_id=stop.venue_id,
+        venue_name=stop.venue_name,
+        scheduled_start=stop.scheduled_start,
+        status=stop.status,
+    )
 
     return FeaturedTrip(
         trip_id=trip_obj.trip_id,
         geo_region=trip_obj.geo_region,
         starts_at=summary.starts_at,
         ends_at=summary.ends_at,
+        is_active=is_active,
         actionable_stop=featured_stop,
     )
 

@@ -1,8 +1,20 @@
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 
+import 'package:travel_buddy/core/api_exception.dart';
+import 'package:travel_buddy/core/providers.dart';
 import 'package:travel_buddy/data/models.dart';
+import 'package:travel_buddy/data/repositories.dart';
+import 'package:travel_buddy/features/home/home_screen.dart';
+import 'package:travel_buddy/offline/offline_database.dart';
+
+class _MockTripRepository extends Mock implements TripRepository {}
+
+class _MockOfflineDatabase extends Mock implements OfflineDatabase {}
 
 /// SPEC-26: HomeSnapshot model + featured trip rendering contract.
 ///
@@ -87,6 +99,7 @@ void main() {
       final original = FeaturedTrip(
         tripId: 't3',
         geoRegion: 'dubai_uae',
+        isActive: true,
         startsAt: DateTime.utc(2026, 10, 5),
         endsAt: DateTime.utc(2026, 10, 7),
         actionableStop: FeaturedStop(
@@ -98,6 +111,7 @@ void main() {
       );
       final rt = FeaturedTrip.fromJson(original.toJson());
       expect(rt.tripId, original.tripId);
+      expect(rt.isActive, isTrue);
       expect(rt.actionableStop!.nodeId, 'n3');
     });
   });
@@ -120,6 +134,7 @@ void main() {
         'featured_trip': {
           'trip_id': 't1',
           'geo_region': 'dubai_uae',
+          'is_active': true,
           'starts_at': '2026-10-05T08:00:00Z',
           'ends_at': '2026-10-07T22:00:00Z',
           'actionable_stop': {
@@ -135,6 +150,7 @@ void main() {
       expect(snap.trips, hasLength(1));
       expect(snap.featuredTrip, isNotNull);
       expect(snap.featuredTrip!.tripId, 't1');
+      expect(snap.featuredTrip!.isActive, isTrue);
       expect(snap.featuredTrip!.actionableStop!.venueName, 'Gold Souk');
       expect(snap.featuredTrip!.actionableStop!.status, 'active');
     });
@@ -265,8 +281,8 @@ void main() {
         geoRegion: 'dubai_uae',
       );
       final json = ft.toJson();
-      expect(json, isNot(contains('state_json')));
-      expect(json, isNot(contains('nodes')));
+      expect(json.containsKey('state_json'), isFalse);
+      expect(json.containsKey('nodes'), isFalse);
     });
 
     test('HomeSnapshot JSON has no state_json', () {
@@ -275,7 +291,107 @@ void main() {
         trips: [],
       );
       final json = snap.toJson();
-      expect(json, isNot(contains('state_json')));
+      expect(json.containsKey('state_json'), isFalse);
+    });
+  });
+
+  group('Home widget request contract', () {
+    testWidgets('renders featured card from one repository response',
+        (tester) async {
+      final repository = _MockTripRepository();
+      final database = _MockOfflineDatabase();
+      final snapshot = HomeSnapshot(
+        supportedRegions: const ['dubai_uae'],
+        trips: [
+          TripSummary(
+            tripId: 'trip-1',
+            geoRegion: 'dubai_uae',
+            nodeCount: 1,
+            bookingCount: 0,
+            updatedAt: DateTime.utc(2026, 10, 4),
+          ),
+        ],
+        featuredTrip: FeaturedTrip(
+          tripId: 'trip-1',
+          geoRegion: 'dubai_uae',
+          isActive: true,
+          actionableStop: FeaturedStop(
+            nodeId: 'node-1',
+            venueName: 'Gold Souk',
+            scheduledStart: DateTime.utc(2026, 10, 5, 9),
+            status: 'pending',
+          ),
+        ),
+      );
+      when(() => repository.getHomeSnapshot()).thenAnswer((_) async => snapshot);
+      when(() => database.cacheTripList(any(), any()))
+          .thenAnswer((_) async {});
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            tripRepoProvider.overrideWithValue(repository),
+            offlineDatabaseProvider.overrideWithValue(database),
+            identityCacheScopeProvider.overrideWithValue('anonymous:device-a'),
+          ],
+          child: const MaterialApp(home: HomeScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Now'), findsOneWidget);
+      expect(find.text('Gold Souk'), findsOneWidget);
+      verify(() => repository.getHomeSnapshot()).called(1);
+      verifyNever(() => repository.getTrip(any()));
+    });
+
+    testWidgets('network failure renders cached featured card and cache age',
+        (tester) async {
+      final repository = _MockTripRepository();
+      final database = _MockOfflineDatabase();
+      final cachedAt = DateTime.now().toUtc().subtract(const Duration(hours: 2));
+      final cachedJson = jsonEncode(
+        HomeSnapshot(
+          supportedRegions: const ['luang_prabang_laos'],
+          trips: const [],
+          featuredTrip: FeaturedTrip(
+            tripId: 'trip-laos',
+            geoRegion: 'luang_prabang_laos',
+            actionableStop: FeaturedStop(
+              nodeId: 'node-market',
+              venueName: 'Night Market',
+              scheduledStart: DateTime.utc(2026, 10, 5, 19),
+              status: 'pending',
+            ),
+          ),
+        ).toJson(),
+      );
+      when(() => repository.getHomeSnapshot())
+          .thenThrow(const NetworkException());
+      when(() => database.getCachedTripList('anonymous:device-a')).thenAnswer(
+        (_) async => (json: cachedJson, cachedAt: cachedAt),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            tripRepoProvider.overrideWithValue(repository),
+            offlineDatabaseProvider.overrideWithValue(database),
+            identityCacheScopeProvider.overrideWithValue('anonymous:device-a'),
+          ],
+          child: const MaterialApp(home: HomeScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Night Market'), findsOneWidget);
+      expect(find.text('Cached 2h ago'), findsOneWidget);
+      expect(
+        find.textContaining('Showing saved trips while offline'),
+        findsOneWidget,
+      );
+      verify(() => repository.getHomeSnapshot()).called(1);
+      verifyNever(() => repository.getTrip(any()));
     });
   });
 }

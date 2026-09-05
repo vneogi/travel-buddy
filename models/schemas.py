@@ -152,6 +152,7 @@ class FeaturedTrip(BaseModel):
     geo_region: str
     starts_at: Optional[datetime] = None
     ends_at: Optional[datetime] = None
+    is_active: bool
     actionable_stop: Optional[FeaturedStop] = None
 
 

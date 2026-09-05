@@ -10,6 +10,8 @@ Tests:
 
 from datetime import datetime, timedelta, timezone
 
+from models.schemas import NodeStatus, TripNode, TripState
+from services.db_provider import db_service
 from tests.conftest import auth
 
 
@@ -23,6 +25,34 @@ def _create_trip(client, user, region="dubai_uae", days_ahead=1):
     )
     assert r.status_code == 200, r.text
     return r.json()["trip_id"]
+
+
+def _save_trip(user: str, trip_id: str, nodes: list[TripNode]) -> None:
+    db_service.save_trip(
+        TripState(
+            trip_id=trip_id,
+            user_id=user,
+            geo_region="dubai_uae",
+            nodes=nodes,
+        )
+    )
+
+
+def _node(
+    node_id: str,
+    start: datetime,
+    *,
+    duration: int = 60,
+    status: NodeStatus = NodeStatus.PENDING,
+) -> TripNode:
+    return TripNode(
+        node_id=node_id,
+        venue_id=f"venue-{node_id}",
+        venue_name=f"Venue {node_id}",
+        scheduled_start=start,
+        duration_minutes=duration,
+        status=status,
+    )
 
 
 class TestTwoIdentitiesNoLeak:
@@ -81,48 +111,38 @@ class TestFeaturedTripSelection:
     """Active trip wins; earliest upcoming is the fallback."""
 
     def test_active_wins_over_upcoming(self, client):
-        """An active trip (with an ACTIVE node) is featured over upcoming."""
+        """Time windows identify an active trip without an ACTIVE status."""
         user = "featured-user"
-
-        # Create an upcoming trip (starts tomorrow)
-        _create_trip(client, user, days_ahead=3)  # upcoming trip
-
-        # Create an active trip (starts now, with an ACTIVE node)
-        active_id = _create_trip(client, user, days_ahead=0)
-
-        # Make one node active via a swap event (which triggers node processing)
-        # Instead, directly set a node active via the trip/event endpoint
-        client.post(
-            "/api/v1/trip/event",
-            json={
-                "trip_id": active_id,
-                "event_type": "ask_info",
-                "message": "What should I do now?",
-            },
-            headers=auth(user),
+        now = datetime.now(tz=timezone.utc)
+        _save_trip(
+            user,
+            "upcoming-trip",
+            [_node("upcoming", now + timedelta(days=2))],
+        )
+        _save_trip(
+            user,
+            "active-trip",
+            [_node("current", now - timedelta(minutes=15), duration=60)],
         )
 
-        # Get home snapshot
         home = client.get("/api/v1/trips", headers=auth(user))
-        body = home.json()
-
-        ft = body.get("featured_trip")
-        assert ft is not None, "Expected a featured_trip"
-        # Both trips exist; featured should be one of them
-        trip_ids = {t["trip_id"] for t in body["trips"]}
-        assert ft["trip_id"] in trip_ids
+        featured = home.json()["featured_trip"]
+        assert featured["trip_id"] == "active-trip"
+        assert featured["is_active"] is True
+        assert featured["actionable_stop"]["node_id"] == "current"
+        assert featured["actionable_stop"]["status"] == "pending"
 
     def test_earliest_upcoming_when_no_active(self, client):
         """Without an active trip, the earliest upcoming is featured."""
         user = "upcoming-user"
-
-        _create_trip(client, user, days_ahead=10)  # later trip
-        earlier_id = _create_trip(client, user, days_ahead=2)
+        now = datetime.now(tz=timezone.utc)
+        _save_trip(user, "later-trip", [_node("later", now + timedelta(days=10))])
+        _save_trip(user, "earlier-trip", [_node("earlier", now + timedelta(days=2))])
 
         home = client.get("/api/v1/trips", headers=auth(user))
-        ft = home.json().get("featured_trip")
-        assert ft is not None
-        assert ft["trip_id"] == earlier_id
+        featured = home.json()["featured_trip"]
+        assert featured["trip_id"] == "earlier-trip"
+        assert featured["is_active"] is False
 
     def test_no_trips_no_featured(self, client):
         """A user with no trips gets null featured_trip, not an error."""
@@ -133,36 +153,84 @@ class TestFeaturedTripSelection:
         # Supported regions still present
         assert isinstance(body["supported_regions"], list)
 
+    def test_naive_client_datetime_does_not_crash_home(self, client):
+        """Flutter-selected local dates arrive without a timezone suffix."""
+        naive_start = datetime.now() + timedelta(days=1)
+        _save_trip("naive-user", "naive-trip", [_node("naive", naive_start)])
+
+        home = client.get("/api/v1/trips", headers=auth("naive-user"))
+
+        assert home.status_code == 200
+        assert home.json()["featured_trip"]["trip_id"] == "naive-trip"
+
+    def test_trip_without_actionable_nodes_is_not_featured(self, client):
+        now = datetime.now(tz=timezone.utc)
+        _save_trip(
+            "done-user",
+            "done-trip",
+            [
+                _node(
+                    "done",
+                    now + timedelta(hours=1),
+                    status=NodeStatus.COMPLETED,
+                )
+            ],
+        )
+
+        home = client.get("/api/v1/trips", headers=auth("done-user"))
+
+        assert home.status_code == 200
+        assert home.json()["featured_trip"] is None
+
 
 class TestNodeSelection:
     """Actionable stop ignores skipped and elapsed nodes."""
 
     def test_actionable_stop_present(self, client):
-        """A newly created trip has nodes; the first pending one is actionable."""
+        """A newly created trip exposes a concrete actionable stop."""
         user = "stop-user"
         _create_trip(client, user, days_ahead=1)
 
         home = client.get("/api/v1/trips", headers=auth(user))
-        ft = home.json().get("featured_trip")
-        if ft and ft.get("actionable_stop"):
-            stop = ft["actionable_stop"]
-            assert "node_id" in stop
-            assert "venue_name" in stop
-            assert "scheduled_start" in stop
-            assert "status" in stop
-            # Must not contain full node fields like duration_minutes
-            assert "duration_minutes" not in stop
-            assert "vibe_tags" not in stop
+        stop = home.json()["featured_trip"]["actionable_stop"]
+        assert stop is not None
+        assert "node_id" in stop
+        assert "venue_name" in stop
+        assert "scheduled_start" in stop
+        assert "status" in stop
+        assert "duration_minutes" not in stop
+        assert "vibe_tags" not in stop
 
     def test_featured_stop_skips_completed_and_skipped(self, client):
-        """The actionable stop should not be a skipped or completed node."""
+        """Skipped, completed and elapsed nodes cannot mask the next stop."""
         user = "skip-user"
-        _create_trip(client, user, days_ahead=1)
+        now = datetime.now(tz=timezone.utc)
+        _save_trip(
+            user,
+            "mixed-trip",
+            [
+                _node(
+                    "elapsed",
+                    now - timedelta(hours=3),
+                    status=NodeStatus.PENDING,
+                ),
+                _node(
+                    "skipped",
+                    now + timedelta(minutes=10),
+                    status=NodeStatus.SKIPPED,
+                ),
+                _node(
+                    "completed",
+                    now + timedelta(minutes=20),
+                    status=NodeStatus.COMPLETED,
+                ),
+                _node("next", now + timedelta(minutes=30)),
+            ],
+        )
 
         home = client.get("/api/v1/trips", headers=auth(user))
-        ft = home.json().get("featured_trip")
-        if ft and ft.get("actionable_stop"):
-            assert ft["actionable_stop"]["status"] not in ("skipped", "completed")
+        stop = home.json()["featured_trip"]["actionable_stop"]
+        assert stop["node_id"] == "next"
 
 
 class TestExistingCreateListGreen:
