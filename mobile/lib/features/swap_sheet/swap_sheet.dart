@@ -1,14 +1,96 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/providers.dart';
+import '../../data/models.dart';
+import '../../data/region_defaults.dart';
 import '../../theme/colors.dart';
 import '../../theme/typography.dart';
 import '../../theme/spacing.dart';
 import '../../widgets/shimmer_card.dart';
 
-/// Bottom sheet with RAG venue suggestions for swapping an activity.
-class SwapSheet extends StatelessWidget {
+/// SPEC-07: Bottom sheet with RAG venue suggestions for swapping an activity.
+///
+/// Returns [VenueSearchResult] when a venue is confirmed, or null when the
+/// sheet is dismissed (drag-down, back, Cancel). The caller inspects the
+/// result to decide whether to send swap_activity + reroute_accepted (non-null)
+/// or reroute_rejected (null).
+///
+/// [offeredVenueIds] is populated once venues load, so the caller can read
+/// it from the key after the sheet closes.
+class SwapSheet extends ConsumerStatefulWidget {
   final String tripId;
   final String targetNodeId;
-  const SwapSheet({super.key, required this.tripId, required this.targetNodeId});
+  final TripState tripState;
+
+  /// Populated by initState after venue search completes. Read by the
+  /// caller for the reroute_rejected payload.
+  final List<String> offeredVenueIds = [];
+
+  SwapSheet({
+    super.key,
+    required this.tripId,
+    required this.targetNodeId,
+    required this.tripState,
+  });
+
+  @override
+  ConsumerState<SwapSheet> createState() => SwapSheetState();
+}
+
+class SwapSheetState extends ConsumerState<SwapSheet> {
+  List<VenueSearchResult>? _venues;
+  String? _error;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVenues();
+  }
+
+  Future<void> _loadVenues() async {
+    try {
+      final coords = _resolveCoords();
+      if (coords == null) {
+        setState(() {
+          _error = 'Could not determine your location for this trip.';
+          _loading = false;
+        });
+        return;
+      }
+      final results = await ref.read(tripRepoProvider).searchVenues(
+            query: 'nearby activity',
+            lat: coords.lat,
+            lng: coords.lng,
+          );
+      if (!mounted) return;
+      setState(() {
+        _venues = results;
+        _loading = false;
+      });
+      widget.offeredVenueIds
+        ..clear()
+        ..addAll(results.map((v) => v.venueId));
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Could not load suggestions. Check your connection.';
+        _loading = false;
+      });
+    }
+  }
+
+  ({double lat, double lng})? _resolveCoords() {
+    final ts = widget.tripState;
+    if (ts.locationLat != null && ts.locationLng != null) {
+      final isDubaiDefault =
+          ts.locationLat == 25.1972 && ts.locationLng == 55.2744;
+      if (!isDubaiDefault || ts.geoRegion == 'dubai_uae') {
+        return (lat: ts.locationLat!, lng: ts.locationLng!);
+      }
+    }
+    return RegionDefaults.coordsFor(ts.geoRegion);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +110,8 @@ class SwapSheet extends StatelessWidget {
             // Drag handle
             Container(
               margin: const EdgeInsets.only(top: AppSpacing.md),
-              width: 40, height: 4,
+              width: 40,
+              height: 4,
               decoration: BoxDecoration(
                 color: AppColors.divider,
                 borderRadius: BorderRadius.circular(2),
@@ -36,28 +119,115 @@ class SwapSheet extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.all(AppSpacing.lg),
-              child: Text('Swap to...', style: AppTypography.h2),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text('Swap to...', style: AppTypography.h2),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Cancel'),
+                  ),
+                ],
+              ),
             ),
-            // Vibe filter chips
+            // Vibe filter chips (visual-only in this slice)
             SizedBox(
               height: 36,
               child: ListView(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
-                children: ['premium', 'cultural', 'outdoor', 'family', 'nightlife']
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.base,
+                ),
+                children: [
+                  'premium',
+                  'cultural',
+                  'outdoor',
+                  'family',
+                  'nightlife',
+                ]
                     .map((v) => Padding(
-                          padding: const EdgeInsets.only(right: AppSpacing.sm),
-                          child: FilterChip(label: Text(v), onSelected: (_) {}),
+                          padding:
+                              const EdgeInsets.only(right: AppSpacing.sm),
+                          child:
+                              FilterChip(label: Text(v), onSelected: (_) {}),
                         ))
                     .toList(),
               ),
             ),
             const SizedBox(height: AppSpacing.base),
-            // Suggestions (placeholder - will wire to venues/search)
-            const Expanded(child: ShimmerList(count: 3)),
+            Expanded(child: _buildContent(scrollController)),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildContent(ScrollController scrollController) {
+    if (_loading) {
+      return const ShimmerList(count: 3);
+    }
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Text(
+            _error!,
+            style: AppTypography.body.copyWith(color: AppColors.muted),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+    final venues = _venues ?? [];
+    if (venues.isEmpty) {
+      return Center(
+        child: Text(
+          'No alternative venues found nearby.',
+          style: AppTypography.body.copyWith(color: AppColors.muted),
+        ),
+      );
+    }
+    return ListView.separated(
+      controller: scrollController,
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
+      itemCount: venues.length,
+      separatorBuilder: (_, __) => const Divider(height: 1),
+      itemBuilder: (_, i) {
+        final v = venues[i];
+        return ListTile(
+          title: Text(v.name, style: AppTypography.body),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                v.microLocation,
+                style: AppTypography.caption.copyWith(color: AppColors.muted),
+              ),
+              if (v.vibeTags.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: AppSpacing.xs),
+                  child: Wrap(
+                    spacing: AppSpacing.xs,
+                    children: v.vibeTags
+                        .take(3)
+                        .map((t) => Chip(
+                              label: Text(t,
+                                  style: AppTypography.caption
+                                      .copyWith(fontSize: 11)),
+                              materialTapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
+                              visualDensity: VisualDensity.compact,
+                            ))
+                        .toList(),
+                  ),
+                ),
+            ],
+          ),
+          trailing: const Icon(Icons.swap_horiz, color: AppColors.primary),
+          onTap: () => Navigator.of(context).pop(v),
+        );
+      },
     );
   }
 }

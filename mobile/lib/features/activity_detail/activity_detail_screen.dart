@@ -4,9 +4,17 @@ import '../../theme/colors.dart';
 import '../../theme/typography.dart';
 import '../../theme/spacing.dart';
 
+/// SPEC-07: Activity detail with Swap and Cancel wired to callbacks.
 class ActivityDetailScreen extends StatelessWidget {
   final TripNode node;
-  const ActivityDetailScreen({super.key, required this.node});
+  final VoidCallback? onSwap;
+  final VoidCallback? onCancel;
+  const ActivityDetailScreen({
+    super.key,
+    required this.node,
+    this.onSwap,
+    this.onCancel,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -44,18 +52,14 @@ class ActivityDetailScreen extends StatelessWidget {
                 children: [
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () {
-                        // TODO: open swap sheet
-                      },
+                      onPressed: onSwap,
                       child: const Text('Swap'),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: () {
-                        // TODO: cancel via sendEvent
-                      },
+                      onPressed: onCancel,
                       child: const Text('Cancel'),
                     ),
                   ),
