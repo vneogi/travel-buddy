@@ -5,6 +5,7 @@ import 'package:travel_buddy/core/api_client.dart';
 import 'package:travel_buddy/data/models.dart';
 import 'package:travel_buddy/data/region_defaults.dart';
 import 'package:travel_buddy/data/repositories.dart';
+import 'package:travel_buddy/features/itinerary/itinerary_screen.dart';
 import 'package:travel_buddy/features/itinerary/replacement_ref.dart';
 import 'package:travel_buddy/features/swap_sheet/swap_search_coords.dart';
 
@@ -77,6 +78,26 @@ void main() {
     test('dismiss with empty venue list sends empty rejected_refs', () {
       final dismissed = <String>[];
       expect(dismissed, isEmpty);
+    });
+
+    test('confirmed swap sends the tapped stable venue ID', () {
+      final original = _node(
+        nodeId: 'n1',
+        venueName: 'Morning Market',
+        venueId: 'current-id',
+      );
+      const replacement = VenueSearchResult(
+        venueId: 'tapped-id',
+        name: 'Night Market',
+        description: 'Lively',
+        microLocation: 'Sisavangvong Rd',
+        vibeTags: ['nightlife'],
+      );
+
+      final preferences = preferencesForConfirmedSwap(original, replacement);
+
+      expect(preferences['replacement_venue_id'], 'tapped-id');
+      expect(preferences['vibe_tags'], original.vibeTags);
     });
   });
 

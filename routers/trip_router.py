@@ -322,6 +322,56 @@ async def process_trip_event(
                 },
             )
 
+    if request.event_type == EventType.SWAP_ACTIVITY:
+        target = next(
+            (n for n in trip.nodes if n.node_id == request.target_node_id),
+            None,
+        )
+        if target is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={
+                    "error": "target_not_found",
+                    "message": "The activity to swap is no longer in this trip.",
+                },
+            )
+        if target.is_locked:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={
+                    "error": "locked_swap_refused",
+                    "message": "Locked bookings cannot be swapped.",
+                },
+            )
+        replacement_id = (request.preferences or {}).get("replacement_venue_id")
+        if replacement_id and replacement_id == target.venue_id:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={
+                    "error": "same_venue",
+                    "message": "Choose a different venue for this swap.",
+                },
+            )
+        if replacement_id:
+            replacement = db_service.get_venue_by_id(replacement_id)
+            target_region = target.geo_region or trip.geo_region
+            if replacement is None:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail={
+                        "error": "replacement_not_found",
+                        "message": "That replacement venue is no longer available.",
+                    },
+                )
+            if replacement.geo_region and target_region and replacement.geo_region != target_region:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail={
+                        "error": "replacement_wrong_region",
+                        "message": "Choose a replacement in the same city.",
+                    },
+                )
+
     # --- LEVER 1: Reroute Throttle (keyed on the authenticated user) ---
     structural_events = {
         EventType.CANCEL_ACTIVITY,
@@ -482,7 +532,10 @@ async def search_venues(
     flat_results = []
     for r in results:
         v = r.venue
-        boost_applied = v.is_sponsored and v.bid_weight > 0 and r.final_score > r.similarity_score
+        # Supabase's RPC exposes the pre/post-boost scores but not the private
+        # bid. A positive score delta is therefore the cross-backend source of
+        # truth that paid placement influenced this result.
+        boost_applied = r.final_score > r.similarity_score
         flat_results.append(
             {
                 "venue_id": v.venue_id,
@@ -491,7 +544,7 @@ async def search_venues(
                 "micro_location": v.micro_location,
                 "vibe_tags": v.vibe_tags,
                 "distance_km": None,
-                "is_sponsored": v.is_sponsored,
+                "is_sponsored": v.is_sponsored or boost_applied,
                 "sponsored_boost_applied": boost_applied,
             }
         )
