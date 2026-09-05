@@ -6,7 +6,7 @@ import 'package:travel_buddy/data/models.dart';
 import 'package:travel_buddy/data/region_defaults.dart';
 import 'package:travel_buddy/data/repositories.dart';
 import 'package:travel_buddy/features/itinerary/replacement_ref.dart';
-import 'package:travel_buddy/features/swap_sheet/swap_sheet.dart';
+import 'package:travel_buddy/features/swap_sheet/swap_search_coords.dart';
 
 class MockApiClient extends Mock implements ApiClient {}
 
@@ -250,8 +250,8 @@ void main() {
     test('accepted signal has replacement_ref, no rejected_refs', () {
       const replacementRef = 'v_new';
       final payload = {'replacement_ref': replacementRef};
-      expect(payload, contains('replacement_ref'));
-      expect(payload, isNot(contains('rejected_refs')));
+      expect(payload.containsKey('replacement_ref'), isTrue);
+      expect(payload.containsKey('rejected_refs'), isFalse);
     });
 
     test('rejected signal has rejected_refs matching offered venues', () {

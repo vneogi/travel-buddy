@@ -70,7 +70,7 @@ class ActivityDetailScreen extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.lock, size: 16, color: AppColors.accent),
+                    const Icon(Icons.lock, size: 16, color: AppColors.accent),
                     const SizedBox(width: AppSpacing.sm),
                     Text('Locked reservation', style: AppTypography.label),
                   ],

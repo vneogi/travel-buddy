@@ -2,24 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers.dart';
 import '../../data/models.dart';
-import '../../data/region_defaults.dart';
 import '../../theme/colors.dart';
 import '../../theme/typography.dart';
 import '../../theme/spacing.dart';
 import '../../widgets/shimmer_card.dart';
+import 'swap_search_coords.dart';
 
-/// Resolve lat/lng for swap venue search from the trip, never silently
-/// substituting Dubai for a non-Dubai region.
-({double lat, double lng})? resolveSwapSearchCoords(TripState ts) {
-  if (ts.locationLat != null && ts.locationLng != null) {
-    final isDubaiDefault =
-        ts.locationLat == 25.1972 && ts.locationLng == 55.2744;
-    if (!isDubaiDefault || ts.geoRegion == 'dubai_uae') {
-      return (lat: ts.locationLat!, lng: ts.locationLng!);
-    }
-  }
-  return RegionDefaults.coordsFor(ts.geoRegion);
-}
+export 'swap_search_coords.dart';
 
 /// SPEC-07: Bottom sheet with RAG venue suggestions for swapping an activity.
 ///
