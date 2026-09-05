@@ -33,8 +33,11 @@ Also **rejected** from the source doc:
 Implements **capability #7 (calm in the unexpected)**. Full spec: `docs/specs/SPEC-04-offline-vault.md`.
 The one genuine *gap* the source doc exposed: our specs covered offline **data sync** thoroughly but
 never asked "what does the user need to **do** when stranded?"
-The thin hotel rescue entry exists, but it still chooses the first hotel-like
-node rather than the current or next date-appropriate stay.
+The thin Hotel Rescue shortcut was tried and rejected by the owner on Sep 4:
+it duplicated the driver-card action already available on the hotel booking.
+Remove the shortcut; retain offline itinerary/place caching and the hotel
+booking's driver card. A future full Vault needs fresh user evidence before it
+earns a global entry point.
 
 ### P1 — Map-first split shell (hero screen IA)
 Spatial context always visible, timeline a thumb-drag away.

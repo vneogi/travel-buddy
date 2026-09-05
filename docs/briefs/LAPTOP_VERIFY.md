@@ -37,7 +37,7 @@ Prove, on the Windows machine, in this order:
    - 8g: SPEC-12 Driver Card: native script, landmark, coordinates, no fare
      claim, no screenshot instruction, one-tap confirm
    - 8h: SPEC-10 Booking Anchors: `+ Add Booking` in AppBar, paste auto-fill, locked booking card with icon & badge
-   - 8i: SPEC-04 Hotel Rescue: Shield icon in AppBar opens Hotel Driver Card or calm empty state
+   - 8i: SPEC-04 rescue removal: no Shield icon; hotel booking keeps Driver Card action
    - 8j: Offline Itinerary Cache: load trip, stop API, reload screen -> renders cached itinerary with `"Offline: showing saved itinerary"` banner
 
 Stop and write the failure down if a step fails. Do not "fix forward" past a hard stop.
@@ -81,7 +81,7 @@ Step 8e Visited / NOW visible on node in current window:
 Step 8f Chat empty-state text:
 Step 8g Driver Card: native script + coordinates; no fare; Maps pass/fail:
 Step 8h Booking Anchors: Add Booking sheet auto-fills, card shows locked badge? yes/no
-Step 8i Hotel Rescue: Shield icon opens hotel card or rescue sheet? yes/no
+Step 8i Rescue removal: Shield absent and hotel Driver Card action present? yes/no
 Step 8j Offline Cache: stopping API renders cached itinerary with offline banner? yes/no
 
 Unexpected skips:
@@ -305,18 +305,7 @@ cd ..
 git checkout -- mobile/lib/features/driver_card/driver_card_helpers.dart
 ```
 
-### 5e hotel rescue node matcher
-File: `mobile/lib/features/rescue/hotel_rescue_sheet.dart`
-In `findHotelNode`, change `return true;` to `return false;`.
-```powershell
-cd mobile
-flutter test --name "identifies hotel booking with non-generic name"
-# Expect FAIL
-cd ..
-git checkout -- mobile/lib/features/rescue/hotel_rescue_sheet.dart
-```
-
-### 5f offline itinerary cache fallback
+### 5e offline itinerary cache fallback
 File: `mobile/lib/features/itinerary/itinerary_notifier.dart`
 In `load()`, comment out the `getCachedTrip` catch block.
 ```powershell
@@ -439,10 +428,10 @@ In itinerary AppBar, tap `+ Add Booking` icon (`bookmark_add_outlined`):
 - Tap `Auto-fill from paste` -> Type and PNR populate automatically.
 - Tap `Save Anchor` -> locked card appears on timeline with lock icon and `[BOOKING: FLIGHT]` badge.
 
-### 8i SPEC-04 Hotel Rescue
-In itinerary AppBar, tap the Shield icon (`shield_outlined`):
-- If a hotel is in the itinerary: directly opens hotel driver card in 1 tap.
-- If no hotel is saved: opens calm `HotelRescueSheet` with `"+ Add Hotel Booking"` button.
+### 8i SPEC-04 rescue removal
+- Confirm the itinerary AppBar has no Shield / Hotel Rescue action.
+- On a hotel booking card, tap the driver-card action and confirm the cached
+  hotel card still opens.
 
 ### 8j Offline itinerary caching
 With the trip loaded on Windows or Android:

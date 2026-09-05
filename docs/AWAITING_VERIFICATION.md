@@ -28,7 +28,7 @@ Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 | Migration 0023 driver_card_search_fields | in repo, unapplied | Apply via Supabase SQL editor; updates hybrid_venue_search to return geo/localized driver-card fields and accept filter_geo_region |
 | Migration 0024 session_start | applied hosted Aug 30-31 (owner SQL editor) | Required before live ingest accepts the type. After apply: session_start accepted=1 |
 | PowerShell scripts | Aug 9 | `.\scripts\smoke-test.ps1` on Windows |
-| Laptop-feedback product gaps | Sep 4 2026 | Multi-night hotel UI, hotel rescue selection (6C not run), Windows Maps hand-off, real location, and device-verify of SPEC-32 Laos create remain open. Date grouping and booking edit/delete/notes passed Sep 4. Durable hearts closed Aug 30 |
+| Laptop-feedback product gaps | Sep 5 2026 | Multi-night hotel UI and real location remain open. Hotel Rescue 6C is canceled by owner decision; remove the duplicate shortcut but keep hotel driver cards and offline cache. Windows Maps fallback and SPEC-32 Laos create were verified Sep 5 |
 | `hybrid_venue_search` geo_region parameter | Observed Aug 17 2026 | Live signature matches 0001: no geo_region arg (radius-only). Multi-city RPC filter still absent |
 | Dubai row contents, including AED magnitudes | Cleared Aug 17 2026 | 16 Dubai venues live (null price_band). dubai_dishes=0 -- nothing to inspect for AED; food data is greenfield |
 | `pg_description` non-ASCII | Cleared Aug 17 2026 | Step 7c returned 0 rows |
@@ -72,7 +72,7 @@ Deferred product requests, not treated as defects in the one-city slice:
   unexplained blank panel.
 
 Sponsored payload and positive Sponsored-label checks were not run in the
-afternoon session. Hotel rescue 6C also remains unverified.
+afternoon session.
 
 ## Finding -- Sep 5 2026 evening -- SPEC-17 tests 8 and 9 (Windows)
 
@@ -113,11 +113,12 @@ Product smoke:
 - 6A date grouping passed: 5 Oct present, 6 Oct added, headers looked correct.
 - 6B booking notes, edit, and delete passed. Sync reported accepted events and
   no rejection.
-- 6C hotel rescue was not run. The booking date picker is one day, which matches
-  `scheduled_start` plus duration. Multi-night check-in/out remains unbuilt.
+- 6C hotel rescue was not run. The owner rejected the shortcut as useless, so
+  6C is canceled rather than awaiting verification. Remove the duplicate
+  shortcut; keep the hotel booking's driver-card action.
 
-Owner later called the hotel-rescue AppBar shortcut useless. Treat that as an
-open product cut, not a 6C result. Profile overflow (`profile_screen.dart`) and
+Owner later called the Hotel Rescue AppBar shortcut useless. The Sep 5 product
+decision is to remove it. Profile overflow (`profile_screen.dart`) and
 an earlier ErrorView overflow after 401 are separate layout findings.
 
 SPEC-32 catalog-backed create is implemented in this branch. A Windows create
@@ -149,8 +150,8 @@ targeting, explicit cancel confirmation, and a scrollable skip-reason sheet.
 Owner Windows full Flutter suite: 176 passed. CI lint, pytest, backend test, and
 Flutter all green.
 
-Product remainder (not a merge defect): date grouping, date-aware hotel rescue,
-booking edit/delete, and multi-night hotel UI.
+Subsequent work closed date grouping and booking edit/delete. The dedicated
+Hotel Rescue path is retired; multi-night hotel UI remains.
 
 ## Finding -- Aug 30 2026 -- Owner laptop verification (Windows, second laptop)
 
@@ -215,12 +216,11 @@ Addressed after the run by SPEC-29:
 - Cancel is a deterministic skip that preserves the node's position; it no
   longer looks like a swap. Locked cancellation is refused before quota use.
 
+These Aug 30 product gaps were later resolved or retired: booking edit/delete,
+notes, and date grouping shipped; the dedicated Hotel Rescue path was retired.
+
 Open product gaps:
 
-- Hotel rescue selects the first hotel-like node instead of the current or next
-  date-appropriate stay.
-- Bookings have no edit/delete flow, notes are absent from cards, and the
-  itinerary has no date grouping.
 - Create-trip still seeds the Dubai template; it cannot create a real Laos trip
   (superseded in code by SPEC-32 on this branch; device-verify a Laos city).
 - `geo:` Maps hand-off fails on Windows. Keep coordinates available until a
@@ -428,11 +428,10 @@ wrong relative to the forcing function ("full context" on real bookings).
 
 Checked against what is already shipped: SPEC-02 already delivers outbox,
 SyncEngine, `cache_trip` and `cache_place`. SPEC-12 already specifies the
-venue driver card offline from `cache_place`. The unique SPEC-04 remainder
-that matters for October is a thin rescue entry to the hotel address card
-once SPEC-10 exists. `cache_vault`, pass tiles, emergency grid and phrase
-packs are post-field-test. SPEC-04, PROJECT_STATUS and CONSUMER_SURFACE were
-amended the same day; device-day steps live in `docs/briefs/DEVICE_DAY.md`.
+venue driver card offline from `cache_place`. The thin rescue entry later
+shipped, but the owner rejected it on device and retired it Sep 5. The useful
+cache floor and hotel driver card remain. `cache_vault`, pass tiles, emergency
+grid and phrase packs are post-field-test.
 
 ## Closed since the last revision
 

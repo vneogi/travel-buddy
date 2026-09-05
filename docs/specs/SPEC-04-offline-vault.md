@@ -2,10 +2,10 @@
 *Implements VISION capability #7 (calm in the unexpected). P1 per docs/UX_BACKLOG.md.*
 *Depends on: SPEC-02 offline cache (`cache_trip`, `cache_place`). No new architecture.*
 
-> Status: SPECIFIED. October scope shrunk Aug 14 2026 -- see "What SPEC-04
-> still adds" and "October scope" below. Full vault (passes, emergency pack,
-> phrase pack, cache_vault tables) is post-field-test unless spare capacity
-> appears after SPEC-12 and SPEC-10 land.
+> Status: OCTOBER CACHE FLOOR IMPLEMENTED. The dedicated Hotel Rescue shortcut
+> is RETIRED by product decision (Sep 5 2026); code removal is pending. Full
+> vault (passes, emergency pack, phrase pack, cache_vault tables) remains
+> post-field-test discovery, not an active build.
 
 ## What SPEC-04 still adds (vs SPEC-02 and SPEC-12)
 
@@ -21,37 +21,46 @@ unconfirmed treatment, and one-tap confirm. That card does not need
 `cache_vault`.
 
 Against that baseline, SPEC-04 as originally written was mostly a second
-name for work other specs already own. The unique remainder is:
+name for work other specs already own. The Sep 5 laptop review found that the
+dedicated rescue shortcut added no value over the driver-card action already
+present on the hotel booking card.
 
 | Piece | Unique to SPEC-04? | October? |
 |---|---|---|
 | Venue driver card offline from `cache_place` | No -- SPEC-12 | Yes, via SPEC-12 |
-| Hotel / accommodation address card | Mostly no -- SPEC-12 against the accommodation node once SPEC-10 exists | Thin slice only |
-| Dedicated Vault shell (<=2 taps, never spinner) | Yes -- navigation and empty-state contract | Thin: entry to hotel + venue cards |
+| Hotel / accommodation address card | No -- SPEC-12 against the accommodation node | Retain |
+| Dedicated Hotel Rescue shortcut | No -- duplicates the hotel booking card action | Remove |
 | `cache_vault` / `cache_asset` tables | Yes -- survival payload + binary blobs | No |
 | Offline pass / boarding-pass tiles | Yes | No |
 | Emergency dial grid | Yes (also wants SPEC-13 numbers) | No |
 | Per-city phrase / "if X happens" pack | Yes | No |
 
-Decision: the October path does not build the full Offline Vault. It builds
-SPEC-12 on the SPEC-02 cache, then SPEC-10 so the trip has a real hotel and
-flight, then a thin rescue entry that opens the hotel address card offline.
-The rest of this spec stays specified and waits until after the field test.
+Decision: the October path does not build the full Offline Vault. It retains
+SPEC-12 on the SPEC-02 cache and SPEC-10 hotel booking cards. The standard
+driver-card action on a hotel booking remains the route for showing a driver
+the cached address. The AppBar shield, HotelRescueSheet, and date-aware rescue
+selection are removed.
 
-## October scope
+## October scope retained after Sep 5
 
 In scope for Oct 2:
 
 1. Pre-cache accommodation (local script + romanized + coordinates) into
    `cache_place` or an equivalent place-shaped row when the booking anchor
    lands -- no new SQLite engine, no `cache_vault` required.
-2. A <=2-tap path from the itinerary to that hotel card, with the same
-   brightness / no-chrome rules as SPEC-12.
+2. The existing driver-card action on the hotel booking opens that cached card.
+   No parallel shield or rescue sheet.
 3. Cold boot with no network still shows the hotel card and any venue cards
    already in `cache_place`. Missing data shows "not saved yet", never a
    spinner or error.
 
-Out of scope for Oct 2 (remain in this spec for later):
+Removed from the October product:
+
+- Hotel Rescue AppBar shortcut
+- HotelRescueSheet and its empty-state navigation
+- Date-aware rescue stay selection and test 6C
+
+Out of scope for Oct 2 (remain discovery candidates for later):
 
 - `cache_vault` and `cache_asset`
 - Offline pass tiles and brightness-boost QR flow
@@ -67,7 +76,8 @@ USP: online-only incumbents cannot serve this moment.
 ## Non-negotiable requirements
 1. **Renders with ZERO network**, including on a **cold boot with no connectivity**.
 2. **Fast:** usable content on screen in < 500ms from local store.
-3. **Reachable in ≤ 2 taps from anywhere** (shield icon in the itinerary top bar).
+3. **Reachable from the relevant booking or venue card.** A future full Vault
+   must earn any global shortcut through device evidence.
 4. **Never shows a spinner or an error state** — if data is missing, show what we have plus a clear
    "not saved yet" affordance. A blank Vault when stranded is a product failure.
 5. **No new DB engine.** Extends the SPEC-02 SQLite cache.
@@ -120,8 +130,8 @@ CREATE TABLE cache_asset (            -- binary blobs: QR images, map thumbnails
 on accommodation set, and on each successful trip fetch. Assume the user will be offline exactly when
 they need it. Log a warning if a trip has no vault payload.
 
-## UI
-- Route `/vault` (also `/trip/:tripId/vault`); shield icon in the itinerary floating top bar.
+## UI (future full Vault, not the October build)
+- A dedicated route and global shortcut require a new product decision.
 - Grid of large tiles (thumb-reachable, glanceable in bright sun): Address • Passes • Emergency • Map.
 - Header pill shows cache freshness ("saved 2h ago") — honest, never fake-fresh.
 - Tiles with no data render as "Add / not saved yet", never as an error.
@@ -135,8 +145,8 @@ they need it. Log a warning if a trip has no vault payload.
 5. `cache_asset` blob round-trips (write → read → decode).
 6. Pre-cache writes `cache_vault` on a successful trip fetch.
 
-**Manual (pre-Laos, real device):** airplane mode → cold boot app → open Vault in ≤2 taps → hotel
-address readable in local script at full brightness → emergency dial works offline.
+**Manual (pre-Laos, real device):** airplane mode -> cold boot app -> open a
+hotel booking's driver card -> hotel address readable in local script.
 
 ## Out of scope (v1)
 Offline vector maps (P3/MapLibre), OCR of tickets, live translation offline, document scanning,
@@ -149,4 +159,4 @@ sharing/export.
 - [ ] Local script stored alongside romanized; translation fetched online only
 - [ ] Brightness boost restores on exit
 - [ ] Uses existing SQLite store — no new DB engine
-- [ ] Reachable in ≤ 2 taps
+- [ ] If the full Vault is revived, its entry point is validated on device

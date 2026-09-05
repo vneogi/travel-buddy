@@ -1,16 +1,16 @@
-# SPEC-31: Date-Scoped Itinerary and Stay Rescue
+# SPEC-31: Date-Scoped Itinerary
 
-> Status: GROUPING IMPLEMENTED (PR #36). Windows Sep 4 verified date headers
-> (6A). Stay-rescue selection (6C) was not run on device.
+> Status: IMPLEMENTED (PR #36). Windows Sep 4 verified date headers (6A).
+> Stay-rescue selection was implemented but is now RETIRED with the dedicated
+> Hotel Rescue shortcut; code removal is pending. Test 6C is canceled by
+> product decision, not pending.
 >
 > Depends on SPEC-10 booking anchors and the existing itinerary wire shape.
 > Does not depend on SPEC-16 phase-two reads, `day_index`, or `trip_stay`.
 
 ## Goal
 
-Stop presenting a multi-day trip as one undifferentiated "Your Day" list, and
-make Hotel Rescue choose the stay that is useful now rather than the first
-hotel-like node in the trip.
+Stop presenting a multi-day trip as one undifferentiated "Your Day" list.
 
 The existing node already carries the only facts this slice needs:
 `scheduled_start` and `duration_minutes`. This is a view change over those
@@ -43,31 +43,17 @@ Converting only the section header would let a card display 00:30 while placing
 it under the previous date. A later timezone slice must change entry, storage,
 display, grouping, and tests together.
 
-### 3. A hotel stay occupies an instant window
+### 3. Sep 5 decision: remove the dedicated rescue path
 
-For rescue selection, a hotel-like node occupies:
+The owner judged the AppBar Hotel Rescue shortcut useless during the Sep 4
+Windows review. The app already exposes the same offline driver card from the
+hotel booking row. Keeping two entry points creates more navigation and
+selection logic without adding a distinct outcome.
 
-```text
-[scheduledStart, scheduledStart + durationMinutes)
-```
-
-Selection order:
-
-1. Active stay containing `now`. If data overlaps, choose the one with the
-   latest start.
-2. Earliest future stay.
-3. Most recently elapsed stay, by latest end.
-4. No stay.
-
-This keeps rescue useful before check-in, during a multi-day booking, and just
-after checkout. The hotel node still appears once in the itinerary, under its
-check-in date. Do not clone it under each occupied date.
-
-Hotel detection keeps the current two paths:
-
-- `booking_type == "hotel"`, or
-- case-insensitive name fallback for hotel, resort, hostel, villa, or
-  guesthouse.
+Remove the AppBar shield, HotelRescueSheet, `isHotelLikeNode`,
+`selectRescueStay`, and their dedicated tests. Keep offline itinerary caching,
+place pre-caching, multi-night booking duration, and the driver-card action on
+every hotel booking.
 
 ### 4. Keep data and scheduling unchanged
 
@@ -86,13 +72,11 @@ This slice does not:
 
 ## Implementation shape
 
-Add a pure helper next to the itinerary window helpers. It owns:
+Keep a pure helper next to the itinerary window helpers. It owns:
 
 ```text
 ItineraryDayGroup
 groupNodesByCalendarDate(nodes)
-isHotelLikeNode(node)
-selectRescueStay(nodes, now)
 ```
 
 `ItineraryDayGroup` contains a date value and an ordered node list. Its date is
@@ -102,9 +86,6 @@ The grouping helper performs a sequential fold over the existing ordered list.
 It must not sort or mutate the input. The current backend returns chronological
 nodes; changing that ordering contract belongs elsewhere.
 
-`selectRescueStay` must not depend on list order. It compares start/end instants
-and applies the precedence above.
-
 ## UI
 
 `ItineraryScreen` renders a date header before each group, then the existing
@@ -113,9 +94,6 @@ cards.
 
 The screen remains one scrollable timeline. No tabs, horizontal pager, sticky
 header package, new dependency, or automatic jump is needed.
-
-Hotel Rescue calls `selectRescueStay(nodes, DateTime.now())`. Tests inject
-`now`; production obtains it only at the call boundary.
 
 ## Tests
 
@@ -127,14 +105,6 @@ Pure helper tests:
 - the input list is not mutated,
 - year boundaries remain distinct,
 - offsets are not converted before extracting date fields,
-- active hotel wins over past and future,
-- latest-starting active hotel wins if stays overlap,
-- earliest future hotel wins when none is active,
-- most recently ended hotel wins when no active/future stay exists,
-- a long hotel booking remains active on a later calendar day,
-- keyword fallback still works,
-- no hotel returns null.
-
 Widget tests:
 
 - app bar says "Your Trip",
@@ -143,19 +113,15 @@ Widget tests:
 - existing heart and SPEC-30 outcome wiring still reaches the correct node,
 - no RenderFlex overflow at an 800x600 surface.
 
-Hotel Rescue tests:
-
-- two stays on different dates select the active one,
-- before both stays selects the earliest future one,
-- after both stays selects the most recently elapsed one,
-- empty state remains unchanged when there is no hotel.
+- no Hotel Rescue shield appears in the itinerary AppBar,
+- a hotel booking still renders its driver-card action.
 
 ## Acceptance
 
 - [x] Multi-day itinerary renders date headers without hiding nodes
 - [x] Existing node order and card identity are preserved
 - [x] Header date uses the same parsed clock fields as the card
-- [ ] Hotel Rescue selects active, then future, then elapsed stay
-- [ ] Long hotel duration works across calendar days without cloned nodes
+- [ ] Dedicated Hotel Rescue code path removed; 6C canceled
+- [ ] Multi-night booking duration remains a separate product slice
 - [x] No API, schema, scheduler, or timezone conversion change
 - [x] Flutter analyze and full Flutter test green from `origin/main`
