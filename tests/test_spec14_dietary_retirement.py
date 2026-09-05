@@ -41,9 +41,7 @@ class TestNoDietarySuitabilityClaim:
         assert resp.status_code == 200
         body = resp.json()
         raw = json.dumps(body["results"])
-        assert "suitable_for" not in raw, (
-            "suitable_for leaked into venue search response"
-        )
+        assert "suitable_for" not in raw, "suitable_for leaked into venue search response"
 
     def test_trip_event_response_has_no_suitable_for_in_nodes(self, client):
         """updated_nodes from /trip/event must not contain suitable_for."""
@@ -60,9 +58,7 @@ class TestNoDietarySuitabilityClaim:
         assert resp.status_code == 200
         body = resp.json()
         nodes_raw = json.dumps(body["updated_nodes"])
-        assert "suitable_for" not in nodes_raw, (
-            "suitable_for leaked into trip event updated_nodes"
-        )
+        assert "suitable_for" not in nodes_raw, "suitable_for leaked into trip event updated_nodes"
 
     def test_trip_get_has_no_suitable_for_claim(self, client):
         """GET /trip/{id} nodes must not carry suitable_for."""
@@ -73,9 +69,7 @@ class TestNoDietarySuitabilityClaim:
         )
         assert resp.status_code == 200
         raw = json.dumps(resp.json())
-        assert "suitable_for" not in raw, (
-            "suitable_for leaked into GET /trip response"
-        )
+        assert "suitable_for" not in raw, "suitable_for leaked into GET /trip response"
 
 
 class TestNoDietaryFiltering:
@@ -91,9 +85,7 @@ class TestNoDietaryFiltering:
         }
         headers = auth("u_spec14")
 
-        resp_neutral = client.get(
-            "/api/v1/venues/search", params=params_base, headers=headers
-        )
+        resp_neutral = client.get("/api/v1/venues/search", params=params_base, headers=headers)
         resp_dietary = client.get(
             "/api/v1/venues/search",
             params={**params_base, "dietary_constraint": "halal"},
@@ -164,10 +156,7 @@ class TestExistingLoaderTestsUnbroken:
         import config.dietary
         import scripts.load_dish_glossary
 
-        assert (
-            scripts.load_dish_glossary.VALID_DISH_CONTAINS
-            is config.dietary.VALID_DISH_CONTAINS
-        )
+        assert scripts.load_dish_glossary.VALID_DISH_CONTAINS is config.dietary.VALID_DISH_CONTAINS
 
     def test_check_allergen_conflicts_still_works(self):
         """check_allergen_conflicts still catches vegan + dairy."""

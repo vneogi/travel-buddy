@@ -16,6 +16,4 @@ FOOD_DISCLAIMER: str = (
 )
 
 # Short variant for inline captions (driver card footer, venue chip).
-FOOD_DISCLAIMER_SHORT: str = (
-    "Menus change; confirm ingredients with the venue."
-)
+FOOD_DISCLAIMER_SHORT: str = "Menus change; confirm ingredients with the venue."
