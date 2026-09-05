@@ -19,6 +19,9 @@ from config.disclaimers import FOOD_DISCLAIMER
 from config.regions import REGIONS
 from config.settings import settings
 from models.schemas import (
+    FeaturedStop,
+    FeaturedTrip,
+    NodeStatus,
     TripState,
     TripSummary,
     TripEventRequest,
@@ -162,17 +165,97 @@ def _summarize_trip(trip: TripState) -> TripSummary:
     )
 
 
+def _as_utc(value: datetime) -> datetime:
+    """Normalize API datetimes for ordering without changing the wire value."""
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def _featured_trip(trips: list[TripState], *, now: datetime | None = None) -> FeaturedTrip | None:
+    """Pick the current trip, or the earliest upcoming trip.
+
+    The server does not continuously stamp ``NodeStatus.ACTIVE``. Time windows,
+    not that enum value, therefore determine whether a trip or stop is current.
+    """
+    current_time = _as_utc(now or datetime.now(tz=timezone.utc))
+    candidates = []
+    for trip in trips:
+        summary = _summarize_trip(trip)
+        actionable = sorted(
+            (
+                node
+                for node in trip.nodes
+                if node.status not in {NodeStatus.SKIPPED, NodeStatus.COMPLETED}
+                and _as_utc(node.scheduled_start + timedelta(minutes=node.duration_minutes))
+                > current_time
+            ),
+            key=lambda node: _as_utc(node.scheduled_start),
+        )
+        if actionable:
+            candidates.append((trip, summary, actionable))
+
+    active = [
+        candidate
+        for candidate in candidates
+        if candidate[1].starts_at is not None
+        and candidate[1].ends_at is not None
+        and _as_utc(candidate[1].starts_at) <= current_time < _as_utc(candidate[1].ends_at)
+    ]
+    upcoming = [
+        candidate
+        for candidate in candidates
+        if candidate[1].starts_at is not None and _as_utc(candidate[1].starts_at) > current_time
+    ]
+    chosen = (
+        max(active, key=lambda candidate: _as_utc(candidate[1].starts_at))
+        if active
+        else min(upcoming, key=lambda candidate: _as_utc(candidate[1].starts_at))
+        if upcoming
+        else None
+    )
+    if chosen is None:
+        return None
+
+    trip_obj, summary, actionable = chosen
+    is_active = chosen in active
+    stop = actionable[0]
+    featured_stop = FeaturedStop(
+        node_id=stop.node_id,
+        venue_id=stop.venue_id,
+        venue_name=stop.venue_name,
+        scheduled_start=stop.scheduled_start,
+        status=stop.status,
+    )
+
+    return FeaturedTrip(
+        trip_id=trip_obj.trip_id,
+        geo_region=trip_obj.geo_region,
+        starts_at=summary.starts_at,
+        ends_at=summary.ends_at,
+        is_active=is_active,
+        actionable_stop=featured_stop,
+    )
+
+
 @router.get("/trips")
 async def list_trips(user_id: str = Depends(get_current_user_id)):
-    """Return only the caller's active trips as a lightweight home projection."""
+    """Return the caller's trips as a lightweight home projection.
+
+    SPEC-26: includes an optional featured_trip -- the currently active
+    trip or the earliest upcoming one, with its actionable stop.
+    Never includes state_json or a full node list.
+    """
     trips = sorted(
         db_service.get_active_trips(user_id),
         key=lambda trip: trip.updated_at,
         reverse=True,
     )
+    featured = _featured_trip(trips)
     return {
         "supported_regions": advertised_regions(db_service.list_venues_for_region),
         "trips": [_summarize_trip(trip).model_dump(mode="json") for trip in trips],
+        "featured_trip": featured.model_dump(mode="json") if featured else None,
     }
 
 

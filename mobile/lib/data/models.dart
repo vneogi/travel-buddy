@@ -217,15 +217,95 @@ class TripSummary {
       };
 }
 
+/// SPEC-26: A single actionable stop inside the featured trip.
+class FeaturedStop {
+  final String nodeId;
+  final String? venueId;
+  final String venueName;
+  final DateTime scheduledStart;
+  final String status;
+
+  const FeaturedStop({
+    required this.nodeId,
+    this.venueId,
+    required this.venueName,
+    required this.scheduledStart,
+    required this.status,
+  });
+
+  factory FeaturedStop.fromJson(Map<String, dynamic> json) => FeaturedStop(
+        nodeId: json['node_id'] as String,
+        venueId: json['venue_id'] as String?,
+        venueName: json['venue_name'] as String,
+        scheduledStart: DateTime.parse(json['scheduled_start'] as String),
+        status: json['status'] as String,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'node_id': nodeId,
+        'venue_id': venueId,
+        'venue_name': venueName,
+        'scheduled_start': scheduledStart.toUtc().toIso8601String(),
+        'status': status,
+      };
+}
+
+/// SPEC-26: Featured trip for the Home card. Never contains state_json
+/// or a full node list.
+class FeaturedTrip {
+  final String tripId;
+  final String geoRegion;
+  final DateTime? startsAt;
+  final DateTime? endsAt;
+  final bool isActive;
+  final FeaturedStop? actionableStop;
+
+  const FeaturedTrip({
+    required this.tripId,
+    required this.geoRegion,
+    this.isActive = false,
+    this.startsAt,
+    this.endsAt,
+    this.actionableStop,
+  });
+
+  factory FeaturedTrip.fromJson(Map<String, dynamic> json) => FeaturedTrip(
+        tripId: json['trip_id'] as String,
+        geoRegion: json['geo_region'] as String,
+        startsAt: json['starts_at'] == null
+            ? null
+            : DateTime.parse(json['starts_at'] as String),
+        endsAt: json['ends_at'] == null
+            ? null
+            : DateTime.parse(json['ends_at'] as String),
+        isActive: json['is_active'] as bool? ?? false,
+        actionableStop: json['actionable_stop'] == null
+            ? null
+            : FeaturedStop.fromJson(
+                (json['actionable_stop'] as Map).cast<String, dynamic>()),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'trip_id': tripId,
+        'geo_region': geoRegion,
+        'starts_at': startsAt?.toUtc().toIso8601String(),
+        'ends_at': endsAt?.toUtc().toIso8601String(),
+        'is_active': isActive,
+        'actionable_stop': actionableStop?.toJson(),
+      };
+}
+
 class HomeSnapshot {
   final List<String> supportedRegions;
   final List<TripSummary> trips;
+  final FeaturedTrip? featuredTrip;
   final bool fromCache;
   final DateTime? cachedAt;
 
   const HomeSnapshot({
     required this.supportedRegions,
     required this.trips,
+    this.featuredTrip,
     this.fromCache = false,
     this.cachedAt,
   });
@@ -243,6 +323,10 @@ class HomeSnapshot {
                   (trip as Map).cast<String, dynamic>(),
                 ))
             .toList(),
+        featuredTrip: json['featured_trip'] == null
+            ? null
+            : FeaturedTrip.fromJson(
+                (json['featured_trip'] as Map).cast<String, dynamic>()),
         fromCache: fromCache,
         cachedAt: cachedAt,
       );
@@ -250,6 +334,7 @@ class HomeSnapshot {
   Map<String, dynamic> toJson() => {
         'supported_regions': supportedRegions,
         'trips': trips.map((trip) => trip.toJson()).toList(),
+        'featured_trip': featuredTrip?.toJson(),
       };
 }
 

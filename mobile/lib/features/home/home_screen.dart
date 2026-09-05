@@ -25,46 +25,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final home = ref.watch(homeSnapshotProvider);
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        child: home.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, _) => ErrorView(
+            error: error,
+            onRetry: () => ref.invalidate(homeSnapshotProvider),
+          ),
+          data: (snapshot) => ListView(
+            padding: const EdgeInsets.all(AppSpacing.lg),
             children: [
               const SizedBox(height: AppSpacing.lg),
               Text('Good morning', style: AppTypography.caption),
               const SizedBox(height: AppSpacing.xs),
               Text('Where to next?', style: AppTypography.display),
               const SizedBox(height: AppSpacing.xl),
-              home.maybeWhen(
-                data: (snapshot) => _CreateTripCard(
-                  creating: _creating,
-                  onTap: () => _createTrip(snapshot),
-                ),
-                orElse: () => const _CreateTripCard(
-                  creating: false,
-                  onTap: null,
-                ),
+              _CreateTripCard(
+                creating: _creating,
+                onTap: () => _createTrip(snapshot),
               ),
-              const SizedBox(height: AppSpacing.xl),
+              if (snapshot.featuredTrip != null) ...[
+                const SizedBox(height: AppSpacing.lg),
+                _FeaturedTripCard(
+                  featured: snapshot.featuredTrip!,
+                  fromCache: snapshot.fromCache,
+                  cachedAt: snapshot.cachedAt,
+                ),
+              ],
+              const SizedBox(height: AppSpacing.lg),
               Text('Your trips', style: AppTypography.h2),
               const SizedBox(height: AppSpacing.base),
-              Expanded(
-                child: home.when(
-                  loading: () =>
-                      const Center(child: CircularProgressIndicator()),
-                  error: (error, _) => ErrorView(
-                    error: error,
-                    onRetry: () => ref.invalidate(homeSnapshotProvider),
-                  ),
-                  data: (snapshot) => Column(
-                    children: [
-                      if (snapshot.fromCache)
-                        _OfflineHomeNotice(cachedAt: snapshot.cachedAt),
-                      Expanded(child: _TripList(trips: snapshot.trips)),
-                    ],
-                  ),
-                ),
-              ),
+              if (snapshot.fromCache)
+                _OfflineHomeNotice(cachedAt: snapshot.cachedAt),
+              _TripList(trips: snapshot.trips),
             ],
           ),
         ),
@@ -243,6 +235,88 @@ class _CreateTripCard extends StatelessWidget {
   }
 }
 
+class _FeaturedTripCard extends StatelessWidget {
+  final FeaturedTrip featured;
+  final bool fromCache;
+  final DateTime? cachedAt;
+  const _FeaturedTripCard({
+    required this.featured,
+    required this.fromCache,
+    this.cachedAt,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final stop = featured.actionableStop;
+    final isActive = featured.isActive;
+    final label = isActive ? 'Now' : 'Up next';
+    final region = _displayRegion(featured.geoRegion);
+
+    return GestureDetector(
+      onTap: () => context.go('/trip/${featured.tripId}'),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppSpacing.base),
+        decoration: BoxDecoration(
+          color: AppColors.card,
+          border: Border.all(color: AppColors.primary, width: 1.5),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                    vertical: AppSpacing.xs,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isActive
+                        ? AppColors.primary
+                        : AppColors.accent,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    label,
+                    style: AppTypography.caption
+                        .copyWith(color: Colors.white, fontSize: 11),
+                  ),
+                ),
+                const Spacer(),
+                if (fromCache && cachedAt != null)
+                  Text(
+                    'Cached ${_cacheAge(cachedAt!)}',
+                    style: AppTypography.caption
+                        .copyWith(color: AppColors.muted, fontSize: 11),
+                  ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(region, style: AppTypography.h2),
+            if (stop != null) ...[
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                stop.venueName,
+                style: AppTypography.body,
+              ),
+              Text(
+                MaterialLocalizations.of(context)
+                    .formatTimeOfDay(
+                      TimeOfDay.fromDateTime(stop.scheduledStart.toLocal()),
+                    ),
+                style: AppTypography.caption
+                    .copyWith(color: AppColors.muted),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _TripList extends StatelessWidget {
   final List<TripSummary> trips;
   const _TripList({required this.trips});
@@ -259,6 +333,8 @@ class _TripList extends StatelessWidget {
       );
     }
     return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       itemCount: trips.length,
       separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
       itemBuilder: (context, index) {
