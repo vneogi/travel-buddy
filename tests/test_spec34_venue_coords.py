@@ -81,9 +81,7 @@ class TestVenueSearchCoordinates:
             headers=auth("u_spec34"),
         )
         # trip not found -> coords cannot be resolved -> 422
-        assert resp.status_code == 422, (
-            f"Expected 422 for unknown trip, got {resp.status_code}"
-        )
+        assert resp.status_code == 422, f"Expected 422 for unknown trip, got {resp.status_code}"
 
 
 class TestExistingBookingMutationsUnchanged:
