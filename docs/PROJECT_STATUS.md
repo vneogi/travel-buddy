@@ -94,7 +94,7 @@
 | Trip inspiration (SPEC-28) | DECIDED, NOT SCHEDULED | Opt-in, delayed, region-level public trip snapshots as inspiration. No live people/location, DMs or comments in v1. Requires identity, deletion/export and moderation gates |
 | Context alerts (SPEC-29) | DONE (phase 1) | PR #25 squash-merged as `aedbc03`. OpenWeather evidence is matched to upcoming nodes, cached by identity and shown with provenance. Alerts never mutate or consume reroute quota. SPEC-35 owns proactive in-app candidates; SPEC-27 owns watcher/push delivery |
 | Retention instrumentation (SPEC-30) | DONE | PR #32 (`f8349a8`) added `session_start` and the `trip_edge` observed-duration writer. PR #34 (`83c825f`) added durable node outcomes, active/past confirmation UI, outcome-aware targeting, and explicit cancel confirmation. Flutter CI and owner Windows full suite green |
-| Date-scoped itinerary (SPEC-31) | DONE; RESCUE REMOVAL PENDING | Grouping under date headers is on main (PR #36, Windows Sep 4 6A). Test 6C is canceled because the owner retired the dedicated rescue shortcut. Remove its selection helpers and tests; keep date grouping and the hotel booking's driver-card action |
+| Date-scoped itinerary (SPEC-31) | DONE | Grouping under date headers is on main (PR #36, Windows Sep 4 6A). Test 6C is canceled; the dedicated rescue shortcut and selection helpers are removed. Date grouping and the hotel booking's driver-card action remain |
 | Real Laos trip creation (SPEC-32) | VERIFIED (one-city slice) | Sep 5 Windows run created a real catalog-backed Luang Prabang itinerary with no Dubai fallback. Multi-city Laos corridors remain outside this slice |
 | Proactive itinerary notifications (SPEC-35) | SPECIFIED | Backend not implemented. Phase A brief: `docs/briefs/GENIE_SPEC_35_DEPARTURE_BACKEND.md`. In-app first: provider-backed time-to-leave candidates using traffic plus an explicit rain policy buffer. Meal previews remain suppressed until dish provenance exists; review-derived popularity waits for licensed SPEC-19 evidence and the SPEC-17 envelope. No background GPS, LLM, mutation or push |
 
@@ -166,8 +166,8 @@ Seed-shaped cohorts.
 
 ### After the field-test spine (still important, not Oct-critical)
 
-8. Remove the duplicate Hotel Rescue shortcut, then multi-night hotel UI.
-   Preserve offline cache fallback and the driver-card action on hotel bookings.
+8. Multi-night hotel UI. The duplicate Hotel Rescue shortcut is removed;
+   preserve offline cache fallback and the driver-card action on hotel bookings.
 9. SPEC-35 Phase A proactive in-app notifications: provider-backed departure
    timing. Keep meal previews suppressed until dish provenance exists, OS push
    in SPEC-27, and review-derived popularity behind SPEC-17/19.
