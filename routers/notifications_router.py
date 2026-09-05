@@ -14,6 +14,7 @@ from models.notifications import TripNotificationsResponse
 from security import get_current_user_id, require_trip_owner
 from services.departure_evaluator import evaluate_departure
 from services.db_provider import db_service
+from services.google_maps_real import google_maps_real
 from services.route_provider import (
     GoogleMapsRouteProvider,
     RouteProvider,
@@ -23,7 +24,7 @@ from services.weather_provider import WeatherProvider
 router = APIRouter(prefix="/api/v1")
 
 _weather_provider = WeatherProvider()
-_route_provider: RouteProvider = GoogleMapsRouteProvider()
+_route_provider: RouteProvider = GoogleMapsRouteProvider(google_maps_real)
 
 
 def get_route_provider() -> RouteProvider:

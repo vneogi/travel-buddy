@@ -23,7 +23,12 @@ from services.departure_evaluator import (
     deterministic_id,
     evaluate_departure,
 )
-from services.route_provider import RouteProvider, RouteProviderError, RouteResult
+from services.route_provider import (
+    GoogleMapsRouteProvider,
+    RouteProvider,
+    RouteProviderError,
+    RouteResult,
+)
 from services.weather_provider import ForecastBlock, WeatherProvider, WeatherProviderError
 
 
@@ -83,10 +88,12 @@ class StubRouteProvider(RouteProvider):
         traffic_minutes=42,
         normal_minutes=34,
         fail=False,
+        observed_at=None,
     ):
         self.traffic_minutes = traffic_minutes
         self.normal_minutes = normal_minutes
         self.fail = fail
+        self.observed_at = observed_at
         self.call_count = 0
         self.calls: list = []
 
@@ -107,7 +114,7 @@ class StubRouteProvider(RouteProvider):
             normal_duration_minutes=self.normal_minutes,
             traffic_duration_minutes=self.traffic_minutes,
             mode="driving",
-            observed_at=datetime.now(tz=timezone.utc),
+            observed_at=self.observed_at or departure_time,
             source="stub",
         )
 
@@ -481,6 +488,30 @@ class TestRainPolicyBuffer:
 class TestRouteFailurePartial:
     """Stale/failed route returns partial without failing unrelated construction."""
 
+    def test_stale_route_evidence_is_suppressed(self):
+        origin = _node(
+            "origin",
+            start=_utc(2026, 10, 5, 1, 0),
+            status=NodeStatus.COMPLETED,
+            lat=19.89,
+            lng=102.13,
+        )
+        dest = _node("dest", start=_utc(2026, 10, 5, 3, 0))
+        trip = _trip(nodes=[origin, dest])
+        route = StubRouteProvider(observed_at=_utc(2026, 10, 5, 1, 54))
+
+        candidate, error = asyncio.run(
+            evaluate_departure(
+                trip,
+                _utc(2026, 10, 5, 2, 0),
+                route,
+                StubWeatherProvider(),
+            )
+        )
+
+        assert candidate is None
+        assert error == "route_unavailable:stale_route_evidence"
+
     def test_route_failure_partial_response(self):
         origin = _node(
             "origin",
@@ -521,6 +552,15 @@ class TestRouteFailurePartial:
         # No weather evidence when provider fails
         assert candidate.evidence.weather is None
         assert candidate.evidence.policy.weather_buffer_minutes == 0
+
+
+class TestProductionRouteWiring:
+    def test_default_provider_wraps_real_maps_service(self):
+        from routers.notifications_router import _route_provider
+        from services.google_maps_real import google_maps_real
+
+        assert isinstance(_route_provider, GoogleMapsRouteProvider)
+        assert _route_provider._maps is google_maps_real
 
 
 class TestEligibilityWindow:

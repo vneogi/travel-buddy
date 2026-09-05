@@ -178,6 +178,13 @@ async def evaluate_departure(
     if route_result is None:
         return None, f"route_unavailable:{route_error or 'unknown'}"
 
+    observed_at = route_result.observed_at
+    if observed_at.tzinfo is None:
+        return None, "route_unavailable:route_evidence_missing_timezone"
+    route_age_seconds = (now - observed_at.astimezone(timezone.utc)).total_seconds()
+    if route_age_seconds > ROUTE_FRESHNESS_SECONDS:
+        return None, "route_unavailable:stale_route_evidence"
+
     # 7. Weather for rain buffer (reuse existing SPEC-29 provider)
     rain_prob = 0.0
     weather_observed_at = None
