@@ -332,17 +332,60 @@ async def process_trip_event(
 @router.get("/venues/search")
 async def search_venues(
     query: str,
-    lat: float = 25.1972,
-    lng: float = 55.2744,
+    lat: Optional[float] = None,
+    lng: Optional[float] = None,
+    trip_id: Optional[str] = None,
     radius_km: float = 15.0,
     top_k: int = 5,
     user_id: str = Depends(get_current_user_id),
 ):
-    """Search venues using hybrid RAG search."""
+    """Search venues using hybrid RAG search.
+
+    SPEC-34: Coordinates resolve in priority order:
+    1. Explicit lat/lng params (client already resolved from trip context).
+    2. Trip context coords (trip_id -> current_context.location_lat/lng).
+    3. Region defaults from config/regions.py (trip_id -> geo_region).
+    4. Refuse with 422 -- never silently default to Dubai.
+    """
+    resolved_lat, resolved_lng = lat, lng
+
+    if resolved_lat is None or resolved_lng is None:
+        if trip_id:
+            trip = db_service.get_trip(trip_id)
+            if trip and trip.user_id == user_id:
+                ctx = trip.current_context
+                resolved_lat = ctx.location_lat
+                resolved_lng = ctx.location_lng
+                # If context coords are still the schema default (Dubai)
+                # but the trip is not Dubai, use region defaults instead.
+                if (
+                    resolved_lat == 25.1972
+                    and resolved_lng == 55.2744
+                    and trip.geo_region != "dubai_uae"
+                ):
+                    region = REGIONS.get(trip.geo_region)
+                    if region:
+                        resolved_lat = region.default_lat
+                        resolved_lng = region.default_lng
+                    else:
+                        resolved_lat, resolved_lng = None, None
+
+    if resolved_lat is None or resolved_lng is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "error": "missing_coordinates",
+                "message": (
+                    "Cannot search venues without location. "
+                    "Pass lat/lng or trip_id with a known region."
+                ),
+            },
+        )
+
     results = db_service.hybrid_venue_search(
         query=query,
-        user_lat=lat,
-        user_lng=lng,
+        user_lat=resolved_lat,
+        user_lng=resolved_lng,
         radius_km=radius_km,
         top_k=top_k,
     )
