@@ -8,6 +8,19 @@ import '../../theme/typography.dart';
 import '../../theme/spacing.dart';
 import '../../widgets/shimmer_card.dart';
 
+/// Resolve lat/lng for swap venue search from the trip, never silently
+/// substituting Dubai for a non-Dubai region.
+({double lat, double lng})? resolveSwapSearchCoords(TripState ts) {
+  if (ts.locationLat != null && ts.locationLng != null) {
+    final isDubaiDefault =
+        ts.locationLat == 25.1972 && ts.locationLng == 55.2744;
+    if (!isDubaiDefault || ts.geoRegion == 'dubai_uae') {
+      return (lat: ts.locationLat!, lng: ts.locationLng!);
+    }
+  }
+  return RegionDefaults.coordsFor(ts.geoRegion);
+}
+
 /// SPEC-07: Bottom sheet with RAG venue suggestions for swapping an activity.
 ///
 /// Returns [VenueSearchResult] when a venue is confirmed, or null when the
@@ -80,17 +93,8 @@ class SwapSheetState extends ConsumerState<SwapSheet> {
     }
   }
 
-  ({double lat, double lng})? _resolveCoords() {
-    final ts = widget.tripState;
-    if (ts.locationLat != null && ts.locationLng != null) {
-      final isDubaiDefault =
-          ts.locationLat == 25.1972 && ts.locationLng == 55.2744;
-      if (!isDubaiDefault || ts.geoRegion == 'dubai_uae') {
-        return (lat: ts.locationLat!, lng: ts.locationLng!);
-      }
-    }
-    return RegionDefaults.coordsFor(ts.geoRegion);
-  }
+  ({double lat, double lng})? _resolveCoords() =>
+      resolveSwapSearchCoords(widget.tripState);
 
   @override
   Widget build(BuildContext context) {
