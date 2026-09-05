@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:travel_buddy/data/models.dart';
 
@@ -115,5 +116,48 @@ void main() {
     expect(EventType.swapActivity.wire, 'swap_activity');
     expect(EventType.askInfo.wire, 'ask_info');
     expect(EventType.weatherAlert.wire, 'weather_alert');
+  });
+
+  group('TripState serialization', () {
+    test('toJson and fromJson roundtrip cleanly', () {
+      final trip = TripState(
+        tripId: 'trip_1',
+        userId: 'user_1',
+        mood: 'relaxed',
+        nodes: [
+          TripNode(
+            nodeId: 'n1',
+            venueName: 'Hilton',
+            scheduledStart: DateTime.utc(2026, 10, 5, 14),
+            durationMinutes: 480,
+            isLocked: true,
+            status: NodeStatus.pending,
+            vibeTags: const ['luxury'],
+            nodeKind: 'booking',
+            bookingType: 'hotel',
+            confirmationCode: 'HTL123',
+            importSource: 'email',
+          ),
+        ],
+      );
+
+      final json = trip.toJson();
+      final restored = TripState.fromJson(json);
+
+      expect(restored.tripId, equals('trip_1'));
+      expect(restored.userId, equals('user_1'));
+      expect(restored.mood, equals('relaxed'));
+      expect(restored.nodes, hasLength(1));
+      expect(restored.nodes.first.venueName, equals('Hilton'));
+      expect(restored.nodes.first.bookingType, equals('hotel'));
+      expect(restored.nodes.first.confirmationCode, equals('HTL123'));
+      expect(restored.nodes.first.importSource, equals('email'));
+
+      // Verify JSON can be encoded/decoded (SQLite roundtrip)
+      final encoded = jsonEncode(json);
+      final decoded = jsonDecode(encoded) as Map<String, dynamic>;
+      final restored2 = TripState.fromJson(decoded);
+      expect(restored2.nodes.first.venueName, equals('Hilton'));
+    });
   });
 }
