@@ -245,6 +245,11 @@ void main() {
             VenueSearchResult.fromJson(_sponsoredNoBoostJson),
           ]);
 
+      tester.view.physicalSize = const Size(800, 2000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
       await tester.pumpWidget(_wrapSheet(
         repo: repo,
         tripState: _minimalTrip(),
@@ -259,7 +264,8 @@ void main() {
             topK: any(named: 'topK'),
           )).called(1);
 
-      // Three venues rendered.
+      // Three venues rendered (sheet is short; use a tall surface so the
+      // third row is not clipped by DraggableScrollableSheet).
       expect(find.text('Luxury Lounge'), findsOneWidget);
       expect(find.text('Street Bites'), findsOneWidget);
       expect(find.text('Partner Cafe'), findsOneWidget);
