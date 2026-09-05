@@ -393,6 +393,10 @@ class VenueSearchResult {
   final double? distanceKm;
   final bool isSponsored;
 
+  /// SPEC-17 decision 15: true when the server determined that a positive
+  /// sponsored ranking contribution was applied to this result.
+  final bool sponsoredBoostApplied;
+
   const VenueSearchResult({
     required this.venueId,
     required this.name,
@@ -401,6 +405,7 @@ class VenueSearchResult {
     required this.vibeTags,
     this.distanceKm,
     this.isSponsored = false,
+    this.sponsoredBoostApplied = false,
   });
 
   factory VenueSearchResult.fromJson(Map<String, dynamic> j) => VenueSearchResult(
@@ -411,5 +416,6 @@ class VenueSearchResult {
         vibeTags: (j['vibe_tags'] as List?)?.cast<String>() ?? const [],
         distanceKm: (j['distance_km'] as num?)?.toDouble(),
         isSponsored: j['is_sponsored'] as bool? ?? false,
+        sponsoredBoostApplied: j['sponsored_boost_applied'] as bool? ?? false,
       );
 }

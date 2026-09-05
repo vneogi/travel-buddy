@@ -60,7 +60,9 @@ class SwapSheetState extends ConsumerState<SwapSheet> {
         });
         return;
       }
-      final results = await ref.read(tripRepoProvider).searchVenues(
+      final results = await ref
+          .read(tripRepoProvider)
+          .searchVenues(
             query: 'nearby activity',
             lat: coords.lat,
             lng: coords.lng,
@@ -114,9 +116,7 @@ class SwapSheetState extends ConsumerState<SwapSheet> {
               padding: const EdgeInsets.all(AppSpacing.lg),
               child: Row(
                 children: [
-                  Expanded(
-                    child: Text('Swap to...', style: AppTypography.h2),
-                  ),
+                  Expanded(child: Text('Swap to...', style: AppTypography.h2)),
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
                     child: const Text('Cancel'),
@@ -132,20 +132,20 @@ class SwapSheetState extends ConsumerState<SwapSheet> {
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.base,
                 ),
-                children: [
-                  'premium',
-                  'cultural',
-                  'outdoor',
-                  'family',
-                  'nightlife',
-                ]
-                    .map((v) => Padding(
-                          padding:
-                              const EdgeInsets.only(right: AppSpacing.sm),
-                          child:
-                              FilterChip(label: Text(v), onSelected: (_) {}),
-                        ))
-                    .toList(),
+                children:
+                    ['premium', 'cultural', 'outdoor', 'family', 'nightlife']
+                        .map(
+                          (v) => Padding(
+                            padding: const EdgeInsets.only(
+                              right: AppSpacing.sm,
+                            ),
+                            child: FilterChip(
+                              label: Text(v),
+                              onSelected: (_) {},
+                            ),
+                          ),
+                        )
+                        .toList(),
               ),
             ),
             const SizedBox(height: AppSpacing.base),
@@ -188,37 +188,81 @@ class SwapSheetState extends ConsumerState<SwapSheet> {
       separatorBuilder: (_, __) => const Divider(height: 1),
       itemBuilder: (_, i) {
         final v = venues[i];
-        return ListTile(
-          title: Text(v.name, style: AppTypography.body),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                v.microLocation,
-                style: AppTypography.caption.copyWith(color: AppColors.muted),
-              ),
-              if (v.vibeTags.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: AppSpacing.xs),
-                  child: Wrap(
-                    spacing: AppSpacing.xs,
-                    children: v.vibeTags
-                        .take(3)
-                        .map((t) => Chip(
-                              label: Text(t,
-                                  style: AppTypography.caption
-                                      .copyWith(fontSize: 11)),
+        return Material(
+          color: Colors.transparent,
+          child: ListTile(
+            title: Row(
+              children: [
+                Expanded(child: Text(v.name, style: AppTypography.body)),
+                // SPEC-17 decision 15: label boosted results.
+                if (v.sponsoredBoostApplied)
+                  Container(
+                    margin: const EdgeInsets.only(left: AppSpacing.sm),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.sponsoredBg,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'Sponsored',
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.sponsoredText,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  v.microLocation,
+                  style: AppTypography.caption.copyWith(color: AppColors.muted),
+                ),
+                // SPEC-17 decision 15: explain ranking influence.
+                if (v.sponsoredBoostApplied)
+                  Padding(
+                    padding: const EdgeInsets.only(top: AppSpacing.xs),
+                    child: Text(
+                      'Paid placement influenced this ranking.',
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.muted,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+                if (v.vibeTags.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: AppSpacing.xs),
+                    child: Wrap(
+                      spacing: AppSpacing.xs,
+                      children: v.vibeTags
+                          .take(3)
+                          .map(
+                            (t) => Chip(
+                              label: Text(
+                                t,
+                                style: AppTypography.caption.copyWith(
+                                  fontSize: 11,
+                                ),
+                              ),
                               materialTapTargetSize:
                                   MaterialTapTargetSize.shrinkWrap,
                               visualDensity: VisualDensity.compact,
-                            ))
-                        .toList(),
+                            ),
+                          )
+                          .toList(),
+                    ),
                   ),
-                ),
-            ],
+              ],
+            ),
+            trailing: const Icon(Icons.swap_horiz, color: AppColors.primary),
+            onTap: () => Navigator.of(context).pop(v),
           ),
-          trailing: const Icon(Icons.swap_horiz, color: AppColors.primary),
-          onTap: () => Navigator.of(context).pop(v),
         );
       },
     );
