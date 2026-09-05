@@ -70,7 +70,7 @@
 | arrival_delta derivation | DONE | Server-derived from visited_confirmed vs scheduled_start |
 | Docs hygiene guard | DONE | tests/test_docs_hygiene.py walks every markdown file outside build and vendor directories, and the SPEC-reference check also scans .py and .sql. Known non-ASCII files are allowlisted; the list may only shrink. The ASCII check itself still covers markdown only |
 | Data format guard | DONE | Every data/ file is ASCII by byte count, venue and glossary files round-trip byte-identically, and Lao-script fields are checked for foreign script |
-| Offline vault (SPEC-04) | CACHE FLOOR DONE; RESCUE REMOVAL DECIDED | PR #22 (`b7e10c3`) + PR #23 (`dab16c0`) shipped offline itinerary fallback and cached driver cards. Sep 5 owner decision retires the duplicate Hotel Rescue AppBar shortcut; code-removal brief: `docs/briefs/GENIE_REMOVE_HOTEL_RESCUE.md`. Keep the driver-card action on hotel bookings. Full vault remains post-field-test discovery |
+| Offline vault (SPEC-04) | CACHE FLOOR DONE; RESCUE REMOVED | PR #22 (`b7e10c3`) + PR #23 (`dab16c0`) shipped offline itinerary fallback and cached driver cards. Sep 5 owner decision retired the duplicate Hotel Rescue AppBar shortcut; code removed in the `refactor/remove-hotel-rescue` PR per `docs/briefs/GENIE_REMOVE_HOTEL_RESCUE.md`. Driver-card action on hotel bookings retained. Full vault remains post-field-test discovery |
 | Anonymous identity (SPEC-09) | DONE (client + server) | Client half landed PR #16 (`7173a3f`): UUID v4 in flutter_secure_storage, Anonymous header, TB_DEBUG_USER_ID removed. Server half already verified. Record any remaining Anonymous E2E gap explicitly; the laptop is available |
 | Itinerary normalisation (SPEC-16) | IMPLEMENTED | Decompose and compose land in services/itinerary_normaliser.py, dual-write in both backends, round-trip equality asserted, wire format unchanged. node_id is stable across reschedules via state_json and now comes from models/ids.py. SPEC-30 (`f8349a8`) writes `trip_edge.observed_duration_minutes` from consecutive arrivals |
 | Booking anchors (SPEC-10) | PARTIAL (create plus edit/delete) | PR #20 (`f6328e9`) plus PR #37 (`364d873`). Immovable locked nodes, booking metadata, parser and AddBookingSheet. Windows Sep 4 verified notes, edit, and delete. Daily hotel anchor and preceding-evening flight rules remain |
@@ -94,7 +94,7 @@
 | Trip inspiration (SPEC-28) | DECIDED, NOT SCHEDULED | Opt-in, delayed, region-level public trip snapshots as inspiration. No live people/location, DMs or comments in v1. Requires identity, deletion/export and moderation gates |
 | Context alerts (SPEC-29) | DONE (phase 1) | PR #25 squash-merged as `aedbc03`. OpenWeather evidence is matched to upcoming nodes, cached by identity and shown with provenance. Alerts never mutate or consume reroute quota. SPEC-35 owns proactive in-app candidates; SPEC-27 owns watcher/push delivery |
 | Retention instrumentation (SPEC-30) | DONE | PR #32 (`f8349a8`) added `session_start` and the `trip_edge` observed-duration writer. PR #34 (`83c825f`) added durable node outcomes, active/past confirmation UI, outcome-aware targeting, and explicit cancel confirmation. Flutter CI and owner Windows full suite green |
-| Date-scoped itinerary (SPEC-31) | DONE; RESCUE REMOVAL PENDING | Grouping under date headers is on main (PR #36, Windows Sep 4 6A). Test 6C is canceled because the owner retired the dedicated rescue shortcut. Remove its selection helpers and tests; keep date grouping and the hotel booking's driver-card action |
+| Date-scoped itinerary (SPEC-31) | DONE | Grouping under date headers is on main (PR #36, Windows Sep 4 6A). Test 6C is canceled; the dedicated rescue shortcut and selection helpers are removed. Date grouping and the hotel booking's driver-card action remain |
 | Real Laos trip creation (SPEC-32) | VERIFIED (one-city slice) | Sep 5 Windows run created a real catalog-backed Luang Prabang itinerary with no Dubai fallback. Multi-city Laos corridors remain outside this slice |
 | Proactive itinerary notifications (SPEC-35) | SPECIFIED | Backend not implemented. Phase A brief: `docs/briefs/GENIE_SPEC_35_DEPARTURE_BACKEND.md`. In-app first: provider-backed time-to-leave candidates using traffic plus an explicit rain policy buffer. Phase A must first correct catalog creation from fixed 09:00 UTC to 09:00 in the region timezone and suppress legacy trips with ambiguous time basis. Meal previews remain suppressed until dish provenance exists. No background GPS, LLM, mutation or push |
 
@@ -166,8 +166,8 @@ Seed-shaped cohorts.
 
 ### After the field-test spine (still important, not Oct-critical)
 
-8. Remove the duplicate Hotel Rescue shortcut, then multi-night hotel UI.
-   Preserve offline cache fallback and the driver-card action on hotel bookings.
+8. Multi-night hotel UI. The duplicate Hotel Rescue shortcut is removed;
+   preserve offline cache fallback and the driver-card action on hotel bookings.
 9. SPEC-35 Phase A proactive in-app notifications: provider-backed departure
    timing. Keep meal previews suppressed until dish provenance exists, OS push
    in SPEC-27, and review-derived popularity behind SPEC-17/19.

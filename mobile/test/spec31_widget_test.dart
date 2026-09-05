@@ -473,4 +473,43 @@ void main() {
       expect(find.text('EK501 to Dubai'), findsNothing);
     });
   });
+
+  // -----------------------------------------------------------
+  // Hotel Rescue retirement (SPEC-04 decision 6C)
+  // -----------------------------------------------------------
+
+  group('Hotel Rescue retirement', () {
+    testWidgets('itinerary has no Hotel Rescue shortcut', (tester) async {
+      final harness = await _Harness.create([
+        _node(
+          id: 'n1',
+          name: 'Gold Souk',
+          start: DateTime(2026, 10, 5, 10),
+        ),
+      ]);
+      addTearDown(harness.dispose);
+      await harness.pump(tester);
+
+      expect(find.byIcon(Icons.shield_outlined), findsNothing);
+      expect(find.byTooltip('Hotel Rescue'), findsNothing);
+    }, timeout: const Timeout(Duration(seconds: 20)));
+
+    testWidgets('hotel booking keeps its driver card action', (tester) async {
+      final harness = await _Harness.create([
+        _node(
+          id: 'hotel-1',
+          name: 'Hilton Dubai Marina',
+          start: DateTime(2026, 10, 5, 14),
+          durationMinutes: 720,
+          locked: true,
+          nodeKind: 'booking',
+          bookingType: 'hotel',
+        ),
+      ]);
+      addTearDown(harness.dispose);
+      await harness.pump(tester);
+
+      expect(find.byIcon(Icons.directions_car_outlined), findsOneWidget);
+    }, timeout: const Timeout(Duration(seconds: 20)));
+  });
 }

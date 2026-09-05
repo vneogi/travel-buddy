@@ -2,8 +2,7 @@
 
 > Status: IMPLEMENTED (PR #36). Windows Sep 4 verified date headers (6A).
 > Stay-rescue selection was implemented but is now RETIRED with the dedicated
-> Hotel Rescue shortcut; code removal is pending. Test 6C is canceled by
-> product decision, not pending.
+> Hotel Rescue shortcut. Test 6C is canceled by product decision, not pending.
 >
 > Depends on SPEC-10 booking anchors and the existing itinerary wire shape.
 > Does not depend on SPEC-16 phase-two reads, `day_index`, or `trip_stay`.

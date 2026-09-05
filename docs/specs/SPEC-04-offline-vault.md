@@ -3,9 +3,10 @@
 *Depends on: SPEC-02 offline cache (`cache_trip`, `cache_place`). No new architecture.*
 
 > Status: OCTOBER CACHE FLOOR IMPLEMENTED. The dedicated Hotel Rescue shortcut
-> is RETIRED by product decision (Sep 5 2026); code removal is pending. Full
-> vault (passes, emergency pack, phrase pack, cache_vault tables) remains
-> post-field-test discovery, not an active build.
+> is RETIRED by product decision (Sep 5 2026) and removed in the
+> `refactor/remove-hotel-rescue` PR. Full vault (passes, emergency pack, phrase
+> pack, cache_vault tables) remains post-field-test discovery, not an active
+> build.
 
 ## What SPEC-04 still adds (vs SPEC-02 and SPEC-12)
 
