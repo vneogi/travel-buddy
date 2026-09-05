@@ -3,7 +3,8 @@
 ## Status: PHASE 1 DONE
 
 Merged in PR #25 as `aedbc03`. Provider-backed pull alerts are live; watcher
-and push delivery remain future work.
+and push delivery remain future work. SPEC-35 owns proactive departure and
+meal candidates; SPEC-27 owns closed-app push transport.
 
 ## Summary
 
@@ -67,12 +68,17 @@ Phase 1 source: OpenWeather forecasts matched to upcoming itinerary nodes.
 ## Phases
 
 1. Phase 1 (this PR): Refresh on itinerary load, app resume, manual refresh.
-2. Phase 2 (future): Server-side scheduled watcher and push notifications.
+2. Phase 2A (SPEC-35): Reuse this weather evidence in proactive, in-app
+   departure and meal notification candidates. Traffic and dish evidence are
+   evaluated there, not added as synthetic weather alerts here.
+3. Phase 2B (SPEC-27): Server-side scheduled watcher and OS push delivery.
+   Push must reuse the same evaluators and server-side interruption budget.
 
 ## Explicit Constraints
 
 1. Refresh triggers: itinerary load, app resume, manual pull-to-refresh.
-2. Server-side watcher and push: Phase 2.
+2. Proactive in-app candidates: SPEC-35. Server-side watcher and push:
+   SPEC-27.
 3. User must confirm any move/swap/cancel.
 4. Cached expired alerts are hidden.
 5. Synthetic transit data is never displayed as a factual alert.

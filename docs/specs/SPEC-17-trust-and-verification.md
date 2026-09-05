@@ -148,6 +148,14 @@ reviewers remembering.
     the moment a venue can pay for rank with no disclosure, "trust is the product"
     becomes unfalsifiable.
 
+16. **Notification copy is subject to the same contract as screen copy.**
+    SPEC-35 cannot turn a weak dish claim into a stronger sentence merely
+    because it is short-lived. `venue_dish.is_signature` supports only
+    signature-guide copy. `popular_dish`, `most ordered`, or review-derived copy
+    requires a resolved claim with independent licensed evidence from SPEC-19.
+    Missing provenance suppresses the notification; it does not produce a bare
+    dish name with implied authority.
+
 ## Shape
 
     attribute_claim(
@@ -247,6 +255,9 @@ rather than a formality.
 - An attribute with no registry entry is refused rather than displayed with a
   default horizon
 - Question card selection prefers an important stale attribute over a fresh one
+- A notification renderer refuses a dish claim whose source, tier or `as_of`
+  value is absent
+- A signature flag alone cannot resolve to the `popular_dish` attribute
 
 ## Acceptance
 
@@ -264,4 +275,6 @@ rather than a formality.
 - [ ] Staleness degrades the tier by one step, with a test per attribute class
 - [ ] Sponsored contribution to ranking is carried in the envelope and labelled at
       render, with a test that a boosted result cannot display unlabelled
+- [ ] SPEC-35 notification copy consumes the same envelope and cannot promote
+      `is_signature` into a popularity claim
 - [ ] Suite green (R8); verified from `origin/main` (R10)
