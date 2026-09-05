@@ -8,6 +8,7 @@ import '../../render/fact_view.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
+import '../../core/disclaimers.dart';
 import 'driver_card_helpers.dart';
 
 /// SPEC-12: Full-screen, high-contrast card shown to drivers.
@@ -184,6 +185,15 @@ class _DriverCardScreenState extends ConsumerState<DriverCardScreen> {
             child: Text(
               'Venue information is an offline travel aid.',
               style: AppTypography.caption.copyWith(color: AppColors.muted),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          // SPEC-14: food disclaimer at the point of the recommendation.
+          Center(
+            child: Text(
+              kFoodDisclaimerShort,
+              style: AppTypography.caption.copyWith(color: AppColors.muted),
+              textAlign: TextAlign.center,
             ),
           ),
         ],

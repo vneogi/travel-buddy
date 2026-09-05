@@ -173,6 +173,8 @@ class TripEventResponse(BaseModel):
     routing_tier_used: str = "light"
     from_cache: bool = False
     reroutes_remaining: Optional[int] = None
+    # SPEC-14: food disclaimer at the point of the recommendation.
+    food_disclaimer: Optional[str] = None
 
 
 class CreateTripRequest(BaseModel):

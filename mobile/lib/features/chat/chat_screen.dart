@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/disclaimers.dart';
 import '../../data/models.dart';
 import '../../theme/colors.dart';
 import '../../theme/typography.dart';
@@ -138,7 +139,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       setState(() {
         _isThinking = false;
         if (result != null) {
-          _messages.add(_ChatMessage(text: result.message, isUser: false));
+          // SPEC-14: append food disclaimer to assistant responses.
+          final withDisclaimer =
+              '${result.message}\n\n$kFoodDisclaimerShort';
+          _messages.add(_ChatMessage(text: withDisclaimer, isUser: false));
         } else {
           _messages.add(const _ChatMessage(
             text: 'I could not complete that request. Please try again.',
