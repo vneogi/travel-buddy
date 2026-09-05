@@ -15,6 +15,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 
+from config.disclaimers import FOOD_DISCLAIMER
 from config.regions import REGIONS
 from config.settings import settings
 from models.schemas import (
@@ -317,6 +318,7 @@ async def process_trip_event(
         routing_tier_used=result["routing_tier_used"],
         from_cache=result["from_cache"],
         reroutes_remaining=remaining,
+        food_disclaimer=FOOD_DISCLAIMER,
     )
 
 
@@ -389,10 +391,22 @@ async def search_venues(
         radius_km=radius_km,
         top_k=top_k,
     )
+    # SPEC-14: strip dietary suitability claims; add food disclaimer.
+    sanitized = []
+    for r in results:
+        d = r.model_dump(mode="json")
+        # suitable_for must never appear in API responses as a claim.
+        venue = d.get("venue", {})
+        venue.pop("suitable_for", None)
+        for dish in venue.get("dishes", []):
+            dish.pop("suitable_for", None)
+        sanitized.append(d)
+
     return {
         "query": query,
-        "results_count": len(results),
-        "results": [r.model_dump(mode="json") for r in results],
+        "results_count": len(sanitized),
+        "results": sanitized,
+        "food_disclaimer": FOOD_DISCLAIMER,
     }
 
 
