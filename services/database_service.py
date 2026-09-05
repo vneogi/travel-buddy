@@ -328,6 +328,13 @@ class DatabaseService:
                 return venue.get("venue_id")
         return None
 
+    def get_venue_by_id(self, venue_id: str) -> Optional[VenueRAG]:
+        """Return one catalog venue by its stable ID."""
+        for venue in self._venues:
+            if str(venue.get("venue_id")) == str(venue_id):
+                return VenueRAG(**{k: v for k, v in venue.items() if k != "embedding"})
+        return None
+
     def get_venue_count(self) -> int:
         """Get total number of venues in store."""
         return len(self._venues)

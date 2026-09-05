@@ -41,6 +41,7 @@ class SwapSheet extends ConsumerStatefulWidget {
 
 class SwapSheetState extends ConsumerState<SwapSheet> {
   List<VenueSearchResult>? _venues;
+  final Set<String> _selectedVibes = {};
   String? _error;
   bool _loading = true;
 
@@ -68,13 +69,24 @@ class SwapSheetState extends ConsumerState<SwapSheet> {
             lng: coords.lng,
           );
       if (!mounted) return;
+      final target = widget.tripState.nodes
+          .where((node) => node.nodeId == widget.targetNodeId)
+          .firstOrNull;
+      final alternatives = results
+          .where(
+            (venue) =>
+                venue.venueId != target?.venueId &&
+                venue.name.toLowerCase() !=
+                    target?.venueName.toLowerCase(),
+          )
+          .toList();
       setState(() {
-        _venues = results;
+        _venues = alternatives;
         _loading = false;
       });
       widget.offeredVenueIds
         ..clear()
-        ..addAll(results.map((v) => v.venueId));
+        ..addAll(alternatives.map((v) => v.venueId));
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -90,7 +102,7 @@ class SwapSheetState extends ConsumerState<SwapSheet> {
   @override
   Widget build(BuildContext context) {
     return DraggableScrollableSheet(
-      initialChildSize: 0.6,
+      initialChildSize: 0.85,
       maxChildSize: 0.9,
       minChildSize: 0.3,
       builder: (_, scrollController) => Container(
@@ -124,31 +136,38 @@ class SwapSheetState extends ConsumerState<SwapSheet> {
                 ],
               ),
             ),
-            // Vibe filter chips (visual-only in this slice)
-            SizedBox(
-              height: 36,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.base,
-                ),
-                children:
-                    ['premium', 'cultural', 'outdoor', 'family', 'nightlife']
-                        .map(
-                          (v) => Padding(
-                            padding: const EdgeInsets.only(
-                              right: AppSpacing.sm,
-                            ),
-                            child: FilterChip(
-                              label: Text(v),
-                              onSelected: (_) {},
-                            ),
+            if (!_loading && _availableVibes.isNotEmpty)
+              SizedBox(
+                height: 36,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.base,
+                  ),
+                  children: _availableVibes
+                      .map(
+                        (vibe) => Padding(
+                          padding: const EdgeInsets.only(right: AppSpacing.sm),
+                          child: FilterChip(
+                            label: Text(vibe.replaceAll('_', ' ')),
+                            selected: _selectedVibes.contains(vibe),
+                            onSelected: (selected) {
+                              setState(() {
+                                if (selected) {
+                                  _selectedVibes.add(vibe);
+                                } else {
+                                  _selectedVibes.remove(vibe);
+                                }
+                              });
+                            },
                           ),
-                        )
-                        .toList(),
+                        ),
+                      )
+                      .toList(),
+                ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.base),
+            if (!_loading && _availableVibes.isNotEmpty)
+              const SizedBox(height: AppSpacing.base),
             Expanded(child: _buildContent(scrollController)),
           ],
         ),
@@ -172,11 +191,13 @@ class SwapSheetState extends ConsumerState<SwapSheet> {
         ),
       );
     }
-    final venues = _venues ?? [];
+    final venues = _visibleVenues;
     if (venues.isEmpty) {
       return Center(
         child: Text(
-          'No alternative venues found nearby.',
+          _selectedVibes.isEmpty
+              ? 'No alternative venues found nearby.'
+              : 'No alternatives match these filters.',
           style: AppTypography.body.copyWith(color: AppColors.muted),
         ),
       );
@@ -266,5 +287,26 @@ class SwapSheetState extends ConsumerState<SwapSheet> {
         );
       },
     );
+  }
+
+  List<String> get _availableVibes {
+    final values = (_venues ?? [])
+        .expand((venue) => venue.vibeTags)
+        .where((tag) => tag.trim().isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort();
+    return values.take(8).toList();
+  }
+
+  List<VenueSearchResult> get _visibleVenues {
+    final venues = _venues ?? [];
+    if (_selectedVibes.isEmpty) return venues;
+    return venues
+        .where(
+          (venue) =>
+              venue.vibeTags.any((tag) => _selectedVibes.contains(tag)),
+        )
+        .toList();
   }
 }

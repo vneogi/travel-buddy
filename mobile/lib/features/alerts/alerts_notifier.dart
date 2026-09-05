@@ -7,6 +7,11 @@ import '../../core/providers.dart';
 import '../../data/context_alert.dart';
 import '../../offline/offline_database.dart';
 
+const alertResumeRefreshInterval = Duration(minutes: 15);
+
+bool alertResumeRefreshDue(DateTime lastAttempt, DateTime now) =>
+    now.difference(lastAttempt) >= alertResumeRefreshInterval;
+
 /// SPEC-29: Alert state for a trip.
 class AlertsState {
   final List<ContextAlert> alerts;
@@ -42,11 +47,11 @@ class AlertsState {
 
 /// SPEC-29: Fetches alerts for a trip without blocking itinerary.
 ///
-/// autoDispose: leave and reopen the same trip refetches alerts.
+/// State remains scoped by trip for the app session.
 /// - 401/403 never falls back to cache.
 /// - NetworkException and WeatherUnavailableException use unexpired cache.
 /// - JSON/parse/programming errors do not silently use stale cache.
-class AlertsNotifier extends AutoDisposeFamilyAsyncNotifier<AlertsState, String> {
+class AlertsNotifier extends FamilyAsyncNotifier<AlertsState, String> {
   @override
   Future<AlertsState> build(String arg) async {
     return _load(arg);
@@ -164,8 +169,10 @@ class AlertsNotifier extends AutoDisposeFamilyAsyncNotifier<AlertsState, String>
   }
 }
 
-/// autoDispose: leaving the trip screen disposes, reopening refetches.
+/// Driver-card navigation and itinerary shimmer temporarily unmount the alert
+/// section. Retaining this provider prevents each remount from becoming
+/// another weather request.
 final alertsNotifierProvider =
-    AsyncNotifierProvider.autoDispose.family<AlertsNotifier, AlertsState, String>(
+    AsyncNotifierProvider.family<AlertsNotifier, AlertsState, String>(
   AlertsNotifier.new,
 );

@@ -38,6 +38,42 @@ The five Supabase integration tests ran green on device day 2026-08-17 with
 are smoke-test.ps1, any unrecorded Anonymous E2E, and deliberate VALIDATE of
 NOT VALID CHECKs.
 
+## Finding -- Sep 5 2026 -- Laos create and swap (Windows)
+
+Recorded against `main` at `f84d981` with the Supabase backend, anonymous
+identity enabled, JWT auth disabled, and 74 live venues.
+
+Passed:
+
+- Catalog-backed Luang Prabang trip creation rendered real local venues.
+- Driver cards rendered local script and were useful.
+- Swap search returned flat, renderable Laos venue results.
+
+Failed or misleading:
+
+- Confirming a SwapSheet choice posted `swap_activity` successfully but did
+  not necessarily apply the venue that was tapped. The client sent the old
+  node's vibe tags but no replacement venue ID, causing the backend to run a
+  second search and potentially select the original venue.
+- The current venue could appear among its own replacement options.
+- SwapSheet showed filter chips whose callbacks were empty.
+- Windows had no handler for the Driver Card's `geo:` Maps URI.
+- Weather-provider failures returned 503 repeatedly as Windows resume events
+  refreshed alerts throughout the session.
+
+Deferred product requests, not treated as defects in the one-city slice:
+
+- One Laos trip spanning Vientiane, Vang Vieng, and Luang Prabang with
+  date-scoped, collapsible city sections.
+- Persona, season, popularity, hidden-gem, recommendation, and sponsored
+  composition in trip creation and SwapSheet.
+- A spatial swap comparison showing the previous, current, next, and candidate
+  stops. This belongs with the map-first/swap-comparison UX rather than an
+  unexplained blank panel.
+
+Sponsored payload and positive Sponsored-label checks were not run and remain
+open. Hotel rescue 6C also remains unverified.
+
 ## Finding -- Sep 4 2026 -- Owner laptop verification (Windows)
 
 Recorded against `main` after PR #37 (`364d873`). Anonymous create/list needed

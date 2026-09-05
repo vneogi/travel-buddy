@@ -70,6 +70,26 @@ TripState _minimalTrip() => const TripState(
       locationLng: 55.2744,
     );
 
+TripState _tripWithCurrentVenue() => TripState(
+      tripId: 'trip-1',
+      userId: 'u1',
+      geoRegion: 'dubai_uae',
+      locationLat: 25.1972,
+      locationLng: 55.2744,
+      nodes: [
+        TripNode(
+          nodeId: 'node-1',
+          venueName: 'Luxury Lounge',
+          venueId: 'v-sponsored-1',
+          scheduledStart: DateTime.utc(2026, 10, 2, 9),
+          durationMinutes: 90,
+          isLocked: false,
+          status: NodeStatus.pending,
+          vibeTags: const ['luxury'],
+        ),
+      ],
+    );
+
 Widget _wrapSheet({
   required _MockTripRepository repo,
   required TripState tripState,
@@ -199,6 +219,54 @@ void main() {
         find.text('Paid placement influenced this ranking.'),
         findsNothing,
       );
+    }, timeout: const Timeout(Duration(seconds: 20)));
+
+    testWidgets('current venue is excluded from its own swap options',
+        (tester) async {
+      when(() => repo.searchVenues(
+            query: any(named: 'query'),
+            lat: any(named: 'lat'),
+            lng: any(named: 'lng'),
+            topK: any(named: 'topK'),
+          )).thenAnswer((_) async => [
+            VenueSearchResult.fromJson(_boostedJson),
+            VenueSearchResult.fromJson(_organicJson),
+          ]);
+
+      await tester.pumpWidget(_wrapSheet(
+        repo: repo,
+        tripState: _tripWithCurrentVenue(),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Luxury Lounge'), findsNothing);
+      expect(find.text('Street Bites'), findsOneWidget);
+    }, timeout: const Timeout(Duration(seconds: 20)));
+
+    testWidgets('vibe chips filter the rendered alternatives', (tester) async {
+      when(() => repo.searchVenues(
+            query: any(named: 'query'),
+            lat: any(named: 'lat'),
+            lng: any(named: 'lng'),
+            topK: any(named: 'topK'),
+          )).thenAnswer((_) async => [
+            VenueSearchResult.fromJson(_boostedJson),
+            VenueSearchResult.fromJson(_organicJson),
+          ]);
+
+      await tester.pumpWidget(_wrapSheet(
+        repo: repo,
+        tripState: _minimalTrip(),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Luxury Lounge'), findsOneWidget);
+      expect(find.text('Street Bites'), findsOneWidget);
+      await tester.tap(find.widgetWithText(FilterChip, 'authentic'));
+      await tester.pump();
+
+      expect(find.text('Luxury Lounge'), findsNothing);
+      expect(find.text('Street Bites'), findsOneWidget);
     }, timeout: const Timeout(Duration(seconds: 20)));
 
     testWidgets(
