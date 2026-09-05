@@ -19,6 +19,9 @@ from config.disclaimers import FOOD_DISCLAIMER
 from config.regions import REGIONS
 from config.settings import settings
 from models.schemas import (
+    FeaturedStop,
+    FeaturedTrip,
+    NodeStatus,
     TripState,
     TripSummary,
     TripEventRequest,
@@ -162,17 +165,90 @@ def _summarize_trip(trip: TripState) -> TripSummary:
     )
 
 
+def _featured_trip(trips: list) -> "FeaturedTrip | None":
+    """Pick the featured trip: active trip wins, else earliest upcoming.
+
+    An active trip has at least one ACTIVE node.
+    An upcoming trip has starts_at in the future.
+    The actionable stop is the first non-skipped, non-elapsed node
+    (status ACTIVE or PENDING with scheduled_start in the future).
+    """
+    now = datetime.now(tz=timezone.utc)
+    active = None
+    earliest_upcoming = None
+
+    for trip in trips:
+        has_active_node = any(n.status == NodeStatus.ACTIVE for n in trip.nodes)
+        summary = _summarize_trip(trip)
+
+        if has_active_node:
+            active = (trip, summary)
+            break  # active wins immediately
+
+        if summary.starts_at and summary.starts_at > now:
+            if earliest_upcoming is None or summary.starts_at < earliest_upcoming[1].starts_at:
+                earliest_upcoming = (trip, summary)
+
+    chosen = active or earliest_upcoming
+    if chosen is None:
+        return None
+
+    trip_obj, summary = chosen
+
+    # Find actionable stop: skip SKIPPED and elapsed nodes
+    stop = None
+    for node in trip_obj.nodes:
+        if node.status == NodeStatus.SKIPPED:
+            continue
+        if node.status == NodeStatus.COMPLETED:
+            continue
+        # ACTIVE node is always actionable
+        if node.status == NodeStatus.ACTIVE:
+            stop = node
+            break
+        # PENDING: only if not elapsed
+        node_end = node.scheduled_start + timedelta(minutes=node.duration_minutes)
+        if node_end > now:
+            stop = node
+            break
+
+    featured_stop = None
+    if stop is not None:
+        featured_stop = FeaturedStop(
+            node_id=stop.node_id,
+            venue_id=stop.venue_id,
+            venue_name=stop.venue_name,
+            scheduled_start=stop.scheduled_start,
+            status=stop.status,
+        )
+
+    return FeaturedTrip(
+        trip_id=trip_obj.trip_id,
+        geo_region=trip_obj.geo_region,
+        starts_at=summary.starts_at,
+        ends_at=summary.ends_at,
+        actionable_stop=featured_stop,
+    )
+
+
 @router.get("/trips")
 async def list_trips(user_id: str = Depends(get_current_user_id)):
-    """Return only the caller's active trips as a lightweight home projection."""
+    """Return the caller's trips as a lightweight home projection.
+
+    SPEC-26: includes an optional featured_trip -- the currently active
+    trip or the earliest upcoming one, with its actionable stop.
+    Never includes state_json or a full node list.
+    """
     trips = sorted(
         db_service.get_active_trips(user_id),
         key=lambda trip: trip.updated_at,
         reverse=True,
     )
+    featured = _featured_trip(trips)
     return {
         "supported_regions": advertised_regions(db_service.list_venues_for_region),
         "trips": [_summarize_trip(trip).model_dump(mode="json") for trip in trips],
+        "featured_trip": featured.model_dump(mode="json") if featured else None,
     }
 
 

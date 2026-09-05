@@ -131,6 +131,30 @@ class TripSummary(BaseModel):
     updated_at: datetime
 
 
+class FeaturedStop(BaseModel):
+    """Current or next actionable stop inside a featured trip."""
+
+    node_id: str
+    venue_id: Optional[str] = None
+    venue_name: str
+    scheduled_start: datetime
+    status: NodeStatus
+
+
+class FeaturedTrip(BaseModel):
+    """Lightweight projection for the Home featured card.
+
+    Contains the trip header plus the single actionable stop.
+    Never includes state_json or a full node list.
+    """
+
+    trip_id: str
+    geo_region: str
+    starts_at: Optional[datetime] = None
+    ends_at: Optional[datetime] = None
+    actionable_stop: Optional[FeaturedStop] = None
+
+
 # TypedDict version for LangGraph state
 class GraphState(TypedDict):
     """LangGraph-compatible state dict."""

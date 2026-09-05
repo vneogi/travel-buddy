@@ -45,7 +45,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   onTap: null,
                 ),
               ),
-              const SizedBox(height: AppSpacing.xl),
+              const SizedBox(height: AppSpacing.lg),
+              // SPEC-26: Featured trip card above trip list
+              home.maybeWhen(
+                data: (snapshot) => snapshot.featuredTrip != null
+                    ? _FeaturedTripCard(
+                        featured: snapshot.featuredTrip!,
+                        fromCache: snapshot.fromCache,
+                        cachedAt: snapshot.cachedAt,
+                      )
+                    : const SizedBox.shrink(),
+                orElse: () => const SizedBox.shrink(),
+              ),
+              const SizedBox(height: AppSpacing.lg),
               Text('Your trips', style: AppTypography.h2),
               const SizedBox(height: AppSpacing.base),
               Expanded(
@@ -236,6 +248,88 @@ class _CreateTripCard extends StatelessWidget {
               'Choose a supported destination and start date',
               style: AppTypography.body.copyWith(color: Colors.white70),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FeaturedTripCard extends StatelessWidget {
+  final FeaturedTrip featured;
+  final bool fromCache;
+  final DateTime? cachedAt;
+  const _FeaturedTripCard({
+    required this.featured,
+    required this.fromCache,
+    this.cachedAt,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final stop = featured.actionableStop;
+    final isActive = stop != null && stop.status == 'active';
+    final label = isActive ? 'Now' : 'Up next';
+    final region = _displayRegion(featured.geoRegion);
+
+    return GestureDetector(
+      onTap: () => context.go('/trip/${featured.tripId}'),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppSpacing.base),
+        decoration: BoxDecoration(
+          color: AppColors.card,
+          border: Border.all(color: AppColors.primary, width: 1.5),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                    vertical: AppSpacing.xs,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isActive
+                        ? AppColors.primary
+                        : AppColors.accent,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    label,
+                    style: AppTypography.caption
+                        .copyWith(color: Colors.white, fontSize: 11),
+                  ),
+                ),
+                const Spacer(),
+                if (fromCache && cachedAt != null)
+                  Text(
+                    'Cached ${_cacheAge(cachedAt!)}',
+                    style: AppTypography.caption
+                        .copyWith(color: AppColors.muted, fontSize: 11),
+                  ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(region, style: AppTypography.h2),
+            if (stop != null) ...[
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                stop.venueName,
+                style: AppTypography.body,
+              ),
+              Text(
+                MaterialLocalizations.of(context)
+                    .formatTimeOfDay(
+                      TimeOfDay.fromDateTime(stop.scheduledStart.toLocal()),
+                    ),
+                style: AppTypography.caption
+                    .copyWith(color: AppColors.muted),
+              ),
+            ],
           ],
         ),
       ),
