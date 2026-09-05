@@ -428,11 +428,6 @@ In itinerary AppBar, tap `+ Add Booking` icon (`bookmark_add_outlined`):
 - Tap `Auto-fill from paste` -> Type and PNR populate automatically.
 - Tap `Save Anchor` -> locked card appears on timeline with lock icon and `[BOOKING: FLIGHT]` badge.
 
-### 8i SPEC-04 rescue removal
-- Confirm the itinerary AppBar has no Shield / Hotel Rescue action.
-- On a hotel booking card, tap the driver-card action and confirm the cached
-  hotel card still opens.
-
 ### 8j Offline itinerary caching
 With the trip loaded on Windows or Android:
 - Stop the uvicorn backend server in terminal (simulating lost connectivity).

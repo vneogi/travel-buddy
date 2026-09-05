@@ -1,6 +1,6 @@
 import '../../data/models.dart';
 
-// SPEC-31: Date-scoped itinerary grouping and hotel-stay rescue selection.
+// SPEC-31: Date-scoped itinerary grouping.
 
 /// A calendar-date bucket of trip nodes.
 class ItineraryDayGroup {
@@ -43,72 +43,6 @@ List<ItineraryDayGroup> groupNodesByCalendarDate(List<TripNode> nodes) {
     ));
   }
   return result;
-}
-
-/// Whether `node` represents a hotel-like accommodation.
-///
-/// Matches booking_type == 'hotel' first, then falls back to a
-/// case-insensitive name check for hotel, resort, hostel, villa,
-/// or guesthouse.
-bool isHotelLikeNode(TripNode node) {
-  if (node.bookingType == 'hotel') return true;
-  final name = node.venueName.toLowerCase();
-  return name.contains('hotel') ||
-      name.contains('resort') ||
-      name.contains('hostel') ||
-      name.contains('villa') ||
-      name.contains('guesthouse');
-}
-
-/// Select the best accommodation for Hotel Rescue.
-///
-/// A hotel-like node occupies `[start, start + duration)`.
-///
-/// Precedence:
-/// 1. Active stay containing `now` (latest start wins on overlap).
-/// 2. Earliest future stay.
-/// 3. Most recently ended elapsed stay (latest end wins).
-/// 4. null.
-///
-/// Does not depend on list order.
-TripNode? selectRescueStay(List<TripNode> nodes, DateTime now) {
-  final hotels = nodes.where(isHotelLikeNode).toList();
-  if (hotels.isEmpty) return null;
-
-  // Partition into active, future, elapsed.
-  TripNode? bestActive;
-  TripNode? bestFuture;
-  TripNode? bestElapsed;
-
-  for (final h in hotels) {
-    final start = h.scheduledStart;
-    final end = start.add(Duration(minutes: h.durationMinutes));
-
-    if (!now.isBefore(start) && now.isBefore(end)) {
-      // Active: [start, end) contains now.
-      if (bestActive == null ||
-          start.isAfter(bestActive.scheduledStart)) {
-        bestActive = h;
-      }
-    } else if (now.isBefore(start)) {
-      // Future.
-      if (bestFuture == null ||
-          start.isBefore(bestFuture.scheduledStart)) {
-        bestFuture = h;
-      }
-    } else {
-      // Elapsed: now >= end.
-      final bestEnd = bestElapsed == null
-          ? null
-          : bestElapsed.scheduledStart
-              .add(Duration(minutes: bestElapsed.durationMinutes));
-      if (bestEnd == null || end.isAfter(bestEnd)) {
-        bestElapsed = h;
-      }
-    }
-  }
-
-  return bestActive ?? bestFuture ?? bestElapsed;
 }
 
 // ---- private helpers ----

@@ -9,7 +9,6 @@ import '../../theme/spacing.dart';
 import '../../widgets/activity_card.dart';
 import '../booking/add_booking_sheet.dart';
 import '../chat/ask_entry_bar.dart';
-import '../rescue/hotel_rescue_sheet.dart';
 import '../swap_sheet/swap_sheet.dart';
 import '../../widgets/reroute_badge.dart';
 import '../../widgets/shimmer_card.dart';
@@ -216,15 +215,6 @@ class ItineraryScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text('Your Trip', style: AppTypography.h2),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.shield_outlined),
-            tooltip: 'Hotel Rescue',
-            onPressed: () => openHotelRescue(
-              context,
-              tripId: tripId,
-              nodes: state.nodes,
-            ),
-          ),
           IconButton(
             icon: const Icon(Icons.bookmark_add_outlined),
             tooltip: 'Add Booking',
