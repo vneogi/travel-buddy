@@ -61,6 +61,12 @@ Failed or misleading:
 - Weather-provider failures returned 503 repeatedly as Windows resume events
   refreshed alerts throughout the session.
 
+Follow-up after PR #45 merged:
+
+- Windows exact-swap recheck passed Sep 5. Selecting a different SwapSheet
+  venue changed the itinerary row to that venue. The original explicit-choice
+  regression is verified closed.
+
 Deferred product requests, not treated as defects in the one-city slice:
 
 - One Laos trip spanning Vientiane, Vang Vieng, and Luang Prabang with

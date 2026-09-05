@@ -65,7 +65,7 @@
 | Party context (SPEC-03) | DONE | Server-side stamping, both backends, migration 0003 applied |
 | Observability (SPEC-05) | DONE | Ring buffer, request IDs, debug endpoint |
 | Signal registry (SPEC-06) | DONE | models/signal_types.py plus drift test |
-| Signal emission (SPEC-07) | IMPLEMENTED | SwapSheet wired: tap Swap opens sheet with real venue search, confirm sends swap_activity + reroute_accepted, dismiss sends reroute_rejected. Remaining: dish_loved, dish_ordered UI |
+| Signal emission (SPEC-07) | IMPLEMENTED | SwapSheet wired: tap Swap opens real venue search, confirm sends the tapped stable venue ID plus reroute_accepted, dismiss sends reroute_rejected. Sep 5 Windows recheck verified the itinerary row changes to the chosen venue. Remaining: dish_loved, dish_ordered UI |
 | Laos curation (SPEC-08) | DONE | 58 venues curated including Lao script. The wrong-script contamination is fixed: appended Chinese, Thai spelling of a Lao word, and a Thai-style consonant cluster |
 | arrival_delta derivation | DONE | Server-derived from visited_confirmed vs scheduled_start |
 | Docs hygiene guard | DONE | tests/test_docs_hygiene.py walks every markdown file outside build and vendor directories, and the SPEC-reference check also scans .py and .sql. Known non-ASCII files are allowlisted; the list may only shrink. The ASCII check itself still covers markdown only |
