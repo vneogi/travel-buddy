@@ -115,6 +115,7 @@ class TripState(BaseModel):
     current_context: CurrentContext = CurrentContext()
     execution_control: ExecutionControl = ExecutionControl()
     nodes: List[TripNode] = []
+    schedule_basis: Optional[str] = None  # SPEC-35: "region_local_v1" when node times use region TZ
     created_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
 
