@@ -2,8 +2,8 @@
 
 > Status: SPECIFIED. Backend not implemented.
 >
-> Extends SPEC-29 context alerts. Depends on SPEC-16 for stable itinerary nodes
-> and edges, SPEC-17 for factual provenance, SPEC-19 for licensed
+> Extends SPEC-29 context alerts. Depends on SPEC-13 for region timezones,
+> SPEC-16 for stable itinerary nodes and edges, SPEC-17 for factual provenance, SPEC-19 for licensed
 > review-derived dish claims, SPEC-22 for the shared interruption budget, and
 > SPEC-27 if an in-app candidate is later delivered as an OS push.
 >
@@ -50,6 +50,32 @@ or marks a candidate delivered. The existing SPEC-29
 
 The client may render the candidates in-app. OS push transport, device tokens,
 and closed-app delivery remain owned by SPEC-27.
+
+## Schedule-time correctness gate
+
+A departure reminder is unsafe if the itinerary's wall-clock meaning is
+ambiguous. The current catalog creator converts `start_date` to UTC and then
+sets the hour to 09:00. For Laos that represents 16:00 local time, while the
+current itinerary UI may still show the components as 09:00. Building a
+reminder directly on that value would make server action time and displayed
+itinerary time disagree.
+
+Phase A therefore includes a narrow time-basis correction:
+
+- catalog creation constructs 09:00 in `REGIONS[geo_region].timezone` and then
+  stores the resulting timezone-aware UTC instant;
+- `TripState` carries `schedule_basis: "region_local_v1"` only after every
+  generated node has been interpreted this way;
+- a node's `geo_region` must resolve to an IANA timezone in the region registry;
+- calculations and provider requests use UTC instants;
+- notification copy formats `HH:MM` in the destination node's region timezone;
+- the response carries both `recommended_departure_at` as an ISO UTC instant
+  and `time_zone` as the IANA zone used for display.
+
+Legacy trips with a missing/unknown `schedule_basis` receive no departure
+candidate. Do not silently reinterpret or rewrite their stored times. They may
+be recreated or migrated by a separately reviewed operation. This fail-closed
+rule is preferable to a precisely calculated reminder for the wrong hour.
 
 ## Notification types
 
@@ -148,6 +174,8 @@ text.
           "message": "...",
           "eligible_at": "...",
           "expires_at": "...",
+          "recommended_departure_at": "2026-10-04T01:20:00Z",
+          "time_zone": "Asia/Vientiane",
           "deep_link": "/trip/trip-123/node/node-7",
           "evidence": {
             "route": {
@@ -253,6 +281,11 @@ locally; it must not show a dismissed deterministic ID again.
 ## Required implementation proofs
 
 - Only the next pending, non-skipped node is evaluated.
+- Catalog 09:00 is constructed in the region timezone and stored as the
+  correct UTC instant.
+- Missing/unknown `schedule_basis` suppresses departure.
+- Copy formats departure time in the destination region timezone, independent
+  of server or device timezone.
 - Missing destination or credible origin coordinates suppresses departure.
 - Traffic duration is used once; no second peak-hour multiplier is applied.
 - Rain adds the declared policy buffer without changing the provider duration.
@@ -272,6 +305,9 @@ locally; it must not show a dismissed deterministic ID again.
 ## Acceptance
 
 - [ ] Read-only owner-scoped notifications endpoint
+- [ ] Region-local catalog creation writes UTC instants and marks
+      `schedule_basis: region_local_v1`
+- [ ] Legacy ambiguous trips fail closed rather than receiving departure copy
 - [ ] Typed `departure_reminder` and `meal_preview` response models
 - [ ] Provider-backed, departure-time-aware route adapter with five-minute
       cache
