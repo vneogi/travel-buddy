@@ -47,11 +47,11 @@ class AlertsState {
 
 /// SPEC-29: Fetches alerts for a trip without blocking itinerary.
 ///
-/// State remains scoped by trip for the app session.
+/// autoDispose: leave and reopen the same trip refetches alerts.
 /// - 401/403 never falls back to cache.
 /// - NetworkException and WeatherUnavailableException use unexpired cache.
 /// - JSON/parse/programming errors do not silently use stale cache.
-class AlertsNotifier extends FamilyAsyncNotifier<AlertsState, String> {
+class AlertsNotifier extends AutoDisposeFamilyAsyncNotifier<AlertsState, String> {
   @override
   Future<AlertsState> build(String arg) async {
     return _load(arg);
@@ -169,10 +169,8 @@ class AlertsNotifier extends FamilyAsyncNotifier<AlertsState, String> {
   }
 }
 
-/// Driver-card navigation and itinerary shimmer temporarily unmount the alert
-/// section. Retaining this provider prevents each remount from becoming
-/// another weather request.
+/// autoDispose: leaving and reopening a trip performs a fresh alert check.
 final alertsNotifierProvider =
-    AsyncNotifierProvider.family<AlertsNotifier, AlertsState, String>(
+    AsyncNotifierProvider.autoDispose.family<AlertsNotifier, AlertsState, String>(
   AlertsNotifier.new,
 );

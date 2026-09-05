@@ -102,6 +102,7 @@ class SwapSheetState extends ConsumerState<SwapSheet> {
   @override
   Widget build(BuildContext context) {
     return DraggableScrollableSheet(
+      expand: false,
       initialChildSize: 0.85,
       maxChildSize: 0.9,
       minChildSize: 0.3,
@@ -138,7 +139,7 @@ class SwapSheetState extends ConsumerState<SwapSheet> {
             ),
             if (!_loading && _availableVibes.isNotEmpty)
               SizedBox(
-                height: 36,
+                height: 48,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(

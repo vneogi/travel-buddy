@@ -189,6 +189,11 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
+      final sheet = tester.widget<DraggableScrollableSheet>(
+        find.byType(DraggableScrollableSheet),
+      );
+      expect(sheet.expand, isFalse);
+
       // The boosted venue must show the Sponsored label.
       expect(find.text('Sponsored'), findsOneWidget);
       expect(
