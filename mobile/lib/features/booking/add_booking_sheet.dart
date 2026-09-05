@@ -34,12 +34,14 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
   final _pasteController = TextEditingController();
   DateTime _scheduledStart = DateTime.now().add(const Duration(hours: 24));
   int _durationMinutes = 180;
+  DateTime? _checkoutDate;
   String _importSource = 'manual';
   bool _saving = false;
   String? _saveError;
   String? _parsedGeoRegion;
 
   bool get _isEditMode => widget.editNode != null;
+  bool get _isHotel => _bookingType == 'hotel';
 
   @override
   void initState() {
@@ -52,10 +54,20 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
       _notesController.text = edit.bookingNotes ?? '';
       _scheduledStart = edit.scheduledStart;
       _durationMinutes = edit.durationMinutes;
+      if (edit.bookingType == 'hotel') {
+        _checkoutDate = edit.scheduledStart.add(
+          Duration(minutes: edit.durationMinutes),
+        );
+      }
       _importSource = edit.importSource ?? 'manual';
     } else {
       _bookingType = widget.initialBookingType;
       _durationMinutes = _defaultDurations[_bookingType] ?? 180;
+      if (_bookingType == 'hotel') {
+        _checkoutDate = _scheduledStart.add(
+          const Duration(hours: 24),
+        );
+      }
     }
   }
 
@@ -99,6 +111,9 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
       if (parsed.scheduledStart != null) {
         _scheduledStart = parsed.scheduledStart!;
       }
+      if (parsed.checkoutDate != null && _bookingType == 'hotel') {
+        _checkoutDate = parsed.checkoutDate;
+      }
       _parsedGeoRegion = parsed.geoRegion;
       _importSource = 'email';
     });
@@ -132,8 +147,78 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
     });
   }
 
+  Future<void> _pickCheckinDate() async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate: _scheduledStart,
+      firstDate: _isEditMode
+          ? _scheduledStart.isBefore(DateTime.now())
+              ? _scheduledStart
+              : DateTime.now()
+          : DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (date == null || !mounted) return;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(_scheduledStart),
+    );
+    if (!mounted) return;
+    setState(() {
+      final hour = time?.hour ?? 15;
+      final minute = time?.minute ?? 0;
+      _scheduledStart = DateTime(
+        date.year, date.month, date.day, hour, minute,
+      );
+      // Push checkout forward if it is on or before new check-in.
+      if (_checkoutDate != null &&
+          !_checkoutDate!.isAfter(_scheduledStart)) {
+        _checkoutDate = _scheduledStart.add(const Duration(hours: 24));
+      }
+    });
+  }
+
+  Future<void> _pickCheckoutDate() async {
+    final initial = _checkoutDate ?? _scheduledStart.add(
+      const Duration(hours: 24),
+    );
+    final date = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: _scheduledStart,
+      lastDate: _scheduledStart.add(const Duration(days: 365)),
+    );
+    if (date == null || !mounted) return;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: _checkoutDate != null
+          ? TimeOfDay.fromDateTime(_checkoutDate!)
+          : const TimeOfDay(hour: 12, minute: 0),
+    );
+    if (!mounted) return;
+    setState(() {
+      final hour = time?.hour ?? 12;
+      final minute = time?.minute ?? 0;
+      _checkoutDate = DateTime(
+        date.year, date.month, date.day, hour, minute,
+      );
+    });
+  }
+
   Future<void> _save() async {
     if (_saving) return;
+    // SPEC-33: For hotels, derive duration from check-in / check-out.
+    if (_isHotel) {
+      if (_checkoutDate == null ||
+          !_checkoutDate!.isAfter(_scheduledStart)) {
+        setState(() {
+          _saveError = 'Check-out must be after check-in.';
+        });
+        return;
+      }
+      _durationMinutes =
+          _checkoutDate!.difference(_scheduledStart).inMinutes;
+    }
     final title = _titleController.text.trim().isEmpty
         ? 'Booking'
         : _titleController.text.trim();
@@ -229,6 +314,13 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
                     _bookingType = e.key;
                     _durationMinutes =
                         _defaultDurations[e.key] ?? 90;
+                    if (e.key == 'hotel' && _checkoutDate == null) {
+                      _checkoutDate = _scheduledStart.add(
+                        const Duration(hours: 24),
+                      );
+                    } else if (e.key != 'hotel') {
+                      _checkoutDate = null;
+                    }
                   }),
                 );
               }).toList(),
@@ -239,17 +331,33 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
               decoration: const InputDecoration(labelText: 'Title / Venue'),
             ),
             const SizedBox(height: AppSpacing.sm),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Date & Time'),
-              subtitle: Text(
-                '${_scheduledStart.day}/${_scheduledStart.month}/${_scheduledStart.year} '
-                '${_scheduledStart.hour.toString().padLeft(2, '0')}:'
-                '${_scheduledStart.minute.toString().padLeft(2, '0')}',
+            if (_isHotel) ...[
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Check-in'),
+                subtitle: Text(_formatDate(_scheduledStart)),
+                trailing: const Icon(Icons.calendar_today),
+                onTap: _pickCheckinDate,
               ),
-              trailing: const Icon(Icons.calendar_today),
-              onTap: _pickDateTime,
-            ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Check-out'),
+                subtitle: Text(
+                  _checkoutDate != null
+                      ? _formatDate(_checkoutDate!)
+                      : 'Select check-out date',
+                ),
+                trailing: const Icon(Icons.calendar_today),
+                onTap: _pickCheckoutDate,
+              ),
+            ] else
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Date & Time'),
+                subtitle: Text(_formatDate(_scheduledStart)),
+                trailing: const Icon(Icons.calendar_today),
+                onTap: _pickDateTime,
+              ),
             TextField(
               controller: _codeController,
               decoration:
@@ -316,4 +424,9 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
       ),
     );
   }
+
+  String _formatDate(DateTime dt) =>
+      '${dt.day}/${dt.month}/${dt.year} '
+      '${dt.hour.toString().padLeft(2, "0")}:'
+      '${dt.minute.toString().padLeft(2, "0")}';
 }

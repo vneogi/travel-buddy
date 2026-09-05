@@ -6,6 +6,7 @@ class ParsedBooking {
   final String? venueName;
   final DateTime? scheduledStart;
   final int? durationMinutes;
+  final DateTime? checkoutDate;
   final String? confirmationCode;
   final String? notes;
   final String? geoRegion;
@@ -16,6 +17,7 @@ class ParsedBooking {
     this.venueName,
     this.scheduledStart,
     this.durationMinutes,
+    this.checkoutDate,
     this.confirmationCode,
     this.notes,
     this.geoRegion,
@@ -121,6 +123,7 @@ ParsedBooking _extractBookingFromText(
     bookingType: bookingType,
     venueName: venueName,
     scheduledStart: checkIn,
+    checkoutDate: stayMinutes != null && stayMinutes > 0 ? checkOut : null,
     confirmationCode: confirmationCode,
     durationMinutes: stayMinutes != null && stayMinutes > 0
         ? stayMinutes
