@@ -1,6 +1,11 @@
 # SPEC-36: Laos Corridor Trip
 
-> Status: SPECIFIED, NOT IMPLEMENTED.
+> Status: IMPLEMENTATION IN REVIEW, NOT MERGED.
+>
+> Candidate branch `origin/feat/spec36-laos-corridor` is at `534b889`.
+> Backend strengthening and later-city swap-coordinate changes are pushed.
+> Completion still requires review of the actual diff, Flutter compile/tests,
+> date-range form and swap-isolation proof, green CI, and merge to `main`.
 >
 > Extends SPEC-31 date grouping and SPEC-32 catalog trip creation. Uses
 > SPEC-13 region metadata, SPEC-16 stable nodes and normalized rows, and the

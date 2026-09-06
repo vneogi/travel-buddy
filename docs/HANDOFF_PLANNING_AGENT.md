@@ -23,8 +23,10 @@ Forcing function: Laos field test, 2 October.
 
 Done on the October spine:
 
-- Device day closed (2026-08-17). Migrations 0011-0018 applied. 0019
-  (`prompt_dismissed`) is in the repo, unapplied live.
+- Device day closed (2026-08-17). Migrations 0011-0018 applied. Live SQL
+  sentinels verified 0019-0024 on 2026-09-06, including the 0023
+  `filter_geo_region` RPC argument. `docs/HOSTED_STATE.md` is the canonical
+  ledger; do not reconstruct migration state from old briefs.
 - SPEC-09 client + server. Client: PR #16 (`7173a3f`). Device E2E with
   `TB_ALLOW_ANONYMOUS=true` still owed.
 - SPEC-22 October slice. PR #17 (`1b9b1b3`). Envelope widget, five
@@ -34,9 +36,9 @@ Done on the October spine:
 
 - SPEC-12 driver card. PR #19 (`a2da64a`). Full-screen offline card on
   `FactView` / `ConfirmAffordance` / `cache_place`, `driver_card_shown` &
-  `name_confirmed` signals (migration 0020 in repo, unapplied live).
+  `name_confirmed` signals (migration 0020 verified live 2026-09-06).
 - SPEC-10 booking anchors. PR #20 (`f6328e9`). Immovable locked nodes,
-  booking metadata on `trip_node` (migration 0021 in repo, unapplied live),
+  booking metadata on `trip_node` (migration 0021 verified live 2026-09-06),
   on-device regex extractor, `AddBookingSheet`, `booking_added` signal.
 - SPEC-04 offline cache floor. PR #22 (`b7e10c3`). Offline itinerary cache
   fallback in `ItineraryController.load()` and pre-cached place data remain.
@@ -50,7 +52,9 @@ Done on the October spine:
 October spine status: ALL 7 CORE ITEMS COMPLETE & HARDENED ON MAIN.
 
 Status tables: `docs/PROJECT_STATUS.md`. Device-only queue:
-`docs/AWAITING_VERIFICATION.md`.
+`docs/AWAITING_VERIFICATION.md`. Hosted schema/provider ledger:
+`docs/HOSTED_STATE.md`. Next delivery gate:
+`docs/specs/SPEC-37-phone-field-test-delivery.md`.
 
 ## Third-party review -- already adjudicated
 
@@ -107,11 +111,23 @@ implement merge before the driver card.
 All 7 items on the October field-test spine are complete on main.
 SPEC-30 is complete (`f8349a8`, `83c825f`).
 Next tasks:
-1. Owner laptop verification for remaining unapplied migrations (0023; 0019-0022
-   if not already applied), Anonymous E2E, and Chrome smoke.
-2. SPEC-32 catalog-backed Laos trip creation (this branch), then device-verify.
-3. Remove the dedicated Hotel Rescue shortcut, then finish multi-night hotel UI.
-4. Post-October consumer surface specs (SPEC-26 remainder, SPEC-25, SPEC-27).
+1. Review `origin/feat/spec36-laos-corridor` at `534b889` against SPEC-36 and
+   its amended brief. It is pushed, not merged. Independently clear backend
+   proofs, Flutter compile/tests, the three-city date form, target-city swap
+   isolation, and CI. Do not accept the execution-agent summary as evidence.
+2. After SPEC-36 merges, execute SPEC-37: provision a stable hosted HTTPS API,
+   configure hosted secrets, build an installable artifact for the owner's
+   phone, and prove online operation without the laptop.
+3. Run the real airplane-mode drill from the installed artifact with USB and
+   local tunnels disconnected. Record the build SHA, platform, and results in
+   `docs/AWAITING_VERIFICATION.md`.
+4. Only then resume multi-night hotel polish, SPEC-17, trip-less Ask, richer
+   Home, and the remaining consumer backlog.
+
+Migrations through 0024 and the Maps/OpenWeather local provider credentials are
+already verified; do not ask for them again unless a new migration or
+credential rotation occurs. See `docs/HOSTED_STATE.md`. Local provider success
+does not establish hosted deployment configuration.
 
 Do not start with another full-repo archaeology. The defects that
 matter on itinerary are listed above. If a new claim needs checking,

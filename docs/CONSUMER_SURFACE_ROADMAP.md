@@ -75,25 +75,33 @@ allowed to render.
 
 ## Sequencing
 
-The October path now includes the thin SPEC-26 trip list/create surface and the
+The October path includes the thin SPEC-26 trip list/create surface and the
 thin SPEC-25 trip-scoped Ask surface alongside identity, render, driver cards,
 booking anchors and offline itinerary/place caching. The duplicate Hotel Rescue
-shortcut is being removed by owner decision. The Home list and Ask composer
-exist.
+shortcut is removed by owner decision. The Home list and Ask composer exist.
+SPEC-35's provider-backed in-app departure banner is also on main.
 
 Still outside that thin path: SPEC-24 identity merge, SPEC-27 lifecycle rights,
-trip-less Ask, and the rich Home aggregate. SPEC-32 catalog create is in this
-branch. SPEC-02 supplied the offline substrate. Durable hearts passed on
-Windows Aug 30.
+trip-less Ask, and the rich Home aggregate. SPEC-32 single-city catalog create
+is verified. SPEC-36's multi-city corridor is pushed at `534b889` but remains
+under review and unmerged. SPEC-02 supplied the offline substrate. Durable
+hearts passed on Windows Aug 30.
 
 The exception is the SPEC-24 design, which is settled now and built later, for
 the reason above.
 
-The remaining order is driven by dependency rather than appeal. Remove the
-dedicated Hotel Rescue shortcut, then finish multi-night hotel UI. The full
-SPEC-25 contract still needs SPEC-17's real envelope, so trip-less Ask follows
-the trust work. SPEC-27 should not be later than the first build that goes to
-people who are not us.
+The immediate order is driven by the field-test dependency:
+
+1. merge SPEC-36 only after backend and Flutter review and green CI;
+2. execute SPEC-37 with a stable hosted HTTPS backend and installable phone
+   artifact;
+3. pass online and real airplane-mode acceptance without a laptop transport;
+4. then return to multi-night hotel polish and the broader consumer backlog.
+
+The full SPEC-25 contract still needs SPEC-17's real envelope, so trip-less Ask
+follows the trust work. SPEC-27 should not be later than the first build that
+goes to people who are not us; SPEC-37 is owner field-test delivery, not a
+public launch.
 
 ## Deliberately not specified here
 

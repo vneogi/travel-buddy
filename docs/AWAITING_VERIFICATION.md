@@ -18,25 +18,43 @@ Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 
 | Area | Unverified since | Verify with |
 |---|---|---|
-| Migrations 0011 to 0018 | applied device day 2026-08-17 | VALIDATE on NOT VALID CHECKs still deferred; confirm via Step 7 |
+| 0015/0017 CHECK validation | Migrations applied device day 2026-08-17 | Deliberate `VALIDATE CONSTRAINT` remains deferred until distinct-value review; this is not an unapplied-migration gap |
 | The five Supabase tests | ran green 2026-08-17 | `280 passed` suite with TB_SUPABASE_URL; see finding below |
 | Flutter client follow-ups | Aug 30 2026 Windows run | Windows desktop or Android. Chrome is layout-only while web SQLite remains experimental. Profile/Skip exact errors remain open; durable hearts passed Aug 30 |
-| Migration 0019 prompt_dismissed | landed `1b9b1b3`, unapplied | LAPTOP_VERIFY Step 3; then signal_types tests |
-| Migration 0020 driver_card_signals | landed `a2da64a`, unapplied | Apply via Supabase SQL editor; then signal_types drift tests |
-| Migration 0021 booking_anchors | landed `f6328e9`, unapplied | Apply via Supabase SQL editor; then signal_types drift tests |
-| Migration 0022 trip_node_local_names | landed, unapplied | Apply via Supabase SQL editor; adds names_local, landmarks_local, nearest_landmark to trip_node |
-| Migration 0023 driver_card_search_fields | in repo, unapplied | Apply via Supabase SQL editor; updates hybrid_venue_search to return geo/localized driver-card fields and accept filter_geo_region |
-| Migration 0024 session_start | applied hosted Aug 30-31 (owner SQL editor) | Required before live ingest accepts the type. After apply: session_start accepted=1 |
 | PowerShell scripts | Aug 9 | `.\scripts\smoke-test.ps1` on Windows |
 | Laptop-feedback product gaps | Sep 5 2026 | Multi-night hotel UI and real location remain open. Hotel Rescue 6C is canceled by owner decision; remove the duplicate shortcut but keep hotel driver cards and offline cache. Windows Maps fallback and SPEC-32 Laos create were verified Sep 5 |
-| `hybrid_venue_search` geo_region parameter | Observed Aug 17 2026 | Live signature matches 0001: no geo_region arg (radius-only). Multi-city RPC filter still absent |
+| SPEC-36 corridor implementation | Branch `534b889`, Sep 6 2026 | Independent backend and Flutter review, compile/tests, date-range form, later-city swap isolation, CI, then merge |
+| Hosted API for phone field test | Not provisioned | SPEC-37: stable HTTPS URL from reviewed main; hosted Supabase, LLM, Maps, Weather and anonymous-auth configuration with `TB_DEBUG=false` |
+| Installable independent phone build | Not produced | SPEC-37: signed Android APK or iOS TestFlight artifact using hosted `TB_API_BASE_URL`; must launch without `flutter run`, USB, localhost, LAN backend, or `adb reverse` |
+| Final phone airplane-mode acceptance | Not run | Preload corridor and driver cards, disconnect USB, enable airplane mode, cold reopen, inspect cached content, queue an action, reconnect and prove exactly-once drain |
 | Dubai row contents, including AED magnitudes | Cleared Aug 17 2026 | 16 Dubai venues live (null price_band). dubai_dishes=0 -- nothing to inspect for AED; food data is greenfield |
 | `pg_description` non-ASCII | Cleared Aug 17 2026 | Step 7c returned 0 rows |
 
 The five Supabase integration tests ran green on device day 2026-08-17 with
 `TB_SUPABASE_URL` set (`280 passed` suite). Remaining credential-gated gaps
 are smoke-test.ps1, any unrecorded Anonymous E2E, and deliberate VALIDATE of
-NOT VALID CHECKs.
+NOT VALID CHECKs. Hosted migration and provider state is maintained only in
+`docs/HOSTED_STATE.md`.
+
+## Finding -- Sep 6 2026 -- hosted schema and provider credentials verified
+
+Owner-provided live SQL exports establish that migrations 0019 through 0024
+are applied. Signal sentinels exist for `prompt_dismissed`,
+`driver_card_shown`, `name_confirmed`, `booking_added`, and `session_start`;
+the 0021 and 0022 `trip_node` column sentinels exist. The live
+`hybrid_venue_search` identity arguments include the seventh
+`filter_geo_region text` parameter, clearing the old 0023 gap.
+
+Windows PowerShell provider smoke tests also returned Google Distance Matrix
+status OK with a real route and traffic duration, and OpenWeather code 200
+with 40 forecast periods. This proves `TB_GOOGLE_MAPS_API_KEY` and
+`TB_OPENWEATHER_API_KEY` were present and provider-authorized in that local
+process. It does not prove hosted deployment configuration. Secret values and
+full responses are deliberately not recorded.
+
+The Google key used during troubleshooting was exposed outside `.env`; rotate
+and restrict it before production use, then rerun the safe summary-only test in
+`docs/HOSTED_STATE.md`.
 
 ## Finding -- Sep 5 2026 -- Laos create and swap (Windows)
 
@@ -127,8 +145,9 @@ Owner later called the Hotel Rescue AppBar shortcut useless. The Sep 5 product
 decision is to remove it. Profile overflow (`profile_screen.dart`) and
 an earlier ErrorView overflow after 401 are separate layout findings.
 
-SPEC-32 catalog-backed create is implemented in this branch. A Windows create
-of a Laos city is still unverified.
+At this point SPEC-32 catalog-backed create was on its implementation branch
+and a Windows Laos create was unverified. The owner later verified the
+single-city Luang Prabang create on Sep 5.
 
 ## Finding -- Aug 31 2026 -- SPEC-30 on origin/main
 
@@ -227,8 +246,8 @@ notes, and date grouping shipped; the dedicated Hotel Rescue path was retired.
 
 Open product gaps:
 
-- Create-trip still seeds the Dubai template; it cannot create a real Laos trip
-  (superseded in code by SPEC-32 on this branch; device-verify a Laos city).
+- Create-trip still seeded the Dubai template during this run. SPEC-32 later
+  replaced that path, and the owner verified a Luang Prabang create on Sep 5.
 - `geo:` Maps hand-off fails on Windows. Keep coordinates available until a
   platform-specific hand-off exists.
 - Hearts live in the auto-disposed itinerary controller and are not durable.

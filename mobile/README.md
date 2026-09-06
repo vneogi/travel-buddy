@@ -1,6 +1,7 @@
 # Travel Buddy -- Flutter Mobile App
 
-AI-powered travel companion for Dubai. Material 3, Riverpod state management, Dio HTTP client.
+AI-powered travel companion for Dubai and the Laos field-test corridor.
+Material 3, Riverpod state management, Dio HTTP client.
 
 ## Quick Start
 
@@ -18,6 +19,22 @@ Override at runtime:
 ```bash
 flutter run --dart-define=TB_API_BASE_URL=https://your-api.railway.app
 ```
+
+`ApiClient` appends `/api/v1`; do not include that suffix in
+`TB_API_BASE_URL`.
+
+For the field-test artifact, use the stable hosted HTTPS API and a standalone
+release build:
+
+```bash
+flutter build apk --release \
+  --dart-define=TB_API_BASE_URL=https://your-hosted-api.example
+```
+
+The acceptance build must launch without `flutter run`, USB, localhost,
+`10.0.2.2`, a laptop LAN address, or `adb reverse`. See
+`../docs/specs/SPEC-37-phone-field-test-delivery.md`. Provider and Supabase
+service-role keys belong on the backend only.
 
 ### Identity (SPEC-09)
 

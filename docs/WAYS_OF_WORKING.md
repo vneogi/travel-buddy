@@ -74,6 +74,7 @@ The routing is fixed:
 | A finding, gap or risk | the risk table in `PROJECT_STATUS.md` |
 | A lesson learned from a defect | a numbered rule in `ENGINEERING_RULES.md` |
 | A dated observation, or something only a device can settle | `AWAITING_VERIFICATION.md` |
+| Hosted migration or credential-backed provider state | `HOSTED_STATE.md` |
 | An instruction for the execution agent | a brief under `docs/briefs/` |
 
 Two rules keep the set coherent. Exactly one document owns any given list; when

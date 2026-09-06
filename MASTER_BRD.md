@@ -308,7 +308,9 @@ All are prefixed `TB_`. See `.env.example` for the full list.
     TB_REVENUECAT_WEBHOOK_AUTH=
 
 `TB_DEBUG` must never be true on a deployment reachable from the internet. Which
-keys are currently populated is environment state, not specification, so it is
+keys are currently populated is environment state, not specification.
+Credential-safe, dated verification state is maintained in
+`docs/HOSTED_STATE.md`; never paste values into this document. Therefore it is
 not recorded here.
 
 `TB_LLM_DEBUG` exists because raising the root log level for a debug flag once
@@ -401,18 +403,24 @@ a failing test. When a test fails against real configuration, suspect the test
 - Error responses carry a `request_id` and nothing internal. Full tracebacks go
   to the log and the ring buffer.
 - Startup logs booleans for credential presence, never values.
-- Halal is not currently enforced against pork in the dietary checker. That is a
-  safety defect, tracked as high severity, not a missing feature.
+- Dietary suitability is retired by SPEC-14. The app does not make a halal or
+  ingredient-safety claim; do not revive the old rule as a field-test task.
 
 ---
 
 ## 11. Deployment
 
-### Railway, the default for now
+### Hosted target -- required by SPEC-37
 
-Push to GitHub, connect Railway to the repository, set environment variables in
-the dashboard with `TB_DEBUG=false`, and Railway builds from the Dockerfile on
-push to `main`. CI runs Ruff, then tests, then build, then deploy.
+No hosted deployment target is currently proven. CI builds the container on
+`main`; deployment is manually gated and the Railway path still requires a
+service, `RAILWAY_TOKEN`, and `PRODUCTION_URL`.
+
+After SPEC-36 merges, SPEC-37 provisions one stable HTTPS target from reviewed
+`main`, configures backend-only secrets with `TB_DEBUG=false`, and verifies it
+from the phone's network. Railway remains the prepared path, but another
+supported container target is acceptable if it satisfies the same health,
+secret, and rollback requirements. A local `.env` is never deployment state.
 
 ### Docker Compose, local
 

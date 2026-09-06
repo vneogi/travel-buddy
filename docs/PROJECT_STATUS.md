@@ -8,6 +8,10 @@
 > For which traveller and which cities, see docs/MARKET_STRATEGY.md.
 > For measured per-city data coverage, see docs/CORRIDOR_COVERAGE.md.
 > For the schema and data-layer sequence, see docs/DATA_LAYER_ROADMAP.md.
+> For hosted migrations and credential-backed provider status, see
+> docs/HOSTED_STATE.md. That file is the only current ledger.
+> For the phone-independent field-test delivery gate, see
+> docs/specs/SPEC-37-phone-field-test-delivery.md.
 
 ## TL;DR
 
@@ -29,10 +33,11 @@
   Hearts persist across process death (verified Aug 30 on Windows).
   `session_start` emits from the app lifecycle (SPEC-30, `f8349a8`).
   Sync Status must still await `syncOnce()` before reading counts.
-- Migrations 0011 to 0018 are applied on the hosted database (device day
-  2026-08-17, Supabase SQL editor). 0011 was gated on a live OpenAPI schema
-  dump (no name_local dual-column conflict). 0015/0017 CHECKs remain NOT
-  VALID until a deliberate VALIDATE after distinct-value review.
+- Migrations 0001 to 0024 are applied on the hosted database. Migrations
+  0011-0018 were verified on device day 2026-08-17; 0019-0024 were verified
+  from live schema sentinels on 2026-09-06. Migration 0023 includes the live
+  `filter_geo_region` RPC argument. 0015/0017 CHECKs remain NOT VALID until a
+  deliberate VALIDATE after distinct-value review. See docs/HOSTED_STATE.md.
 - Every file under data/ is ASCII-escaped, and a guard enforces it. Use
   scripts/format_venue_json.py to get a readable copy for curation and to
   re-escape on the way back in.
@@ -55,6 +60,7 @@
 | Migration 0016 comment fixes | APPLIED (device day 2026-08-17) | Comments only; confirm pg_description ASCII in Step 7 |
 | Migration 0017 venues_rag price_band | APPLIED (device day 2026-08-17) | NOT VALID CHECK; VALIDATE deferred until distinct-value read |
 | Migration 0018 anonymous identity | APPLIED (device day 2026-08-17) | identity_kind on user_tiers |
+| Migrations 0019-0024 | APPLIED (verified 2026-09-06) | Signal rows for 0019/0020/0021/0024, trip_node columns for 0021/0022, and the 0023 seven-argument hybrid search RPC were observed live. Canonical evidence: docs/HOSTED_STATE.md |
 | Venue loader | REPAIRED, CARRIES EVERY FIELD | Pure ASCII, vocabulary restored, geo_region inferred from the file wrapper. Payload built once in build_venue_record; insert and update derive from it so they cannot drift apart |
 | Loader payload guard | DONE | A test asserts build_venue_record's key set equals VENUES_RAG_WRITE_COLUMNS, and build_dish_record does the same for venue_dish against VENUE_DISH_WRITE_COLUMNS. The earlier guards watched the declaration only, which is how four fields were dropped while the suite stayed green |
 | External-id writer | DONE | upsert_venues writes venue_external_id for every venue carrying a verified name reference, and the test drives upsert_venues rather than the helper, which is the distinction that let the first attempt land as dead code |
@@ -83,7 +89,7 @@
 | On-demand venue discovery (SPEC-18) | SPECIFIED | Not implemented. A traveller asks about where they are standing and the answer persists as a provisional venue, so the venue layer grows from real demand. Coordinate anchoring against OSM or Wikidata is mandatory before anything persists |
 | Corpus mining (SPEC-19) | SPECIFIED | Not implemented. Extracts the operational knowledge no structured dataset carries, from openly licensed corpora only. This is the data source trip_edge never had. Google and TripAdvisor are excluded on licensing |
 | City onboarding kit (SPEC-20) | SPECIFIED | Not implemented. Seeds a city's spine of 40 to 60 anchors, sourced identity first so provenance defaults to sourced rather than generated. SPEC-18 supplies the tail. validate_city refuses rather than warns |
-| Client render contract (SPEC-22) | DONE (October slice) | PR #17 squash-merged as `1b9b1b3`. Envelope widget, five treatments, interruption budget, offline state, PromptDismissAdapter -> SignalService.emit(prompt_dismissed). Font cmap, ARB wiring, and screen migration deferred. Migration 0019 unapplied on live DB until laptop |
+| Client render contract (SPEC-22) | DONE (October slice) | PR #17 squash-merged as `1b9b1b3`. Envelope widget, five treatments, interruption budget, offline state, PromptDismissAdapter -> SignalService.emit(prompt_dismissed). Font cmap, ARB wiring, and screen migration deferred. Migration 0019 verified live 2026-09-06 |
 | OSM upstream contribution (SPEC-21) | DECIDED IN PRINCIPLE | Not scheduled, and not on the October path. A decision record rather than a spec: confirmed commodity facts go back to OpenStreetMap under the traveller's own account, never behavioural derivations, never model output, never subjective fields. Depends on SPEC-17 for field_verified claims. It also flags that our ODbL exposure is on the consuming side and already live via SPEC-20 |
 | Money as a dimension (SPEC-23) | SPECIFIED | Not implemented. The engineering contract under VISION section 20, and roadmap concern 7. A band and an amount are different things and both are needed; no amount is storable without its currency; a band is meaningless until anchored to a region, which is what makes price tolerance portable between cities; transport cost belongs on trip_edge; budget is revealed from rejections rather than asked for, with a volunteered hard cap honoured exactly; amounts are SPEC-17 claims on a weeks-scale horizon and degrade to a band when stale. Depends on SPEC-13, SPEC-16 and SPEC-17 |
 
@@ -97,7 +103,8 @@
 | Date-scoped itinerary (SPEC-31) | DONE | Grouping under date headers is on main (PR #36, Windows Sep 4 6A). Test 6C is canceled; the dedicated rescue shortcut and selection helpers are removed. Date grouping and the hotel booking's driver-card action remain |
 | Real Laos trip creation (SPEC-32) | VERIFIED (one-city slice) | Sep 5 Windows run created a real catalog-backed Luang Prabang itinerary with no Dubai fallback. Multi-city Laos corridors remain outside this slice |
 | Proactive itinerary notifications (SPEC-35) | PHASE A + A2 DONE | PR #50 (`ccfa41e`) added `GET /trip/{id}/notifications`, region-local catalog 09:00, and provider-backed departure candidates. PR #52 (`1379da8`) added the in-app Flutter banner, identity-scoped cache, local dismissal, and weather-card stacking gate. Meal previews remain suppressed until dish provenance exists. No background GPS, LLM, mutation or push |
-| Laos corridor trip (SPEC-36) | SPECIFIED | One northbound trip across Vientiane, Vang Vieng, and Luang Prabang with independent date ranges, deterministic city-day catalog stops, truthful normalized day indexes, and collapsible city/day sections. No synthetic transport or stay claim |
+| Laos corridor trip (SPEC-36) | IMPLEMENTATION IN REVIEW, NOT MERGED | `origin/feat/spec36-laos-corridor` is at `534b889`. Backend strengthening and target-node swap-coordinate changes are pushed, but the branch still requires independent backend/Flutter review, compile/test evidence, date-range form verification, and green CI. Do not infer completion from the execution-agent report |
+| Phone-independent field-test delivery (SPEC-37) | SPECIFIED, BLOCKED ON SPEC-36 | Stable hosted HTTPS backend, installable phone artifact, online corridor acceptance, and a real airplane-mode drill without localhost, laptop LAN, `flutter run`, or `adb reverse` |
 
 Migration numbers are assigned when a spec is implemented, not when it is
 written. SPEC-11, SPEC-13, SPEC-14 and SPEC-15 each claimed a number, and the
@@ -109,10 +116,12 @@ numbers were taken by other work while they sat unimplemented.
 
 Interim R5 relocate of VALID_DISH_CONTAINS landed in PR #15 (d061222). Device
 day is closed and the Windows laptop ran the product matrix on Aug 27-28.
-Remaining device work must be named explicitly: unapplied migrations
-(0023 and any earlier unapplied except 0024 if already applied on hosted),
-Profile/Skip exact errors, and any unrecorded Anonymous E2E. Durable hearts
-passed on Windows Aug 30.
+All repository migrations through 0024 are verified on hosted Supabase; do not
+reopen or reapply them without a new migration. Remaining device work must be
+named explicitly: Profile/Skip exact errors and any unrecorded Anonymous E2E.
+Durable hearts passed on Windows Aug 30. Google Maps Distance Matrix and
+OpenWeather credentials returned successful real responses on Windows Sep 6;
+see docs/HOSTED_STATE.md for the credential-safe checks.
 
 Success means an installable build whose engine knows a real trip anchored on
 real flight and hotel bookings, and whose driver card works without
@@ -129,9 +138,9 @@ SPEC-02 plus SPEC-12.
    `TB_ALLOW_ANONYMOUS=true` E2E gap explicitly; laptop access is no longer the
    blocker.
 3. SPEC-22 client render contract -- **DONE** PR #17 (`1b9b1b3`). October
-   slice only; SPEC-17 backend still stubbed. Migration 0019 remains unapplied
-   unless separately recorded; Flutter verification is tracked by current CI
-   and the Windows runbook.
+   slice only; SPEC-17 backend still stubbed. Migration 0019 was verified live
+   2026-09-06; Flutter verification is tracked by current CI and the Windows
+   runbook.
 4. Itinerary signal, auth-gate, and Flutter CI -- **DONE** PR #18
    (`ce8fedb`). Flutter job green; owner laptop `flutter analyze
    --no-fatal-infos` (infos only) and `flutter test` green on `d7eb853`.
@@ -139,11 +148,11 @@ SPEC-02 plus SPEC-12.
 5. SPEC-12 driver card UI with one-tap confirm -- **DONE** PR #19
    (`a2da64a`). Full-screen offline card on FactView / ConfirmAffordance /
    cache_place, driver_card_shown & name_confirmed signals (migration 0020
-   in repo, unapplied live).
+   verified live 2026-09-06).
 6. SPEC-10 booking anchors -- **DONE** PR #20 (`f6328e9`). Immovable
    locked nodes on timeline, scheduler hard conflict rules, on-device text
    extractor, AddBookingSheet, and booking_added signal in migration 0021
-   (in repo, unapplied live).
+   (verified live 2026-09-06).
 7. SPEC-04 October cache floor -- **DONE** PR #22 (`b7e10c3`). Offline
    itinerary reads from SQLite cache_trip and pre-cached place data remain.
    The same PR shipped a rescue shortcut that the owner retired Sep 5; its
@@ -165,27 +174,32 @@ Seed-shaped cohorts.
   labels boosted search results. Full SPEC-17 (claims, registry, staleness)
   and affiliate revenue remain gated.
 
-### After the field-test spine (still important, not Oct-critical)
+### Immediate pre-trip sequence
 
 8. Multi-night hotel UI. The duplicate Hotel Rescue shortcut is removed;
    preserve offline cache fallback and the driver-card action on hotel bookings.
+   This is deferred until the phone-independent field-test gate unless it
+   blocks the owner's real booking.
 9. SPEC-35 Phase A2 in-app departure banners -- **DONE** PR #52 (`1379da8`).
    Keep meal previews suppressed, OS push in SPEC-27, and review-derived
    popularity behind SPEC-17/19.
-10. SPEC-36 Laos corridor trip -- **NEXT BUILD**. One northbound trip across
-    Vientiane, Vang Vieng, and Luang Prabang; do not invent transfer or hotel
-    facts.
-11. Retire the dietary suitability claim (SPEC-14). Closes the
-   halal-versus-pork hole by removing the claim.
-12. SPEC-17 trust and verification -- gates SPEC-18/19/20; behind the
-   field-test installable app on purpose.
-13. reroute_rejected plus swap sheet UI -- last unwired behavioural signal.
-14. Full SPEC-04 remainder (cache_vault, passes, emergency grid, phrase
-    packs) if still wanted.
-15. Finish the consumer slices already on the October path: date-scoped
-    itinerary and bookings, trip-less Ask and
-    the richer Home aggregate. SPEC-27 follows; SPEC-24 design is settled.
-16. Swappable LLM provider -- no owning spec yet; next free number. Every
+10. SPEC-36 Laos corridor trip -- **IN REVIEW, NOT MERGED** at `534b889`.
+    Review the actual branch, clear backend and Flutter blockers, run CI, then
+    merge. Do not invent transfer or hotel facts.
+11. SPEC-37 phone-independent field-test delivery -- **NEXT AFTER SPEC-36**.
+    Deploy reviewed `main` to stable HTTPS, configure hosted secrets, install a
+    standalone phone build, then run online and airplane-mode acceptance
+    without a laptop transport.
+12. Retire the dietary suitability claim (SPEC-14) -- **DONE**. The claim is
+    absent; do not reopen it as pre-trip work.
+13. SPEC-17 trust and verification -- gates SPEC-18/19/20; behind the
+    field-test installable app on purpose.
+14. reroute_rejected plus swap sheet UI -- last unwired behavioural signal.
+15. Full SPEC-04 remainder (cache_vault, passes, emergency grid, phrase
+    packs) only if field evidence supports it.
+16. Finish remaining consumer slices: trip-less Ask and the richer Home
+    aggregate. SPEC-27 follows; SPEC-24 design is settled.
+17. Swappable LLM provider -- no owning spec yet; next free number. Every
     intelligent path is one hosted vendor today.
 
 Export the Dubai rows before applying anything. A rebuild from migrations
@@ -211,7 +225,7 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 | observed_duration_minutes writer | Closed PR #32 (`f8349a8`) | Consecutive arrivals update `trip_edge.observed_duration_minutes`. Dual-write preserves the value. Transport cost on the same table is still unwritten (SPEC-23) |
 | The five Supabase tests have never run | Closed Aug 17 2026 | Live device-day pytest with TB_SUPABASE_URL set; tests/test_supabase_integration.py included. Run pytest -q -ra to confirm |
 | Non-Laos local dish names remain unbackfilled | Low | 0015's names_local backfill is correctly scoped to the three Laos regions, so any Dubai dish carrying a name_local keeps a null names_local rather than a wrong language tag. That is the right trade, but it leaves a second pass owed once the Dubai rows are exported and their language confirmed |
-| deploy fails: there is no deployment target | Medium | ci.yml chains lint, test, build and deploy, each needing the one before, and lint failed on every run as far back as the retained history, so build and deploy had never executed once in the life of this repository. Both ran for the first time on 8ed6c16. build passed and pushed an image to the container registry, which is the first artifact this project has ever produced. deploy failed after one second at the Railway step, which needs a RAILWAY_TOKEN secret and a service named travel-buddy-api; the health check reads a PRODUCTION_URL secret. Nothing here is a regression -- it is scaffolding written early and never once exercised. Resolved by gating: deploy now requires workflow_dispatch, so main stays green and deploying becomes a deliberate act from the Actions tab once a target exists. build still runs on every push to main, so the image is proven continuously and only the release step is manual. Left ungated it would have made main permanently red, which is the exact condition that let lint stay broken and unnoticed for a week |
+| No hosted application target | High until SPEC-37 | CI builds the container, but no stable field-test API is verified. The prepared Railway step needs a service, RAILWAY_TOKEN and PRODUCTION_URL; deployment is manually gated so main remains green. SPEC-37 must provision a target from reviewed main, configure backend-only secrets with TB_DEBUG=false, verify HTTPS health from a non-laptop network, and record the result in docs/HOSTED_STATE.md before the phone build can pass |
 | Signal provenance was silently unwritten until today | Low | _compute_provenance computed clock skew and its return was discarded, while both backends defaulted provenance to a constant. So clock_skew_seconds was never persisted for any signal and SPEC-02 Part C was unmet in the live write path. Fixed and guarded by a test that drives the ingest endpoint rather than the storage layer. Recorded because the gap was invisible for months: nothing failed, the column had a default, and the only symptom was analytics that could not exist |
 | The scheduler is money-blind | Medium | services/scheduler.py contains no reference to price, cost, budget or fare, and no model carries traveller spend capacity, so affordability cannot be ranked on at all. The only price in config is Stripe subscription pricing, which is our revenue rather than the traveller's spend. Specified as SPEC-23 and roadmap concern 7; the cost of delay compounds with venues, regions and trips simultaneously. The venues_rag.price_band half of this row was closed by 0017 |
 | Sponsored placement is undisclosed in the client | Closed (SwapSheet slice) | GET /venues/search now flattens results and sets sponsored_boost_applied from a real ranking contribution. SwapSheet shows Sponsored plus Paid placement influenced this ranking. Ranker boost, seed is_sponsored, and Pro "no sponsored results" still exist; remaining SPEC-17 work (claims, registry) still gates affiliate |
@@ -227,7 +241,7 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 | Most localized names remain unverified | Medium | Forty-eight of 58 stay source=generated. Two known errors are a wrong vowel inside otherwise valid Lao, which no codepoint guard can detect. The driver card's confirm affordance is the mitigation |
 | Lao order phrase may say fry, not spicy | Medium | The papaya salad phrase reads bo phat lai, not bo phet lai -- stir-fry rather than spicy, one missing vowel. Needs a native speaker, not a script check. Three of four hot dishes carry no moderating phrase at all, and the raw-meat laap has no cooked-request phrase |
 | opening_hours null on all Laos venues | RESOLVED | Device-day reload: 58/58 opening_hours_structured populated |
-| hybrid_venue_search geo_region param | Medium | Live signature matches 0001: no geo_region arg. Caller may still pass a filter the RPC ignores -- fix needs a new migration + align |
+| hybrid_venue_search geo_region param | CLOSED 2026-09-06 | Live signature has the 0023 seventh argument `filter_geo_region text`; owner SQL export recorded in docs/HOSTED_STATE.md |
 | price_local units documented, AED rows still suspect | Low | No Dubai venue_dish rows live (count 0). AED magnitude question is moot until dishes are curated |
 | Raw-safety guard keys off English prose | Low | The guard that flags an uncooked dish looks for the word raw in the description, so rewording a description silently disables a safety check. Key it off a structured field |
 | seniors overcorrected | Low | Set on 40 of 58 venues, roughly two thirds, so it cannot discriminate. mobility_limited is 17 of 58, which is plausible rather than overcorrected -- an earlier version of this table attributed the two-thirds figure to the wrong tag |

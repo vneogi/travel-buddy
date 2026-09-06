@@ -86,13 +86,11 @@ in Kuala Lumpur and 130 of 2198 in Dubai. `diet:vegetarian` runs from two to
 seven percent. Wheelchair information reaches 16 percent at best and 2 percent
 at worst.
 
-SPEC-14 models dietary constraints as safety filters rather than preferences,
-which is the right decision for the intended traveller. But a filter needs
-input, and no open dataset can supply it at the coverage a safety claim
-requires. This is now recorded as a high-severity risk in PROJECT_STATUS. The
-options are deliberate curation for a small set, a commercial or community feed,
-or deriving it from user signals over time -- and until one exists, the feature
-has to say it does not know.
+This evidence caused SPEC-14 to retire dietary suitability claims. No open
+dataset can supply the coverage a safety filter requires, and behavioural
+signals cannot turn an unverified kitchen claim into a fact. The app may present
+sourced ingredients or establishment facts with their limits, but it must not
+infer that a dish is safe or suitable.
 
 ## Consequence for the driver card
 

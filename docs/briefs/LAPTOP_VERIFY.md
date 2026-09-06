@@ -5,11 +5,17 @@ verifying the entire October spine (SPEC-09, SPEC-22, SPEC-12, SPEC-10,
 SPEC-04, and post-spine hardening) on your Windows machine with live
 credentials.
 
+This remains the laptop regression runbook. It is not the final phone field
+test. After SPEC-36 merges, SPEC-37 requires a hosted HTTPS backend and an
+installed phone artifact that works with the laptop and USB disconnected.
+
 PowerShell 5.1. Canonical copy: `docs/briefs/LAPTOP_VERIFY.md` on `main`.
 
 Device Day (`docs/briefs/DEVICE_DAY.md`) is CLOSED. Do not re-apply
-0011-0018. Do not re-export Dubai. Do not `VALIDATE CONSTRAINT` on
-0015/0017 (that remains a separate non-blocking follow-up).
+0011-0024. Hosted sentinels for every repository migration through 0024 were
+verified by 2026-09-06. Do not re-export Dubai. Do not `VALIDATE CONSTRAINT`
+on 0015/0017 (that remains a separate non-blocking follow-up). The canonical
+ledger and recheck SQL are in `docs/HOSTED_STATE.md`.
 
 Identity is `Authorization: Anonymous <uuid>`. Never pass the removed
 `TB_DEBUG_USER_ID` dart-define.
@@ -19,7 +25,7 @@ Identity is `Authorization: Anonymous <uuid>`. Never pass the removed
 Prove, on the Windows machine, in this order:
 
 1. Repo SHA and tools on `main`
-2. Migrations 0019, 0020, 0021, and 0022 applied on the hosted Supabase DB
+2. Hosted migration sentinels still match `docs/HOSTED_STATE.md` (read-only)
 3. Backend pytest with live Supabase URL (all 292 tests pass, including live Supabase integration tests)
 4. Flutter analyze + test (all 92 unit and widget tests pass with 0 warnings)
 5. Sabotage proofs (R17) -- break, watch the named test fail,
@@ -45,7 +51,7 @@ Stop and write the failure down if a step fails. Do not "fix forward" past a har
 ## Hard stops (do not continue)
 
 - `git pull` fails or working directory has uncommitted regressions
-- 0019, 0020, or 0021 proof `SELECT` returns zero rows after apply
+- Any hosted migration sentinel in `docs/HOSTED_STATE.md` returns false
 - `pytest -q -ra` with `TB_SUPABASE_URL` set shows any failure (all 292 tests must pass)
 - `flutter analyze` or `flutter test` non-zero
 - uvicorn starts with `supabase_configured` false while you intended live
@@ -66,7 +72,7 @@ git SHA:
 Branch: main
 
 Step 0 flutter doctor:
-Step 2 Migrations applied (0019, 0020, 0021, 0022 proof query output):
+Step 2 Hosted migration sentinels all true? yes/no:
 Step 3 pytest -ra skip/pass status (confirm 292 passed, 5 Supabase tests included):
 Step 4 flutter analyze exit (expect 0 errors, 0 warnings):
 Step 4 flutter test exit (expect 92 passed):
@@ -113,8 +119,21 @@ Get-Content .env | ForEach-Object {
 }
 if (-not $env:TB_SUPABASE_URL) { throw "TB_SUPABASE_URL missing" }
 if (-not $env:TB_SUPABASE_KEY) { throw "TB_SUPABASE_KEY missing" }
-Write-Host "creds present URL=$($env:TB_SUPABASE_URL.Substring(0,[Math]::Min(40,$env:TB_SUPABASE_URL.Length)))..."
+@(
+    'TB_SUPABASE_URL',
+    'TB_SUPABASE_KEY',
+    'TB_GOOGLE_MAPS_API_KEY',
+    'TB_OPENWEATHER_API_KEY'
+) | ForEach-Object {
+    $value = (Get-Item "Env:$_" -ErrorAction SilentlyContinue).Value
+    if ([string]::IsNullOrWhiteSpace($value)) { "MISSING $_" } else { "SET $_" }
+}
 ```
+
+Do not print values or paste `.env` into chat. Maps and OpenWeather were
+provider-verified from this laptop on 2026-09-06. Rerun their safe summary-only
+checks only after rotation or when diagnosing a provider failure; commands are
+in `docs/HOSTED_STATE.md`. Use `curl.exe`, not PowerShell's `curl` alias.
 
 ---
 
@@ -144,84 +163,22 @@ cd ..
 
 ---
 
-## Step 1 -- check live schema before migrations
+## Steps 1 and 2 -- read-only hosted-state recheck
 
-Check what signal types are currently in the live database:
+Do not execute migration files again. Open `docs/HOSTED_STATE.md`, run its
+"Recheck the hosted Supabase sentinels" SQL in the Supabase SQL Editor, and
+confirm every sentinel is true. Confirm the `hybrid_venue_search` arguments
+include `filter_geo_region text`.
 
-```sql
-SELECT key FROM signal_type
-WHERE key IN ('prompt_dismissed', 'driver_card_shown', 'name_confirmed', 'booking_added')
-ORDER BY 1;
-```
-
----
-
-## Step 2 -- apply migrations 0019, 0020, and 0021
-
-In the **Supabase SQL Editor** (web dashboard), execute these statements:
-
-### 2a Migration 0019 (`prompt_dismissed`)
-```sql
-INSERT INTO signal_type (key, category, value_kind, enum_values, decay_policy, description) VALUES
-    ('prompt_dismissed', 'explicit_user', 'json', NULL, 'exp_180d',
-     'User dismissed an interruptive fact prompt (ask/defer FactView)')
-ON CONFLICT (key) DO NOTHING;
-```
-
-### 2b Migration 0020 (`driver_card_shown`, `name_confirmed`)
-```sql
-INSERT INTO signal_type (key, category, value_kind, enum_values, decay_policy, description) VALUES
-    ('driver_card_shown', 'behavioral', 'json', NULL, 'none',
-     'Traveller opened a driver card for a venue (offline or online)'),
-    ('name_confirmed', 'explicit_user', 'json', NULL, 'none',
-     'Traveller verified or rejected local-script venue signage (verdict=confirmed|rejected)')
-ON CONFLICT (key) DO NOTHING;
-```
-
-### 2c Migration 0021 (`booking_anchors`)
-```sql
-ALTER TABLE trip_node
-    ADD COLUMN IF NOT EXISTS node_kind TEXT NOT NULL DEFAULT 'activity',
-    ADD COLUMN IF NOT EXISTS booking_type TEXT NULL,
-    ADD COLUMN IF NOT EXISTS confirmation_code TEXT NULL,
-    ADD COLUMN IF NOT EXISTS booking_notes TEXT NULL,
-    ADD COLUMN IF NOT EXISTS import_source TEXT NULL;
-
-INSERT INTO signal_type (key, category, value_kind, enum_values, decay_policy, description) VALUES
-    ('booking_added', 'explicit_user', 'json', NULL, 'none',
-     'Traveller recorded a booking anchor (flight, hotel, train, tour)')
-ON CONFLICT (key) DO NOTHING;
-```
-
-### 2d Migration 0022 (`trip_node_local_names`)
-```sql
-ALTER TABLE trip_node
-    ADD COLUMN IF NOT EXISTS names_local JSONB DEFAULT NULL,
-    ADD COLUMN IF NOT EXISTS landmarks_local JSONB DEFAULT NULL,
-    ADD COLUMN IF NOT EXISTS nearest_landmark TEXT DEFAULT NULL;
-```
-
-### 2e Proof query:
-```sql
-SELECT key, category, value_kind
-FROM signal_type
-WHERE key IN ('prompt_dismissed', 'driver_card_shown', 'name_confirmed', 'booking_added')
-ORDER BY 1;
-```
-
-Expect **4 rows**.
-
-Re-verify drift guard:
-```powershell
-pytest tests/test_signal_types.py -q -ra
-if ($LASTEXITCODE -ne 0) { throw "signal_types tests failed after migrations" }
-```
+If a sentinel is false, stop and record the discrepancy. Do not repair it by
+guessing or by replaying every migration.
 
 ---
 
 ## Step 3 -- pytest (live Supabase backend)
 
-With migrations 0019-0022 applied, run the full test suite against your live Supabase project:
+With the hosted sentinels confirmed, run the full test suite against your live
+Supabase project:
 
 ```powershell
 if (-not $env:TB_SUPABASE_URL) { throw "URL missing -- reload .env" }

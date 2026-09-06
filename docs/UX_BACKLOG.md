@@ -54,6 +54,15 @@ Past sections collapse without deleting their history. This needs an owning
 spec for corridor ordering and stay/transport boundaries; it must not be
 implemented by relabeling one city's venues. SPEC-36 now owns the first
 northbound slice and explicitly refuses synthetic transfer and stay claims.
+Implementation is pushed at `534b889` but remains under review; it is not on
+`main` until backend and Flutter gates clear.
+
+### P1 -- Phone-independent field-test delivery
+
+SPEC-37 owns the delivery gate after SPEC-36: stable hosted HTTPS API,
+installable phone artifact, online corridor proof, then a cold-reopen
+airplane-mode drill with USB and local tunnels disconnected. This work is ahead
+of visual polish because a laptop-tethered demo cannot accompany the traveller.
 
 ### P2 — Side-by-side swap comparison (`SwapSheet`)
 **Capability #2.** Original vs proposed alternative showing the **delta**: time, distance, cost, and

@@ -226,7 +226,9 @@ Sabotage before trusting:
 
 - Branch: `feat/spec-22-render-contract`
 - Title: `feat(mobile): SPEC-22 render contract (envelope, budget, offline)`
-- Body: October slice notes; 0019 unapplied; font cmap deferred
+- Body at implementation time: October slice notes and font cmap deferred.
+  Migration 0019 was later verified live on 2026-09-06; current migration
+  state belongs in `docs/HOSTED_STATE.md`, not this historical brief.
 - Against `main`
 
 ## Acceptance for this PR
