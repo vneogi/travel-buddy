@@ -1,12 +1,24 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+import 'package:travel_buddy/core/api_client.dart';
+import 'package:travel_buddy/core/api_exception.dart';
+import 'package:travel_buddy/core/providers.dart';
 import 'package:travel_buddy/data/departure_notification.dart';
 import 'package:travel_buddy/features/alerts/alerts_notifier.dart';
+import 'package:travel_buddy/features/itinerary/itinerary_screen.dart';
 import 'package:travel_buddy/features/notifications/departure_notifier.dart';
 import 'package:travel_buddy/offline/offline_database.dart';
+import 'package:travel_buddy/widgets/alert_card.dart';
 import 'package:travel_buddy/widgets/departure_banner.dart';
+
+class _MockApiClient extends Mock implements ApiClient {}
 
 // ===================== Fixtures =====================
 
@@ -75,6 +87,33 @@ Map<String, dynamic> _responseJson({
       'refreshed_at': '2026-10-04T01:05:00Z',
       'status': status,
       'notifications': notifications ?? [_candidateJson()],
+    };
+
+Map<String, dynamic> _alertsResponseJson() => {
+      'trip_id': 'trip-123',
+      'status': 'available',
+      'alerts': [
+        {
+          'alert_id': 'weather-1',
+          'alert_type': 'rain',
+          'severity': 'advisory',
+          'message': 'Server weather message',
+          'affected_node_ids': ['node-7'],
+          'affected_node_names': ['Kuang Si Falls'],
+          'source': 'openweather',
+          'source_updated_at': '2026-10-04T01:05:00Z',
+          'valid_from': '2026-10-04T01:00:00Z',
+          'valid_until': '2099-10-05T12:00:00Z',
+          'expires_at': '2099-10-05T12:30:00Z',
+          'location_basis': 'node_coordinates',
+          'evidence': {
+            'rain_probability': 0.63,
+            'condition_code': 500,
+          },
+          'auto_applied': false,
+        },
+      ],
+      'refreshed_at': '2026-10-04T01:05:00Z',
     };
 
 void main() {
@@ -169,15 +208,72 @@ void main() {
   });
 
   // ===================== Proof: Departure hides weather, absent leaves visible =====================
-  test('visible departure hides weather cards; absent leaves them visible', () {
-    final candidate = NotificationCandidate.fromJson(_candidateJson());
-    final withDeparture = DepartureState(candidates: [candidate]);
-    expect(withDeparture.visible, isNotNull);
+  testWidgets('visible departure hides weather cards', (tester) async {
+    final api = _MockApiClient();
+    final db = OfflineDatabase(testPath: inMemoryDatabasePath);
+    addTearDown(db.close);
+    when(() => api.get(any(), query: any(named: 'query'))).thenAnswer(
+      (invocation) async {
+        final path = invocation.positionalArguments.first as String;
+        return path.endsWith('/notifications')
+            ? _responseJson()
+            : _alertsResponseJson();
+      },
+    );
 
-    // When departure visible -> weather cards should be hidden (UI enforces this)
-    // When no departure -> weather cards visible
-    final noDeparture = const DepartureState();
-    expect(noDeparture.visible, isNull);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          apiClientProvider.overrideWithValue(api),
+          offlineDatabaseProvider.overrideWithValue(db),
+          identityCacheScopeProvider.overrideWithValue('account:user-1'),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: ItineraryAlertsSection(tripId: 'trip-123'),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(DepartureBanner), findsOneWidget);
+    expect(find.byType(AlertCard), findsNothing);
+    expect(find.text('Server weather message'), findsNothing);
+  });
+
+  testWidgets('absent departure leaves weather cards visible', (tester) async {
+    final api = _MockApiClient();
+    final db = OfflineDatabase(testPath: inMemoryDatabasePath);
+    addTearDown(db.close);
+    when(() => api.get(any(), query: any(named: 'query'))).thenAnswer(
+      (invocation) async {
+        final path = invocation.positionalArguments.first as String;
+        return path.endsWith('/notifications')
+            ? _responseJson(notifications: [])
+            : _alertsResponseJson();
+      },
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          apiClientProvider.overrideWithValue(api),
+          offlineDatabaseProvider.overrideWithValue(db),
+          identityCacheScopeProvider.overrideWithValue('account:user-1'),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: ItineraryAlertsSection(tripId: 'trip-123'),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(DepartureBanner), findsNothing);
+    expect(find.byType(AlertCard), findsOneWidget);
+    expect(find.text('Server weather message'), findsOneWidget);
   });
 
   // ===================== Proof: Banner text equals server copy =====================
@@ -240,7 +336,8 @@ void main() {
   });
 
   // ===================== Proof: Resume debounce =====================
-  test('resume inside 15 minutes does not issue a second request', () {
+  testWidgets('resume inside 15 minutes does not issue a second request',
+      (tester) async {
     final lastAttempt = DateTime.utc(2026, 10, 5, 12);
     expect(
       alertResumeRefreshDue(
@@ -255,6 +352,55 @@ void main() {
         lastAttempt.add(const Duration(minutes: 15)),
       ),
       isTrue,
+    );
+
+    final api = _MockApiClient();
+    final db = OfflineDatabase(testPath: inMemoryDatabasePath);
+    addTearDown(db.close);
+    when(() => api.get(any(), query: any(named: 'query'))).thenAnswer(
+      (invocation) async {
+        final path = invocation.positionalArguments.first as String;
+        if (path.endsWith('/notifications')) {
+          return _responseJson(notifications: []);
+        }
+        return {
+          'trip_id': 'trip-123',
+          'status': 'unconfigured',
+          'alerts': <Object>[],
+          'refreshed_at': '2026-10-04T01:05:00Z',
+        };
+      },
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          apiClientProvider.overrideWithValue(api),
+          offlineDatabaseProvider.overrideWithValue(db),
+          identityCacheScopeProvider.overrideWithValue('account:user-1'),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: ItineraryAlertsSection(tripId: 'trip-123'),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    clearInteractions(api);
+
+    await tester.binding.handleAppLifecycleStateChanged(
+      AppLifecycleState.paused,
+    );
+    await tester.binding.handleAppLifecycleStateChanged(
+      AppLifecycleState.resumed,
+    );
+    await tester.pump();
+
+    verifyNever(
+      () => api.get(
+        '/trip/trip-123/notifications',
+        query: any(named: 'query'),
+      ),
     );
   });
 
@@ -280,9 +426,11 @@ void main() {
   // ===================== Proof: Notification cache =====================
   test('network failure with unexpired cache still shows cached banner', () async {
     final db = OfflineDatabase(testPath: inMemoryDatabasePath);
-    await db.db;
+    addTearDown(db.close);
+    final api = _MockApiClient();
+    when(() => api.get(any(), query: any(named: 'query')))
+        .thenThrow(const NetworkException());
 
-    // Simulate caching a valid response
     final payloadJson = '{"trip_id":"t1","refreshed_at":"2026-10-04T01:05:00Z","status":"available","notifications":[{"notification_id":"cached-1","type":"departure_reminder","priority":"trip_critical","node_id":"n1","title":"Cached title","message":"Cached msg","eligible_at":"2026-10-04T00:58:00Z","expires_at":"2099-12-31T00:00:00Z","recommended_departure_at":"2026-10-04T01:20:00Z","time_zone":"Asia/Vientiane","deep_link":"/trip/t1/node/n1","evidence":{"route":{"source":"stub","observed_at":"2026-10-04T01:05:00Z","traffic_duration_minutes":30,"mode":"driving","origin_basis":"previous_node"},"policy":{"arrival_buffer_minutes":10,"weather_buffer_minutes":0}}}]}';
     await db.cacheNotifications(
       identityScope: 'scope-1',
@@ -291,14 +439,78 @@ void main() {
       expiresAt: '2099-12-31T00:00:00Z',
     );
 
-    final cached = await db.getCachedNotifications(
+    final container = ProviderContainer(
+      overrides: [
+        apiClientProvider.overrideWithValue(api),
+        offlineDatabaseProvider.overrideWithValue(db),
+        identityCacheScopeProvider.overrideWithValue('scope-1'),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final state = await container.read(
+      departureNotifierProvider('t1').future,
+    );
+    expect(state.status, 'cached');
+    expect(state.visible?.notificationId, 'cached-1');
+  });
+
+  test('HTTP 503 with unexpired cache still shows cached banner', () async {
+    final db = OfflineDatabase(testPath: inMemoryDatabasePath);
+    addTearDown(db.close);
+    final api = _MockApiClient();
+    when(() => api.get(any(), query: any(named: 'query')))
+        .thenThrow(const ServerException());
+
+    await db.cacheNotifications(
       identityScope: 'scope-1',
       tripId: 't1',
+      payloadJson: jsonEncode(_responseJson()),
+      expiresAt: '2099-12-31T00:00:00Z',
     );
-    expect(cached, isNotNull);
-    expect(cached, contains('cached-1'));
+    final container = ProviderContainer(
+      overrides: [
+        apiClientProvider.overrideWithValue(api),
+        offlineDatabaseProvider.overrideWithValue(db),
+        identityCacheScopeProvider.overrideWithValue('scope-1'),
+      ],
+    );
+    addTearDown(container.dispose);
 
-    await db.close();
+    final state = await container.read(
+      departureNotifierProvider('t1').future,
+    );
+    expect(state.status, 'cached');
+    expect(state.visible?.notificationId, 'notif-1');
+  });
+
+  test('401 never renders a cached departure', () async {
+    final db = OfflineDatabase(testPath: inMemoryDatabasePath);
+    addTearDown(db.close);
+    final api = _MockApiClient();
+    when(() => api.get(any(), query: any(named: 'query')))
+        .thenThrow(const UnauthorizedException());
+
+    await db.cacheNotifications(
+      identityScope: 'scope-1',
+      tripId: 't1',
+      payloadJson: jsonEncode(_responseJson()),
+      expiresAt: '2099-12-31T00:00:00Z',
+    );
+    final container = ProviderContainer(
+      overrides: [
+        apiClientProvider.overrideWithValue(api),
+        offlineDatabaseProvider.overrideWithValue(db),
+        identityCacheScopeProvider.overrideWithValue('scope-1'),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final state = await container.read(
+      departureNotifierProvider('t1').future,
+    );
+    expect(state.status, 'auth_error');
+    expect(state.visible, isNull);
   });
 
   // ===================== Proof: unconfigured/empty renders nothing =====================
@@ -336,25 +548,14 @@ void main() {
     expect(find.textContaining('updated'), findsNothing);
   });
 
-  // ===================== SABOTAGE PROOF 2: weather cards visible with departure =====================
-  test('SABOTAGE: hasDeparture true means weather cards must be hidden', () {
-    // The UI contract: when hasDeparture is true, weather cards are hidden.
-    // The _AlertsSection uses `if (!hasDeparture)` before rendering weather.
-    // This verifies the DepartureState drives the gate correctly.
-    final candidate = NotificationCandidate.fromJson(_candidateJson());
-    final withDeparture = DepartureState(candidates: [candidate]);
-    final hasDeparture = withDeparture.visible != null;
-    expect(hasDeparture, isTrue, reason: 'Departure must be visible');
-
-    // If someone removes the gate, weather + departure would both be visible.
-    // This state check ensures the departure state is correctly signaling.
-    final noDeparture = const DepartureState();
-    expect(noDeparture.visible, isNull);
-  });
-
   // ===================== SABOTAGE PROOF 3: skip persisting dismissals =====================
   test('SABOTAGE: dismiss survives rebuild via notification_dismissals', () async {
-    final db = OfflineDatabase(testPath: inMemoryDatabasePath);
+    final tempDir = await Directory.systemTemp.createTemp(
+      'travel-buddy-notification-test-',
+    );
+    addTearDown(() => tempDir.delete(recursive: true));
+    final dbPath = '${tempDir.path}/offline.db';
+    final db = OfflineDatabase(testPath: dbPath);
     await db.db;
 
     // Dismiss
@@ -365,7 +566,7 @@ void main() {
 
     // Close and reopen (simulate app restart)
     await db.close();
-    final db2 = OfflineDatabase(testPath: inMemoryDatabasePath);
+    final db2 = OfflineDatabase(testPath: dbPath);
     await db2.db;
 
     final dismissed = await db2.getDismissedNotificationIds(

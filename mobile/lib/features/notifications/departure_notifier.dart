@@ -127,6 +127,9 @@ class DepartureNotifier
     } on WeatherUnavailableException {
       // 503: use unexpired cache.
       return _loadFromCache(tripId, dismissedIds);
+    } on ServerException {
+      // Notifications endpoint storage/provider 5xx: use unexpired cache.
+      return _loadFromCache(tripId, dismissedIds);
     } catch (e) {
       // Parse/programming errors: do NOT use stale cache.
       return DepartureState(status: 'error', dismissed: dismissedIds);

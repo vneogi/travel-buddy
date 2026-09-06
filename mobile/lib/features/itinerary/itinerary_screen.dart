@@ -267,7 +267,7 @@ class ItineraryScreen extends ConsumerWidget {
                     // SPEC-29: Context alerts above timeline.
                     // Non-blocking: itinerary shows immediately; alerts
                     // render when available (no spinner replacement).
-                    _AlertsSection(tripId: tripId),
+                    ItineraryAlertsSection(tripId: tripId),
                     Expanded(
                       child: state.nodes.isEmpty
                           ? Center(
@@ -573,16 +573,22 @@ class _OutcomeSheet extends StatelessWidget {
 ///
 /// Renders alert cards when data is available. Does NOT show a spinner
 /// or replace the itinerary while loading.
-class _AlertsSection extends ConsumerStatefulWidget {
+class ItineraryAlertsSection extends ConsumerStatefulWidget {
   final String tripId;
   final void Function(String nodeId)? onScrollToNode;
-  const _AlertsSection({required this.tripId, this.onScrollToNode});
+  const ItineraryAlertsSection({
+    super.key,
+    required this.tripId,
+    this.onScrollToNode,
+  });
 
   @override
-  ConsumerState<_AlertsSection> createState() => _AlertsSectionState();
+  ConsumerState<ItineraryAlertsSection> createState() =>
+      _ItineraryAlertsSectionState();
 }
 
-class _AlertsSectionState extends ConsumerState<_AlertsSection>
+class _ItineraryAlertsSectionState
+    extends ConsumerState<ItineraryAlertsSection>
     with WidgetsBindingObserver {
   late DateTime _lastRefreshAttempt;
 
