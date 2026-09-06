@@ -4,7 +4,6 @@
 /// Starts collapsed when all nodes in the section end before [DateTime.now()].
 import 'package:flutter/material.dart';
 
-import '../data/models.dart';
 import '../features/itinerary/date_scope.dart';
 
 /// A collapsible city section in a corridor itinerary.
