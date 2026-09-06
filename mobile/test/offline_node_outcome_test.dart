@@ -18,7 +18,7 @@ void main() {
 
     tearDown(() => database.close());
 
-    test('v6 fresh create stores visited and skipped outcomes', () async {
+    test('v7 fresh create stores visited and skipped outcomes', () async {
       final visitedAt = DateTime.utc(2026, 8, 31, 8);
       final skippedAt = DateTime.utc(2026, 8, 31, 9);
       await database.upsertNodeOutcome(
@@ -42,7 +42,7 @@ void main() {
         tripId: 'trip-1',
       );
 
-      expect(await (await database.db).getVersion(), 6);
+      expect(await (await database.db).getVersion(), 7);
       expect(outcomes['node-1']?.wasVisited, isTrue);
       expect(outcomes['node-1']?.recordedAt, visitedAt);
       expect(outcomes['node-2']?.wasSkipped, isTrue);
@@ -142,7 +142,7 @@ void main() {
     });
   });
 
-  test('opening a real v5 database upgrades to v6 and preserves rows', () async {
+  test('opening a real v5 database upgrades to v7 and preserves rows', () async {
     final directory = await Directory.systemTemp.createTemp('spec30-v5-');
     final path = '${directory.path}/offline.db';
     addTearDown(() => directory.delete(recursive: true));
@@ -225,7 +225,7 @@ void main() {
     addTearDown(upgraded.close);
     final db = await upgraded.db;
 
-    expect(await db.getVersion(), 6);
+    expect(await db.getVersion(), 7);
     expect(await db.query('outbox'), hasLength(1));
     expect(await db.query('cache_trip'), hasLength(1));
     expect(await db.query('loved_places'), hasLength(1));
@@ -245,6 +245,8 @@ void main() {
         'loved_places',
         'app_kv',
         'node_outcome',
+        'notification_cache',
+        'notification_dismissals',
       }),
     );
     expect(
