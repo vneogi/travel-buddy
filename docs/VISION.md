@@ -228,8 +228,7 @@ Near-term product gates after the Aug 27-28 laptop run:
    not regress to random traffic or synthetic transit copy.
 2. Date-scoped grouping, single-city Laos creation, durable hearts, and
    SPEC-30 instrumentation are complete.
-3. Finish SPEC-36's one-trip, three-city Laos corridor and merge only after
-   backend plus Flutter review and CI.
+3. SPEC-36's one-trip, three-city Laos corridor is on main (PR #55).
 4. Execute SPEC-37: stable hosted HTTPS API and an installable phone artifact.
 5. Complete online and airplane-mode acceptance by 2026-09-18 with the laptop,
    USB, and local tunnels removed from the path.
@@ -341,7 +340,7 @@ Recorded so these are not re-proposed without new information.
 | Gmail OAuth | **Declined permanently** | Restricted-scope assessment $15k-75k/yr; full-inbox read access. Forwarding address supersedes. |
 | HealthKit / Google Fit | **Declined** | Two permission flows + privacy review for a signal one tap provides. |
 | Tiered SLM routing | **Deferred** | `llm_key_present=False` today. Get one model working before a 3-tier router. `light_model=gpt-4o-mini` is already the cheap tier. |
-| Trap score computation | **Deferred; column now** | Needs post-Laos volume. Ship the unpopulated column so data has somewhere to land. |
+| Trap score computation | **Deferred; column now** | Needs post-Laos volume. Ship the unpopulated column so data has somewhere to land. Business shape of disappointment vs expected dwell is parked in Part III section 31. |
 | Silent Veto | **Needs design review** | "The app hid my partner's preference from me" is an unpatchable trust problem. Consent design first. |
 | Street utility index | **Post-Laos** | Loses to Google Maps without differentiation; revisit with real data. |
 | Flight delay cascade | **Post-Laos** | Depends on §27 anchors landing first. |
@@ -363,7 +362,8 @@ Every directional claim in Part III currently rests on one or two
 responses. Part III may be promoted only after the survey reaches
 n>=20 with independent respondents and the claims survive.
 
-Revisit: after the Laos field test (Oct 2026).
+Revisit: after the Laos field test (Oct 2026). Section 31 records later
+business hypotheses parked Sep 2026; same rule: not a build order.
 
 ---
 
@@ -575,4 +575,109 @@ more users → more signal → ...
 3. Unique data (behavioral signals no competitor has)
 4. **Full context** (integration depth that creates switching cost) ← NEW
 
-If the answer is "I added a city" or "I polished the UI" — stop and refocus.
+If the answer is "I added a city" or "I polished the UI" -- stop and refocus.
+
+## 31. Parked business hypotheses (Sep 2026)
+
+**Status: NOT COMMITTED. Do not build, spec, or brief against this section
+before the field-test sequence (SPEC-36 then SPEC-37) is done.** Architecture,
+vendors, and background telemetry are deliberately omitted. The point of
+recording this is so the *business* ideas survive a later revisit.
+
+Source: an external growth/moat sketch (Sep 2026). Useful as a reminder of
+how the flywheel might *pay* after density exists. Harmful if treated as
+Phase 1 work. Revisit after the Oct 2026 Laos field test, and only if
+on-trip reopen is observable (SPEC-30) and identity can attach history to a
+person (SPEC-24), not only a device UUID.
+
+These ideas do not change the beachhead, the India-outbound monetization
+corridor, or VISION section 9 (no backpacker subscription as the first
+lever).
+
+### What this is claiming as a business, in order
+
+1. **Give away the on-trip utility that incumbents cannot copy offline**, so
+   backpackers actually keep the app open on the corridor.
+2. **Accumulate ground-truth about what is actually worth the walk**, so
+   ranking is not a scrape of Google stars.
+3. **Sell a small, in-the-moment product at the point of intent**, not a
+   monthly plan to people who will not pay $5.
+
+That order is already the flywheel in section 4 plus the revenue stance in
+section 9. What follows is only the *later* products that sketch named.
+
+### Ground-truth disappointment, not star ratings
+
+Hypothesis: a venue can look excellent on public reviews and still fail the
+traveller in six minutes. If enough people *arrive and leave early*, or
+stay far longer than the catalog expected, that is a proprietary quality
+signal: tourist-trap vs high engagement.
+
+We already reserved `trap_score` with no writer (section 30). The business
+question later is whether disappointment is inferred from **explicit**
+on-trip facts we already collect -- visited, skipped, hearts, reroute
+rejected, observed stop duration -- once many travellers hit the same
+venue. It is not a question of whether one field-test phone can mint a
+city-wide index.
+
+Promotion gate: enough overlapping visits per venue to beat noise, plus a
+sourced expected-dwell baseline. Until then the honest product is silence
+or a sourced claim (SPEC-17), not an unpublished "trap engine."
+
+### Cross-trip memory as switching cost
+
+Hypothesis: after a few trips the app knows pace, food, and party context
+well enough that a second trip in a new city does not start from a blank
+form. That is section 22. The Sep 2026 sketch restates it as the retention
+product: Georgia last year should change Almaty this year without a
+questionnaire.
+
+Promotion gate: SPEC-24 merge so memories belong to a person, not a
+device, and enough trips that a preference is observed more than once.
+Soft weights, never a hard filter bubble (section 22 already).
+
+### Last-mile arrival as free utility
+
+Hypothesis: the install-worthy moment is still "I am at a station with no
+signal and I need a walk, a fare bound, and a card the driver can read."
+That is the Offline Vault (section 16 / SPEC-04) plus driver cards
+(SPEC-12) plus local transport intelligence (section 21). Fare bounds and
+scam warnings are only a product when sourced per city, never invented.
+
+Promotion gate: field-test evidence that the cached itinerary and driver
+card were actually used offline. Offline map tiles and on-device routing
+graphs remain P3 in the UX backlog.
+
+### Fatigue-aware micro-offers (sachet commerce)
+
+Hypothesis: backpackers will not subscribe, but they will buy a $2-3
+thing at the exact moment they are hot, tired, and 80 metres from a locker,
+an iced drink, or an eSIM top-up. That is affiliate/sachet revenue attached
+to *context* (weather, steps, time of day, remaining walk), which extends
+section 9 rather than replacing it.
+
+Trust constraint: this must never look like an undisclosed sponsored
+reroute. SPEC-17 disclosure and the anti-trap positioning in section 10
+apply before any bid or voucher is shown as a recommendation.
+
+Promotion gate: a real fatigue or weather trigger people already believe
+(SPEC-29 / SPEC-35), a partner who can fulfil without us running
+marketplace ops, and density in one city. Not a bidding exchange in week
+one.
+
+### Parametric "the day broke" goodwill
+
+Hypothesis: when a monsoon or a long delay kills an outdoor plan, a tiny
+automatic indoor voucher (cafe, museum, partner channel) creates loyalty
+cheaper than ads. This is brand and retention, not an insurance company.
+
+Promotion gate: weather-triggered reflow that already works without paying
+anyone (SPEC-29). Partner funding or our own COGS must be explicit. Do not
+promise a claim that we cannot pay.
+
+### What this section is not
+
+- Not a change to the Sep/Oct field-test sequence.
+- Not permission to add background location, a second database, or a
+  second offline store.
+- Not a Seed narrative that the trap index or memory graph already exists.

@@ -1,9 +1,7 @@
 # Genie Brief: SPEC-36 Laos Corridor Trip
 
-> Current execution state: candidate branch
-> `origin/feat/spec36-laos-corridor` is pushed at `e6522bb`, not merged.
-> Review the branch against this brief and the spec; do not treat an agent's
-> test summary as completion evidence.
+> HISTORICAL. SPEC-36 landed in PR #55 (`1f2c43d`). Do not implement from this
+> brief.
 
 ## Read first
 

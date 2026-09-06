@@ -1,11 +1,11 @@
 # SPEC-36: Laos Corridor Trip
 
-> Status: IMPLEMENTATION IN REVIEW, NOT MERGED.
+> Status: IMPLEMENTED ON MAIN (PR #55, merge `1f2c43d`, head `f44cdc6`).
 >
-> Candidate branch `origin/feat/spec36-laos-corridor` is at `e6522bb`.
-> Backend strengthening and later-city swap-coordinate changes are pushed.
-> Completion still requires review of the actual diff, Flutter compile/tests,
-> date-range form and swap-isolation proof, green CI, and merge to `main`.
+> Owner Windows verified three-city Oct 2-8 create and later-city swap on
+> 2026-09-06. CI lint, pytest, and Flutter were green before merge.
+> Phone-independent delivery is SPEC-37. Heads-up reminder spam is a
+> separate SPEC-29/35 finding, not a corridor create defect.
 >
 > Extends SPEC-31 date grouping and SPEC-32 catalog trip creation. Uses
 > SPEC-13 region metadata, SPEC-16 stable nodes and normalized rows, and the
@@ -335,14 +335,16 @@ assertion. A red suite from another test is not proof.
 
 ## Acceptance
 
-- [ ] One northbound Laos corridor creates as one trip
-- [ ] Three independent ordered date ranges are validated server-side
-- [ ] Four unique deterministic catalog stops are created per city-day
-- [ ] Segment metadata survives save and fetch
-- [ ] Normalized rows carry truthful day indexes and per-node regions
-- [ ] Flutter creates the corridor and renders collapsible city/day sections
-- [ ] Past sections collapse without hiding history permanently
-- [ ] A later-city swap searches around its target node, not the first city
-- [ ] Single-city creation and itinerary behavior remain compatible
-- [ ] No transport, stay, traffic, meal, or popularity claim is invented
+- [x] One northbound Laos corridor creates as one trip
+- [x] Three independent ordered date ranges are validated server-side
+- [x] Four unique deterministic catalog stops are created per city-day
+- [x] Segment metadata survives save and fetch
+- [x] Normalized rows carry truthful day indexes and per-node regions
+- [x] Flutter creates the corridor and renders collapsible city/day sections
+- [x] Past sections collapse without hiding history permanently
+- [x] A later-city swap searches around its target node, not the first city
+- [x] Single-city creation and itinerary behavior remain compatible
+- [x] No transport, stay, traffic, meal, or popularity claim is invented
 - [ ] Backend and Flutter proof cases pass and all sabotage proofs fail correctly
+  (CI pytest and Flutter were green on `f44cdc6`; named sabotage runs were
+  reported by the execution agent, not independently re-run at merge.)

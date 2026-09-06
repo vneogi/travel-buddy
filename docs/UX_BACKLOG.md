@@ -54,8 +54,7 @@ Past sections collapse without deleting their history. This needs an owning
 spec for corridor ordering and stay/transport boundaries; it must not be
 implemented by relabeling one city's venues. SPEC-36 now owns the first
 northbound slice and explicitly refuses synthetic transfer and stay claims.
-Implementation is pushed at `e6522bb` but remains under review; it is not on
-`main` until backend and Flutter gates clear.
+Implementation is on `main` via PR #55 (`1f2c43d`).
 
 ### P1 -- Phone-independent field-test delivery
 
@@ -113,8 +112,7 @@ grid) is close to ours but more complete. Fold in when the designer engages.
 **UX polish does not capture moat data.** The spine work above is shipped. The
 remaining product order is:
 
-1. Review and merge SPEC-36 only after backend, Flutter, date-form, swap, and
-   CI gates clear.
+1. SPEC-36 is on main (PR #55).
 2. Execute SPEC-37: hosted HTTPS API plus an installable phone artifact.
 3. Complete online and real airplane-mode acceptance by 2026-09-18 with USB
    and local tunnels disconnected.

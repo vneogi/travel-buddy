@@ -103,8 +103,8 @@
 | Date-scoped itinerary (SPEC-31) | DONE | Grouping under date headers is on main (PR #36, Windows Sep 4 6A). Test 6C is canceled; the dedicated rescue shortcut and selection helpers are removed. Date grouping and the hotel booking's driver-card action remain |
 | Real Laos trip creation (SPEC-32) | VERIFIED (one-city slice) | Sep 5 Windows run created a real catalog-backed Luang Prabang itinerary with no Dubai fallback. Multi-city Laos corridors remain outside this slice |
 | Proactive itinerary notifications (SPEC-35) | PHASE A + A2 DONE | PR #50 (`ccfa41e`) added `GET /trip/{id}/notifications`, region-local catalog 09:00, and provider-backed departure candidates. PR #52 (`1379da8`) added the in-app Flutter banner, identity-scoped cache, local dismissal, and weather-card stacking gate. Meal previews remain suppressed until dish provenance exists. No background GPS, LLM, mutation or push |
-| Laos corridor trip (SPEC-36) | IMPLEMENTATION IN REVIEW, NOT MERGED | `origin/feat/spec36-laos-corridor` is at `e6522bb`. Backend behavioral proofs and most widget proofs are materially strengthened. The extracted form still has invalid constructor names, and no Home-to-repository exactly-once widget proof exists. Fix those, then run Flutter analyze/test and CI |
-| Phone-independent field-test delivery (SPEC-37) | SPECIFIED, BLOCKED ON SPEC-36 | Stable hosted HTTPS backend, installable phone artifact, online corridor acceptance, and a real airplane-mode drill without localhost, laptop LAN, `flutter run`, or `adb reverse` |
+| Laos corridor trip (SPEC-36) | IMPLEMENTED (PR #55, `1f2c43d`) | One northbound Laos corridor on main. Owner Windows Oct 2-8 create and later-city swap 2026-09-06. Heads-up spam is SPEC-29/35, not this slice |
+| Phone-independent field-test delivery (SPEC-37) | SPECIFIED, UNBLOCKED | Stable hosted HTTPS backend, installable phone artifact, online corridor acceptance, and a real airplane-mode drill without localhost, laptop LAN, `flutter run`, or `adb reverse` |
 
 Migration numbers are assigned when a spec is implemented, not when it is
 written. SPEC-11, SPEC-13, SPEC-14 and SPEC-15 each claimed a number, and the
@@ -175,12 +175,11 @@ Seed-shaped cohorts.
 
 ### Immediate pre-trip sequence
 
-1. SPEC-36 Laos corridor trip -- **IN REVIEW, NOT MERGED** at `e6522bb`.
-   Review the actual branch, clear backend and Flutter blockers, run CI, then
-   merge. Do not invent transfer or hotel facts.
-2. SPEC-37 phone-independent field-test delivery -- **NEXT AFTER SPEC-36**.
+1. SPEC-36 Laos corridor trip -- **DONE** PR #55 (`1f2c43d` from `f44cdc6`).
+2. SPEC-37 phone-independent field-test delivery -- **NEXT**.
    Deploy reviewed `main` to stable HTTPS, configure hosted secrets, and
-   install a standalone phone build.
+   install a standalone phone build. Brief:
+   docs/briefs/GENIE_SPEC_37_PHONE_FIELD_TEST.md.
 3. By **2026-09-18**, run online corridor acceptance followed by the real
    airplane-mode drill with USB and local tunnels disconnected. Preserve about
    two weeks to repair any field blocker before travel.

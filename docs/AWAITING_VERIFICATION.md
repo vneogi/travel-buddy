@@ -24,7 +24,7 @@ Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 | Flutter client follow-ups | Aug 30 2026 Windows run | Windows desktop or Android. Chrome is layout-only while web SQLite remains experimental. Profile/Skip exact errors remain open; durable hearts passed Aug 30 |
 | PowerShell scripts | Aug 9 | `.\scripts\smoke-test.ps1` on Windows |
 | Laptop-feedback product gaps | Sep 5 2026 | Multi-night hotel UI and real location remain open. Hotel Rescue 6C is canceled by owner decision; remove the duplicate shortcut but keep hotel driver cards and offline cache. Windows Maps fallback and SPEC-32 Laos create were verified Sep 5 |
-| SPEC-36 corridor implementation | Branch `e6522bb`, Sep 6 2026 | Fix extracted form constructor names; add Home-to-repository exactly-once proof; then Flutter analyze/test, CI, and merge |
+| SPEC-36 corridor implementation | Merged PR #55 `1f2c43d`, Sep 7 2026 | Owner Windows create and swap done. Remaining device work is SPEC-37 hosted API plus installable phone. Heads-up spam is SPEC-29/35 |
 | Hosted API for phone field test | Not provisioned | SPEC-37: stable HTTPS URL from reviewed main; hosted Supabase, LLM, Maps, Weather and anonymous-auth configuration with `TB_DEBUG=false` |
 | Installable independent phone build | Not produced | SPEC-37: signed Android APK or iOS TestFlight artifact using hosted `TB_API_BASE_URL`; must launch without `flutter run`, USB, localhost, LAN backend, or `adb reverse` |
 | Final phone airplane-mode acceptance | Not run; target 2026-09-18 | Preload corridor and driver cards, disconnect USB, enable airplane mode, cold reopen, inspect cached content, queue an action, reconnect and prove exactly-once drain |
@@ -56,6 +56,53 @@ full responses are deliberately not recorded.
 The Google key used during troubleshooting was exposed outside `.env`; rotate
 and restrict it before production use, then rerun the safe summary-only test in
 `docs/HOSTED_STATE.md`.
+
+## Finding -- Sep 6 2026 evening -- SPEC-36 Flutter on Windows
+
+Owner ran `flutter analyze --no-fatal-infos` and `flutter test` from
+`mobile/` on `feat/spec36-laos-corridor`. The paste did not include
+`git rev-parse HEAD`; last SHA confirmed on that laptop earlier was
+`6f74816` unless a pull to `b9931e1` ran in between.
+
+Analyze: one warning, unused import `../data/models.dart` in
+`lib/widgets/city_section.dart`. Remaining findings were infos. That
+warning is enough for CI `flutter analyze --no-fatal-infos` to fail.
+
+`flutter test`: all tests passed. Do not treat the console chatter from
+SyncEngine, Sqflite closed-db, or persist-loved Null as failures; those
+tests continued. Three-city UI create landed later the same evening; see
+the corridor finding below.
+
+## Finding -- Sep 6 2026 evening -- corridor create and Heads-up spam (Windows)
+
+Source: owner PDF `Testing 6th Sep V1.2.pdf`.
+
+Passed:
+
+- Corridor date form showed Vientiane, Vang Vieng, and Luang Prabang
+  (not truncated "Vang" / "Luang").
+- Owner used 2 Oct-3 Oct, 4 Oct-5 Oct, 6 Oct-8 Oct 2026 (7 days).
+- Create produced one trip with three city sections.
+- Swap worked.
+
+Failed product behaviour (not a SPEC-36 create bug):
+
+After swap, many long "Heads-up" surfaces stacked. Owner rule, recorded
+here so it is not lost:
+
+1. Show at most one reminder, two only if both are immediately useful.
+2. Short copy. No long advisory prose.
+3. Bind to the immediate next stop, not every later city or forecast block.
+4. If today is more than three days before the trip start date, show no
+   departure reminders and no weather Heads-up cards.
+
+This is SPEC-29 / SPEC-35 / SPEC-22 interruption-budget work. The itinerary
+currently renders every visible SPEC-29 alert card. A seven-day Laos corridor
+in October, viewed on 6 Sep, is more than three days out and should have been
+silent. SPEC-36 is merged; this finding is next after SPEC-37 only if it
+blocks the field test, otherwise after the phone gate.
+
+Minor: form dates are D/M/YYYY and city headers are YYYY-MM-DD.
 
 ## Finding -- Sep 5 2026 -- Laos create and swap (Windows)
 

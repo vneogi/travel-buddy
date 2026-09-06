@@ -1,49 +1,49 @@
 # Genie Brief: SPEC-37 Phone-Independent Field-Test Delivery
 
-> Status: QUEUED AFTER SPEC-36 MERGES. Do not start from the SPEC-36 feature
-> branch and do not deploy an unreviewed commit.
+> Status: READY. SPEC-36 is merged to `origin/main` at `1f2c43d` (PR #55).
+> Do not start from `feat/spec36-laos-corridor`. Deploy only reviewed `main`.
+> New branch: `feat/spec37-phone-field-test` from `origin/main` at `1f2c43d`.
 
 ## Read first
 
-- `docs/specs/SPEC-37-phone-field-test-delivery.md`
-- `docs/PROJECT_STATUS.md`
+- `docs/specs/SPEC-37-phone-field-test-delivery.md` (authoritative)
+- `docs/TESTING_GUIDE.md` section 6
 - `docs/HOSTED_STATE.md`
-- `docs/TESTING_GUIDE.md`, especially section 6
-- `docs/ENGINEERING_RULES.md`, especially R7
+- `docs/ENGINEERING_RULES.md` R7, R11
+- This brief
 
-The target acceptance date is 2026-09-18, about two weeks before travel.
+Target owner acceptance: 2026-09-18.
 
 ## Mission
 
-Produce a field-test build that runs on the owner's phone without the laptop:
+A field-test build that runs on the owner's phone with the laptop gone:
 
-1. reviewed `main` is deployed to a stable HTTPS backend;
-2. backend-only credentials are configured on that hosted service;
-3. an installable phone artifact is compiled against that URL;
-4. the owner proves the corridor online; and
-5. the owner proves cached itinerary and driver cards in airplane mode with
+1. reviewed `main` (`1f2c43d` or later on `main`) deployed to stable HTTPS;
+2. backend-only secrets on that hosted service;
+3. an installable artifact compiled against that URL;
+4. owner proves the Laos corridor online;
+5. owner proves cached itinerary and driver cards in airplane mode with
    USB and local tunnels disconnected.
 
 ## Preflight hard stops
 
-Stop before changing deployment or build configuration unless:
+Stop and report; do not guess:
 
-- SPEC-36 is merged to `origin/main`;
-- backend CI and Flutter gates are green on that merged SHA;
-- the owner names the target phone platform;
-- the owner has access to the chosen hosting and signing accounts; and
-- the exposed Google Maps key has been rotated and restricted.
+1. `git fetch origin && git rev-parse origin/main` is not an ancestor of or
+   equal to current `main` containing `1f2c43d`.
+2. The owner has not named **Android** or **iOS**. Ask once, then wait.
+3. The owner has not confirmed the leaked Google Maps key was rotated.
+   Do not install the old key on the hosted service.
+4. You do not have a container target the owner can actually provision
+   (Railway if they have `RAILWAY_TOKEN` and a service; otherwise one
+   supported container, no app redesign).
 
-Never request secret values in chat. The owner enters them directly in the
-hosting or signing service.
+Never request secret values in chat. The owner enters them in the host
+and signing consoles.
 
 ## Phase A: hosted backend
 
-Use the existing container and CI path. Prefer the prepared Railway route if
-the owner provisions its service, `RAILWAY_TOKEN`, and `PRODUCTION_URL`;
-otherwise use another supported container target without redesigning the app.
-
-Required hosted configuration:
+Required hosted configuration (values never appear in the repo or PR):
 
 ```text
 TB_DEBUG=false
@@ -55,58 +55,70 @@ TB_GOOGLE_MAPS_API_KEY=<rotated hosted secret>
 TB_OPENWEATHER_API_KEY=<hosted secret>
 ```
 
-Keep `TB_SUPABASE_JWT_SECRET` unset for the Anonymous field-test path. Do not
-put the service-role, LLM, Maps, or Weather keys in Flutter.
+Keep `TB_SUPABASE_JWT_SECRET` unset. Laptop `.env` is not deployment
+config. Do not put service-role, LLM, Maps, or Weather keys in Flutter.
 
-Proof:
+Proof Genie can produce without the phone:
 
-- HTTPS health succeeds from outside the laptop network;
-- startup reports credential presence only, never values;
+- HTTPS `GET /api/v1/health` succeeds from a non-laptop network;
+- startup logs booleans only (`llm_key_present`, `supabase_configured`,
+  `jwt_auth`); never values;
 - `TB_DEBUG` is false;
-- an Anonymous device can list and read its trip; and
-- provider-backed notification retrieval is not `unconfigured`.
+- Anonymous `GET /api/v1/trips` and trip read succeed;
+- `GET /api/v1/trip/{id}/notifications` is not `unconfigured`.
 
 ## Phase B: installable artifact
 
-`ApiClient` appends `/api/v1`; compile with the host root:
+`ApiClient` appends `/api/v1`. Compile with the host root only:
 
 ```text
 --dart-define=TB_API_BASE_URL=https://<hosted-api>
 ```
 
-For Android, produce a signed release APK suitable for direct installation.
-For iOS, use TestFlight and the owner's Apple signing setup. Do not silently
-substitute an emulator build.
+Android: signed release APK for sideload. iOS: TestFlight with the owner's
+Apple signing. No emulator substitute. No `flutter run` as the delivery.
 
-Record:
-
-- source commit;
-- platform and device;
-- artifact type;
-- hosted API hostname, without query strings or credentials; and
-- build command with secret-free defines only.
+Record in the PR (no secrets): source commit, platform, artifact type,
+hosted API hostname, secret-free build command.
 
 ## Phase C: owner acceptance
 
-The owner performs and records the SPEC-37 online and offline acceptance.
-Genie may prepare scripts or checklists but cannot claim device evidence.
-
-The offline run is invalid if the app uses `flutter run`, localhost,
-`10.0.2.2`, a laptop LAN address, USB networking, or `adb reverse`.
+Genie prepares checklist only. The owner records online and airplane-mode
+results in `docs/AWAITING_VERIFICATION.md`. Invalid if the app uses
+`flutter run`, localhost, `10.0.2.2`, laptop LAN, USB networking, or
+`adb reverse` (R7).
 
 ## Non-goals
 
-- No new consumer feature.
-- No OS push, background GPS, real offline maps, or public store launch.
-- No identity merge.
-- No SPEC-36 fixes on this branch.
+- No new consumer feature, OS push, background GPS, offline map tiles,
+  public store, or SPEC-24 identity merge.
+- No SPEC-36 itinerary changes.
+- No SPEC-29 Heads-up / interruption-budget work on this branch.
 - No new deployment framework if the current container works.
+
+## Gates
+
+```bash
+git fetch origin
+git checkout -b feat/spec37-phone-field-test origin/main
+pytest -q -ra
+ruff check .
+```
+
+From `mobile/` if Flutter is available:
+
+```bash
+flutter analyze --no-fatal-infos
+flutter test
+```
+
+If Flutter is unavailable, say so. Report skips with reasons (R8).
 
 ## Completion
 
-1. Open a focused PR for any repository changes.
-2. Report backend, Flutter, and build checks with skip reasons.
-3. Do not merge the PR.
-4. Do not claim hosted or phone acceptance without owner evidence.
-5. After owner acceptance, update `docs/HOSTED_STATE.md` and the dated finding
-   in `docs/AWAITING_VERIFICATION.md`.
+1. Open a focused PR into `main`. Do not merge.
+2. Report SHA, compare URL, checks, and what the owner must still enter
+   (platform, rotated Maps key, host secrets, signing).
+3. Do not claim hosted or phone acceptance without owner evidence.
+4. After owner acceptance, update `docs/HOSTED_STATE.md` and a dated
+   finding in `docs/AWAITING_VERIFICATION.md`.

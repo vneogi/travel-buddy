@@ -5,8 +5,9 @@ Those two files are the contract. This file is only the baton: what is true
 now, what the previous planning agent already adjudicated, and what the
 next agent must not reopen in the first week.
 
-Read this file and the two contracts above. The first job is review of SPEC-36
-at `e6522bb`; after merge, prepare and execute the SPEC-37 delivery brief.
+Read this file and the two contracts above. The first job is SPEC-37
+field-test delivery from reviewed `main` (`1f2c43d`). SPEC-36 is merged
+(PR #55). Execution brief: `docs/briefs/GENIE_SPEC_37_PHONE_FIELD_TEST.md`.
 
 ## Who does what (unchanged)
 
@@ -114,18 +115,15 @@ SPEC-36 and SPEC-37 gates.
 All 7 items on the October field-test spine are complete on main.
 SPEC-30 is complete (`f8349a8`, `83c825f`).
 Next tasks:
-1. Review `origin/feat/spec36-laos-corridor` at `e6522bb` against SPEC-36 and
-   its amended brief. It is pushed, not merged. Independently clear backend
-   proofs, Flutter compile/tests, the three-city date form, target-city swap
-   isolation, and CI. Do not accept the execution-agent summary as evidence.
-2. After SPEC-36 merges, execute SPEC-37: provision a stable hosted HTTPS API,
-   configure hosted secrets, build an installable artifact for the owner's
-   phone, and prove online operation without the laptop. Execution brief:
-   `docs/briefs/GENIE_SPEC_37_PHONE_FIELD_TEST.md`.
-3. By **2026-09-18**, run the real airplane-mode drill from the installed
+1. Execute SPEC-37 from reviewed `main` at `1f2c43d`. Provision a stable
+   hosted HTTPS API, configure hosted secrets, build an installable artifact
+   for the owner's phone. Execution brief:
+   `docs/briefs/GENIE_SPEC_37_PHONE_FIELD_TEST.md`. Do not deploy an
+   unreviewed commit.
+2. By **2026-09-18**, run the real airplane-mode drill from the installed
    artifact with USB and local tunnels disconnected. Record the build SHA,
    platform, and results in `docs/AWAITING_VERIFICATION.md`.
-4. Only then resume multi-night hotel polish, SPEC-17, trip-less Ask, richer
+3. Only then resume multi-night hotel polish, SPEC-17, trip-less Ask, richer
    Home, and the remaining consumer backlog.
 
 Migrations through 0024 and the Maps/OpenWeather local provider credentials are

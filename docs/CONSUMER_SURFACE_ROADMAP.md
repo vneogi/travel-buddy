@@ -83,8 +83,8 @@ SPEC-35's provider-backed in-app departure banner is also on main.
 
 Still outside that thin path: SPEC-24 identity merge, SPEC-27 lifecycle rights,
 trip-less Ask, and the rich Home aggregate. SPEC-32 single-city catalog create
-is verified. SPEC-36's multi-city corridor is pushed at `e6522bb` but remains
-under review and unmerged. SPEC-02 supplied the offline substrate. Durable
+is verified. SPEC-36's multi-city corridor is on `main` (PR #55, `1f2c43d`).
+SPEC-02 supplied the offline substrate. Durable
 hearts passed on Windows Aug 30.
 
 The exception is the SPEC-24 design, which is settled now and built later, for
@@ -92,7 +92,7 @@ the reason above.
 
 The immediate order is driven by the field-test dependency:
 
-1. merge SPEC-36 only after backend and Flutter review and green CI;
+1. SPEC-36 is on main (PR #55);
 2. execute SPEC-37 with a stable hosted HTTPS backend and installable phone
    artifact;
 3. by 2026-09-18, pass online and real airplane-mode acceptance without a
