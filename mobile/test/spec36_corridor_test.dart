@@ -18,7 +18,9 @@ import 'package:travel_buddy/features/itinerary/itinerary_notifier.dart';
 import 'package:travel_buddy/features/itinerary/itinerary_screen.dart';
 import 'package:travel_buddy/offline/offline_database.dart';
 import 'package:travel_buddy/services/signal_service.dart';
+import 'package:travel_buddy/widgets/activity_card.dart';
 import 'package:travel_buddy/widgets/city_section.dart';
+import 'package:travel_buddy/widgets/corridor_date_form.dart';
 
 class _MockTripRepository extends Mock implements TripRepository {}
 
@@ -576,14 +578,14 @@ void main() {
 
   // -- Proof: CitySection collapsed/expanded behavior ----------------------
 
-  testWidgets('CitySection: past group starts collapsed, tap expands',
+  testWidgets('CitySection: past group starts collapsed (showSecond), tap expands to showFirst',
       (tester) async {
     final pastGroup = CorridorCityGroup(
       geoRegion: 'vientiane_laos',
       displayName: 'Vientiane',
       dateRange: '2 Oct - 3 Oct',
       dayGroups: [
-        CalendarDateGroup(
+        ItineraryDayGroup(
           date: DateTime.utc(2020, 10, 2),
           nodes: [
             _node(
@@ -595,40 +597,47 @@ void main() {
         ),
       ],
     );
-    var builtCount = 0;
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(
         body: CitySection(
           cityGroup: pastGroup,
-          childBuilder: (cg) {
-            builtCount++;
-            return Text('child-${cg.geoRegion}');
-          },
+          childBuilder: (cg) => Text('child-${cg.geoRegion}'),
         ),
       ),
     ));
     await tester.pumpAndSettle();
 
-    // Past group: collapsed, child hidden via AnimatedCrossFade.
+    // Header always visible.
     expect(find.text('Vientiane'), findsOneWidget);
-    // The child is built (AnimatedCrossFade builds both) but crossFade hides it.
-    // The chevron is not rotated (collapsed state).
+
+    // Past group: collapsed = showSecond.
+    final acf = tester.widget<AnimatedCrossFade>(find.byType(AnimatedCrossFade));
+    expect(acf.crossFadeState, CrossFadeState.showSecond,
+        reason: 'Past group should start collapsed (showSecond)');
+
+    // Child widget is still built by AnimatedCrossFade (it builds both).
+    expect(find.text('child-vientiane_laos'), findsOneWidget);
 
     // Tap to expand.
     await tester.tap(find.text('Vientiane'));
     await tester.pumpAndSettle();
 
-    // Now expanded: child should be visible.
+    // Now expanded: showFirst.
+    final acfAfter = tester.widget<AnimatedCrossFade>(find.byType(AnimatedCrossFade));
+    expect(acfAfter.crossFadeState, CrossFadeState.showFirst,
+        reason: 'After tap, past group should expand (showFirst)');
+
+    // Child still present.
     expect(find.text('child-vientiane_laos'), findsOneWidget);
   });
 
-  testWidgets('CitySection: future group starts expanded', (tester) async {
+  testWidgets('CitySection: future group starts expanded (showFirst)', (tester) async {
     final futureGroup = CorridorCityGroup(
       geoRegion: 'luang_prabang_laos',
       displayName: 'Luang Prabang',
       dateRange: '6 Oct - 8 Oct',
       dayGroups: [
-        CalendarDateGroup(
+        ItineraryDayGroup(
           date: DateTime.now().toUtc().add(const Duration(days: 30)),
           nodes: [
             _node(
@@ -651,8 +660,11 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    // Future group: expanded by default.
+    // Future group: expanded = showFirst.
     expect(find.text('Luang Prabang'), findsOneWidget);
+    final acf = tester.widget<AnimatedCrossFade>(find.byType(AnimatedCrossFade));
+    expect(acf.crossFadeState, CrossFadeState.showFirst,
+        reason: 'Future group should start expanded (showFirst)');
     expect(find.text('child-luang_prabang_laos'), findsOneWidget);
   });
 
@@ -803,47 +815,248 @@ void main() {
 
   // -- Proof: corridor date form validation ----------------------------------
 
-  test('_CorridorDateForm validation: overlap detected', () {
-    // This test validates the form validation logic.
-    // Overlap: city 1 ends on Oct 4, city 2 starts on Oct 4.
-    final ranges = [
-      DateTimeRange(
-        start: DateTime(2026, 10, 2),
-        end: DateTime(2026, 10, 4),
-      ),
-      DateTimeRange(
-        start: DateTime(2026, 10, 4),
-        end: DateTime(2026, 10, 5),
-      ),
-      DateTimeRange(
-        start: DateTime(2026, 10, 6),
-        end: DateTime(2026, 10, 7),
-      ),
-    ];
-    // Validate: second range starts on same day first ends.
-    expect(ranges[1].start.isAfter(ranges[0].end), isFalse,
-        reason: 'Overlap not detected');
-  });
+  // -- Proof: CorridorDateForm production widget tests ----------------------
 
-  test('_CorridorDateForm validation: per-segment > 3 days', () {
-    final range = DateTimeRange(
-      start: DateTime(2026, 10, 1),
-      end: DateTime(2026, 10, 4),
+  testWidgets('CorridorDateForm: renders with default valid dates, Create enabled',
+      (tester) async {
+    const corridor = SupportedCorridor(
+      corridorId: 'laos_northbound_v1',
+      displayName: 'Vientiane to Luang Prabang',
+      geoRegions: ['vientiane_laos', 'vang_vieng_laos', 'luang_prabang_laos'],
+      maxDays: 7,
+      maxDaysPerSegment: 3,
     );
-    final days = range.end.difference(range.start).inDays + 1;
-    expect(days, 4);
-    expect(days > 3, isTrue, reason: 'Per-segment limit not enforced');
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: CorridorDateForm(corridor: corridor),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    // Title renders.
+    expect(find.text('Create Vientiane to Luang Prabang'), findsOneWidget);
+    // Three city rows.
+    expect(find.text('Vientiane'), findsOneWidget);
+    expect(find.text('Vang'), findsOneWidget);
+    expect(find.text('Luang'), findsOneWidget);
+    // No error shown (defaults are valid).
+    expect(find.textContaining('overlap'), findsNothing);
+    expect(find.textContaining('exceeds'), findsNothing);
+    // Create button enabled (find FilledButton that is not disabled).
+    final button = tester.widget<FilledButton>(find.byType(FilledButton));
+    expect(button.onPressed, isNotNull, reason: 'Create should be enabled for valid defaults');
   });
 
-  test('_CorridorDateForm validation: total > 7 days', () {
-    final ranges = [
-      DateTimeRange(start: DateTime(2026, 10, 1), end: DateTime(2026, 10, 3)),
-      DateTimeRange(start: DateTime(2026, 10, 4), end: DateTime(2026, 10, 6)),
-      DateTimeRange(start: DateTime(2026, 10, 7), end: DateTime(2026, 10, 9)),
-    ];
-    final total = ranges.fold<int>(
-        0, (s, r) => s + r.end.difference(r.start).inDays + 1);
-    expect(total, 9);
-    expect(total > 7, isTrue, reason: 'Total limit not enforced');
+  testWidgets('CorridorDateForm: overlap error shown + Create disabled',
+      (tester) async {
+    const corridor = SupportedCorridor(
+      corridorId: 'laos_northbound_v1',
+      displayName: 'Vientiane to Luang Prabang',
+      geoRegions: ['vientiane_laos', 'vang_vieng_laos', 'luang_prabang_laos'],
+      maxDays: 7,
+      maxDaysPerSegment: 3,
+    );
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: CorridorDateForm(corridor: corridor),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    // Manipulate state: get the CorridorDateFormState and set overlapping ranges.
+    final state = tester.state<CorridorDateFormState>(
+      find.byType(CorridorDateForm),
+    );
+    final overlap = DateTime.now().add(const Duration(days: 5));
+    // All three ranges start and end on the same day -> overlap.
+    state.setRangesForTest([
+      DateTimeRange(start: overlap, end: overlap),
+      DateTimeRange(start: overlap, end: overlap),
+      DateTimeRange(start: overlap.add(const Duration(days: 1)),
+          end: overlap.add(const Duration(days: 1))),
+    ]);
+    await tester.pumpAndSettle();
+
+    // Error message visible.
+    expect(find.textContaining('overlap'), findsOneWidget);
+    // Create button disabled.
+    final button = tester.widget<FilledButton>(find.byType(FilledButton));
+    expect(button.onPressed, isNull, reason: 'Create should be disabled on overlap');
   });
+
+  testWidgets('CorridorDateForm: >3 days/city shows error + Create disabled',
+      (tester) async {
+    const corridor = SupportedCorridor(
+      corridorId: 'laos_northbound_v1',
+      displayName: 'Vientiane to Luang Prabang',
+      geoRegions: ['vientiane_laos', 'vang_vieng_laos', 'luang_prabang_laos'],
+      maxDays: 7,
+      maxDaysPerSegment: 3,
+    );
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: CorridorDateForm(corridor: corridor),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    final state = tester.state<CorridorDateFormState>(
+      find.byType(CorridorDateForm),
+    );
+    final base = DateTime.now().add(const Duration(days: 5));
+    // First segment: 4 days (exceeds 3).
+    state.setRangesForTest([
+      DateTimeRange(start: base, end: base.add(const Duration(days: 3))),
+      DateTimeRange(start: base.add(const Duration(days: 5)),
+          end: base.add(const Duration(days: 5))),
+      DateTimeRange(start: base.add(const Duration(days: 7)),
+          end: base.add(const Duration(days: 7))),
+    ]);
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('exceeds 3 days'), findsOneWidget);
+    final button = tester.widget<FilledButton>(find.byType(FilledButton));
+    expect(button.onPressed, isNull);
+  });
+
+  testWidgets('CorridorDateForm: >7 total days shows error + Create disabled',
+      (tester) async {
+    const corridor = SupportedCorridor(
+      corridorId: 'laos_northbound_v1',
+      displayName: 'Vientiane to Luang Prabang',
+      geoRegions: ['vientiane_laos', 'vang_vieng_laos', 'luang_prabang_laos'],
+      maxDays: 7,
+      maxDaysPerSegment: 3,
+    );
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: CorridorDateForm(corridor: corridor),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    final state = tester.state<CorridorDateFormState>(
+      find.byType(CorridorDateForm),
+    );
+    final base = DateTime.now().add(const Duration(days: 5));
+    // 3 + 3 + 3 = 9 days, exceeds 7.
+    state.setRangesForTest([
+      DateTimeRange(start: base, end: base.add(const Duration(days: 2))),
+      DateTimeRange(start: base.add(const Duration(days: 4)),
+          end: base.add(const Duration(days: 6))),
+      DateTimeRange(start: base.add(const Duration(days: 8)),
+          end: base.add(const Duration(days: 10))),
+    ]);
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('exceeds the 7-day limit'), findsOneWidget);
+    final button = tester.widget<FilledButton>(find.byType(FilledButton));
+    expect(button.onPressed, isNull);
+  });
+
+  testWidgets('CorridorDateForm: valid submit pops with 3 segments',
+      (tester) async {
+    const corridor = SupportedCorridor(
+      corridorId: 'laos_northbound_v1',
+      displayName: 'Vientiane to Luang Prabang',
+      geoRegions: ['vientiane_laos', 'vang_vieng_laos', 'luang_prabang_laos'],
+      maxDays: 7,
+      maxDaysPerSegment: 3,
+    );
+    List<TripSegment>? result;
+    await tester.pumpWidget(MaterialApp(
+      home: Builder(
+        builder: (ctx) => Scaffold(
+          body: FilledButton(
+            onPressed: () async {
+              final segs = await showModalBottomSheet<List<TripSegment>>(
+                context: ctx,
+                isScrollControlled: true,
+                builder: (_) => const CorridorDateForm(corridor: corridor),
+              );
+              result = segs;
+            },
+            child: const Text('Open'),
+          ),
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    // Open the bottom sheet.
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    // Form is showing with Create button.
+    expect(find.text('Create Vientiane to Luang Prabang'), findsOneWidget);
+
+    // Defaults are valid -> tap Create.
+    await tester.tap(find.text('Create Laos corridor'));
+    await tester.pumpAndSettle();
+
+    // Bottom sheet closed, result is 3 segments.
+    expect(result, isNotNull);
+    expect(result, hasLength(3));
+    expect(result![0].geoRegion, 'vientiane_laos');
+    expect(result![1].geoRegion, 'vang_vieng_laos');
+    expect(result![2].geoRegion, 'luang_prabang_laos');
+  });
+
+  // -- Proof: cross-city nextNode on corridor ActivityCard -------------------
+
+  testWidgets('Cross-city nextNode: last Vientiane card gets first Vang Vieng node',
+      (tester) async {
+    final repo = _MockTripRepository();
+    final vteNode = _node(
+      name: 'Temple VTE',
+      geoRegion: 'vientiane_laos',
+      scheduledStart: DateTime.utc(2026, 10, 2, 9),
+    );
+    final vvNode = _node(
+      name: 'Cave VV',
+      geoRegion: 'vang_vieng_laos',
+      scheduledStart: DateTime.utc(2026, 10, 4, 9),
+    );
+    final trip = TripState(
+      tripId: 'trip-xn',
+      userId: 'u1',
+      corridorId: 'laos_northbound_v1',
+      geoRegion: 'vientiane_laos',
+      locationLat: 17.9757,
+      locationLng: 102.6331,
+      nodes: [vteNode, vvNode],
+      segments: [
+        _seg('vientiane_laos', '2026-10-02', '2026-10-03'),
+        _seg('vang_vieng_laos', '2026-10-04', '2026-10-05'),
+      ],
+    );
+    when(() => repo.getTrip(any())).thenAnswer((_) async => trip);
+
+    final container = await _loadItineraryContainer(trip: trip, repo: repo);
+    tester.view.physicalSize = const Size(800, 1400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: ItineraryScreen(tripId: 'trip-xn')),
+      ),
+    );
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    // Find all ActivityCard widgets.
+    final cards = tester.widgetList<ActivityCard>(find.byType(ActivityCard)).toList();
+    expect(cards.length, greaterThanOrEqualTo(2),
+        reason: 'Expected at least 2 ActivityCards (VTE + VV)');
+
+    // The VTE card (Temple VTE) should have nextNode = Cave VV.
+    final vteCard = cards.firstWhere((c) => c.node.venueName == 'Temple VTE');
+    expect(vteCard.nextNode, isNotNull,
+        reason: 'Last Vientiane card must have a nextNode (cross-city)');
+    expect(vteCard.nextNode!.venueName, 'Cave VV',
+        reason: 'nextNode must be the first Vang Vieng node');
+  }, timeout: const Timeout(Duration(seconds: 20)));
 }

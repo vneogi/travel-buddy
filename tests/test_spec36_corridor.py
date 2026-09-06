@@ -264,6 +264,8 @@ class TestSingleCityCompat:
 class TestNoLLMNoQuota:
     def test_corridor_create_never_invokes_heavy_path(self):
         from agents.state_machine import state_machine as sm_inst
+        from services.llm_service import llm_service as llm_inst
+        from agents.router_agent import router_agent as ra_inst
 
         originals = {}
         calls = {}
@@ -278,6 +280,9 @@ class TestNoLLMNoQuota:
             "process_event": sm_inst,
             "hybrid_venue_search": db_service,
             "consume_reroute": db_service,
+            "generate_itinerary_response": llm_inst,
+            "generate_info_response": llm_inst,
+            "generate_response": ra_inst,
         }
         for name, obj in targets.items():
             originals[name] = getattr(obj, name)
@@ -416,12 +421,15 @@ class TestCrossCitySwap:
 # Proof 12: earlier-city cancel/swap preserves next-city boundary
 # ==================================================================
 class TestEarlierCityMutation:
-    def test_cancel_preserves_next_city_boundary(self):
+    def test_cancel_skips_target_preserves_next_city(self):
+        """Cancel a Vientiane node: target becomes SKIPPED, VV boundary intact."""
         data = _create()
         trip_id = data["trip_id"]
         vv_nodes = [n for n in data["nodes"] if n["geo_region"] == "vang_vieng_laos"]
         vv_first_start = vv_nodes[0]["scheduled_start"]
         vte_node = next(n for n in data["nodes"] if n["geo_region"] == "vientiane_laos")
+        target_id = vte_node["node_id"]
+        assert vte_node["status"] == "pending", "Precondition: target is pending"
 
         r = client.post(
             "/api/v1/trip/event",
@@ -429,40 +437,75 @@ class TestEarlierCityMutation:
                 "trip_id": trip_id,
                 "event_type": "cancel_activity",
                 "message": f"Cancel {vte_node['venue_name']}",
-                "target_node_id": vte_node["node_id"],
+                "target_node_id": target_id,
             },
             headers=HEADERS,
         )
         assert r.status_code == 200, f"Cancel returned {r.status_code}: {r.text}"
 
         trip_after = client.get(f"/api/v1/trip/{trip_id}", headers=HEADERS).json()
+
+        # 1. The cancelled node is now skipped.
+        target_after = next(n for n in trip_after["nodes"] if n["node_id"] == target_id)
+        assert target_after["status"] == "skipped", (
+            f"Expected skipped, got {target_after['status']}"
+        )
+
+        # 2. Vang Vieng first node timestamp unchanged.
         vv_after = [n for n in trip_after["nodes"] if n["geo_region"] == "vang_vieng_laos"]
         assert len(vv_after) > 0, "Vang Vieng nodes disappeared"
         assert vv_after[0]["scheduled_start"] == vv_first_start, (
             f"VV boundary moved: {vv_first_start} -> {vv_after[0]['scheduled_start']}"
         )
 
-    def test_swap_preserves_next_city_boundary(self):
+    def test_swap_changes_venue_preserves_next_city(self):
+        """Swap a VV node with an explicit same-region replacement: venue_id
+        changes, LP boundary stays fixed."""
         data = _create()
         trip_id = data["trip_id"]
         vv_nodes = [n for n in data["nodes"] if n["geo_region"] == "vang_vieng_laos"]
         lp_nodes = [n for n in data["nodes"] if n["geo_region"] == "luang_prabang_laos"]
         lp_first_start = lp_nodes[0]["scheduled_start"]
         vv_target = vv_nodes[0]
+        original_venue_id = vv_target["venue_id"]
+
+        # Find a same-region venue NOT already in the trip.
+        trip_vids = {n["venue_id"] for n in data["nodes"]
+                     if n["geo_region"] == "vang_vieng_laos"}
+        all_vv = eligible_corridor_venues(
+            db_service.list_venues_for_region("vang_vieng_laos")
+        )
+        unused = [v for v in all_vv if str(v["venue_id"]) not in trip_vids]
+        assert len(unused) > 0, "Need at least one unused VV venue for swap"
+        replacement_vid = str(unused[0]["venue_id"])
 
         r = client.post(
             "/api/v1/trip/event",
             json={
                 "trip_id": trip_id,
                 "event_type": "swap_activity",
-                "message": "Swap to something else",
+                "message": "Swap to a different VV venue",
                 "target_node_id": vv_target["node_id"],
+                "preferences": {"replacement_venue_id": replacement_vid},
             },
             headers=HEADERS,
         )
         assert r.status_code == 200, f"Swap returned {r.status_code}: {r.text}"
 
         trip_after = client.get(f"/api/v1/trip/{trip_id}", headers=HEADERS).json()
+
+        # 1. The swapped node now has the new venue_id.
+        swapped = next(
+            n for n in trip_after["nodes"]
+            if n["node_id"] == vv_target["node_id"]
+        )
+        assert swapped["venue_id"] == replacement_vid, (
+            f"venue_id not changed: expected {replacement_vid}, got {swapped['venue_id']}"
+        )
+        assert swapped["venue_id"] != original_venue_id, "venue_id unchanged after swap"
+        assert swapped["geo_region"] == "vang_vieng_laos"
+
+        # 2. LP first node timestamp unchanged.
         lp_after = [n for n in trip_after["nodes"] if n["geo_region"] == "luang_prabang_laos"]
         assert len(lp_after) > 0, "LP nodes disappeared"
         assert lp_after[0]["scheduled_start"] == lp_first_start, (
