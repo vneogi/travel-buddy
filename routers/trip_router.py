@@ -104,12 +104,16 @@ async def create_trip(
             },
         )
 
-    start = request.start_date
-    if start.tzinfo is None:
-        start = start.replace(tzinfo=timezone.utc)
-    else:
-        start = start.astimezone(timezone.utc)
-    start = start.replace(hour=9, minute=0, second=0)
+    # SPEC-35: Construct 09:00 in the region's IANA timezone, then store UTC.
+    from zoneinfo import ZoneInfo
+
+    region_tz = ZoneInfo(REGIONS[geo_region].timezone)
+    raw_date = request.start_date
+    if raw_date.tzinfo is not None:
+        raw_date = raw_date.replace(tzinfo=None)
+    start = datetime(
+        raw_date.year, raw_date.month, raw_date.day, 9, 0, 0, tzinfo=region_tz
+    ).astimezone(timezone.utc)
     try:
         nodes = nodes_from_catalog(
             geo_region=geo_region,
@@ -131,6 +135,7 @@ async def create_trip(
         geo_region=geo_region,
         current_context=context_for_region(geo_region, request.initial_mood),
         nodes=nodes,
+        schedule_basis="region_local_v1",
     )
     db_service.save_trip(trip)
 
