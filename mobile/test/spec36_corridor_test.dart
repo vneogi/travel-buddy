@@ -7,12 +7,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:travel_buddy/core/api_client.dart';
 import 'package:travel_buddy/core/providers.dart';
 import 'package:travel_buddy/data/models.dart';
 import 'package:travel_buddy/data/repositories.dart';
+import 'package:travel_buddy/features/home/home_controller.dart';
+import 'package:travel_buddy/features/home/home_screen.dart';
 import 'package:travel_buddy/features/itinerary/date_scope.dart';
 import 'package:travel_buddy/features/itinerary/itinerary_notifier.dart';
 import 'package:travel_buddy/features/itinerary/itinerary_screen.dart';
@@ -1058,5 +1061,92 @@ void main() {
         reason: 'Last Vientiane card must have a nextNode (cross-city)');
     expect(vteCard.nextNode!.venueName, 'Cave VV',
         reason: 'nextNode must be the first Vang Vieng node');
+  }, timeout: const Timeout(Duration(seconds: 20)));
+  // -- Proof: HomeScreen opens form, form submits, corridorCreate called once --
+
+  testWidgets('HomeScreen corridor tap -> form submit calls corridorCreate once with 3 segments',
+      (tester) async {
+    registerFallbackValue(<TripSegment>[]);
+    final repo = _MockTripRepository();
+    when(() => repo.corridorCreate(
+          segments: any(named: 'segments'),
+          mood: any(named: 'mood'),
+        )).thenAnswer((_) async => const TripState(
+          tripId: 'corridor-trip-1',
+          userId: 'u1',
+          nodes: [],
+          corridorId: 'laos_northbound_v1',
+        ));
+
+    final router = GoRouter(
+      routes: [
+        GoRoute(path: '/', builder: (_, __) => const HomeScreen()),
+        GoRoute(
+          path: '/trip/:tripId',
+          builder: (_, __) => const Scaffold(body: Text('trip opened')),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          tripRepoProvider.overrideWithValue(repo),
+          homeSnapshotProvider.overrideWith(
+            (_) async => const HomeSnapshot(
+              supportedRegions: ['vientiane_laos'],
+              supportedCorridors: [
+                SupportedCorridor(
+                  corridorId: 'laos_northbound_v1',
+                  displayName: 'Vientiane to Luang Prabang',
+                  geoRegions: [
+                    'vientiane_laos',
+                    'vang_vieng_laos',
+                    'luang_prabang_laos',
+                  ],
+                  maxDays: 7,
+                  maxDaysPerSegment: 3,
+                ),
+              ],
+              trips: [],
+            ),
+          ),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    // Corridor card is visible.
+    expect(find.text('Multi-city Laos corridor'), findsOneWidget);
+
+    // Tap the corridor card to open the date form bottom sheet.
+    await tester.tap(find.text('Multi-city Laos corridor'));
+    await tester.pumpAndSettle();
+
+    // Form is showing.
+    expect(find.text('Create Vientiane to Luang Prabang'), findsOneWidget);
+
+    // Defaults are valid, tap Create.
+    await tester.tap(find.text('Create Laos corridor'));
+    await tester.pumpAndSettle();
+
+    // corridorCreate was called exactly once with 3 segments.
+    final captured = verify(
+      () => repo.corridorCreate(
+        segments: captureAny(named: 'segments'),
+        mood: any(named: 'mood'),
+      ),
+    ).captured;
+    expect(captured, hasLength(1), reason: 'corridorCreate must be called exactly once');
+    final segments = captured.single as List<TripSegment>;
+    expect(segments, hasLength(3));
+    expect(segments[0].geoRegion, 'vientiane_laos');
+    expect(segments[1].geoRegion, 'vang_vieng_laos');
+    expect(segments[2].geoRegion, 'luang_prabang_laos');
+
+    // Router navigated to the trip.
+    expect(find.text('trip opened'), findsOneWidget);
   }, timeout: const Timeout(Duration(seconds: 20)));
 }

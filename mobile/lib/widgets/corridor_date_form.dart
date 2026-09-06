@@ -14,7 +14,7 @@ import '../theme/typography.dart';
 ///  - Chronological order: start_i+1 > end_i.
 class CorridorDateForm extends StatefulWidget {
   final SupportedCorridor corridor;
-  const _CorridorDateForm({required this.corridor});
+  const CorridorDateForm({required this.corridor});
 
   @override
   State<CorridorDateForm> createState() => CorridorDateFormState();
@@ -130,7 +130,7 @@ class CorridorDateFormState extends State<CorridorDateForm> {
             ),
             const SizedBox(height: 16),
             for (var i = 0; i < widget.corridor.geoRegions.length; i++) ...[
-              _CityDateRow(
+              CityDateRow(
                 region: widget.corridor.geoRegions[i],
                 range: _ranges[i],
                 onTap: () => _pickRange(i),
@@ -171,7 +171,7 @@ class CityDateRow extends StatelessWidget {
   final DateTimeRange range;
   final VoidCallback onTap;
 
-  const _CityDateRow({
+  const CityDateRow({
     required this.region,
     required this.range,
     required this.onTap,
