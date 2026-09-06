@@ -224,6 +224,12 @@ Swap and other targeted venue operations use the target node's `geo_region`.
 They must never use the last itinerary node or the trip's first-city default as
 a proxy.
 
+The Flutter swap sheet must also derive search latitude and longitude from the
+target node. The current itinerary path builds swap coordinates from the first
+trip node, which would search Vientiane when the traveller opens Swap on a
+Luang Prabang card. Update the production coordinate resolver; do not fix only
+the server-side region filter.
+
 Trip-global "near me" remains outside this slice. If no current city or target
 node is known, refuse or ask; do not silently search Vientiane for a traveller
 who may be in Luang Prabang.
@@ -279,20 +285,24 @@ Backend:
 9. Create calls neither the LLM nor hybrid search and does not consume quota.
 10. Normalized rows carry increasing day indexes and preserve global sequence.
 11. A targeted swap in Luang Prabang cannot return a Vientiane venue.
+12. Canceling or swapping an earlier-city node does not move the next city's
+    first 09:00 node across its requested date boundary.
 
 Flutter:
 
-12. Home parses and caches missing or present `supported_corridors`.
-13. Corridor create sends only the three segment objects.
-14. Invalid date ranges cannot submit and show a user-facing reason.
-15. One fetched trip renders city sections in corridor order and date headers
+13. Home parses and caches missing or present `supported_corridors`.
+14. Corridor create sends only the three segment objects.
+15. Invalid date ranges cannot submit and show a user-facing reason.
+16. One fetched trip renders city sections in corridor order and date headers
     inside each city.
-16. Past city sections start collapsed and expand without losing cards.
-17. Current and future city sections start expanded.
-18. Hearts, outcomes, booking actions, and target-node swaps still reach the
+17. Past city sections start collapsed and expand without losing cards.
+18. Current and future city sections start expanded.
+19. Hearts, outcomes, booking actions, and target-node swaps still reach the
     original node IDs.
-19. A single-city trip renders exactly as before.
-20. No overflow at 800x600 and no raw region code is shown to the user.
+20. Opening Swap on a Luang Prabang card sends that node's latitude and
+    longitude to venue search, not the first Vientiane node's coordinates.
+21. A single-city trip renders exactly as before.
+22. No overflow at 800x600 and no raw region code is shown to the user.
 
 ## Sabotage proofs
 
@@ -312,6 +322,8 @@ Run each sabotage separately and name the expected failing test:
    test must fail.
 8. Resolve a swap from `trip.geo_region` instead of the target node. The
    cross-city swap isolation test must fail.
+9. Change the Flutter swap coordinate resolver back to `nodes.first`. The
+   later-city swap-search coordinate test must fail.
 
 For every sabotage, verify that the named test itself fails for the intended
 assertion. A red suite from another test is not proof.
@@ -325,6 +337,7 @@ assertion. A red suite from another test is not proof.
 - [ ] Normalized rows carry truthful day indexes and per-node regions
 - [ ] Flutter creates the corridor and renders collapsible city/day sections
 - [ ] Past sections collapse without hiding history permanently
+- [ ] A later-city swap searches around its target node, not the first city
 - [ ] Single-city creation and itinerary behavior remain compatible
 - [ ] No transport, stay, traffic, meal, or popularity claim is invented
 - [ ] Backend and Flutter proof cases pass and all sabotage proofs fail correctly
