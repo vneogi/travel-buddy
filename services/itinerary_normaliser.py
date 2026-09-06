@@ -11,6 +11,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
+from zoneinfo import ZoneInfo
 
 from models.ids import generate_edge_id, generate_node_id
 
@@ -25,6 +26,50 @@ REGION_TIMEZONES: Dict[str, str] = {
     "vang_vieng_laos": "Asia/Vientiane",
     "vientiane_laos": "Asia/Vientiane",
 }
+
+
+def _compute_day_index(
+    node: Dict[str, Any],
+    idx: int,
+    all_nodes: List[Dict[str, Any]],
+    trip_geo: str | None,
+) -> int:
+    """Derive zero-based day index from region-local calendar dates.
+
+    Converts each stored UTC instant to its node region timezone, then
+    assigns indexes based on ordered distinct local dates.
+    Single-day trips stay at zero.
+    """
+    # Collect all local dates across nodes
+    local_dates: list[str] = []
+    for n in all_nodes:
+        sched = n.get("scheduled_start")
+        geo = n.get("geo_region") or trip_geo or ""
+        tz_name = REGION_TIMEZONES.get(geo)
+        if sched and tz_name:
+            try:
+                if isinstance(sched, str):
+                    dt = datetime.fromisoformat(sched.replace("Z", "+00:00"))
+                else:
+                    dt = sched
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+                local = dt.astimezone(ZoneInfo(tz_name))
+                local_dates.append(f"{local.year}-{local.month:02d}-{local.day:02d}")
+            except (ValueError, TypeError):
+                local_dates.append("")
+        else:
+            local_dates.append("")
+
+    # Ordered distinct dates
+    seen: dict[str, int] = {}
+    for d in local_dates:
+        if d and d not in seen:
+            seen[d] = len(seen)
+
+    # Look up current node
+    current_date = local_dates[idx] if idx < len(local_dates) else ""
+    return seen.get(current_date, 0)
 
 
 def decompose_trip(
@@ -87,7 +132,7 @@ def decompose_trip(
         node_row = {
             "node_id": node_id,
             "trip_id": trip_id,
-            "day_index": 0,  # single-day trips; future: derive from date
+            "day_index": _compute_day_index(n, i, raw_nodes, trip_geo),
             "seq": (i + 1) * _SEQ_GAP,
             "node_type": node_type,
             "venue_ref": n.get("venue_id"),

@@ -21,6 +21,18 @@ class TripRepository {
     return getTrip(data['trip_id'] as String);
   }
 
+
+  /// SPEC-36: Create a corridor trip. Body contains only segments.
+  Future<TripState> corridorCreate({
+    required List<TripSegment> segments,
+    String? mood,
+  }) async {
+    final data = await _api.post('/trip/create', body: {
+      'segments': segments.map((s) => s.toJson()).toList(),
+      if (mood != null) 'initial_mood': mood,
+    });
+    return getTrip(data['trip_id'] as String);
+  }
   Future<TripState> getTrip(String tripId) async => TripState.fromJson(
         await _api.get('/trip/$tripId') as Map<String, dynamic>,
       );

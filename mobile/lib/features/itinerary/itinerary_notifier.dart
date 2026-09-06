@@ -89,6 +89,7 @@ class ItineraryController extends StateNotifier<ItineraryState> {
       if (!mounted) return;
       state = ItineraryState(
         nodes: trip.nodes,
+        segments: trip.segments,
         loading: false,
         lovedPlaceRefs: merged,
         nodeOutcomes: {...restoredOutcomes, ...priorOutcomes},

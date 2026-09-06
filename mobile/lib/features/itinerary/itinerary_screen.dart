@@ -285,32 +285,66 @@ class ItineraryScreen extends ConsumerWidget {
                             ),
                           ),
                         )
-                      : _DateScopedTimeline(
-                          nodes: state.nodes,
-                          state: state,
-                          onSwap: (node) => _swap(context, ref, node),
-                          onCancel: (node) => _cancel(ref, node),
-                          onOutcome: (node) =>
-                              _showOutcomePicker(context, ref, node),
-                          onLoved: (node) {
-                            final placeRef = node.venueId ?? node.venueName;
-                            ref
-                                .read(signalServiceProvider)
-                                .emitUserLoved(
-                                  placeRef: placeRef,
-                                  tripId: tripId,
-                                );
-                            ref
-                                .read(
-                                  itineraryControllerProvider(tripId).notifier,
-                                )
-                                .markLoved(placeRef);
-                          },
-                          onEditBooking: (node) => _editBooking(context, node),
-                          onDeleteBooking: (node) =>
-                              _deleteBooking(context, ref, node),
-                          sig: _sig,
-                        ),
+                      : state.segments.isNotEmpty
+                          ? _CorridorTimeline(
+                              nodes: state.nodes,
+                              segments: state.segments,
+                              state: state,
+                              onSwap: (node) => _swap(context, ref, node),
+                              onCancel: (node) => _cancel(ref, node),
+                              onOutcome: (node) =>
+                                  _showOutcomePicker(context, ref, node),
+                              onLoved: (node) {
+                                final placeRef =
+                                    node.venueId ?? node.venueName;
+                                ref
+                                    .read(signalServiceProvider)
+                                    .emitUserLoved(
+                                      placeRef: placeRef,
+                                      tripId: tripId,
+                                    );
+                                ref
+                                    .read(
+                                      itineraryControllerProvider(tripId)
+                                          .notifier,
+                                    )
+                                    .markLoved(placeRef);
+                              },
+                              onEditBooking: (node) =>
+                                  _editBooking(context, node),
+                              onDeleteBooking: (node) =>
+                                  _deleteBooking(context, ref, node),
+                              sig: _sig,
+                            )
+                          : _DateScopedTimeline(
+                              nodes: state.nodes,
+                              state: state,
+                              onSwap: (node) => _swap(context, ref, node),
+                              onCancel: (node) => _cancel(ref, node),
+                              onOutcome: (node) =>
+                                  _showOutcomePicker(context, ref, node),
+                              onLoved: (node) {
+                                final placeRef =
+                                    node.venueId ?? node.venueName;
+                                ref
+                                    .read(signalServiceProvider)
+                                    .emitUserLoved(
+                                      placeRef: placeRef,
+                                      tripId: tripId,
+                                    );
+                                ref
+                                    .read(
+                                      itineraryControllerProvider(tripId)
+                                          .notifier,
+                                    )
+                                    .markLoved(placeRef);
+                              },
+                              onEditBooking: (node) =>
+                                  _editBooking(context, node),
+                              onDeleteBooking: (node) =>
+                                  _deleteBooking(context, ref, node),
+                              sig: _sig,
+                            ),
                 ),
               ],
             ),
@@ -323,6 +357,63 @@ class ItineraryScreen extends ConsumerWidget {
 /// Builds a single ListView of date-header and ActivityCard items.
 /// The `nextNode` spans across date boundaries so the last card in one day
 /// still receives the first card of the next day.
+
+/// SPEC-36: Corridor-aware timeline that groups nodes by city segment.
+class _CorridorTimeline extends StatelessWidget {
+  final List<TripNode> nodes;
+  final List<TripSegment> segments;
+  final ItineraryState state;
+  final void Function(TripNode) onSwap;
+  final void Function(TripNode) onCancel;
+  final void Function(TripNode) onOutcome;
+  final void Function(TripNode) onLoved;
+  final void Function(TripNode) onEditBooking;
+  final void Function(TripNode) onDeleteBooking;
+  final String Function(TripNode) sig;
+
+  const _CorridorTimeline({
+    required this.nodes,
+    required this.segments,
+    required this.state,
+    required this.onSwap,
+    required this.onCancel,
+    required this.onOutcome,
+    required this.onLoved,
+    required this.onEditBooking,
+    required this.onDeleteBooking,
+    required this.sig,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cityGroups = groupNodesByCorridor(
+      nodes: nodes,
+      segments: segments,
+    );
+    return ListView.builder(
+      padding: const EdgeInsets.only(bottom: 120),
+      itemCount: cityGroups.length,
+      itemBuilder: (context, index) {
+        final group = cityGroups[index];
+        return CitySection(
+          cityGroup: group,
+          childBuilder: (cg) => _DateScopedTimeline(
+            nodes: cg.dayGroups.expand((dg) => dg.nodes).toList(),
+            state: state,
+            onSwap: onSwap,
+            onCancel: onCancel,
+            onOutcome: onOutcome,
+            onLoved: onLoved,
+            onEditBooking: onEditBooking,
+            onDeleteBooking: onDeleteBooking,
+            sig: sig,
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _DateScopedTimeline extends StatelessWidget {
   final List<TripNode> nodes;
   final ItineraryState state;

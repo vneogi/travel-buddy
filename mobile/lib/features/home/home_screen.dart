@@ -43,6 +43,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 creating: _creating,
                 onTap: () => _createTrip(snapshot),
               ),
+              if (snapshot.supportedCorridors.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.base),
+                _CreateCorridorCard(
+                  creating: _creating,
+                  corridors: snapshot.supportedCorridors,
+                  onTap: () => _createCorridorTrip(snapshot),
+                ),
+              ],
               if (snapshot.featuredTrip != null) ...[
                 const SizedBox(height: AppSpacing.lg),
                 _FeaturedTripCard(
@@ -100,6 +108,59 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           const SnackBar(
             content: Text(
               "Couldn't create this trip. Check your connection and try again.",
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _creating = false);
+    }
+  }
+
+
+  Future<void> _createCorridorTrip(HomeSnapshot snapshot) async {
+    if (_creating || snapshot.supportedCorridors.isEmpty) return;
+    // For now, use the first available corridor with default 1-day segments
+    final corridor = snapshot.supportedCorridors.first;
+    final now = DateTime.now();
+    final segments = <TripSegment>[];
+    var cursor = DateTime(now.year, now.month, now.day + 1);
+    for (final region in corridor.geoRegions) {
+      final start =
+          '${cursor.year}-${cursor.month.toString().padLeft(2, '0')}-${cursor.day.toString().padLeft(2, '0')}';
+      segments.add(TripSegment(
+        geoRegion: region,
+        startsOn: start,
+        endsOn: start,
+      ));
+      cursor = cursor.add(const Duration(days: 1));
+    }
+    if (!mounted) return;
+    setState(() => _creating = true);
+    try {
+      final trip = await ref
+          .read(tripRepoProvider)
+          .corridorCreate(segments: segments);
+      ref.invalidate(homeSnapshotProvider);
+      if (mounted) context.go('/trip/${trip.tripId}');
+    } on ApiException catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error is NetworkException
+                ? "Can't reach Travel Buddy \u2014 check your connection."
+                : error.message),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              "Couldn't create this corridor trip. Try again.",
             ),
             behavior: SnackBarBehavior.floating,
           ),
@@ -404,3 +465,60 @@ String _cacheAge(DateTime cachedAt) {
   if (age.inDays < 1) return '${age.inHours}h ago';
   return '${age.inDays}d ago';
 }
+
+
+class _CreateCorridorCard extends StatelessWidget {
+  final bool creating;
+  final List<SupportedCorridor> corridors;
+  final VoidCallback onTap;
+
+  const _CreateCorridorCard({
+    required this.creating,
+    required this.corridors,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final corridor = corridors.first;
+    return Card(
+      child: InkWell(
+        onTap: creating ? null : onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              const Icon(Icons.route, size: 32),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      corridor.displayName,
+                      style: AppTypography.bodyBold,
+                    ),
+                    Text(
+                      'Multi-city Laos corridor',
+                      style: AppTypography.caption,
+                    ),
+                  ],
+                ),
+              ),
+              if (creating)
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else
+                const Icon(Icons.arrow_forward_ios, size: 16),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
