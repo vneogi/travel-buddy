@@ -1,7 +1,8 @@
 # SPEC-35: Proactive Itinerary Notifications
 
-> Status: PHASE A BACKEND DONE (PR #50, `ccfa41e`). In-app client not
-> implemented. OS push remains SPEC-27. Meal previews remain suppressed.
+> Status: PHASE A BACKEND DONE (PR #50, `ccfa41e`) AND PHASE A2 CLIENT DONE
+> (PR #52, `1379da8`). OS push remains SPEC-27. Meal previews remain
+> suppressed.
 >
 > Extends SPEC-29 context alerts. Depends on SPEC-13 for region timezones,
 > SPEC-16 for stable itinerary nodes and edges, SPEC-17 for factual provenance, SPEC-19 for licensed
@@ -20,9 +21,8 @@ app during the trip:
 2. shortly before a meal, surface one evidence-backed dish worth considering.
 
 The first product slice is an in-app notification feed evaluated on itinerary
-load, foreground and resume. Phase A backend is live. The next slice is the
-Flutter banner that consumes those candidates. It does not request background
-location and does not send OS push notifications.
+load, foreground and resume. The backend and Flutter banner are live. They do
+not request background location and do not send OS push notifications.
 
 ## Product copy contract
 
@@ -322,8 +322,9 @@ leave-now copy is not gated by the SPEC-22 question-card daily cap.
 
 1. **Phase A - departure backend:** DONE in PR #50. Endpoint, deterministic
    evaluator, cached route adapter, departure reminder, weather reuse.
-2. **Phase A2 - in-app client:** Flutter fetch, cache, local dismiss, and a
-   single departure banner on the itinerary. No meal copy, GPS, or push.
+2. **Phase A2 - in-app client:** DONE in PR #52. Flutter fetch, cache, local
+   dismiss, and a single departure banner on the itinerary. No meal copy, GPS,
+   or push.
 3. **Phase B - meal evidence:** stored editorial provenance for guide-signature
    dishes and SPEC-17 `popular_dish` claims populated through SPEC-19 licensed
    corpus mining. Only then can meal previews be returned.
@@ -386,6 +387,6 @@ leave-now copy is not gated by the SPEC-22 question-card daily cap.
 - [ ] SPEC-17 envelope required for review-derived dish claims
 - [x] No background GPS, LLM, mutation, reroute quota, or push transport
       (Phase A backend)
-- [ ] Phase A2 itinerary banner fetches `/notifications`, caches, dismisses
+- [x] Phase A2 itinerary banner fetches `/notifications`, caches, dismisses
       locally, and never stacks with weather cards
 - [ ] Phase C explicitly routes through SPEC-27 rather than bypassing it

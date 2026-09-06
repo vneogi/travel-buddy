@@ -1,7 +1,6 @@
 # SPEC-32: Real Laos trip creation from the venue catalog
 
-> Status: IMPLEMENTED (this branch). Device verification of a Laos create on
-> Windows remains open in AWAITING_VERIFICATION.
+> Status: IMPLEMENTED (PR #38) AND VERIFIED on Windows Sep 5.
 >
 > One city per trip. Create reads venues already stored for that geo_region
 > and builds a deterministic 4 to 6 stop day. It does not call hybrid search,

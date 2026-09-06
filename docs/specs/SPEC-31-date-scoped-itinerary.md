@@ -120,7 +120,7 @@ Widget tests:
 - [x] Multi-day itinerary renders date headers without hiding nodes
 - [x] Existing node order and card identity are preserved
 - [x] Header date uses the same parsed clock fields as the card
-- [ ] Dedicated Hotel Rescue code path removed; 6C canceled
+- [x] Dedicated Hotel Rescue code path removed; 6C canceled
 - [ ] Multi-night booking duration remains a separate product slice
 - [x] No API, schema, scheduler, or timezone conversion change
 - [x] Flutter analyze and full Flutter test green from `origin/main`
