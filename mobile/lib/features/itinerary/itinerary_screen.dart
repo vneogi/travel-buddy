@@ -19,6 +19,8 @@ import 'itinerary_notifier.dart';
 import 'replacement_ref.dart';
 import '../alerts/alerts_notifier.dart';
 import '../../widgets/alert_card.dart';
+import '../../widgets/departure_banner.dart';
+import '../notifications/departure_notifier.dart';
 
 Map<String, dynamic> preferencesForConfirmedSwap(
   TripNode original,
@@ -573,7 +575,8 @@ class _OutcomeSheet extends StatelessWidget {
 /// or replace the itinerary while loading.
 class _AlertsSection extends ConsumerStatefulWidget {
   final String tripId;
-  const _AlertsSection({required this.tripId});
+  final void Function(String nodeId)? onScrollToNode;
+  const _AlertsSection({required this.tripId, this.onScrollToNode});
 
   @override
   ConsumerState<_AlertsSection> createState() => _AlertsSectionState();
@@ -602,54 +605,88 @@ class _AlertsSectionState extends ConsumerState<_AlertsSection>
     if (state == AppLifecycleState.resumed &&
         alertResumeRefreshDue(_lastRefreshAttempt, now)) {
       _lastRefreshAttempt = now;
+      // Refresh both alerts and departure notifications with same debounce.
       ref.read(alertsNotifierProvider(widget.tripId).notifier).refresh();
+      ref.read(departureNotifierProvider(widget.tripId).notifier).refresh();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final alertsAsync = ref.watch(alertsNotifierProvider(widget.tripId));
+    final departureAsync =
+        ref.watch(departureNotifierProvider(widget.tripId));
 
-    return alertsAsync.when(
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
-      data: (alertsState) {
-        final visible = alertsState.visible;
-        if (visible.isEmpty) return const SizedBox.shrink();
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Manual refresh action
-            Align(
-              alignment: Alignment.centerRight,
-              child: IconButton(
-                icon: alertsState.loading
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.refresh, size: 18),
-                tooltip: 'Refresh alerts',
-                onPressed: alertsState.loading
-                    ? null
-                    : () => ref
-                        .read(alertsNotifierProvider(widget.tripId).notifier)
-                        .refresh(),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
+    final departureState = departureAsync.valueOrNull;
+    final departureBanner = departureState?.visible;
+    final hasDeparture = departureBanner != null;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // SPEC-35: Departure banner above weather cards.
+        if (hasDeparture)
+          DepartureBanner(
+            candidate: departureBanner,
+            onDismiss: () => ref
+                .read(departureNotifierProvider(widget.tripId).notifier)
+                .dismiss(departureBanner.notificationId),
+            onTapNodeId: widget.onScrollToNode,
+          ),
+        // SPEC-29 weather cards: hidden while departure banner is visible.
+        if (!hasDeparture)
+          alertsAsync.when(
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+            data: (alertsState) {
+              final visible = alertsState.visible;
+              if (visible.isEmpty) return const SizedBox.shrink();
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final alert in visible)
+                    AlertCard(
+                      alert: alert,
+                      onDismiss: () => ref
+                          .read(
+                              alertsNotifierProvider(widget.tripId).notifier)
+                          .dismiss(alert.alertId),
+                    ),
+                ],
+              );
+            },
+          ),
+        // Shared refresh button: refreshes both alerts and notifications.
+        if (hasDeparture ||
+            (alertsAsync.valueOrNull?.visible.isNotEmpty ?? false))
+          Align(
+            alignment: Alignment.centerRight,
+            child: IconButton(
+              icon: (alertsAsync.valueOrNull?.loading ?? false)
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.refresh, size: 18),
+              tooltip: 'Refresh alerts',
+              onPressed: (alertsAsync.valueOrNull?.loading ?? false)
+                  ? null
+                  : () {
+                      ref
+                          .read(
+                              alertsNotifierProvider(widget.tripId).notifier)
+                          .refresh();
+                      ref
+                          .read(departureNotifierProvider(widget.tripId)
+                              .notifier)
+                          .refresh();
+                    },
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
             ),
-            for (final alert in visible)
-              AlertCard(
-                alert: alert,
-                onDismiss: () => ref
-                    .read(alertsNotifierProvider(widget.tripId).notifier)
-                    .dismiss(alert.alertId),
-              ),
-          ],
-        );
-      },
+          ),
+      ],
     );
   }
 }

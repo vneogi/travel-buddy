@@ -32,7 +32,7 @@ class NodeOutcome {
 /// Invariant: a user action is durable in outbox BEFORE any network attempt.
 class OfflineDatabase {
   static const _dbName = 'travel_buddy_offline.db';
-  static const _dbVersion = 6;
+  static const _dbVersion = 7;
 
   /// Optional path override for testing (pass inMemoryDatabasePath for isolation).
   final String? _testPath;
@@ -103,6 +103,7 @@ class OfflineDatabase {
     await _createLovedPlacesTable(db);
     await _createAppKvTable(db);
     await _createNodeOutcomeTable(db);
+    await _createNotificationTables(db);
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -120,6 +121,9 @@ class OfflineDatabase {
     }
     if (oldVersion < 6) {
       await _createNodeOutcomeTable(db);
+    }
+    if (oldVersion < 7) {
+      await _createNotificationTables(db);
     }
   }
 
@@ -629,6 +633,120 @@ class OfflineDatabase {
         .toIso8601String();
     await database.delete(
       'alert_dismissals',
+      where: 'dismissed_at < ?',
+      whereArgs: [cutoff],
+    );
+  }
+
+  /// SPEC-35: Notification cache and dismissal tables (separate from alerts).
+  Future<void> _createNotificationTables(Database db) async {
+    await db.execute(
+      'CREATE TABLE notification_cache ('
+      '  identity_scope TEXT NOT NULL,'
+      '  trip_id        TEXT NOT NULL,'
+      '  payload_json   TEXT NOT NULL,'
+      '  cached_at      TEXT NOT NULL,'
+      '  expires_at     TEXT NOT NULL,'
+      '  PRIMARY KEY (identity_scope, trip_id)'
+      ')',
+    );
+    await db.execute(
+      'CREATE TABLE notification_dismissals ('
+      '  identity_scope  TEXT NOT NULL,'
+      '  notification_id TEXT NOT NULL,'
+      '  dismissed_at    TEXT NOT NULL,'
+      '  PRIMARY KEY (identity_scope, notification_id)'
+      ')',
+    );
+  }
+
+  // ============================================================
+  // Notification cache (SPEC-35)
+  // ============================================================
+
+  /// Cache notifications scoped by identity and trip.
+  Future<void> cacheNotifications({
+    required String identityScope,
+    required String tripId,
+    required String payloadJson,
+    required String expiresAt,
+  }) async {
+    final database = await db;
+    await database.insert(
+      'notification_cache',
+      {
+        'identity_scope': identityScope,
+        'trip_id': tripId,
+        'payload_json': payloadJson,
+        'cached_at': DateTime.now().toUtc().toIso8601String(),
+        'expires_at': expiresAt,
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  /// Retrieve cached notifications (only if not expired).
+  Future<String?> getCachedNotifications({
+    required String identityScope,
+    required String tripId,
+  }) async {
+    final database = await db;
+    final now = DateTime.now().toUtc().toIso8601String();
+    final rows = await database.query(
+      'notification_cache',
+      where: 'identity_scope = ? AND trip_id = ? AND expires_at > ?',
+      whereArgs: [identityScope, tripId, now],
+    );
+    if (rows.isEmpty) return null;
+    return rows.first['payload_json'] as String?;
+  }
+
+  /// Record a dismissed notification in the dedicated table.
+  Future<void> dismissNotification({
+    required String identityScope,
+    required String notificationId,
+  }) async {
+    final database = await db;
+    await database.insert(
+      'notification_dismissals',
+      {
+        'identity_scope': identityScope,
+        'notification_id': notificationId,
+        'dismissed_at': DateTime.now().toUtc().toIso8601String(),
+      },
+      conflictAlgorithm: ConflictAlgorithm.ignore,
+    );
+  }
+
+  /// Get all dismissed notification IDs for this identity.
+  Future<Set<String>> getDismissedNotificationIds({
+    required String identityScope,
+  }) async {
+    final database = await db;
+    final rows = await database.query(
+      'notification_dismissals',
+      columns: ['notification_id'],
+      where: 'identity_scope = ?',
+      whereArgs: [identityScope],
+    );
+    return rows.map((r) => r['notification_id'] as String).toSet();
+  }
+
+  /// Prune expired notification cache and stale dismissals (> 30 days).
+  Future<void> pruneNotificationData() async {
+    final database = await db;
+    final now = DateTime.now().toUtc().toIso8601String();
+    await database.delete(
+      'notification_cache',
+      where: 'expires_at <= ?',
+      whereArgs: [now],
+    );
+    final cutoff = DateTime.now()
+        .toUtc()
+        .subtract(const Duration(days: 30))
+        .toIso8601String();
+    await database.delete(
+      'notification_dismissals',
       where: 'dismissed_at < ?',
       whereArgs: [cutoff],
     );
