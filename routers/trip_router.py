@@ -28,6 +28,7 @@ from models.schemas import (
     TripEventResponse,
     CreateTripRequest,
     TripPartyIn,
+    TripSegment,
     EventType,
 )
 from services.catalog_itinerary import (
@@ -36,6 +37,14 @@ from services.catalog_itinerary import (
     context_for_region,
     nodes_from_catalog,
 )
+from services.corridor_itinerary import (
+    InvalidCorridor,
+    UnsupportedCorridor,
+    advertised_corridors,
+    build_corridor_nodes,
+    validate_corridor_segments,
+)
+from config.corridors import CORRIDORS, require_corridor
 from services.db_provider import db_service
 from services.cache_service import cache_service
 from agents.state_machine import state_machine
@@ -87,9 +96,26 @@ async def create_trip(
     request: CreateTripRequest,
     identity: ResolvedIdentity = Depends(resolve_identity),
 ):
-    """Create a catalog-backed one-day itinerary for a supported city."""
+    """Create a catalog-backed itinerary for a city or corridor."""
     user_id = identity.user_id
     db_service.get_or_create_user(user_id, identity.identity_kind)
+
+    # SPEC-36: Corridor mode vs single-city mode
+    if request.segments is not None:
+        return await _create_corridor_trip(request, user_id)
+
+    # SPEC-36: single-city mode requires start_date
+    if request.start_date is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "error": "invalid_corridor",
+                "message": "Single-city mode requires start_date and geo_region.",
+                "field": "start_date",
+                "supported_corridors": list(CORRIDORS.keys()),
+            },
+        )
+
     ready = advertised_regions(db_service.list_venues_for_region)
     geo_region = request.geo_region or (ready[0] if ready else None)
     if geo_region not in REGIONS or geo_region not in ready:
@@ -153,6 +179,93 @@ async def create_trip(
     }
 
 
+async def _create_corridor_trip(request: CreateTripRequest, user_id: str):
+    """SPEC-36: Create a multi-city corridor trip."""
+    if request.start_date is not None or request.geo_region is not None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "error": "invalid_corridor",
+                "message": "Corridor mode must not include start_date or geo_region.",
+                "field": "segments",
+                "supported_corridors": list(CORRIDORS.keys()),
+            },
+        )
+
+    segments = request.segments
+    # Infer corridor from segment regions
+    seg_regions = tuple(s.geo_region for s in segments)
+    corridor = None
+    for c in CORRIDORS.values():
+        if c.geo_regions == seg_regions:
+            corridor = c
+            break
+    if corridor is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "error": "invalid_corridor",
+                "message": f"No corridor matches regions {list(seg_regions)}.",
+                "field": "segments",
+                "supported_corridors": list(CORRIDORS.keys()),
+            },
+        )
+
+    try:
+        validate_corridor_segments(segments, corridor)
+    except InvalidCorridor as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "error": "invalid_corridor",
+                "message": str(e),
+                "field": "segments",
+                "supported_corridors": list(CORRIDORS.keys()),
+            },
+        )
+
+    try:
+        nodes, stored_segments = build_corridor_nodes(
+            segments, db_service.list_venues_for_region, corridor
+        )
+    except UnsupportedCorridor as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "error": "unsupported_corridor",
+                "message": str(e),
+                "field": "segments",
+                "supported_corridors": list(CORRIDORS.keys()),
+            },
+        )
+
+    from services.catalog_itinerary import context_for_region
+
+    first_region = segments[0].geo_region
+    trip = TripState(
+        user_id=user_id,
+        geo_region=first_region,
+        current_context=context_for_region(first_region, request.initial_mood),
+        nodes=nodes,
+        schedule_basis="region_local_v1",
+        corridor_id=corridor.corridor_id,
+        segments=stored_segments,
+    )
+    db_service.save_trip(trip)
+
+    party_in = request.party or TripPartyIn(party_type="solo", size=1)
+    party = db_service.save_trip_party(trip.trip_id, party_in)
+
+    return {
+        "trip_id": trip.trip_id,
+        "status": "created",
+        "message": f"Corridor itinerary created with {len(nodes)} activities",
+        "nodes": [n.model_dump(mode="json") for n in nodes],
+        "locked_count": sum(1 for n in nodes if n.is_locked),
+        "party": party.model_dump(mode="json"),
+    }
+
+
 def _summarize_trip(trip: TripState) -> TripSummary:
     starts_at = min((node.scheduled_start for node in trip.nodes), default=None)
     ends_at = max(
@@ -167,6 +280,7 @@ def _summarize_trip(trip: TripState) -> TripSummary:
         node_count=len(trip.nodes),
         booking_count=sum(node.node_kind == "booking" for node in trip.nodes),
         updated_at=trip.updated_at,
+        corridor_id=trip.corridor_id,
     )
 
 
@@ -240,6 +354,7 @@ def _featured_trip(trips: list[TripState], *, now: datetime | None = None) -> Fe
         ends_at=summary.ends_at,
         is_active=is_active,
         actionable_stop=featured_stop,
+        corridor_id=trip_obj.corridor_id,
     )
 
 
@@ -259,6 +374,7 @@ async def list_trips(user_id: str = Depends(get_current_user_id)):
     featured = _featured_trip(trips)
     return {
         "supported_regions": advertised_regions(db_service.list_venues_for_region),
+        "supported_corridors": advertised_corridors(db_service.list_venues_for_region),
         "trips": [_summarize_trip(trip).model_dump(mode="json") for trip in trips],
         "featured_trip": featured.model_dump(mode="json") if featured else None,
     }

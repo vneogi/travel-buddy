@@ -96,8 +96,12 @@ class SwapSheetState extends ConsumerState<SwapSheet> {
     }
   }
 
-  ({double lat, double lng})? _resolveCoords() =>
-      resolveSwapSearchCoords(widget.tripState);
+  ({double lat, double lng})? _resolveCoords() {
+    final target = widget.tripState.nodes
+        .where((n) => n.nodeId == widget.targetNodeId)
+        .firstOrNull;
+    return resolveSwapSearchCoords(widget.tripState, targetNode: target);
+  }
 
   @override
   Widget build(BuildContext context) {

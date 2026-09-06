@@ -15,6 +15,7 @@ import '../../widgets/shimmer_card.dart';
 import '../../widgets/error_view.dart';
 import 'current_window.dart';
 import 'date_scope.dart';
+import '../../widgets/city_section.dart';
 import 'itinerary_notifier.dart';
 import 'replacement_ref.dart';
 import '../alerts/alerts_notifier.dart';
@@ -51,7 +52,7 @@ class ItineraryScreen extends ConsumerWidget {
   /// confirms a suggestion. Dismiss emits reroute_rejected.
   Future<void> _swap(BuildContext context, WidgetRef ref, TripNode node) async {
     final state = ref.read(itineraryControllerProvider(tripId));
-    final tripState = _tripStateForCoords(state);
+    final tripState = _tripStateForCoords(state, node);
     final sheet = SwapSheet(
       tripId: tripId,
       targetNodeId: node.nodeId,
@@ -108,17 +109,17 @@ class ItineraryScreen extends ConsumerWidget {
   }
 
   /// Build a TripState with coords for SwapSheet venue search.
-  TripState _tripStateForCoords(ItineraryState state) {
-    // ItineraryState only keeps nodes. Use the first node's geo/coords as
-    // the trip hint; resolveSwapSearchCoords then applies RegionDefaults.
-    final first = state.nodes.isNotEmpty ? state.nodes.first : null;
+  ///
+  /// Uses the [targetNode] coordinates so corridor swaps search the
+  /// correct city, not the first segment location.
+  TripState _tripStateForCoords(ItineraryState state, TripNode targetNode) {
     return TripState(
       tripId: tripId,
       userId: '',
       nodes: state.nodes,
-      geoRegion: first?.geoRegion,
-      locationLat: first?.lat,
-      locationLng: first?.lng,
+      geoRegion: targetNode.geoRegion,
+      locationLat: targetNode.lat,
+      locationLng: targetNode.lng,
     );
   }
 
@@ -285,32 +286,66 @@ class ItineraryScreen extends ConsumerWidget {
                             ),
                           ),
                         )
-                      : _DateScopedTimeline(
-                          nodes: state.nodes,
-                          state: state,
-                          onSwap: (node) => _swap(context, ref, node),
-                          onCancel: (node) => _cancel(ref, node),
-                          onOutcome: (node) =>
-                              _showOutcomePicker(context, ref, node),
-                          onLoved: (node) {
-                            final placeRef = node.venueId ?? node.venueName;
-                            ref
-                                .read(signalServiceProvider)
-                                .emitUserLoved(
-                                  placeRef: placeRef,
-                                  tripId: tripId,
-                                );
-                            ref
-                                .read(
-                                  itineraryControllerProvider(tripId).notifier,
-                                )
-                                .markLoved(placeRef);
-                          },
-                          onEditBooking: (node) => _editBooking(context, node),
-                          onDeleteBooking: (node) =>
-                              _deleteBooking(context, ref, node),
-                          sig: _sig,
-                        ),
+                      : state.segments.isNotEmpty
+                          ? _CorridorTimeline(
+                              nodes: state.nodes,
+                              segments: state.segments,
+                              state: state,
+                              onSwap: (node) => _swap(context, ref, node),
+                              onCancel: (node) => _cancel(ref, node),
+                              onOutcome: (node) =>
+                                  _showOutcomePicker(context, ref, node),
+                              onLoved: (node) {
+                                final placeRef =
+                                    node.venueId ?? node.venueName;
+                                ref
+                                    .read(signalServiceProvider)
+                                    .emitUserLoved(
+                                      placeRef: placeRef,
+                                      tripId: tripId,
+                                    );
+                                ref
+                                    .read(
+                                      itineraryControllerProvider(tripId)
+                                          .notifier,
+                                    )
+                                    .markLoved(placeRef);
+                              },
+                              onEditBooking: (node) =>
+                                  _editBooking(context, node),
+                              onDeleteBooking: (node) =>
+                                  _deleteBooking(context, ref, node),
+                              sig: _sig,
+                            )
+                          : _DateScopedTimeline(
+                              nodes: state.nodes,
+                              state: state,
+                              onSwap: (node) => _swap(context, ref, node),
+                              onCancel: (node) => _cancel(ref, node),
+                              onOutcome: (node) =>
+                                  _showOutcomePicker(context, ref, node),
+                              onLoved: (node) {
+                                final placeRef =
+                                    node.venueId ?? node.venueName;
+                                ref
+                                    .read(signalServiceProvider)
+                                    .emitUserLoved(
+                                      placeRef: placeRef,
+                                      tripId: tripId,
+                                    );
+                                ref
+                                    .read(
+                                      itineraryControllerProvider(tripId)
+                                          .notifier,
+                                    )
+                                    .markLoved(placeRef);
+                              },
+                              onEditBooking: (node) =>
+                                  _editBooking(context, node),
+                              onDeleteBooking: (node) =>
+                                  _deleteBooking(context, ref, node),
+                              sig: _sig,
+                            ),
                 ),
               ],
             ),
@@ -323,6 +358,74 @@ class ItineraryScreen extends ConsumerWidget {
 /// Builds a single ListView of date-header and ActivityCard items.
 /// The `nextNode` spans across date boundaries so the last card in one day
 /// still receives the first card of the next day.
+
+/// SPEC-36: Corridor-aware timeline that groups nodes by city segment.
+class _CorridorTimeline extends StatelessWidget {
+  final List<TripNode> nodes;
+  final List<TripSegment> segments;
+  final ItineraryState state;
+  final void Function(TripNode) onSwap;
+  final void Function(TripNode) onCancel;
+  final void Function(TripNode) onOutcome;
+  final void Function(TripNode) onLoved;
+  final void Function(TripNode) onEditBooking;
+  final void Function(TripNode) onDeleteBooking;
+  final String Function(TripNode) sig;
+
+  const _CorridorTimeline({
+    required this.nodes,
+    required this.segments,
+    required this.state,
+    required this.onSwap,
+    required this.onCancel,
+    required this.onOutcome,
+    required this.onLoved,
+    required this.onEditBooking,
+    required this.onDeleteBooking,
+    required this.sig,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cityGroups = groupNodesByCorridor(
+      nodes: nodes,
+      segments: segments,
+    );
+    return ListView.builder(
+      padding: const EdgeInsets.only(bottom: 120),
+      itemCount: cityGroups.length,
+      itemBuilder: (context, index) {
+        final group = cityGroups[index];
+        // Compute the first node of the next city for cross-city nextNode.
+        TripNode? nextCityFirst;
+        if (index + 1 < cityGroups.length) {
+          final nextNodes = cityGroups[index + 1]
+              .dayGroups
+              .expand((dg) => dg.nodes)
+              .toList();
+          if (nextNodes.isNotEmpty) nextCityFirst = nextNodes.first;
+        }
+        return CitySection(
+          cityGroup: group,
+          childBuilder: (cg) => _DateScopedTimeline(
+            nodes: cg.dayGroups.expand((dg) => dg.nodes).toList(),
+            state: state,
+            onSwap: onSwap,
+            onCancel: onCancel,
+            onOutcome: onOutcome,
+            onLoved: onLoved,
+            onEditBooking: onEditBooking,
+            onDeleteBooking: onDeleteBooking,
+            sig: sig,
+            isCorridor: true,
+            globalNextNode: nextCityFirst,
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _DateScopedTimeline extends StatelessWidget {
   final List<TripNode> nodes;
   final ItineraryState state;
@@ -333,6 +436,8 @@ class _DateScopedTimeline extends StatelessWidget {
   final void Function(TripNode) onEditBooking;
   final void Function(TripNode) onDeleteBooking;
   final String Function(TripNode) sig;
+  final bool isCorridor;
+  final TripNode? globalNextNode;
 
   const _DateScopedTimeline({
     required this.nodes,
@@ -344,6 +449,8 @@ class _DateScopedTimeline extends StatelessWidget {
     required this.onEditBooking,
     required this.onDeleteBooking,
     required this.sig,
+    this.isCorridor = false,
+    this.globalNextNode,
   });
 
   @override
@@ -360,6 +467,8 @@ class _DateScopedTimeline extends StatelessWidget {
     }
 
     return ListView.builder(
+      shrinkWrap: isCorridor,
+      physics: isCorridor ? const NeverScrollableScrollPhysics() : null,
       itemCount: items.length,
       padding: const EdgeInsets.only(
         top: AppSpacing.base,
@@ -380,6 +489,8 @@ class _DateScopedTimeline extends StatelessWidget {
             break;
           }
         }
+        // Cross-city boundary: use globally-ordered next from corridor.
+        next ??= globalNextNode;
 
         return AnimatedSwitcher(
           duration: const Duration(milliseconds: 220),

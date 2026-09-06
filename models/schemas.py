@@ -7,6 +7,7 @@ all data structures used across the application.
 from __future__ import annotations
 
 import uuid
+import datetime as _dt_module
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional, TypedDict
@@ -106,6 +107,22 @@ class ExecutionControl(BaseModel):
     max_loop_depth: int = 3
 
 
+class TripSegmentIn(BaseModel):
+    """SPEC-36: One city segment in a corridor create request."""
+
+    geo_region: str
+    starts_on: _dt_module.date
+    ends_on: _dt_module.date
+
+
+class TripSegment(BaseModel):
+    """SPEC-36: Stored city segment in a corridor trip."""
+
+    geo_region: str
+    starts_on: _dt_module.date
+    ends_on: _dt_module.date
+
+
 class TripState(BaseModel):
     """The live, mutable trip state object."""
 
@@ -116,6 +133,8 @@ class TripState(BaseModel):
     execution_control: ExecutionControl = ExecutionControl()
     nodes: List[TripNode] = []
     schedule_basis: Optional[str] = None  # SPEC-35: "region_local_v1" when node times use region TZ
+    corridor_id: Optional[str] = None  # SPEC-36: corridor identifier
+    segments: List[TripSegment] = []  # SPEC-36: ordered city segments
     created_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
 
@@ -130,6 +149,7 @@ class TripSummary(BaseModel):
     node_count: int
     booking_count: int
     updated_at: datetime
+    corridor_id: Optional[str] = None  # SPEC-36
 
 
 class FeaturedStop(BaseModel):
@@ -155,6 +175,7 @@ class FeaturedTrip(BaseModel):
     ends_at: Optional[datetime] = None
     is_active: bool
     actionable_stop: Optional[FeaturedStop] = None
+    corridor_id: Optional[str] = None  # SPEC-36
 
 
 # TypedDict version for LangGraph state
@@ -208,8 +229,9 @@ class CreateTripRequest(BaseModel):
 
     # NOTE: user_id is derived from the auth token server-side; ignored if sent.
     user_id: Optional[str] = None
-    start_date: datetime
+    start_date: Optional[datetime] = None
     geo_region: Optional[str] = None
+    segments: Optional[List[TripSegmentIn]] = None
     preferences: dict = {}
     initial_mood: Optional[str] = "exploratory"
     party: Optional[TripPartyIn] = None  # SPEC-03: defaults to solo if absent
