@@ -52,7 +52,8 @@ Prabang, not three unrelated trip cards. Add cities with independent date
 ranges to one trip and group the itinerary into collapsible city/day sections.
 Past sections collapse without deleting their history. This needs an owning
 spec for corridor ordering and stay/transport boundaries; it must not be
-implemented by relabeling one city's venues.
+implemented by relabeling one city's venues. SPEC-36 now owns the first
+northbound slice and explicitly refuses synthetic transfer and stay claims.
 
 ### P2 — Side-by-side swap comparison (`SwapSheet`)
 **Capability #2.** Original vs proposed alternative showing the **delta**: time, distance, cost, and
@@ -77,10 +78,9 @@ recommendation reason.
 **Capability #2**, proactive not reactive. SPEC-29 now renders provider-backed
 weather alerts above the timeline with provenance and a Review action. Climate
 comfort remains UX polish; random traffic and synthetic transit must never
-become alert copy. SPEC-35 Phase A backend is on main. The next slice is the
-in-app itinerary banner: fetch on load/resume/refresh, one departure
-reminder, no stack with weather cards, local dismiss. OS push remains
-SPEC-27.
+become alert copy. SPEC-35 Phase A backend and Phase A2 in-app itinerary banner
+are on main: fetch on load/resume/refresh, one departure reminder, no stack
+with weather cards, local dismiss. OS push remains SPEC-27.
 
 ### P3 — `SplitGroupCard` — split itineraries for diverging desires
 **Capability #6**, made visible: "Group A: Old Souk / Group B: Mall, reconverge 17:00." Almost nobody
