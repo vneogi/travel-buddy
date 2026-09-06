@@ -83,7 +83,7 @@ SPEC-35's provider-backed in-app departure banner is also on main.
 
 Still outside that thin path: SPEC-24 identity merge, SPEC-27 lifecycle rights,
 trip-less Ask, and the rich Home aggregate. SPEC-32 single-city catalog create
-is verified. SPEC-36's multi-city corridor is pushed at `534b889` but remains
+is verified. SPEC-36's multi-city corridor is pushed at `351bc06` but remains
 under review and unmerged. SPEC-02 supplied the offline substrate. Durable
 hearts passed on Windows Aug 30.
 

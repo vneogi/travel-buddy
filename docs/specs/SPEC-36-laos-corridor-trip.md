@@ -2,7 +2,7 @@
 
 > Status: IMPLEMENTATION IN REVIEW, NOT MERGED.
 >
-> Candidate branch `origin/feat/spec36-laos-corridor` is at `534b889`.
+> Candidate branch `origin/feat/spec36-laos-corridor` is at `351bc06`.
 > Backend strengthening and later-city swap-coordinate changes are pushed.
 > Completion still requires review of the actual diff, Flutter compile/tests,
 > date-range form and swap-isolation proof, green CI, and merge to `main`.

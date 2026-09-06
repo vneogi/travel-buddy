@@ -54,7 +54,7 @@ Past sections collapse without deleting their history. This needs an owning
 spec for corridor ordering and stay/transport boundaries; it must not be
 implemented by relabeling one city's venues. SPEC-36 now owns the first
 northbound slice and explicitly refuses synthetic transfer and stay claims.
-Implementation is pushed at `534b889` but remains under review; it is not on
+Implementation is pushed at `351bc06` but remains under review; it is not on
 `main` until backend and Flutter gates clear.
 
 ### P1 -- Phone-independent field-test delivery

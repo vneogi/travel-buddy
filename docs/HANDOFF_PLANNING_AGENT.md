@@ -6,7 +6,7 @@ now, what the previous planning agent already adjudicated, and what the
 next agent must not reopen in the first week.
 
 Read this file and the two contracts above. The first job is review of SPEC-36
-at `534b889`; after merge, prepare and execute the SPEC-37 delivery brief.
+at `351bc06`; after merge, prepare and execute the SPEC-37 delivery brief.
 
 ## Who does what (unchanged)
 
@@ -114,7 +114,7 @@ SPEC-36 and SPEC-37 gates.
 All 7 items on the October field-test spine are complete on main.
 SPEC-30 is complete (`f8349a8`, `83c825f`).
 Next tasks:
-1. Review `origin/feat/spec36-laos-corridor` at `534b889` against SPEC-36 and
+1. Review `origin/feat/spec36-laos-corridor` at `351bc06` against SPEC-36 and
    its amended brief. It is pushed, not merged. Independently clear backend
    proofs, Flutter compile/tests, the three-city date form, target-city swap
    isolation, and CI. Do not accept the execution-agent summary as evidence.

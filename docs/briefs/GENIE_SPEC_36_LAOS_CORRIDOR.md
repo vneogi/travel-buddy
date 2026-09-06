@@ -1,7 +1,7 @@
 # Genie Brief: SPEC-36 Laos Corridor Trip
 
 > Current execution state: candidate branch
-> `origin/feat/spec36-laos-corridor` is pushed at `534b889`, not merged.
+> `origin/feat/spec36-laos-corridor` is pushed at `351bc06`, not merged.
 > Review the branch against this brief and the spec; do not treat an agent's
 > test summary as completion evidence.
 
