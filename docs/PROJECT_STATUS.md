@@ -96,7 +96,7 @@
 | Retention instrumentation (SPEC-30) | DONE | PR #32 (`f8349a8`) added `session_start` and the `trip_edge` observed-duration writer. PR #34 (`83c825f`) added durable node outcomes, active/past confirmation UI, outcome-aware targeting, and explicit cancel confirmation. Flutter CI and owner Windows full suite green |
 | Date-scoped itinerary (SPEC-31) | DONE | Grouping under date headers is on main (PR #36, Windows Sep 4 6A). Test 6C is canceled; the dedicated rescue shortcut and selection helpers are removed. Date grouping and the hotel booking's driver-card action remain |
 | Real Laos trip creation (SPEC-32) | VERIFIED (one-city slice) | Sep 5 Windows run created a real catalog-backed Luang Prabang itinerary with no Dubai fallback. Multi-city Laos corridors remain outside this slice |
-| Proactive itinerary notifications (SPEC-35) | SPECIFIED | Backend not implemented. Phase A brief: `docs/briefs/GENIE_SPEC_35_DEPARTURE_BACKEND.md`. In-app first: provider-backed time-to-leave candidates using traffic plus an explicit rain policy buffer. Phase A must first correct catalog creation from fixed 09:00 UTC to 09:00 in the region timezone and suppress legacy trips with ambiguous time basis. Meal previews remain suppressed until dish provenance exists. No background GPS, LLM, mutation or push |
+| Proactive itinerary notifications (SPEC-35) | PHASE A BACKEND DONE; CLIENT PENDING | PR #50 (`ccfa41e`) added `GET /trip/{id}/notifications`, region-local catalog 09:00, and provider-backed departure candidates. In-app banner brief: `docs/briefs/GENIE_SPEC_35_DEPARTURE_CLIENT.md`. Meal previews remain suppressed until dish provenance exists. No background GPS, LLM, mutation or push |
 
 Migration numbers are assigned when a spec is implemented, not when it is
 written. SPEC-11, SPEC-13, SPEC-14 and SPEC-15 each claimed a number, and the
@@ -168,9 +168,9 @@ Seed-shaped cohorts.
 
 8. Multi-night hotel UI. The duplicate Hotel Rescue shortcut is removed;
    preserve offline cache fallback and the driver-card action on hotel bookings.
-9. SPEC-35 Phase A proactive in-app notifications: provider-backed departure
-   timing. Keep meal previews suppressed until dish provenance exists, OS push
-   in SPEC-27, and review-derived popularity behind SPEC-17/19.
+9. SPEC-35 Phase A2 in-app departure banners. Backend is on main; travellers
+   still cannot see a reminder. Keep meal previews suppressed, OS push in
+   SPEC-27, and review-derived popularity behind SPEC-17/19.
 10. Retire the dietary suitability claim (SPEC-14). Closes the
    halal-versus-pork hole by removing the claim.
 11. SPEC-17 trust and verification -- gates SPEC-18/19/20; behind the

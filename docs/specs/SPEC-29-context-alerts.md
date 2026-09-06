@@ -70,7 +70,9 @@ Phase 1 source: OpenWeather forecasts matched to upcoming itinerary nodes.
 1. Phase 1 (this PR): Refresh on itinerary load, app resume, manual refresh.
 2. Phase 2A (SPEC-35): Reuse this weather evidence in proactive, in-app
    departure and meal notification candidates. Traffic and dish evidence are
-   evaluated there, not added as synthetic weather alerts here.
+   evaluated there, not added as synthetic weather alerts here. When a
+   departure banner is visible, the itinerary hides these weather cards so
+   the two feeds do not stack.
 3. Phase 2B (SPEC-27): Server-side scheduled watcher and OS push delivery.
    Push must reuse the same evaluators and server-side interruption budget.
 

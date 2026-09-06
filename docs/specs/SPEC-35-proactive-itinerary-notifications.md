@@ -1,6 +1,7 @@
 # SPEC-35: Proactive Itinerary Notifications
 
-> Status: SPECIFIED. Backend not implemented.
+> Status: PHASE A BACKEND DONE (PR #50, `ccfa41e`). In-app client not
+> implemented. OS push remains SPEC-27. Meal previews remain suppressed.
 >
 > Extends SPEC-29 context alerts. Depends on SPEC-13 for region timezones,
 > SPEC-16 for stable itinerary nodes and edges, SPEC-17 for factual provenance, SPEC-19 for licensed
@@ -18,9 +19,10 @@ app during the trip:
    weather conditions; and
 2. shortly before a meal, surface one evidence-backed dish worth considering.
 
-The first slice is an in-app notification feed evaluated on itinerary load,
-foreground and resume. It does not request background location and does not
-send OS push notifications.
+The first product slice is an in-app notification feed evaluated on itinerary
+load, foreground and resume. Phase A backend is live. The next slice is the
+Flutter banner that consumes those candidates. It does not request background
+location and does not send OS push notifications.
 
 ## Product copy contract
 
@@ -48,7 +50,7 @@ owner. It never mutates the itinerary, consumes reroute quota, calls an LLM,
 or marks a candidate delivered. The existing SPEC-29
 `GET /api/v1/trip/{trip_id}/alerts` endpoint remains compatible.
 
-The client may render the candidates in-app. OS push transport, device tokens,
+The client renders those candidates in-app. OS push transport, device tokens,
 and closed-app delivery remain owned by SPEC-27.
 
 ## Schedule-time correctness gate
@@ -255,16 +257,77 @@ locally; it must not show a dismissed deterministic ID again.
 - Route and weather providers sit behind injectable interfaces.
 - Provider keys and raw provider payloads never cross to the client.
 
+## In-app client (Phase A2)
+
+The backend already decides eligibility, expiry, copy, and evidence. The
+client does not recompute traffic, rain, or departure time. It fetches,
+filters, and renders.
+
+### Fetch and refresh
+
+- Call `GET /api/v1/trip/{trip_id}/notifications` for the open trip.
+- Triggers: itinerary screen open, pull-to-refresh / existing alerts refresh
+  control, and app resume with the same 15-minute debounce used by SPEC-29.
+- Fetch is non-blocking. The itinerary renders without waiting.
+- 401/403 never fall back to cache.
+- Network failure or HTTP 503 may use an unexpired identity-scoped cache.
+- JSON/parse errors do not silently use stale cache.
+- `status: partial` with an empty list is a valid empty state, not an error.
+- `status: unconfigured` is silent: no banner, no error colour.
+
+### What may be shown
+
+- Render at most one `departure_reminder` whose `expires_at` is still in the
+  future and whose `notification_id` is not dismissed.
+- Ignore `meal_preview` in this slice even if the payload later contains one.
+- Use server `title` and `message` exactly. Do not rewrite, localise, or
+  append invented traffic/rain sentences.
+- Provenance caption may name `evidence.route.source` and, when present,
+  `evidence.weather.source`. Do not display raw provider payloads or API keys.
+- Do not claim `current traffic` in client chrome unless
+  `evidence.route.traffic_duration_minutes` is present.
+
+### Stacking with SPEC-29
+
+The itinerary has one interruptive slot above the timeline.
+
+1. If a visible departure reminder exists, show it and hide SPEC-29 weather
+   cards for that paint.
+2. Otherwise keep the existing SPEC-29 alert cards unchanged.
+
+Do not stack a departure banner on top of weather cards. Trip-critical
+leave-now copy is not gated by the SPEC-22 question-card daily cap.
+
+### Dismissal and cache
+
+- Dismiss is local, identity-scoped, persisted in SQLite.
+- Use a dedicated `notification_dismissals` table keyed by
+  `(identity_scope, notification_id)`. Do not mix these IDs into
+  `alert_dismissals`.
+- A dismissed ID stays hidden across resume and process restart.
+- Cache the last successful notifications JSON with `expires_at` taken from
+  the candidate, or one hour from cache time when the list is empty.
+
+### Actions
+
+- Close dismisses the candidate.
+- Tap may scroll the timeline to `node_id` when that node is on screen.
+  If the node is absent, tapping is a no-op.
+- Tap does not open maps, request location, swap, cancel, or emit a
+  structural event.
+- Deep-link strings are stored for later SPEC-27 use; this slice does not
+  register a public route for them.
+
 ## Delivery phases
 
-1. **Phase A - departure backend:** endpoint, deterministic evaluator, cached
-   route adapter, departure reminder, weather reuse, and interruption ordering.
-   Meal preview remains an empty capability when no eligible sourced dish
-   exists.
-2. **Phase B - meal evidence:** stored editorial provenance for guide-signature
+1. **Phase A - departure backend:** DONE in PR #50. Endpoint, deterministic
+   evaluator, cached route adapter, departure reminder, weather reuse.
+2. **Phase A2 - in-app client:** Flutter fetch, cache, local dismiss, and a
+   single departure banner on the itinerary. No meal copy, GPS, or push.
+3. **Phase B - meal evidence:** stored editorial provenance for guide-signature
    dishes and SPEC-17 `popular_dish` claims populated through SPEC-19 licensed
    corpus mining. Only then can meal previews be returned.
-3. **Phase C - OS push:** scheduled watcher and delivery through SPEC-27 device
+4. **Phase C - OS push:** scheduled watcher and delivery through SPEC-27 device
    tokens and the server-side interruption ledger. Phase C reuses the same
    candidates and does not create a second evaluator.
 
@@ -301,6 +364,10 @@ locally; it must not show a dismissed deterministic ID again.
 - A due departure reminder wins over a simultaneous meal preview.
 - No evaluator calls an LLM or mutates the trip.
 - A traveller cannot read another traveller's notification candidates.
+- The itinerary client shows at most one departure banner and does not stack
+  it with SPEC-29 weather cards.
+- Dismissed notification IDs remain hidden after resume.
+- Client copy equals server `title`/`message`; meal_preview is ignored.
 
 ## Acceptance
 
@@ -317,5 +384,8 @@ locally; it must not show a dismissed deterministic ID again.
 - [ ] Partial provider failure represented without failing unrelated candidates
 - [ ] Signature-dish copy is distinct from review-derived popularity copy
 - [ ] SPEC-17 envelope required for review-derived dish claims
-- [ ] No background GPS, LLM, mutation, reroute quota, or push transport
+- [x] No background GPS, LLM, mutation, reroute quota, or push transport
+      (Phase A backend)
+- [ ] Phase A2 itinerary banner fetches `/notifications`, caches, dismisses
+      locally, and never stacks with weather cards
 - [ ] Phase C explicitly routes through SPEC-27 rather than bypassing it
