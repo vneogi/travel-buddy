@@ -24,6 +24,7 @@ from models.schemas import (
 from services.catalog_itinerary import (
     CATEGORY_BUCKETS,
     INFRASTRUCTURE_CATEGORIES,
+    eligible_corridor_venues,
     eligible_venues,
     duration_for,
     flatten_opening_hours,
@@ -148,7 +149,7 @@ def build_corridor_nodes(
         region = require_region(seg_in.geo_region)
         tz = ZoneInfo(region.timezone)
         rows = list_venues_fn(seg_in.geo_region)
-        pool = eligible_venues(rows)
+        pool = eligible_corridor_venues(rows)
 
         span = (seg_in.ends_on - seg_in.starts_on).days + 1
         needed = span * CORRIDOR_STOPS_PER_DAY
@@ -225,7 +226,7 @@ def advertised_corridors(list_venues_fn) -> list[dict]:
         for region_code in corridor.geo_regions:
             try:
                 rows = list_venues_fn(region_code)
-                pool = eligible_venues(rows)
+                pool = eligible_corridor_venues(rows)
                 if len(pool) < CORRIDOR_STOPS_PER_DAY:
                     ok = False
                     break

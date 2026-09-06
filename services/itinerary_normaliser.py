@@ -13,19 +13,18 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 from zoneinfo import ZoneInfo
 
+from config.regions import REGIONS
 from models.ids import generate_edge_id, generate_node_id
 
 
 # Sparse seq gap for inserts between nodes without rewriting
 _SEQ_GAP = 1000
 
-# Region -> IANA timezone mapping (application-level, not stored per-row)
-REGION_TIMEZONES: Dict[str, str] = {
-    "dubai_uae": "Asia/Dubai",
-    "luang_prabang_laos": "Asia/Vientiane",
-    "vang_vieng_laos": "Asia/Vientiane",
-    "vientiane_laos": "Asia/Vientiane",
-}
+
+def _region_timezone(code: str) -> str | None:
+    """Look up IANA timezone from the canonical region registry."""
+    region = REGIONS.get(code)
+    return region.timezone if region else None
 
 
 def _compute_day_index(
@@ -45,7 +44,7 @@ def _compute_day_index(
     for n in all_nodes:
         sched = n.get("scheduled_start")
         geo = n.get("geo_region") or trip_geo or ""
-        tz_name = REGION_TIMEZONES.get(geo)
+        tz_name = _region_timezone(geo)
         if sched and tz_name:
             try:
                 if isinstance(sched, str):

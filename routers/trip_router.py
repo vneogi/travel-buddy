@@ -104,6 +104,18 @@ async def create_trip(
     if request.segments is not None:
         return await _create_corridor_trip(request, user_id)
 
+    # SPEC-36: single-city mode requires start_date
+    if request.start_date is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "error": "invalid_corridor",
+                "message": "Single-city mode requires start_date and geo_region.",
+                "field": "start_date",
+                "supported_corridors": list(CORRIDORS.keys()),
+            },
+        )
+
     ready = advertised_regions(db_service.list_venues_for_region)
     geo_region = request.geo_region or (ready[0] if ready else None)
     if geo_region not in REGIONS or geo_region not in ready:
@@ -342,6 +354,7 @@ def _featured_trip(trips: list[TripState], *, now: datetime | None = None) -> Fe
         ends_at=summary.ends_at,
         is_active=is_active,
         actionable_stop=featured_stop,
+        corridor_id=trip_obj.corridor_id,
     )
 
 

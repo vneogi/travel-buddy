@@ -51,7 +51,7 @@ class ItineraryScreen extends ConsumerWidget {
   /// confirms a suggestion. Dismiss emits reroute_rejected.
   Future<void> _swap(BuildContext context, WidgetRef ref, TripNode node) async {
     final state = ref.read(itineraryControllerProvider(tripId));
-    final tripState = _tripStateForCoords(state);
+    final tripState = _tripStateForCoords(state, node);
     final sheet = SwapSheet(
       tripId: tripId,
       targetNodeId: node.nodeId,
@@ -108,17 +108,17 @@ class ItineraryScreen extends ConsumerWidget {
   }
 
   /// Build a TripState with coords for SwapSheet venue search.
-  TripState _tripStateForCoords(ItineraryState state) {
-    // ItineraryState only keeps nodes. Use the first node's geo/coords as
-    // the trip hint; resolveSwapSearchCoords then applies RegionDefaults.
-    final first = state.nodes.isNotEmpty ? state.nodes.first : null;
+  ///
+  /// Uses the [targetNode] coordinates so corridor swaps search the
+  /// correct city, not the first segment location.
+  TripState _tripStateForCoords(ItineraryState state, TripNode targetNode) {
     return TripState(
       tripId: tripId,
       userId: '',
       nodes: state.nodes,
-      geoRegion: first?.geoRegion,
-      locationLat: first?.lat,
-      locationLng: first?.lng,
+      geoRegion: targetNode.geoRegion,
+      locationLat: targetNode.lat,
+      locationLng: targetNode.lng,
     );
   }
 

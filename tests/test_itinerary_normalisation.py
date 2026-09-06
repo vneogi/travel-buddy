@@ -27,11 +27,11 @@ sys.path.insert(0, str(REPO_ROOT))
 
 from models.schemas import TripNode, TripState, NodeStatus
 from services.database_service import DatabaseService
+from config.regions import REGIONS
 from services.itinerary_normaliser import (
     compose_trip_nodes,
     decompose_trip,
     round_trip_equal,
-    REGION_TIMEZONES,
     _SEQ_GAP,
 )
 
@@ -501,9 +501,10 @@ class TestRegionTimezones:
         """Every geo_region used in data files must map to an IANA timezone."""
         required = ["dubai_uae", "luang_prabang_laos", "vang_vieng_laos", "vientiane_laos"]
         for region in required:
-            assert region in REGION_TIMEZONES, f"Missing: {region}"
+            assert region in REGIONS, f"Missing: {region}"
+            assert REGIONS[region].timezone, f"No timezone for {region}"
 
     def test_values_are_iana(self):
         """All timezone values must look like IANA zone names."""
-        for region, tz in REGION_TIMEZONES.items():
-            assert "/" in tz, f"{region} -> {tz} is not IANA format"
+        for code, region in REGIONS.items():
+            assert "/" in region.timezone, f"{code} -> {region.timezone} is not IANA format"
