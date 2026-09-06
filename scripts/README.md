@@ -35,7 +35,7 @@ Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 | `.\scripts\dev.ps1 tunnel` | Re-establish adb reverse (if USB reconnected) |
 | `.\scripts\dev.ps1 verify` | Hit GET /signals to check drill results |
 
-## Airplane-mode drill (the real test)
+## USB development rehearsal (not final field-test acceptance)
 
 1. `.\scripts\dev.ps1 backend` (Terminal 1)
 2. `.\scripts\dev.ps1 app` (Terminal 2 — waits for build, launches on phone)
@@ -44,6 +44,12 @@ Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 5. Reopen app → Profile → Sync Status → expect 5 pending
 6. Airplane mode OFF → watch drain to 0
 7. `.\scripts\dev.ps1 verify` → expect 5 signals, no duplicates
+
+This workflow may use `adb reverse`, so airplane mode does not prove the phone
+was disconnected from the laptop. It is a development rehearsal only. The real
+SPEC-37 gate uses an installed release artifact pointed at the hosted HTTPS API,
+with USB and local tunnels disconnected. Follow `docs/TESTING_GUIDE.md`
+section 6.
 
 ## Troubleshooting
 

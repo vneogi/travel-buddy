@@ -54,6 +54,14 @@ Past sections collapse without deleting their history. This needs an owning
 spec for corridor ordering and stay/transport boundaries; it must not be
 implemented by relabeling one city's venues. SPEC-36 now owns the first
 northbound slice and explicitly refuses synthetic transfer and stay claims.
+Implementation is on `main` via PR #55 (`1f2c43d`).
+
+### P1 -- Phone-independent field-test delivery
+
+SPEC-37 owns the delivery gate after SPEC-36: stable hosted HTTPS API,
+installable phone artifact, online corridor proof, then a cold-reopen
+airplane-mode drill with USB and local tunnels disconnected. This work is ahead
+of visual polish because a laptop-tethered demo cannot accompany the traveller.
 
 ### P2 — Side-by-side swap comparison (`SwapSheet`)
 **Capability #2.** Original vs proposed alternative showing the **delta**: time, distance, cost, and
@@ -104,12 +112,12 @@ grid) is close to ours but more complete. Fold in when the designer engages.
 **UX polish does not capture moat data.** The spine work above is shipped. The
 remaining product order is:
 
-1. Preserve evidence-backed alerts (SPEC-29 landed; no synthetic transit).
-2. Date-scoped itinerary grouping is on main (Windows Sep 4). Date-aware stay
-   selection remains unverified.
-3. Make hearts durable and await `syncOnce()` before showing status counts.
-4. Create real Laos trips (SPEC-32) instead of stamping destinations onto the
-   Dubai template.
+1. SPEC-36 is on main (PR #55).
+2. Execute SPEC-37: hosted HTTPS API plus an installable phone artifact.
+3. Complete online and real airplane-mode acceptance by 2026-09-18 with USB
+   and local tunnels disconnected.
+4. Only then resume map-first polish, multi-night hotel UI, the `syncOnce()`
+   status-count race, and broader consumer work.
 
 Full Vault and the map-first shell remain post-field-test unless spare capacity
 appears.

@@ -147,7 +147,10 @@ the most damage.
   pipeline must support, not what ships.
 - **No change to the Oct 2 Laos scope.** Both new specs are post-Laos.
 - **No pre-trip or booking-funnel expansion.** Vision section 6 still wins over
-  the Part III hypotheses.
+  the Part III hypotheses. Sep 2026 business ideas (disappointment index,
+  cross-trip memory as a product, last-mile utility, sachet offers, weather
+  goodwill) are parked in VISION Part III section 31; they do not change Laos
+  scope or this corridor decision.
 
 ## Addendum, Aug 2026: the acquisition beachhead
 

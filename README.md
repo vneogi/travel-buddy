@@ -13,9 +13,11 @@ Oct 2 2026.
 | Read this | For |
 |-----------|-----|
 | `docs/PROJECT_STATUS.md` | What is built, what is next, known risks |
+| `docs/HOSTED_STATE.md` | Hosted migrations and credential-backed provider verification |
 | `docs/ENGINEERING_RULES.md` | Rules earned from real bugs. Read before contributing |
 | `docs/VISION.md` | Product strategy and the data moat thesis |
 | `docs/AWAITING_VERIFICATION.md` | Dated log of what is not yet verified on device |
+| `docs/specs/SPEC-37-phone-field-test-delivery.md` | Hosted, installable, phone-independent field-test gate |
 | `docs/specs/` | Numbered specifications, SPEC-01 onward |
 
 ## Architecture
@@ -38,7 +40,7 @@ Oct 2 2026.
       monitoring/error_log.py     request IDs and traceback capture
 
     Supabase (PostgreSQL + pgvector)
-      supabase/migrations/0001 .. 0010
+      supabase/migrations/0001 .. 0024 (hosted state in docs/HOSTED_STATE.md)
 
 The orchestrator is **not** LangGraph, despite what older revisions of this file
 and the BRD claimed. `langgraph` is commented out in `requirements.txt` and the
@@ -130,7 +132,9 @@ Example event:
 unexplained skip as a failure (R8). Flutter: `cd mobile && flutter analyze && flutter test`.
 
 See `docs/TESTING_GUIDE.md` for the full playbook, including the airplane-mode
-durability drill that gates the Laos field test.
+durability drill that gates the Laos field test. Final phone acceptance must use
+an installed build and hosted API, not `flutter run`, a laptop LAN server, or
+`adb reverse`; see SPEC-37.
 
 ## Status
 

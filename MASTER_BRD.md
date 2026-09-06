@@ -35,6 +35,8 @@ Vieng and Vientiane (58 hand-curated venues). `geo_region` is per trip, set from
 
 **Near-term goal:** a real field test in Laos on Oct 2 2026. That date is the
 forcing function for everything prioritized in `docs/PROJECT_STATUS.md`.
+The installable hosted build must complete online and airplane-mode acceptance
+by Sep 18, leaving approximately two weeks for recovery.
 
 **Market direction:** the product optimises for the Indian outbound traveller,
 and the cities after Laos follow that traveller's corridor. See
@@ -262,17 +264,14 @@ column the loader writes, the loader builds its payload in one place
 declared write set, so a declared column that stops being written now fails the
 suite rather than writing NULL.
 
-**`0011` must not be applied before the live schema is dumped and diffed.**
-Loads have been succeeding against columns no migration declared, so those
-columns exist in the hosted database and were almost certainly added by hand.
-The extent of those manual edits is unknown. This matters concretely: if a
-hand-made `name_local TEXT` is present, `ADD COLUMN IF NOT EXISTS names_local
-JSONB` adds a second empty column and silently leaves the populated one unread.
-The dump, the diff and any backfill are device tasks tracked in
-`docs/AWAITING_VERIFICATION.md`.
+Migration 0011 cleared the live dump/diff gate and migrations 0011-0018 were
+applied on device day 2026-08-17. The earlier dual-column risk is closed; do
+not replay that migration. Live sentinels later verified every repository
+migration through 0024.
 
-**Still open.** `supabase_service` passes a `geo_region` filter that the RPC in
-`0001_initial_schema.sql` does not declare. Verify against the live function.
+Migration 0023 also closed the RPC drift: live `hybrid_venue_search` includes
+the seventh `filter_geo_region text` argument. Current hosted evidence belongs
+only in `docs/HOSTED_STATE.md`.
 
 ---
 
@@ -308,7 +307,9 @@ All are prefixed `TB_`. See `.env.example` for the full list.
     TB_REVENUECAT_WEBHOOK_AUTH=
 
 `TB_DEBUG` must never be true on a deployment reachable from the internet. Which
-keys are currently populated is environment state, not specification, so it is
+keys are currently populated is environment state, not specification.
+Credential-safe, dated verification state is maintained in
+`docs/HOSTED_STATE.md`; never paste values into this document. Therefore it is
 not recorded here.
 
 `TB_LLM_DEBUG` exists because raising the root log level for a debug flag once
@@ -401,18 +402,24 @@ a failing test. When a test fails against real configuration, suspect the test
 - Error responses carry a `request_id` and nothing internal. Full tracebacks go
   to the log and the ring buffer.
 - Startup logs booleans for credential presence, never values.
-- Halal is not currently enforced against pork in the dietary checker. That is a
-  safety defect, tracked as high severity, not a missing feature.
+- Dietary suitability is retired by SPEC-14. The app does not make a halal or
+  ingredient-safety claim; do not revive the old rule as a field-test task.
 
 ---
 
 ## 11. Deployment
 
-### Railway, the default for now
+### Hosted target -- required by SPEC-37
 
-Push to GitHub, connect Railway to the repository, set environment variables in
-the dashboard with `TB_DEBUG=false`, and Railway builds from the Dockerfile on
-push to `main`. CI runs Ruff, then tests, then build, then deploy.
+No hosted deployment target is currently proven. CI builds the container on
+`main`; deployment is manually gated and the Railway path still requires a
+service, `RAILWAY_TOKEN`, and `PRODUCTION_URL`.
+
+After SPEC-36 merges, SPEC-37 provisions one stable HTTPS target from reviewed
+`main`, configures backend-only secrets with `TB_DEBUG=false`, and verifies it
+from the phone's network. Railway remains the prepared path, but another
+supported container target is acceptable if it satisfies the same health,
+secret, and rollback requirements. A local `.env` is never deployment state.
 
 ### Docker Compose, local
 

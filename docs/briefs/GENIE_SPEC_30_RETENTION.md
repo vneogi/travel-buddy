@@ -76,8 +76,10 @@ ON CONFLICT (key) DO NOTHING;
 ```
 
 The drift guard `tests/test_signal_types.py` compares Python against the
-migrations, not the live DB, so it passes once both land. Leaving 0024 unapplied
-on the hosted DB is consistent with 0019-0023.
+migrations, not the live DB, so it passes once both land. At implementation
+time, applying 0024 to hosted was a separate owner step. Migrations 0019-0024
+were later verified live on 2026-09-06; current state is recorded only in
+`docs/HOSTED_STATE.md`.
 
 ### 2. Emit on foreground (client)
 

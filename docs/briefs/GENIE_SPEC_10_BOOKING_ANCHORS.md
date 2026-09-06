@@ -1,8 +1,7 @@
 # Genie Brief -- SPEC-10 Booking Anchors (Manual Floor & Import Degradation)
 
-> Status: READY TO IMPLEMENT. Paste this entire file to Genie Code.
-> Land via PR to main, not direct push. Owner has no laptop -- unit and
-> widget tests + flutter analyze in CI.
+> Status: HISTORICAL, COMPLETED IN PR #20 (`f6328e9`). Do not execute this
+> brief again.
 
 Canonical spec: `docs/specs/SPEC-10-booking-anchors.md`
 Normalisation: `docs/specs/SPEC-16-itinerary-normalisation.md`

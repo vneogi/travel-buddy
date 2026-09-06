@@ -1,8 +1,7 @@
 # Genie Brief -- Post-Spine Hardening (geoRegion, authHalted, Hotel Matching)
 
-> Status: READY TO IMPLEMENT. Paste this entire file to Genie Code.
-> Land via PR to main, not direct push. Owner has no laptop -- unit and
-> widget tests + flutter analyze in CI.
+> Status: HISTORICAL, COMPLETED IN PR #23 (`dab16c0`). Do not execute this
+> brief again.
 
 Canonical specs: `docs/specs/SPEC-12-show-driver-cards.md`, `docs/specs/SPEC-02-offline-queue-and-sync.md`, `docs/specs/SPEC-04-offline-vault.md`
 Rules: `docs/ENGINEERING_RULES.md` (R1, R3, R14, R16, R17)

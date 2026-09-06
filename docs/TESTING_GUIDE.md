@@ -113,7 +113,9 @@ on three separate occasions (R1).
       --dart-define=TB_API_BASE_URL=http://10.0.2.2:8000
 
 `10.0.2.2` is the emulator's route to the host. A physical device needs the
-laptop's LAN IP instead, which also matters for section 6.
+laptop's LAN IP for local development. Neither path is field-test acceptance;
+SPEC-37 uses an installed build and hosted `TB_API_BASE_URL` as described in
+section 6.
 
 ## 5. Flutter unit and widget tests
 
@@ -134,23 +136,31 @@ meaningless. The build was talking to the laptop over `adb reverse` on USB, and
 airplane mode does not disable USB, so four hearts posted instantly to a
 supposedly disconnected server (R7).
 
-Build against the laptop's LAN IP, not `10.0.2.2` and not a USB tunnel:
+For a development rehearsal, a laptop LAN IP is acceptable:
 
     flutter run -d <deviceId> \
       --dart-define=TB_API_BASE_URL=http://<laptop-lan-ip>:8000
 
+That rehearsal is not the final SPEC-37 acceptance. Final acceptance requires a
+standalone installed artifact compiled against the hosted HTTPS API. Disconnect
+USB and close any `adb reverse` or local tunnel before beginning. The app must
+launch from the phone home screen without `flutter run`.
+
 Then:
 
-1. Confirm the failure mode is real. Enable airplane mode and watch the server
-   log show no incoming requests. If requests still arrive, stop -- the drill is
-   invalid.
-2. Tap loved on five venues.
-3. Force-kill the app. Reopen it. Hearts must still show as filled (SPEC-02
+1. While online, load the SPEC-36 corridor and open the driver cards that must
+   be available offline.
+2. Enable airplane mode. Confirm the hosted server receives no new request. If
+   requests still arrive, stop -- the drill is invalid.
+3. Force-kill and reopen the app. The cached corridor, city/day sections, and
+   pre-cached driver cards must remain usable.
+4. Tap loved on a venue while offline.
+5. Force-kill and reopen again. The heart must still show as filled (SPEC-02
    durable hearts; verified on Windows Aug 30). Sync Status still calls
    `syncOnce()` without awaiting it before reading counts; do not treat a
    stale count as a hearts-persistence failure.
-4. Re-enable the network. All five must sync.
-5. Query the destination store for five rows. An `accepted=1` log line is not
+6. Re-enable the network. The queued action must sync once.
+7. Query the destination store for the row. An `accepted=1` log line is not
    proof of persistence -- the sync engine once reported exactly that while
    `db_provider` pointed at the in-memory backend and every signal was discarded
    on restart (R11).
@@ -167,14 +177,22 @@ Then:
 
 The backend already resolves to Supabase whenever credentials are present;
 there is no pending flip. `services/db_provider.py` decides at import time.
+The canonical record of which migrations and credential-backed providers have
+already been verified is `docs/HOSTED_STATE.md`. Check it before asking the
+owner to repeat a hosted query or reveal `.env` contents.
 
 - Set `TB_SUPABASE_URL` and the service key, then run
   `pytest tests/test_supabase_integration.py -v`. Those are the tests that skip
   by default.
+- Use the presence-only PowerShell and summary-only Maps/OpenWeather checks in
+  `docs/HOSTED_STATE.md`. In PowerShell, use `curl.exe`; bare `curl` resolves
+  to `Invoke-WebRequest` on Windows PowerShell 5.1.
+- Never print `.env`, secret values, or full environment listings. A successful
+  local provider test does not prove a hosted deployment has the same variable.
 - Loaders: `python scripts/load_dish_glossary.py data/laos_dish_glossary.json`
-  and `python scripts/load_venues.py <files> --geo-region <region>`. Check
-  `docs/AWAITING_VERIFICATION.md` first; the venue loader has open defects that
-  make an unqualified run fail.
+  and `python scripts/load_venues.py <files> --geo-region <region>`. The loader
+  is repaired and guarded; the remaining Dubai gap is that its raw snapshot is
+  intentionally not a loader source.
 - Real auth: set `TB_SUPABASE_JWT_SECRET` and the app switches from
   `X-Debug-User-Id` to verified JWTs. Use a real access token from the app's
   auth flow.

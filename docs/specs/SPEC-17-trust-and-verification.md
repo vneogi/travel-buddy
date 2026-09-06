@@ -1,6 +1,8 @@
 # SPEC-17: Trust and Verification Contract
 
-> Status: SPECIFIED. Not implemented.
+> Status: PARTIAL. Sponsored-placement disclosure is implemented in the
+> SwapSheet slice; the claims registry, source/staleness system, and full
+> envelope backend remain unimplemented.
 >
 > This spec constrains SPEC-18, SPEC-19 and SPEC-20. Each of those produces
 > unverified assertions at scale; this one governs what may be shown, how, and

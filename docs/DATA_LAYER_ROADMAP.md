@@ -239,47 +239,38 @@ schema it needs is the expensive part.
 
 ## A process defect the reprioritisation just created
 
-Specs currently pre-allocate migration numbers: `0012` for SPEC-10, `0013` for
+Earlier specs pre-allocated migration numbers: `0012` for SPEC-10, `0013` for
 SPEC-11, `0014` for SPEC-12, `0015` for SPEC-13, `0016` for SPEC-14, `0017` for
-SPEC-15. That was harmless while build order matched spec order. It stops being
-harmless the moment they diverge, which is exactly what putting SPEC-16 ahead of
-SPEC-13 does.
+SPEC-15. Build order diverged and those numbers were assigned to implemented
+work instead. Hosted migrations through 0024 are now verified; current state is
+in `docs/HOSTED_STATE.md`.
 
 Migrations must apply in numeric order. Spec numbers are identifiers and carry
 no priority. Reserving a migration number in an unbuilt spec therefore asserts a
 build order that nobody has committed to.
 
 **Rule going forward:** a migration takes the next free number at implementation
-time, not at specification time. Specs describe the schema change and do not name
-the file. The existing pre-allocations stay where a spec is genuinely next in
-line and are treated as advisory everywhere else.
+time, not at specification time. Specs describe the schema change and do not
+reserve a file number.
 
 ## Sequencing against the Oct 2 field test
 
-The field test proves engine behaviour -- rerouting, the offline write path,
-signal capture. It does not require complete or verified data, which means Laos
-data quality is no longer worth spending on beyond the deterministic corrections
-already identified.
+The original schema sequence through normalization, booking anchors, identity,
+signals, and driver-card search is implemented and hosted through migration
+0024. SPEC-14 retired dietary suitability rather than adding a safety claim.
+The remaining `venue_attribute_source`, `derived_feature`, and batch-job work
+is not required for the owner field test.
 
-That frees the window before Oct 2 for exactly this work, with one constraint:
-nothing that risks the itinerary core should land in the last weeks before a
-trip depends on it. SPEC-16 is therefore either early or after, not adjacent.
+The immediate pre-trip sequence is now:
 
-Suggested order:
+1. finish and merge SPEC-36 only after backend and Flutter review;
+2. execute SPEC-37 with a hosted HTTPS API and installable phone artifact;
+3. pass online and airplane-mode acceptance without a laptop transport; and
+4. defer new schema work until after that evidence.
 
-1. Deterministic Lao token corrections and the script guard. Small, closes a
-   known defect, no network.
-2. `venue_external_id` and `taxonomy_term`. Additive, cheap, independent of
-   everything else, and they unblock adding a city on demand.
-3. SPEC-16 itinerary normalisation, storage only, wire format unchanged.
-4. SPEC-10 booking anchors on the normalised schema, where an anchor is a locked
-   node.
-5. `venue_attribute_source` and `derived_feature`, then the first two batch jobs.
-6. SPEC-13, SPEC-14 and SPEC-15, which all become simpler once regions, edges
-   and provenance exist.
-
-The halal and pork safety hole is not in this list because it is not a schema
-concern and should not wait for one.
+No migration is planned for SPEC-36 or SPEC-37. If implementation reveals one,
+assign the next free number at that time and update `docs/HOSTED_STATE.md` only
+after observing its live sentinel.
 
 ## Not decided
 

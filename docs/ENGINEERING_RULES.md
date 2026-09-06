@@ -85,7 +85,9 @@ explicitly.
 The first airplane-mode durability drill was meaningless: the build was
 using `adb reverse` over USB, and airplane mode does not disable USB.
 Four hearts posted instantly to a "disconnected" server. The drill only
-became valid after rebuilding against the laptop's LAN IP.
+became meaningful after rebuilding against the laptop's LAN IP. That remains a
+valid development rehearsal, but the final field-test gate is stricter: an
+installed build using hosted HTTPS, with USB and local tunnels disconnected.
 
 **For any offline/failure drill, first confirm the failure mode is real** --
 e.g. see requests actually stop -- before trusting a pass.

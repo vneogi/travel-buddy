@@ -1,5 +1,8 @@
 # Genie Brief: SPEC-35 Phase A Departure Backend
 
+> Status: HISTORICAL, COMPLETED IN PR #50 (`ccfa41e`). Do not execute this
+> brief again.
+
 ## Read first
 
 - `docs/specs/SPEC-35-proactive-itinerary-notifications.md`

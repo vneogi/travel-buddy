@@ -5,8 +5,9 @@ Those two files are the contract. This file is only the baton: what is true
 now, what the previous planning agent already adjudicated, and what the
 next agent must not reopen in the first week.
 
-Switch is valid: PR #18 is on `main` (`ce8fedb`). Read this file and
-the two contracts above. First execution brief to write: SPEC-12.
+Read this file and the two contracts above. The first job is SPEC-37
+field-test delivery from reviewed `main` (`1f2c43d`). SPEC-36 is merged
+(PR #55). Execution brief: `docs/briefs/GENIE_SPEC_37_PHONE_FIELD_TEST.md`.
 
 ## Who does what (unchanged)
 
@@ -14,8 +15,9 @@ the two contracts above. First execution brief to write: SPEC-12.
   claims you did not watch. ASCII in living docs (R14). R17: a guard
   that cannot fail is not a guard.
 - Execution (Genie Code): application code, migrations, tests; land via PR.
-- Owner: laptop, Flutter on device, live SQL editor, PowerShell. Runbook:
-  `docs/briefs/LAPTOP_VERIFY.md`. Do not invent device results.
+- Owner: laptop, Flutter on device, live SQL editor, PowerShell. Laptop
+  regression runbook: `docs/briefs/LAPTOP_VERIFY.md`. Final phone gate:
+  SPEC-37 and `docs/TESTING_GUIDE.md` section 6. Do not invent device results.
 
 ## Where we are
 
@@ -23,8 +25,10 @@ Forcing function: Laos field test, 2 October.
 
 Done on the October spine:
 
-- Device day closed (2026-08-17). Migrations 0011-0018 applied. 0019
-  (`prompt_dismissed`) is in the repo, unapplied live.
+- Device day closed (2026-08-17). Migrations 0011-0018 applied. Live SQL
+  sentinels verified 0019-0024 on 2026-09-06, including the 0023
+  `filter_geo_region` RPC argument. `docs/HOSTED_STATE.md` is the canonical
+  ledger; do not reconstruct migration state from old briefs.
 - SPEC-09 client + server. Client: PR #16 (`7173a3f`). Device E2E with
   `TB_ALLOW_ANONYMOUS=true` still owed.
 - SPEC-22 October slice. PR #17 (`1b9b1b3`). Envelope widget, five
@@ -34,14 +38,14 @@ Done on the October spine:
 
 - SPEC-12 driver card. PR #19 (`a2da64a`). Full-screen offline card on
   `FactView` / `ConfirmAffordance` / `cache_place`, `driver_card_shown` &
-  `name_confirmed` signals (migration 0020 in repo, unapplied live).
+  `name_confirmed` signals (migration 0020 verified live 2026-09-06).
 - SPEC-10 booking anchors. PR #20 (`f6328e9`). Immovable locked nodes,
-  booking metadata on `trip_node` (migration 0021 in repo, unapplied live),
+  booking metadata on `trip_node` (migration 0021 verified live 2026-09-06),
   on-device regex extractor, `AddBookingSheet`, `booking_added` signal.
 - SPEC-04 offline cache floor. PR #22 (`b7e10c3`). Offline itinerary cache
   fallback in `ItineraryController.load()` and pre-cached place data remain.
-  Sep 5 owner decision retires the duplicate Hotel Rescue AppBar shortcut;
-  removal brief: `docs/briefs/GENIE_REMOVE_HOTEL_RESCUE.md`.
+  The duplicate Hotel Rescue AppBar shortcut was subsequently retired and
+  removed.
 - Post-spine hardening. PR #23 (`dab16c0`). `geoRegion` threaded from
   `TripNode` to `PlaceDriverCardData` (Lao script & LAK fares resolve live),
   `resetAuthHalted()` on `SyncEngine` + `SyncStatusScreen` `HALTED (401)` card,
@@ -50,7 +54,9 @@ Done on the October spine:
 October spine status: ALL 7 CORE ITEMS COMPLETE & HARDENED ON MAIN.
 
 Status tables: `docs/PROJECT_STATUS.md`. Device-only queue:
-`docs/AWAITING_VERIFICATION.md`.
+`docs/AWAITING_VERIFICATION.md`. Hosted schema/provider ledger:
+`docs/HOSTED_STATE.md`. Next delivery gate:
+`docs/specs/SPEC-37-phone-field-test-delivery.md`.
 
 ## Third-party review -- already adjudicated
 
@@ -69,11 +75,12 @@ Fixed in PR #18 (`ce8fedb`):
 - 401 sets `_authHalted`; connectivity does not clear it.
 - Chat empty-state is a question, not a swap.
 
-Still true (do not "fix" by rescoping October):
+Still true (do not "fix" by rescoping the field-test gate):
 
-- `cacheTrip` / `getCachedTrip` have no production callers (reads).
-  Wire on SPEC-12 / thin SPEC-04, not a README edit.
-- Chat still always sends `ask_info`; do not build NL swap this week.
+- Offline itinerary reads and pre-cached driver cards are production paths;
+  preserve them through SPEC-36 and SPEC-37.
+- Chat still sends `ask_info`; broad natural-language mutation remains
+  deferred until after the phone gate.
 
 Reject or defer:
 
@@ -94,24 +101,35 @@ Reject or defer:
 - Rescoping October toward traction/growth because the survey said
   mid-trip replanning is moderate. The field test is one working trip
   on a phone, not a user-acquisition plan. VISION Part III remains
-  not committed. SPEC-18 through SPEC-27 stay specified and unbuilt.
+  not committed. SPEC-24 and SPEC-27 remain unbuilt; several other specs in
+  that number range already have partial or completed slices.
 
 Strategic point that is true and still not a spine change: unique data
 needs many users per city and has no owner. Date a note after the field
-test. Do not steal SPEC-12's week for it. SPEC-24 vs accumulating
-device UUIDs is already a Medium row in PROJECT_STATUS; date it, do not
-implement merge before the driver card.
+test. SPEC-24 vs accumulating device UUIDs is already a Medium row in
+PROJECT_STATUS; date it, but do not insert identity-merge work before the
+SPEC-36 and SPEC-37 gates.
 
 ## First job
 
 All 7 items on the October field-test spine are complete on main.
 SPEC-30 is complete (`f8349a8`, `83c825f`).
 Next tasks:
-1. Owner laptop verification for remaining unapplied migrations (0023; 0019-0022
-   if not already applied), Anonymous E2E, and Chrome smoke.
-2. SPEC-32 catalog-backed Laos trip creation (this branch), then device-verify.
-3. Remove the dedicated Hotel Rescue shortcut, then finish multi-night hotel UI.
-4. Post-October consumer surface specs (SPEC-26 remainder, SPEC-25, SPEC-27).
+1. Execute SPEC-37 from reviewed `main` at `1f2c43d`. Provision a stable
+   hosted HTTPS API, configure hosted secrets, build an installable artifact
+   for the owner's phone. Execution brief:
+   `docs/briefs/GENIE_SPEC_37_PHONE_FIELD_TEST.md`. Do not deploy an
+   unreviewed commit.
+2. By **2026-09-18**, run the real airplane-mode drill from the installed
+   artifact with USB and local tunnels disconnected. Record the build SHA,
+   platform, and results in `docs/AWAITING_VERIFICATION.md`.
+3. Only then resume multi-night hotel polish, SPEC-17, trip-less Ask, richer
+   Home, and the remaining consumer backlog.
+
+Migrations through 0024 and the Maps/OpenWeather local provider credentials are
+already verified; do not ask for them again unless a new migration or
+credential rotation occurs. See `docs/HOSTED_STATE.md`. Local provider success
+does not establish hosted deployment configuration.
 
 Do not start with another full-repo archaeology. The defects that
 matter on itinerary are listed above. If a new claim needs checking,

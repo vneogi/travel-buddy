@@ -1,7 +1,7 @@
 # Genie Brief: SPEC-36 remaining review items after 793ffb2
 
-> Continue `feat/spec36-laos-corridor`. Do not recreate or rebase it.
-> Do not merge. A PR may already exist so CI can run; push onto the same branch.
+> HISTORICAL. SPEC-36 landed in PR #55 (`1f2c43d`). Do not implement from
+> this brief.
 
 ## Read first
 

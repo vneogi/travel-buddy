@@ -1,6 +1,8 @@
 # Supabase Migrations
 
-**Rule: ALL schema changes go through versioned migration files. No hand-run SQL in the console.**
+**Rule: ALL schema changes originate in versioned migration files.** The hosted
+project has historically applied those files through the SQL editor, so never
+run SQL there that has no committed migration counterpart.
 
 ## Overview
 
@@ -71,10 +73,9 @@ supabase db push
 
 ### Verify current state
 
-```bash
-# List applied migrations (if using supabase CLI tracking)
-supabase migration list
-```
+This project does not have a trustworthy CLI migration-history table. Do not
+infer hosted state from `supabase migration list`. Run the live sentinel query
+in `docs/HOSTED_STATE.md`; that document is the only current hosted ledger.
 
 ## Rules
 
@@ -91,9 +92,10 @@ supabase migration list
 
 ## Current migrations
 
-| # | File | Description |
-|---|------|-------------|
-| 0001 | `0001_initial_schema.sql` | Baseline: user_tiers, trip_states, venues_rag, cached_responses, event_log + 5 functions |
+The repository contains ordered migrations `0001_initial_schema.sql` through
+`0024_session_start.sql`. All are verified on the hosted project as recorded in
+`docs/HOSTED_STATE.md`. The directory listing, not a duplicated table here, is
+the source of truth for filenames and descriptions.
 
 ## Connection strings
 
