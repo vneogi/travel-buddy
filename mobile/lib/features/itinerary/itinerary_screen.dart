@@ -25,11 +25,10 @@ import '../notifications/departure_notifier.dart';
 Map<String, dynamic> preferencesForConfirmedSwap(
   TripNode original,
   VenueSearchResult replacement,
-) =>
-    {
-      'replacement_venue_id': replacement.venueId,
-      'vibe_tags': original.vibeTags,
-    };
+) => {
+  'replacement_venue_id': replacement.venueId,
+  'vibe_tags': original.vibeTags,
+};
 
 /// The hero screen — live timeline of activity cards.
 ///
@@ -85,7 +84,9 @@ class ItineraryScreen extends ConsumerWidget {
           originalVenueKey: placeRef,
           updatedNodes: result.updatedNodes,
         );
-        ref.read(signalServiceProvider).emitRerouteAccepted(
+        ref
+            .read(signalServiceProvider)
+            .emitRerouteAccepted(
               placeRef: placeRef,
               replacementRef: replacement,
               tripId: tripId,
@@ -95,7 +96,9 @@ class ItineraryScreen extends ConsumerWidget {
       // --- Dismiss path ---
       final offeredIds = sheet.offeredVenueIds;
       if (offeredIds.isNotEmpty) {
-        ref.read(signalServiceProvider).emitRerouteRejected(
+        ref
+            .read(signalServiceProvider)
+            .emitRerouteRejected(
               placeRef: placeRef,
               rejectedRefs: offeredIds,
               tripId: tripId,
@@ -120,7 +123,9 @@ class ItineraryScreen extends ConsumerWidget {
   }
 
   void _cancel(WidgetRef ref, TripNode node) {
-    ref.read(itineraryControllerProvider(tripId).notifier).applyEvent(
+    ref
+        .read(itineraryControllerProvider(tripId).notifier)
+        .applyEvent(
           type: EventType.cancelActivity,
           message: 'Cancel ${node.venueName}',
           targetNodeId: node.nodeId,
@@ -152,9 +157,7 @@ class ItineraryScreen extends ConsumerWidget {
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.danger,
-            ),
+            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
             child: const Text('Delete'),
           ),
         ],
@@ -182,8 +185,7 @@ class ItineraryScreen extends ConsumerWidget {
     );
     if (decision == null || !context.mounted) return;
 
-    final controller =
-        ref.read(itineraryControllerProvider(tripId).notifier);
+    final controller = ref.read(itineraryControllerProvider(tripId).notifier);
     if (decision == _OutcomeDecision.visited) {
       await controller.recordVisited(node);
       return;
@@ -201,9 +203,14 @@ class ItineraryScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Reroute-limit → push upgrade once, then clear the flag.
-    ref.listen<ItineraryState>(itineraryControllerProvider(tripId), (prev, next) {
+    ref.listen<ItineraryState>(itineraryControllerProvider(tripId), (
+      prev,
+      next,
+    ) {
       if (next.rerouteLimitHit) {
-        ref.read(itineraryControllerProvider(tripId).notifier).clearRerouteLimit();
+        ref
+            .read(itineraryControllerProvider(tripId).notifier)
+            .clearRerouteLimit();
         context.push('/upgrade');
       }
     });
@@ -246,68 +253,67 @@ class ItineraryScreen extends ConsumerWidget {
       body: state.loading
           ? const ShimmerList(count: 5)
           : state.error != null
-              ? ErrorView(
-                  error: state.error!,
-                  onRetry: () =>
-                      ref.read(itineraryControllerProvider(tripId).notifier).load(),
-                )
-              : Column(
-                  children: [
-                    // Slim progress bar while an event is in flight (heavy calls).
-                    if (state.processing)
-                      const LinearProgressIndicator(minHeight: 2),
-                    // "Heads up: ..." scheduler note from the last event.
-                    if (state.banner != null)
-                      _HeadsUpBanner(
-                        text: state.banner!,
-                        onClose: () => ref
-                            .read(itineraryControllerProvider(tripId).notifier)
-                            .clearBanner(),
-                      ),
-                    // SPEC-29: Context alerts above timeline.
-                    // Non-blocking: itinerary shows immediately; alerts
-                    // render when available (no spinner replacement).
-                    ItineraryAlertsSection(tripId: tripId),
-                    Expanded(
-                      child: state.nodes.isEmpty
-                          ? Center(
-                              child: Text(
-                                'No activities yet.',
-                                style: AppTypography.body
-                                    .copyWith(color: AppColors.muted),
-                              ),
-                            )
-                          : _DateScopedTimeline(
-                              nodes: state.nodes,
-                              state: state,
-                              onSwap: (node) => _swap(context, ref, node),
-                              onCancel: (node) => _cancel(ref, node),
-                              onOutcome: (node) =>
-                                  _showOutcomePicker(context, ref, node),
-                              onLoved: (node) {
-                                final placeRef =
-                                    node.venueId ?? node.venueName;
-                                ref
-                                    .read(signalServiceProvider)
-                                    .emitUserLoved(
-                                      placeRef: placeRef,
-                                      tripId: tripId,
-                                    );
-                                ref
-                                    .read(
-                                        itineraryControllerProvider(tripId)
-                                            .notifier)
-                                    .markLoved(placeRef);
-                              },
-                              onEditBooking: (node) =>
-                                  _editBooking(context, node),
-                              onDeleteBooking: (node) =>
-                                  _deleteBooking(context, ref, node),
-                              sig: _sig,
+          ? ErrorView(
+              error: state.error!,
+              onRetry: () =>
+                  ref.read(itineraryControllerProvider(tripId).notifier).load(),
+            )
+          : Column(
+              children: [
+                // Slim progress bar while an event is in flight (heavy calls).
+                if (state.processing)
+                  const LinearProgressIndicator(minHeight: 2),
+                // "Heads up: ..." scheduler note from the last event.
+                if (state.banner != null)
+                  _HeadsUpBanner(
+                    text: state.banner!,
+                    onClose: () => ref
+                        .read(itineraryControllerProvider(tripId).notifier)
+                        .clearBanner(),
+                  ),
+                // SPEC-29: Context alerts above timeline.
+                // Non-blocking: itinerary shows immediately; alerts
+                // render when available (no spinner replacement).
+                ItineraryAlertsSection(tripId: tripId),
+                Expanded(
+                  child: state.nodes.isEmpty
+                      ? Center(
+                          child: Text(
+                            'No activities yet.',
+                            style: AppTypography.body.copyWith(
+                              color: AppColors.muted,
                             ),
-                    ),
-                  ],
+                          ),
+                        )
+                      : _DateScopedTimeline(
+                          nodes: state.nodes,
+                          state: state,
+                          onSwap: (node) => _swap(context, ref, node),
+                          onCancel: (node) => _cancel(ref, node),
+                          onOutcome: (node) =>
+                              _showOutcomePicker(context, ref, node),
+                          onLoved: (node) {
+                            final placeRef = node.venueId ?? node.venueName;
+                            ref
+                                .read(signalServiceProvider)
+                                .emitUserLoved(
+                                  placeRef: placeRef,
+                                  tripId: tripId,
+                                );
+                            ref
+                                .read(
+                                  itineraryControllerProvider(tripId).notifier,
+                                )
+                                .markLoved(placeRef);
+                          },
+                          onEditBooking: (node) => _editBooking(context, node),
+                          onDeleteBooking: (node) =>
+                              _deleteBooking(context, ref, node),
+                          sig: _sig,
+                        ),
                 ),
+              ],
+            ),
     );
   }
 }
@@ -389,21 +395,23 @@ class _DateScopedTimeline extends StatelessWidget {
             ),
             node: node,
             nextNode: next,
-            isLoved: state.lovedPlaceRefs
-                .contains(node.venueId ?? node.venueName),
+            isLoved: state.lovedPlaceRefs.contains(
+              node.venueId ?? node.venueName,
+            ),
             recordedOutcome: state.nodeOutcomes[node.nodeId],
-            isRecordingOutcome:
-                state.outcomeRecordingNodeIds.contains(node.nodeId),
+            isRecordingOutcome: state.outcomeRecordingNodeIds.contains(
+              node.nodeId,
+            ),
             onTapSwap: state.processing ? null : () => onSwap(node),
             onTapCancel: state.processing ? null : () => onCancel(node),
             onTapEditBooking: (!state.processing && node.nodeKind == 'booking')
                 ? () => onEditBooking(node)
                 : null,
-            onTapDeleteBooking: (!state.processing && node.nodeKind == 'booking')
+            onTapDeleteBooking:
+                (!state.processing && node.nodeKind == 'booking')
                 ? () => onDeleteBooking(node)
                 : null,
-            onTapRecordOutcome:
-                state.processing ? null : () => onOutcome(node),
+            onTapRecordOutcome: state.processing ? null : () => onOutcome(node),
             onTapLoved: () => onLoved(node),
           ),
         );
@@ -419,10 +427,8 @@ class _TimelineItem {
 
   const _TimelineItem._({this.date, this.node});
 
-  factory _TimelineItem.header(DateTime date) =>
-      _TimelineItem._(date: date);
-  factory _TimelineItem.card(TripNode node) =>
-      _TimelineItem._(node: node);
+  factory _TimelineItem.header(DateTime date) => _TimelineItem._(date: date);
+  factory _TimelineItem.card(TripNode node) => _TimelineItem._(node: node);
 
   bool get isHeader => date != null;
 }
@@ -485,23 +491,25 @@ class _HeadsUpBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        width: double.infinity,
-        color: AppColors.accent.withValues(alpha: 0.12),
-        padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.base, vertical: AppSpacing.sm),
-        child: Row(
-          children: [
-            const Icon(Icons.info_outline, size: 18, color: AppColors.accent),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(child: Text(text, style: AppTypography.caption)),
-            IconButton(
-              icon: const Icon(Icons.close, size: 16),
-              onPressed: onClose,
-              visualDensity: VisualDensity.compact,
-            ),
-          ],
+    width: double.infinity,
+    color: AppColors.accent.withValues(alpha: 0.12),
+    padding: const EdgeInsets.symmetric(
+      horizontal: AppSpacing.base,
+      vertical: AppSpacing.sm,
+    ),
+    child: Row(
+      children: [
+        const Icon(Icons.info_outline, size: 18, color: AppColors.accent),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(child: Text(text, style: AppTypography.caption)),
+        IconButton(
+          icon: const Icon(Icons.close, size: 16),
+          onPressed: onClose,
+          visualDensity: VisualDensity.compact,
         ),
-      );
+      ],
+    ),
+  );
 }
 
 /// SPEC-07: Bottom sheet presenting the closed set of skip reasons.
@@ -519,11 +527,13 @@ class _SkipReasonSheet extends StatelessWidget {
             padding: const EdgeInsets.all(AppSpacing.base),
             child: Text('Why are you skipping?', style: AppTypography.h2),
           ),
-          ...skipReasonLabels.entries.map((e) => ListTile(
-                leading: const Icon(Icons.arrow_forward_ios, size: 14),
-                title: Text(e.value),
-                onTap: () => Navigator.pop(context, e.key),
-              )),
+          ...skipReasonLabels.entries.map(
+            (e) => ListTile(
+              leading: const Icon(Icons.arrow_forward_ios, size: 14),
+              title: Text(e.value),
+              onTap: () => Navigator.pop(context, e.key),
+            ),
+          ),
           const SizedBox(height: AppSpacing.base),
         ],
       ),
@@ -568,7 +578,6 @@ class _OutcomeSheet extends StatelessWidget {
   }
 }
 
-
 /// SPEC-29: Non-blocking alert section above the timeline.
 ///
 /// Renders alert cards when data is available. Does NOT show a spinner
@@ -587,8 +596,7 @@ class ItineraryAlertsSection extends ConsumerStatefulWidget {
       _ItineraryAlertsSectionState();
 }
 
-class _ItineraryAlertsSectionState
-    extends ConsumerState<ItineraryAlertsSection>
+class _ItineraryAlertsSectionState extends ConsumerState<ItineraryAlertsSection>
     with WidgetsBindingObserver {
   late DateTime _lastRefreshAttempt;
 
@@ -620,8 +628,7 @@ class _ItineraryAlertsSectionState
   @override
   Widget build(BuildContext context) {
     final alertsAsync = ref.watch(alertsNotifierProvider(widget.tripId));
-    final departureAsync =
-        ref.watch(departureNotifierProvider(widget.tripId));
+    final departureAsync = ref.watch(departureNotifierProvider(widget.tripId));
 
     final departureState = departureAsync.valueOrNull;
     final departureBanner = departureState?.visible;
@@ -654,8 +661,7 @@ class _ItineraryAlertsSectionState
                     AlertCard(
                       alert: alert,
                       onDismiss: () => ref
-                          .read(
-                              alertsNotifierProvider(widget.tripId).notifier)
+                          .read(alertsNotifierProvider(widget.tripId).notifier)
                           .dismiss(alert.alertId),
                     ),
                 ],
@@ -680,12 +686,12 @@ class _ItineraryAlertsSectionState
                   ? null
                   : () {
                       ref
-                          .read(
-                              alertsNotifierProvider(widget.tripId).notifier)
+                          .read(alertsNotifierProvider(widget.tripId).notifier)
                           .refresh();
                       ref
-                          .read(departureNotifierProvider(widget.tripId)
-                              .notifier)
+                          .read(
+                            departureNotifierProvider(widget.tripId).notifier,
+                          )
                           .refresh();
                     },
               padding: EdgeInsets.zero,

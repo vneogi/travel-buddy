@@ -21,13 +21,13 @@ class RouteEvidence {
   });
 
   factory RouteEvidence.fromJson(Map<String, dynamic> j) => RouteEvidence(
-        source: j['source'] as String,
-        observedAt: DateTime.parse(j['observed_at'] as String),
-        normalDurationMinutes: (j['normal_duration_minutes'] as num?)?.toInt(),
-        trafficDurationMinutes: (j['traffic_duration_minutes'] as num).toInt(),
-        mode: j['mode'] as String,
-        originBasis: j['origin_basis'] as String,
-      );
+    source: j['source'] as String,
+    observedAt: DateTime.parse(j['observed_at'] as String),
+    normalDurationMinutes: (j['normal_duration_minutes'] as num?)?.toInt(),
+    trafficDurationMinutes: (j['traffic_duration_minutes'] as num).toInt(),
+    mode: j['mode'] as String,
+    originBasis: j['origin_basis'] as String,
+  );
 }
 
 class WeatherEvidence {
@@ -42,10 +42,10 @@ class WeatherEvidence {
   });
 
   factory WeatherEvidence.fromJson(Map<String, dynamic> j) => WeatherEvidence(
-        source: j['source'] as String,
-        observedAt: DateTime.parse(j['observed_at'] as String),
-        rainProbability: (j['rain_probability'] as num).toDouble(),
-      );
+    source: j['source'] as String,
+    observedAt: DateTime.parse(j['observed_at'] as String),
+    rainProbability: (j['rain_probability'] as num).toDouble(),
+  );
 }
 
 class PolicyBuffers {
@@ -58,9 +58,9 @@ class PolicyBuffers {
   });
 
   factory PolicyBuffers.fromJson(Map<String, dynamic> j) => PolicyBuffers(
-        arrivalBufferMinutes: (j['arrival_buffer_minutes'] as num).toInt(),
-        weatherBufferMinutes: (j['weather_buffer_minutes'] as num).toInt(),
-      );
+    arrivalBufferMinutes: (j['arrival_buffer_minutes'] as num).toInt(),
+    weatherBufferMinutes: (j['weather_buffer_minutes'] as num).toInt(),
+  );
 }
 
 class DepartureEvidence {
@@ -68,11 +68,7 @@ class DepartureEvidence {
   final WeatherEvidence? weather;
   final PolicyBuffers policy;
 
-  const DepartureEvidence({
-    this.route,
-    this.weather,
-    required this.policy,
-  });
+  const DepartureEvidence({this.route, this.weather, required this.policy});
 
   factory DepartureEvidence.fromJson(Map<String, dynamic> j) =>
       DepartureEvidence(
@@ -82,8 +78,7 @@ class DepartureEvidence {
         weather: j['weather'] != null
             ? WeatherEvidence.fromJson(j['weather'] as Map<String, dynamic>)
             : null,
-        policy:
-            PolicyBuffers.fromJson(j['policy'] as Map<String, dynamic>),
+        policy: PolicyBuffers.fromJson(j['policy'] as Map<String, dynamic>),
       );
 }
 
@@ -132,7 +127,8 @@ class NotificationCandidate {
         timeZone: j['time_zone'] as String?,
         deepLink: j['deep_link'] as String,
         evidence: DepartureEvidence.fromJson(
-            j['evidence'] as Map<String, dynamic>),
+          j['evidence'] as Map<String, dynamic>,
+        ),
       );
 
   bool get isExpired => DateTime.now().toUtc().isAfter(expiresAt);
@@ -157,8 +153,9 @@ class TripNotificationsResponse {
         refreshedAt: DateTime.parse(j['refreshed_at'] as String),
         status: j['status'] as String,
         notifications: (j['notifications'] as List)
-            .map((e) =>
-                NotificationCandidate.fromJson(e as Map<String, dynamic>))
+            .map(
+              (e) => NotificationCandidate.fromJson(e as Map<String, dynamic>),
+            )
             .toList(),
       );
 }

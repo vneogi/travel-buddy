@@ -38,6 +38,7 @@ class OfflineDatabase {
   final String? _testPath;
 
   Database? _db;
+  Future<Database>? _opening;
 
   /// Creates an OfflineDatabase. Pass [testPath] in unit tests to use an
   /// in-memory database (`:memory:`) for full test isolation.
@@ -47,9 +48,18 @@ class OfflineDatabase {
   Future<Database> get db async {
     final existing = _db;
     if (existing != null) return existing;
-    final opened = await _open();
-    _db = opened;
-    return opened;
+    final opening = _opening;
+    if (opening != null) return opening;
+
+    final nextOpening = _open();
+    _opening = nextOpening;
+    try {
+      final opened = await nextOpening;
+      _db = opened;
+      return opened;
+    } finally {
+      _opening = null;
+    }
   }
 
   Future<Database> _open() async {
@@ -165,19 +175,19 @@ class OfflineDatabase {
 
   /// Insert a signal into the outbox (state='pending').
   /// Called BEFORE any network attempt — this is the durability guarantee.
-  Future<void> enqueue(String signalId, String payloadJson, String capturedAt) async {
+  Future<void> enqueue(
+    String signalId,
+    String payloadJson,
+    String capturedAt,
+  ) async {
     final database = await db;
-    await database.insert(
-      'outbox',
-      {
-        'signal_id': signalId,
-        'payload_json': payloadJson,
-        'captured_at': capturedAt,
-        'attempts': 0,
-        'state': 'pending',
-      },
-      conflictAlgorithm: ConflictAlgorithm.ignore,
-    );
+    await database.insert('outbox', {
+      'signal_id': signalId,
+      'payload_json': payloadJson,
+      'captured_at': capturedAt,
+      'attempts': 0,
+      'state': 'pending',
+    }, conflictAlgorithm: ConflictAlgorithm.ignore);
   }
 
   /// Get pending signals ready to sync (ordered oldest-first).
@@ -186,7 +196,8 @@ class OfflineDatabase {
     final now = DateTime.now().toUtc().toIso8601String();
     return database.query(
       'outbox',
-      where: "state = 'pending' AND (next_retry_at IS NULL OR next_retry_at <= ?)",
+      where:
+          "state = 'pending' AND (next_retry_at IS NULL OR next_retry_at <= ?)",
       whereArgs: [now],
       orderBy: 'captured_at ASC',
       limit: limit,
@@ -228,11 +239,17 @@ class OfflineDatabase {
   Future<void> markRetry(List<String> signalIds, String error) async {
     final database = await db;
     for (final id in signalIds) {
-      final rows = await database.query('outbox', where: 'signal_id = ?', whereArgs: [id]);
+      final rows = await database.query(
+        'outbox',
+        where: 'signal_id = ?',
+        whereArgs: [id],
+      );
       if (rows.isEmpty) continue;
       final attempts = (rows.first['attempts'] as int) + 1;
       final backoffMs = _backoffMs(attempts);
-      final nextRetry = DateTime.now().toUtc().add(Duration(milliseconds: backoffMs));
+      final nextRetry = DateTime.now().toUtc().add(
+        Duration(milliseconds: backoffMs),
+      );
       await database.update(
         'outbox',
         {
@@ -284,7 +301,9 @@ class OfflineDatabase {
   /// Total outbox size (for cap check — SPEC-02 B.3).
   Future<int> getOutboxSize() async {
     final database = await db;
-    final result = await database.rawQuery('SELECT COUNT(*) as cnt FROM outbox');
+    final result = await database.rawQuery(
+      'SELECT COUNT(*) as cnt FROM outbox',
+    );
     return (result.first['cnt'] as int?) ?? 0;
   }
 
@@ -295,15 +314,11 @@ class OfflineDatabase {
   /// Cache a trip state.
   Future<void> cacheTrip(String tripId, String stateJson) async {
     final database = await db;
-    await database.insert(
-      'cache_trip',
-      {
-        'trip_id': tripId,
-        'state_json': stateJson,
-        'cached_at': DateTime.now().toUtc().toIso8601String(),
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await database.insert('cache_trip', {
+      'trip_id': tripId,
+      'state_json': stateJson,
+      'cached_at': DateTime.now().toUtc().toIso8601String(),
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   /// Read cached trip state (returns null if not cached).
@@ -319,15 +334,11 @@ class OfflineDatabase {
 
   Future<void> cacheTripList(String cacheKey, String listJson) async {
     final database = await db;
-    await database.insert(
-      'cache_trip_list',
-      {
-        'cache_key': cacheKey,
-        'list_json': listJson,
-        'cached_at': DateTime.now().toUtc().toIso8601String(),
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await database.insert('cache_trip_list', {
+      'cache_key': cacheKey,
+      'list_json': listJson,
+      'cached_at': DateTime.now().toUtc().toIso8601String(),
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<({String json, DateTime cachedAt})?> getCachedTripList(
@@ -349,15 +360,11 @@ class OfflineDatabase {
   /// Cache a place/venue.
   Future<void> cachePlace(String placeRef, String dataJson) async {
     final database = await db;
-    await database.insert(
-      'cache_place',
-      {
-        'place_ref': placeRef,
-        'data_json': dataJson,
-        'cached_at': DateTime.now().toUtc().toIso8601String(),
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await database.insert('cache_place', {
+      'place_ref': placeRef,
+      'data_json': dataJson,
+      'cached_at': DateTime.now().toUtc().toIso8601String(),
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   /// Read cached place data (returns null if not cached).
@@ -370,7 +377,6 @@ class OfflineDatabase {
     );
     return rows.isEmpty ? null : rows.first['data_json'] as String;
   }
-
 
   /// Durable heart storage (identity-scoped, per-trip).
   Future<void> _createLovedPlacesTable(Database db) async {
@@ -396,16 +402,12 @@ class OfflineDatabase {
     required String placeRef,
   }) async {
     final database = await db;
-    await database.insert(
-      'loved_places',
-      {
-        'identity_scope': identityScope,
-        'trip_id': tripId,
-        'place_ref': placeRef,
-        'loved_at': DateTime.now().toUtc().toIso8601String(),
-      },
-      conflictAlgorithm: ConflictAlgorithm.ignore,
-    );
+    await database.insert('loved_places', {
+      'identity_scope': identityScope,
+      'trip_id': tripId,
+      'place_ref': placeRef,
+      'loved_at': DateTime.now().toUtc().toIso8601String(),
+    }, conflictAlgorithm: ConflictAlgorithm.ignore);
   }
 
   /// Retrieve all loved place refs for this identity + trip.
@@ -422,7 +424,6 @@ class OfflineDatabase {
     );
     return rows.map((r) => r['place_ref'] as String).toSet();
   }
-
 
   /// Minimal durable key-value store for app-level state (e.g. last_session_at).
   Future<void> _createAppKvTable(Database db) async {
@@ -457,28 +458,36 @@ class OfflineDatabase {
     DateTime? recordedAt,
   }) async {
     if (outcome != NodeOutcome.visited && outcome != NodeOutcome.skipped) {
-      throw ArgumentError.value(outcome, 'outcome', 'must be visited or skipped');
+      throw ArgumentError.value(
+        outcome,
+        'outcome',
+        'must be visited or skipped',
+      );
     }
     if (outcome == NodeOutcome.skipped && (reason == null || reason.isEmpty)) {
-      throw ArgumentError.value(reason, 'reason', 'is required for skipped outcomes');
+      throw ArgumentError.value(
+        reason,
+        'reason',
+        'is required for skipped outcomes',
+      );
     }
     if (outcome == NodeOutcome.visited && reason != null) {
-      throw ArgumentError.value(reason, 'reason', 'must be null for visited outcomes');
+      throw ArgumentError.value(
+        reason,
+        'reason',
+        'must be null for visited outcomes',
+      );
     }
 
     final database = await db;
-    await database.insert(
-      'node_outcome',
-      {
-        'identity_scope': identityScope,
-        'trip_id': tripId,
-        'node_id': nodeId,
-        'outcome': outcome,
-        'reason': reason,
-        'recorded_at': (recordedAt ?? DateTime.now()).toUtc().toIso8601String(),
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await database.insert('node_outcome', {
+      'identity_scope': identityScope,
+      'trip_id': tripId,
+      'node_id': nodeId,
+      'outcome': outcome,
+      'reason': reason,
+      'recorded_at': (recordedAt ?? DateTime.now()).toUtc().toIso8601String(),
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<Map<String, NodeOutcome>> getNodeOutcomes({
@@ -520,11 +529,10 @@ class OfflineDatabase {
   /// Write a value to the app_kv table (upsert).
   Future<void> setAppValue(String key, String value) async {
     final database = await db;
-    await database.insert(
-      'app_kv',
-      {'key': key, 'value': value},
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await database.insert('app_kv', {
+      'key': key,
+      'value': value,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   // ============================================================
@@ -536,12 +544,19 @@ class OfflineDatabase {
   int _backoffMs(int attempts) {
     final baseMs = 2000 * (1 << attempts);
     final cappedMs = baseMs.clamp(0, 15 * 60 * 1000);
-    final jitter = (cappedMs * 0.2 * (DateTime.now().millisecond / 1000)).round();
+    final jitter = (cappedMs * 0.2 * (DateTime.now().millisecond / 1000))
+        .round();
     return cappedMs + jitter;
   }
 
   /// Close the database (for testing).
   Future<void> close() async {
+    final opening = _opening;
+    if (opening != null) {
+      try {
+        _db = await opening;
+      } catch (_) {}
+    }
     await _db?.close();
     _db = null;
   }
@@ -558,17 +573,13 @@ class OfflineDatabase {
     required String expiresAt,
   }) async {
     final database = await db;
-    await database.insert(
-      'alert_cache',
-      {
-        'identity_scope': identityScope,
-        'trip_id': tripId,
-        'payload_json': payloadJson,
-        'cached_at': DateTime.now().toUtc().toIso8601String(),
-        'expires_at': expiresAt,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await database.insert('alert_cache', {
+      'identity_scope': identityScope,
+      'trip_id': tripId,
+      'payload_json': payloadJson,
+      'cached_at': DateTime.now().toUtc().toIso8601String(),
+      'expires_at': expiresAt,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   /// Retrieve cached alerts (only if not expired).
@@ -593,15 +604,11 @@ class OfflineDatabase {
     required String alertId,
   }) async {
     final database = await db;
-    await database.insert(
-      'alert_dismissals',
-      {
-        'identity_scope': identityScope,
-        'alert_id': alertId,
-        'dismissed_at': DateTime.now().toUtc().toIso8601String(),
-      },
-      conflictAlgorithm: ConflictAlgorithm.ignore,
-    );
+    await database.insert('alert_dismissals', {
+      'identity_scope': identityScope,
+      'alert_id': alertId,
+      'dismissed_at': DateTime.now().toUtc().toIso8601String(),
+    }, conflictAlgorithm: ConflictAlgorithm.ignore);
   }
 
   /// Get all dismissed alert IDs for this identity.
@@ -672,17 +679,13 @@ class OfflineDatabase {
     required String expiresAt,
   }) async {
     final database = await db;
-    await database.insert(
-      'notification_cache',
-      {
-        'identity_scope': identityScope,
-        'trip_id': tripId,
-        'payload_json': payloadJson,
-        'cached_at': DateTime.now().toUtc().toIso8601String(),
-        'expires_at': expiresAt,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await database.insert('notification_cache', {
+      'identity_scope': identityScope,
+      'trip_id': tripId,
+      'payload_json': payloadJson,
+      'cached_at': DateTime.now().toUtc().toIso8601String(),
+      'expires_at': expiresAt,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   /// Retrieve cached notifications (only if not expired).
@@ -707,15 +710,11 @@ class OfflineDatabase {
     required String notificationId,
   }) async {
     final database = await db;
-    await database.insert(
-      'notification_dismissals',
-      {
-        'identity_scope': identityScope,
-        'notification_id': notificationId,
-        'dismissed_at': DateTime.now().toUtc().toIso8601String(),
-      },
-      conflictAlgorithm: ConflictAlgorithm.ignore,
-    );
+    await database.insert('notification_dismissals', {
+      'identity_scope': identityScope,
+      'notification_id': notificationId,
+      'dismissed_at': DateTime.now().toUtc().toIso8601String(),
+    }, conflictAlgorithm: ConflictAlgorithm.ignore);
   }
 
   /// Get all dismissed notification IDs for this identity.

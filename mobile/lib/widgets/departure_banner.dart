@@ -60,8 +60,9 @@ class DepartureBanner extends StatelessWidget {
                       const SizedBox(height: AppSpacing.xs),
                       Text(
                         _captionText!,
-                        style: AppTypography.caption
-                            .copyWith(color: AppColors.muted),
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.muted,
+                        ),
                       ),
                     ],
                   ],

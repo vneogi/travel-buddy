@@ -26,13 +26,12 @@ class DepartureState {
     bool? loading,
     String? status,
     Set<String>? dismissed,
-  }) =>
-      DepartureState(
-        candidates: candidates ?? this.candidates,
-        loading: loading ?? this.loading,
-        status: status ?? this.status,
-        dismissed: dismissed ?? this.dismissed,
-      );
+  }) => DepartureState(
+    candidates: candidates ?? this.candidates,
+    loading: loading ?? this.loading,
+    status: status ?? this.status,
+    dismissed: dismissed ?? this.dismissed,
+  );
 
   /// At most one non-expired, non-dismissed departure_reminder.
   NotificationCandidate? get visible {
@@ -86,10 +85,7 @@ class DepartureNotifier
         resp as Map<String, dynamic>,
       );
       if (parsed.status == 'unconfigured') {
-        return DepartureState(
-          status: 'unconfigured',
-          dismissed: dismissedIds,
-        );
+        return DepartureState(status: 'unconfigured', dismissed: dismissedIds);
       }
       // Filter to departure_reminder only, non-expired.
       final valid = parsed.notifications
@@ -101,8 +97,8 @@ class DepartureNotifier
         final latestExpiry = valid.isEmpty
             ? DateTime.now().toUtc().add(const Duration(hours: 1))
             : valid
-                .map((c) => c.expiresAt)
-                .reduce((a, b) => a.isAfter(b) ? a : b);
+                  .map((c) => c.expiresAt)
+                  .reduce((a, b) => a.isAfter(b) ? a : b);
         await _db.cacheNotifications(
           identityScope: _identityScope,
           tripId: tripId,
@@ -186,6 +182,4 @@ class DepartureNotifier
 
 /// autoDispose: leaving and reopening performs a fresh check.
 final departureNotifierProvider = AsyncNotifierProvider.autoDispose
-    .family<DepartureNotifier, DepartureState, String>(
-  DepartureNotifier.new,
-);
+    .family<DepartureNotifier, DepartureState, String>(DepartureNotifier.new);
