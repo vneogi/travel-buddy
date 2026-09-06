@@ -52,9 +52,7 @@ def validate_corridor_segments(
     provided = [s.geo_region for s in segments]
 
     if provided != expected:
-        raise InvalidCorridor(
-            f"Segments must follow corridor order: {expected}. " f"Got: {provided}."
-        )
+        raise InvalidCorridor(f"Segments must follow corridor order: {expected}. Got: {provided}.")
 
     total_days = 0
     prev_ends_on: date | None = None
@@ -62,7 +60,7 @@ def validate_corridor_segments(
     for seg in segments:
         if seg.starts_on > seg.ends_on:
             raise InvalidCorridor(
-                f"Segment {seg.geo_region}: start {seg.starts_on} is after " f"end {seg.ends_on}."
+                f"Segment {seg.geo_region}: start {seg.starts_on} is after end {seg.ends_on}."
             )
         span = (seg.ends_on - seg.starts_on).days + 1
         if span < 1 or span > corridor.max_days_per_segment:
@@ -81,7 +79,7 @@ def validate_corridor_segments(
 
     if total_days > corridor.max_days:
         raise InvalidCorridor(
-            f"Total {total_days} days exceeds corridor maximum of " f"{corridor.max_days}."
+            f"Total {total_days} days exceeds corridor maximum of {corridor.max_days}."
         )
 
 

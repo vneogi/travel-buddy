@@ -43,8 +43,7 @@ def _corridor_body(
         ]
     return {
         "segments": [
-            {"geo_region": r, "starts_on": s, "ends_on": e}
-            for r, (s, e) in zip(regions, starts)
+            {"geo_region": r, "starts_on": s, "ends_on": e} for r, (s, e) in zip(regions, starts)
         ],
     }
 
@@ -69,20 +68,18 @@ class TestCorridorCreate:
         assert data["status"] == "created"
         assert "trip_id" in data
         assert len(data["nodes"]) > 0
-        trip = client.get(
-            f"/api/v1/trip/{data['trip_id']}", headers=HEADERS
-        ).json()
+        trip = client.get(f"/api/v1/trip/{data['trip_id']}", headers=HEADERS).json()
         assert trip["corridor_id"] == "laos_northbound_v1"
         assert len(trip["segments"]) == 3
         assert [s["geo_region"] for s in trip["segments"]] == [
-            "vientiane_laos", "vang_vieng_laos", "luang_prabang_laos",
+            "vientiane_laos",
+            "vang_vieng_laos",
+            "luang_prabang_laos",
         ]
 
     def test_nodes_belong_to_segment_catalog(self):
         data = _create()
-        trip = client.get(
-            f"/api/v1/trip/{data['trip_id']}", headers=HEADERS
-        ).json()
+        trip = client.get(f"/api/v1/trip/{data['trip_id']}", headers=HEADERS).json()
         for node in trip["nodes"]:
             region = node["geo_region"]
             catalog = _catalog_ids(region)
@@ -108,9 +105,7 @@ class TestCorridorCreate:
         for n in data["nodes"]:
             dt = datetime.fromisoformat(n["scheduled_start"])
             local = dt.astimezone(TZ)
-            by_date.setdefault(local.date(), []).append(
-                (local, n["duration_minutes"])
-            )
+            by_date.setdefault(local.date(), []).append((local, n["duration_minutes"]))
         for d, entries in by_date.items():
             for i in range(1, len(entries)):
                 prev_start, prev_dur = entries[i - 1]
@@ -147,34 +142,60 @@ class TestCorridorValidation:
         assert r.json()["detail"]["error"] == "invalid_corridor"
 
     def test_overlap_rejected(self):
-        self._assert_invalid(_corridor_body(starts=[
-            ("2026-10-02", "2026-10-04"),
-            ("2026-10-04", "2026-10-05"),
-            ("2026-10-06", "2026-10-07"),
-        ]))
+        self._assert_invalid(
+            _corridor_body(
+                starts=[
+                    ("2026-10-02", "2026-10-04"),
+                    ("2026-10-04", "2026-10-05"),
+                    ("2026-10-06", "2026-10-07"),
+                ]
+            )
+        )
 
     def test_wrong_order_rejected(self):
-        self._assert_invalid({
-            "segments": [
-                {"geo_region": "luang_prabang_laos", "starts_on": "2026-10-02", "ends_on": "2026-10-03"},
-                {"geo_region": "vang_vieng_laos", "starts_on": "2026-10-04", "ends_on": "2026-10-05"},
-                {"geo_region": "vientiane_laos", "starts_on": "2026-10-06", "ends_on": "2026-10-07"},
-            ]
-        })
+        self._assert_invalid(
+            {
+                "segments": [
+                    {
+                        "geo_region": "luang_prabang_laos",
+                        "starts_on": "2026-10-02",
+                        "ends_on": "2026-10-03",
+                    },
+                    {
+                        "geo_region": "vang_vieng_laos",
+                        "starts_on": "2026-10-04",
+                        "ends_on": "2026-10-05",
+                    },
+                    {
+                        "geo_region": "vientiane_laos",
+                        "starts_on": "2026-10-06",
+                        "ends_on": "2026-10-07",
+                    },
+                ]
+            }
+        )
 
     def test_range_over_three_days(self):
-        self._assert_invalid(_corridor_body(starts=[
-            ("2026-10-01", "2026-10-04"),
-            ("2026-10-05", "2026-10-06"),
-            ("2026-10-07", "2026-10-08"),
-        ]))
+        self._assert_invalid(
+            _corridor_body(
+                starts=[
+                    ("2026-10-01", "2026-10-04"),
+                    ("2026-10-05", "2026-10-06"),
+                    ("2026-10-07", "2026-10-08"),
+                ]
+            )
+        )
 
     def test_total_over_seven_days(self):
-        self._assert_invalid(_corridor_body(starts=[
-            ("2026-10-01", "2026-10-03"),
-            ("2026-10-04", "2026-10-06"),
-            ("2026-10-07", "2026-10-09"),
-        ]))
+        self._assert_invalid(
+            _corridor_body(
+                starts=[
+                    ("2026-10-01", "2026-10-03"),
+                    ("2026-10-04", "2026-10-06"),
+                    ("2026-10-07", "2026-10-09"),
+                ]
+            )
+        )
 
     def test_segments_plus_start_date_rejected(self):
         body = _corridor_body()
@@ -182,21 +203,45 @@ class TestCorridorValidation:
         self._assert_invalid(body)
 
     def test_missing_city_rejected(self):
-        self._assert_invalid({
-            "segments": [
-                {"geo_region": "vientiane_laos", "starts_on": "2026-10-02", "ends_on": "2026-10-03"},
-                {"geo_region": "luang_prabang_laos", "starts_on": "2026-10-04", "ends_on": "2026-10-05"},
-            ]
-        })
+        self._assert_invalid(
+            {
+                "segments": [
+                    {
+                        "geo_region": "vientiane_laos",
+                        "starts_on": "2026-10-02",
+                        "ends_on": "2026-10-03",
+                    },
+                    {
+                        "geo_region": "luang_prabang_laos",
+                        "starts_on": "2026-10-04",
+                        "ends_on": "2026-10-05",
+                    },
+                ]
+            }
+        )
 
     def test_duplicate_city_rejected(self):
-        self._assert_invalid({
-            "segments": [
-                {"geo_region": "vientiane_laos", "starts_on": "2026-10-02", "ends_on": "2026-10-03"},
-                {"geo_region": "vientiane_laos", "starts_on": "2026-10-04", "ends_on": "2026-10-05"},
-                {"geo_region": "vientiane_laos", "starts_on": "2026-10-06", "ends_on": "2026-10-07"},
-            ]
-        })
+        self._assert_invalid(
+            {
+                "segments": [
+                    {
+                        "geo_region": "vientiane_laos",
+                        "starts_on": "2026-10-02",
+                        "ends_on": "2026-10-03",
+                    },
+                    {
+                        "geo_region": "vientiane_laos",
+                        "starts_on": "2026-10-04",
+                        "ends_on": "2026-10-05",
+                    },
+                    {
+                        "geo_region": "vientiane_laos",
+                        "starts_on": "2026-10-06",
+                        "ends_on": "2026-10-07",
+                    },
+                ]
+            }
+        )
 
 
 # ==================================================================
@@ -214,9 +259,7 @@ class TestAtomicRefusal:
 
         db_service.list_venues_for_region = sparse
         try:
-            r = client.post(
-                "/api/v1/trip/create", json=_corridor_body(), headers=HEADERS
-            )
+            r = client.post("/api/v1/trip/create", json=_corridor_body(), headers=HEADERS)
             assert r.status_code == 422
             assert r.json()["detail"]["error"] == "unsupported_corridor"
             assert set(db_service._trips.keys()) == trips_before
@@ -244,9 +287,7 @@ class TestSingleCityCompat:
         for key in ("trip_id", "status", "nodes", "locked_count", "party", "message"):
             assert key in data, f"Missing key {key}"
         assert data["status"] == "created"
-        trip = client.get(
-            f"/api/v1/trip/{data['trip_id']}", headers=HEADERS
-        ).json()
+        trip = client.get(f"/api/v1/trip/{data['trip_id']}", headers=HEADERS).json()
         assert trip.get("corridor_id") is None
 
     def test_single_city_missing_start_date_returns_422(self):
@@ -274,6 +315,7 @@ class TestNoLLMNoQuota:
             def bomb(*a, **kw):
                 calls[name] = True
                 raise AssertionError(f"{name} called during corridor create")
+
             return bomb
 
         targets = {
@@ -294,9 +336,7 @@ class TestNoLLMNoQuota:
         reroute_before = db_service._users[user]["daily_reroute_count"]
 
         try:
-            r = client.post(
-                "/api/v1/trip/create", json=_corridor_body(), headers=hdrs
-            )
+            r = client.post("/api/v1/trip/create", json=_corridor_body(), headers=hdrs)
             assert r.status_code == 200
             assert not calls, f"Unexpected calls: {list(calls)}"
             reroute_after = db_service._users[user]["daily_reroute_count"]
@@ -325,11 +365,14 @@ class TestNormalizedRows:
         assert len(seqs) == len(set(seqs))
         for r in rows:
             assert r["geo_region"] in {
-                "vientiane_laos", "vang_vieng_laos", "luang_prabang_laos",
+                "vientiane_laos",
+                "vang_vieng_laos",
+                "luang_prabang_laos",
             }
 
     def test_normaliser_uses_config_regions(self):
         from services import itinerary_normaliser
+
         assert not hasattr(itinerary_normaliser, "REGION_TIMEZONES")
 
 
@@ -342,13 +385,8 @@ class TestCrossCitySwap:
         and reject a Vientiane venue replacement."""
         data = _create()
         trip_id = data["trip_id"]
-        lp_node = next(
-            n for n in data["nodes"]
-            if n["geo_region"] == "luang_prabang_laos"
-        )
-        vte_rows = eligible_venues(
-            db_service.list_venues_for_region("vientiane_laos")
-        )
+        lp_node = next(n for n in data["nodes"] if n["geo_region"] == "luang_prabang_laos")
+        vte_rows = eligible_venues(db_service.list_venues_for_region("vientiane_laos"))
         if not vte_rows:
             pytest.skip("No Vientiane venues seeded")
         vte_venue_id = str(vte_rows[0]["venue_id"])
@@ -368,13 +406,8 @@ class TestCrossCitySwap:
         assert r.status_code == 409, f"Expected 409, got {r.status_code}: {r.text}"
         assert r.json()["detail"]["error"] == "replacement_wrong_region"
         # Router catches cross-region replacement at HTTP layer.
-        trip_after = client.get(
-            f"/api/v1/trip/{trip_id}", headers=HEADERS
-        ).json()
-        lp_after = next(
-            n for n in trip_after["nodes"]
-            if n["node_id"] == lp_node["node_id"]
-        )
+        trip_after = client.get(f"/api/v1/trip/{trip_id}", headers=HEADERS).json()
+        lp_after = next(n for n in trip_after["nodes"] if n["node_id"] == lp_node["node_id"])
         # The LP node must NOT have been replaced by the Vientiane venue.
         assert lp_after["venue_id"] != vte_venue_id, (
             "Cross-region swap was accepted -- should have been rejected"
@@ -385,10 +418,7 @@ class TestCrossCitySwap:
         """Spy hybrid_venue_search to verify geo_region=luang_prabang_laos."""
         data = _create()
         trip_id = data["trip_id"]
-        lp_node = next(
-            n for n in data["nodes"]
-            if n["geo_region"] == "luang_prabang_laos"
-        )
+        lp_node = next(n for n in data["nodes"] if n["geo_region"] == "luang_prabang_laos")
         original = db_service.hybrid_venue_search
         search_calls = []
 
@@ -470,11 +500,8 @@ class TestEarlierCityMutation:
         original_venue_id = vv_target["venue_id"]
 
         # Find a same-region venue NOT already in the trip.
-        trip_vids = {n["venue_id"] for n in data["nodes"]
-                     if n["geo_region"] == "vang_vieng_laos"}
-        all_vv = eligible_corridor_venues(
-            db_service.list_venues_for_region("vang_vieng_laos")
-        )
+        trip_vids = {n["venue_id"] for n in data["nodes"] if n["geo_region"] == "vang_vieng_laos"}
+        all_vv = eligible_corridor_venues(db_service.list_venues_for_region("vang_vieng_laos"))
         unused = [v for v in all_vv if str(v["venue_id"]) not in trip_vids]
         assert len(unused) > 0, "Need at least one unused VV venue for swap"
         replacement_vid = str(unused[0]["venue_id"])
@@ -495,10 +522,7 @@ class TestEarlierCityMutation:
         trip_after = client.get(f"/api/v1/trip/{trip_id}", headers=HEADERS).json()
 
         # 1. The swapped node now has the new venue_id.
-        swapped = next(
-            n for n in trip_after["nodes"]
-            if n["node_id"] == vv_target["node_id"]
-        )
+        swapped = next(n for n in trip_after["nodes"] if n["node_id"] == vv_target["node_id"])
         assert swapped["venue_id"] == replacement_vid, (
             f"venue_id not changed: expected {replacement_vid}, got {swapped['venue_id']}"
         )
@@ -530,9 +554,21 @@ class TestTripList:
     def test_validation_uses_registry_order(self):
         body = {
             "segments": [
-                {"geo_region": "vang_vieng_laos", "starts_on": "2026-10-02", "ends_on": "2026-10-03"},
-                {"geo_region": "vientiane_laos", "starts_on": "2026-10-04", "ends_on": "2026-10-05"},
-                {"geo_region": "luang_prabang_laos", "starts_on": "2026-10-06", "ends_on": "2026-10-07"},
+                {
+                    "geo_region": "vang_vieng_laos",
+                    "starts_on": "2026-10-02",
+                    "ends_on": "2026-10-03",
+                },
+                {
+                    "geo_region": "vientiane_laos",
+                    "starts_on": "2026-10-04",
+                    "ends_on": "2026-10-05",
+                },
+                {
+                    "geo_region": "luang_prabang_laos",
+                    "starts_on": "2026-10-06",
+                    "ends_on": "2026-10-07",
+                },
             ]
         }
         r = client.post("/api/v1/trip/create", json=body, headers=HEADERS)
@@ -541,11 +577,13 @@ class TestTripList:
 
     def test_featured_trip_carries_corridor_id(self):
         tomorrow = date.today() + timedelta(days=1)
-        body = _corridor_body(starts=[
-            (str(tomorrow), str(tomorrow)),
-            (str(tomorrow + timedelta(days=1)), str(tomorrow + timedelta(days=1))),
-            (str(tomorrow + timedelta(days=2)), str(tomorrow + timedelta(days=2))),
-        ])
+        body = _corridor_body(
+            starts=[
+                (str(tomorrow), str(tomorrow)),
+                (str(tomorrow + timedelta(days=1)), str(tomorrow + timedelta(days=1))),
+                (str(tomorrow + timedelta(days=2)), str(tomorrow + timedelta(days=2))),
+            ]
+        )
         client.post("/api/v1/trip/create", json=body, headers=HEADERS)
         data = client.get("/api/v1/trips", headers=HEADERS).json()
         ft = data.get("featured_trip")
