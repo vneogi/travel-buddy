@@ -396,6 +396,15 @@ class _CorridorTimeline extends StatelessWidget {
       itemCount: cityGroups.length,
       itemBuilder: (context, index) {
         final group = cityGroups[index];
+        // Compute the first node of the next city for cross-city nextNode.
+        TripNode? nextCityFirst;
+        if (index + 1 < cityGroups.length) {
+          final nextNodes = cityGroups[index + 1]
+              .dayGroups
+              .expand((dg) => dg.nodes)
+              .toList();
+          if (nextNodes.isNotEmpty) nextCityFirst = nextNodes.first;
+        }
         return CitySection(
           cityGroup: group,
           childBuilder: (cg) => _DateScopedTimeline(
@@ -408,6 +417,8 @@ class _CorridorTimeline extends StatelessWidget {
             onEditBooking: onEditBooking,
             onDeleteBooking: onDeleteBooking,
             sig: sig,
+            isCorridor: true,
+            globalNextNode: nextCityFirst,
           ),
         );
       },
@@ -425,6 +436,8 @@ class _DateScopedTimeline extends StatelessWidget {
   final void Function(TripNode) onEditBooking;
   final void Function(TripNode) onDeleteBooking;
   final String Function(TripNode) sig;
+  final bool isCorridor;
+  final TripNode? globalNextNode;
 
   const _DateScopedTimeline({
     required this.nodes,
@@ -436,6 +449,8 @@ class _DateScopedTimeline extends StatelessWidget {
     required this.onEditBooking,
     required this.onDeleteBooking,
     required this.sig,
+    this.isCorridor = false,
+    this.globalNextNode,
   });
 
   @override
@@ -452,8 +467,8 @@ class _DateScopedTimeline extends StatelessWidget {
     }
 
     return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
+      shrinkWrap: isCorridor,
+      physics: isCorridor ? const NeverScrollableScrollPhysics() : null,
       itemCount: items.length,
       padding: const EdgeInsets.only(
         top: AppSpacing.base,
@@ -474,6 +489,8 @@ class _DateScopedTimeline extends StatelessWidget {
             break;
           }
         }
+        // Cross-city boundary: use globally-ordered next from corridor.
+        next ??= globalNextNode;
 
         return AnimatedSwitcher(
           duration: const Duration(milliseconds: 220),

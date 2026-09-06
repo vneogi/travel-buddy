@@ -590,6 +590,7 @@ class _CorridorDateFormState extends State<_CorridorDateForm> {
 
   void _submit() {
     if (_submitting || _validate() != null) return;
+    setState(() => _submitting = true);
     final segments = <TripSegment>[];
     for (var i = 0; i < _ranges.length; i++) {
       segments.add(TripSegment(
@@ -640,7 +641,7 @@ class _CorridorDateFormState extends State<_CorridorDateForm> {
               const SizedBox(height: 12),
               Text(
                 error,
-                style: AppTypography.caption.copyWith(color: AppColors.error),
+                style: AppTypography.caption.copyWith(color: AppColors.danger),
               ),
             ],
             const SizedBox(height: 16),
