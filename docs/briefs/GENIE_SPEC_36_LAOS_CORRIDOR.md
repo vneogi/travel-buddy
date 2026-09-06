@@ -210,6 +210,17 @@ Keep the existing target-node region behavior in `agents/state_machine.py`.
 Add a regression test proving a Luang Prabang target cannot resolve a
 Vientiane replacement.
 
+Fix the client coordinate path in:
+
+- `mobile/lib/features/itinerary/itinerary_screen.dart`
+- `mobile/lib/features/swap_sheet/swap_search_coords.dart`
+
+The current itinerary swap path derives coordinates from the first trip node.
+Pass the tapped target node through the production resolver so a Luang Prabang
+card searches around its own coordinates, not Vientiane. Extend the real
+SwapSheet request test to capture the latitude and longitude sent to the API.
+A pure coordinate-helper test alone is not sufficient.
+
 Do not use `trip.geo_region`, the first segment, or the last itinerary node as
 a targeted swap proxy.
 
@@ -230,11 +241,13 @@ Cover every required proof case in SPEC-36, including:
 - no LLM, hybrid search, or quota;
 - truthful normalized day indexes;
 - target-node swap isolation;
+- earlier-city mutations preserve the next city's requested date boundary;
 - old and new Home snapshot parsing/cache round-trip;
 - exact corridor POST body;
 - invalid create UI;
 - city order plus nested date order;
 - past collapse and expansion through the production widget;
+- later-city SwapSheet search uses the tapped node's coordinates;
 - callback/node-ID preservation;
 - unchanged single-city rendering;
 - 800x600 overflow.
@@ -253,7 +266,7 @@ Perform each sabotage from SPEC-36 separately. For each:
 4. revert only the sabotage;
 5. rerun the test green.
 
-At minimum, report all eight spec sabotage cases by test name. Stop if any
+Report all nine spec sabotage cases by test name. Stop if any
 sabotage stays green.
 
 ## Gates
