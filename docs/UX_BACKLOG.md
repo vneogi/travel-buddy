@@ -113,12 +113,13 @@ grid) is close to ours but more complete. Fold in when the designer engages.
 **UX polish does not capture moat data.** The spine work above is shipped. The
 remaining product order is:
 
-1. Preserve evidence-backed alerts (SPEC-29 landed; no synthetic transit).
-2. Date-scoped itinerary grouping is on main (Windows Sep 4). Date-aware stay
-   selection remains unverified.
-3. Make hearts durable and await `syncOnce()` before showing status counts.
-4. Create real Laos trips (SPEC-32) instead of stamping destinations onto the
-   Dubai template.
+1. Review and merge SPEC-36 only after backend, Flutter, date-form, swap, and
+   CI gates clear.
+2. Execute SPEC-37: hosted HTTPS API plus an installable phone artifact.
+3. Complete online and real airplane-mode acceptance by 2026-09-18 with USB
+   and local tunnels disconnected.
+4. Only then resume map-first polish, multi-night hotel UI, the `syncOnce()`
+   status-count race, and broader consumer work.
 
 Full Vault and the map-first shell remain post-field-test unless spare capacity
 appears.

@@ -35,6 +35,8 @@ Vieng and Vientiane (58 hand-curated venues). `geo_region` is per trip, set from
 
 **Near-term goal:** a real field test in Laos on Oct 2 2026. That date is the
 forcing function for everything prioritized in `docs/PROJECT_STATUS.md`.
+The installable hosted build must complete online and airplane-mode acceptance
+by Sep 18, leaving approximately two weeks for recovery.
 
 **Market direction:** the product optimises for the Indian outbound traveller,
 and the cities after Laos follow that traveller's corridor. See
@@ -262,17 +264,14 @@ column the loader writes, the loader builds its payload in one place
 declared write set, so a declared column that stops being written now fails the
 suite rather than writing NULL.
 
-**`0011` must not be applied before the live schema is dumped and diffed.**
-Loads have been succeeding against columns no migration declared, so those
-columns exist in the hosted database and were almost certainly added by hand.
-The extent of those manual edits is unknown. This matters concretely: if a
-hand-made `name_local TEXT` is present, `ADD COLUMN IF NOT EXISTS names_local
-JSONB` adds a second empty column and silently leaves the populated one unread.
-The dump, the diff and any backfill are device tasks tracked in
-`docs/AWAITING_VERIFICATION.md`.
+Migration 0011 cleared the live dump/diff gate and migrations 0011-0018 were
+applied on device day 2026-08-17. The earlier dual-column risk is closed; do
+not replay that migration. Live sentinels later verified every repository
+migration through 0024.
 
-**Still open.** `supabase_service` passes a `geo_region` filter that the RPC in
-`0001_initial_schema.sql` does not declare. Verify against the live function.
+Migration 0023 also closed the RPC drift: live `hybrid_venue_search` includes
+the seventh `filter_geo_region text` argument. Current hosted evidence belongs
+only in `docs/HOSTED_STATE.md`.
 
 ---
 

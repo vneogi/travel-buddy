@@ -4,6 +4,11 @@
 >
 > Starts only after SPEC-36 is merged and green. This is a delivery and
 > acceptance slice, not a new consumer feature.
+>
+> Target final online and airplane-mode acceptance: 2026-09-18, approximately
+> two weeks before the 2026-10-02 trip.
+>
+> Execution brief: `docs/briefs/GENIE_SPEC_37_PHONE_FIELD_TEST.md`.
 
 ## Goal
 

@@ -1,8 +1,7 @@
 # Genie Brief -- SPEC-10 Booking Edit and Delete
 
-> Status: QUEUED AFTER SPEC-31. Do not implement on the SPEC-31 branch.
-> Read the "Remainder" section of
-> `docs/specs/SPEC-10-booking-anchors.md` before starting.
+> Status: HISTORICAL, COMPLETED IN PR #37 (`364d873`). Do not execute this
+> brief again.
 
 ## Goal
 

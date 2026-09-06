@@ -113,7 +113,9 @@ on three separate occasions (R1).
       --dart-define=TB_API_BASE_URL=http://10.0.2.2:8000
 
 `10.0.2.2` is the emulator's route to the host. A physical device needs the
-laptop's LAN IP instead, which also matters for section 6.
+laptop's LAN IP for local development. Neither path is field-test acceptance;
+SPEC-37 uses an installed build and hosted `TB_API_BASE_URL` as described in
+section 6.
 
 ## 5. Flutter unit and widget tests
 
@@ -188,9 +190,9 @@ owner to repeat a hosted query or reveal `.env` contents.
 - Never print `.env`, secret values, or full environment listings. A successful
   local provider test does not prove a hosted deployment has the same variable.
 - Loaders: `python scripts/load_dish_glossary.py data/laos_dish_glossary.json`
-  and `python scripts/load_venues.py <files> --geo-region <region>`. Check
-  `docs/AWAITING_VERIFICATION.md` first; the venue loader has open defects that
-  make an unqualified run fail.
+  and `python scripts/load_venues.py <files> --geo-region <region>`. The loader
+  is repaired and guarded; the remaining Dubai gap is that its raw snapshot is
+  intentionally not a loader source.
 - Real auth: set `TB_SUPABASE_JWT_SECRET` and the app switches from
   `X-Debug-User-Id` to verified JWTs. Use a real access token from the app's
   auth flow.

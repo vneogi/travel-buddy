@@ -50,9 +50,10 @@ It does not prove they are configured on a hosted backend deployment.
 No production/field-test API deployment is currently verified. Therefore no
 backend variable is recorded as present on a hosted application service,
 including Supabase, LLM, Maps, Weather, or anonymous-auth configuration.
-SPEC-37 owns provisioning and verification after SPEC-36 merges. Until then,
-the hosted Supabase database and the laptop-local backend environment must not
-be described as a deployed application.
+SPEC-37 owns provisioning and verification after SPEC-36 merges, with final
+phone acceptance targeted for 2026-09-18. Until then, the hosted Supabase
+database and the laptop-local backend environment must not be described as a
+deployed application.
 
 Security action: a Google Maps key was exposed outside `.env` during testing.
 Rotate it in Google Cloud, retain API and application restrictions, replace the

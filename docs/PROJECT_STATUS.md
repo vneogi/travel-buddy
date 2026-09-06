@@ -123,11 +123,10 @@ Durable hearts passed on Windows Aug 30. Google Maps Distance Matrix and
 OpenWeather credentials returned successful real responses on Windows Sep 6;
 see docs/HOSTED_STATE.md for the credential-safe checks.
 
-Success means an installable build whose engine knows a real trip anchored on
-real flight and hotel bookings, and whose driver card works without
-connectivity. Re-cut Aug 14 after finding that CONSUMER_SURFACE_ROADMAP and
-PROJECT_STATUS disagreed on SPEC-04, and that SPEC-04 mostly duplicated
-SPEC-02 plus SPEC-12.
+Success means an installable phone build using a stable hosted HTTPS API, with
+the real Laos corridor and pre-cached driver cards working after the laptop and
+USB are disconnected. Target the final online plus airplane-mode acceptance by
+2026-09-18, about two weeks before the Oct 2 trip, leaving recovery time.
 
 1. Device day -- **CLOSED** 2026-08-17. Brief: docs/briefs/DEVICE_DAY.md.
    Dubai raw dump 6bfa1c6; migrations 0011-0018 applied; Laos reloaded;
@@ -156,7 +155,7 @@ SPEC-02 plus SPEC-12.
 7. SPEC-04 October cache floor -- **DONE** PR #22 (`b7e10c3`). Offline
    itinerary reads from SQLite cache_trip and pre-cached place data remain.
    The same PR shipped a rescue shortcut that the owner retired Sep 5; its
-   code removal is next.
+   code removal is complete.
    Post-spine hardening merged in PR #23 (`dab16c0`): geoRegion threading
    to driver card (native script resolves; no fare is claimed), authHalted reset
    and UI status card, and robust hotel matching.
@@ -176,36 +175,29 @@ Seed-shaped cohorts.
 
 ### Immediate pre-trip sequence
 
-8. Multi-night hotel UI. The duplicate Hotel Rescue shortcut is removed;
-   preserve offline cache fallback and the driver-card action on hotel bookings.
-   This is deferred until the phone-independent field-test gate unless it
-   blocks the owner's real booking.
-9. SPEC-35 Phase A2 in-app departure banners -- **DONE** PR #52 (`1379da8`).
-   Keep meal previews suppressed, OS push in SPEC-27, and review-derived
-   popularity behind SPEC-17/19.
-10. SPEC-36 Laos corridor trip -- **IN REVIEW, NOT MERGED** at `534b889`.
-    Review the actual branch, clear backend and Flutter blockers, run CI, then
-    merge. Do not invent transfer or hotel facts.
-11. SPEC-37 phone-independent field-test delivery -- **NEXT AFTER SPEC-36**.
-    Deploy reviewed `main` to stable HTTPS, configure hosted secrets, install a
-    standalone phone build, then run online and airplane-mode acceptance
-    without a laptop transport.
-12. Retire the dietary suitability claim (SPEC-14) -- **DONE**. The claim is
-    absent; do not reopen it as pre-trip work.
-13. SPEC-17 trust and verification -- gates SPEC-18/19/20; behind the
-    field-test installable app on purpose.
-14. reroute_rejected plus swap sheet UI -- last unwired behavioural signal.
-15. Full SPEC-04 remainder (cache_vault, passes, emergency grid, phrase
-    packs) only if field evidence supports it.
-16. Finish remaining consumer slices: trip-less Ask and the richer Home
-    aggregate. SPEC-27 follows; SPEC-24 design is settled.
-17. Swappable LLM provider -- no owning spec yet; next free number. Every
-    intelligent path is one hosted vendor today.
+1. SPEC-36 Laos corridor trip -- **IN REVIEW, NOT MERGED** at `534b889`.
+   Review the actual branch, clear backend and Flutter blockers, run CI, then
+   merge. Do not invent transfer or hotel facts.
+2. SPEC-37 phone-independent field-test delivery -- **NEXT AFTER SPEC-36**.
+   Deploy reviewed `main` to stable HTTPS, configure hosted secrets, and
+   install a standalone phone build.
+3. By **2026-09-18**, run online corridor acceptance followed by the real
+   airplane-mode drill with USB and local tunnels disconnected. Preserve about
+   two weeks to repair any field blocker before travel.
 
-Export the Dubai rows before applying anything. A rebuild from migrations
-without that export silently loses 16 venues. Step 2 durability is met by
-data/dubai_uae_raw_snapshot.json (6bfa1c6). A loader-valid dubai_uae.json
-is still a follow-up, not a migration blocker.
+### Deferred until the phone gate passes
+
+- Multi-night hotel UI, unless the owner's real booking cannot be represented.
+- Full SPEC-17 trust and verification, then SPEC-18/19/20.
+- Remaining signal/UI polish, including the `syncOnce()` status-count race.
+- Full SPEC-04 remainder only if field evidence supports it.
+- Trip-less Ask, richer Home, SPEC-24/27, and public-release lifecycle work.
+- Swappable LLM provider; every intelligent path currently uses one hosted
+  vendor.
+
+The Dubai raw snapshot is already durable at
+`data/dubai_uae_raw_snapshot.json` (`6bfa1c6`). Do not rerun the closed export.
+A loader-valid `data/dubai_uae.json` remains a post-gate follow-up.
 
 The one task that cannot be done by an agent is judging whether a
 transliterated venue name is what the signage actually says. A script test

@@ -226,13 +226,13 @@ Near-term product gates after the Aug 27-28 laptop run:
 
 1. Keep alerts evidence-backed. SPEC-29 phase 1 is live with OpenWeather; do
    not regress to random traffic or synthetic transit copy.
-2. Date-scoped itinerary grouping is on main (Windows Sep 4). Date-aware stay
-   selection (rescue) was not device-tested.
-3. Hearts persist across process death (verified Aug 30). Keep awaiting sync
-   before reporting status counts.
-4. Build real Laos trip creation (SPEC-32). The create path must not stamp
-   Laos onto Dubai venues.
-5. SPEC-30 is complete (`f8349a8`, `83c825f`).
+2. Date-scoped grouping, single-city Laos creation, durable hearts, and
+   SPEC-30 instrumentation are complete.
+3. Finish SPEC-36's one-trip, three-city Laos corridor and merge only after
+   backend plus Flutter review and CI.
+4. Execute SPEC-37: stable hosted HTTPS API and an installable phone artifact.
+5. Complete online and airplane-mode acceptance by 2026-09-18 with the laptop,
+   USB, and local tunnels removed from the path.
 
 
 ---

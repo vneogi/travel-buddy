@@ -1,8 +1,8 @@
 # Genie Brief -- Durable Hearts and Accurate Sync Status
 
-> Status: READY TO IMPLEMENT.
-> Land through a feature branch and PR to `main`; do not push directly to
-> `main`. Keep this a small Flutter-only vertical slice.
+> Status: HISTORICAL/SUPERSEDED. Durable hearts were verified on Windows;
+> the remaining `syncOnce()` status-count race is deferred until after
+> SPEC-37. Do not execute this brief as the next job.
 
 ## Context
 

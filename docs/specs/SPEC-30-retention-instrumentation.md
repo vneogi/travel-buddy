@@ -7,8 +7,9 @@
 > registry and emission path), and SPEC-16 (the observed_duration_minutes column
 > this writes on `trip_edge`, not `trip_node`).
 >
-> Migration 0024 registers `session_start`. Apply on hosted Postgres before the
-> first live ingest; until then ingest reports `rejected=1`.
+> Migration 0024 registers `session_start` and was verified on hosted Postgres
+> on 2026-09-06. Do not reapply it; current evidence is in
+> `docs/HOSTED_STATE.md`.
 
 ## Goal
 

@@ -1,8 +1,7 @@
 # Genie Brief -- SPEC-22 Client Render Contract (October slice)
 
-> Status: READY TO IMPLEMENT. Paste this entire file to Genie Code.
-> Land via PR to main, not direct push. Owner has no laptop -- unit and
-> widget tests only. Golden pixel tests and flutter analyze await device.
+> Status: HISTORICAL, COMPLETED IN PR #17 (`1b9b1b3`). Do not execute this
+> brief again.
 
 Canonical spec: `docs/specs/SPEC-22-render-contract.md`
 Envelope shape: `docs/specs/SPEC-17-trust-and-verification.md` (Shape section).

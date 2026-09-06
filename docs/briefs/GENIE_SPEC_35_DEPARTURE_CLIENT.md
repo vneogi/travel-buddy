@@ -1,5 +1,8 @@
 # Genie Brief: SPEC-35 Phase A2 In-App Departure Client
 
+> Status: HISTORICAL, COMPLETED IN PR #52 (`1379da8`). Do not execute this
+> brief again.
+
 ## Read first
 
 - `docs/specs/SPEC-35-proactive-itinerary-notifications.md` (In-app client)

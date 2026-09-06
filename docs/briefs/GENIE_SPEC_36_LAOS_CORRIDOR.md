@@ -34,7 +34,8 @@ meal copy, review claims, an LLM call, or a migration.
    - `docs/specs/SPEC-36-laos-corridor-trip.md`;
    - this brief.
 3. Stop if the working tree is not clean.
-4. Create `feat/spec36-laos-corridor` from `origin/main`.
+4. Continue `feat/spec36-laos-corridor` at the current reviewed candidate.
+   Do not recreate or rebase it while review is in progress.
 5. Read the current implementations before editing. Do not reconstruct files
    from this brief.
 

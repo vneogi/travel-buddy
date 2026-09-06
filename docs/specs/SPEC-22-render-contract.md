@@ -1,6 +1,9 @@
 # SPEC-22: Client Render and Interaction Contract
 
-> Status: SPECIFIED. Not implemented, and it precedes every screen.
+> Status: DONE (October slice) in PR #17 (`1b9b1b3`). Envelope widgets,
+> treatments, interruption budget, offline state, and dismissal emission are
+> implemented. Full screen migration, font cmap, and remaining localization
+> work are deferred.
 >
 > Depends on SPEC-17 for the definition of the tiers, but not on SPEC-17 being
 > implemented. The envelope shape is already specified, so this can be built as a

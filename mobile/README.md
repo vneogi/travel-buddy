@@ -77,7 +77,7 @@ lib/
 |   +-- chat/       # REST-based (no WebSocket)
 |   +-- activity_detail/
 |   +-- swap_sheet/
-|   +-- map/        # Placeholder until Maps API key
+|   +-- map/        # Flutter map UI placeholder; separate from backend routing key
 |   +-- profile/
 |   +-- upgrade/    # RevenueCat paywall scaffold
 +-- routing/        # GoRouter config + auth guard
@@ -88,7 +88,8 @@ lib/
 
 1. **No WebSocket** -- Chat uses `POST /trip/event` over REST
 2. **No codegen** -- Hand-written `fromJson` for flexibility
-3. **Map placeholder** -- Behind an interface; real Google Maps drops in later
+3. **Map placeholder** -- Flutter tiles remain deferred. The backend Distance
+   Matrix key is separately verified in `../docs/HOSTED_STATE.md`.
 4. **RevenueCat scaffold** -- Activates when keys are set, no-ops otherwise
 5. **Error-typed exceptions** -- `RerouteLimitException` drives upgrade CTA, not error toast
 6. **Auth guard** -- GoRouter redirect; Supabase session check

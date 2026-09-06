@@ -1,8 +1,7 @@
 # Genie Brief -- SPEC-12 Show Driver Cards (Offline)
 
-> Status: READY TO IMPLEMENT. Paste this entire file to Genie Code.
-> Land via PR to main, not direct push. Owner has no laptop -- unit and
-> widget tests + flutter analyze in CI.
+> Status: HISTORICAL, COMPLETED IN PR #19 (`a2da64a`). Do not execute this
+> brief again.
 
 Canonical spec: `docs/specs/SPEC-12-show-driver-cards.md`
 Render contract: `docs/specs/SPEC-22-render-contract.md` (uses `FactView`, `FactEnvelope`, `ConfirmAffordance`)

@@ -1,9 +1,8 @@
 # Laptop verify -- Windows (PowerShell 5.1)
 
-Owner-only. This is the complete, canonical Device Day runbook for
-verifying the entire October spine (SPEC-09, SPEC-22, SPEC-12, SPEC-10,
-SPEC-04, and post-spine hardening) on your Windows machine with live
-credentials.
+Owner-only. This is the canonical laptop regression runbook for the shipped
+October spine (SPEC-09, SPEC-22, SPEC-12, SPEC-10, SPEC-04, and post-spine
+hardening) on Windows with live credentials.
 
 This remains the laptop regression runbook. It is not the final phone field
 test. After SPEC-36 merges, SPEC-37 requires a hosted HTTPS backend and an

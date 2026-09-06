@@ -5,11 +5,12 @@ from a keyboard, plus the findings that were retracted and the tooling
 incidents worth not repeating. It is the only place in the repo where dated
 observations belong (R16).
 
-What it deliberately does not carry: the device-day task order, which lives in
-`docs/PROJECT_STATUS.md` with the runnable Windows PowerShell steps in
-`docs/briefs/DEVICE_DAY.md`. Two documents holding the same ordered list is how
-they end up contradicting each other, which is what this consolidation is
-fixing.
+What it deliberately does not carry: task order, which lives only in
+`docs/PROJECT_STATUS.md`. `docs/briefs/LAPTOP_VERIFY.md` is the laptop
+regression runbook; SPEC-37 and `docs/TESTING_GUIDE.md` section 6 own the final
+phone gate. `docs/briefs/DEVICE_DAY.md` is a closed historical record. Two
+documents holding the same ordered list is how they end up contradicting each
+other.
 
 Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 `#85` and so on; those numbers cannot be reconciled against `git log`.
@@ -26,7 +27,7 @@ Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 | SPEC-36 corridor implementation | Branch `534b889`, Sep 6 2026 | Independent backend and Flutter review, compile/tests, date-range form, later-city swap isolation, CI, then merge |
 | Hosted API for phone field test | Not provisioned | SPEC-37: stable HTTPS URL from reviewed main; hosted Supabase, LLM, Maps, Weather and anonymous-auth configuration with `TB_DEBUG=false` |
 | Installable independent phone build | Not produced | SPEC-37: signed Android APK or iOS TestFlight artifact using hosted `TB_API_BASE_URL`; must launch without `flutter run`, USB, localhost, LAN backend, or `adb reverse` |
-| Final phone airplane-mode acceptance | Not run | Preload corridor and driver cards, disconnect USB, enable airplane mode, cold reopen, inspect cached content, queue an action, reconnect and prove exactly-once drain |
+| Final phone airplane-mode acceptance | Not run; target 2026-09-18 | Preload corridor and driver cards, disconnect USB, enable airplane mode, cold reopen, inspect cached content, queue an action, reconnect and prove exactly-once drain |
 | Dubai row contents, including AED magnitudes | Cleared Aug 17 2026 | 16 Dubai venues live (null price_band). dubai_dishes=0 -- nothing to inspect for AED; food data is greenfield |
 | `pg_description` non-ASCII | Cleared Aug 17 2026 | Step 7c returned 0 rows |
 

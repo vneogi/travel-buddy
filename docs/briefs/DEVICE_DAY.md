@@ -1,11 +1,16 @@
 # Device Day -- Windows laptop (PowerShell)
 
-PowerShell 5.1. Canonical copy: `docs/briefs/DEVICE_DAY.md` on `origin/main`.
+> Status: HISTORICAL, COMPLETED 2026-08-17. Do not use this file as the current
+> task order or replay its migrations. Current priority is in
+> `docs/PROJECT_STATUS.md`; hosted state is in `docs/HOSTED_STATE.md`; final
+> phone delivery is SPEC-37.
+
+PowerShell 5.1. Historical record on `origin/main`.
 
 ## RESUME HERE (as of 2026-08-17 -- Device Day CLOSED)
 
-All Steps 0-8 complete on the Windows laptop. Next product work is the
-October spine starting at **SPEC-09 client half** (see PROJECT_STATUS).
+All Steps 0-8 completed on the Windows laptop. The former SPEC-09 next step is
+also complete; do not resume from this brief.
 
 | Step | Status | Evidence |
 |---|---|---|
@@ -22,7 +27,8 @@ October spine starting at **SPEC-09 client half** (see PROJECT_STATUS).
 - Loader-valid `data/dubai_uae.json` (null 0011 fields + Dubai vocabulary)
 - Dubai has **zero** `venue_dish` rows live -- food/AED work is greenfield
 - `VALIDATE CONSTRAINT` on 0015/0017 price_band CHECKs still deferred
-- `hybrid_venue_search` still has no `geo_region` arg (live = 0001)
+- `hybrid_venue_search` gap later closed by migration 0023; see
+  `docs/HOSTED_STATE.md`
 - Working-tree LF fix for `laos*.json` on Windows: do not commit line-ending-only noise
 
 ### Pickup commands (any Windows machine)

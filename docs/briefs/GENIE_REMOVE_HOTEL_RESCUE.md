@@ -1,8 +1,7 @@
 # Genie Brief -- Retire the Hotel Rescue Shortcut
 
-> Status: READY TO IMPLEMENT. Paste this entire file to Genie Code.
-> Branch from latest `main` after the planning-doc PR is merged. Land through
-> a PR; do not push directly to `main`.
+> Status: HISTORICAL, COMPLETED. The shortcut is removed while the offline
+> cache and hotel driver-card action remain. Do not execute this brief again.
 
 Canonical decisions:
 

@@ -95,7 +95,8 @@ The immediate order is driven by the field-test dependency:
 1. merge SPEC-36 only after backend and Flutter review and green CI;
 2. execute SPEC-37 with a stable hosted HTTPS backend and installable phone
    artifact;
-3. pass online and real airplane-mode acceptance without a laptop transport;
+3. by 2026-09-18, pass online and real airplane-mode acceptance without a
+   laptop transport;
 4. then return to multi-night hotel polish and the broader consumer backlog.
 
 The full SPEC-25 contract still needs SPEC-17's real envelope, so trip-less Ask

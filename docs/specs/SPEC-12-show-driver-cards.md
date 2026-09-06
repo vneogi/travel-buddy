@@ -1,11 +1,11 @@
 # SPEC-12: Show Driver Cards (Offline)
 
-> Status: SPECIFIED. Not implemented. Not blocked on curation -- see the
-> corrected finding below.
+> Status: DONE (October slice) in PR #19 (`a2da64a`) with later hardening in
+> PR #23 (`dab16c0`). Full fare/source expansion remains deferred.
 >
-> Migration numbering: the column additions below are migration `0011`, shared
-> with the schema-drift fix. `driver_card_shown` is `0014`, after 0012 (booking
-> anchors) and 0013 (preference_choice).
+> The migration-number proposal below was superseded by implementation.
+> Driver-card signals are in 0020 and local trip-node fields are in 0022; both
+> are hosted. See `docs/HOSTED_STATE.md`.
 >
 > Depends on SPEC-13 for the ordered language list and the fare bands. The
 > interim arrangement until SPEC-13 lands is in design decision 4.

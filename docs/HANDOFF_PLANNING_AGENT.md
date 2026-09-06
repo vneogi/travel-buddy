@@ -5,8 +5,8 @@ Those two files are the contract. This file is only the baton: what is true
 now, what the previous planning agent already adjudicated, and what the
 next agent must not reopen in the first week.
 
-Switch is valid: PR #18 is on `main` (`ce8fedb`). Read this file and
-the two contracts above. First execution brief to write: SPEC-12.
+Read this file and the two contracts above. The first job is review of SPEC-36
+at `534b889`; after merge, prepare and execute the SPEC-37 delivery brief.
 
 ## Who does what (unchanged)
 
@@ -14,8 +14,9 @@ the two contracts above. First execution brief to write: SPEC-12.
   claims you did not watch. ASCII in living docs (R14). R17: a guard
   that cannot fail is not a guard.
 - Execution (Genie Code): application code, migrations, tests; land via PR.
-- Owner: laptop, Flutter on device, live SQL editor, PowerShell. Runbook:
-  `docs/briefs/LAPTOP_VERIFY.md`. Do not invent device results.
+- Owner: laptop, Flutter on device, live SQL editor, PowerShell. Laptop
+  regression runbook: `docs/briefs/LAPTOP_VERIFY.md`. Final phone gate:
+  SPEC-37 and `docs/TESTING_GUIDE.md` section 6. Do not invent device results.
 
 ## Where we are
 
@@ -42,8 +43,8 @@ Done on the October spine:
   on-device regex extractor, `AddBookingSheet`, `booking_added` signal.
 - SPEC-04 offline cache floor. PR #22 (`b7e10c3`). Offline itinerary cache
   fallback in `ItineraryController.load()` and pre-cached place data remain.
-  Sep 5 owner decision retires the duplicate Hotel Rescue AppBar shortcut;
-  removal brief: `docs/briefs/GENIE_REMOVE_HOTEL_RESCUE.md`.
+  The duplicate Hotel Rescue AppBar shortcut was subsequently retired and
+  removed.
 - Post-spine hardening. PR #23 (`dab16c0`). `geoRegion` threaded from
   `TripNode` to `PlaceDriverCardData` (Lao script & LAK fares resolve live),
   `resetAuthHalted()` on `SyncEngine` + `SyncStatusScreen` `HALTED (401)` card,
@@ -73,11 +74,12 @@ Fixed in PR #18 (`ce8fedb`):
 - 401 sets `_authHalted`; connectivity does not clear it.
 - Chat empty-state is a question, not a swap.
 
-Still true (do not "fix" by rescoping October):
+Still true (do not "fix" by rescoping the field-test gate):
 
-- `cacheTrip` / `getCachedTrip` have no production callers (reads).
-  Wire on SPEC-12 / thin SPEC-04, not a README edit.
-- Chat still always sends `ask_info`; do not build NL swap this week.
+- Offline itinerary reads and pre-cached driver cards are production paths;
+  preserve them through SPEC-36 and SPEC-37.
+- Chat still sends `ask_info`; broad natural-language mutation remains
+  deferred until after the phone gate.
 
 Reject or defer:
 
@@ -98,13 +100,14 @@ Reject or defer:
 - Rescoping October toward traction/growth because the survey said
   mid-trip replanning is moderate. The field test is one working trip
   on a phone, not a user-acquisition plan. VISION Part III remains
-  not committed. SPEC-18 through SPEC-27 stay specified and unbuilt.
+  not committed. SPEC-24 and SPEC-27 remain unbuilt; several other specs in
+  that number range already have partial or completed slices.
 
 Strategic point that is true and still not a spine change: unique data
 needs many users per city and has no owner. Date a note after the field
-test. Do not steal SPEC-12's week for it. SPEC-24 vs accumulating
-device UUIDs is already a Medium row in PROJECT_STATUS; date it, do not
-implement merge before the driver card.
+test. SPEC-24 vs accumulating device UUIDs is already a Medium row in
+PROJECT_STATUS; date it, but do not insert identity-merge work before the
+SPEC-36 and SPEC-37 gates.
 
 ## First job
 
@@ -117,10 +120,11 @@ Next tasks:
    isolation, and CI. Do not accept the execution-agent summary as evidence.
 2. After SPEC-36 merges, execute SPEC-37: provision a stable hosted HTTPS API,
    configure hosted secrets, build an installable artifact for the owner's
-   phone, and prove online operation without the laptop.
-3. Run the real airplane-mode drill from the installed artifact with USB and
-   local tunnels disconnected. Record the build SHA, platform, and results in
-   `docs/AWAITING_VERIFICATION.md`.
+   phone, and prove online operation without the laptop. Execution brief:
+   `docs/briefs/GENIE_SPEC_37_PHONE_FIELD_TEST.md`.
+3. By **2026-09-18**, run the real airplane-mode drill from the installed
+   artifact with USB and local tunnels disconnected. Record the build SHA,
+   platform, and results in `docs/AWAITING_VERIFICATION.md`.
 4. Only then resume multi-night hotel polish, SPEC-17, trip-less Ask, richer
    Home, and the remaining consumer backlog.
 

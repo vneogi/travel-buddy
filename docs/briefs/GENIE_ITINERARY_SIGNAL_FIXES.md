@@ -1,8 +1,7 @@
 # Genie Brief -- Itinerary signal, auth gate, Flutter CI
 
-> Status: READY TO IMPLEMENT. Paste this entire file to Genie Code.
-> Land via PR to main, not direct push. Owner has no laptop -- unit and
-> widget tests plus `flutter analyze` in CI. Device E2E stays deferred.
+> Status: HISTORICAL, COMPLETED IN PR #18 (`ce8fedb`). Do not execute this
+> brief again.
 
 A third-party review (verified against the tree) found production bugs on
 the itinerary and identity path. This PR is those bugs only. It is not
