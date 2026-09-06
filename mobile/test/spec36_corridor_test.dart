@@ -154,6 +154,7 @@ void main() {
         geoRegion: geoRegion,
         lat: 0,
         lng: 0,
+        vibeTags: const [],
       );
 
   TripSegment _seg(String region, String start, String end) => TripSegment(

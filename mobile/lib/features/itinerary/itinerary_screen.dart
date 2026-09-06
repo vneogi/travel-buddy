@@ -15,6 +15,7 @@ import '../../widgets/shimmer_card.dart';
 import '../../widgets/error_view.dart';
 import 'current_window.dart';
 import 'date_scope.dart';
+import '../../widgets/city_section.dart';
 import 'itinerary_notifier.dart';
 import 'replacement_ref.dart';
 import '../alerts/alerts_notifier.dart';
@@ -451,6 +452,8 @@ class _DateScopedTimeline extends StatelessWidget {
     }
 
     return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       itemCount: items.length,
       padding: const EdgeInsets.only(
         top: AppSpacing.base,
