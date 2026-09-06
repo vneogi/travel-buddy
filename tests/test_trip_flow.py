@@ -58,6 +58,7 @@ def test_trip_list_returns_only_callers_lightweight_projection(client):
         "node_count",
         "booking_count",
         "updated_at",
+        "corridor_id",
     }
     assert 4 <= trips[0]["node_count"] <= 6
     assert "nodes" not in trips[0]

@@ -20,10 +20,12 @@ class ItineraryState {
   final bool rerouteLimitHit;  // screen shows upgrade, then clears
   final Set<String> lovedPlaceRefs; // local-only: which venues the user loved
   final Map<String, NodeOutcome> nodeOutcomes;
+  final List<TripSegment> segments;  // SPEC-36: corridor segments
   final Set<String> outcomeRecordingNodeIds;
 
   const ItineraryState({
     this.nodes = const [],
+    this.segments = const [],
     this.loading = true,
     this.processing = false,
     this.banner,
@@ -37,6 +39,7 @@ class ItineraryState {
   static const _keep = Object();
   ItineraryState copyWith({
     List<TripNode>? nodes,
+    List<TripSegment>? segments,
     bool? loading,
     bool? processing,
     Object? banner = _keep,
@@ -48,6 +51,7 @@ class ItineraryState {
   }) =>
       ItineraryState(
         nodes: nodes ?? this.nodes,
+        segments: segments ?? this.segments,
         loading: loading ?? this.loading,
         processing: processing ?? this.processing,
         banner: identical(banner, _keep) ? this.banner : banner as String?,
@@ -89,6 +93,7 @@ class ItineraryController extends StateNotifier<ItineraryState> {
       if (!mounted) return;
       state = ItineraryState(
         nodes: trip.nodes,
+        segments: trip.segments,
         loading: false,
         lovedPlaceRefs: merged,
         nodeOutcomes: {...restoredOutcomes, ...priorOutcomes},
@@ -119,6 +124,7 @@ class ItineraryController extends StateNotifier<ItineraryState> {
           if (!mounted) return;
           state = ItineraryState(
             nodes: cachedTrip.nodes,
+            segments: cachedTrip.segments,
             loading: false,
             banner: 'Offline: showing saved itinerary',
             lovedPlaceRefs: merged,

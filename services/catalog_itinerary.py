@@ -66,6 +66,11 @@ def eligible_venues(rows: Iterable[dict]) -> List[dict]:
     return eligible
 
 
+def eligible_corridor_venues(rows) -> list:
+    """Like eligible_venues but also requires a stable venue_id."""
+    return [r for r in eligible_venues(rows) if r.get("venue_id")]
+
+
 def select_day_venues(rows: Sequence[dict]) -> List[dict]:
     pool = eligible_venues(rows)
     if len(pool) < MIN_STOPS:

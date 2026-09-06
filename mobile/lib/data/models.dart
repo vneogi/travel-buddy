@@ -126,6 +126,65 @@ class TripNode {
       };
 }
 
+
+/// SPEC-36: A supported corridor advertised by the server.
+class SupportedCorridor {
+  final String corridorId;
+  final String displayName;
+  final List<String> geoRegions;
+  final int maxDays;
+  final int maxDaysPerSegment;
+
+  const SupportedCorridor({
+    required this.corridorId,
+    required this.displayName,
+    required this.geoRegions,
+    required this.maxDays,
+    required this.maxDaysPerSegment,
+  });
+
+  factory SupportedCorridor.fromJson(Map<String, dynamic> j) =>
+      SupportedCorridor(
+        corridorId: j['corridor_id'] as String,
+        displayName: j['display_name'] as String,
+        geoRegions: (j['geo_regions'] as List).cast<String>(),
+        maxDays: (j['max_days'] as num).toInt(),
+        maxDaysPerSegment: (j['max_days_per_segment'] as num).toInt(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'corridor_id': corridorId,
+        'display_name': displayName,
+        'geo_regions': geoRegions,
+        'max_days': maxDays,
+        'max_days_per_segment': maxDaysPerSegment,
+      };
+}
+
+/// SPEC-36: A city segment in a corridor trip.
+class TripSegment {
+  final String geoRegion;
+  final String startsOn;
+  final String endsOn;
+
+  const TripSegment({
+    required this.geoRegion,
+    required this.startsOn,
+    required this.endsOn,
+  });
+
+  factory TripSegment.fromJson(Map<String, dynamic> j) => TripSegment(
+        geoRegion: j['geo_region'] as String,
+        startsOn: j['starts_on'] as String,
+        endsOn: j['ends_on'] as String,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'geo_region': geoRegion,
+        'starts_on': startsOn,
+        'ends_on': endsOn,
+      };
+}
 class TripState {
   final String tripId;
   final String userId;
@@ -134,11 +193,15 @@ class TripState {
   final double? locationLat;
   final double? locationLng;
   final List<TripNode> nodes;
+  final String? corridorId;
+  final List<TripSegment> segments;
 
   const TripState({
     required this.tripId,
     required this.userId,
     required this.nodes,
+    this.corridorId,
+    this.segments = const [],
     this.mood,
     this.geoRegion,
     this.locationLat,
@@ -157,6 +220,10 @@ class TripState {
       nodes: ((j['nodes'] as List?) ?? const [])
           .map((n) => TripNode.fromJson(n as Map<String, dynamic>))
           .toList(),
+      corridorId: j['corridor_id'] as String?,
+      segments: ((j['segments'] as List?) ?? const [])
+          .map((s) => TripSegment.fromJson(s as Map<String, dynamic>))
+          .toList(),
     );
   }
 
@@ -170,6 +237,9 @@ class TripState {
           if (locationLng != null) 'location_lng': locationLng,
         },
         'nodes': nodes.map((n) => n.toJson()).toList(),
+        if (corridorId != null) 'corridor_id': corridorId,
+        if (segments.isNotEmpty)
+          'segments': segments.map((s) => s.toJson()).toList(),
       };
 }
 
@@ -181,6 +251,7 @@ class TripSummary {
   final int nodeCount;
   final int bookingCount;
   final DateTime updatedAt;
+  final String? corridorId;
 
   const TripSummary({
     required this.tripId,
@@ -188,6 +259,7 @@ class TripSummary {
     required this.nodeCount,
     required this.bookingCount,
     required this.updatedAt,
+    this.corridorId,
     this.startsAt,
     this.endsAt,
   });
@@ -204,6 +276,7 @@ class TripSummary {
         nodeCount: (json['node_count'] as num).toInt(),
         bookingCount: (json['booking_count'] as num).toInt(),
         updatedAt: DateTime.parse(json['updated_at'] as String),
+        corridorId: json['corridor_id'] as String?,
       );
 
   Map<String, dynamic> toJson() => {
@@ -214,6 +287,7 @@ class TripSummary {
         'node_count': nodeCount,
         'booking_count': bookingCount,
         'updated_at': updatedAt.toUtc().toIso8601String(),
+        if (corridorId != null) 'corridor_id': corridorId,
       };
 }
 
@@ -259,6 +333,7 @@ class FeaturedTrip {
   final DateTime? endsAt;
   final bool isActive;
   final FeaturedStop? actionableStop;
+  final String? corridorId;
 
   const FeaturedTrip({
     required this.tripId,
@@ -267,6 +342,7 @@ class FeaturedTrip {
     this.startsAt,
     this.endsAt,
     this.actionableStop,
+    this.corridorId,
   });
 
   factory FeaturedTrip.fromJson(Map<String, dynamic> json) => FeaturedTrip(
@@ -283,6 +359,7 @@ class FeaturedTrip {
             ? null
             : FeaturedStop.fromJson(
                 (json['actionable_stop'] as Map).cast<String, dynamic>()),
+        corridorId: json['corridor_id'] as String?,
       );
 
   Map<String, dynamic> toJson() => {
@@ -292,11 +369,13 @@ class FeaturedTrip {
         'ends_at': endsAt?.toUtc().toIso8601String(),
         'is_active': isActive,
         'actionable_stop': actionableStop?.toJson(),
+        if (corridorId != null) 'corridor_id': corridorId,
       };
 }
 
 class HomeSnapshot {
   final List<String> supportedRegions;
+  final List<SupportedCorridor> supportedCorridors;
   final List<TripSummary> trips;
   final FeaturedTrip? featuredTrip;
   final bool fromCache;
@@ -304,6 +383,7 @@ class HomeSnapshot {
 
   const HomeSnapshot({
     required this.supportedRegions,
+    this.supportedCorridors = const [],
     required this.trips,
     this.featuredTrip,
     this.fromCache = false,
@@ -318,6 +398,10 @@ class HomeSnapshot {
       HomeSnapshot(
         supportedRegions:
             ((json['supported_regions'] as List?) ?? const []).cast<String>(),
+        supportedCorridors: ((json['supported_corridors'] as List?) ?? const [])
+            .map((c) => SupportedCorridor.fromJson(
+                  (c as Map).cast<String, dynamic>()))
+            .toList(),
         trips: ((json['trips'] as List?) ?? const [])
             .map((trip) => TripSummary.fromJson(
                   (trip as Map).cast<String, dynamic>(),
@@ -333,6 +417,8 @@ class HomeSnapshot {
 
   Map<String, dynamic> toJson() => {
         'supported_regions': supportedRegions,
+        'supported_corridors':
+            supportedCorridors.map((c) => c.toJson()).toList(),
         'trips': trips.map((trip) => trip.toJson()).toList(),
         'featured_trip': featuredTrip?.toJson(),
       };
