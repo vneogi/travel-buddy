@@ -23,9 +23,7 @@ from models.schemas import (
 )
 from services.catalog_itinerary import (
     CATEGORY_BUCKETS,
-    INFRASTRUCTURE_CATEGORIES,
     eligible_corridor_venues,
-    eligible_venues,
     duration_for,
     flatten_opening_hours,
 )

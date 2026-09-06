@@ -840,8 +840,8 @@ void main() {
     expect(find.text('Create Vientiane to Luang Prabang'), findsOneWidget);
     // Three city rows.
     expect(find.text('Vientiane'), findsOneWidget);
-    expect(find.text('Vang'), findsOneWidget);
-    expect(find.text('Luang'), findsOneWidget);
+    expect(find.text('Vang Vieng'), findsOneWidget);
+    expect(find.text('Luang Prabang'), findsOneWidget);
     // No error shown (defaults are valid).
     expect(find.textContaining('overlap'), findsNothing);
     expect(find.textContaining('exceeds'), findsNothing);
@@ -1149,7 +1149,7 @@ void main() {
     // Router navigated to the trip.
     expect(find.text('trip opened'), findsOneWidget);
   }, timeout: const Timeout(Duration(seconds: 20)));
-  testWidgets('HomeScreen double-tap corridor card does not call corridorCreate twice',
+  testWidgets('HomeScreen: second tap while create in-flight does not call corridorCreate again',
       (tester) async {
     registerFallbackValue(<TripSegment>[]);
     final repo = _MockTripRepository();
@@ -1209,13 +1209,12 @@ void main() {
     await tester.tap(find.text('Create Laos corridor'));
     await tester.pump(); // Submit fires, _creating = true, corridorCreate pending.
 
-    // corridorCreate is in-flight. Try to tap the corridor card again.
-    // The card should be disabled (_creating == true) or the sheet should
-    // not re-open.
-    if (find.text('Multi-city Laos corridor').evaluate().isNotEmpty) {
-      await tester.tap(find.text('Multi-city Laos corridor'));
-      await tester.pump();
-    }
+    // R17: assert the corridor card IS still on screen (otherwise the tap
+    // below is vacuous and proves nothing).
+    expect(find.text('Multi-city Laos corridor'), findsOneWidget,
+        reason: 'Corridor card must still be on screen so the second tap is real');
+    await tester.tap(find.text('Multi-city Laos corridor'));
+    await tester.pump();
 
     // Resolve the first call.
     completer.complete(const TripState(
@@ -1226,8 +1225,137 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    // Only one call should have reached the repository.
     expect(callCount, 1,
         reason: 'corridorCreate must not be called a second time during in-flight request');
+  }, timeout: const Timeout(Duration(seconds: 20)));
+
+  testWidgets('HomeScreen: second tap while form sheet is open does not stack another sheet',
+      (tester) async {
+    registerFallbackValue(<TripSegment>[]);
+    final repo = _MockTripRepository();
+
+    final router = GoRouter(
+      routes: [
+        GoRoute(path: '/', builder: (_, __) => const HomeScreen()),
+        GoRoute(
+          path: '/trip/:tripId',
+          builder: (_, __) => const Scaffold(body: Text('trip opened')),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          tripRepoProvider.overrideWithValue(repo),
+          homeSnapshotProvider.overrideWith(
+            (_) async => const HomeSnapshot(
+              supportedRegions: ['vientiane_laos'],
+              supportedCorridors: [
+                SupportedCorridor(
+                  corridorId: 'laos_northbound_v1',
+                  displayName: 'Vientiane to Luang Prabang',
+                  geoRegions: [
+                    'vientiane_laos',
+                    'vang_vieng_laos',
+                    'luang_prabang_laos',
+                  ],
+                  maxDays: 7,
+                  maxDaysPerSegment: 3,
+                ),
+              ],
+              trips: [],
+            ),
+          ),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    // Open the form sheet.
+    await tester.tap(find.text('Multi-city Laos corridor'));
+    await tester.pumpAndSettle();
+
+    // Form is visible.
+    expect(find.text('Create Vientiane to Luang Prabang'), findsOneWidget);
+
+    // Tap the corridor card again while the sheet is still open.
+    // (The card may be behind the sheet, so we look for any remaining finder.)
+    final cardFinder = find.text('Multi-city Laos corridor');
+    if (cardFinder.evaluate().isNotEmpty) {
+      await tester.tap(cardFinder, warnIfMissed: false);
+      await tester.pumpAndSettle();
+    }
+
+    // There must be exactly one CorridorDateForm on screen (not two).
+    expect(find.byType(CorridorDateForm), findsOneWidget,
+        reason: 'A second form sheet must not stack on top of the first');
+  }, timeout: const Timeout(Duration(seconds: 20)));
+  // -- Proof: ItineraryScreen renders CitySection headers in corridor order ----
+
+  testWidgets('ItineraryScreen: 3-city corridor renders CitySection headers in VTE, VV, LP order',
+      (tester) async {
+    final repo = _MockTripRepository();
+    final vteNode = _node(
+      name: 'Temple VTE',
+      geoRegion: 'vientiane_laos',
+      scheduledStart: DateTime.utc(2026, 10, 2, 9),
+    );
+    final vvNode = _node(
+      name: 'Cave VV',
+      geoRegion: 'vang_vieng_laos',
+      scheduledStart: DateTime.utc(2026, 10, 4, 9),
+    );
+    final lpNode = _node(
+      name: 'Waterfall LP',
+      geoRegion: 'luang_prabang_laos',
+      scheduledStart: DateTime.utc(2026, 10, 6, 9),
+    );
+    final trip = TripState(
+      tripId: 'trip-order',
+      userId: 'u1',
+      corridorId: 'laos_northbound_v1',
+      geoRegion: 'vientiane_laos',
+      locationLat: 17.9757,
+      locationLng: 102.6331,
+      nodes: [vteNode, vvNode, lpNode],
+      segments: [
+        _seg('vientiane_laos', '2026-10-02', '2026-10-03'),
+        _seg('vang_vieng_laos', '2026-10-04', '2026-10-05'),
+        _seg('luang_prabang_laos', '2026-10-06', '2026-10-08'),
+      ],
+    );
+    when(() => repo.getTrip(any())).thenAnswer((_) async => trip);
+
+    final container = await _loadItineraryContainer(trip: trip, repo: repo);
+    tester.view.physicalSize = const Size(800, 1400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: ItineraryScreen(tripId: 'trip-order')),
+      ),
+    );
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    // Find CitySection widgets and assert their order.
+    final sections = tester.widgetList<CitySection>(find.byType(CitySection)).toList();
+    expect(sections.length, 3,
+        reason: 'Must render one CitySection per corridor city');
+
+    expect(sections[0].cityGroup.geoRegion, 'vientiane_laos');
+    expect(sections[1].cityGroup.geoRegion, 'vang_vieng_laos');
+    expect(sections[2].cityGroup.geoRegion, 'luang_prabang_laos');
+
+    // Also verify display names appear in document order.
+    expect(sections[0].cityGroup.displayName, 'Vientiane');
+    expect(sections[1].cityGroup.displayName, 'Vang Vieng');
+    expect(sections[2].cityGroup.displayName, 'Luang Prabang');
   }, timeout: const Timeout(Duration(seconds: 20)));
 }

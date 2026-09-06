@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../data/models.dart';
+import '../features/itinerary/date_scope.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
 
@@ -183,9 +184,7 @@ class _CityDateRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final days = range.end.difference(range.start).inDays + 1;
-    // Pretty region name: "vientiane_laos" -> "Vientiane"
-    final display = region.split('_').first[0].toUpperCase() +
-        region.split('_').first.substring(1);
+    final display = regionDisplayNames[region] ?? region;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),

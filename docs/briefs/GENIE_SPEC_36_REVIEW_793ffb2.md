@@ -86,7 +86,7 @@ Run ruff on files you touch.
 
 ## Do not do
 
-- Do not start SPEC-37.
+- Do not start the next spec.
 - Do not add a migration, LLM, hybrid search, synthetic transport, or
   background location.
 - Do not mark SPEC-36 acceptance boxes complete.

@@ -81,7 +81,9 @@ class CorridorCityGroup {
 }
 
 /// Region code to display name mapping.
-const _regionDisplayNames = {
+///
+/// Shared by [groupNodesByCorridor] and the corridor date form.
+const regionDisplayNames = {
   'dubai_uae': 'Dubai',
   'luang_prabang_laos': 'Luang Prabang',
   'vang_vieng_laos': 'Vang Vieng',
@@ -110,7 +112,7 @@ List<CorridorCityGroup> groupNodesByCorridor({
       }
     }
     final dayGroups = groupNodesByCalendarDate(segNodes);
-    final displayName = _regionDisplayNames[seg.geoRegion] ?? seg.geoRegion;
+    final displayName = regionDisplayNames[seg.geoRegion] ?? seg.geoRegion;
     result.add(CorridorCityGroup(
       geoRegion: seg.geoRegion,
       displayName: displayName,

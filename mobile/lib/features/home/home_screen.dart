@@ -20,6 +20,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _creating = false;
+  bool _formOpen = false;
 
   @override
   Widget build(BuildContext context) {
@@ -121,13 +122,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
 
   Future<void> _showCorridorDateForm(HomeSnapshot snapshot) async {
-    if (_creating || snapshot.supportedCorridors.isEmpty) return;
+    if (_creating || _formOpen || snapshot.supportedCorridors.isEmpty) return;
+    _formOpen = true;
     final corridor = snapshot.supportedCorridors.first;
-    final segments = await showModalBottomSheet<List<TripSegment>>(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => CorridorDateForm(corridor: corridor),
-    );
+    List<TripSegment>? segments;
+    try {
+      segments = await showModalBottomSheet<List<TripSegment>>(
+        context: context,
+        isScrollControlled: true,
+        builder: (_) => CorridorDateForm(corridor: corridor),
+      );
+    } finally {
+      _formOpen = false;
+    }
     if (segments == null || !mounted) return;
     setState(() => _creating = true);
     try {
