@@ -1149,4 +1149,85 @@ void main() {
     // Router navigated to the trip.
     expect(find.text('trip opened'), findsOneWidget);
   }, timeout: const Timeout(Duration(seconds: 20)));
+  testWidgets('HomeScreen double-tap corridor card does not call corridorCreate twice',
+      (tester) async {
+    registerFallbackValue(<TripSegment>[]);
+    final repo = _MockTripRepository();
+    final completer = Completer<TripState>();
+    var callCount = 0;
+    when(() => repo.corridorCreate(
+          segments: any(named: 'segments'),
+          mood: any(named: 'mood'),
+        )).thenAnswer((_) {
+      callCount++;
+      return completer.future;
+    });
+
+    final router = GoRouter(
+      routes: [
+        GoRoute(path: '/', builder: (_, __) => const HomeScreen()),
+        GoRoute(
+          path: '/trip/:tripId',
+          builder: (_, __) => const Scaffold(body: Text('trip opened')),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          tripRepoProvider.overrideWithValue(repo),
+          homeSnapshotProvider.overrideWith(
+            (_) async => const HomeSnapshot(
+              supportedRegions: ['vientiane_laos'],
+              supportedCorridors: [
+                SupportedCorridor(
+                  corridorId: 'laos_northbound_v1',
+                  displayName: 'Vientiane to Luang Prabang',
+                  geoRegions: [
+                    'vientiane_laos',
+                    'vang_vieng_laos',
+                    'luang_prabang_laos',
+                  ],
+                  maxDays: 7,
+                  maxDaysPerSegment: 3,
+                ),
+              ],
+              trips: [],
+            ),
+          ),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    // Open form and submit.
+    await tester.tap(find.text('Multi-city Laos corridor'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Create Laos corridor'));
+    await tester.pump(); // Submit fires, _creating = true, corridorCreate pending.
+
+    // corridorCreate is in-flight. Try to tap the corridor card again.
+    // The card should be disabled (_creating == true) or the sheet should
+    // not re-open.
+    if (find.text('Multi-city Laos corridor').evaluate().isNotEmpty) {
+      await tester.tap(find.text('Multi-city Laos corridor'));
+      await tester.pump();
+    }
+
+    // Resolve the first call.
+    completer.complete(const TripState(
+      tripId: 'corridor-trip-1',
+      userId: 'u1',
+      nodes: [],
+      corridorId: 'laos_northbound_v1',
+    ));
+    await tester.pumpAndSettle();
+
+    // Only one call should have reached the repository.
+    expect(callCount, 1,
+        reason: 'corridorCreate must not be called a second time during in-flight request');
+  }, timeout: const Timeout(Duration(seconds: 20)));
 }
