@@ -20,7 +20,22 @@ git log -1 --oneline
 # Confirm the SHA matches the reviewed commit
 ```
 
-## 2. Create a signing keystore (one-time, PowerShell)
+## 2. Generate the Android platform (one-time)
+
+The repository does not commit `mobile/android/`. Generate it from the
+Flutter SDK, then apply the Travel Buddy overlay:
+
+```powershell
+cd mobile
+flutter create . --platforms=android --org com.vneogi --project-name travel_buddy
+bash ../scripts/overlay_android.sh
+cd ..
+```
+
+This adds INTERNET permission to the main manifest, release signing from
+`key.properties`, and disables R8 minification for the first field-test APK.
+
+## 3. Create a signing keystore (one-time, PowerShell)
 
 ```powershell
 keytool -genkey -v `
@@ -33,7 +48,7 @@ Enter the keystore password when prompted. Do not commit the keystore or
 passwords to the repository. Keep this keystore for future upgrades: the same
 application ID (`com.vneogi.travelbuddy`) and signing key must be retained.
 
-## 3. Create `mobile/android/key.properties` (gitignored)
+## 4. Create `mobile/android/key.properties` (gitignored)
 
 ```powershell
 @"
@@ -46,7 +61,7 @@ storeFile=$HOME\travel-buddy-release.jks
 
 Do not print or commit this file. It is already in `.gitignore`.
 
-## 4. Build the signed release APK (PowerShell)
+## 5. Build the signed release APK (PowerShell)
 
 ```powershell
 cd mobile
@@ -61,7 +76,7 @@ The APK is output to:
 build/app/outputs/flutter-apk/app-release.apk
 ```
 
-## 5. Locate the APK SHA-256 fingerprint
+## 6. Locate the APK SHA-256 fingerprint
 
 ```powershell
 certutil -hashfile build\app\outputs\flutter-apk\app-release.apk SHA256
@@ -69,7 +84,7 @@ certutil -hashfile build\app\outputs\flutter-apk\app-release.apk SHA256
 
 Record this in the PR for traceability (no secrets).
 
-## 6. Install on the phone
+## 7. Install on the phone
 
 With the phone connected via USB:
 
@@ -85,7 +100,7 @@ adb uninstall com.vneogi.travelbuddy.debug
 adb install build\app\outputs\flutter-apk\app-release.apk
 ```
 
-## 7. Disconnect and verify
+## 8. Disconnect and verify
 
 1. Disconnect the USB cable.
 2. Close any `adb reverse` or local tunnel.

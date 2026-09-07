@@ -46,6 +46,10 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+      - name: Generate Android platform
+        run: flutter create . --platforms=android --org com.vneogi --project-name travel_buddy
+      - name: Apply Travel Buddy overlay
+        run: bash ../scripts/overlay_android.sh
       - run: flutter pub get
       - name: Build debug APK (CI compile proof)
         run: >
