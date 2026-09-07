@@ -66,13 +66,7 @@ async def health_check():
         "app": settings.app_name,
         "version": settings.app_version,
         "geo_fence": settings.geo_fence,
-        "debug_mode": settings.debug,
         "venues_loaded": db_service.get_venue_count(),
-        "llm_key_present": bool(settings.litellm_api_key),
-        "supabase_configured": bool(
-            getattr(settings, "supabase_url", None) and getattr(settings, "supabase_key", None)
-        ),
-        "jwt_auth": bool(getattr(settings, "supabase_jwt_secret", None)),
         "cache_stats": cache_service.get_stats(),
     }
 

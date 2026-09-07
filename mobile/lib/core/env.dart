@@ -9,6 +9,13 @@ class Env {
     defaultValue: 'http://10.0.2.2:8000',
   );
 
+  /// Hostname-only for display in Profile/About (no path, no credentials).
+  /// Returns e.g. "service-name.run.app" or "10.0.2.2" for local dev.
+  static String get apiHostname {
+    final uri = Uri.tryParse(apiBaseUrl);
+    return uri?.host ?? apiBaseUrl;
+  }
+
   /// Supabase project URL (for auth).
   static const supabaseUrl = String.fromEnvironment(
     'TB_SUPABASE_URL',

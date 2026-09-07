@@ -7,45 +7,57 @@ No secrets appear in this file or in the repository.
 
 - Google Cloud SDK (`gcloud`) installed and authenticated
 - An existing GCP project with billing enabled
-- Cloud Run API and Artifact Registry API enabled
-- The rotated Google Maps API key (never the leaked one)
+- Cloud Run API enabled
+- The rotated Google Maps API key with API restrictions only (not an
+  Android application restriction, which is incompatible with server egress)
 
-## 1. Enable APIs (one-time)
+## 1. Enable APIs (one-time, PowerShell)
 
-```bash
-gcloud services enable run.googleapis.com artifactregistry.googleapis.com cloudbuild.googleapis.com
+```powershell
+gcloud services enable run.googleapis.com cloudbuild.googleapis.com
 ```
 
-## 2. Build and push the container image
+## 2. Choose a region
+
+Pick a region close to the hosted Supabase database to reduce latency.
+List available Cloud Run regions:
+
+```powershell
+gcloud run regions list
+```
+
+Set it for this session:
+
+```powershell
+$REGION = "<owner-selected-region>"   # e.g. asia-southeast1, us-central1
+```
+
+## 3. Build and deploy from source
+
+`gcloud run deploy --source .` builds the container image and deploys in one
+step; no separate Artifact Registry repository is required.
 
 From the repository root (on reviewed main):
 
-```bash
-export GCP_PROJECT=$(gcloud config get-value project)
-export REGION=us-central1
-export SERVICE=travel-buddy
+```powershell
+$SERVICE = "travel-buddy"
 
-gcloud builds submit --tag ${REGION}-docker.pkg.dev/${GCP_PROJECT}/cloud-run-source-deploy/${SERVICE}
-```
-
-## 3. Deploy to Cloud Run
-
-```bash
-gcloud run deploy ${SERVICE} \
-  --image ${REGION}-docker.pkg.dev/${GCP_PROJECT}/cloud-run-source-deploy/${SERVICE} \
-  --region ${REGION} \
-  --platform managed \
-  --allow-unauthenticated \
-  --port 8080 \
-  --memory 512Mi \
-  --min-instances 0 \
-  --max-instances 3 \
+gcloud run deploy $SERVICE `
+  --source . `
+  --region $REGION `
+  --platform managed `
+  --allow-unauthenticated `
+  --port 8080 `
+  --memory 512Mi `
+  --min-instances 0 `
+  --max-instances 3 `
   --set-env-vars "TB_DEBUG=false,TB_ALLOW_ANONYMOUS=true"
 ```
 
 ## 4. Set secrets in the Cloud Run console
 
-Navigate to Cloud Run > travel-buddy > Edit & Deploy New Revision > Variables & Secrets.
+Navigate to Cloud Run > travel-buddy > Edit & Deploy New Revision > Variables
+& Secrets.
 
 Set these environment variables (values from your secrets, never in this repo):
 
@@ -54,7 +66,7 @@ Set these environment variables (values from your secrets, never in this repo):
 | `TB_SUPABASE_URL` | Hosted Supabase project URL |
 | `TB_SUPABASE_KEY` | Service-role key (never in Flutter) |
 | `TB_LITELLM_API_KEY` | LLM provider key |
-| `TB_GOOGLE_MAPS_API_KEY` | Rotated Maps API key |
+| `TB_GOOGLE_MAPS_API_KEY` | Rotated Maps API key (API restrictions only) |
 | `TB_OPENWEATHER_API_KEY` | OpenWeather API key |
 
 Leave `TB_SUPABASE_JWT_SECRET` unset for anonymous field testing.
@@ -68,21 +80,48 @@ In the Cloud Run console under Health checks:
 - **Startup probe**: HTTP GET `/api/v1/health`, port 8080, initial delay 5s
 - **Liveness probe**: HTTP GET `/api/v1/health`, port 8080, period 30s
 
-## 6. Verify from a non-laptop network
+## 6. Verify from a non-laptop network (PowerShell)
 
-```bash
-HOSTED_URL=https://<your-service>.run.app
+```powershell
+$HOSTED = "https://<your-service>.run.app"
 
-# Health (booleans only, no secrets)
-curl -s ${HOSTED_URL}/api/v1/health | python3 -m json.tool
-
-# Expected: debug_mode=false, llm_key_present=true, supabase_configured=true
+# Health (liveness only)
+$h = Invoke-RestMethod "$HOSTED/api/v1/health"
+if ($h.status -ne "healthy") { throw "Health check failed" }
+Write-Host "Health: OK"
 
 # Anonymous trip list
-curl -s -H "X-Device-ID: field-test-device-1" ${HOSTED_URL}/api/v1/trips
+$DEVICE_ID = "00000000-0000-4000-8000-$('{0:x12}' -f (Get-Random -Maximum ([long]::MaxValue)))"
+$headers = @{ "Authorization" = "Anonymous $DEVICE_ID" }
+$trips = Invoke-RestMethod "$HOSTED/api/v1/trips" -Headers $headers
+if ($trips -eq $null) { throw "Trip list failed" }
+Write-Host "Trip list: OK ($($trips.Count) trips)"
 
-# Trip read (replace TRIP_ID)
-curl -s -H "X-Device-ID: field-test-device-1" ${HOSTED_URL}/api/v1/trip/TRIP_ID
+# Trip read (replace TRIP_ID after creating a corridor)
+# $trip = Invoke-RestMethod "$HOSTED/api/v1/trip/TRIP_ID" -Headers $headers
+```
+
+Configuration booleans are in startup logs (Cloud Run > Logs) and the revision
+environment panel, not in the public health response.
+
+## Cloud Shell alternative
+
+If running from Google Cloud Shell instead of the owner's laptop:
+
+```bash
+REGION="<owner-selected-region>"
+SERVICE="travel-buddy"
+
+gcloud run deploy $SERVICE \
+  --source . \
+  --region $REGION \
+  --platform managed \
+  --allow-unauthenticated \
+  --port 8080 \
+  --memory 512Mi \
+  --min-instances 0 \
+  --max-instances 3 \
+  --set-env-vars "TB_DEBUG=false,TB_ALLOW_ANONYMOUS=true"
 ```
 
 ## Security reminders
@@ -91,4 +130,7 @@ curl -s -H "X-Device-ID: field-test-device-1" ${HOSTED_URL}/api/v1/trip/TRIP_ID
   or chat. Set it only in the Cloud Run console.
 - `TB_DEBUG=false` prevents impersonation headers.
 - The Google Maps key must be the rotated replacement, not the leaked one.
-- Application and API restrictions should remain on the Maps key.
+- The Maps key must have API restrictions (not Android application
+  restrictions) since Cloud Run makes server-side requests.
+- Verify provider connectivity from the hosted service using Cloud Run logs
+  after the first trip creation.
