@@ -90,9 +90,8 @@ $h = Invoke-RestMethod "$HOSTED/api/v1/health"
 if ($h.status -ne "healthy") { throw "Health check failed" }
 Write-Host "Health: OK"
 
-# Anonymous trip list
-$DEVICE_ID = "00000000-0000-4000-8000-$('{0:x12}' -f (Get-Random -Maximum ([long]::MaxValue)))"
-$headers = @{ "Authorization" = "Anonymous $DEVICE_ID" }
+# Anonymous trip list (fixed canonical UUID-v4 for verification)
+$headers = @{ "Authorization" = "Anonymous aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" }
 $trips = Invoke-RestMethod "$HOSTED/api/v1/trips" -Headers $headers
 if ($trips -eq $null) { throw "Trip list failed" }
 Write-Host "Trip list: OK ($($trips.Count) trips)"
