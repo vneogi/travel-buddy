@@ -1,0 +1,16 @@
+# Keep the image lean -- backend-only.
+mobile/
+.git/
+.github/
+.env
+.env.*
+__pycache__/
+*.pyc
+tests/
+docs/
+scripts/
+*.md
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+.vscode/
