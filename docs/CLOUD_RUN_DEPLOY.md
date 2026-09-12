@@ -28,8 +28,12 @@ gcloud run regions list
 
 Set it for this session:
 
+Owner decision 2026-09-07: Cloud Run region is `asia-south1` (Mumbai), matching
+hosted Supabase. Do not deploy until PR #57 `android-compile` is green on a
+commit that tracks `mobile/android/`.
+
 ```powershell
-$REGION = "<owner-selected-region>"   # e.g. asia-southeast1, us-central1
+$REGION = "asia-south1"
 ```
 
 ## 3. Build and deploy from source
@@ -37,7 +41,8 @@ $REGION = "<owner-selected-region>"   # e.g. asia-southeast1, us-central1
 `gcloud run deploy --source .` builds the container image and deploys in one
 step; no separate Artifact Registry repository is required.
 
-From the repository root (on reviewed main):
+From the repository root (reviewed main after SPEC-37 merge, or this draft
+branch only if review explicitly allows a field-test deploy):
 
 ```powershell
 $SERVICE = "travel-buddy"
@@ -108,7 +113,7 @@ environment panel, not in the public health response.
 If running from Google Cloud Shell instead of the owner's laptop:
 
 ```bash
-REGION="<owner-selected-region>"
+REGION="asia-south1"
 SERVICE="travel-buddy"
 
 gcloud run deploy $SERVICE \

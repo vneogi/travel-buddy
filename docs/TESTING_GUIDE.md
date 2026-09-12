@@ -135,7 +135,8 @@ The first airplane-mode attempt was meaningless: the build talked to the laptop
 over `adb reverse` on USB, and airplane mode does not disable USB (R7).
 
 Final acceptance requires a standalone installed artifact compiled against the
-hosted HTTPS API. See:
+hosted HTTPS API. Sequence as of 2026-09-12: commit `mobile/android/`, green
+GitHub `android-compile`, Cloud Run `asia-south1`, then signed APK. See:
 
 - `docs/CLOUD_RUN_DEPLOY.md` -- deploy the backend and set secrets
 - `docs/ANDROID_BUILD.md` -- build the signed APK and install it

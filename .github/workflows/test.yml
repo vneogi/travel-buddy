@@ -27,6 +27,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: '3.44.8'
       - run: flutter pub get
       - run: flutter analyze --no-fatal-infos
       - run: flutter test
@@ -46,10 +47,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
-      - name: Generate Android platform
-        run: flutter create . --platforms=android --org com.vneogi --project-name travel_buddy
-      - name: Apply Travel Buddy overlay
-        run: bash ../scripts/overlay_android.sh
+          flutter-version: '3.44.8'
       - run: flutter pub get
       - name: Build debug APK (CI compile proof)
         run: >

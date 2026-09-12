@@ -10,8 +10,8 @@ successful test of a named variable.
 
 ## Current verified state
 
-Last verified: 2026-09-06 on the owner's Windows laptop and hosted Supabase
-project.
+Last verified: 2026-09-12 owner Windows Android debug APK compile (not a hosted
+API). Hosted Supabase schema last verified 2026-09-06.
 
 ### Hosted Supabase
 
@@ -50,15 +50,32 @@ It does not prove they are configured on a hosted backend deployment.
 No production/field-test API deployment is currently verified. Therefore no
 backend variable is recorded as present on a hosted application service,
 including Supabase, LLM, Maps, Weather, or anonymous-auth configuration.
-SPEC-37 owns provisioning and verification. SPEC-36 is on main (PR #55). Final
-phone acceptance targeted for 2026-09-18. Until then, the hosted Supabase
-database and the laptop-local backend environment must not be described as a
-deployed application.
+SPEC-37 owns provisioning and verification. Chosen Cloud Run region:
+`asia-south1` (Mumbai, matching hosted Supabase). SPEC-36 is on main (PR #55).
+Final phone acceptance targeted for 2026-09-18. Until a Cloud Run URL is
+verified from a non-laptop network, the hosted Supabase database and the
+laptop-local backend environment must not be described as a deployed
+application.
+
+### Laptop Android compile proof (2026-09-12)
+
+Owner Windows, Flutter 3.44.8 stable, branch `feat/spec37-phone-field-test`
+at `b248ce0` plus a locally generated `mobile/android/`:
+
+- `flutter test` passed after deleting dummy `test/widget_test.dart`
+- `flutter build apk --debug --dart-define=TB_API_BASE_URL=https://example.invalid`
+  succeeded
+- applicationId / namespace: `com.vneogi.travelbuddy`
+- INTERNET present on the main manifest
+
+This does not prove a hosted backend, a signed release APK, or phone
+acceptance. Do not sideload that debug APK as the field artifact.
 
 Security action: a Google Maps key was exposed outside `.env` during testing.
-Rotate it in Google Cloud, retain API and application restrictions, replace the
-local value, and rerun the safe smoke test below. Do not record the replacement
-key in this repository.
+Rotate it in Google Cloud, retain API restrictions (not an Android application
+restriction for Cloud Run server egress), replace the local value, and rerun
+the safe smoke test below. Do not record the replacement key in this
+repository.
 
 ## Check local variable presence without printing secrets
 
