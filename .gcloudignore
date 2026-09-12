@@ -1,0 +1,16 @@
+# Same exclusions as .dockerignore for gcloud builds submit.
+.git/
+.github/
+mobile/
+.env
+.env.*
+__pycache__/
+*.pyc
+tests/
+docs/
+scripts/
+*.md
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+.vscode/
