@@ -96,10 +96,11 @@ The immediate order after the field-test gate:
 2. SPEC-37 passed 2026-09-13 (Cloud Run plus signed APK, owner phone);
 3. SPEC-38 passed 2026-09-14 (Cloud Run `travel-buddy-00004-62g` plus signed
    APK, owner phone);
-4. guided Create Trip (party, interests, single-city start/end, then LLM /
-   similar-trip inspiration);
-5. PDF/itinerary import stays deferred;
-6. then the broader consumer backlog (SPEC-17, grounded trip-less Ask,
+4. SPEC-40 guided Create Trip foundation (party, interests, single-city
+   start/end, deterministic catalog creation);
+5. LLM / similar-trip inspiration follows as a separate brief after SPEC-40;
+6. SPEC-39 PDF/itinerary import stays deferred;
+7. then the broader consumer backlog (SPEC-17, grounded trip-less Ask,
    SPEC-24/27).
 
 The full SPEC-25 contract still needs SPEC-17's real envelope, so trip-less Ask

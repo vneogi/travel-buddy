@@ -108,6 +108,8 @@
 | Laos corridor trip (SPEC-36) | IMPLEMENTED (PR #55, `1f2c43d`) | One northbound Laos corridor on main. Owner Windows Oct 2-8 create and later-city swap 2026-09-06. Heads-up spam is SPEC-29/35, not this slice |
 | Phone-independent field-test delivery (SPEC-37) | DONE (PR #57, `f6f2f0c`) | 2026-09-13: Cloud Run revision `travel-buddy-00003-5bc` in `asia-south1` serving `https://travel-buddy-196190001420.asia-south1.run.app`. Signed release APK from `f6f2f0c` installed on the owner's Android phone. Owner reported online plus airplane-mode pass (ICT times, maps label, compact warnings, cached itinerary). Details in docs/AWAITING_VERIFICATION.md |
 | Active trip mode (SPEC-38) | DONE (PR #59, `fefc4ec`) | 2026-09-14: Cloud Run `travel-buddy-00004-62g`. Signed APK installed. Owner reported Oct 2-9 corridor (32 stops), LP Oct 6-9, Up next entry, visible cancel, airplane driver card. Single-city start/end dates deferred. Details in docs/AWAITING_VERIFICATION.md |
+| PDF itinerary intake (SPEC-39) | DEFERRED | No implementation brief. PDF/OCR, Day Sheet, and print-pack work remain outside the current sequence |
+| Guided Create Trip foundation (SPEC-40) | SPECIFIED | Five-step destination/date-range/party/interests/review flow backed by deterministic multi-day catalog selection. LLM and similar-trip inspiration are a later brief |
 
 Migration numbers are assigned when a spec is implemented, not when it is
 written. SPEC-11, SPEC-13, SPEC-14 and SPEC-15 each claimed a number, and the
@@ -186,9 +188,11 @@ Seed-shaped cohorts.
    docs/briefs/GENIE_SPEC_37_PHONE_FIELD_TEST.md.
 3. SPEC-38 Active Trip Mode -- **DONE** PR #59 (`fefc4ec`). Cloud Run
    `travel-buddy-00004-62g` plus signed APK; owner phone pass 2026-09-14.
-4. Next product slice: guided Create Trip (party, interests, start/end for
-   single-city, then LLM / similar-trip inspiration). PDF import stays
-   deferred. Then SPEC-17, grounded trip-less Ask, SPEC-24/27.
+4. SPEC-40 Guided Create Trip foundation -- **SPECIFIED**. Party, interests,
+   and single-city start/end feed deterministic catalog creation first.
+5. Inspiration/LLM generation follows only after SPEC-40 establishes the
+   typed input and fallback contract. PDF import (SPEC-39) stays deferred.
+6. Then SPEC-17, grounded trip-less Ask, SPEC-24/27.
 
 ### Deferred after the phone gate
 
