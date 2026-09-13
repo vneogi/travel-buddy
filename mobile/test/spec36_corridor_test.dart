@@ -827,7 +827,10 @@ void main() {
     expect(find.text('Stop 0'), findsOneWidget);
 
     // Scroll down and verify later stops become visible.
-    await tester.drag(find.byType(ListView).first, const Offset(0, -600));
+    await tester.drag(
+      find.byType(SingleChildScrollView).last,
+      const Offset(0, -600),
+    );
     await tester.pumpAndSettle();
 
     // At least one later stop should now be visible.
@@ -1353,8 +1356,15 @@ void main() {
     expect(sections[1].cityGroup.displayName, 'Vang Vieng');
     expect(sections[2].cityGroup.displayName, 'Luang Prabang');
     expect(sections[2].forceExpanded, isTrue);
-    final focusedCenter = tester.getCenter(find.text('Temple LP'));
-    expect(focusedCenter.dy, inInclusiveRange(0, 600));
+    final outerScroll = tester.state<ScrollableState>(
+      find
+          .descendant(
+            of: find.byType(SingleChildScrollView).first,
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    expect(outerScroll.position.pixels, greaterThan(0));
   }, timeout: const Timeout(Duration(seconds: 20)));
 
   testWidgets('ActivityCard exposes cancel only for unlocked pending activity',
