@@ -85,7 +85,7 @@ void main() {
     expect(s.nodes.single.venueName, 'Old');
   });
 
-  test('successful event replaces nodes and extracts Heads up banner', () async {
+  test('successful event replaces nodes and delivers schedule warnings', () async {
     when(() => repo.sendEvent(
           tripId: any(named: 'tripId'),
           type: any(named: 'type'),
@@ -93,10 +93,11 @@ void main() {
           targetNodeId: any(named: 'targetNodeId'),
           preferences: any(named: 'preferences'),
         )).thenAnswer((_) async => TripEventResult(
-          message: 'Swapped. Heads up: New venue closes early.',
+          message: 'Swapped.',
           updatedNodes: [_node('n1', 'New')],
           routingTier: 'heavy',
           fromCache: false,
+          scheduleWarnings: ['New venue closes early.'],
         ));
 
     final c = await ready();
@@ -106,7 +107,8 @@ void main() {
     final s = container.read(itineraryControllerProvider('t1'));
     expect(result, isNotNull);
     expect(s.nodes.single.venueName, 'New');
-    expect(s.banner, startsWith('Heads up:'));
+    expect(s.banner, isNull);
+    expect(s.scheduleWarnings, ['New venue closes early.']);
     expect(s.processing, false);
   });
 
