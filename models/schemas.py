@@ -222,6 +222,8 @@ class TripEventResponse(BaseModel):
     reroutes_remaining: Optional[int] = None
     # SPEC-14: food disclaimer at the point of the recommendation.
     food_disclaimer: Optional[str] = None
+    # SPEC-37: Structured schedule warnings (replaces inline concatenation).
+    schedule_warnings: List[str] = []
 
 
 class CreateTripRequest(BaseModel):

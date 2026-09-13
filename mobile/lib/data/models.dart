@@ -431,6 +431,8 @@ class TripEventResult {
   final String routingTier; // "light" | "heavy"
   final bool fromCache;
   final int? reroutesRemaining;
+  /// SPEC-37: Structured schedule warnings from the backend.
+  final List<String> scheduleWarnings;
 
   const TripEventResult({
     required this.message,
@@ -438,6 +440,7 @@ class TripEventResult {
     required this.routingTier,
     required this.fromCache,
     this.reroutesRemaining,
+    this.scheduleWarnings = const [],
   });
 
   factory TripEventResult.fromJson(Map<String, dynamic> j) => TripEventResult(
@@ -448,6 +451,8 @@ class TripEventResult {
         routingTier: j['routing_tier_used'] as String? ?? 'light',
         fromCache: j['from_cache'] as bool? ?? false,
         reroutesRemaining: (j['reroutes_remaining'] as num?)?.toInt(),
+        scheduleWarnings: ((j['schedule_warnings'] as List?) ?? const [])
+            .cast<String>(),
       );
 }
 

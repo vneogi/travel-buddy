@@ -152,7 +152,7 @@ class _DriverCardScreenState extends ConsumerState<DriverCardScreen> {
 
   Widget _buildCard() {
     final data = _data!;
-    final mapsUri = buildMapsUri(data.lat, data.lng);
+    final mapsUri = buildMapsUri(data.lat, data.lng, label: data.venueName);
     final mapsFallbackUri = buildMapsFallbackUri(data.lat, data.lng);
     final hasCoords = data.lat != null && data.lng != null;
 

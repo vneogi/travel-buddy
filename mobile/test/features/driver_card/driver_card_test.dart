@@ -89,11 +89,24 @@ void main() {
   });
 
   group('buildMapsUri', () {
-    test('keeps native geo URI and provides an HTTPS desktop fallback', () {
+    test('geo URI includes venue label when provided', () {
+      final uri = buildMapsUri(19.89758, 102.14321, label: 'Ban Anou Night Market');
+      expect(uri, isNotNull);
+      expect(uri!.scheme, equals('geo'));
+      // Label must be URI-encoded in the query parameter
+      expect(uri.toString(), contains('Ban%20Anou'));
+      // Coordinates are always present as fallback
+      expect(uri.toString(), contains('19.89758'));
+    });
+
+    test('geo URI works without label', () {
       final uri = buildMapsUri(19.89758, 102.14321);
       expect(uri, isNotNull);
       expect(uri!.scheme, equals('geo'));
+      expect(uri.toString(), isNot(contains('(')));
+    });
 
+    test('HTTPS desktop fallback', () {
       final fallback = buildMapsFallbackUri(19.89758, 102.14321);
       expect(fallback, isNotNull);
       expect(fallback!.scheme, equals('https'));

@@ -573,6 +573,7 @@ async def process_trip_event(
         from_cache=result["from_cache"],
         reroutes_remaining=remaining,
         food_disclaimer=FOOD_DISCLAIMER,
+        schedule_warnings=result.get("schedule_warnings") or [],
     )
 
 

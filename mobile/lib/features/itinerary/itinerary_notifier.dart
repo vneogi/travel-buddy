@@ -22,6 +22,8 @@ class ItineraryState {
   final Map<String, NodeOutcome> nodeOutcomes;
   final List<TripSegment> segments;  // SPEC-36: corridor segments
   final Set<String> outcomeRecordingNodeIds;
+  // SPEC-37: Structured schedule warnings from last event.
+  final List<String> scheduleWarnings;
 
   const ItineraryState({
     this.nodes = const [],
@@ -34,6 +36,7 @@ class ItineraryState {
     this.lovedPlaceRefs = const {},
     this.nodeOutcomes = const {},
     this.outcomeRecordingNodeIds = const {},
+    this.scheduleWarnings = const [],
   });
 
   static const _keep = Object();
@@ -48,6 +51,7 @@ class ItineraryState {
     Set<String>? lovedPlaceRefs,
     Map<String, NodeOutcome>? nodeOutcomes,
     Set<String>? outcomeRecordingNodeIds,
+    List<String>? scheduleWarnings,
   }) =>
       ItineraryState(
         nodes: nodes ?? this.nodes,
@@ -61,6 +65,7 @@ class ItineraryState {
         nodeOutcomes: nodeOutcomes ?? this.nodeOutcomes,
         outcomeRecordingNodeIds:
             outcomeRecordingNodeIds ?? this.outcomeRecordingNodeIds,
+        scheduleWarnings: scheduleWarnings ?? this.scheduleWarnings,
       );
 }
 
@@ -189,6 +194,8 @@ class ItineraryController extends StateNotifier<ItineraryState> {
         nodes: result.updatedNodes.isNotEmpty ? result.updatedNodes : state.nodes,
         processing: false,
         banner: _headsUp(result.message),
+        // SPEC-37: Store structured warnings separately for compact rendering.
+        scheduleWarnings: result.scheduleWarnings,
         // Preserve loved refs through event application.
         lovedPlaceRefs: state.lovedPlaceRefs,
         nodeOutcomes: state.nodeOutcomes,

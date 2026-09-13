@@ -99,6 +99,7 @@ class TripStateMachine:
             "routing_tier_used": state["routing_tier"].value,
             "from_cache": state["from_cache"],
             "venues_found": state["venues_found"],
+            "schedule_warnings": state.get("schedule_warnings") or [],
         }
 
     # =========================================================================
@@ -562,7 +563,36 @@ class TripStateMachine:
                         routing_tier="heavy",
                     )
                 else:
-                    base = await llm_service.generate_info_response(state["message"])
+                    # Build destination context so the LLM grounds its
+                    # answer in the traveller's actual location.
+                    trip = state["trip_state"]
+                    target_id = state.get("target_node_id")
+                    current_node = None
+                    next_node = None
+                    if target_id:
+                        current_node = next(
+                            (n for n in trip.nodes if n.node_id == target_id),
+                            None,
+                        )
+                    if current_node is None and trip.nodes:
+                        current_node = trip.nodes[0]
+                    if current_node:
+                        idx = trip.nodes.index(current_node)
+                        if idx + 1 < len(trip.nodes):
+                            next_node = trip.nodes[idx + 1]
+                    info_ctx = {
+                        "geo_region": (
+                            getattr(current_node, "geo_region", None) or trip.geo_region or ""
+                        ),
+                    }
+                    if current_node:
+                        info_ctx["venue_name"] = current_node.venue_name
+                    if next_node:
+                        info_ctx["next_venue_name"] = next_node.venue_name
+                    base = await llm_service.generate_info_response(
+                        state["message"],
+                        context=info_ctx,
+                    )
                 state["response"] = base
             except Exception as exc:
                 print(f"LLM generation failed, using canned fallback: {exc}")
