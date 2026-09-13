@@ -4,7 +4,6 @@
 ///
 /// To add a region: add it to [_regionOffsets] and the test.
 
-import 'package:flutter/foundation.dart';
 
 /// Map geo_region identifiers to their UTC offset in hours.
 /// DST is not relevant for current corridors (ICT/GST are fixed).
@@ -33,7 +32,6 @@ DateTime toDestinationLocal(DateTime utc, String? geoRegion) {
 }
 
 /// Format a [DateTime] as HH:MM in the destination timezone.
-@visibleForTesting
 String formatDestinationTime(DateTime utc, String? geoRegion) {
   final local = toDestinationLocal(utc, geoRegion);
   return '${local.hour.toString().padLeft(2, "0")}:'

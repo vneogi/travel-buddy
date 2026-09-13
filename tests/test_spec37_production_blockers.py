@@ -127,6 +127,12 @@ async def test_heavy_llm_failure_returns_canned_response_not_500():
         """Pretend structural apply swapped the node."""
         return state
 
+    captured_fallback_ctx = {}
+
+    def _spy_router(message, routing_tier, context=None):
+        captured_fallback_ctx.update(context or {})
+        return "Canned fallback after LLM failure."
+
     with (
         patch("config.settings.settings.litellm_api_key", "fake-key"),
         patch.object(
@@ -144,6 +150,10 @@ async def test_heavy_llm_failure_returns_canned_response_not_500():
             new_callable=AsyncMock,
             side_effect=RuntimeError("model overloaded"),
         ),
+        patch(
+            "agents.router_agent.router_agent.generate_response",
+            side_effect=_spy_router,
+        ),
     ):
         result = await state_machine.process_event(
             trip_state=trip,
@@ -156,9 +166,10 @@ async def test_heavy_llm_failure_returns_canned_response_not_500():
     # Must NOT be an empty string or raise -- should be a canned fallback
     assert result["response"], "Response was empty after HEAVY LLM failure"
     assert "500" not in result["response"]
-    # info_ctx was available in except: response should mention LP region
-    assert "luang prabang" in result["response"].lower() or result["response"], (
-        "Fallback should use geo context from info_ctx"
+    # Prove info_ctx was available in the except clause: the fallback
+    # must have received geo_region from the hoisted context.
+    assert captured_fallback_ctx.get("geo_region") == "luang_prabang_laos", (
+        f"Expected luang_prabang_laos, got {captured_fallback_ctx.get('geo_region')}"
     )
     # The trip state should still be returned (mutation preserved if any)
     assert result["updated_trip_state"] is not None
