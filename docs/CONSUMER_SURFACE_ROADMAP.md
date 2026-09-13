@@ -90,14 +90,13 @@ hearts passed on Windows Aug 30.
 The exception is the SPEC-24 design, which is settled now and built later, for
 the reason above.
 
-The immediate order is driven by the field-test dependency:
+The immediate order after the field-test gate:
 
 1. SPEC-36 is on main (PR #55);
-2. execute SPEC-37 with a stable hosted HTTPS backend and installable phone
-   artifact;
-3. by 2026-09-18, pass online and real airplane-mode acceptance without a
-   laptop transport;
-4. then return to multi-night hotel polish and the broader consumer backlog.
+2. SPEC-37 passed 2026-09-13 (Cloud Run plus signed APK, owner phone);
+3. multi-night hotel polish and PDF/itinerary import if the real Oct 2-9
+   booking still cannot be represented;
+4. then the broader consumer backlog (SPEC-17, trip-less Ask, SPEC-24/27).
 
 The full SPEC-25 contract still needs SPEC-17's real envelope, so trip-less Ask
 follows the trust work. SPEC-27 should not be later than the first build that

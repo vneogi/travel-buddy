@@ -36,8 +36,8 @@ Settled identity:
 ```powershell
 cd travel-buddy
 git fetch origin
-git checkout feat/spec37-phone-field-test
-git pull origin feat/spec37-phone-field-test
+git checkout main
+git pull origin main
 git log -1 --oneline
 ```
 
@@ -114,11 +114,13 @@ the phone home screen. Profile > API Host must show the Cloud Run hostname.
 
 ## What to record in the PR (no secrets)
 
+Field APK used 2026-09-13 (owner did not paste certutil hash):
+
 | Field | Value |
 |---|---|
-| Source commit SHA | |
+| Source commit SHA | `f6f2f0c` |
 | Platform | Android |
 | Artifact | Signed release APK |
-| Hosted API hostname | (asia-south1 `*.run.app`) |
-| Build command | `flutter build apk --release --dart-define=TB_API_BASE_URL=https://<host>` |
-| APK SHA-256 | |
+| Hosted API hostname | `travel-buddy-196190001420.asia-south1.run.app` |
+| Build command | `flutter build apk --release --dart-define=TB_API_BASE_URL=https://travel-buddy-196190001420.asia-south1.run.app` |
+| APK SHA-256 | (not recorded) |

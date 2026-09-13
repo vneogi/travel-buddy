@@ -10,8 +10,9 @@ successful test of a named variable.
 
 ## Current verified state
 
-Last verified: 2026-09-12 owner Windows Android debug APK compile (not a hosted
-API). Hosted Supabase schema last verified 2026-09-06.
+Last verified: 2026-09-13 owner Android field pass against Cloud Run
+`travel-buddy-00003-5bc` (main `f6f2f0c`). Hosted Supabase schema last verified
+2026-09-06.
 
 ### Hosted Supabase
 
@@ -47,15 +48,25 @@ It does not prove they are configured on a hosted backend deployment.
 
 ### Hosted application deployment
 
-No production/field-test API deployment is currently verified. Therefore no
-backend variable is recorded as present on a hosted application service,
-including Supabase, LLM, Maps, Weather, or anonymous-auth configuration.
-SPEC-37 owns provisioning and verification. Chosen Cloud Run region:
-`asia-south1` (Mumbai, matching hosted Supabase). SPEC-36 is on main (PR #55).
-Final phone acceptance targeted for 2026-09-18. Until a Cloud Run URL is
-verified from a non-laptop network, the hosted Supabase database and the
-laptop-local backend environment must not be described as a deployed
-application.
+Cloud Run service `travel-buddy` in project `ultra-solution-499410-e9`,
+region `asia-south1`. Owner deployed from local `main` at `f6f2f0c` on
+2026-09-13.
+
+| Field | Value |
+|---|---|
+| Revision | `travel-buddy-00003-5bc` (100 percent traffic) |
+| URL | `https://travel-buddy-196190001420.asia-south1.run.app` |
+| Health | HTTP 200 `GET /api/v1/health` (`status=healthy`, `venues_loaded=74`) |
+| Flags on the deploy command | `TB_DEBUG=false`, `TB_ALLOW_ANONYMOUS=true` |
+
+Secret values are not recorded. Startup booleans (`llm_key_present`,
+`supabase_configured`) live in Cloud Run logs, not in the public health
+body. `/health` still reports process default `geo_fence=dubai_uae`; trip
+`geo_region` is what scopes Laos Ask and itineraries.
+
+SPEC-36 remains on main (PR #55). SPEC-37 phone pass is recorded in
+`docs/AWAITING_VERIFICATION.md`. Laptop `.env` is still not the hosted
+config.
 
 ### Laptop Android compile proof (2026-09-12)
 

@@ -1,11 +1,11 @@
 # SPEC-37: Phone-Independent Field-Test Delivery
 
-> Status: SPECIFIED, UNBLOCKED. SPEC-36 is on main (PR #55, `1f2c43d`).
+> Status: DONE. Merged PR #57 as `f6f2f0c`. Owner Android field pass
+> 2026-09-13 against Cloud Run `travel-buddy-00003-5bc`.
 >
 > This is a delivery and acceptance slice, not a new consumer feature.
 >
-> Target final online and airplane-mode acceptance: 2026-09-18, approximately
-> two weeks before the 2026-10-02 trip.
+> Travel remains Oct 2-9 2026. Hotel/PDF polish is outside this spec.
 >
 > Execution brief: `docs/briefs/GENIE_SPEC_37_PHONE_FIELD_TEST.md`.
 

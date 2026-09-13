@@ -229,9 +229,12 @@ Near-term product gates after the Aug 27-28 laptop run:
 2. Date-scoped grouping, single-city Laos creation, durable hearts, and
    SPEC-30 instrumentation are complete.
 3. SPEC-36's one-trip, three-city Laos corridor is on main (PR #55).
-4. Execute SPEC-37: stable hosted HTTPS API and an installable phone artifact.
-5. Complete online and airplane-mode acceptance by 2026-09-18 with the laptop,
-   USB, and local tunnels removed from the path.
+4. SPEC-37 is done: hosted HTTPS API and an installable phone artifact
+   passed on the owner's Android device 2026-09-13 (`f6f2f0c`, Cloud Run
+   `travel-buddy-00003-5bc`).
+5. Remaining pre-trip product work is hotel/PDF representation and
+   catalog-hours quality, not re-proving the hosted APK path. Public
+   launch, SPEC-24/27, and trip-less Ask stay later.
 
 
 ---
@@ -580,9 +583,9 @@ If the answer is "I added a city" or "I polished the UI" -- stop and refocus.
 ## 31. Parked business hypotheses (Sep 2026)
 
 **Status: NOT COMMITTED. Do not build, spec, or brief against this section
-before the field-test sequence (SPEC-36 then SPEC-37) is done.** Architecture,
-vendors, and background telemetry are deliberately omitted. The point of
-recording this is so the *business* ideas survive a later revisit.
+as current work.** SPEC-36 and SPEC-37 are complete. Architecture, vendors,
+and background telemetry are deliberately omitted. The point of recording
+this is so the *business* ideas survive a later revisit.
 
 Source: an external growth/moat sketch (Sep 2026). Useful as a reminder of
 how the flywheel might *pay* after density exists. Harmful if treated as
