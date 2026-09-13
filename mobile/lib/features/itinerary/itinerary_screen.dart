@@ -489,11 +489,13 @@ class _CorridorTimelineState extends State<_CorridorTimeline> {
     final focusedNode = widget.nodes
         .where((node) => node.nodeId == widget.focusNodeId)
         .firstOrNull;
-    return ListView(
+    return SingleChildScrollView(
       padding: const EdgeInsets.only(bottom: 120),
-      children: List.generate(
-        cityGroups.length,
-        (index) => _buildCitySection(cityGroups, index, focusedNode),
+      child: Column(
+        children: List.generate(
+          cityGroups.length,
+          (index) => _buildCitySection(cityGroups, index, focusedNode),
+        ),
       ),
     );
   }
@@ -658,14 +660,7 @@ class _DateScopedTimeline extends StatelessWidget {
       }
     }
 
-    return ListView(
-      shrinkWrap: isCorridor,
-      physics: isCorridor ? const NeverScrollableScrollPhysics() : null,
-      padding: const EdgeInsets.only(
-        top: AppSpacing.base,
-        bottom: 100, // space for FAB
-      ),
-      children: List.generate(items.length, (i) {
+    final children = List<Widget>.generate(items.length, (i) {
         final item = items[i];
         if (item.isHeader) {
           return _DateHeader(date: item.date!);
@@ -722,7 +717,23 @@ class _DateScopedTimeline extends StatelessWidget {
             ),
           ),
         );
-      }),
+      });
+    final content = Column(children: children);
+    if (isCorridor) {
+      return Padding(
+        padding: const EdgeInsets.only(
+          top: AppSpacing.base,
+          bottom: 100,
+        ),
+        child: content,
+      );
+    }
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(
+        top: AppSpacing.base,
+        bottom: 100,
+      ),
+      child: content,
     );
   }
 }

@@ -76,18 +76,12 @@ class TestCorridorCreate:
             "vang_vieng_laos",
             "luang_prabang_laos",
         ]
-        assert [
-            (s["starts_on"], s["ends_on"]) for s in trip["segments"]
-        ] == [
+        assert [(s["starts_on"], s["ends_on"]) for s in trip["segments"]] == [
             ("2026-10-02", "2026-10-03"),
             ("2026-10-04", "2026-10-05"),
             ("2026-10-06", "2026-10-09"),
         ]
-        lp_ids = [
-            n["venue_id"]
-            for n in trip["nodes"]
-            if n["geo_region"] == "luang_prabang_laos"
-        ]
+        lp_ids = [n["venue_id"] for n in trip["nodes"] if n["geo_region"] == "luang_prabang_laos"]
         assert len(lp_ids) == 16
         assert len(lp_ids) == len(set(lp_ids))
 

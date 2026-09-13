@@ -67,8 +67,7 @@ def validate_corridor_segments(
         max_days = corridor.max_days_for_region(seg.geo_region)
         if span < 1 or span > max_days:
             raise InvalidCorridor(
-                f"Segment {seg.geo_region}: {span} days; must be 1 to "
-                f"{max_days}."
+                f"Segment {seg.geo_region}: {span} days; must be 1 to {max_days}."
             )
         if prev_ends_on is not None and seg.starts_on <= prev_ends_on:
             raise InvalidCorridor(
@@ -225,10 +224,7 @@ def advertised_corridors(list_venues_fn) -> list[dict]:
             try:
                 rows = list_venues_fn(region_code)
                 pool = eligible_corridor_venues(rows)
-                required = (
-                    corridor.max_days_for_region(region_code)
-                    * CORRIDOR_STOPS_PER_DAY
-                )
+                required = corridor.max_days_for_region(region_code) * CORRIDOR_STOPS_PER_DAY
                 if len(pool) < required:
                     ok = False
                     break
