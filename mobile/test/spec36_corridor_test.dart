@@ -1391,6 +1391,7 @@ void main() {
     expect(sections[0].cityGroup.displayName, 'Vientiane');
     expect(sections[1].cityGroup.displayName, 'Vang Vieng');
     expect(sections[2].cityGroup.displayName, 'Luang Prabang');
+    expect(sections[2].forceExpanded, isTrue);
     final outerScroll = tester.state<ScrollableState>(
       find
           .descendant(

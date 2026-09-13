@@ -491,15 +491,16 @@ class _CorridorTimelineState extends State<_CorridorTimeline> {
       nodes: widget.nodes,
       segments: widget.segments,
     );
-    final focusedNode = widget.nodes
-        .where((node) => node.nodeId == widget.focusNodeId)
-        .firstOrNull;
     return SingleChildScrollView(
       padding: const EdgeInsets.only(bottom: 120),
       child: Column(
         children: List.generate(
           cityGroups.length,
-          (index) => _buildCitySection(cityGroups, index, focusedNode),
+          (index) => _buildCitySection(
+            cityGroups,
+            index,
+            widget.focusNodeId,
+          ),
         ),
       ),
     );
@@ -508,9 +509,13 @@ class _CorridorTimelineState extends State<_CorridorTimeline> {
   Widget _buildCitySection(
     List<CorridorCityGroup> cityGroups,
     int index,
-    TripNode? focusedNode,
+    String? focusedNodeId,
   ) {
     final group = cityGroups[index];
+    final containsFocusedNode = focusedNodeId != null &&
+        group.dayGroups
+            .expand((dayGroup) => dayGroup.nodes)
+            .any((node) => node.nodeId == focusedNodeId);
     TripNode? nextCityFirst;
     if (index + 1 < cityGroups.length) {
       final nextNodes = cityGroups[index + 1]
@@ -522,7 +527,7 @@ class _CorridorTimelineState extends State<_CorridorTimeline> {
     return CitySection(
       key: ValueKey(group.geoRegion),
       cityGroup: group,
-      forceExpanded: focusedNode?.geoRegion == group.geoRegion,
+      forceExpanded: containsFocusedNode,
       childBuilder: (cityGroup) => _DateScopedTimeline(
         nodes: cityGroup.dayGroups.expand((dayGroup) => dayGroup.nodes).toList(),
         state: widget.state,
