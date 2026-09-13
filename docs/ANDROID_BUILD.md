@@ -114,11 +114,11 @@ the phone home screen. Profile > API Host must show the Cloud Run hostname.
 
 ## What to record in the PR (no secrets)
 
-Field APK used 2026-09-13 (owner did not paste certutil hash):
+Field APK used 2026-09-14 (owner did not paste certutil hash):
 
 | Field | Value |
 |---|---|
-| Source commit SHA | `f6f2f0c` |
+| Source commit SHA | `fefc4ec` |
 | Platform | Android |
 | Artifact | Signed release APK |
 | Hosted API hostname | `travel-buddy-196190001420.asia-south1.run.app` |

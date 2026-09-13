@@ -107,7 +107,7 @@
 | Proactive itinerary notifications (SPEC-35) | PHASE A + A2 DONE | PR #50 (`ccfa41e`) added `GET /trip/{id}/notifications`, region-local catalog 09:00, and provider-backed departure candidates. PR #52 (`1379da8`) added the in-app Flutter banner, identity-scoped cache, local dismissal, and weather-card stacking gate. Meal previews remain suppressed until dish provenance exists. No background GPS, LLM, mutation or push |
 | Laos corridor trip (SPEC-36) | IMPLEMENTED (PR #55, `1f2c43d`) | One northbound Laos corridor on main. Owner Windows Oct 2-8 create and later-city swap 2026-09-06. Heads-up spam is SPEC-29/35, not this slice |
 | Phone-independent field-test delivery (SPEC-37) | DONE (PR #57, `f6f2f0c`) | 2026-09-13: Cloud Run revision `travel-buddy-00003-5bc` in `asia-south1` serving `https://travel-buddy-196190001420.asia-south1.run.app`. Signed release APK from `f6f2f0c` installed on the owner's Android phone. Owner reported online plus airplane-mode pass (ICT times, maps label, compact warnings, cached itinerary). Details in docs/AWAITING_VERIFICATION.md |
-| Active trip mode (SPEC-38) | IN PROGRESS | Adds the authoritative 8-day Laos limits (Vientiane 4, Vang Vieng 3, Luang Prabang 4), actionable-stop deep links, deterministic itinerary focus, visible confirmed cancellation, and departure/weather actions. LLM/provider and memory work remain deferred |
+| Active trip mode (SPEC-38) | DONE (PR #59, `fefc4ec`) | 2026-09-14: Cloud Run `travel-buddy-00004-62g`. Signed APK installed. Owner reported Oct 2-9 corridor (32 stops), LP Oct 6-9, Up next entry, visible cancel, airplane driver card. Single-city start/end dates deferred. Details in docs/AWAITING_VERIFICATION.md |
 
 Migration numbers are assigned when a spec is implemented, not when it is
 written. SPEC-11, SPEC-13, SPEC-14 and SPEC-15 each claimed a number, and the
@@ -184,15 +184,17 @@ Seed-shaped cohorts.
    (`f6f2f0c`). Cloud Run `travel-buddy-00003-5bc` plus signed APK; owner
    phone pass 2026-09-13. Briefs:
    docs/briefs/GENIE_SPEC_37_PHONE_FIELD_TEST.md.
-3. SPEC-38 Active Trip Mode -- **IN PROGRESS**. Authoritative Oct 2-9 Laos
-   corridor plus deterministic current-stop navigation and explicit actions.
-4. PDF/itinerary import remains deferred; then the broader consumer backlog
-   (SPEC-17, grounded trip-less Ask, SPEC-24/27).
+3. SPEC-38 Active Trip Mode -- **DONE** PR #59 (`fefc4ec`). Cloud Run
+   `travel-buddy-00004-62g` plus signed APK; owner phone pass 2026-09-14.
+4. Next product slice: guided Create Trip (party, interests, start/end for
+   single-city, then LLM / similar-trip inspiration). PDF import stays
+   deferred. Then SPEC-17, grounded trip-less Ask, SPEC-24/27.
 
 ### Deferred after the phone gate
 
 - Multi-night hotel UI, unless the owner's real booking cannot be represented.
-- Corridor span vs the real Oct 2-9 PDF (app still caps days per city).
+- Corridor span vs the real Oct 2-9 PDF (closed for the corridor path: 8-day
+  2/2/4 create is live). Single-city create still uses one start date.
 - Full SPEC-17 trust and verification, then SPEC-18/19/20.
 - Remaining signal/UI polish, including the `syncOnce()` status-count race.
 - Full SPEC-04 remainder only if field evidence supports it.
@@ -222,7 +224,7 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 | observed_duration_minutes writer | Closed PR #32 (`f8349a8`) | Consecutive arrivals update `trip_edge.observed_duration_minutes`. Dual-write preserves the value. Transport cost on the same table is still unwritten (SPEC-23) |
 | The five Supabase tests have never run | Closed Aug 17 2026 | Live device-day pytest with TB_SUPABASE_URL set; tests/test_supabase_integration.py included. Run pytest -q -ra to confirm |
 | Non-Laos local dish names remain unbackfilled | Low | 0015's names_local backfill is correctly scoped to the three Laos regions, so any Dubai dish carrying a name_local keeps a null names_local rather than a wrong language tag. That is the right trade, but it leaves a second pass owed once the Dubai rows are exported and their language confirmed |
-| No hosted application target | Closed 2026-09-13 | Cloud Run `travel-buddy-00003-5bc` at `https://travel-buddy-196190001420.asia-south1.run.app` from main `f6f2f0c`. Health 200. Signed APK uses that URL. Laptop `.env` is still not the hosted config |
+| No hosted application target | Closed 2026-09-14 | Cloud Run `travel-buddy-00004-62g` at `https://travel-buddy-196190001420.asia-south1.run.app` from main `fefc4ec`. Health 200. Signed APK uses that URL. Laptop `.env` is still not the hosted config |
 | Signal provenance was silently unwritten until today | Low | _compute_provenance computed clock skew and its return was discarded, while both backends defaulted provenance to a constant. So clock_skew_seconds was never persisted for any signal and SPEC-02 Part C was unmet in the live write path. Fixed and guarded by a test that drives the ingest endpoint rather than the storage layer. Recorded because the gap was invisible for months: nothing failed, the column had a default, and the only symptom was analytics that could not exist |
 | The scheduler is money-blind | Medium | services/scheduler.py contains no reference to price, cost, budget or fare, and no model carries traveller spend capacity, so affordability cannot be ranked on at all. The only price in config is Stripe subscription pricing, which is our revenue rather than the traveller's spend. Specified as SPEC-23 and roadmap concern 7; the cost of delay compounds with venues, regions and trips simultaneously. The venues_rag.price_band half of this row was closed by 0017 |
 | Sponsored placement is undisclosed in the client | Closed (SwapSheet slice) | GET /venues/search now flattens results and sets sponsored_boost_applied from a real ranking contribution. SwapSheet shows Sponsored plus Paid placement influenced this ranking. Ranker boost, seed is_sponsored, and Pro "no sponsored results" still exist; remaining SPEC-17 work (claims, registry) still gates affiliate |
