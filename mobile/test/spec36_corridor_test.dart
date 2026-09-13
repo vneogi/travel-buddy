@@ -1455,5 +1455,47 @@ void main() {
         preferences: any(named: 'preferences'),
       ),
     );
+
+    when(
+      () => repo.sendEvent(
+        tripId: any(named: 'tripId'),
+        type: any(named: 'type'),
+        message: any(named: 'message'),
+        targetNodeId: any(named: 'targetNodeId'),
+        preferences: any(named: 'preferences'),
+      ),
+    ).thenAnswer(
+      (_) async => TripEventResult(
+        message: 'Cancelled.',
+        updatedNodes: [node],
+        routingTier: 'light',
+        fromCache: false,
+      ),
+    );
+    await tester.tap(find.byTooltip('Cancel this activity'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cancel activity'));
+    await tester.pumpAndSettle();
+    expect(find.text('Why are you skipping?'), findsOneWidget);
+    verifyNever(
+      () => repo.sendEvent(
+        tripId: any(named: 'tripId'),
+        type: any(named: 'type'),
+        message: any(named: 'message'),
+        targetNodeId: any(named: 'targetNodeId'),
+        preferences: any(named: 'preferences'),
+      ),
+    );
+    await tester.tap(find.text('Too tired'));
+    await tester.pumpAndSettle();
+    verify(
+      () => repo.sendEvent(
+        tripId: 'trip-confirm',
+        type: EventType.cancelActivity,
+        message: 'Cancel Confirm me (too_tired)',
+        targetNodeId: 'Confirm me',
+        preferences: null,
+      ),
+    ).called(1);
   });
 }

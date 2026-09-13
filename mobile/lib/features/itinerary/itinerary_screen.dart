@@ -153,11 +153,16 @@ class ItineraryScreen extends ConsumerWidget {
       ),
     );
     if (confirmed == true && context.mounted) {
+      final reason = await showModalBottomSheet<String>(
+        context: context,
+        builder: (_) => const _SkipReasonSheet(),
+      );
+      if (reason == null || !context.mounted) return;
       await ref
           .read(itineraryControllerProvider(tripId).notifier)
           .applyEvent(
             type: EventType.cancelActivity,
-            message: 'Cancel ${node.venueName}',
+            message: 'Cancel ${node.venueName} ($reason)',
             targetNodeId: node.nodeId,
           );
     }
