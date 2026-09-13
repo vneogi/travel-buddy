@@ -1,41 +1,37 @@
-"""Lightweight region-to-UTC-offset for opening-hours validation.
+"""Destination timezone conversions using ZoneInfo.
 
-The scheduler checks venue opening hours against the scheduled time.
-Times are stored in UTC; opening hours are in destination-local time.
-This module converts UTC datetimes to destination-local for comparison.
+config.REGIONS is the single source of truth for region -> IANA timezone.
+This module resolves a geo_region code to a ZoneInfo and converts UTC
+datetimes with proper astimezone (never replace(tzinfo=...)).
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import Optional
+from zoneinfo import ZoneInfo
 
-# Map geo_region identifiers to UTC offset in hours.
-# DST is not relevant for current corridors (ICT/GST are fixed).
-REGION_OFFSETS: dict[str, int] = {
-    "dubai_uae": 4,  # GST  UTC+4
-    "vientiane_laos": 7,  # ICT  UTC+7
-    "luang_prabang_laos": 7,
-    "vang_vieng_laos": 7,
-}
+from config.regions import REGIONS
 
 
-def destination_offset(geo_region: Optional[str]) -> Optional[timedelta]:
-    """Return the UTC offset for a geo_region, or None if unknown."""
+def destination_tz(geo_region: Optional[str]) -> Optional[ZoneInfo]:
+    """Return the ZoneInfo for a geo_region, or None if unknown."""
     if geo_region is None:
         return None
-    hours = REGION_OFFSETS.get(geo_region)
-    if hours is None:
+    region = REGIONS.get(geo_region)
+    if region is None:
         return None
-    return timedelta(hours=hours)
+    return ZoneInfo(region.timezone)
 
 
 def to_destination_local(utc_dt: datetime, geo_region: Optional[str]) -> datetime:
     """Convert a UTC datetime to destination-local.
 
-    Falls back to UTC if the region is unknown (safe for hour comparison
-    because that was the prior behaviour).
+    Uses astimezone for correct conversion. Falls back to UTC when the
+    region is unknown (safe for hour comparison -- matches prior behaviour).
     """
-    offset = destination_offset(geo_region)
-    if offset is None:
+    tz = destination_tz(geo_region)
+    if tz is None:
         return utc_dt
-    tz = timezone(offset)
-    return utc_dt.replace(tzinfo=timezone.utc).astimezone(tz)
+    # Ensure the input is tz-aware UTC before converting.
+    if utc_dt.tzinfo is None:
+        utc_dt = utc_dt.replace(tzinfo=timezone.utc)
+    return utc_dt.astimezone(tz)

@@ -33,6 +33,23 @@ from agents.router_agent import router_agent
 from services.llm_service import llm_service
 
 
+def _current_or_next_pending(nodes, now_utc):
+    """Return the first pending node whose window has not fully elapsed.
+
+    Skips completed, skipped, and fully-elapsed nodes so that a later-city
+    corridor question uses the correct geo_region.
+    """
+    from datetime import timedelta
+
+    for node in nodes:
+        if node.status in (NodeStatus.COMPLETED, NodeStatus.SKIPPED):
+            continue
+        end = node.scheduled_start + timedelta(minutes=node.duration_minutes)
+        if now_utc < end:
+            return node
+    return None
+
+
 STRUCTURAL_EDIT_EVENTS = {
     EventType.CANCEL_ACTIVITY.value,
     EventType.SWAP_ACTIVITY.value,
@@ -513,23 +530,14 @@ class TripStateMachine:
 
         if state["event_type"] == EventType.ADD_BOOKING.value:
             state["response"] = "Booking saved as a locked itinerary anchor."
-            warnings = state.get("schedule_warnings") or []
-            if warnings:
-                state["response"] += "\n\nHeads up: " + " ".join(warnings)
             return state
 
         if state["event_type"] == EventType.EDIT_BOOKING.value:
             state["response"] = "Booking updated."
-            warnings = state.get("schedule_warnings") or []
-            if warnings:
-                state["response"] += "\n\nHeads up: " + " ".join(warnings)
             return state
 
         if state["event_type"] == EventType.DELETE_BOOKING.value:
             state["response"] = "Booking removed from your itinerary."
-            warnings = state.get("schedule_warnings") or []
-            if warnings:
-                state["response"] += "\n\nHeads up: " + " ".join(warnings)
             return state
 
         if state.get("breaker_tripped"):
@@ -566,6 +574,7 @@ class TripStateMachine:
                     # Build destination context so the LLM grounds its
                     # answer in the traveller's actual location.
                     trip = state["trip_state"]
+                    now_utc = state.get("now_utc") or datetime.now(timezone.utc)
                     target_id = state.get("target_node_id")
                     current_node = None
                     next_node = None
@@ -574,8 +583,10 @@ class TripStateMachine:
                             (n for n in trip.nodes if n.node_id == target_id),
                             None,
                         )
-                    if current_node is None and trip.nodes:
-                        current_node = trip.nodes[0]
+                    # Fall back to the current or next pending node,
+                    # skipping elapsed/skipped/completed.
+                    if current_node is None:
+                        current_node = _current_or_next_pending(trip.nodes, now_utc)
                     if current_node:
                         idx = trip.nodes.index(current_node)
                         if idx + 1 < len(trip.nodes):
@@ -599,21 +610,30 @@ class TripStateMachine:
                 state["response"] = router_agent.generate_response(
                     state["message"],
                     state["routing_tier"],
-                    {"venues_found": state["venues_found"]},
+                    {
+                        "venues_found": state["venues_found"],
+                        "geo_region": info_ctx.get("geo_region", ""),
+                    },
                 )
         else:
+            trip = state["trip_state"]
+            now_utc = state.get("now_utc") or datetime.now(timezone.utc)
+            cn = _current_or_next_pending(trip.nodes, now_utc)
+            fallback_geo = (
+                (getattr(cn, "geo_region", None) or trip.geo_region or "")
+                if cn
+                else (trip.geo_region or "")
+            )
             state["response"] = router_agent.generate_response(
                 state["message"],
                 state["routing_tier"],
                 {
                     "venues_found": state["venues_found"],
                     "target_node_id": state.get("target_node_id", ""),
+                    "geo_region": fallback_geo,
                 },
             )
 
-        warnings = state.get("schedule_warnings") or []
-        if warnings:
-            state["response"] += "\n\nHeads up: " + " ".join(warnings)
         return state
 
     def _fallback_response(self, state: Dict) -> str:

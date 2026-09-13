@@ -1,37 +1,45 @@
-"""SPEC-37: Destination timezone tests.
+"""SPEC-37: Destination timezone tests (ZoneInfo + config.REGIONS).
 
 Proves that a Vientiane 09:00 local node stored as 02:00Z is
 displayed and validated as 09:00, regardless of the server or
 device timezone.
 """
 
-from datetime import datetime, timezone, timedelta
+import os
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
-from services.destination_tz import (
-    destination_offset,
-    to_destination_local,
-    REGION_OFFSETS,
-)
+from services.destination_tz import destination_tz, to_destination_local
 
 
-def test_vientiane_offset_is_7():
-    off = destination_offset("vientiane_laos")
-    assert off == timedelta(hours=7)
+# ------------------------------------------------------------------
+# Unit: destination_tz resolver
+# ------------------------------------------------------------------
 
 
-def test_dubai_offset_is_4():
-    off = destination_offset("dubai_uae")
-    assert off == timedelta(hours=4)
+def test_vientiane_resolves_to_asia_vientiane():
+    tz = destination_tz("vientiane_laos")
+    assert tz is not None
+    assert str(tz) == "Asia/Vientiane"
+
+
+def test_dubai_resolves_to_asia_dubai():
+    tz = destination_tz("dubai_uae")
+    assert tz is not None
+    assert str(tz) == "Asia/Dubai"
 
 
 def test_unknown_region_returns_none():
-    assert destination_offset("atlantis") is None
-    assert destination_offset(None) is None
+    assert destination_tz("atlantis") is None
+    assert destination_tz(None) is None
+
+
+# ------------------------------------------------------------------
+# Conversion: UTC -> destination-local
+# ------------------------------------------------------------------
 
 
 def test_vientiane_0200z_renders_0900():
-    """Backend stores Vientiane 09:00 as 02:00Z.
-    to_destination_local must return 09:00."""
     utc_dt = datetime(2026, 9, 15, 2, 0, tzinfo=timezone.utc)
     local = to_destination_local(utc_dt, "vientiane_laos")
     assert local.hour == 9
@@ -43,6 +51,35 @@ def test_dubai_0500z_renders_0900():
     local = to_destination_local(utc_dt, "dubai_uae")
     assert local.hour == 9
     assert local.minute == 0
+
+
+def test_naive_utc_is_handled():
+    """A naive datetime (no tzinfo) should still convert correctly."""
+    naive = datetime(2026, 9, 15, 2, 0)
+    local = to_destination_local(naive, "vientiane_laos")
+    assert local.hour == 9
+
+
+def test_vientiane_0200z_displays_0900_with_kolkata_device():
+    """Even when the process TZ is Asia/Kolkata (IST +5:30),
+    destination-local must still be ICT +7 = 09:00."""
+    old_tz = os.environ.get("TZ")
+    try:
+        os.environ["TZ"] = "Asia/Kolkata"
+        # Python caches TZ on import, but ZoneInfo is unaffected
+        utc_dt = datetime(2026, 9, 15, 2, 0, tzinfo=timezone.utc)
+        local = to_destination_local(utc_dt, "vientiane_laos")
+        assert local.hour == 9, f"Expected 09:00 ICT, got {local.hour}:{local.minute}"
+    finally:
+        if old_tz is None:
+            os.environ.pop("TZ", None)
+        else:
+            os.environ["TZ"] = old_tz
+
+
+# ------------------------------------------------------------------
+# Scheduler integration: opening-hours with destination-local
+# ------------------------------------------------------------------
 
 
 def test_scheduler_opening_hours_uses_destination_tz():
@@ -63,7 +100,7 @@ def test_scheduler_opening_hours_uses_destination_tz():
         geo_region="vientiane_laos",
     )
     result = reschedule_and_validate([node])
-    assert len(result.warnings) == 0, f"Should have no warnings, got: {result.warnings}"
+    assert len(result.warnings) == 0, f"Got: {result.warnings}"
 
 
 def test_scheduler_warns_when_actually_closed():

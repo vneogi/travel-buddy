@@ -298,6 +298,7 @@ class FeaturedStop {
   final String venueName;
   final DateTime scheduledStart;
   final String status;
+  final String? geoRegion;
 
   const FeaturedStop({
     required this.nodeId,
@@ -305,6 +306,7 @@ class FeaturedStop {
     required this.venueName,
     required this.scheduledStart,
     required this.status,
+    this.geoRegion,
   });
 
   factory FeaturedStop.fromJson(Map<String, dynamic> json) => FeaturedStop(
@@ -313,6 +315,7 @@ class FeaturedStop {
         venueName: json['venue_name'] as String,
         scheduledStart: DateTime.parse(json['scheduled_start'] as String),
         status: json['status'] as String,
+        geoRegion: json['geo_region'] as String?,
       );
 
   Map<String, dynamic> toJson() => {
@@ -321,6 +324,7 @@ class FeaturedStop {
         'venue_name': venueName,
         'scheduled_start': scheduledStart.toUtc().toIso8601String(),
         'status': status,
+        'geo_region': geoRegion,
       };
 }
 

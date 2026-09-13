@@ -160,6 +160,7 @@ class FeaturedStop(BaseModel):
     venue_name: str
     scheduled_start: datetime
     status: NodeStatus
+    geo_region: Optional[str] = None
 
 
 class FeaturedTrip(BaseModel):

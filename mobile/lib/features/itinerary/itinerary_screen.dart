@@ -276,6 +276,9 @@ class ItineraryScreen extends ConsumerWidget {
                 if (state.scheduleWarnings.isNotEmpty)
                   _ScheduleWarningsBanner(
                     warnings: state.scheduleWarnings,
+                    onDismiss: () => ref
+                        .read(itineraryControllerProvider(tripId).notifier)
+                        .clearScheduleWarnings(),
                   ),
                 // SPEC-29: Context alerts above timeline.
                 // Non-blocking: itinerary shows immediately; alerts
@@ -604,7 +607,8 @@ class _DateHeader extends StatelessWidget {
 /// and opens a bottom sheet with the full list on tap.
 class _ScheduleWarningsBanner extends StatelessWidget {
   final List<String> warnings;
-  const _ScheduleWarningsBanner({required this.warnings});
+  final VoidCallback? onDismiss;
+  const _ScheduleWarningsBanner({required this.warnings, this.onDismiss});
 
   @override
   Widget build(BuildContext context) {
@@ -635,6 +639,14 @@ class _ScheduleWarningsBanner extends StatelessWidget {
               ),
             ),
             const Icon(Icons.chevron_right, size: 18, color: AppColors.accent),
+            if (onDismiss != null)
+              IconButton(
+                icon: const Icon(Icons.close, size: 16),
+                onPressed: onDismiss,
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+              ),
           ],
         ),
       ),
@@ -647,27 +659,34 @@ class _ScheduleWarningsBanner extends StatelessWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (_) => Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Schedule Issues', style: AppTypography.h2),
-            const SizedBox(height: AppSpacing.base),
-            for (final w in warnings) ...[
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('\u2022 ', style: TextStyle(fontSize: 14)),
-                  Expanded(
-                    child: Text(w, style: AppTypography.body),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.sm),
+      isScrollControlled: true,
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.4,
+        maxChildSize: 0.8,
+        minChildSize: 0.2,
+        expand: false,
+        builder: (_, scrollController) => Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: ListView(
+            controller: scrollController,
+            shrinkWrap: true,
+            children: [
+              Text('Schedule Issues', style: AppTypography.h2),
+              const SizedBox(height: AppSpacing.base),
+              for (final w in warnings) ...[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('\u2022 ', style: TextStyle(fontSize: 14)),
+                    Expanded(
+                      child: Text(w, style: AppTypography.body),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
