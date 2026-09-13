@@ -209,6 +209,7 @@ class TripState {
   final List<TripNode> nodes;
   final String? corridorId;
   final List<TripSegment> segments;
+  final CreationContext? creationContext;
 
   const TripState({
     required this.tripId,
@@ -220,6 +221,7 @@ class TripState {
     this.geoRegion,
     this.locationLat,
     this.locationLng,
+    this.creationContext,
   });
 
   factory TripState.fromJson(Map<String, dynamic> j) {
@@ -238,6 +240,10 @@ class TripState {
       segments: ((j['segments'] as List?) ?? const [])
           .map((s) => TripSegment.fromJson(s as Map<String, dynamic>))
           .toList(),
+      creationContext: j['creation_context'] == null
+          ? null
+          : CreationContext.fromJson(
+              (j['creation_context'] as Map).cast<String, dynamic>()),
     );
   }
 
@@ -396,6 +402,7 @@ class HomeSnapshot {
   final List<SupportedCorridor> supportedCorridors;
   final List<TripSummary> trips;
   final FeaturedTrip? featuredTrip;
+  final CreateTripOptions? createTripOptions;
   final bool fromCache;
   final DateTime? cachedAt;
 
@@ -404,6 +411,7 @@ class HomeSnapshot {
     this.supportedCorridors = const [],
     required this.trips,
     this.featuredTrip,
+    this.createTripOptions,
     this.fromCache = false,
     this.cachedAt,
   });
@@ -429,6 +437,11 @@ class HomeSnapshot {
             ? null
             : FeaturedTrip.fromJson(
                 (json['featured_trip'] as Map).cast<String, dynamic>()),
+        createTripOptions: json['create_trip_options'] == null
+            ? null
+            : CreateTripOptions.fromJson(
+                (json['create_trip_options'] as Map)
+                    .cast<String, dynamic>()),
         fromCache: fromCache,
         cachedAt: cachedAt,
       );
@@ -439,6 +452,16 @@ class HomeSnapshot {
             supportedCorridors.map((c) => c.toJson()).toList(),
         'trips': trips.map((trip) => trip.toJson()).toList(),
         'featured_trip': featuredTrip?.toJson(),
+        if (createTripOptions != null)
+          'create_trip_options': {
+            'party_types': createTripOptions!.partyTypes
+                .map((p) => {'id': p.id, 'label': p.label})
+                .toList(),
+            'interests': createTripOptions!.interests
+                .map((i) => {'id': i.id, 'label': i.label})
+                .toList(),
+            'max_days_by_region': createTripOptions!.maxDaysByRegion,
+          },
       };
 }
 
@@ -493,6 +516,84 @@ class UserStatus {
         used: (j['daily_reroutes_used'] as num).toInt(),
         remaining: (j['daily_reroutes_remaining'] as num).toInt(),
         max: (j['max_daily_reroutes'] as num).toInt(),
+      );
+}
+
+
+// ---------------------------------------------------------------------------
+// SPEC-40: Guided Create Trip models
+// ---------------------------------------------------------------------------
+
+/// A single party type option advertised by the server.
+class PartyOption {
+  final String id;
+  final String label;
+  const PartyOption({required this.id, required this.label});
+
+  factory PartyOption.fromJson(Map<String, dynamic> j) => PartyOption(
+        id: j['id'] as String,
+        label: j['label'] as String,
+      );
+}
+
+/// A single interest option advertised by the server.
+class InterestOption {
+  final String id;
+  final String label;
+  const InterestOption({required this.id, required this.label});
+
+  factory InterestOption.fromJson(Map<String, dynamic> j) => InterestOption(
+        id: j['id'] as String,
+        label: j['label'] as String,
+      );
+}
+
+/// Advertised create-trip options from GET /trips.
+class CreateTripOptions {
+  final List<PartyOption> partyTypes;
+  final List<InterestOption> interests;
+  final Map<String, int> maxDaysByRegion;
+
+  const CreateTripOptions({
+    this.partyTypes = const [],
+    this.interests = const [],
+    this.maxDaysByRegion = const {},
+  });
+
+  factory CreateTripOptions.fromJson(Map<String, dynamic> j) {
+    return CreateTripOptions(
+      partyTypes: ((j['party_types'] as List?) ?? const [])
+          .map((e) => PartyOption.fromJson((e as Map).cast<String, dynamic>()))
+          .toList(),
+      interests: ((j['interests'] as List?) ?? const [])
+          .map((e) =>
+              InterestOption.fromJson((e as Map).cast<String, dynamic>()))
+          .toList(),
+      maxDaysByRegion: ((j['max_days_by_region'] as Map?) ?? const {})
+          .map((k, v) => MapEntry(k as String, (v as num).toInt())),
+    );
+  }
+}
+
+/// SPEC-40: Persisted creation context from the guided create flow.
+class CreationContext {
+  final String? destination;
+  final String? startDateLocal;
+  final String? endDateLocal;
+  final List<String> interestIds;
+
+  const CreationContext({
+    this.destination,
+    this.startDateLocal,
+    this.endDateLocal,
+    this.interestIds = const [],
+  });
+
+  factory CreationContext.fromJson(Map<String, dynamic> j) => CreationContext(
+        destination: j['destination'] as String?,
+        startDateLocal: j['start_date_local'] as String?,
+        endDateLocal: j['end_date_local'] as String?,
+        interestIds: ((j['interest_ids'] as List?) ?? const []).cast<String>(),
       );
 }
 

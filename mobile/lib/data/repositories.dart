@@ -33,6 +33,34 @@ class TripRepository {
     });
     return getTrip(data['trip_id'] as String);
   }
+
+  /// SPEC-40: Guided range create with dates, party, and interests.
+  Future<TripState> rangeCreate({
+    required String geoRegion,
+    required DateTime startDate,
+    required DateTime endDate,
+    required String partyType,
+    required int partySize,
+    List<String> interestIds = const [],
+    String? mood,
+  }) async {
+    final body = <String, dynamic>{
+      'geo_region': geoRegion,
+      'start_date': startDate.toIso8601String(),
+      'end_date': endDate.toIso8601String(),
+      'party': {
+        'party_type': partyType,
+        'size': partySize,
+        'members': <Map<String, dynamic>>[],
+      },
+      'preferences': {
+        'interest_ids': interestIds,
+      },
+      if (mood != null) 'initial_mood': mood,
+    };
+    final data = await _api.post('/trip/create', body: body);
+    return getTrip(data['trip_id'] as String);
+  }
   Future<TripState> getTrip(String tripId) async => TripState.fromJson(
         await _api.get('/trip/$tripId') as Map<String, dynamic>,
       );

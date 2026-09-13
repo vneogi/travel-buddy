@@ -134,6 +134,19 @@ class SupportedCorridor(BaseModel):
     max_days_per_region: Dict[str, int]
 
 
+class CreationContext(BaseModel):
+    """SPEC-40: Persisted inputs from the guided create flow.
+
+    Stored inside TripState JSON so no migration is needed.
+    Party remains in the existing SPEC-03 party contract.
+    """
+
+    destination: Optional[str] = None  # geo_region selected
+    start_date_local: Optional[str] = None  # inclusive YYYY-MM-DD
+    end_date_local: Optional[str] = None  # inclusive YYYY-MM-DD
+    interest_ids: List[str] = Field(default_factory=list)
+
+
 class TripState(BaseModel):
     """The live, mutable trip state object."""
 
@@ -146,6 +159,7 @@ class TripState(BaseModel):
     schedule_basis: Optional[str] = None  # SPEC-35: "region_local_v1" when node times use region TZ
     corridor_id: Optional[str] = None  # SPEC-36: corridor identifier
     segments: List[TripSegment] = []  # SPEC-36: ordered city segments
+    creation_context: Optional[CreationContext] = None  # SPEC-40: guided create inputs
     created_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
 
@@ -244,6 +258,7 @@ class CreateTripRequest(BaseModel):
     # NOTE: user_id is derived from the auth token server-side; ignored if sent.
     user_id: Optional[str] = None
     start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None  # SPEC-40: inclusive range end
     geo_region: Optional[str] = None
     segments: Optional[List[TripSegmentIn]] = None
     preferences: dict = {}

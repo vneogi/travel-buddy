@@ -76,8 +76,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _createTrip(HomeSnapshot snapshot) async {
+    // SPEC-40: Navigate to guided create wizard
+    if (_creating) return;
+    context.push('/trip/create');
+    return;
+    // Legacy dialog below is unreachable
     final supportedRegions = snapshot.supportedRegions;
-    if (_creating || supportedRegions.isEmpty) return;
+    if (supportedRegions.isEmpty) return;
     final selection = await _showCreateDialog(
       supportedRegions,
       createsAdditionalTrip: snapshot.trips.isNotEmpty,
