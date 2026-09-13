@@ -9,8 +9,16 @@ import '../theme/typography.dart';
 class AlertCard extends StatelessWidget {
   final ContextAlert alert;
   final VoidCallback? onDismiss;
+  final VoidCallback? onViewStop;
+  final VoidCallback? onReviewAlternatives;
 
-  const AlertCard({super.key, required this.alert, this.onDismiss});
+  const AlertCard({
+    super.key,
+    required this.alert,
+    this.onDismiss,
+    this.onViewStop,
+    this.onReviewAlternatives,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +53,22 @@ class AlertCard extends StatelessWidget {
                     '${_sourceDisplayName(alert.source)} - Updated $ago',
                     style: AppTypography.caption,
                   ),
+                  if (onViewStop != null || onReviewAlternatives != null)
+                    Wrap(
+                      spacing: AppSpacing.sm,
+                      children: [
+                        if (onViewStop != null)
+                          TextButton(
+                            onPressed: onViewStop,
+                            child: const Text('View stop'),
+                          ),
+                        if (onReviewAlternatives != null)
+                          TextButton(
+                            onPressed: onReviewAlternatives,
+                            child: const Text('Review alternatives'),
+                          ),
+                      ],
+                    ),
                 ],
               ),
             ),

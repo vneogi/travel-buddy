@@ -46,8 +46,8 @@ returned HTTP 200. Signed `app-release.apk` built with that
 `TB_API_BASE_URL` and `adb install -r` succeeded on device
 `49261FDKD001JM`.
 
-Owner reported the session worked end to end. Screenshots (not a quoted Ask
-transcript) show:
+Owner reported the installed and offline session worked end to end. Screenshots
+show:
 
 - Profile API Host is the Cloud Run hostname (not localhost).
 - Device ID `d7cf8b44-1cb1-4028-ae5f-b6505b75423c`.
@@ -58,6 +58,13 @@ transcript) show:
 - City sections (Vientiane, Luang Prabang) and hearts/swap UI.
 - Airplane-mode itinerary still readable; Sync Status queued then later
   drained with no permanent failures.
+
+Subsequent screenshots captured the Ask text. Both food questions returned the
+deterministic Vientiane router fallback ("check with the venue directly"), not
+an LLM-generated or corpus-grounded answer. It no longer leaked Dubai content,
+but LLM-backed Ask is not verified and is deferred to the grounded SPEC-25
+phase. This does not reopen the SPEC-37 delivery gate: hosted transport,
+installed launch, destination time, maps hand-off, and offline cache passed.
 
 Not recorded here: APK SHA-256 (owner did not paste `certutil`), and Cloud
 Run startup booleans (not pasted for this revision). Opening-hours warnings

@@ -64,6 +64,12 @@ Secret values are not recorded. Startup booleans (`llm_key_present`,
 body. `/health` still reports process default `geo_fence=dubai_uae`; trip
 `geo_region` is what scopes Laos Ask and itineraries.
 
+The 2026-09-13 phone Ask screenshots show the deterministic Vientiane router
+fallback. They prove region-safe fallback behavior, not a successful hosted
+LLM call. LLM provider readiness remains unverified even if the startup
+boolean was true; provider switching and grounded answers belong to the later
+SPEC-25 phase.
+
 SPEC-36 remains on main (PR #55). SPEC-37 phone pass is recorded in
 `docs/AWAITING_VERIFICATION.md`. Laptop `.env` is still not the hosted
 config.

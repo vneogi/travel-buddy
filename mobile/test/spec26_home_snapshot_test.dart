@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:travel_buddy/core/api_exception.dart';
@@ -343,6 +344,58 @@ void main() {
       expect(find.text('Gold Souk'), findsOneWidget);
       verify(() => repository.getHomeSnapshot()).called(1);
       verifyNever(() => repository.getTrip(any()));
+    });
+
+    testWidgets('active featured card deep-links to its actionable node',
+        (tester) async {
+      final repository = _MockTripRepository();
+      final database = _MockOfflineDatabase();
+      final snapshot = HomeSnapshot(
+        supportedRegions: const ['luang_prabang_laos'],
+        trips: const [],
+        featuredTrip: FeaturedTrip(
+          tripId: 'trip-active',
+          geoRegion: 'luang_prabang_laos',
+          isActive: true,
+          actionableStop: FeaturedStop(
+            nodeId: 'node-current',
+            venueName: 'Current stop',
+            scheduledStart: DateTime.utc(2026, 10, 8, 2),
+            status: 'pending',
+          ),
+        ),
+      );
+      when(() => repository.getHomeSnapshot()).thenAnswer((_) async => snapshot);
+      when(() => database.cacheTripList(any(), any()))
+          .thenAnswer((_) async {});
+      final router = GoRouter(
+        routes: [
+          GoRoute(path: '/', builder: (_, __) => const HomeScreen()),
+          GoRoute(
+            path: '/trip/:tripId',
+            builder: (_, state) => Text(
+              '${state.pathParameters['tripId']}:'
+              '${state.uri.queryParameters['focus']}',
+            ),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            tripRepoProvider.overrideWithValue(repository),
+            offlineDatabaseProvider.overrideWithValue(database),
+            identityCacheScopeProvider.overrideWithValue('anonymous:device-a'),
+          ],
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Current stop'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('trip-active:node-current'), findsOneWidget);
     });
 
     testWidgets('network failure renders cached featured card and cache age',

@@ -13,10 +13,12 @@ import '../features/itinerary/date_scope.dart';
 class CitySection extends StatefulWidget {
   final CorridorCityGroup cityGroup;
   final Widget Function(CorridorCityGroup group) childBuilder;
+  final bool forceExpanded;
 
   const CitySection({
     required this.cityGroup,
     required this.childBuilder,
+    this.forceExpanded = false,
     super.key,
   });
 
@@ -30,7 +32,16 @@ class _CitySectionState extends State<CitySection> {
   @override
   void initState() {
     super.initState();
-    _expanded = !widget.cityGroup.isPast(DateTime.now().toUtc());
+    _expanded =
+        widget.forceExpanded || !widget.cityGroup.isPast(DateTime.now().toUtc());
+  }
+
+  @override
+  void didUpdateWidget(covariant CitySection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.forceExpanded && !oldWidget.forceExpanded && !_expanded) {
+      setState(() => _expanded = true);
+    }
   }
 
   @override

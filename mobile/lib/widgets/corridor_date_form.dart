@@ -9,7 +9,7 @@ import '../theme/typography.dart';
 /// SPEC-36: Independent date-range form for each corridor city.
 ///
 /// Validation rules (all checked live):
-///  - Each segment range: 1 to [maxDaysPerSegment] days inclusive.
+///  - Each segment range: 1 to its advertised city cap, inclusive.
 ///  - Total days across all segments: <= [maxDays].
 ///  - Segments must not overlap: each starts strictly after the prior ends.
 ///  - Chronological order: start_i+1 > end_i.
@@ -50,15 +50,17 @@ class CorridorDateFormState extends State<CorridorDateForm> {
   }
 
   String? _validate() {
-    final maxPer = widget.corridor.maxDaysPerSegment;
     final maxTotal = widget.corridor.maxDays;
     var totalDays = 0;
     for (var i = 0; i < _ranges.length; i++) {
       final r = _ranges[i];
       final days = r.end.difference(r.start).inDays + 1;
       if (days < 1) return 'Each city needs at least 1 day.';
+      final region = widget.corridor.geoRegions[i];
+      final maxPer = widget.corridor.maxDaysForRegion(region);
       if (days > maxPer) {
-        return '${widget.corridor.geoRegions[i]} exceeds $maxPer days.';
+        final display = regionDisplayNames[region] ?? region;
+        return '$display exceeds $maxPer days.';
       }
       totalDays += days;
       if (i > 0) {
@@ -108,25 +110,25 @@ class CorridorDateFormState extends State<CorridorDateForm> {
   Widget build(BuildContext context) {
     final error = _validate();
     return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: 16,
-          right: 16,
-          top: 16,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 16,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
             Text(
               'Create ${widget.corridor.displayName}',
               style: AppTypography.h2,
             ),
             const SizedBox(height: 4),
             Text(
-              'Pick dates for each city (max ${widget.corridor.maxDaysPerSegment} days each, '
-              '${widget.corridor.maxDays} total).',
+              'Pick dates for each city (${widget.corridor.maxDays} days total).',
               style: AppTypography.caption,
             ),
             const SizedBox(height: 16),
@@ -134,6 +136,9 @@ class CorridorDateFormState extends State<CorridorDateForm> {
               _CityDateRow(
                 region: widget.corridor.geoRegions[i],
                 range: _ranges[i],
+                maxDays: widget.corridor.maxDaysForRegion(
+                  widget.corridor.geoRegions[i],
+                ),
                 onTap: () => _pickRange(i),
               ),
               if (i < widget.corridor.geoRegions.length - 1)
@@ -160,7 +165,8 @@ class CorridorDateFormState extends State<CorridorDateForm> {
                     )
                   : const Text('Create Laos corridor'),
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -170,11 +176,13 @@ class CorridorDateFormState extends State<CorridorDateForm> {
 class _CityDateRow extends StatelessWidget {
   final String region;
   final DateTimeRange range;
+  final int maxDays;
   final VoidCallback onTap;
 
   const _CityDateRow({
     required this.region,
     required this.range,
+    required this.maxDays,
     required this.onTap,
   });
 
@@ -198,7 +206,8 @@ class _CityDateRow extends StatelessWidget {
             ),
             Expanded(
               child: Text(
-                '${_label(range.start)} - ${_label(range.end)}  ($days d)',
+                '${_label(range.start)} - ${_label(range.end)}  '
+                '($days d, max $maxDays)',
                 style: AppTypography.bodyMedium,
               ),
             ),

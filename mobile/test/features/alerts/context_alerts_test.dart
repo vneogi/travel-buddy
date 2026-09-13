@@ -113,6 +113,32 @@ void main() {
     expect(find.textContaining('custom_src'), findsOneWidget);
   });
 
+  testWidgets('AlertCard actions require explicit traveller taps',
+      (tester) async {
+    var views = 0;
+    var reviews = 0;
+    final alert = ContextAlert.fromJson(_alertJson());
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: AlertCard(
+            alert: alert,
+            onViewStop: () => views++,
+            onReviewAlternatives: () => reviews++,
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(views, 0);
+    expect(reviews, 0);
+    await tester.tap(find.text('View stop'));
+    await tester.tap(find.text('Review alternatives'));
+    expect(views, 1);
+    expect(reviews, 1);
+  });
+
   // ===================== Test 3: Expired alerts hidden =====================
   test('isExpired identifies expired alerts', () {
     final expired = ContextAlert.fromJson(

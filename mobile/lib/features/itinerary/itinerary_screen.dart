@@ -43,7 +43,12 @@ Map<String, dynamic> preferencesForConfirmedSwap(
 /// be verified on a real device.
 class ItineraryScreen extends ConsumerWidget {
   final String tripId;
-  const ItineraryScreen({super.key, required this.tripId});
+  final String? focusNodeId;
+  const ItineraryScreen({
+    super.key,
+    required this.tripId,
+    this.focusNodeId,
+  });
 
   String _sig(TripNode n) =>
       '${n.nodeId}|${n.venueId}|${n.venueName}|${n.scheduledStart.toIso8601String()}|${n.status.name}|${n.isLocked}|${n.bookingNotes}|${n.bookingType}';
@@ -123,14 +128,39 @@ class ItineraryScreen extends ConsumerWidget {
     );
   }
 
-  void _cancel(WidgetRef ref, TripNode node) {
-    ref
-        .read(itineraryControllerProvider(tripId).notifier)
-        .applyEvent(
-          type: EventType.cancelActivity,
-          message: 'Cancel ${node.venueName}',
-          targetNodeId: node.nodeId,
-        );
+  Future<void> _cancel(
+    BuildContext context,
+    WidgetRef ref,
+    TripNode node,
+  ) async {
+    if (node.isLocked) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cancel this activity?'),
+        content: Text('${node.venueName} will be marked as skipped.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Keep'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            child: const Text('Cancel activity'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && context.mounted) {
+      await ref
+          .read(itineraryControllerProvider(tripId).notifier)
+          .applyEvent(
+            type: EventType.cancelActivity,
+            message: 'Cancel ${node.venueName}',
+            targetNodeId: node.nodeId,
+          );
+    }
   }
 
   void _editBooking(BuildContext context, TripNode node) {
@@ -283,7 +313,20 @@ class ItineraryScreen extends ConsumerWidget {
                 // SPEC-29: Context alerts above timeline.
                 // Non-blocking: itinerary shows immediately; alerts
                 // render when available (no spinner replacement).
-                ItineraryAlertsSection(tripId: tripId),
+                ItineraryAlertsSection(
+                  tripId: tripId,
+                  onScrollToNode: (nodeId) => context.go(
+                    '/trip/$tripId?focus=${Uri.encodeQueryComponent(nodeId)}',
+                  ),
+                  onReviewAlternatives: (nodeId) {
+                    final node = state.nodes
+                        .where((candidate) => candidate.nodeId == nodeId)
+                        .firstOrNull;
+                    if (node != null && !node.isLocked) {
+                      _swap(context, ref, node);
+                    }
+                  },
+                ),
                 Expanded(
                   child: state.nodes.isEmpty
                       ? Center(
@@ -299,8 +342,9 @@ class ItineraryScreen extends ConsumerWidget {
                               nodes: state.nodes,
                               segments: state.segments,
                               state: state,
+                              focusNodeId: focusNodeId,
                               onSwap: (node) => _swap(context, ref, node),
-                              onCancel: (node) => _cancel(ref, node),
+                              onCancel: (node) => _cancel(context, ref, node),
                               onOutcome: (node) =>
                                   _showOutcomePicker(context, ref, node),
                               onLoved: (node) {
@@ -325,11 +369,12 @@ class ItineraryScreen extends ConsumerWidget {
                                   _deleteBooking(context, ref, node),
                               sig: _sig,
                             )
-                          : _DateScopedTimeline(
+                          : _FocusedDateScopedTimeline(
                               nodes: state.nodes,
                               state: state,
+                              focusNodeId: focusNodeId,
                               onSwap: (node) => _swap(context, ref, node),
-                              onCancel: (node) => _cancel(ref, node),
+                              onCancel: (node) => _cancel(context, ref, node),
                               onOutcome: (node) =>
                                   _showOutcomePicker(context, ref, node),
                               onLoved: (node) {
@@ -368,10 +413,11 @@ class ItineraryScreen extends ConsumerWidget {
 /// still receives the first card of the next day.
 
 /// SPEC-36: Corridor-aware timeline that groups nodes by city segment.
-class _CorridorTimeline extends StatelessWidget {
+class _CorridorTimeline extends StatefulWidget {
   final List<TripNode> nodes;
   final List<TripSegment> segments;
   final ItineraryState state;
+  final String? focusNodeId;
   final void Function(TripNode) onSwap;
   final void Function(TripNode) onCancel;
   final void Function(TripNode) onOutcome;
@@ -384,6 +430,7 @@ class _CorridorTimeline extends StatelessWidget {
     required this.nodes,
     required this.segments,
     required this.state,
+    this.focusNodeId,
     required this.onSwap,
     required this.onCancel,
     required this.onOutcome,
@@ -394,44 +441,179 @@ class _CorridorTimeline extends StatelessWidget {
   });
 
   @override
+  State<_CorridorTimeline> createState() => _CorridorTimelineState();
+}
+
+class _CorridorTimelineState extends State<_CorridorTimeline> {
+  final Map<String, GlobalKey> _nodeKeys = {};
+  String? _lastFocusedNodeId;
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduleFocus();
+  }
+
+  @override
+  void didUpdateWidget(covariant _CorridorTimeline oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.focusNodeId != widget.focusNodeId ||
+        oldWidget.nodes != widget.nodes) {
+      _scheduleFocus();
+    }
+  }
+
+  void _scheduleFocus() {
+    final nodeId = widget.focusNodeId;
+    if (nodeId == null || nodeId == _lastFocusedNodeId) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final target = _nodeKeys[nodeId]?.currentContext;
+      if (target == null) return;
+      _lastFocusedNodeId = nodeId;
+      Scrollable.ensureVisible(
+        target,
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeOut,
+        alignment: 0.08,
+      );
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final cityGroups = groupNodesByCorridor(
-      nodes: nodes,
-      segments: segments,
+      nodes: widget.nodes,
+      segments: widget.segments,
     );
-    return ListView.builder(
+    final focusedNode = widget.nodes
+        .where((node) => node.nodeId == widget.focusNodeId)
+        .firstOrNull;
+    return ListView(
       padding: const EdgeInsets.only(bottom: 120),
-      itemCount: cityGroups.length,
-      itemBuilder: (context, index) {
-        final group = cityGroups[index];
-        // Compute the first node of the next city for cross-city nextNode.
-        TripNode? nextCityFirst;
-        if (index + 1 < cityGroups.length) {
-          final nextNodes = cityGroups[index + 1]
-              .dayGroups
-              .expand((dg) => dg.nodes)
-              .toList();
-          if (nextNodes.isNotEmpty) nextCityFirst = nextNodes.first;
-        }
-        return CitySection(
-          cityGroup: group,
-          childBuilder: (cg) => _DateScopedTimeline(
-            nodes: cg.dayGroups.expand((dg) => dg.nodes).toList(),
-            state: state,
-            onSwap: onSwap,
-            onCancel: onCancel,
-            onOutcome: onOutcome,
-            onLoved: onLoved,
-            onEditBooking: onEditBooking,
-            onDeleteBooking: onDeleteBooking,
-            sig: sig,
-            isCorridor: true,
-            globalNextNode: nextCityFirst,
-          ),
-        );
-      },
+      children: List.generate(
+        cityGroups.length,
+        (index) => _buildCitySection(cityGroups, index, focusedNode),
+      ),
     );
   }
+
+  Widget _buildCitySection(
+    List<CorridorCityGroup> cityGroups,
+    int index,
+    TripNode? focusedNode,
+  ) {
+    final group = cityGroups[index];
+    TripNode? nextCityFirst;
+    if (index + 1 < cityGroups.length) {
+      final nextNodes = cityGroups[index + 1]
+          .dayGroups
+          .expand((dayGroup) => dayGroup.nodes)
+          .toList();
+      if (nextNodes.isNotEmpty) nextCityFirst = nextNodes.first;
+    }
+    return CitySection(
+      key: ValueKey(group.geoRegion),
+      cityGroup: group,
+      forceExpanded: focusedNode?.geoRegion == group.geoRegion,
+      childBuilder: (cityGroup) => _DateScopedTimeline(
+        nodes: cityGroup.dayGroups.expand((dayGroup) => dayGroup.nodes).toList(),
+        state: widget.state,
+        onSwap: widget.onSwap,
+        onCancel: widget.onCancel,
+        onOutcome: widget.onOutcome,
+        onLoved: widget.onLoved,
+        onEditBooking: widget.onEditBooking,
+        onDeleteBooking: widget.onDeleteBooking,
+        sig: widget.sig,
+        isCorridor: true,
+        globalNextNode: nextCityFirst,
+        nodeKeys: _nodeKeys,
+      ),
+    );
+  }
+}
+
+class _FocusedDateScopedTimeline extends StatefulWidget {
+  final List<TripNode> nodes;
+  final ItineraryState state;
+  final String? focusNodeId;
+  final void Function(TripNode) onSwap;
+  final void Function(TripNode) onCancel;
+  final void Function(TripNode) onOutcome;
+  final void Function(TripNode) onLoved;
+  final void Function(TripNode) onEditBooking;
+  final void Function(TripNode) onDeleteBooking;
+  final String Function(TripNode) sig;
+
+  const _FocusedDateScopedTimeline({
+    required this.nodes,
+    required this.state,
+    this.focusNodeId,
+    required this.onSwap,
+    required this.onCancel,
+    required this.onOutcome,
+    required this.onLoved,
+    required this.onEditBooking,
+    required this.onDeleteBooking,
+    required this.sig,
+  });
+
+  @override
+  State<_FocusedDateScopedTimeline> createState() =>
+      _FocusedDateScopedTimelineState();
+}
+
+class _FocusedDateScopedTimelineState
+    extends State<_FocusedDateScopedTimeline> {
+  final Map<String, GlobalKey> _nodeKeys = {};
+  String? _lastFocusedNodeId;
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduleFocus();
+  }
+
+  @override
+  void didUpdateWidget(covariant _FocusedDateScopedTimeline oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.focusNodeId != widget.focusNodeId ||
+        oldWidget.nodes != widget.nodes) {
+      _scheduleFocus();
+    }
+  }
+
+  void _scheduleFocus() {
+    final nodeId = widget.focusNodeId;
+    if (nodeId == null || nodeId == _lastFocusedNodeId) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final target = _nodeKeys[nodeId]?.currentContext;
+      if (target == null) return;
+      _lastFocusedNodeId = nodeId;
+      Scrollable.ensureVisible(
+        target,
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeOut,
+        alignment: 0.08,
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => _DateScopedTimeline(
+        nodes: widget.nodes,
+        state: widget.state,
+        onSwap: widget.onSwap,
+        onCancel: widget.onCancel,
+        onOutcome: widget.onOutcome,
+        onLoved: widget.onLoved,
+        onEditBooking: widget.onEditBooking,
+        onDeleteBooking: widget.onDeleteBooking,
+        sig: widget.sig,
+        nodeKeys: _nodeKeys,
+      );
 }
 
 class _DateScopedTimeline extends StatelessWidget {
@@ -446,6 +628,7 @@ class _DateScopedTimeline extends StatelessWidget {
   final String Function(TripNode) sig;
   final bool isCorridor;
   final TripNode? globalNextNode;
+  final Map<String, GlobalKey>? nodeKeys;
 
   const _DateScopedTimeline({
     required this.nodes,
@@ -459,6 +642,7 @@ class _DateScopedTimeline extends StatelessWidget {
     required this.sig,
     this.isCorridor = false,
     this.globalNextNode,
+    this.nodeKeys,
   });
 
   @override
@@ -474,15 +658,14 @@ class _DateScopedTimeline extends StatelessWidget {
       }
     }
 
-    return ListView.builder(
+    return ListView(
       shrinkWrap: isCorridor,
       physics: isCorridor ? const NeverScrollableScrollPhysics() : null,
-      itemCount: items.length,
       padding: const EdgeInsets.only(
         top: AppSpacing.base,
         bottom: 100, // space for FAB
       ),
-      itemBuilder: (context, i) {
+      children: List.generate(items.length, (i) {
         final item = items[i];
         if (item.isHeader) {
           return _DateHeader(date: item.date!);
@@ -500,41 +683,46 @@ class _DateScopedTimeline extends StatelessWidget {
         // Cross-city boundary: use globally-ordered next from corridor.
         next ??= globalNextNode;
 
-        return AnimatedSwitcher(
-          duration: const Duration(milliseconds: 220),
-          transitionBuilder: (child, anim) =>
-              FadeTransition(opacity: anim, child: child),
-          child: ActivityCard(
-            key: ValueKey(
-              '${sig(node)}|'
-              '${state.lovedPlaceRefs.contains(node.venueId ?? node.venueName)}|'
-              '${state.nodeOutcomes[node.nodeId]?.outcome}|'
-              '${state.nodeOutcomes[node.nodeId]?.reason}|'
-              '${state.outcomeRecordingNodeIds.contains(node.nodeId)}',
+        return KeyedSubtree(
+          key: nodeKeys?.putIfAbsent(node.nodeId, () => GlobalKey()),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 220),
+            transitionBuilder: (child, anim) =>
+                FadeTransition(opacity: anim, child: child),
+            child: ActivityCard(
+              key: ValueKey(
+                '${sig(node)}|'
+                '${state.lovedPlaceRefs.contains(node.venueId ?? node.venueName)}|'
+                '${state.nodeOutcomes[node.nodeId]?.outcome}|'
+                '${state.nodeOutcomes[node.nodeId]?.reason}|'
+                '${state.outcomeRecordingNodeIds.contains(node.nodeId)}',
+              ),
+              node: node,
+              nextNode: next,
+              isLoved: state.lovedPlaceRefs.contains(
+                node.venueId ?? node.venueName,
+              ),
+              recordedOutcome: state.nodeOutcomes[node.nodeId],
+              isRecordingOutcome: state.outcomeRecordingNodeIds.contains(
+                node.nodeId,
+              ),
+              onTapSwap: state.processing ? null : () => onSwap(node),
+              onTapCancel: state.processing ? null : () => onCancel(node),
+              onTapEditBooking:
+                  (!state.processing && node.nodeKind == 'booking')
+                      ? () => onEditBooking(node)
+                      : null,
+              onTapDeleteBooking:
+                  (!state.processing && node.nodeKind == 'booking')
+                      ? () => onDeleteBooking(node)
+                      : null,
+              onTapRecordOutcome:
+                  state.processing ? null : () => onOutcome(node),
+              onTapLoved: () => onLoved(node),
             ),
-            node: node,
-            nextNode: next,
-            isLoved: state.lovedPlaceRefs.contains(
-              node.venueId ?? node.venueName,
-            ),
-            recordedOutcome: state.nodeOutcomes[node.nodeId],
-            isRecordingOutcome: state.outcomeRecordingNodeIds.contains(
-              node.nodeId,
-            ),
-            onTapSwap: state.processing ? null : () => onSwap(node),
-            onTapCancel: state.processing ? null : () => onCancel(node),
-            onTapEditBooking: (!state.processing && node.nodeKind == 'booking')
-                ? () => onEditBooking(node)
-                : null,
-            onTapDeleteBooking:
-                (!state.processing && node.nodeKind == 'booking')
-                ? () => onDeleteBooking(node)
-                : null,
-            onTapRecordOutcome: state.processing ? null : () => onOutcome(node),
-            onTapLoved: () => onLoved(node),
           ),
         );
-      },
+      }),
     );
   }
 }
@@ -794,10 +982,12 @@ class _OutcomeSheet extends StatelessWidget {
 class ItineraryAlertsSection extends ConsumerStatefulWidget {
   final String tripId;
   final void Function(String nodeId)? onScrollToNode;
+  final void Function(String nodeId)? onReviewAlternatives;
   const ItineraryAlertsSection({
     super.key,
     required this.tripId,
     this.onScrollToNode,
+    this.onReviewAlternatives,
   });
 
   @override
@@ -869,6 +1059,20 @@ class _ItineraryAlertsSectionState extends ConsumerState<ItineraryAlertsSection>
                   for (final alert in visible)
                     AlertCard(
                       alert: alert,
+                      onViewStop: alert.affectedNodeIds.isEmpty ||
+                              widget.onScrollToNode == null
+                          ? null
+                          : () => widget.onScrollToNode!(
+                                alert.affectedNodeIds.first,
+                              ),
+                      onReviewAlternatives:
+                          alert.suggestedAction == 'review_outdoor_plans' &&
+                                  alert.affectedNodeIds.isNotEmpty &&
+                                  widget.onReviewAlternatives != null
+                              ? () => widget.onReviewAlternatives!(
+                                    alert.affectedNodeIds.first,
+                                  )
+                              : null,
                       onDismiss: () => ref
                           .read(alertsNotifierProvider(widget.tripId).notifier)
                           .dismiss(alert.alertId),

@@ -7,8 +7,8 @@ must not hardcode city order.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Dict, List
+from dataclasses import dataclass
+from typing import Dict
 
 
 @dataclass(frozen=True)
@@ -19,7 +19,24 @@ class Corridor:
     display_name: str
     geo_regions: tuple[str, ...]
     max_days: int
-    max_days_per_segment: int
+    max_days_by_region: tuple[tuple[str, int], ...]
+
+    def max_days_for_region(self, geo_region: str) -> int:
+        """Return the advertised segment cap for one corridor city."""
+        limits = dict(self.max_days_by_region)
+        if geo_region not in limits:
+            raise KeyError(geo_region)
+        return limits[geo_region]
+
+    @property
+    def max_days_per_segment(self) -> int:
+        """Backward-compatible overall maximum for older clients."""
+        return max(limit for _, limit in self.max_days_by_region)
+
+    @property
+    def max_days_per_region(self) -> Dict[str, int]:
+        """JSON-ready per-city limits for corridor clients."""
+        return dict(self.max_days_by_region)
 
 
 CORRIDORS: Dict[str, Corridor] = {
@@ -31,8 +48,12 @@ CORRIDORS: Dict[str, Corridor] = {
             "vang_vieng_laos",
             "luang_prabang_laos",
         ),
-        max_days=7,
-        max_days_per_segment=3,
+        max_days=8,
+        max_days_by_region=(
+            ("vientiane_laos", 4),
+            ("vang_vieng_laos", 3),
+            ("luang_prabang_laos", 4),
+        ),
     ),
 }
 

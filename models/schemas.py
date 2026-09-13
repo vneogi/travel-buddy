@@ -123,6 +123,17 @@ class TripSegment(BaseModel):
     ends_on: _dt_module.date
 
 
+class SupportedCorridor(BaseModel):
+    """Client-facing corridor limits advertised by the trip list."""
+
+    corridor_id: str
+    display_name: str
+    geo_regions: List[str]
+    max_days: int
+    max_days_per_segment: int
+    max_days_per_region: Dict[str, int]
+
+
 class TripState(BaseModel):
     """The live, mutable trip state object."""
 
