@@ -134,6 +134,7 @@ class SupportedCorridor {
   final List<String> geoRegions;
   final int maxDays;
   final int maxDaysPerSegment;
+  final Map<String, int> maxDaysPerRegion;
 
   const SupportedCorridor({
     required this.corridorId,
@@ -141,6 +142,7 @@ class SupportedCorridor {
     required this.geoRegions,
     required this.maxDays,
     required this.maxDaysPerSegment,
+    this.maxDaysPerRegion = const {},
   });
 
   factory SupportedCorridor.fromJson(Map<String, dynamic> j) =>
@@ -150,7 +152,18 @@ class SupportedCorridor {
         geoRegions: (j['geo_regions'] as List).cast<String>(),
         maxDays: (j['max_days'] as num).toInt(),
         maxDaysPerSegment: (j['max_days_per_segment'] as num).toInt(),
+        maxDaysPerRegion:
+            ((j['max_days_per_region'] as Map?) ?? const {})
+                .map<String, int>(
+                  (key, value) => MapEntry(
+                    key as String,
+                    (value as num).toInt(),
+                  ),
+                ),
       );
+
+  int maxDaysForRegion(String geoRegion) =>
+      maxDaysPerRegion[geoRegion] ?? maxDaysPerSegment;
 
   Map<String, dynamic> toJson() => {
         'corridor_id': corridorId,
@@ -158,6 +171,7 @@ class SupportedCorridor {
         'geo_regions': geoRegions,
         'max_days': maxDays,
         'max_days_per_segment': maxDaysPerSegment,
+        'max_days_per_region': maxDaysPerRegion,
       };
 }
 

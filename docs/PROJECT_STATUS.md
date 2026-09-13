@@ -21,8 +21,10 @@
   (classify_intent -> check_cache -> venue_search -> apply_structural ->
   generate_response). NOT LangGraph -- langgraph is commented out in
   requirements.txt and the GraphState TypedDict is unused.
-- AI: live via the LiteLLM gateway (gpt-4o heavy, gpt-4o-mini light,
-  text-embedding-3-small embeddings).
+- AI: LiteLLM paths exist (gpt-4o heavy, gpt-4o-mini light,
+  text-embedding-3-small embeddings), but the 2026-09-13 hosted phone Ask
+  evidence used the deterministic router fallback. Live LLM-backed Ask is not
+  verified.
 - Data as last loaded: 74 venues (16 Dubai, 23 Luang Prabang, 15 Vang Vieng,
   20 Vientiane), 44 venue dishes, 30 dish-glossary entries. Confirm with a
   count query against venues_rag rather than trusting these numbers.
@@ -94,7 +96,7 @@
 | Money as a dimension (SPEC-23) | SPECIFIED | Not implemented. The engineering contract under VISION section 20, and roadmap concern 7. A band and an amount are different things and both are needed; no amount is storable without its currency; a band is meaningless until anchored to a region, which is what makes price tolerance portable between cities; transport cost belongs on trip_edge; budget is revealed from rejections rather than asked for, with a volunteered hard cap honoured exactly; amounts are SPEC-17 claims on a weeks-scale horizon and degrade to a band when stale. Depends on SPEC-13, SPEC-16 and SPEC-17 |
 
 | Identity lifecycle (SPEC-24) | SPECIFIED | Not implemented, and the design is deliberately settled ahead of the build. Sign-in itself is nearly free because Supabase Auth owns the provider flow and security.py already verifies the token; the work is what happens to the anonymous history. Owns credential aliases, the anonymous-to-account merge, multi-device, and sign-out. Merge direction is fixed one way, which extends the upgrade-on-sight rule already live on identity_kind. Union rather than dedupe; tier and quota both resolve to the maximum, since taking the minimum makes sign-in a way to refill the daily reroute allowance |
-| Ask Anything surface (SPEC-25) | PARTIAL (trip-scoped October slice) | The itinerary composer and per-trip home entry use existing trip chat. One-stop cancel/swap are structural; cancel is a skip, not a swap, as of SPEC-29. Broad mutations refuse. No add-from-chat control; near-me uses default Dubai coordinates. Trip-optional ask, pre-model budgets, SPEC-17 envelopes, discovery and offline answer contract remain |
+| Ask Anything surface (SPEC-25) | PARTIAL (trip-scoped October slice) | The itinerary composer and per-trip home entry use existing trip chat. The Sep 13 hosted phone food questions returned the deterministic Vientiane fallback, not an LLM/corpus answer. One-stop cancel/swap are structural; cancel is a skip, not a swap. Broad mutations refuse. Provider switching, latency, memory, trip-optional ask, budgets, SPEC-17 envelopes, discovery, and offline answers remain |
 | Home surface (SPEC-26) | IMPLEMENTED (snapshot) | GET /trips now returns featured_trip: active trip (or earliest upcoming) with actionable stop (no state_json, no full nodes). Dart HomeSnapshot parses and caches it. Home renders Now/Up next card above trip list. Offline cache renders same card with cache age. Full SPEC-22 migration remains |
 | App lifecycle and data rights (SPEC-27) | SPECIFIED | Not implemented. Owns push transport for candidates produced by capabilities such as SPEC-35, with tokens that survive the SPEC-24 merge and delivery through the SPEC-22 interruption budget enforced server-side. Also owns deletion/export under DPDP and GDPR and a minimum supported client that blocks writes but never reads |
 | Trip inspiration (SPEC-28) | DECIDED, NOT SCHEDULED | Opt-in, delayed, region-level public trip snapshots as inspiration. No live people/location, DMs or comments in v1. Requires identity, deletion/export and moderation gates |
@@ -105,6 +107,7 @@
 | Proactive itinerary notifications (SPEC-35) | PHASE A + A2 DONE | PR #50 (`ccfa41e`) added `GET /trip/{id}/notifications`, region-local catalog 09:00, and provider-backed departure candidates. PR #52 (`1379da8`) added the in-app Flutter banner, identity-scoped cache, local dismissal, and weather-card stacking gate. Meal previews remain suppressed until dish provenance exists. No background GPS, LLM, mutation or push |
 | Laos corridor trip (SPEC-36) | IMPLEMENTED (PR #55, `1f2c43d`) | One northbound Laos corridor on main. Owner Windows Oct 2-8 create and later-city swap 2026-09-06. Heads-up spam is SPEC-29/35, not this slice |
 | Phone-independent field-test delivery (SPEC-37) | DONE (PR #57, `f6f2f0c`) | 2026-09-13: Cloud Run revision `travel-buddy-00003-5bc` in `asia-south1` serving `https://travel-buddy-196190001420.asia-south1.run.app`. Signed release APK from `f6f2f0c` installed on the owner's Android phone. Owner reported online plus airplane-mode pass (ICT times, maps label, compact warnings, cached itinerary). Details in docs/AWAITING_VERIFICATION.md |
+| Active trip mode (SPEC-38) | IN PROGRESS | Adds the authoritative 8-day Laos limits (Vientiane 4, Vang Vieng 3, Luang Prabang 4), actionable-stop deep links, deterministic itinerary focus, visible confirmed cancellation, and departure/weather actions. LLM/provider and memory work remain deferred |
 
 Migration numbers are assigned when a spec is implemented, not when it is
 written. SPEC-11, SPEC-13, SPEC-14 and SPEC-15 each claimed a number, and the
@@ -181,9 +184,10 @@ Seed-shaped cohorts.
    (`f6f2f0c`). Cloud Run `travel-buddy-00003-5bc` plus signed APK; owner
    phone pass 2026-09-13. Briefs:
    docs/briefs/GENIE_SPEC_37_PHONE_FIELD_TEST.md.
-3. Next product slice (not a re-run of SPEC-37): multi-night hotel polish,
-   PDF/itinerary import if still wanted for the Oct 2-9 booking, then the
-   broader consumer backlog (SPEC-17, trip-less Ask, SPEC-24/27).
+3. SPEC-38 Active Trip Mode -- **IN PROGRESS**. Authoritative Oct 2-9 Laos
+   corridor plus deterministic current-stop navigation and explicit actions.
+4. PDF/itinerary import remains deferred; then the broader consumer backlog
+   (SPEC-17, grounded trip-less Ask, SPEC-24/27).
 
 ### Deferred after the phone gate
 

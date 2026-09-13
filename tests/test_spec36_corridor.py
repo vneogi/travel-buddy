@@ -39,7 +39,7 @@ def _corridor_body(
         starts = [
             ("2026-10-02", "2026-10-03"),
             ("2026-10-04", "2026-10-05"),
-            ("2026-10-06", "2026-10-08"),
+            ("2026-10-06", "2026-10-09"),
         ]
     return {
         "segments": [
@@ -67,7 +67,7 @@ class TestCorridorCreate:
         data = _create()
         assert data["status"] == "created"
         assert "trip_id" in data
-        assert len(data["nodes"]) > 0
+        assert len(data["nodes"]) == 32
         trip = client.get(f"/api/v1/trip/{data['trip_id']}", headers=HEADERS).json()
         assert trip["corridor_id"] == "laos_northbound_v1"
         assert len(trip["segments"]) == 3
@@ -76,6 +76,14 @@ class TestCorridorCreate:
             "vang_vieng_laos",
             "luang_prabang_laos",
         ]
+        assert [(s["starts_on"], s["ends_on"]) for s in trip["segments"]] == [
+            ("2026-10-02", "2026-10-03"),
+            ("2026-10-04", "2026-10-05"),
+            ("2026-10-06", "2026-10-09"),
+        ]
+        lp_ids = [n["venue_id"] for n in trip["nodes"] if n["geo_region"] == "luang_prabang_laos"]
+        assert len(lp_ids) == 16
+        assert len(lp_ids) == len(set(lp_ids))
 
     def test_nodes_belong_to_segment_catalog(self):
         data = _create()
@@ -94,7 +102,7 @@ class TestCorridorCreate:
             dt = datetime.fromisoformat(n["scheduled_start"])
             local = dt.astimezone(TZ)
             by_date.setdefault(local.date(), []).append(local)
-        assert len(by_date) == 7
+        assert len(by_date) == 8
         for d, times in by_date.items():
             assert len(times) == CORRIDOR_STOPS_PER_DAY
             assert times[0].hour == 9 and times[0].minute == 0
@@ -175,24 +183,46 @@ class TestCorridorValidation:
             }
         )
 
-    def test_range_over_three_days(self):
+    def test_vientiane_over_four_days_rejected(self):
         self._assert_invalid(
             _corridor_body(
                 starts=[
-                    ("2026-10-01", "2026-10-04"),
-                    ("2026-10-05", "2026-10-06"),
+                    ("2026-10-01", "2026-10-05"),
+                    ("2026-10-06", "2026-10-07"),
+                    ("2026-10-08", "2026-10-09"),
+                ]
+            )
+        )
+
+    def test_vang_vieng_over_three_days_rejected(self):
+        self._assert_invalid(
+            _corridor_body(
+                starts=[
+                    ("2026-10-01", "2026-10-02"),
+                    ("2026-10-03", "2026-10-06"),
                     ("2026-10-07", "2026-10-08"),
                 ]
             )
         )
 
-    def test_total_over_seven_days(self):
+    def test_luang_prabang_over_four_days_rejected(self):
         self._assert_invalid(
             _corridor_body(
                 starts=[
-                    ("2026-10-01", "2026-10-03"),
-                    ("2026-10-04", "2026-10-06"),
-                    ("2026-10-07", "2026-10-09"),
+                    ("2026-10-01", "2026-10-02"),
+                    ("2026-10-03", "2026-10-04"),
+                    ("2026-10-05", "2026-10-09"),
+                ]
+            )
+        )
+
+    def test_total_over_eight_days_rejected(self):
+        self._assert_invalid(
+            _corridor_body(
+                starts=[
+                    ("2026-10-01", "2026-10-04"),
+                    ("2026-10-05", "2026-10-07"),
+                    ("2026-10-08", "2026-10-11"),
                 ]
             )
         )
@@ -358,7 +388,7 @@ class TestNormalizedRows:
         assert len(rows) > 0
         days = [r["day_index"] for r in rows]
         assert days[0] == 0
-        assert days[-1] == 6
+        assert days[-1] == 7
         for i in range(1, len(days)):
             assert days[i] >= days[i - 1]
         seqs = [r["seq"] for r in rows]
@@ -544,12 +574,20 @@ class TestTripList:
     def test_supported_corridors_in_list(self):
         data = client.get("/api/v1/trips", headers=HEADERS).json()
         assert "supported_corridors" in data
+        supported = {corridor["corridor_id"]: corridor for corridor in data["supported_corridors"]}
+        assert "laos_northbound_v1" in supported
+        assert supported["laos_northbound_v1"]["max_days_per_region"] == {
+            "vientiane_laos": 4,
+            "vang_vieng_laos": 3,
+            "luang_prabang_laos": 4,
+        }
         for c in data["supported_corridors"]:
             assert c["corridor_id"] in CORRIDORS
             reg = CORRIDORS[c["corridor_id"]]
             assert list(c["geo_regions"]) == list(reg.geo_regions)
             assert c["max_days"] == reg.max_days
             assert c["max_days_per_segment"] == reg.max_days_per_segment
+            assert c["max_days_per_region"] == reg.max_days_per_region
 
     def test_validation_uses_registry_order(self):
         body = {

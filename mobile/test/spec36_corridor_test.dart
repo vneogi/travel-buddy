@@ -25,6 +25,23 @@ import 'package:travel_buddy/widgets/activity_card.dart';
 import 'package:travel_buddy/widgets/city_section.dart';
 import 'package:travel_buddy/widgets/corridor_date_form.dart';
 
+const _laosCorridor = SupportedCorridor(
+  corridorId: 'laos_northbound_v1',
+  displayName: 'Vientiane to Luang Prabang',
+  geoRegions: [
+    'vientiane_laos',
+    'vang_vieng_laos',
+    'luang_prabang_laos',
+  ],
+  maxDays: 8,
+  maxDaysPerSegment: 4,
+  maxDaysPerRegion: {
+    'vientiane_laos': 4,
+    'vang_vieng_laos': 3,
+    'luang_prabang_laos': 4,
+  },
+);
+
 class _MockTripRepository extends Mock implements TripRepository {}
 
 class _MockApiClient extends Mock implements ApiClient {}
@@ -176,15 +193,23 @@ void main() {
       'corridor_id': 'laos_northbound_v1',
       'display_name': 'Vientiane to Luang Prabang',
       'geo_regions': ['vientiane_laos', 'vang_vieng_laos', 'luang_prabang_laos'],
-      'max_days': 7,
-      'max_days_per_segment': 3,
+      'max_days': 8,
+      'max_days_per_segment': 4,
+      'max_days_per_region': {
+        'vientiane_laos': 4,
+        'vang_vieng_laos': 3,
+        'luang_prabang_laos': 4,
+      },
     };
     final c = SupportedCorridor.fromJson(json);
     expect(c.corridorId, 'laos_northbound_v1');
     expect(c.geoRegions, hasLength(3));
-    expect(c.maxDays, 7);
+    expect(c.maxDays, 8);
+    expect(c.maxDaysForRegion('vang_vieng_laos'), 3);
+    expect(c.maxDaysForRegion('luang_prabang_laos'), 4);
     final out = c.toJson();
     expect(out['corridor_id'], 'laos_northbound_v1');
+    expect((out['max_days_per_region'] as Map)['vientiane_laos'], 4);
   });
 
   // -- Proof 13: TripSegment round-trips JSON --------------------------------
@@ -671,6 +696,42 @@ void main() {
     expect(find.text('child-luang_prabang_laos'), findsOneWidget);
   });
 
+  testWidgets('CitySection: focused past group starts expanded', (tester) async {
+    final pastGroup = CorridorCityGroup(
+      geoRegion: 'luang_prabang_laos',
+      displayName: 'Luang Prabang',
+      dateRange: '6 Oct - 9 Oct',
+      dayGroups: [
+        ItineraryDayGroup(
+          date: DateTime.utc(2020, 10, 6),
+          nodes: [
+            _node(
+              name: 'Focused past stop',
+              geoRegion: 'luang_prabang_laos',
+              scheduledStart: DateTime.utc(2020, 10, 6, 2),
+            ),
+          ],
+        ),
+      ],
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: CitySection(
+            cityGroup: pastGroup,
+            forceExpanded: true,
+            childBuilder: (_) => const Text('focused child'),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final crossFade =
+        tester.widget<AnimatedCrossFade>(find.byType(AnimatedCrossFade));
+    expect(crossFade.crossFadeState, CrossFadeState.showFirst);
+  });
+
   // -- Proof: corridorCreate POST body shape --------------------------------
 
   test('TripRepository.corridorCreate sends segments-only body', () async {
@@ -802,7 +863,10 @@ void main() {
     expect(find.text('Stop 0'), findsOneWidget);
 
     // Scroll down and verify later stops become visible.
-    await tester.drag(find.byType(ListView).first, const Offset(0, -600));
+    await tester.drag(
+      find.byType(SingleChildScrollView).last,
+      const Offset(0, -600),
+    );
     await tester.pumpAndSettle();
 
     // At least one later stop should now be visible.
@@ -822,13 +886,11 @@ void main() {
 
   testWidgets('CorridorDateForm: renders with default valid dates, Create enabled',
       (tester) async {
-    const corridor = SupportedCorridor(
-      corridorId: 'laos_northbound_v1',
-      displayName: 'Vientiane to Luang Prabang',
-      geoRegions: ['vientiane_laos', 'vang_vieng_laos', 'luang_prabang_laos'],
-      maxDays: 7,
-      maxDaysPerSegment: 3,
-    );
+    const corridor = _laosCorridor;
+    tester.view.physicalSize = const Size(800, 600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(
         body: CorridorDateForm(corridor: corridor),
@@ -845,6 +907,7 @@ void main() {
     // No error shown (defaults are valid).
     expect(find.textContaining('overlap'), findsNothing);
     expect(find.textContaining('exceeds'), findsNothing);
+    await tester.ensureVisible(find.text('Create Laos corridor'));
     // Create button enabled (find FilledButton that is not disabled).
     final button = tester.widget<FilledButton>(find.byType(FilledButton));
     expect(button.onPressed, isNotNull, reason: 'Create should be enabled for valid defaults');
@@ -852,13 +915,7 @@ void main() {
 
   testWidgets('CorridorDateForm: overlap error shown + Create disabled',
       (tester) async {
-    const corridor = SupportedCorridor(
-      corridorId: 'laos_northbound_v1',
-      displayName: 'Vientiane to Luang Prabang',
-      geoRegions: ['vientiane_laos', 'vang_vieng_laos', 'luang_prabang_laos'],
-      maxDays: 7,
-      maxDaysPerSegment: 3,
-    );
+    const corridor = _laosCorridor;
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(
         body: CorridorDateForm(corridor: corridor),
@@ -887,15 +944,9 @@ void main() {
     expect(button.onPressed, isNull, reason: 'Create should be disabled on overlap');
   });
 
-  testWidgets('CorridorDateForm: >3 days/city shows error + Create disabled',
+  testWidgets('CorridorDateForm: Vang Vieng >3 days disables Create',
       (tester) async {
-    const corridor = SupportedCorridor(
-      corridorId: 'laos_northbound_v1',
-      displayName: 'Vientiane to Luang Prabang',
-      geoRegions: ['vientiane_laos', 'vang_vieng_laos', 'luang_prabang_laos'],
-      maxDays: 7,
-      maxDaysPerSegment: 3,
-    );
+    const corridor = _laosCorridor;
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(
         body: CorridorDateForm(corridor: corridor),
@@ -907,10 +958,10 @@ void main() {
       find.byType(CorridorDateForm),
     );
     final base = DateTime.now().add(const Duration(days: 5));
-    // First segment: 4 days (exceeds 3).
+    // Vang Vieng: 4 days (exceeds its catalog-backed cap of 3).
     state.setRangesForTest([
-      DateTimeRange(start: base, end: base.add(const Duration(days: 3))),
-      DateTimeRange(start: base.add(const Duration(days: 5)),
+      DateTimeRange(start: base, end: base),
+      DateTimeRange(start: base.add(const Duration(days: 2)),
           end: base.add(const Duration(days: 5))),
       DateTimeRange(start: base.add(const Duration(days: 7)),
           end: base.add(const Duration(days: 7))),
@@ -922,15 +973,9 @@ void main() {
     expect(button.onPressed, isNull);
   });
 
-  testWidgets('CorridorDateForm: >7 total days shows error + Create disabled',
+  testWidgets('CorridorDateForm: >8 total days shows error + Create disabled',
       (tester) async {
-    const corridor = SupportedCorridor(
-      corridorId: 'laos_northbound_v1',
-      displayName: 'Vientiane to Luang Prabang',
-      geoRegions: ['vientiane_laos', 'vang_vieng_laos', 'luang_prabang_laos'],
-      maxDays: 7,
-      maxDaysPerSegment: 3,
-    );
+    const corridor = _laosCorridor;
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(
         body: CorridorDateForm(corridor: corridor),
@@ -942,30 +987,24 @@ void main() {
       find.byType(CorridorDateForm),
     );
     final base = DateTime.now().add(const Duration(days: 5));
-    // 3 + 3 + 3 = 9 days, exceeds 7.
+    // 4 + 3 + 4 = 11 days, each city valid but total exceeds 8.
     state.setRangesForTest([
-      DateTimeRange(start: base, end: base.add(const Duration(days: 2))),
+      DateTimeRange(start: base, end: base.add(const Duration(days: 3))),
       DateTimeRange(start: base.add(const Duration(days: 4)),
           end: base.add(const Duration(days: 6))),
-      DateTimeRange(start: base.add(const Duration(days: 8)),
+      DateTimeRange(start: base.add(const Duration(days: 7)),
           end: base.add(const Duration(days: 10))),
     ]);
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('exceeds the 7-day limit'), findsOneWidget);
+    expect(find.textContaining('exceeds the 8-day limit'), findsOneWidget);
     final button = tester.widget<FilledButton>(find.byType(FilledButton));
     expect(button.onPressed, isNull);
   });
 
   testWidgets('CorridorDateForm: valid submit pops with 3 segments',
       (tester) async {
-    const corridor = SupportedCorridor(
-      corridorId: 'laos_northbound_v1',
-      displayName: 'Vientiane to Luang Prabang',
-      geoRegions: ['vientiane_laos', 'vang_vieng_laos', 'luang_prabang_laos'],
-      maxDays: 7,
-      maxDaysPerSegment: 3,
-    );
+    const corridor = _laosCorridor;
     List<TripSegment>? result;
     await tester.pumpWidget(MaterialApp(
       home: Builder(
@@ -993,7 +1032,26 @@ void main() {
     // Form is showing with Create button.
     expect(find.text('Create Vientiane to Luang Prabang'), findsOneWidget);
 
-    // Defaults are valid -> tap Create.
+    final state = tester.state<CorridorDateFormState>(
+      find.byType(CorridorDateForm),
+    );
+    state.setRangesForTest([
+      DateTimeRange(
+        start: DateTime(2026, 10, 2),
+        end: DateTime(2026, 10, 3),
+      ),
+      DateTimeRange(
+        start: DateTime(2026, 10, 4),
+        end: DateTime(2026, 10, 5),
+      ),
+      DateTimeRange(
+        start: DateTime(2026, 10, 6),
+        end: DateTime(2026, 10, 9),
+      ),
+    ]);
+    await tester.pumpAndSettle();
+
+    // The authoritative 2/2/4 split is valid.
     await tester.tap(find.text('Create Laos corridor'));
     await tester.pumpAndSettle();
 
@@ -1003,6 +1061,7 @@ void main() {
     expect(result![0].geoRegion, 'vientiane_laos');
     expect(result![1].geoRegion, 'vang_vieng_laos');
     expect(result![2].geoRegion, 'luang_prabang_laos');
+    expect(result![2].endsOn, '2026-10-09');
   });
 
   // -- Proof: cross-city nextNode on corridor ActivityCard -------------------
@@ -1096,17 +1155,7 @@ void main() {
             (_) async => const HomeSnapshot(
               supportedRegions: ['vientiane_laos'],
               supportedCorridors: [
-                SupportedCorridor(
-                  corridorId: 'laos_northbound_v1',
-                  displayName: 'Vientiane to Luang Prabang',
-                  geoRegions: [
-                    'vientiane_laos',
-                    'vang_vieng_laos',
-                    'luang_prabang_laos',
-                  ],
-                  maxDays: 7,
-                  maxDaysPerSegment: 3,
-                ),
+                _laosCorridor,
               ],
               trips: [],
             ),
@@ -1181,17 +1230,7 @@ void main() {
             (_) async => const HomeSnapshot(
               supportedRegions: ['vientiane_laos'],
               supportedCorridors: [
-                SupportedCorridor(
-                  corridorId: 'laos_northbound_v1',
-                  displayName: 'Vientiane to Luang Prabang',
-                  geoRegions: [
-                    'vientiane_laos',
-                    'vang_vieng_laos',
-                    'luang_prabang_laos',
-                  ],
-                  maxDays: 7,
-                  maxDaysPerSegment: 3,
-                ),
+                _laosCorridor,
               ],
               trips: [],
             ),
@@ -1252,17 +1291,7 @@ void main() {
             (_) async => const HomeSnapshot(
               supportedRegions: ['vientiane_laos'],
               supportedCorridors: [
-                SupportedCorridor(
-                  corridorId: 'laos_northbound_v1',
-                  displayName: 'Vientiane to Luang Prabang',
-                  geoRegions: [
-                    'vientiane_laos',
-                    'vang_vieng_laos',
-                    'luang_prabang_laos',
-                  ],
-                  maxDays: 7,
-                  maxDaysPerSegment: 3,
-                ),
+                _laosCorridor,
               ],
               trips: [],
             ),
@@ -1330,7 +1359,7 @@ void main() {
     when(() => repo.getTrip(any())).thenAnswer((_) async => trip);
 
     final container = await _loadItineraryContainer(trip: trip, repo: repo);
-    tester.view.physicalSize = const Size(800, 1400);
+    tester.view.physicalSize = const Size(800, 600);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -1338,7 +1367,12 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: const MaterialApp(home: ItineraryScreen(tripId: 'trip-order')),
+        child: MaterialApp(
+          home: ItineraryScreen(
+            tripId: 'trip-order',
+            focusNodeId: lpNode.nodeId,
+          ),
+        ),
       ),
     );
     await tester.pump();
@@ -1357,5 +1391,157 @@ void main() {
     expect(sections[0].cityGroup.displayName, 'Vientiane');
     expect(sections[1].cityGroup.displayName, 'Vang Vieng');
     expect(sections[2].cityGroup.displayName, 'Luang Prabang');
+    expect(sections[2].forceExpanded, isTrue);
+    final outerScroll = tester.state<ScrollableState>(
+      find
+          .descendant(
+            of: find.byType(SingleChildScrollView).first,
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    expect(outerScroll.position.pixels, greaterThan(0));
   }, timeout: const Timeout(Duration(seconds: 20)));
+
+  testWidgets('ActivityCard exposes cancel only for unlocked pending activity',
+      (tester) async {
+    var cancels = 0;
+    final unlocked = _node(
+      name: 'Unlocked stop',
+      geoRegion: 'luang_prabang_laos',
+      scheduledStart: DateTime.utc(2026, 10, 8, 2),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ActivityCard(
+            node: unlocked,
+            onTapCancel: () => cancels++,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byTooltip('Cancel this activity'), findsOneWidget);
+    await tester.tap(find.byTooltip('Cancel this activity'));
+    expect(cancels, 1);
+
+    final locked = TripNode(
+      nodeId: 'locked',
+      venueName: 'Locked booking',
+      scheduledStart: DateTime.utc(2026, 10, 8, 2),
+      durationMinutes: 60,
+      isLocked: true,
+      status: NodeStatus.pending,
+      vibeTags: const [],
+      geoRegion: 'luang_prabang_laos',
+      nodeKind: 'booking',
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ActivityCard(
+            node: locked,
+            onTapCancel: () => cancels++,
+          ),
+        ),
+      ),
+    );
+    expect(find.byTooltip('Cancel this activity'), findsNothing);
+    expect(cancels, 1);
+  });
+
+  testWidgets('Itinerary cancel requires confirmation before mutation',
+      (tester) async {
+    registerFallbackValue(EventType.cancelActivity);
+    registerFallbackValue(<String, dynamic>{});
+    final repo = _MockTripRepository();
+    final node = _node(
+      name: 'Confirm me',
+      geoRegion: 'luang_prabang_laos',
+      scheduledStart: DateTime.utc(2026, 10, 8, 2),
+    );
+    final trip = TripState(
+      tripId: 'trip-confirm',
+      userId: 'u1',
+      geoRegion: 'luang_prabang_laos',
+      nodes: [node],
+    );
+    final container = await _loadItineraryContainer(trip: trip, repo: repo);
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(
+          home: ItineraryScreen(tripId: 'trip-confirm'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Cancel this activity'));
+    await tester.pumpAndSettle();
+    expect(find.text('Cancel this activity?'), findsOneWidget);
+    verifyNever(
+      () => repo.sendEvent(
+        tripId: any(named: 'tripId'),
+        type: any(named: 'type'),
+        message: any(named: 'message'),
+        targetNodeId: any(named: 'targetNodeId'),
+        preferences: any(named: 'preferences'),
+      ),
+    );
+    await tester.tap(find.text('Keep'));
+    await tester.pumpAndSettle();
+    verifyNever(
+      () => repo.sendEvent(
+        tripId: any(named: 'tripId'),
+        type: any(named: 'type'),
+        message: any(named: 'message'),
+        targetNodeId: any(named: 'targetNodeId'),
+        preferences: any(named: 'preferences'),
+      ),
+    );
+
+    when(
+      () => repo.sendEvent(
+        tripId: any(named: 'tripId'),
+        type: any(named: 'type'),
+        message: any(named: 'message'),
+        targetNodeId: any(named: 'targetNodeId'),
+        preferences: any(named: 'preferences'),
+      ),
+    ).thenAnswer(
+      (_) async => TripEventResult(
+        message: 'Cancelled.',
+        updatedNodes: [node],
+        routingTier: 'light',
+        fromCache: false,
+      ),
+    );
+    await tester.tap(find.byTooltip('Cancel this activity'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cancel activity'));
+    await tester.pumpAndSettle();
+    expect(find.text('Why are you skipping?'), findsOneWidget);
+    verifyNever(
+      () => repo.sendEvent(
+        tripId: any(named: 'tripId'),
+        type: any(named: 'type'),
+        message: any(named: 'message'),
+        targetNodeId: any(named: 'targetNodeId'),
+        preferences: any(named: 'preferences'),
+      ),
+    );
+    await tester.tap(find.text('Too tired'));
+    await tester.pumpAndSettle();
+    verify(
+      () => repo.sendEvent(
+        tripId: 'trip-confirm',
+        type: EventType.cancelActivity,
+        message: 'Cancel Confirm me (too_tired)',
+        targetNodeId: 'Confirm me',
+        preferences: null,
+      ),
+    ).called(1);
+  });
 }

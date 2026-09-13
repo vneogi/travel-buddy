@@ -3,7 +3,8 @@
 > Status: IMPLEMENTED ON MAIN (PR #55, merge `1f2c43d`, head `f44cdc6`).
 >
 > Owner Windows verified three-city Oct 2-8 create and later-city swap on
-> 2026-09-06. CI lint, pytest, and Flutter were green before merge.
+> 2026-09-06. The authoritative Oct 2-9 shape (2/2/4 city days) is the
+> SPEC-38 follow-up.
 > Phone-independent delivery is SPEC-37. Heads-up reminder spam is a
 > separate SPEC-29/35 finding, not a corridor create defect.
 >
@@ -52,8 +53,9 @@ cities.
 
 Rules:
 
-- each range is at least one day and at most three days;
-- the total corridor is at most seven days;
+- each range is at least one day and no more than its catalog-backed city cap:
+  Vientiane four, Vang Vieng three, Luang Prabang four;
+- the total corridor is at most eight days;
 - each next city starts after the previous city ends;
 - gaps are allowed, because the traveller may use them for transport;
 - overlapping or out-of-order ranges return 422 `invalid_corridor`;
@@ -80,9 +82,9 @@ For each city:
 - fail the whole request before saving if any segment lacks enough eligible
   venues.
 
-Four stops are deliberate. The smallest current corridor catalog has enough
-eligible rows for three unique four-stop days. Five per day would advertise a
-range the current catalog cannot reliably fulfill.
+Four stops are deliberate. Vang Vieng is the smallest current corridor
+catalog and has enough eligible rows for three unique four-stop days. The
+larger Vientiane and Luang Prabang catalogs support four-day segments.
 
 Failure is atomic: no partial trip, party, normalized node, or edge rows may
 remain.
@@ -148,8 +150,13 @@ GET `/api/v1/trips` adds:
         "vang_vieng_laos",
         "luang_prabang_laos"
       ],
-      "max_days": 7,
-      "max_days_per_segment": 3
+      "max_days": 8,
+      "max_days_per_segment": 4,
+      "max_days_per_region": {
+        "vientiane_laos": 4,
+        "vang_vieng_laos": 3,
+        "luang_prabang_laos": 4
+      }
     }
   ]
 }
@@ -283,8 +290,8 @@ Backend:
    intra-day spacing.
 4. No venue repeats within a segment.
 5. Repeating the same request keeps the venue ID sequence stable.
-6. Overlap, wrong order, duplicate/missing city, range over three days, and
-   total over seven days each return 422 `invalid_corridor`.
+6. Overlap, wrong order, duplicate/missing city, a range over its city cap,
+   and total over eight days each return 422 `invalid_corridor`.
 7. Insufficient capacity returns 422 and leaves no trip or party behind.
 8. Single-city create remains byte-shape compatible.
 9. Create calls neither the LLM nor hybrid search and does not consume quota.

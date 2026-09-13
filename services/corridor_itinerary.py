@@ -17,6 +17,7 @@ from config.corridors import CORRIDORS, Corridor, require_corridor
 from config.regions import REGIONS, require_region
 from models.schemas import (
     CurrentContext,
+    SupportedCorridor,
     TripNode,
     TripSegment,
     TripSegmentIn,
@@ -63,10 +64,10 @@ def validate_corridor_segments(
                 f"Segment {seg.geo_region}: start {seg.starts_on} is after end {seg.ends_on}."
             )
         span = (seg.ends_on - seg.starts_on).days + 1
-        if span < 1 or span > corridor.max_days_per_segment:
+        max_days = corridor.max_days_for_region(seg.geo_region)
+        if span < 1 or span > max_days:
             raise InvalidCorridor(
-                f"Segment {seg.geo_region}: {span} days; must be 1 to "
-                f"{corridor.max_days_per_segment}."
+                f"Segment {seg.geo_region}: {span} days; must be 1 to {max_days}."
             )
         if prev_ends_on is not None and seg.starts_on <= prev_ends_on:
             raise InvalidCorridor(
@@ -215,7 +216,7 @@ def build_corridor_nodes(
 
 
 def advertised_corridors(list_venues_fn) -> list[dict]:
-    """Corridors where every city can supply one day of venues."""
+    """Corridors where every city can supply its advertised maximum."""
     result = []
     for cid, corridor in CORRIDORS.items():
         ok = True
@@ -223,7 +224,8 @@ def advertised_corridors(list_venues_fn) -> list[dict]:
             try:
                 rows = list_venues_fn(region_code)
                 pool = eligible_corridor_venues(rows)
-                if len(pool) < CORRIDOR_STOPS_PER_DAY:
+                required = corridor.max_days_for_region(region_code) * CORRIDOR_STOPS_PER_DAY
+                if len(pool) < required:
                     ok = False
                     break
             except Exception:
@@ -231,12 +233,13 @@ def advertised_corridors(list_venues_fn) -> list[dict]:
                 break
         if ok:
             result.append(
-                {
-                    "corridor_id": corridor.corridor_id,
-                    "display_name": corridor.display_name,
-                    "geo_regions": list(corridor.geo_regions),
-                    "max_days": corridor.max_days,
-                    "max_days_per_segment": corridor.max_days_per_segment,
-                }
+                SupportedCorridor(
+                    corridor_id=corridor.corridor_id,
+                    display_name=corridor.display_name,
+                    geo_regions=list(corridor.geo_regions),
+                    max_days=corridor.max_days,
+                    max_days_per_segment=corridor.max_days_per_segment,
+                    max_days_per_region=corridor.max_days_per_region,
+                ).model_dump()
             )
     return result

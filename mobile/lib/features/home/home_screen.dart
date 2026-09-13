@@ -314,7 +314,12 @@ class _FeaturedTripCard extends StatelessWidget {
     final region = _displayRegion(featured.geoRegion);
 
     return GestureDetector(
-      onTap: () => context.go('/trip/${featured.tripId}'),
+      onTap: () {
+        final focus = stop == null
+            ? ''
+            : '?focus=${Uri.encodeQueryComponent(stop.nodeId)}';
+        context.go('/trip/${featured.tripId}$focus');
+      },
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(AppSpacing.base),

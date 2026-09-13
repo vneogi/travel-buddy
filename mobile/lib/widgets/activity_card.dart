@@ -193,6 +193,25 @@ class ActivityCard extends StatelessWidget {
                                 onTapSwap!.call();
                               },
                             ),
+                          if (onTapCancel != null &&
+                              !node.isLocked &&
+                              !isCompleted &&
+                              !isSkipped)
+                            IconButton(
+                              icon: const Icon(Icons.cancel_outlined, size: 20),
+                              color: AppColors.muted,
+                              tooltip: 'Cancel this activity',
+                              visualDensity: VisualDensity.compact,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(
+                                minWidth: 36,
+                                minHeight: 36,
+                              ),
+                              onPressed: () {
+                                HapticFeedback.lightImpact();
+                                onTapCancel!.call();
+                              },
+                            ),
                           if (onTapLoved != null && !isCompleted && !isSkipped)
                             IconButton(
                               icon: Icon(

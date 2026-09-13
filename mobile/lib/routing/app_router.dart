@@ -51,6 +51,7 @@ final appRouter = GoRouter(
           path: '/trip/:tripId',
           builder: (_, state) => ItineraryScreen(
             tripId: state.pathParameters['tripId']!,
+            focusNodeId: state.uri.queryParameters['focus'],
           ),
         ),
         GoRoute(
