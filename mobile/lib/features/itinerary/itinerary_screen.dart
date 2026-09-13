@@ -468,13 +468,23 @@ class _CorridorTimelineState extends State<_CorridorTimeline> {
     }
   }
 
-  void _scheduleFocus() {
+  void _scheduleFocus([int attempt = 0]) {
     final nodeId = widget.focusNodeId;
     if (nodeId == null || nodeId == _lastFocusedNodeId) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final target = _nodeKeys[nodeId]?.currentContext;
       if (target == null) return;
+      final renderObject = target.findRenderObject();
+      if (renderObject is! RenderBox ||
+          !renderObject.hasSize ||
+          renderObject.size.height == 0) {
+        if (attempt < 3) {
+          _scheduleFocus(attempt + 1);
+          WidgetsBinding.instance.scheduleFrame();
+        }
+        return;
+      }
       _lastFocusedNodeId = nodeId;
       Scrollable.ensureVisible(
         target,
@@ -596,13 +606,23 @@ class _FocusedDateScopedTimelineState
     }
   }
 
-  void _scheduleFocus() {
+  void _scheduleFocus([int attempt = 0]) {
     final nodeId = widget.focusNodeId;
     if (nodeId == null || nodeId == _lastFocusedNodeId) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final target = _nodeKeys[nodeId]?.currentContext;
       if (target == null) return;
+      final renderObject = target.findRenderObject();
+      if (renderObject is! RenderBox ||
+          !renderObject.hasSize ||
+          renderObject.size.height == 0) {
+        if (attempt < 3) {
+          _scheduleFocus(attempt + 1);
+          WidgetsBinding.instance.scheduleFrame();
+        }
+        return;
+      }
       _lastFocusedNodeId = nodeId;
       Scrollable.ensureVisible(
         target,

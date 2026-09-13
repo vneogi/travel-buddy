@@ -39,8 +39,8 @@ class _CitySectionState extends State<CitySection> {
   @override
   void didUpdateWidget(covariant CitySection oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.forceExpanded && !oldWidget.forceExpanded && !_expanded) {
-      setState(() => _expanded = true);
+    if (widget.forceExpanded && !_expanded) {
+      _expanded = true;
     }
   }
 
@@ -51,7 +51,9 @@ class _CitySectionState extends State<CitySection> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         InkWell(
-          onTap: () => setState(() => _expanded = !_expanded),
+          onTap: widget.forceExpanded
+              ? null
+              : () => setState(() => _expanded = !_expanded),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(

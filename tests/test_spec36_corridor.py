@@ -574,6 +574,16 @@ class TestTripList:
     def test_supported_corridors_in_list(self):
         data = client.get("/api/v1/trips", headers=HEADERS).json()
         assert "supported_corridors" in data
+        supported = {
+            corridor["corridor_id"]: corridor
+            for corridor in data["supported_corridors"]
+        }
+        assert "laos_northbound_v1" in supported
+        assert supported["laos_northbound_v1"]["max_days_per_region"] == {
+            "vientiane_laos": 4,
+            "vang_vieng_laos": 3,
+            "luang_prabang_laos": 4,
+        }
         for c in data["supported_corridors"]:
             assert c["corridor_id"] in CORRIDORS
             reg = CORRIDORS[c["corridor_id"]]
