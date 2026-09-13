@@ -1367,10 +1367,10 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: const MaterialApp(
+        child: MaterialApp(
           home: ItineraryScreen(
             tripId: 'trip-order',
-            focusNodeId: 'Temple LP',
+            focusNodeId: lpNode.nodeId,
           ),
         ),
       ),
