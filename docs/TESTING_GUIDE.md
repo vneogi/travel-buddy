@@ -129,41 +129,63 @@ throw the same exception types production throws -- a test that threw
 `Exception('401 ...')` instead of `UnauthorizedException` is precisely why the
 retry bug survived a green suite (R3).
 
-## 6. Airplane-mode durability drill (gates the Laos field test)
+## 6. SPEC-37 field-test acceptance (gates the Laos trip)
 
-This is the drill that must pass before the trip, and the first attempt was
-meaningless. The build was talking to the laptop over `adb reverse` on USB, and
-airplane mode does not disable USB, so four hearts posted instantly to a
-supposedly disconnected server (R7).
+The first airplane-mode attempt was meaningless: the build talked to the laptop
+over `adb reverse` on USB, and airplane mode does not disable USB (R7).
 
-For a development rehearsal, a laptop LAN IP is acceptable:
+Final acceptance requires a standalone installed artifact compiled against the
+hosted HTTPS API. Sequence as of 2026-09-12: commit `mobile/android/`, green
+GitHub `android-compile`, Cloud Run `asia-south1`, then signed APK. See:
 
-    flutter run -d <deviceId> \
-      --dart-define=TB_API_BASE_URL=http://<laptop-lan-ip>:8000
+- `docs/CLOUD_RUN_DEPLOY.md` -- deploy the backend and set secrets
+- `docs/ANDROID_BUILD.md` -- build the signed APK and install it
 
-That rehearsal is not the final SPEC-37 acceptance. Final acceptance requires a
-standalone installed artifact compiled against the hosted HTTPS API. Disconnect
-USB and close any `adb reverse` or local tunnel before beginning. The app must
-launch from the phone home screen without `flutter run`.
+### Hosted backend verification
 
-Then:
+1. `GET /api/v1/health` succeeds from a non-laptop network (HTTPS, HTTP 200).
+2. Cloud Run revision shows `TB_DEBUG=false` and `TB_ALLOW_ANONYMOUS=true`.
+3. Startup logs (Cloud Run > Logs) show `llm_key_present=True`,
+   `supabase_configured=True`, `jwt_auth=False` -- booleans only, no values.
+4. Anonymous trip list and trip read succeed with `Authorization: Anonymous <uuid>`.
+5. `GET /api/v1/trip/{id}/notifications` does not return "unconfigured".
+6. Server logs contain no debug impersonation mode.
 
-1. While online, load the SPEC-36 corridor and open the driver cards that must
-   be available offline.
-2. Enable airplane mode. Confirm the hosted server receives no new request. If
-   requests still arrive, stop -- the drill is invalid.
-3. Force-kill and reopen the app. The cached corridor, city/day sections, and
-   pre-cached driver cards must remain usable.
-4. Tap loved on a venue while offline.
-5. Force-kill and reopen again. The heart must still show as filled (SPEC-02
+### Online acceptance (phone disconnected from laptop)
+
+Disconnect USB and close any `adb reverse` or local tunnel.
+
+1. Launch Travel Buddy from the phone home screen (not `flutter run`).
+2. Confirm device identity is stable across app restart.
+3. Open the SPEC-36 Laos corridor and its three city sections.
+4. Open a driver card for each city.
+5. Perform one later-city swap; confirm only the targeted city changes.
+6. Confirm departure notification retrieval succeeds.
+7. Profile > API Host shows the Cloud Run hostname (not localhost/10.0.2.2).
+
+### Offline acceptance (airplane mode, USB disconnected)
+
+First load the corridor and driver cards online. Then enable airplane mode:
+
+1. Force-kill and reopen the app. The cached corridor, city/day sections,
+   and pre-cached driver cards must remain usable.
+2. Open a pre-cached driver card with local name, landmark, and coordinates.
+3. Tap loved on a venue while offline.
+4. Force-kill and reopen again. The heart must still show as filled (SPEC-02
    durable hearts; verified on Windows Aug 30). Sync Status still calls
    `syncOnce()` without awaiting it before reading counts; do not treat a
    stale count as a hearts-persistence failure.
-6. Re-enable the network. The queued action must sync once.
-7. Query the destination store for the row. An `accepted=1` log line is not
+5. Re-enable the network. The queued action must sync once without duplication.
+6. Query the destination store for the row. An `accepted=1` log line is not
    proof of persistence -- the sync engine once reported exactly that while
-   `db_provider` pointed at the in-memory backend and every signal was discarded
-   on restart (R11).
+   `db_provider` pointed at the in-memory backend and every signal was
+   discarded on restart (R11).
+
+### Recording results
+
+After running these steps, append one dated finding to
+`docs/AWAITING_VERIFICATION.md` with the source commit, APK SHA-256, and
+pass/fail for each step.
 
 ## 7. End-to-end and visual regression (later)
 

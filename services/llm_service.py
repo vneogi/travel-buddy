@@ -22,6 +22,7 @@ import json
 import time
 from typing import AsyncGenerator, Dict, List, Optional, Tuple
 
+from config.regions import get_region
 from config.settings import settings
 
 
@@ -180,10 +181,23 @@ class LLMService:
         trip_state: Dict,
         venues_found: List[Dict],
         routing_tier: str = "heavy",
+        context: Optional[Dict] = None,
     ) -> str:
-        """Generate a natural language response for itinerary changes."""
+        """Generate a natural language response for itinerary changes.
+
+        *context* carries geo_region, venue_name, and next_venue_name so the
+        prompt is grounded in the traveller's actual destination, not hardcoded
+        to Dubai.
+        """
+        ctx = context or {}
+        geo_code = ctx.get("geo_region", "")
+        region = get_region(geo_code) if geo_code else None
+        region_label = region.display_name if region else "your destination"
+        lang_hint = region.language_hint if region else ""
+
         system_prompt = (
-            "You are Travel Buddy AI, a concise and helpful Dubai travel companion. "
+            f"You are Travel Buddy AI, a concise and helpful {region_label} "
+            "travel companion. "
             "You help travelers modify their itineraries in real-time.\n\n"
             "Rules:\n"
             "- Never modify LOCKED activities\n"
@@ -192,6 +206,8 @@ class LLMService:
             "- Be warm but concise (2-3 sentences max)\n"
             "- Mention the vibe/atmosphere of suggested venues"
         )
+        if lang_hint:
+            system_prompt += f"\n- Language tip: {lang_hint}"
 
         user_context = (
             f"User request: {user_message}\n\n"
@@ -212,17 +228,51 @@ class LLMService:
         )
         return result["content"]
 
-    async def generate_info_response(self, user_message: str, context: Dict = None) -> str:
-        """Generate a light response for info queries."""
+    async def generate_info_response(
+        self,
+        user_message: str,
+        context: Optional[Dict] = None,
+    ) -> str:
+        """Generate a light response for info queries.
+
+        Args:
+            user_message: The traveller's question.
+            context: Optional dict with keys like ``geo_region``,
+                ``venue_name``, ``next_venue_name`` so the model
+                grounds its answer in the actual destination instead
+                of defaulting to any single city.
+        """
+        ctx = context or {}
+        region = ctx.get("geo_region", "")
+
         system_prompt = (
-            "You are Travel Buddy AI, a Dubai travel expert. "
-            "Answer the user's question concisely (1-2 sentences). "
-            "Focus on practical, actionable information for tourists."
+            "You are Travel Buddy AI, a concise travel companion. "
+            "Answer the user's question in 1-2 sentences with practical, "
+            "actionable information grounded in the traveller's current "
+            "destination."
         )
+        if region:
+            system_prompt += f" The traveller is currently in the {region} region."
+        system_prompt += (
+            " If you lack specific local data for this destination, "
+            "say so honestly rather than substituting information from "
+            "another city."
+        )
+
+        user_block = user_message
+        venue = ctx.get("venue_name")
+        next_venue = ctx.get("next_venue_name")
+        if venue or next_venue:
+            parts = []
+            if venue:
+                parts.append(f"Current venue: {venue}")
+            if next_venue:
+                parts.append(f"Next venue: {next_venue}")
+            user_block = f"{user_message}\n\nContext: {'; '.join(parts)}"
 
         messages = [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_message},
+            {"role": "user", "content": user_block},
         ]
 
         result = await self.complete(

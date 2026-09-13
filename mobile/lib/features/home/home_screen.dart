@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/api_exception.dart';
 import '../../core/providers.dart';
+import '../../core/destination_tz.dart';
 import '../../data/models.dart';
 import '../../theme/colors.dart';
 import '../../theme/typography.dart';
@@ -364,7 +365,7 @@ class _FeaturedTripCard extends StatelessWidget {
               Text(
                 MaterialLocalizations.of(context)
                     .formatTimeOfDay(
-                      TimeOfDay.fromDateTime(stop.scheduledStart.toLocal()),
+                      TimeOfDay.fromDateTime(toDestinationLocal(stop.scheduledStart, stop.geoRegion)),
                     ),
                 style: AppTypography.caption
                     .copyWith(color: AppColors.muted),
@@ -402,7 +403,7 @@ class _TripList extends StatelessWidget {
         final dates = trip.startsAt == null
             ? 'Dates not set'
             : MaterialLocalizations.of(context)
-                .formatMediumDate(trip.startsAt!.toLocal());
+                .formatMediumDate(toDestinationLocal(trip.startsAt!, trip.geoRegion));
         return Card(
           child: ListTile(
             onTap: () => context.go('/trip/${trip.tripId}'),

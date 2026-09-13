@@ -49,9 +49,21 @@ FactTier tierForNameSource(String source) {
 
 /// Offline map hand-off. `geo:` opens the device map app on Android without a
 /// Google dependency; coordinates stay on the card as the last-resort fallback.
-Uri? buildMapsUri(double? lat, double? lng) {
+///
+/// When [label] is provided the venue name is appended to the query so the
+/// map app can show a meaningful pin title.  Coordinates are always present
+/// so the pin resolves even when the label is not in any geocoding index.
+///
+/// NOTE: Ban Anou Night Market coordinates are from seed data and have not
+/// been field-verified.  Coordinate accuracy for all Laos venues is
+/// recorded as **unverified** until the owner confirms on-site.
+Uri? buildMapsUri(double? lat, double? lng, {String? label}) {
   if (lat == null || lng == null) return null;
-  return Uri.parse('geo:$lat,$lng?q=$lat,$lng');
+  final encodedLabel = label != null ? Uri.encodeComponent(label) : null;
+  final query = encodedLabel != null
+      ? '$lat,$lng($encodedLabel)'
+      : '$lat,$lng';
+  return Uri.parse('geo:$lat,$lng?q=$query');
 }
 
 /// Browser fallback for desktop platforms without a `geo:` URI handler.

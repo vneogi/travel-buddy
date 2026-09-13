@@ -25,8 +25,8 @@ Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 | PowerShell scripts | Aug 9 | `.\scripts\smoke-test.ps1` on Windows |
 | Laptop-feedback product gaps | Sep 5 2026 | Multi-night hotel UI and real location remain open. Hotel Rescue 6C is canceled by owner decision; remove the duplicate shortcut but keep hotel driver cards and offline cache. Windows Maps fallback and SPEC-32 Laos create were verified Sep 5 |
 | SPEC-36 corridor implementation | Merged PR #55 `1f2c43d`, Sep 7 2026 | Owner Windows create and swap done. Remaining device work is SPEC-37 hosted API plus installable phone. Heads-up spam is SPEC-29/35 |
-| Hosted API for phone field test | Not provisioned | SPEC-37: stable HTTPS URL from reviewed main; hosted Supabase, LLM, Maps, Weather and anonymous-auth configuration with `TB_DEBUG=false` |
-| Installable independent phone build | Not produced | SPEC-37: signed Android APK or iOS TestFlight artifact using hosted `TB_API_BASE_URL`; must launch without `flutter run`, USB, localhost, LAN backend, or `adb reverse` |
+| Hosted API for phone field test | Not provisioned | SPEC-37 Cloud Run in `asia-south1` after PR #57 `android-compile` is green; `TB_DEBUG=false` |
+| Installable independent phone build | Debug compile only 2026-09-12 | Windows debug APK against `example.invalid` is not the field artifact. Signed release APK with hosted `TB_API_BASE_URL` still owed |
 | Final phone airplane-mode acceptance | Not run; target 2026-09-18 | Preload corridor and driver cards, disconnect USB, enable airplane mode, cold reopen, inspect cached content, queue an action, reconnect and prove exactly-once drain |
 | Dubai row contents, including AED magnitudes | Cleared Aug 17 2026 | 16 Dubai venues live (null price_band). dubai_dishes=0 -- nothing to inspect for AED; food data is greenfield |
 | `pg_description` non-ASCII | Cleared Aug 17 2026 | Step 7c returned 0 rows |
@@ -36,6 +36,25 @@ The five Supabase integration tests ran green on device day 2026-08-17 with
 are smoke-test.ps1, any unrecorded Anonymous E2E, and deliberate VALIDATE of
 NOT VALID CHECKs. Hosted migration and provider state is maintained only in
 `docs/HOSTED_STATE.md`.
+
+## Finding -- Sep 12 2026 -- Windows debug APK compile proof
+
+Owner Windows (Flutter 3.44.8 stable, Android SDK 36, Android Studio JDK for
+Flutter). Working tree on `feat/spec37-phone-field-test` at `b248ce0` plus a
+locally generated `mobile/android/` (not yet the GitHub tree).
+
+`flutter create . --platforms=android --org com.vneogi --project-name travel_buddy`
+was required because CI-generated Android and the Python-written platform both
+failed. After setting applicationId `com.vneogi.travelbuddy`, INTERNET on the
+main manifest, minify/shrink off, and rewriting `app/build.gradle.kts` without
+a UTF-8 BOM:
+
+- `flutter test` passed
+- `flutter build apk --debug --dart-define=TB_API_BASE_URL=https://example.invalid`
+  produced `mobile/build/app/outputs/flutter-apk/app-debug.apk`
+
+This is not hosted API evidence and not phone acceptance. Do not install that
+debug APK as the Laos field build.
 
 ## Finding -- Sep 6 2026 -- hosted schema and provider credentials verified
 

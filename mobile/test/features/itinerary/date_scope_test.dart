@@ -10,6 +10,7 @@ TripNode _node(
   String nodeKind = 'activity',
   String? bookingType,
   String? name,
+  String? geoRegion,
 }) =>
     TripNode(
       nodeId: id,
@@ -21,6 +22,7 @@ TripNode _node(
       vibeTags: const [],
       nodeKind: nodeKind,
       bookingType: bookingType,
+      geoRegion: geoRegion,
     );
 
 void main() {
@@ -101,37 +103,34 @@ void main() {
       expect(groups[2].nodes.map((n) => n.nodeId), ['a2']);
     });
 
-    test('offset DateTime is grouped from its fields without conversion', () {
-      // Dart DateTime.parse normalizes offset timestamps to UTC, so
-      // '2026-10-06T01:30:00+05:30' becomes 2026-10-05T20:00Z (fields
-      // show Oct 5, not Oct 6).  The grouping helper reads .year/.month/.day
-      // directly -- no toUtc()/toLocal() -- so a local-like DateTime(Oct 6)
-      // stays on Oct 6 while a UTC-normalized parse lands on Oct 5.
-      //
-      // This test verifies the helper never calls toUtc() before grouping:
-      // a non-UTC DateTime(Oct 6, 1, 30) keeps its fields intact.
-      final localLike = DateTime(2026, 10, 6, 1, 30);
+    test('destination-local conversion groups by local date', () {
+      // A Vientiane node at 22:00 UTC on Oct 5 is 05:00 ICT on Oct 6.
+      // With geoRegion set, grouping uses destination-local, so it should
+      // land on Oct 6, not Oct 5.
       final nodes = [
-        _node('day5', start: DateTime(2026, 10, 5, 18)),
-        _node('late', start: localLike),
+        _node('day5', start: DateTime.utc(2026, 10, 5, 10), geoRegion: 'vientiane_laos'),
+        _node('day6', start: DateTime.utc(2026, 10, 5, 22), geoRegion: 'vientiane_laos'),
+      ];
+      final groups = groupNodesByCalendarDate(nodes);
+      // 10:00 UTC = 17:00 ICT Oct 5, 22:00 UTC = 05:00 ICT Oct 6
+      expect(groups, hasLength(2));
+      expect(groups[0].date, DateTime(2026, 10, 5));
+      expect(groups[0].nodes.map((n) => n.nodeId), ['day5']);
+      expect(groups[1].date, DateTime(2026, 10, 6));
+      expect(groups[1].nodes.map((n) => n.nodeId), ['day6']);
+    });
+
+    test('null geoRegion falls back without crash', () {
+      // Nodes without geoRegion fall back to .toLocal() in destination_tz.
+      // On CI (UTC) this is identity, so fields are preserved.
+      final nodes = [
+        _node('a', start: DateTime.utc(2026, 10, 5, 18)),
+        _node('b', start: DateTime.utc(2026, 10, 6, 1)),
       ];
       final groups = groupNodesByCalendarDate(nodes);
       expect(groups, hasLength(2));
       expect(groups[0].date, DateTime(2026, 10, 5));
       expect(groups[1].date, DateTime(2026, 10, 6));
-      // Sabotage proof: .toUtc() on a non-UTC DateTime is NOT identity
-      // -- it applies the local timezone offset, so in UTC+N zones
-      // 01:30 local could shift to the previous calendar day in UTC.
-      // The UTC-parsed variant below already lands on Oct 5 because
-      // Dart normalized the offset at parse time.
-      final utcParsed = DateTime.parse('2026-10-06T01:30:00+05:30');
-      expect(utcParsed.day, 5, reason: 'Dart normalizes offset to UTC');
-      final groups2 = groupNodesByCalendarDate([
-        _node('day5', start: DateTime(2026, 10, 5, 18)),
-        _node('utc', start: utcParsed),
-      ]);
-      // Both land on Oct 5 because Dart already normalized
-      expect(groups2, hasLength(1));
     });
   });
 }

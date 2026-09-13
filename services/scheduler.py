@@ -22,6 +22,7 @@ from datetime import timedelta
 from typing import List
 
 from models.schemas import TripNode, NodeStatus
+from services.destination_tz import to_destination_local
 from services.maps_service import maps_service
 
 
@@ -82,17 +83,24 @@ def reschedule_and_validate(nodes: List[TripNode]) -> ScheduleResult:
                 start = node.scheduled_start
             node.scheduled_start = start
 
-        # Opening-hours re-validation (hedged per SPEC-29 D7)
+        # Opening-hours re-validation (hedged per SPEC-29 D7).
+        # Opening hours are in destination-local time, so convert the
+        # UTC schedule to destination-local before comparing.
         if node.opening_hours:
-            end_dt = start + timedelta(minutes=node.duration_minutes)
+            geo = getattr(node, "geo_region", None)
+            local_start = to_destination_local(start, geo)
+            local_end = to_destination_local(
+                start + timedelta(minutes=node.duration_minutes),
+                geo,
+            )
             if not (
-                maps_service.check_venue_open(node.opening_hours, start)
-                and maps_service.check_venue_open(node.opening_hours, end_dt)
+                maps_service.check_venue_open(node.opening_hours, local_start)
+                and maps_service.check_venue_open(node.opening_hours, local_end)
             ):
                 warnings.append(
                     f"Based on saved venue hours, '{node.venue_name}' may be "
                     f"closed at its scheduled time "
-                    f"({start.strftime('%H:%M')}). Verify locally."
+                    f"({local_start.strftime('%H:%M')}). Verify locally."
                 )
 
         prev_active = node

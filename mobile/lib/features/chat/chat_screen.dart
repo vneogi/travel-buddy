@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/disclaimers.dart';
+import '../../core/destination_tz.dart';
 import '../../data/models.dart';
 import '../../theme/colors.dart';
 import '../../theme/typography.dart';
@@ -162,7 +163,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   Future<bool> _confirmCancellation(TripNode target) async {
-    final localStart = target.scheduledStart.toLocal();
+    final localStart = toDestinationLocal(target.scheduledStart, target.geoRegion);
     final localTime = TimeOfDay.fromDateTime(localStart).format(context);
     final confirmed = await showDialog<bool>(
       context: context,

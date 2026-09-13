@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/env.dart';
 import '../../core/providers.dart';
 import '../../theme/colors.dart';
 import '../../theme/typography.dart';
@@ -33,6 +34,16 @@ class ProfileScreen extends ConsumerWidget {
               title: const Text('Device ID'),
               subtitle: Text(
                 deviceId,
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.base),
+            // SPEC-37: API host diagnostic (hostname only, no credentials)
+            ListTile(
+              leading: const Icon(Icons.cloud_outlined),
+              title: const Text('API Host'),
+              subtitle: Text(
+                Env.apiHostname,
                 style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
               ),
             ),

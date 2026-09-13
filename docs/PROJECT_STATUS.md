@@ -104,7 +104,7 @@
 | Real Laos trip creation (SPEC-32) | VERIFIED (one-city slice) | Sep 5 Windows run created a real catalog-backed Luang Prabang itinerary with no Dubai fallback. Multi-city Laos corridors remain outside this slice |
 | Proactive itinerary notifications (SPEC-35) | PHASE A + A2 DONE | PR #50 (`ccfa41e`) added `GET /trip/{id}/notifications`, region-local catalog 09:00, and provider-backed departure candidates. PR #52 (`1379da8`) added the in-app Flutter banner, identity-scoped cache, local dismissal, and weather-card stacking gate. Meal previews remain suppressed until dish provenance exists. No background GPS, LLM, mutation or push |
 | Laos corridor trip (SPEC-36) | IMPLEMENTED (PR #55, `1f2c43d`) | One northbound Laos corridor on main. Owner Windows Oct 2-8 create and later-city swap 2026-09-06. Heads-up spam is SPEC-29/35, not this slice |
-| Phone-independent field-test delivery (SPEC-37) | SPECIFIED, UNBLOCKED | Stable hosted HTTPS backend, installable phone artifact, online corridor acceptance, and a real airplane-mode drill without localhost, laptop LAN, `flutter run`, or `adb reverse` |
+| Phone-independent field-test delivery (SPEC-37) | IN PROGRESS (PR #57) | Windows 2026-09-12: Flutter 3.44.8 debug APK built with `TB_API_BASE_URL=https://example.invalid` (compile proof only). App id `com.vneogi.travelbuddy`. Cloud Run region decided: `asia-south1`. Hosted API and signed field APK are not yet produced |
 
 Migration numbers are assigned when a spec is implemented, not when it is
 written. SPEC-11, SPEC-13, SPEC-14 and SPEC-15 each claimed a number, and the
@@ -176,10 +176,12 @@ Seed-shaped cohorts.
 ### Immediate pre-trip sequence
 
 1. SPEC-36 Laos corridor trip -- **DONE** PR #55 (`1f2c43d` from `f44cdc6`).
-2. SPEC-37 phone-independent field-test delivery -- **NEXT**.
-   Deploy reviewed `main` to stable HTTPS, configure hosted secrets, and
-   install a standalone phone build. Brief:
-   docs/briefs/GENIE_SPEC_37_PHONE_FIELD_TEST.md.
+2. SPEC-37 phone-independent field-test delivery -- **IN PROGRESS** PR #57.
+   2026-09-12 Windows debug APK compile proof is done. Next: commit the
+   generated `mobile/android/` platform, green GitHub `android-compile`,
+   Cloud Run in `asia-south1`, then a signed APK compiled against that HTTPS
+   URL. Brief: docs/briefs/GENIE_SPEC_37_PHONE_FIELD_TEST.md. Follow-up:
+   docs/briefs/GENIE_SPEC_37_COMMIT_ANDROID.md.
 3. By **2026-09-18**, run online corridor acceptance followed by the real
    airplane-mode drill with USB and local tunnels disconnected. Preserve about
    two weeks to repair any field blocker before travel.
@@ -216,7 +218,7 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 | observed_duration_minutes writer | Closed PR #32 (`f8349a8`) | Consecutive arrivals update `trip_edge.observed_duration_minutes`. Dual-write preserves the value. Transport cost on the same table is still unwritten (SPEC-23) |
 | The five Supabase tests have never run | Closed Aug 17 2026 | Live device-day pytest with TB_SUPABASE_URL set; tests/test_supabase_integration.py included. Run pytest -q -ra to confirm |
 | Non-Laos local dish names remain unbackfilled | Low | 0015's names_local backfill is correctly scoped to the three Laos regions, so any Dubai dish carrying a name_local keeps a null names_local rather than a wrong language tag. That is the right trade, but it leaves a second pass owed once the Dubai rows are exported and their language confirmed |
-| No hosted application target | High until SPEC-37 | CI builds the container, but no stable field-test API is verified. The prepared Railway step needs a service, RAILWAY_TOKEN and PRODUCTION_URL; deployment is manually gated so main remains green. SPEC-37 must provision a target from reviewed main, configure backend-only secrets with TB_DEBUG=false, verify HTTPS health from a non-laptop network, and record the result in docs/HOSTED_STATE.md before the phone build can pass |
+| No hosted application target | High until SPEC-37 | CI can build the container. No Cloud Run URL is verified. Owner chose region `asia-south1`. Do not treat laptop `.env` or the 2026-09-12 `example.invalid` debug APK as a hosted target |
 | Signal provenance was silently unwritten until today | Low | _compute_provenance computed clock skew and its return was discarded, while both backends defaulted provenance to a constant. So clock_skew_seconds was never persisted for any signal and SPEC-02 Part C was unmet in the live write path. Fixed and guarded by a test that drives the ingest endpoint rather than the storage layer. Recorded because the gap was invisible for months: nothing failed, the column had a default, and the only symptom was analytics that could not exist |
 | The scheduler is money-blind | Medium | services/scheduler.py contains no reference to price, cost, budget or fare, and no model carries traveller spend capacity, so affordability cannot be ranked on at all. The only price in config is Stripe subscription pricing, which is our revenue rather than the traveller's spend. Specified as SPEC-23 and roadmap concern 7; the cost of delay compounds with venues, regions and trips simultaneously. The venues_rag.price_band half of this row was closed by 0017 |
 | Sponsored placement is undisclosed in the client | Closed (SwapSheet slice) | GET /venues/search now flattens results and sets sponsored_boost_applied from a real ranking contribution. SwapSheet shows Sponsored plus Paid placement influenced this ranking. Ranker boost, seed is_sponsored, and Pro "no sponsored results" still exist; remaining SPEC-17 work (claims, registry) still gates affiliate |

@@ -1,41 +1,37 @@
-# Travel Buddy MVP - Production Dockerfile
-# Multi-stage build for minimal image size
-# Deploy to: Railway, Fly.io, Google Cloud Run, AWS ECS
+# Travel Buddy - Production Dockerfile
+# Target: Google Cloud Run (also works on Railway, Fly.io, AWS ECS)
+# Cloud Run injects PORT via env; secrets are set in the console.
 
 # Stage 1: Dependencies
-FROM python:3.11-slim as builder
+FROM python:3.12-slim AS builder
 
 WORKDIR /app
-COPY requirements-prod.txt .
-RUN pip install --no-cache-dir --target=/deps -r requirements-prod.txt
+COPY requirements.txt .
+RUN pip install --no-cache-dir --target=/deps -r requirements.txt
 
 # Stage 2: Production image
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 # Security: non-root user
 RUN useradd -m -r appuser && mkdir /app && chown appuser:appuser /app
 WORKDIR /app
 
 # Copy dependencies from builder
-COPY --from=builder /deps /usr/local/lib/python3.11/site-packages/
+COPY --from=builder /deps /usr/local/lib/python3.12/site-packages/
 
-# Copy application code
+# Copy application code (see .dockerignore for exclusions)
 COPY --chown=appuser:appuser . .
 
 USER appuser
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD python -c "import httpx; r=httpx.get('http://localhost:8000/api/v1/health'); assert r.status_code==200"
+# Cloud Run injects PORT (default 8080). Do not bake secrets here.
+ENV PORT=8080
 
-# Expose port
-EXPOSE 8000
+EXPOSE ${PORT}
 
-# Run with uvicorn (production settings)
-CMD ["python", "-m", "uvicorn", "main:app", \
-     "--host", "0.0.0.0", \
-     "--port", "8000", \
-     "--workers", "4", \
-     "--loop", "uvloop", \
-     "--http", "httptools", \
-     "--access-log"]
+# Production uvicorn: read PORT from env, single worker (Cloud Run scales instances).
+CMD python -m uvicorn main:app \
+    --host 0.0.0.0 \
+    --port ${PORT} \
+    --workers 1 \
+    --access-log

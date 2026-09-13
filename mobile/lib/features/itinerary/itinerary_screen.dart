@@ -272,6 +272,14 @@ class ItineraryScreen extends ConsumerWidget {
                         .read(itineraryControllerProvider(tripId).notifier)
                         .clearBanner(),
                   ),
+                // SPEC-37: Compact schedule warnings summary.
+                if (state.scheduleWarnings.isNotEmpty)
+                  _ScheduleWarningsBanner(
+                    warnings: state.scheduleWarnings,
+                    onDismiss: () => ref
+                        .read(itineraryControllerProvider(tripId).notifier)
+                        .clearScheduleWarnings(),
+                  ),
                 // SPEC-29: Context alerts above timeline.
                 // Non-blocking: itinerary shows immediately; alerts
                 // render when available (no spinner replacement).
@@ -590,6 +598,96 @@ class _DateHeader extends StatelessWidget {
       child: Text(
         '$weekday, $day $month $year',
         style: AppTypography.label.copyWith(color: AppColors.muted),
+      ),
+    );
+  }
+}
+
+/// SPEC-37: Compact schedule warnings.  Shows "N schedule issues - Review"
+/// and opens a bottom sheet with the full list on tap.
+class _ScheduleWarningsBanner extends StatelessWidget {
+  final List<String> warnings;
+  final VoidCallback? onDismiss;
+  const _ScheduleWarningsBanner({required this.warnings, this.onDismiss});
+
+  @override
+  Widget build(BuildContext context) {
+    final count = warnings.length;
+    final label = count == 1
+        ? '1 schedule issue'
+        : '$count schedule issues';
+    return GestureDetector(
+      onTap: () => _showWarningsSheet(context),
+      child: Container(
+        width: double.infinity,
+        color: AppColors.accent.withValues(alpha: 0.08),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.base,
+          vertical: AppSpacing.sm,
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, size: 18, color: AppColors.accent),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Text(
+                '$label \u2013 Review',
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.accent,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const Icon(Icons.chevron_right, size: 18, color: AppColors.accent),
+            if (onDismiss != null)
+              IconButton(
+                icon: const Icon(Icons.close, size: 16),
+                onPressed: onDismiss,
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showWarningsSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      isScrollControlled: true,
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.4,
+        maxChildSize: 0.8,
+        minChildSize: 0.2,
+        expand: false,
+        builder: (_, scrollController) => Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: ListView(
+            controller: scrollController,
+            shrinkWrap: true,
+            children: [
+              Text('Schedule Issues', style: AppTypography.h2),
+              const SizedBox(height: AppSpacing.base),
+              for (final w in warnings) ...[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('\u2022 ', style: TextStyle(fontSize: 14)),
+                    Expanded(
+                      child: Text(w, style: AppTypography.body),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }

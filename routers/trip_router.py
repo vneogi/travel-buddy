@@ -345,6 +345,7 @@ def _featured_trip(trips: list[TripState], *, now: datetime | None = None) -> Fe
         venue_name=stop.venue_name,
         scheduled_start=stop.scheduled_start,
         status=stop.status,
+        geo_region=getattr(stop, "geo_region", None) or trip_obj.geo_region,
     )
 
     return FeaturedTrip(
@@ -573,6 +574,7 @@ async def process_trip_event(
         from_cache=result["from_cache"],
         reroutes_remaining=remaining,
         food_disclaimer=FOOD_DISCLAIMER,
+        schedule_warnings=result.get("schedule_warnings") or [],
     )
 
 

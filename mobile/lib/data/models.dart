@@ -298,6 +298,7 @@ class FeaturedStop {
   final String venueName;
   final DateTime scheduledStart;
   final String status;
+  final String? geoRegion;
 
   const FeaturedStop({
     required this.nodeId,
@@ -305,6 +306,7 @@ class FeaturedStop {
     required this.venueName,
     required this.scheduledStart,
     required this.status,
+    this.geoRegion,
   });
 
   factory FeaturedStop.fromJson(Map<String, dynamic> json) => FeaturedStop(
@@ -313,6 +315,7 @@ class FeaturedStop {
         venueName: json['venue_name'] as String,
         scheduledStart: DateTime.parse(json['scheduled_start'] as String),
         status: json['status'] as String,
+        geoRegion: json['geo_region'] as String?,
       );
 
   Map<String, dynamic> toJson() => {
@@ -321,6 +324,7 @@ class FeaturedStop {
         'venue_name': venueName,
         'scheduled_start': scheduledStart.toUtc().toIso8601String(),
         'status': status,
+        'geo_region': geoRegion,
       };
 }
 
@@ -431,6 +435,8 @@ class TripEventResult {
   final String routingTier; // "light" | "heavy"
   final bool fromCache;
   final int? reroutesRemaining;
+  /// SPEC-37: Structured schedule warnings from the backend.
+  final List<String> scheduleWarnings;
 
   const TripEventResult({
     required this.message,
@@ -438,6 +444,7 @@ class TripEventResult {
     required this.routingTier,
     required this.fromCache,
     this.reroutesRemaining,
+    this.scheduleWarnings = const [],
   });
 
   factory TripEventResult.fromJson(Map<String, dynamic> j) => TripEventResult(
@@ -448,6 +455,8 @@ class TripEventResult {
         routingTier: j['routing_tier_used'] as String? ?? 'light',
         fromCache: j['from_cache'] as bool? ?? false,
         reroutesRemaining: (j['reroutes_remaining'] as num?)?.toInt(),
+        scheduleWarnings: ((j['schedule_warnings'] as List?) ?? const [])
+            .cast<String>(),
       );
 }
 

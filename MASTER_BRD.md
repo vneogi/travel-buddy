@@ -412,14 +412,13 @@ a failing test. When a test fails against real configuration, suspect the test
 ### Hosted target -- required by SPEC-37
 
 No hosted deployment target is currently proven. CI builds the container on
-`main`; deployment is manually gated and the Railway path still requires a
-service, `RAILWAY_TOKEN`, and `PRODUCTION_URL`.
+`main`; deployment is manually gated. SPEC-37 uses Google Cloud Run in
+`asia-south1` (owner decision 2026-09-07; Mumbai, matching hosted Supabase),
+not Railway.
 
-After SPEC-36 merges, SPEC-37 provisions one stable HTTPS target from reviewed
-`main`, configures backend-only secrets with `TB_DEBUG=false`, and verifies it
-from the phone's network. Railway remains the prepared path, but another
-supported container target is acceptable if it satisfies the same health,
-secret, and rollback requirements. A local `.env` is never deployment state.
+After SPEC-36 merged, SPEC-37 provisions one stable HTTPS target, configures
+backend-only secrets with `TB_DEBUG=false`, and verifies it from the phone's
+network. A local `.env` is never deployment state.
 
 ### Docker Compose, local
 
@@ -428,7 +427,7 @@ secret, and rollback requirements. A local `.env` is never deployment state.
 
 ### Google Cloud Run
 
-    gcloud run deploy travel-buddy --source . --region me-central1
+    gcloud run deploy travel-buddy --source . --region asia-south1
 
 ---
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/services.dart';
+import '../core/destination_tz.dart';
 import '../data/models.dart';
 import '../features/itinerary/current_window.dart';
 import '../offline/offline_database.dart';
@@ -312,7 +313,7 @@ class ActivityCard extends StatelessWidget {
   }
 
   String _formatTime(DateTime dt) =>
-      '${dt.hour.toString().padLeft(2, "0")}:${dt.minute.toString().padLeft(2, "0")}';
+      formatDestinationTime(dt, node.geoRegion);
 }
 
 class _VibeChip extends StatelessWidget {
