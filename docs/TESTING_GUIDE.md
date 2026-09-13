@@ -136,7 +136,9 @@ over `adb reverse` on USB, and airplane mode does not disable USB (R7).
 
 Final acceptance requires a standalone installed artifact compiled against the
 hosted HTTPS API. That sequence completed 2026-09-13 on `f6f2f0c` (Cloud Run
-`travel-buddy-00003-5bc` plus signed APK). Repeat from `main` if the hosted
+`travel-buddy-00003-5bc` plus signed APK) and was repeated 2026-09-14 on
+`fefc4ec` (Cloud Run `travel-buddy-00004-62g` plus signed APK). Repeat from
+`main` if the hosted
 URL or signing changes. See:
 
 - `docs/CLOUD_RUN_DEPLOY.md` -- deploy the backend and set secrets

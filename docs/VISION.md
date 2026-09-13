@@ -232,9 +232,12 @@ Near-term product gates after the Aug 27-28 laptop run:
 4. SPEC-37 is done: hosted HTTPS API and an installable phone artifact
    passed on the owner's Android device 2026-09-13 (`f6f2f0c`, Cloud Run
    `travel-buddy-00003-5bc`).
-5. Remaining pre-trip product work is hotel/PDF representation and
-   catalog-hours quality, not re-proving the hosted APK path. Public
-   launch, SPEC-24/27, and trip-less Ask stay later.
+5. SPEC-38 is done: Oct 2-9 corridor and active-trip navigation passed
+   2026-09-14 (`fefc4ec`, Cloud Run `travel-buddy-00004-62g`).
+6. Remaining pre-trip product work is guided Create Trip (party, interests,
+   single-city start/end) plus catalog-hours quality, not re-proving the
+   hosted APK path. PDF import, public launch, SPEC-24/27, and trip-less
+   Ask stay later.
 
 
 ---

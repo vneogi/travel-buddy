@@ -30,7 +30,7 @@ Set it for this session:
 
 Owner decision 2026-09-07: Cloud Run region is `asia-south1` (Mumbai), matching
 hosted Supabase. Deploy only from reviewed `main`. Field revision
-`travel-buddy-00003-5bc` was deployed from `f6f2f0c` on 2026-09-13.
+`travel-buddy-00004-62g` was deployed from `fefc4ec` on 2026-09-14.
 
 ```powershell
 $REGION = "asia-south1"

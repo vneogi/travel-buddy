@@ -1,6 +1,7 @@
 # SPEC-38: Active Trip Mode
 
-> Status: IN PROGRESS.
+> Status: DONE. Merged PR #59 as `fefc4ec`. Owner Android field pass
+> 2026-09-14 against Cloud Run `travel-buddy-00004-62g`.
 >
 > Depends on the SPEC-36 corridor and SPEC-37 installed field path. This is a
 > deterministic client-navigation slice. It does not add an LLM, memory layer,
@@ -49,3 +50,6 @@ sections or infer hidden gestures while standing in transit.
 - LLM provider switching, persistent chat, agentic memory, or vector recall.
 - Too far, Too hot, Raining, or Too tired copilot actions.
 - PDF intake, Day Sheet, print pack, OCR, or itinerary document storage.
+- Single-city start and end dates. SPEC-32 still creates one catalog day from
+  one `start_date`. A later Create Trip spec owns ranges plus party/interest
+  screens.

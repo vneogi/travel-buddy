@@ -94,10 +94,12 @@ The immediate order after the field-test gate:
 
 1. SPEC-36 is on main (PR #55);
 2. SPEC-37 passed 2026-09-13 (Cloud Run plus signed APK, owner phone);
-3. SPEC-38 adds the authoritative Oct 2-9 corridor and active-trip navigation;
-4. PDF/itinerary import stays deferred while the corridor can represent the
-   real dates;
-5. then the broader consumer backlog (SPEC-17, grounded trip-less Ask,
+3. SPEC-38 passed 2026-09-14 (Cloud Run `travel-buddy-00004-62g` plus signed
+   APK, owner phone);
+4. guided Create Trip (party, interests, single-city start/end, then LLM /
+   similar-trip inspiration);
+5. PDF/itinerary import stays deferred;
+6. then the broader consumer backlog (SPEC-17, grounded trip-less Ask,
    SPEC-24/27).
 
 The full SPEC-25 contract still needs SPEC-17's real envelope, so trip-less Ask

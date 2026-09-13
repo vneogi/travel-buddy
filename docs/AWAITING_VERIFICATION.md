@@ -25,8 +25,8 @@ Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 | PowerShell scripts | Aug 9 | `.\scripts\smoke-test.ps1` on Windows |
 | Laptop-feedback product gaps | Sep 5 2026 | Multi-night hotel UI and real location remain open. Hotel Rescue 6C is canceled by owner decision; remove the duplicate shortcut but keep hotel driver cards and offline cache. Windows Maps fallback and SPEC-32 Laos create were verified Sep 5 |
 | SPEC-36 corridor implementation | Merged PR #55 `1f2c43d`, Sep 7 2026 | Owner Windows create and swap done. Phone corridor also passed 2026-09-13 |
-| Hosted API for phone field test | Closed 2026-09-13 | Cloud Run `travel-buddy-00003-5bc`, `asia-south1`, health 200. See HOSTED_STATE.md |
-| Installable independent phone build | Closed 2026-09-13 | Signed release APK from `f6f2f0c` with hosted `TB_API_BASE_URL`; app id `com.vneogi.travelbuddy` |
+| Hosted API for phone field test | Closed 2026-09-14 | Cloud Run `travel-buddy-00004-62g` from `fefc4ec`. Earlier SPEC-37 revision was `travel-buddy-00003-5bc`. See HOSTED_STATE.md |
+| Installable independent phone build | Closed 2026-09-14 | Signed release APK from `fefc4ec` with hosted `TB_API_BASE_URL`; app id `com.vneogi.travelbuddy` |
 | Final phone airplane-mode acceptance | Closed 2026-09-13 | Owner reported pass; screenshots show airplane itinerary plus sync queue then drain. See finding below |
 | Dubai row contents, including AED magnitudes | Cleared Aug 17 2026 | 16 Dubai venues live (null price_band). dubai_dishes=0 -- nothing to inspect for AED; food data is greenfield |
 | `pg_description` non-ASCII | Cleared Aug 17 2026 | Step 7c returned 0 rows |
@@ -36,6 +36,33 @@ The five Supabase integration tests ran green on device day 2026-08-17 with
 are smoke-test.ps1, any unrecorded Anonymous E2E, and deliberate VALIDATE of
 NOT VALID CHECKs. Hosted migration and provider state is maintained only in
 `docs/HOSTED_STATE.md`.
+
+## Finding -- Sep 14 2026 -- SPEC-38 Cloud Run and Android phone pass
+
+Owner Windows laptop at `main` `fefc4ec` (PR #59 squash). Cloud Run deploy
+`--source .` produced revision `travel-buddy-00004-62g` serving
+`https://travel-buddy-196190001420.asia-south1.run.app`. `GET /api/v1/health`
+returned HTTP 200. Signed `app-release.apk` built with that
+`TB_API_BASE_URL` and `adb install -r` succeeded on device
+`49261FDKD001JM`.
+
+Owner reported the session looked fine. Screenshots show:
+
+- Corridor form advertises 8 days total and per-city caps (Vientiane 4,
+  Vang Vieng 3, Luang Prabang 4).
+- Created trip listed as Fri Oct 2, 32 stops.
+- Home Up next is COPE Visitor Centre at 9:00 AM.
+- Vientiane section dated 2026-10-02 to 2026-10-03; Luang Prabang
+  2026-10-06 to 2026-10-09 with a Friday 9 October header.
+- Pending cards expose cancel. ICT morning times.
+- Airplane-mode driver card for Ban Anou Night Market still readable.
+
+Not claimed from these shots: Keep vs confirm-cancel, alert View stop /
+Review alternatives, or a refused 4-day Vang Vieng / 9-day total create.
+
+Owner product note, deferred: single-city "Create a trip" still picks one
+start date (SPEC-32). Start and end dates belong in a later Create Trip
+spec with party and interest screens. PDF import remains deferred.
 
 ## Finding -- Sep 13 2026 -- SPEC-37 hosted API and Android phone pass
 

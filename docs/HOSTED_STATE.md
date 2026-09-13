@@ -10,8 +10,8 @@ successful test of a named variable.
 
 ## Current verified state
 
-Last verified: 2026-09-13 owner Android field pass against Cloud Run
-`travel-buddy-00003-5bc` (main `f6f2f0c`). Hosted Supabase schema last verified
+Last verified: 2026-09-14 owner Android SPEC-38 pass against Cloud Run
+`travel-buddy-00004-62g` (main `fefc4ec`). Hosted Supabase schema last verified
 2026-09-06.
 
 ### Hosted Supabase
@@ -49,12 +49,12 @@ It does not prove they are configured on a hosted backend deployment.
 ### Hosted application deployment
 
 Cloud Run service `travel-buddy` in project `ultra-solution-499410-e9`,
-region `asia-south1`. Owner deployed from local `main` at `f6f2f0c` on
-2026-09-13.
+region `asia-south1`. Owner deployed from local `main` at `fefc4ec` on
+2026-09-14.
 
 | Field | Value |
 |---|---|
-| Revision | `travel-buddy-00003-5bc` (100 percent traffic) |
+| Revision | `travel-buddy-00004-62g` (100 percent traffic) |
 | URL | `https://travel-buddy-196190001420.asia-south1.run.app` |
 | Health | HTTP 200 `GET /api/v1/health` (`status=healthy`, `venues_loaded=74`) |
 | Flags on the deploy command | `TB_DEBUG=false`, `TB_ALLOW_ANONYMOUS=true` |
@@ -70,7 +70,7 @@ LLM call. LLM provider readiness remains unverified even if the startup
 boolean was true; provider switching and grounded answers belong to the later
 SPEC-25 phase.
 
-SPEC-36 remains on main (PR #55). SPEC-37 phone pass is recorded in
+SPEC-36 remains on main (PR #55). SPEC-38 phone pass is recorded in
 `docs/AWAITING_VERIFICATION.md`. Laptop `.env` is still not the hosted
 config.
 
