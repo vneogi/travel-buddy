@@ -403,7 +403,7 @@ class _TripList extends StatelessWidget {
         final dates = trip.startsAt == null
             ? 'Dates not set'
             : MaterialLocalizations.of(context)
-                .formatMediumDate(trip.startsAt!.toLocal());
+                .formatMediumDate(toDestinationLocal(trip.startsAt!, trip.geoRegion));
         return Card(
           child: ListTile(
             onTap: () => context.go('/trip/${trip.tripId}'),

@@ -1,3 +1,4 @@
+import '../../core/destination_tz.dart';
 import '../../data/models.dart';
 
 // SPEC-31: Date-scoped itinerary grouping.
@@ -12,7 +13,10 @@ class ItineraryDayGroup {
 
 /// Group `nodes` by the calendar date on their `scheduledStart`.
 ///
-/// Date key uses year/month/day directly -- no toLocal or toUtc call.
+/// Date key converts to destination-local so that a Vientiane 02:00 UTC
+/// node (= 09:00 ICT, same calendar day) is grouped correctly even when
+/// the device timezone is IST (+5:30, which would place it on the wrong
+/// calendar date).
 /// Preserves input order: nodes within a day keep the server-provided
 /// sequence, and groups appear in the order of their first node.
 /// The input list is never sorted or mutated.
@@ -22,7 +26,8 @@ List<ItineraryDayGroup> groupNodesByCalendarDate(List<TripNode> nodes) {
   List<TripNode>? currentNodes;
 
   for (final node in nodes) {
-    final key = _dateKey(node.scheduledStart);
+    final local = toDestinationLocal(node.scheduledStart, node.geoRegion);
+    final key = _dateKey(local);
     if (key != currentKey) {
       if (currentNodes != null) {
         result.add(ItineraryDayGroup(

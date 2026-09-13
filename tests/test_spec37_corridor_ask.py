@@ -122,12 +122,12 @@ def test_router_agent_no_region_falls_back_gracefully():
 
 
 def test_schedule_warnings_not_in_response_text():
-    """After the fix, state_machine must not append 'Heads up:' to
-    state['response']. Warnings go via schedule_warnings list only."""
+    """Behavioral duplicate in test_spec37_production_blockers.py --
+    test_warnings_in_list_not_in_message_text.  This test validates
+    via source read as a quick structural check."""
     import pathlib
 
     source = pathlib.Path("agents/state_machine.py").read_text()
-    # The string "Heads up:" must not appear anywhere in the module.
     assert "Heads up:" not in source, (
         "state_machine.py still concatenates warnings into response text"
     )

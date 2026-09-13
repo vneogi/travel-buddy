@@ -22,12 +22,16 @@ class CacheEntry:
         embedding: List[float],
         geo_lat: float = 25.1972,
         geo_lng: float = 55.2744,
+        geo_region: str = "",
+        venue_name: str = "",
     ):
         self.query_text = query_text
         self.response_text = response_text
         self.embedding = embedding
         self.geo_lat = geo_lat
         self.geo_lng = geo_lng
+        self.geo_region = geo_region
+        self.venue_name = venue_name
         self.created_at = datetime.now(tz=timezone.utc)
         self.hit_count = 0
         self.expires_at = self.created_at + timedelta(hours=settings.cache_ttl_hours)
@@ -51,9 +55,17 @@ class SemanticCacheService:
         self.total_misses = 0
 
     def check_cache(
-        self, query: str, geo_lat: float = 25.1972, geo_lng: float = 55.2744
+        self,
+        query: str,
+        geo_lat: float = 25.1972,
+        geo_lng: float = 55.2744,
+        geo_region: str = "",
+        venue_name: str = "",
     ) -> Optional[Tuple[str, float]]:
         """Check if a semantically similar query exists in cache.
+
+        Cache entries are scoped by (geo_region, venue_name) so that
+        the same question text in different destinations never collides.
 
         Returns:
             Tuple of (cached_response, similarity_score) if hit, None if miss.
@@ -65,6 +77,9 @@ class SemanticCacheService:
 
         for entry in self._cache:
             if entry.is_expired:
+                continue
+            # Scope: same region AND same venue context.
+            if entry.geo_region != geo_region or entry.venue_name != venue_name:
                 continue
 
             similarity = embedding_service.cosine_similarity(query_embedding, entry.embedding)
@@ -87,8 +102,15 @@ class SemanticCacheService:
         response: str,
         geo_lat: float = 25.1972,
         geo_lng: float = 55.2744,
+        geo_region: str = "",
+        venue_name: str = "",
     ) -> None:
-        """Store a query-response pair in the cache."""
+        """Store a query-response pair in the cache.
+
+        The entry is keyed by (geo_region, venue_name, semantic_embedding)
+        so identical question text scoped to different destinations produces
+        independent cache entries.
+        """
         embedding = embedding_service.generate_embedding(query)
         entry = CacheEntry(
             query_text=query,
@@ -96,6 +118,8 @@ class SemanticCacheService:
             embedding=embedding,
             geo_lat=geo_lat,
             geo_lng=geo_lng,
+            geo_region=geo_region,
+            venue_name=venue_name,
         )
         self._cache.append(entry)
 
