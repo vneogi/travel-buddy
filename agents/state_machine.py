@@ -637,6 +637,7 @@ class TripStateMachine:
                         trip_state=state["trip_state"].model_dump(mode="json"),
                         venues_found=venues,
                         routing_tier="heavy",
+                        context=info_ctx,
                     )
                 else:
                     base = await llm_service.generate_info_response(

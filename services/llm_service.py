@@ -22,6 +22,7 @@ import json
 import time
 from typing import AsyncGenerator, Dict, List, Optional, Tuple
 
+from config.regions import get_region
 from config.settings import settings
 
 
@@ -180,10 +181,23 @@ class LLMService:
         trip_state: Dict,
         venues_found: List[Dict],
         routing_tier: str = "heavy",
+        context: Optional[Dict] = None,
     ) -> str:
-        """Generate a natural language response for itinerary changes."""
+        """Generate a natural language response for itinerary changes.
+
+        *context* carries geo_region, venue_name, and next_venue_name so the
+        prompt is grounded in the traveller's actual destination, not hardcoded
+        to Dubai.
+        """
+        ctx = context or {}
+        geo_code = ctx.get("geo_region", "")
+        region = get_region(geo_code) if geo_code else None
+        region_label = region.display_name if region else "your destination"
+        lang_hint = region.language_hint if region else ""
+
         system_prompt = (
-            "You are Travel Buddy AI, a concise and helpful Dubai travel companion. "
+            f"You are Travel Buddy AI, a concise and helpful {region_label} "
+            "travel companion. "
             "You help travelers modify their itineraries in real-time.\n\n"
             "Rules:\n"
             "- Never modify LOCKED activities\n"
@@ -192,6 +206,8 @@ class LLMService:
             "- Be warm but concise (2-3 sentences max)\n"
             "- Mention the vibe/atmosphere of suggested venues"
         )
+        if lang_hint:
+            system_prompt += f"\n- Language tip: {lang_hint}"
 
         user_context = (
             f"User request: {user_message}\n\n"

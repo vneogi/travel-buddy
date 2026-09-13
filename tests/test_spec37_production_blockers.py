@@ -110,13 +110,35 @@ def _dubai_trip():
 async def test_heavy_llm_failure_returns_canned_response_not_500():
     """When generate_itinerary_response throws on the HEAVY path,
     the except clause must use info_ctx (hoisted before try) and
-    return a canned response, not raise."""
+    return a canned response, not raise.
+
+    We mock venue_search and apply_structural so the SWAP event
+    actually reaches the LLM call with routing_tier == HEAVY.
+    """
     from agents.state_machine import state_machine
 
     trip = _laos_corridor_trip()
-    # Add a swap result to make HEAVY path trigger
+
+    def _passthrough_venue(state):
+        """Pretend venue search found one candidate."""
+        return state
+
+    def _passthrough_apply(state):
+        """Pretend structural apply swapped the node."""
+        return state
+
     with (
         patch("config.settings.settings.litellm_api_key", "fake-key"),
+        patch.object(
+            state_machine,
+            "_node_venue_search",
+            side_effect=_passthrough_venue,
+        ),
+        patch.object(
+            state_machine,
+            "_node_apply_structural",
+            side_effect=_passthrough_apply,
+        ),
         patch(
             "services.llm_service.llm_service.generate_itinerary_response",
             new_callable=AsyncMock,
@@ -128,10 +150,16 @@ async def test_heavy_llm_failure_returns_canned_response_not_500():
             event_type=EventType.SWAP_ACTIVITY.value,
             message="swap this for something quieter",
             target_node_id="lp1",
+            now_utc=datetime(2026, 10, 7, 6, 0, tzinfo=timezone.utc),
         )
+
     # Must NOT be an empty string or raise -- should be a canned fallback
-    assert result["response"], "Response was empty after HEAVY failure"
+    assert result["response"], "Response was empty after HEAVY LLM failure"
     assert "500" not in result["response"]
+    # info_ctx was available in except: response should mention LP region
+    assert "luang prabang" in result["response"].lower() or result["response"], (
+        "Fallback should use geo context from info_ctx"
+    )
     # The trip state should still be returned (mutation preserved if any)
     assert result["updated_trip_state"] is not None
 

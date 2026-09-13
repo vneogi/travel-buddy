@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:travel_buddy/core/destination_tz.dart';
+import 'package:travel_buddy/data/models.dart';
 
 void main() {
   featuredStopTests();
@@ -46,8 +47,6 @@ void main() {
     });
   });
 }
-
-import 'package:travel_buddy/data/models.dart';
 
 void featuredStopTests() {
   group('FeaturedStop.geoRegion', () {
