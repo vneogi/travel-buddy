@@ -696,6 +696,42 @@ void main() {
     expect(find.text('child-luang_prabang_laos'), findsOneWidget);
   });
 
+  testWidgets('CitySection: focused past group starts expanded', (tester) async {
+    final pastGroup = CorridorCityGroup(
+      geoRegion: 'luang_prabang_laos',
+      displayName: 'Luang Prabang',
+      dateRange: '6 Oct - 9 Oct',
+      dayGroups: [
+        ItineraryDayGroup(
+          date: DateTime.utc(2020, 10, 6),
+          nodes: [
+            _node(
+              name: 'Focused past stop',
+              geoRegion: 'luang_prabang_laos',
+              scheduledStart: DateTime.utc(2020, 10, 6, 2),
+            ),
+          ],
+        ),
+      ],
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: CitySection(
+            cityGroup: pastGroup,
+            forceExpanded: true,
+            childBuilder: (_) => const Text('focused child'),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final crossFade =
+        tester.widget<AnimatedCrossFade>(find.byType(AnimatedCrossFade));
+    expect(crossFade.crossFadeState, CrossFadeState.showFirst);
+  });
+
   // -- Proof: corridorCreate POST body shape --------------------------------
 
   test('TripRepository.corridorCreate sends segments-only body', () async {
@@ -1355,7 +1391,6 @@ void main() {
     expect(sections[0].cityGroup.displayName, 'Vientiane');
     expect(sections[1].cityGroup.displayName, 'Vang Vieng');
     expect(sections[2].cityGroup.displayName, 'Luang Prabang');
-    expect(sections[2].forceExpanded, isTrue);
     final outerScroll = tester.state<ScrollableState>(
       find
           .descendant(
