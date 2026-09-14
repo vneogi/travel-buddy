@@ -160,6 +160,12 @@ generic parser. Provider detection is a hint, not permission to invent fields.
 Unknown providers always degrade to the generic parser and then the manual
 floor.
 
+Airbnb and Expedia are the next named hotel-provider adapters after field
+evidence supplies redacted fixtures. They are not aliases for Agoda or
+Booking.com, and they are not claimed supported by the first slice. Existing
+flight-format parsing remains independently regression-tested; hotel hardening
+must not broaden a flight rule until it starts consuming hotel footer text.
+
 Normalize Unicode, whitespace, forwarded-email prefixes, label separators, and
 common date/time forms before extraction. Label aliases include `check-in`,
 `check in`, `arrival`, `check-out`, `checkout`, `departure`, `booking ID`,
@@ -202,6 +208,28 @@ a separate non-PII `import_provider`; it is not encoded into
 Telemetry may record provider class, full/partial/unknown outcome, and a bitmask
 of fields filled. It never records the extracted values or source text.
 
+### Redacted corpus and release measurement
+
+Maintain a committed, sanitized golden corpus grouped by provider and source
+shape. Every fixture declares the expected booking type and expected value or
+explicit absence for each output field. Sanitization replaces all live names,
+codes, addresses, links, payment details, and account identifiers while
+preserving layout and labels needed by the parser.
+
+Report exact-match results per field and provider, including:
+
+- correct value;
+- honest missing field;
+- wrong value;
+- wrong booking type;
+- parser exception.
+
+The release gate is zero wrong synthetic values and zero exceptions across the
+golden corpus. A supported provider may still return an honest partial result
+when the source omits a field. Adding corpus volume cannot be replaced by one
+large end-to-end success percentage because a false hotel name is materially
+worse than an unfilled optional field.
+
 ### Provider-aware tests and acceptance
 
 - [ ] Existing Booking.com fixture still extracts type, venue, check-in,
@@ -216,6 +244,8 @@ of fields filled. It never records the extracted values or source text.
 - [ ] The UI displays found and missing fields before save
 - [ ] Provider adapters and the generic fallback share one normalized output
       contract
+- [ ] Sanitized corpus reports exact-match outcomes per field and provider
+- [ ] Golden corpus contains zero invented values and zero parser exceptions
 - [ ] Extraction opens no socket
 - [ ] Raw text and confirmation code are absent from logs and signals
 
