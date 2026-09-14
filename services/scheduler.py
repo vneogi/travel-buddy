@@ -19,11 +19,12 @@ edit (cancel / swap / add / reroute):
 
 from dataclasses import dataclass, field
 from datetime import timedelta
-from typing import List
+from typing import List, Optional, Set
 
 from models.schemas import TripNode, NodeStatus
 from services.destination_tz import to_destination_local
 from services.maps_service import maps_service
+from services.opening_hours import HoursResult, hours_for_slot
 
 
 @dataclass
@@ -44,11 +45,18 @@ def _is_background_anchor(node: TripNode) -> bool:
     return node.node_kind == "booking" and node.booking_type == "hotel"
 
 
-def reschedule_and_validate(nodes: List[TripNode]) -> ScheduleResult:
+def reschedule_and_validate(
+    nodes: List[TripNode],
+    mutated_node_ids: Optional[Set[str]] = None,
+) -> ScheduleResult:
     """Recompute start times preserving original positions.
 
     Skipped nodes stay at their original index/time (cancel correctness).
     Active nodes are forward-scheduled around them.
+
+    When *mutated_node_ids* is given, hours warnings are emitted only for
+    those nodes (SPEC-41 A2: one swap must not reprint pre-existing hours
+    messages for untouched nodes).
     """
     warnings: List[str] = []
     has_hard_conflict = False
@@ -83,25 +91,35 @@ def reschedule_and_validate(nodes: List[TripNode]) -> ScheduleResult:
                 start = node.scheduled_start
             node.scheduled_start = start
 
-        # Opening-hours re-validation (hedged per SPEC-29 D7).
-        # Opening hours are in destination-local time, so convert the
-        # UTC schedule to destination-local before comparing.
-        if node.opening_hours:
+        # SPEC-41 A2: Hours validation using check_slot.  Only emit
+        # warnings for nodes in the mutated set (or all, if not scoped).
+        _should_check = mutated_node_ids is None or node.node_id in mutated_node_ids
+        if _should_check:
+            structured = getattr(node, "opening_hours_structured", None)
             geo = getattr(node, "geo_region", None)
-            local_start = to_destination_local(start, geo)
-            local_end = to_destination_local(
-                start + timedelta(minutes=node.duration_minutes),
-                geo,
-            )
-            if not (
-                maps_service.check_venue_open(node.opening_hours, local_start)
-                and maps_service.check_venue_open(node.opening_hours, local_end)
-            ):
-                warnings.append(
-                    f"Based on saved venue hours, '{node.venue_name}' may be "
-                    f"closed at its scheduled time "
-                    f"({local_start.strftime('%H:%M')}). Verify locally."
+            hr = hours_for_slot(structured, start, node.duration_minutes, geo)
+            if hr == HoursResult.UNKNOWN and structured is None and node.opening_hours:
+                # Legacy path: fall back to flat string for old nodes
+                local_start = to_destination_local(start, geo)
+                local_end = to_destination_local(
+                    start + timedelta(minutes=node.duration_minutes),
+                    geo,
                 )
+                if not (
+                    maps_service.check_venue_open(node.opening_hours, local_start)
+                    and maps_service.check_venue_open(node.opening_hours, local_end)
+                ):
+                    warnings.append(
+                        f"Based on saved venue hours, '{node.venue_name}' may be "
+                        f"closed at its scheduled time "
+                        f"({local_start.strftime('%H:%M')}). Verify locally."
+                    )
+            elif hr == HoursResult.CLOSED:
+                warnings.append(
+                    f"'{node.venue_name}' is closed at its scheduled time. Consider swapping it."
+                )
+            elif hr == HoursResult.UNKNOWN and structured is not None:
+                warnings.append(f"Opening hours for '{node.venue_name}' could not be verified.")
 
         prev_active = node
         prev_active_end = (

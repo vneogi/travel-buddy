@@ -28,6 +28,7 @@ from services.catalog_itinerary import (
     duration_for,
     flatten_opening_hours,
 )
+from services.opening_hours import HoursResult, hours_for_slot
 
 
 CORRIDOR_STOPS_PER_DAY = 4
@@ -169,40 +170,60 @@ def build_corridor_nodes(
                 tzinfo=tz,
             ).astimezone(timezone.utc)
 
-            selected = _select_corridor_day(pool, used_ids)
-            if len(selected) < CORRIDOR_STOPS_PER_DAY:
-                raise UnsupportedCorridor(
-                    f"Region {seg_in.geo_region} day {day_date}: only "
-                    f"{len(selected)} unique venues available, need "
-                    f"{CORRIDOR_STOPS_PER_DAY}."
-                )
-
-            # Mark used
-            for row in selected:
-                used_ids.add(str(row.get("venue_id") or row["name"]))
+            # SPEC-41 A2: hours-aware corridor day fill
+            from services.catalog_itinerary import (
+                _is_hours_eligible,
+                _make_node,
+            )
 
             cursor = start_dt
-            for row in selected:
-                duration = duration_for(row)
-                hours = flatten_opening_hours(row.get("opening_hours"))
-                all_nodes.append(
-                    TripNode(
-                        venue_name=row["name"],
-                        venue_id=str(row["venue_id"]) if row.get("venue_id") else None,
-                        scheduled_start=cursor,
-                        duration_minutes=duration,
-                        micro_location=row.get("micro_location"),
-                        vibe_tags=list(row.get("vibe_tags") or []),
-                        lat=float(row["lat"]),
-                        lng=float(row["lng"]),
-                        opening_hours=hours,
-                        geo_region=seg_in.geo_region,
-                        names_local=row.get("names_local"),
-                        landmarks_local=row.get("landmarks_local"),
-                        nearest_landmark=row.get("nearest_landmark"),
-                    )
+            day_count = 0
+            chosen_ids: set[str] = set()
+            chosen_names: set[str] = set()
+
+            def _try_take_corridor(row: dict) -> bool:
+                nonlocal cursor, day_count
+                key = str(row.get("venue_id") or row["name"])
+                name = row["name"]
+                if key in used_ids or key in chosen_ids or name in chosen_names:
+                    return False
+                if not _is_hours_eligible(row, cursor, seg_in.geo_region):
+                    return False
+                chosen_ids.add(key)
+                chosen_names.add(name)
+                node = _make_node(row, cursor, seg_in.geo_region)
+                all_nodes.append(node)
+                cursor = cursor + timedelta(minutes=node.duration_minutes + 30)
+                day_count += 1
+                return True
+
+            # Bucket-first for diversity
+            for bucket in CATEGORY_BUCKETS:
+                if day_count >= CORRIDOR_STOPS_PER_DAY:
+                    break
+                for row in pool:
+                    if (row.get("category") or "experience").lower() in bucket:
+                        if _try_take_corridor(row):
+                            break
+            # Fill remaining -- loop until stable because the cursor
+            # advances on each placement and may unlock venues that
+            # were CLOSED at the earlier cursor.
+            changed = True
+            while changed and day_count < CORRIDOR_STOPS_PER_DAY:
+                changed = False
+                for row in pool:
+                    if day_count >= CORRIDOR_STOPS_PER_DAY:
+                        break
+                    if _try_take_corridor(row):
+                        changed = True
+
+            if day_count < CORRIDOR_STOPS_PER_DAY:
+                raise UnsupportedCorridor(
+                    f"Region {seg_in.geo_region} day {day_date}: only "
+                    f"{day_count} hours-eligible venues, need "
+                    f"{CORRIDOR_STOPS_PER_DAY}."
                 )
-                cursor = cursor + timedelta(minutes=duration + 30)
+            used_ids.update(chosen_ids)
 
         stored_segments.append(
             TripSegment(

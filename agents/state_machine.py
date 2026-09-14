@@ -27,7 +27,10 @@ from models.schemas import (
 )
 from services.db_provider import db_service
 from services.cache_service import cache_service
+from services.catalog_itinerary import duration_for as _duration_for
 from services.maps_service import maps_service
+from services.opening_hours import HoursResult as _HoursResult
+from services.opening_hours import hours_for_slot as _hours_for_slot
 from services.scheduler import reschedule_and_validate
 from agents.router_agent import router_agent
 from services.llm_service import llm_service
@@ -218,6 +221,21 @@ class TripStateMachine:
             ):
                 state["no_candidates"] = True
                 return state
+            # SPEC-41 A2: refuse CLOSED for the target slot
+            structured = getattr(replacement, "opening_hours_structured", None)
+            if target_node is not None:
+                cand_dwell = _duration_for(
+                    {"typical_dwell_minutes": getattr(replacement, "typical_dwell_minutes", None)}
+                )
+                hr = _hours_for_slot(
+                    structured,
+                    target_node.scheduled_start,
+                    cand_dwell,
+                    target_region,
+                )
+                if hr == _HoursResult.CLOSED:
+                    state["no_candidates"] = True
+                    return state
             state["venues_found"] = [
                 VenueSearchResult(
                     venue=replacement,
@@ -247,6 +265,28 @@ class TripStateMachine:
         )
         if state["event_type"] == EventType.SWAP_ACTIVITY.value and target_node:
             venues = [result for result in venues if result.venue.venue_id != target_node.venue_id]
+
+        # SPEC-41 A2: filter swap search candidates by hours eligibility
+        if (
+            state["event_type"] == EventType.SWAP_ACTIVITY.value
+            and target_node is not None
+            and venues
+        ):
+            eligible = []
+            for v in venues:
+                structured = getattr(v.venue, "opening_hours_structured", None)
+                cand_dwell = _duration_for(
+                    {"typical_dwell_minutes": getattr(v.venue, "typical_dwell_minutes", None)}
+                )
+                hr = _hours_for_slot(
+                    structured,
+                    target_node.scheduled_start,
+                    cand_dwell,
+                    geo_region,
+                )
+                if hr != _HoursResult.CLOSED:
+                    eligible.append(v)
+            venues = eligible
 
         if venues:
             venue_dicts = [
@@ -434,7 +474,9 @@ class TripStateMachine:
             )
             if candidate_nodes is None:
                 break  # no further candidates to try
-            result = reschedule_and_validate(candidate_nodes)
+            # SPEC-41 A2: scope warnings to mutated nodes
+            _mutated = {target} if target else None
+            result = reschedule_and_validate(candidate_nodes, mutated_node_ids=_mutated)
             state["loop_depth"] = attempt + 1
             if not result.has_hard_conflict:
                 accepted = result
@@ -480,10 +522,13 @@ class TripStateMachine:
             if attempt >= len(venues):
                 return None
             venue = venues[attempt].venue
+            cand_dwell = _duration_for(
+                {"typical_dwell_minutes": getattr(venue, "typical_dwell_minutes", None)}
+            )
             for i, node in enumerate(nodes):
                 if node.node_id == target_node_id and not node.is_locked:
                     nodes[i] = self._node_from_venue(
-                        venue, node.scheduled_start, node.duration_minutes, node.node_id
+                        venue, node.scheduled_start, cand_dwell, node.node_id
                     )
                     break
             return nodes
@@ -541,6 +586,7 @@ class TripStateMachine:
             lat=venue.lat,
             lng=venue.lng,
             opening_hours=getattr(venue, "opening_hours", None),
+            opening_hours_structured=getattr(venue, "opening_hours_structured", None),
             geo_region=getattr(venue, "geo_region", None),
             names_local=getattr(venue, "names_local", None),
             landmarks_local=getattr(venue, "landmarks_local", None),

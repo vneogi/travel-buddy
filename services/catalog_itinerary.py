@@ -10,6 +10,8 @@ from typing import Iterable, List, Optional, Sequence
 from config.interests import VENUES_PER_DAY
 from config.regions import REGIONS, require_region
 from models.schemas import CurrentContext, TripNode
+from services.opening_hours import HoursResult as _HoursResult
+from services.opening_hours import hours_for_slot as _hours_for_slot
 
 INFRASTRUCTURE_CATEGORIES = frozenset({"hospital", "pharmacy", "transport_hub"})
 TARGET_STOPS = 5
@@ -119,37 +121,88 @@ def duration_for(row: dict) -> int:
     return DEFAULT_DURATION_MINUTES
 
 
+def _make_node(row: dict, cursor: datetime, geo_region: str) -> TripNode:
+    """Build a TripNode from a venue dict, carrying structured hours."""
+    duration = duration_for(row)
+    hours = flatten_opening_hours(row.get("opening_hours"))
+    return TripNode(
+        venue_name=row["name"],
+        venue_id=str(row["venue_id"]) if row.get("venue_id") else None,
+        scheduled_start=cursor,
+        duration_minutes=duration,
+        micro_location=row.get("micro_location"),
+        vibe_tags=list(row.get("vibe_tags") or []),
+        lat=float(row["lat"]),
+        lng=float(row["lng"]),
+        opening_hours=hours,
+        opening_hours_structured=row.get("opening_hours_structured"),
+        geo_region=geo_region,
+        names_local=row.get("names_local"),
+        landmarks_local=row.get("landmarks_local"),
+        nearest_landmark=row.get("nearest_landmark"),
+    )
+
+
+def _is_hours_eligible(row: dict, cursor: datetime, geo_region: str) -> bool:
+    """True unless the venue is definitely CLOSED at *cursor*."""
+    structured = row.get("opening_hours_structured")
+    result = _hours_for_slot(structured, cursor, duration_for(row), geo_region)
+    return result != _HoursResult.CLOSED
+
+
 def nodes_from_catalog(
     *,
     geo_region: str,
     start: datetime,
     rows: Sequence[dict],
 ) -> List[TripNode]:
-    selected = select_day_venues(rows)
+    pool = eligible_corridor_venues(rows)
+    if len(pool) < MIN_STOPS:
+        raise InsufficientCatalog(f"need at least {MIN_STOPS} eligible venues, have {len(pool)}")
+
     nodes: List[TripNode] = []
     cursor = start
-    for row in selected:
-        duration = duration_for(row)
-        hours = flatten_opening_hours(row.get("opening_hours"))
-        nodes.append(
-            TripNode(
-                venue_name=row["name"],
-                venue_id=str(row["venue_id"]) if row.get("venue_id") else None,
-                scheduled_start=cursor,
-                duration_minutes=duration,
-                micro_location=row.get("micro_location"),
-                vibe_tags=list(row.get("vibe_tags") or []),
-                lat=float(row["lat"]),
-                lng=float(row["lng"]),
-                opening_hours=hours,
-                geo_region=geo_region,
-                names_local=row.get("names_local"),
-                landmarks_local=row.get("landmarks_local"),
-                nearest_landmark=row.get("nearest_landmark"),
-            )
-        )
-        cursor = cursor + timedelta(minutes=duration + 30)
-    return nodes
+    used_ids: set[str] = set()
+    used_names: set[str] = set()
+
+    def _try_take(row: dict) -> bool:
+        nonlocal cursor
+        key = str(row.get("venue_id") or row["name"])
+        name = row["name"]
+        if key in used_ids or name in used_names:
+            return False
+        if not _is_hours_eligible(row, cursor, geo_region):
+            return False
+        used_ids.add(key)
+        used_names.add(name)
+        node = _make_node(row, cursor, geo_region)
+        nodes.append(node)
+        cursor = cursor + timedelta(minutes=node.duration_minutes + 30)
+        return True
+
+    # Bucket-first for diversity
+    for bucket in CATEGORY_BUCKETS:
+        if len(nodes) >= TARGET_STOPS:
+            break
+        for row in pool:
+            if (row.get("category") or "experience").lower() in bucket:
+                if _try_take(row):
+                    break
+
+    # Fill remaining -- loop until stable (cursor advances may unlock
+    # venues that were CLOSED at the earlier cursor).
+    changed = True
+    while changed and len(nodes) < TARGET_STOPS:
+        changed = False
+        for row in pool:
+            if len(nodes) >= TARGET_STOPS:
+                break
+            if _try_take(row):
+                changed = True
+
+    if len(nodes) < MIN_STOPS:
+        raise InsufficientCatalog(f"need at least {MIN_STOPS} eligible venues, have {len(nodes)}")
+    return nodes[:TARGET_STOPS]
 
 
 def context_for_region(geo_region: str, mood: str | None) -> CurrentContext:
@@ -342,30 +395,62 @@ def range_nodes_from_catalog(
             tzinfo=region_tz,
         ).astimezone(timezone.utc)
 
-        day_venues = select_day_venues_scored(pool, interest_ids, used_ids)
+        # SPEC-41 A2: fill each day with hours-eligible venues.
+        available = [v for v in pool if _venue_key(v) not in used_ids]
+        scored = sorted(
+            available,
+            key=lambda v: (
+                -_interest_score(v, interest_ids),
+                (v.get("name") or "").lower(),
+                str(v.get("venue_id") or ""),
+            ),
+        )
         cursor = day_start
-        for row in day_venues:
-            duration = duration_for(row)
-            hours = flatten_opening_hours(row.get("opening_hours"))
-            all_nodes.append(
-                TripNode(
-                    venue_name=row["name"],
-                    venue_id=str(row["venue_id"]) if row.get("venue_id") else None,
-                    scheduled_start=cursor,
-                    duration_minutes=duration,
-                    micro_location=row.get("micro_location"),
-                    vibe_tags=list(row.get("vibe_tags") or []),
-                    lat=float(row["lat"]),
-                    lng=float(row["lng"]),
-                    opening_hours=hours,
-                    geo_region=geo_region,
-                    names_local=row.get("names_local"),
-                    landmarks_local=row.get("landmarks_local"),
-                    nearest_landmark=row.get("nearest_landmark"),
-                )
+        day_count = 0
+        day_used_buckets: set[int] = set()
+        day_chosen_keys: set[str] = set()
+        # Pass 1: diversity buckets
+        for venue in scored:
+            if day_count >= VENUES_PER_DAY:
+                break
+            bidx = _bucket_index(venue)
+            if bidx in day_used_buckets:
+                continue
+            vk = _venue_key(venue)
+            if vk in day_chosen_keys:
+                continue
+            if not _is_hours_eligible(venue, cursor, geo_region):
+                continue
+            day_used_buckets.add(bidx)
+            day_chosen_keys.add(vk)
+            node = _make_node(venue, cursor, geo_region)
+            all_nodes.append(node)
+            cursor = cursor + timedelta(minutes=node.duration_minutes + 30)
+            used_ids.add(vk)
+            day_count += 1
+        # Pass 2: fill remaining -- loop until stable.
+        _changed = True
+        while _changed and day_count < VENUES_PER_DAY:
+            _changed = False
+            for venue in scored:
+                if day_count >= VENUES_PER_DAY:
+                    break
+                vk = _venue_key(venue)
+                if vk in day_chosen_keys:
+                    continue
+                if not _is_hours_eligible(venue, cursor, geo_region):
+                    continue
+                day_chosen_keys.add(vk)
+                node = _make_node(venue, cursor, geo_region)
+                all_nodes.append(node)
+                cursor = cursor + timedelta(minutes=node.duration_minutes + 30)
+                used_ids.add(vk)
+                day_count += 1
+                _changed = True
+        if day_count < VENUES_PER_DAY:
+            raise InsufficientCatalog(
+                f"need {VENUES_PER_DAY} hours-eligible venues on {current_date}, have {day_count}"
             )
-            cursor = cursor + timedelta(minutes=duration + 30)
-            used_ids.add(_venue_key(row))
 
     return all_nodes
 
