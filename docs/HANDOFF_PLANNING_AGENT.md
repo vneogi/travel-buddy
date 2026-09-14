@@ -5,11 +5,10 @@ Those two files are the contract. This file is only the baton: what is true
 now, what the previous planning agent already adjudicated, and what the
 next agent must not reopen in the first week.
 
-Read this file and the two contracts above. SPEC-36 through SPEC-38 are done,
-and SPEC-40 PR #61 squash-merged as `ebdea52`. The first job is SPEC-41 Phase A
-feasibility. The following product sequence is the SPEC-10
-Agoda/provider-aware paste remainder and the SPEC-25 grounded trip-scoped Ask
-remainder.
+Read this file and the two contracts above. SPEC-36 through SPEC-38 and
+SPEC-40 are done. SPEC-41 Phase A1 merged as `2d703f4`. The first job is
+Phase A2 hours eligibility. Then SPEC-10 provider-aware paste and SPEC-25
+grounded trip-scoped Ask.
 
 ## Who does what (unchanged)
 
