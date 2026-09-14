@@ -11,7 +11,6 @@ import 'package:travel_buddy/data/models.dart';
 import 'package:travel_buddy/data/repositories.dart';
 import 'package:travel_buddy/features/create_trip/create_trip_screen.dart';
 import 'package:travel_buddy/features/home/home_controller.dart';
-import 'package:travel_buddy/features/home/home_screen.dart';
 import 'package:travel_buddy/theme/app_theme.dart';
 
 // ---------------------------------------------------------------------------
@@ -156,6 +155,11 @@ Future<void> _toStep5(WidgetTester t) async {
 
 void main() {
   late MockTripRepository mockRepo;
+
+  setUpAll(() {
+    registerFallbackValue(DateTime(2026));
+    registerFallbackValue(<String>[]);
+  });
 
   setUp(() {
     mockRepo = MockTripRepository();
@@ -447,40 +451,8 @@ void main() {
     expect(t.takeException(), isNull);
   });
 
-  // -----------------------------------------------------------------------
-  // Home -> GoRouter -> wizard (production path)
-  // -----------------------------------------------------------------------
-  testWidgets('Home create card navigates to wizard', (t) async {
-    final router = GoRouter(
-      initialLocation: '/',
-      routes: [
-        GoRoute(
-          path: '/',
-          builder: (_, __) => const HomeScreen(),
-        ),
-        GoRoute(
-          path: '/trip/create',
-          builder: (_, __) => const CreateTripScreen(),
-        ),
-      ],
-    );
-    await t.pumpWidget(ProviderScope(
-      overrides: [
-        homeSnapshotProvider.overrideWith((_) async => _snapshot),
-      ],
-      child: MaterialApp.router(
-        theme: AppTheme.light,
-        routerConfig: router,
-      ),
-    ));
-    await t.pumpAndSettle();
-
-    // Home must have a create card
-    expect(find.textContaining('Plan a new trip'), findsOneWidget);
-    await t.tap(find.textContaining('Plan a new trip'));
-    await t.pumpAndSettle();
-    expect(find.text('Where are you going?'), findsOneWidget);
-  });
+  // Home -> GoRouter -> wizard is covered by home_screen_test.dart
+  // ('create card opens guided wizard').
 
   // -----------------------------------------------------------------------
   // Loading and error states
