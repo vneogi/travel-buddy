@@ -210,6 +210,12 @@ Each guard must include a sabotage proof where practical.
 Hours-aware feasibility and staged ranking under SPEC-41 come before inspiration
 or model-generated itineraries.
 
+SPEC-42 later separates the selected trip span from generated content density.
+It permits a wider trip range, auto-populates at most five starter days, renders
+the remaining dates as editable empty days, and adds direct Add/Move actions.
+That change is not folded into this foundation because sparse-day rendering and
+structural editing require their own compatibility contract.
+
 A later brief may add inspiration and generation using this exact creation
 context. It must define source/provenance, latency and cost budgets, fallback
 behavior, and how similar trips are anonymized before any implementation.

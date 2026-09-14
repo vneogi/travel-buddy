@@ -109,6 +109,12 @@ generation stay deferred. Provider-aware confirmation text is SPEC-10, not
 SPEC-39. Learned personalization may later reorder the SPEC-41 feasible set but
 cannot weaken hard constraints.
 
+SPEC-42 is the later Create/editor phase: trip span no longer equals catalog
+auto-fill capacity, at most five starter days are populated, and remaining
+dates are first-class empty days with direct Add/Move actions. It follows the
+SPEC-41, SPEC-10, and grounded SPEC-25 reliability slices; it does not expand
+the active SPEC-40 PR.
+
 The full SPEC-25 contract still needs SPEC-17's real envelope, so trip-less Ask
 follows the trust work. The bounded grounded trip-scoped remainder may use
 hedged curated catalog facts first. SPEC-27 should not be later than the first

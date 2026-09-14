@@ -111,6 +111,7 @@
 | PDF itinerary intake (SPEC-39) | DEFERRED | No implementation brief. PDF/OCR, Day Sheet, and print-pack work remain outside the current sequence |
 | Guided Create Trip foundation (SPEC-40) | IN REVIEW (PR #61) | Five-step destination/date-range/party/interests/review flow backed by deterministic multi-day catalog selection. CI and owner Flutter tests passed during review; merge still requires owner approval |
 | Hours-aware scheduling and staged ranking (SPEC-41) | SPECIFIED | New post-SPEC-40 engine contract. Structured destination-local hours, reachability, locks, and day boundaries define the feasible set before deterministic and later evidence-gated ranking |
+| Flexible trip span and sparse day editing (SPEC-42) | SPECIFIED, LATER PHASE | Decouples trip duration from auto-fill capacity. Wider spans may contain at most five generated starter days plus first-class empty days with direct Add/Move actions |
 
 Migration numbers are assigned when a spec is implemented, not when it is
 written. SPEC-11, SPEC-13, SPEC-14 and SPEC-15 each claimed a number, and the
@@ -216,6 +217,8 @@ Seed-shaped cohorts.
 - Inspiration, similar-trip retrieval, and LLM itinerary generation remain
   after SPEC-41. An LLM may explain solver output; it does not schedule.
 - SPEC-39 PDF/OCR/Day Sheet remains deferred; Agoda paste does not reopen it.
+- SPEC-42 flexible span and sparse-day editing follows the reliability slices.
+  The current SPEC-40 five-day cap remains unchanged in PR #61.
 - Remaining signal/UI polish.
 - Full SPEC-04 remainder only if field evidence supports it.
 - Trip-less Ask, richer Home, SPEC-24/27, and public-release lifecycle work.
@@ -241,6 +244,7 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 | Known-closed venues can be scheduled and offered by swap | High | Structured weekday hours exist, but create and swap do not use them as target-slot hard constraints. Validation can warn only after mutation and can report unrelated nodes. SPEC-41 owns feasibility-first scheduling and scoped warnings |
 | Hotel paste is provider-narrow | High for real booking intake | Current proof is Booking.com-shaped. Agoda field input did not reliably fill the hotel, and a footer fragment cannot supply absent name or dates. SPEC-10 now owns provider adapters, per-field quality, honest partial extraction, and redacted fixtures |
 | Trip Chat is wired but not grounded | High | The hosted composer returned the deterministic region fallback. Key presence is unverified and, by itself, would not add catalog retrieval. SPEC-25 now puts grounded trip-scoped Ask before trip-less Ask |
+| Create conflates trip span with auto-fill capacity | Medium | SPEC-40 deliberately caps the foundation at five filled days. SPEC-42 later accepts wider spans, generates at most five starter days, and renders remaining dates as editable empty days |
 | Range create persists trip and party in two writes | Medium | A failure between writes can leave an orphan trip. Recorded as a pre-existing SPEC-40 risk; do not redesign persistence inside PR #61 |
 | reroute_accepted.replacement_ref is inverted | Closed PR #18 (`ce8fedb`) | Client helper replacementRefForSwap matches node_id and changed venue key. Production `_swap` calls it |
 | Supabase session gate softlocks the app | Closed PR #18 (`ce8fedb`) | app_router calls redirectForAuth; anonymous device needs no session. Owner E2E with dart-defines still in LAPTOP_VERIFY Step 8b |
