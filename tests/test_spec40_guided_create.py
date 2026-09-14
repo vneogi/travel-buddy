@@ -633,36 +633,33 @@ class TestOptions:
             r = client.post("/api/v1/trip/create", json=body, headers=HEADERS)
             assert r.status_code == 200, f"Interest {interest_id} failed: {r.json()}"
 
-    def test_options_max_matches_validator(self):
-        # SPEC-41 hours filtering can reduce effective pool below identity
-        # capacity for any region.  Accept 200 or typed insufficient_capacity.
+    # Known temporary hours-vs-identity mismatch (SPEC-41 A3 will fix)
+    _HOURS_MISMATCH_REGIONS = {"luang_prabang_laos", "vang_vieng_laos", "vientiane_laos"}
+
+    def test_non_mismatch_regions_at_max_succeed(self):
+        """Non-mismatch regions at advertised max must return 200."""
         r = client.get("/api/v1/trips", headers=HEADERS)
         max_days = r.json()["create_trip_options"]["max_days_by_region"]
         for region, md in max_days.items():
+            if region in self._HOURS_MISMATCH_REGIONS:
+                continue
             body = _range_body(geo_region=region, num_days=md)
             resp = client.post("/api/v1/trip/create", json=body, headers=HEADERS)
-            if resp.status_code == 422:
-                detail = resp.json().get("detail", {})
-                assert detail.get("error") == "insufficient_capacity", (
-                    f"{region} at max {md}: unexpected 422: {detail}"
-                )
-            else:
-                assert resp.status_code == 200, f"{region} at max {md} failed"
+            assert resp.status_code == 200, f"{region} at max {md}: {resp.json()}"
 
-    def test_lp_max_days_identity_hours_mismatch(self):
-        # LP identity capacity advertises 5 but hours-aware pool can exhaust
-        # at 5 days.  Deferred to Phase A3 (hours-aware max_days).
+    def test_mismatch_regions_return_insufficient_capacity(self):
+        """Known mismatch regions at advertised max return insufficient_capacity."""
         r = client.get("/api/v1/trips", headers=HEADERS)
-        md = r.json()["create_trip_options"]["max_days_by_region"]["luang_prabang_laos"]
-        body = _range_body(geo_region="luang_prabang_laos", num_days=md)
-        resp = client.post("/api/v1/trip/create", json=body, headers=HEADERS)
-        if resp.status_code == 422:
-            detail = resp.json().get("detail", {})
-            assert detail.get("error") == "insufficient_capacity", (
-                f"LP at max {md}: unexpected 422: {detail}"
+        max_days = r.json()["create_trip_options"]["max_days_by_region"]
+        for region in self._HOURS_MISMATCH_REGIONS:
+            md = max_days[region]
+            body = _range_body(geo_region=region, num_days=md)
+            resp = client.post("/api/v1/trip/create", json=body, headers=HEADERS)
+            assert resp.status_code == 422, (
+                f"{region} at max {md}: expected 422, got {resp.status_code}"
             )
-        else:
-            assert resp.status_code == 200
+            detail = resp.json().get("detail", {})
+            assert detail.get("error") == "insufficient_capacity", f"{region}: {detail}"
 
     def test_sabotage_empty_interests_fails(self):
         assert len(INTERESTS) >= 7

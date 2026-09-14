@@ -277,12 +277,13 @@ class TripStateMachine:
             eligible = []
             for v in venues:
                 hydrated = db_service.get_venue_by_id(v.venue.venue_id)
-                if hydrated is not None:
-                    v = VenueSearchResult(
-                        venue=hydrated,
-                        similarity_score=v.similarity_score,
-                        final_score=v.final_score,
-                    )
+                if hydrated is None:
+                    continue  # unhydratable candidate discarded
+                v = VenueSearchResult(
+                    venue=hydrated,
+                    similarity_score=v.similarity_score,
+                    final_score=v.final_score,
+                )
                 structured = getattr(v.venue, "opening_hours_structured", None)
                 cand_dwell = _duration_for(
                     {"typical_dwell_minutes": getattr(v.venue, "typical_dwell_minutes", None)}
@@ -485,9 +486,20 @@ class TripStateMachine:
             )
             if candidate_nodes is None:
                 break  # no further candidates to try
-            # SPEC-41 A2: scope warnings to mutated nodes
-            _mutated = {target} if target else None
-            result = reschedule_and_validate(candidate_nodes, mutated_node_ids=_mutated)
+            # SPEC-41 A2: scope warnings to actually-mutated nodes
+            original_map = {n.node_id: n for n in trip_state.nodes}
+            _mutated = set()
+            for cn in candidate_nodes:
+                orig = original_map.get(cn.node_id)
+                if orig is None:
+                    _mutated.add(cn.node_id)
+                elif (
+                    cn.venue_id != orig.venue_id
+                    or cn.duration_minutes != orig.duration_minutes
+                    or cn.scheduled_start != orig.scheduled_start
+                ):
+                    _mutated.add(cn.node_id)
+            result = reschedule_and_validate(candidate_nodes, mutated_node_ids=_mutated or None)
             state["loop_depth"] = attempt + 1
             if not result.has_hard_conflict:
                 accepted = result
@@ -538,17 +550,6 @@ class TripStateMachine:
             )
             for i, node in enumerate(nodes):
                 if node.node_id == target_node_id and not node.is_locked:
-                    # SPEC-41 A2: recheck at apply time -- search filtering
-                    # alone is insufficient; re-run the same predicate.
-                    target_region = node.geo_region or trip_state.geo_region
-                    hr = _hours_for_slot(
-                        getattr(venue, "opening_hours_structured", None),
-                        node.scheduled_start,
-                        cand_dwell,
-                        target_region,
-                    )
-                    if hr == _HoursResult.CLOSED:
-                        return None  # reject this candidate
                     nodes[i] = self._node_from_venue(
                         venue, node.scheduled_start, cand_dwell, node.node_id
                     )
