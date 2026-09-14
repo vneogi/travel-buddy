@@ -221,7 +221,8 @@ class SupabaseService:
             self.client.table("venues_rag")
             .select(
                 "venue_id,name,description,micro_location,lat,lng,vibe_tags,"
-                "audience,category,opening_hours,geo_region,names_local,"
+                "audience,category,opening_hours,opening_hours_structured,"
+                "geo_region,names_local,"
                 "landmarks_local,nearest_landmark,typical_dwell_minutes"
             )
             .eq("geo_region", geo_region)
@@ -249,6 +250,7 @@ class SupabaseService:
             .select(
                 "venue_id,name,description,micro_location,lat,lng,vibe_tags,"
                 "audience,category,is_sponsored,bid_weight,opening_hours,"
+                "opening_hours_structured,"
                 "geo_region,names_local,landmarks_local,nearest_landmark"
             )
             .eq("venue_id", venue_id)
