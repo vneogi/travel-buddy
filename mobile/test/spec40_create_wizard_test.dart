@@ -599,7 +599,7 @@ void main() {
     // Step 2: pick 5-day range
     await t.tap(find.widgetWithText(OutlinedButton, 'Select date range'));
     await t.pumpAndSettle();
-    expect(find.textContaining('5 days'), findsOneWidget);
+    expect(find.text('5 days'), findsOneWidget);
 
     // Go back to step 1
     await t.tap(find.byIcon(Icons.arrow_back));
