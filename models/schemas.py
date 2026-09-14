@@ -354,6 +354,9 @@ class VenueRAG(BaseModel):
     is_sponsored: bool = False
     bid_weight: float = 0.0
     opening_hours: str = "09:00-23:00"
+    opening_hours_structured: Optional[Dict[str, Any]] = (
+        None  # SPEC-41: weekday -> [[open, close], ...]
+    )
     geo_region: Optional[str] = None
     names_local: Optional[Dict[str, Any]] = None
     landmarks_local: Optional[Dict[str, Any]] = None

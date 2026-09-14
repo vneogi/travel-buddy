@@ -248,7 +248,10 @@ def _seed_laos_catalogs() -> int:
             name = (row.get("name") or "").strip()
             if not name:
                 continue
-            hours = flatten_opening_hours(row.get("opening_hours")) or "09:00-17:00"
+            raw_hours = row.get("opening_hours")
+            hours = flatten_opening_hours(raw_hours) or "09:00-17:00"
+            # SPEC-41: preserve the original structured dict when present.
+            structured = raw_hours if isinstance(raw_hours, dict) else None
             venue = VenueRAG(
                 venue_id=str(uuid.uuid5(uuid.NAMESPACE_URL, f"{geo_region}:{name}")),
                 name=name,
@@ -262,6 +265,7 @@ def _seed_laos_catalogs() -> int:
                 is_sponsored=bool(row.get("is_sponsored")),
                 bid_weight=float(row.get("bid_weight") or 0.0),
                 opening_hours=hours,
+                opening_hours_structured=structured,
                 geo_region=geo_region,
                 names_local=_local_map(row.get("name_local"), row.get("name_local_source"), "lo"),
                 landmarks_local=(
