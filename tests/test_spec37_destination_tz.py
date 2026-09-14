@@ -88,6 +88,7 @@ def test_scheduler_opening_hours_uses_destination_tz():
     from models.schemas import TripNode, NodeStatus
     from services.scheduler import reschedule_and_validate
 
+    _days = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
     node = TripNode(
         node_id="n1",
         venue_name="Ban Anou Night Market",
@@ -97,6 +98,7 @@ def test_scheduler_opening_hours_uses_destination_tz():
         is_locked=False,
         status=NodeStatus.PENDING,
         opening_hours="08:00-22:00",
+        opening_hours_structured={d: [["08:00", "22:00"]] for d in _days},
         geo_region="vientiane_laos",
     )
     result = reschedule_and_validate([node])
@@ -109,6 +111,7 @@ def test_scheduler_warns_when_actually_closed():
     from models.schemas import TripNode, NodeStatus
     from services.scheduler import reschedule_and_validate
 
+    _days = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
     node = TripNode(
         node_id="n2",
         venue_name="Morning Market",
@@ -118,8 +121,10 @@ def test_scheduler_warns_when_actually_closed():
         is_locked=False,
         status=NodeStatus.PENDING,
         opening_hours="08:00-17:00",
+        opening_hours_structured={d: [["08:00", "17:00"]] for d in _days},
         geo_region="vientiane_laos",
     )
     result = reschedule_and_validate([node])
+    assert result.has_hard_conflict, "CLOSED should be a hard conflict"
     assert len(result.warnings) == 1
     assert "Morning Market" in result.warnings[0]

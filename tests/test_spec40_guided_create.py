@@ -634,10 +634,8 @@ class TestOptions:
             assert r.status_code == 200, f"Interest {interest_id} failed: {r.json()}"
 
     def test_options_max_matches_validator(self):
-        # SPEC-41 A2: max_days is identity-capacity based (not hours-aware).
-        # Creating at max_days succeeds unless hours filtering exhausts
-        # the pool, in which case a typed insufficient_catalog 422 is
-        # acceptable -- it means the hours-aware capacity is lower.
+        # SPEC-41 hours filtering can reduce effective pool below identity
+        # capacity for any region.  Accept 200 or typed insufficient_capacity.
         r = client.get("/api/v1/trips", headers=HEADERS)
         max_days = r.json()["create_trip_options"]["max_days_by_region"]
         for region, md in max_days.items():
@@ -645,12 +643,26 @@ class TestOptions:
             resp = client.post("/api/v1/trip/create", json=body, headers=HEADERS)
             if resp.status_code == 422:
                 detail = resp.json().get("detail", {})
-                assert detail.get("error") in (
-                    "insufficient_catalog",
-                    "insufficient_capacity",
-                ), f"{region} at max {md}: unexpected 422: {detail}"
+                assert detail.get("error") == "insufficient_capacity", (
+                    f"{region} at max {md}: unexpected 422: {detail}"
+                )
             else:
                 assert resp.status_code == 200, f"{region} at max {md} failed"
+
+    def test_lp_max_days_identity_hours_mismatch(self):
+        # LP identity capacity advertises 5 but hours-aware pool can exhaust
+        # at 5 days.  Deferred to Phase A3 (hours-aware max_days).
+        r = client.get("/api/v1/trips", headers=HEADERS)
+        md = r.json()["create_trip_options"]["max_days_by_region"]["luang_prabang_laos"]
+        body = _range_body(geo_region="luang_prabang_laos", num_days=md)
+        resp = client.post("/api/v1/trip/create", json=body, headers=HEADERS)
+        if resp.status_code == 422:
+            detail = resp.json().get("detail", {})
+            assert detail.get("error") == "insufficient_capacity", (
+                f"LP at max {md}: unexpected 422: {detail}"
+            )
+        else:
+            assert resp.status_code == 200
 
     def test_sabotage_empty_interests_fails(self):
         assert len(INTERESTS) >= 7

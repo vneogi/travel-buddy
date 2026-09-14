@@ -362,6 +362,7 @@ class VenueRAG(BaseModel):
     names_local: Optional[Dict[str, Any]] = None
     landmarks_local: Optional[Dict[str, Any]] = None
     nearest_landmark: Optional[str] = None
+    typical_dwell_minutes: Optional[int] = None  # SPEC-41 A2: candidate dwell
     embedding: Optional[List[float]] = None  # 1536-dim vector
 
 

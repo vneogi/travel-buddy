@@ -266,7 +266,9 @@ class TripStateMachine:
         if state["event_type"] == EventType.SWAP_ACTIVITY.value and target_node:
             venues = [result for result in venues if result.venue.venue_id != target_node.venue_id]
 
-        # SPEC-41 A2: filter swap search candidates by hours eligibility
+        # SPEC-41 A2: hydrate + hours-filter swap search candidates.
+        # Hybrid-search RPC may omit opening_hours_structured / typical_dwell_minutes;
+        # hydrate each candidate from the catalog so the predicate sees real data.
         if (
             state["event_type"] == EventType.SWAP_ACTIVITY.value
             and target_node is not None
@@ -274,6 +276,13 @@ class TripStateMachine:
         ):
             eligible = []
             for v in venues:
+                hydrated = db_service.get_venue_by_id(v.venue.venue_id)
+                if hydrated is not None:
+                    v = VenueSearchResult(
+                        venue=hydrated,
+                        similarity_score=v.similarity_score,
+                        final_score=v.final_score,
+                    )
                 structured = getattr(v.venue, "opening_hours_structured", None)
                 cand_dwell = _duration_for(
                     {"typical_dwell_minutes": getattr(v.venue, "typical_dwell_minutes", None)}
@@ -288,7 +297,9 @@ class TripStateMachine:
                     eligible.append(v)
             venues = eligible
 
-        if venues:
+        # Maps validation -- swap uses target-slot structured hours as the sole
+        # hours authority; do not call validate_venues (which uses datetime.now()).
+        if venues and state["event_type"] != EventType.SWAP_ACTIVITY.value:
             venue_dicts = [
                 {
                     "name": v.venue.name,
@@ -527,6 +538,17 @@ class TripStateMachine:
             )
             for i, node in enumerate(nodes):
                 if node.node_id == target_node_id and not node.is_locked:
+                    # SPEC-41 A2: recheck at apply time -- search filtering
+                    # alone is insufficient; re-run the same predicate.
+                    target_region = node.geo_region or trip_state.geo_region
+                    hr = _hours_for_slot(
+                        getattr(venue, "opening_hours_structured", None),
+                        node.scheduled_start,
+                        cand_dwell,
+                        target_region,
+                    )
+                    if hr == _HoursResult.CLOSED:
+                        return None  # reject this candidate
                     nodes[i] = self._node_from_venue(
                         venue, node.scheduled_start, cand_dwell, node.node_id
                     )

@@ -22,7 +22,6 @@ from datetime import timedelta
 from typing import List, Optional, Set
 
 from models.schemas import TripNode, NodeStatus
-from services.destination_tz import to_destination_local
 from services.maps_service import maps_service
 from services.opening_hours import HoursResult, hours_for_slot
 
@@ -54,20 +53,22 @@ def reschedule_and_validate(
     Skipped nodes stay at their original index/time (cancel correctness).
     Active nodes are forward-scheduled around them.
 
-    When *mutated_node_ids* is given, hours warnings are emitted only for
-    those nodes (SPEC-41 A2: one swap must not reprint pre-existing hours
-    messages for untouched nodes).
+    When *mutated_node_ids* is given, hours checks apply to those nodes
+    **and** any downstream node whose ``scheduled_start`` was shifted.
+    CLOSED on a checked node sets ``has_hard_conflict`` -- the circuit
+    breaker should try the next candidate or refuse.
     """
     warnings: List[str] = []
     has_hard_conflict = False
 
-    # Process in original order, skipping over SKIPPED nodes for transit calc
+    # Snapshot original start times to detect shifted nodes.
+    original_starts = {n.node_id: n.scheduled_start for n in nodes}
+
     prev_active = None
     prev_active_end = None
 
     for node in nodes:
         if node.status == NodeStatus.SKIPPED:
-            # Skipped nodes keep their original position and time
             continue
 
         transit_min = 0
@@ -81,9 +82,7 @@ def reschedule_and_validate(
         if node.is_locked:
             if earliest is not None and earliest > node.scheduled_start:
                 has_hard_conflict = True
-                # Internal feasibility flag only. Synthetic transit claims
-                # (minutes, distance, "unreachable") must never reach user copy.
-            start = node.scheduled_start  # anchor stays fixed
+            start = node.scheduled_start
         else:
             if earliest is not None and earliest > node.scheduled_start:
                 start = earliest
@@ -91,35 +90,22 @@ def reschedule_and_validate(
                 start = node.scheduled_start
             node.scheduled_start = start
 
-        # SPEC-41 A2: Hours validation using check_slot.  Only emit
-        # warnings for nodes in the mutated set (or all, if not scoped).
-        _should_check = mutated_node_ids is None or node.node_id in mutated_node_ids
+        # Hours check: mutated node, shifted downstream, or unscoped.
+        _is_shifted = node.scheduled_start != original_starts.get(node.node_id)
+        _should_check = mutated_node_ids is None or node.node_id in mutated_node_ids or _is_shifted
         if _should_check:
             structured = getattr(node, "opening_hours_structured", None)
             geo = getattr(node, "geo_region", None)
             hr = hours_for_slot(structured, start, node.duration_minutes, geo)
-            if hr == HoursResult.UNKNOWN and structured is None and node.opening_hours:
-                # Legacy path: fall back to flat string for old nodes
-                local_start = to_destination_local(start, geo)
-                local_end = to_destination_local(
-                    start + timedelta(minutes=node.duration_minutes),
-                    geo,
-                )
-                if not (
-                    maps_service.check_venue_open(node.opening_hours, local_start)
-                    and maps_service.check_venue_open(node.opening_hours, local_end)
-                ):
-                    warnings.append(
-                        f"Based on saved venue hours, '{node.venue_name}' may be "
-                        f"closed at its scheduled time "
-                        f"({local_start.strftime('%H:%M')}). Verify locally."
-                    )
-            elif hr == HoursResult.CLOSED:
+            if hr == HoursResult.CLOSED:
+                has_hard_conflict = True
                 warnings.append(
                     f"'{node.venue_name}' is closed at its scheduled time. Consider swapping it."
                 )
-            elif hr == HoursResult.UNKNOWN and structured is not None:
-                warnings.append(f"Opening hours for '{node.venue_name}' could not be verified.")
+            elif hr == HoursResult.UNKNOWN:
+                warnings.append(
+                    f"Opening hours for '{node.venue_name}' are unknown; verify locally."
+                )
 
         prev_active = node
         prev_active_end = (

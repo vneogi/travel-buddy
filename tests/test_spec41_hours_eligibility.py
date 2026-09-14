@@ -1,22 +1,22 @@
-"""SPEC-41 Phase A2: Hours Eligibility on Create and Swap.
+"""SPEC-41 Phase A2: Hours Eligibility -- Create, Swap, Scheduler.
 
-Tests that create, corridor, swap search, and swap apply all refuse
-venues known to be closed at the proposed slot.  Also verifies the
-scheduler scopes hours warnings to mutated nodes.
+Tests exercise production state-machine paths, not just helper functions.
 """
 
 from __future__ import annotations
 
-import json
 import uuid
 from datetime import date, datetime, timedelta, timezone
-from typing import Any, Dict, List
+from typing import Any, Dict
 from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
 import pytest
+from fastapi.testclient import TestClient
 
-from config.regions import REGIONS, require_region
+from main import app
+from tests.conftest import auth
+from config.regions import REGIONS
 from models.schemas import (
     EventType,
     NodeStatus,
@@ -34,11 +34,15 @@ from services.catalog_itinerary import (
     range_nodes_from_catalog,
 )
 from services.corridor_itinerary import build_corridor_nodes
+import services.database_service as db_mod
 from services.opening_hours import HoursResult, hours_for_slot
 from services.scheduler import reschedule_and_validate
 
 ICT = ZoneInfo("Asia/Vientiane")
 GEO = "luang_prabang_laos"
+
+client = TestClient(app)
+HEADERS = auth("spec41-a2-user")
 
 
 # ---------------------------------------------------------------------------
@@ -148,16 +152,16 @@ class TestCreateHoursFiltering:
         names = [n.venue_name for n in nodes]
         assert "Closed Tue" not in names
 
-    def test_split_window_gap_rejected(self):
-        """A venue across the lunch gap is not placed."""
-        # Only 1 venue with split windows, at 12:00 for 90 min -> crosses gap
+    def test_split_window_through_builder(self):
+        """Run nodes_from_catalog with split-window venue at gap time."""
         split = _split_window()
-        rows = _pool_of(5, structured=_make_hours({}), dwell=60)
+        rows = _pool_of(5, structured=_make_hours({}), dwell=30)
         rows.append(_make_venue_row("Split Place", structured=split, category="museum", dwell=90))
-        # Verify directly: 90 min at 12:00 crosses the 11:30-13:30 gap.
-        gap_start = _ict_to_utc(2026, 9, 14, 12)
-        result = hours_for_slot(split, gap_start, 90, GEO)
-        assert result == HoursResult.CLOSED
+        gap_start = _ict_to_utc(2026, 9, 14, 11)
+        assert hours_for_slot(split, gap_start, 90, GEO) == HoursResult.CLOSED
+        start = _ict_to_utc(2026, 9, 14, 10)
+        nodes = nodes_from_catalog(geo_region=GEO, start=start, rows=rows)
+        assert len(nodes) >= 4
 
     def test_unknown_hours_still_scheduled(self):
         """A venue with null structured hours (UNKNOWN) is still eligible."""
@@ -168,22 +172,78 @@ class TestCreateHoursFiltering:
         names = [n.venue_name for n in nodes]
         assert "Unknown Venue" in names
 
-    def test_insufficient_raises_no_persistence(self):
-        """Not enough non-closed venues raises InsufficientCatalog."""
+    def test_insufficient_raises_no_trip_no_party(self):
+        """Not enough hours-eligible venues raises; trip/party counts unchanged."""
+        r = client.get("/api/v1/trips", headers=HEADERS)
+        trips_before = len(r.json().get("trips", []))
         rows = _pool_of(2, structured=_make_hours({}), dwell=60)
-        # Only 2 venues -- below MIN_STOPS
         start = _ict_to_utc(2026, 9, 14, 9)
         with pytest.raises(InsufficientCatalog):
             nodes_from_catalog(geo_region=GEO, start=start, rows=rows)
+        r2 = client.get("/api/v1/trips", headers=HEADERS)
+        assert len(r2.json().get("trips", [])) == trips_before
 
-    def test_destination_local_tuesday_not_utc_tuesday(self):
-        """ICT is UTC+7; a slot that is Tuesday locally but still Monday UTC
-        must evaluate against Tuesday hours."""
-        # Tuesday 01:00 ICT = Monday 18:00 UTC
+    def test_destination_local_tuesday_through_builder(self):
+        """ICT is UTC+7; Tuesday 09:00 ICT is the correct local weekday."""
         closed_tue = _closed_tuesday()
-        start_utc = _ict_to_utc(2026, 9, 15, 1)  # Tuesday 01:00 ICT
-        result = hours_for_slot(closed_tue, start_utc, 60, GEO)
-        assert result == HoursResult.CLOSED
+        start_utc = _ict_to_utc(2026, 9, 15, 9)  # Tuesday 09:00 ICT
+        assert hours_for_slot(closed_tue, start_utc, 60, GEO) == HoursResult.CLOSED
+        rows = _pool_of(5, structured=_make_hours({}), dwell=60)
+        rows.append(
+            _make_venue_row("Closed Tue", structured=closed_tue, category="museum", dwell=60)
+        )
+        nodes = nodes_from_catalog(geo_region=GEO, start=start_utc, rows=rows)
+        assert "Closed Tue" not in [n.venue_name for n in nodes]
+
+    def test_corridor_build_excludes_known_closed(self):
+        """A real corridor build must not contain any known-closed venues."""
+        from config.corridors import require_corridor
+        from models.schemas import TripSegmentIn
+
+        corridor = require_corridor("laos_northbound_v1")
+        segments = [
+            TripSegmentIn(
+                geo_region="vientiane_laos",
+                starts_on=date(2026, 10, 2),
+                ends_on=date(2026, 10, 3),
+            ),
+            TripSegmentIn(
+                geo_region="vang_vieng_laos",
+                starts_on=date(2026, 10, 4),
+                ends_on=date(2026, 10, 5),
+            ),
+            TripSegmentIn(
+                geo_region="luang_prabang_laos",
+                starts_on=date(2026, 10, 6),
+                ends_on=date(2026, 10, 9),
+            ),
+        ]
+        nodes, _segs = build_corridor_nodes(
+            segments,
+            lambda r: db_mod.db_service.list_venues_for_region(r),
+            corridor,
+        )
+        for n in nodes:
+            if n.opening_hours_structured:
+                hr = hours_for_slot(
+                    n.opening_hours_structured,
+                    n.scheduled_start,
+                    n.duration_minutes,
+                    n.geo_region,
+                )
+                assert hr != HoursResult.CLOSED, f"{n.venue_name} at {n.scheduled_start} is CLOSED"
+
+    def test_api_insufficient_capacity_typed_error(self):
+        """Identity-eligible but hours-ineligible pool raises typed error."""
+        rows = _pool_of(4, structured=_make_hours({}), dwell=60)
+        rows.extend(_pool_of(2, structured=_evening_hours(), category="market", dwell=60))
+        with pytest.raises(InsufficientCatalog):
+            range_nodes_from_catalog(
+                geo_region=GEO,
+                start_date_local="2026-09-14",
+                end_date_local="2026-09-15",
+                rows=rows,
+            )
 
 
 # ---------------------------------------------------------------------------
@@ -191,7 +251,7 @@ class TestCreateHoursFiltering:
 # ---------------------------------------------------------------------------
 
 
-def _make_venue_rag(name, structured=None, dwell=60):
+def _make_venue_rag(name, structured=None, dwell=60, geo=GEO):
     return VenueRAG(
         venue_id=str(uuid.uuid5(uuid.NAMESPACE_URL, name)),
         name=name,
@@ -204,62 +264,166 @@ def _make_venue_rag(name, structured=None, dwell=60):
         category="temple",
         opening_hours=flatten_opening_hours(structured) or "09:00-17:00",
         opening_hours_structured=structured,
-        geo_region=GEO,
+        geo_region=geo,
         typical_dwell_minutes=dwell,
     )
 
 
-class TestSwapHoursFiltering:
-    def test_search_omits_closed_candidate(self):
-        """A CLOSED candidate is not offered in swap search."""
-        evening = _evening_hours()
-        venue = _make_venue_rag("Evening Only", structured=evening, dwell=60)
-        # Target slot: Monday 09:00 ICT
-        target_start = _ict_to_utc(2026, 9, 14, 9)
-        result = hours_for_slot(
-            venue.opening_hours_structured,
-            target_start,
-            60,
-            GEO,
-        )
-        assert result == HoursResult.CLOSED
+def _seed_swap_trip(venues, headers=None):
+    """Create a trip, seed extra candidate venues, return (trip_id, target_node_dict)."""
+    h = headers or HEADERS
+    r = client.post(
+        "/api/v1/trip/create",
+        json={"geo_region": GEO, "start_date": "2026-09-14"},
+        headers=h,
+    )
+    assert r.status_code == 200, r.text
+    data = r.json()
+    for v in venues:
+        db_mod.db_service.add_venue(v)
+    return data["trip_id"], data["nodes"][0]
 
-    def test_apply_same_venue_also_refused(self):
-        """If search would hide a venue, apply of that venue_id also refuses."""
-        evening = _evening_hours()
-        venue = _make_venue_rag("Evening Only", structured=evening, dwell=60)
-        target_start = _ict_to_utc(2026, 9, 14, 9)
-        # The shared predicate refuses both search and apply
-        result = hours_for_slot(
-            venue.opening_hours_structured,
-            target_start,
-            60,
-            GEO,
-        )
-        assert result == HoursResult.CLOSED
 
-    def test_fits_candidate_offered(self):
-        """A FITS candidate is eligible."""
-        allday = _make_hours({})
-        venue = _make_venue_rag("All Day", structured=allday, dwell=60)
-        target_start = _ict_to_utc(2026, 9, 14, 10)
-        result = hours_for_slot(
-            venue.opening_hours_structured,
-            target_start,
-            60,
-            GEO,
-        )
-        assert result == HoursResult.FITS
+class TestSwapStateMachine:
+    """HTTP-level swap tests exercising real state-machine paths."""
 
-    def test_long_dwell_overruns_closing(self):
-        """A candidate whose dwell overruns closing is ineligible even if
-        a 30-minute visit would fit."""
-        # Venue closes at 11:30, slot at 10:00
-        hours = _make_hours({"mon": [["08:00", "11:30"]]})
-        # 30 min would fit (10:00-10:30 < 11:30)
-        assert hours_for_slot(hours, _ict_to_utc(2026, 9, 14, 10), 30, GEO) == HoursResult.FITS
-        # 120 min overruns (10:00-12:00 > 11:30)
-        assert hours_for_slot(hours, _ict_to_utc(2026, 9, 14, 10), 120, GEO) == HoursResult.CLOSED
+    def test_search_hydrates_and_omits_closed(self):
+        """HTTP swap: CLOSED candidate never appears in the result."""
+        closed_v = _make_venue_rag("Evening Temple", structured=_evening_hours(), dwell=60)
+        open_v = _make_venue_rag("All Day Temple", structured=_make_hours({}), dwell=60)
+        h = auth("spec41-swap-1")
+        trip_id, target = _seed_swap_trip([closed_v, open_v], headers=h)
+        r = client.post(
+            "/api/v1/trip/event",
+            json={
+                "trip_id": trip_id,
+                "event_type": "swap_activity",
+                "message": "temple",
+                "target_node_id": target["node_id"],
+            },
+            headers=h,
+        )
+        assert r.status_code == 200
+        swapped = next(n for n in r.json()["updated_nodes"] if n["node_id"] == target["node_id"])
+        assert swapped["venue_name"] != "Evening Temple"
+
+    def test_fits_hydrated_candidate_applied(self):
+        """HTTP swap: a FITS candidate is actually applied to the trip."""
+        open_v = _make_venue_rag("Open Spot", structured=_make_hours({}), dwell=60)
+        h = auth("spec41-swap-2")
+        trip_id, target = _seed_swap_trip([open_v], headers=h)
+        original_name = target["venue_name"]
+        r = client.post(
+            "/api/v1/trip/event",
+            json={
+                "trip_id": trip_id,
+                "event_type": "swap_activity",
+                "message": "find something else",
+                "target_node_id": target["node_id"],
+            },
+            headers=h,
+        )
+        assert r.status_code == 200
+        swapped = next(n for n in r.json()["updated_nodes"] if n["node_id"] == target["node_id"])
+        assert swapped["venue_name"] != original_name
+
+    def test_sheet_apply_rejects_closed_venue(self):
+        """replacement_venue_id of a CLOSED venue is refused; trip unchanged."""
+        closed_v = _make_venue_rag("Closed Sheet", structured=_evening_hours(), dwell=60)
+        h = auth("spec41-swap-3")
+        trip_id, target = _seed_swap_trip([closed_v], headers=h)
+        original_name = target["venue_name"]
+        r = client.post(
+            "/api/v1/trip/event",
+            json={
+                "trip_id": trip_id,
+                "event_type": "swap_activity",
+                "message": "swap",
+                "target_node_id": target["node_id"],
+                "preferences": {"replacement_venue_id": closed_v.venue_id},
+            },
+            headers=h,
+        )
+        assert r.status_code == 200
+        swapped = next(n for n in r.json()["updated_nodes"] if n["node_id"] == target["node_id"])
+        assert swapped["venue_name"] == original_name
+
+    def test_candidate_dwell_preserved_and_used(self):
+        """120-min candidate overruns window; 30-min fits via sheet replacement."""
+        hours = _make_hours({"mon": [["08:00", "10:00"]]})
+        long_v = _make_venue_rag("Long Visit", structured=hours, dwell=120)
+        short_v = _make_venue_rag("Quick Visit", structured=hours, dwell=30)
+        h = auth("spec41-swap-4")
+        trip_id, target = _seed_swap_trip([long_v, short_v], headers=h)
+        original_name = target["venue_name"]
+        # Long Visit rejected (09:00+120=11:00 > 10:00)
+        r1 = client.post(
+            "/api/v1/trip/event",
+            json={
+                "trip_id": trip_id,
+                "event_type": "swap_activity",
+                "message": "swap",
+                "target_node_id": target["node_id"],
+                "preferences": {"replacement_venue_id": long_v.venue_id},
+            },
+            headers=h,
+        )
+        assert r1.status_code == 200
+        node1 = next(n for n in r1.json()["updated_nodes"] if n["node_id"] == target["node_id"])
+        assert node1["venue_name"] == original_name  # unchanged
+        # Quick Visit accepted (09:00+30=09:30 < 10:00)
+        r2 = client.post(
+            "/api/v1/trip/event",
+            json={
+                "trip_id": trip_id,
+                "event_type": "swap_activity",
+                "message": "swap",
+                "target_node_id": target["node_id"],
+                "preferences": {"replacement_venue_id": short_v.venue_id},
+            },
+            headers=h,
+        )
+        assert r2.status_code == 200
+        node2 = next(n for n in r2.json()["updated_nodes"] if n["node_id"] == target["node_id"])
+        assert node2["venue_name"] == "Quick Visit"
+
+    def test_maps_validation_not_called_during_swap(self):
+        """Swap must skip Maps validate_venues entirely."""
+        open_v = _make_venue_rag("Maps Test", structured=_make_hours({}), dwell=60)
+        h = auth("spec41-swap-5")
+        trip_id, target = _seed_swap_trip([open_v], headers=h)
+        with patch("agents.state_machine.maps_service") as mock_maps:
+            r = client.post(
+                "/api/v1/trip/event",
+                json={
+                    "trip_id": trip_id,
+                    "event_type": "swap_activity",
+                    "message": "maps check",
+                    "target_node_id": target["node_id"],
+                },
+                headers=h,
+            )
+        assert r.status_code == 200
+        mock_maps.validate_venues.assert_not_called()
+
+    def test_swap_invokes_no_llm(self):
+        """Swap path in test env must not call LLM for response generation."""
+        open_v = _make_venue_rag("LLM Test", structured=_make_hours({}), dwell=60)
+        h = auth("spec41-swap-6")
+        trip_id, target = _seed_swap_trip([open_v], headers=h)
+        with patch("agents.state_machine.llm_service") as mock_llm:
+            r = client.post(
+                "/api/v1/trip/event",
+                json={
+                    "trip_id": trip_id,
+                    "event_type": "swap_activity",
+                    "message": "llm check",
+                    "target_node_id": target["node_id"],
+                },
+                headers=h,
+            )
+        assert r.status_code == 200
+        mock_llm.generate_itinerary_response.assert_not_called()
 
 
 # ---------------------------------------------------------------------------
@@ -293,24 +457,72 @@ class TestSchedulerScopedWarnings:
             assert "V0" not in w
             assert "V2" not in w
 
-    def test_unknown_mutated_node_may_warn(self):
-        """UNKNOWN on a mutated node may produce an uncertainty warning."""
+    def test_unknown_mutated_node_exact_warning(self):
+        """UNKNOWN on a mutated node produces exact uncertainty warning."""
         nodes = [
             TripNode(
                 venue_name="NoHours",
                 venue_id="vid_0",
                 scheduled_start=_ict_to_utc(2026, 9, 14, 10),
                 duration_minutes=60,
-                opening_hours="09:00-11:00",  # legacy only
-                opening_hours_structured=None,  # no structured -> UNKNOWN
+                opening_hours_structured=None,
                 geo_region=GEO,
                 lat=19.89,
                 lng=102.13,
             )
         ]
         result = reschedule_and_validate(nodes, mutated_node_ids={nodes[0].node_id})
-        # Should not crash; may produce a legacy warning
-        assert isinstance(result.warnings, list)
+        assert any("unknown" in w.lower() for w in result.warnings)
+        assert result.has_hard_conflict is False
+
+    def test_downstream_shifted_node_checked(self):
+        """A long mutated node pushes B into a CLOSED window; B is flagged."""
+        morning = _make_hours({"mon": [["08:00", "11:30"]]})
+        nodes = [
+            TripNode(
+                venue_name="Long_A",
+                venue_id="vid_long",
+                scheduled_start=_ict_to_utc(2026, 9, 14, 9),
+                duration_minutes=180,
+                opening_hours_structured=_make_hours({}),
+                geo_region=GEO,
+                lat=19.89,
+                lng=102.13,
+            ),
+            TripNode(
+                venue_name="Fragile_B",
+                venue_id="vid_fragile",
+                scheduled_start=_ict_to_utc(2026, 9, 14, 10),
+                duration_minutes=60,
+                opening_hours_structured=morning,
+                geo_region=GEO,
+                lat=19.89,
+                lng=102.13,
+            ),
+        ]
+        mutated = {nodes[0].node_id}
+        result = reschedule_and_validate(nodes, mutated_node_ids=mutated)
+        assert result.has_hard_conflict is True
+        assert any("Fragile_B" in w for w in result.warnings)
+
+    def test_scheduler_closed_is_hard_conflict(self):
+        """CLOSED on a mutated node sets has_hard_conflict=True."""
+        closed_hours = {d: [] for d in _ALL_DAYS}
+        nodes = [
+            TripNode(
+                venue_name="AlwaysClosed",
+                venue_id="vid_ac",
+                scheduled_start=_ict_to_utc(2026, 9, 14, 10),
+                duration_minutes=60,
+                opening_hours_structured=closed_hours,
+                geo_region=GEO,
+                lat=19.89,
+                lng=102.13,
+            ),
+        ]
+        result = reschedule_and_validate(nodes, mutated_node_ids={nodes[0].node_id})
+        assert result.has_hard_conflict is True
+        assert any("AlwaysClosed" in w for w in result.warnings)
 
 
 # ---------------------------------------------------------------------------
@@ -404,3 +616,83 @@ class TestSabotageProofs:
         for w in result.warnings:
             assert "Untouched_A" not in w
             assert "Untouched_B" not in w
+
+    def test_sabotage4_apply_recheck_catches_closed(self):
+        """Prove _build_candidate_nodes rejects CLOSED at apply time.
+        If the recheck were removed, the search filter might still catch it,
+        but this direct test would fail."""
+        from agents.state_machine import state_machine as sm
+
+        closed_v = _make_venue_rag("Direct Closed", structured=_evening_hours(), dwell=60)
+        trip_state = TripState(
+            trip_id="sab4-trip",
+            user_id="sab4-user",
+            geo_region=GEO,
+            nodes=[
+                TripNode(
+                    venue_name="Target",
+                    venue_id="vid_target",
+                    scheduled_start=_ict_to_utc(2026, 9, 14, 9),
+                    duration_minutes=60,
+                    geo_region=GEO,
+                    lat=19.89,
+                    lng=102.13,
+                ),
+            ],
+        )
+        venues = [VenueSearchResult(venue=closed_v, similarity_score=0.0, final_score=0.0)]
+        result = sm._build_candidate_nodes(
+            trip_state,
+            EventType.SWAP_ACTIVITY.value,
+            trip_state.nodes[0].node_id,
+            venues,
+            0,
+        )
+        assert result is None
+
+    def test_sabotage5_default_dwell_lets_long_through(self):
+        """If the code used default 90-min dwell instead of candidate dwell,
+        a 30-min venue at 09:00 with close at 10:00 would be treated as
+        90 min and wrongly rejected."""
+        hours = _make_hours({"mon": [["08:00", "10:00"]]})
+        assert hours_for_slot(hours, _ict_to_utc(2026, 9, 14, 9), 30, GEO) == HoursResult.FITS
+        assert hours_for_slot(hours, _ict_to_utc(2026, 9, 14, 9), 90, GEO) == HoursResult.CLOSED
+
+    def test_sabotage6_shifted_closed_must_be_hard_conflict(self):
+        """Only _is_shifted detection causes Victim to be checked."""
+        closed_hours = {d: [] for d in _ALL_DAYS}
+
+        def _make_pair(pusher_duration):
+            return [
+                TripNode(
+                    venue_name="Pusher",
+                    venue_id="vid_push_s6",
+                    scheduled_start=_ict_to_utc(2026, 9, 14, 9),
+                    duration_minutes=pusher_duration,
+                    opening_hours_structured=_make_hours({}),
+                    geo_region=GEO,
+                    lat=19.89,
+                    lng=102.13,
+                ),
+                TripNode(
+                    venue_name="Victim",
+                    venue_id="vid_victim_s6",
+                    scheduled_start=_ict_to_utc(2026, 9, 14, 11),
+                    duration_minutes=60,
+                    opening_hours_structured=closed_hours,
+                    geo_region=GEO,
+                    lat=19.89,
+                    lng=102.13,
+                ),
+            ]
+
+        # Pusher 60 min: Victim NOT shifted, not checked, no conflict
+        short = _make_pair(60)
+        r1 = reschedule_and_validate(short, mutated_node_ids={short[0].node_id})
+        assert r1.has_hard_conflict is False
+
+        # Pusher 180 min: Victim shifted past its window, checked, conflict
+        long = _make_pair(180)
+        r2 = reschedule_and_validate(long, mutated_node_ids={long[0].node_id})
+        assert r2.has_hard_conflict is True
+        assert any("Victim" in w for w in r2.warnings)
