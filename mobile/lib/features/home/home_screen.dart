@@ -133,6 +133,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       if (mounted) setState(() => _creating = false);
     }
   }
+}
 
 
 class _CreateTripCard extends StatelessWidget {
