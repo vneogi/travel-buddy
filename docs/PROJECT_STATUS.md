@@ -110,7 +110,7 @@
 | Active trip mode (SPEC-38) | DONE (PR #59, `fefc4ec`) | 2026-09-14: Cloud Run `travel-buddy-00004-62g`. Signed APK installed. Owner reported Oct 2-9 corridor (32 stops), LP Oct 6-9, Up next entry, visible cancel, airplane driver card. Single-city start/end dates deferred. Details in docs/AWAITING_VERIFICATION.md |
 | PDF itinerary intake (SPEC-39) | DEFERRED | No implementation brief. PDF/OCR, Day Sheet, and print-pack work remain outside the current sequence |
 | Guided Create Trip foundation (SPEC-40) | DONE (PR #61, `ebdea52`) | Five-step destination/date-range/party/interests/review flow backed by deterministic multi-day catalog selection. Post-merge CI and owner Flutter tests passed. Hosted deploy and phone acceptance are not yet repeated for this SHA |
-| Hours-aware scheduling and staged ranking (SPEC-41) | SPECIFIED; PHASE A1 BRIEF READY | New post-SPEC-40 engine contract. Structured destination-local hours, reachability, locks, and day boundaries define the feasible set before deterministic and later evidence-gated ranking |
+| Hours-aware scheduling and staged ranking (SPEC-41) | A1 MERGED (PR #63, `2d703f4`); A2 NEXT | Evaluator and provider parity are on main. Create/swap still flatten hours and warn after the fact. Next: `docs/briefs/GENIE_SPEC_41_PHASE_A2_HOURS_ELIGIBILITY.md` |
 | Flexible trip span and sparse day editing (SPEC-42) | SPECIFIED, LATER PHASE | Decouples trip duration from auto-fill capacity. Wider spans may contain at most five generated starter days plus first-class empty days with direct Add/Move actions |
 
 Migration numbers are assigned when a spec is implemented, not when it is
@@ -196,10 +196,10 @@ Seed-shaped cohorts.
    Party, interests, and single-city start/end feed deterministic catalog
    creation. Post-merge CI and owner Windows Flutter gates passed.
 5. SPEC-41 hours-aware scheduling and swap -- **NEXT ENGINE PRIORITY**.
-   Structured destination-local hours, reachability, locks, and day boundaries
-   become hard constraints before ranking. This also removes the post-swap
-   schedule-warning storm at its source. Start with the isolated structured
-   hours core in `docs/briefs/GENIE_SPEC_41_PHASE_A1_HOURS_CORE.md`.
+   Phase A1 (`2d703f4`) added `check_slot` and preserved structured hours.
+   Phase A2 (`docs/briefs/GENIE_SPEC_41_PHASE_A2_HOURS_ELIGIBILITY.md`) must
+   refuse known-closed create/swap candidates and scope hours warnings.
+   Transit, locks, and window retiming remain Phase A3.
 6. SPEC-10 provider-aware paste -- **NEXT INPUT PRIORITY**. Add Agoda beside
    the proven Booking.com-shaped path, with honest partial extraction and a
    manual floor. This is text paste, not SPEC-39 PDF intake.
