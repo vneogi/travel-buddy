@@ -16,9 +16,17 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from config.disclaimers import FOOD_DISCLAIMER
+from config.interests import (
+    ACCEPTED_PARTY_TYPE_IDS,
+    INTERESTS,
+    PARTY_TYPE_IDS,
+    PARTY_TYPES,
+    validate_interest_ids,
+)
 from config.regions import REGIONS
 from config.settings import settings
 from models.schemas import (
+    CreationContext,
     FeaturedStop,
     FeaturedTrip,
     NodeStatus,
@@ -34,8 +42,10 @@ from models.schemas import (
 from services.catalog_itinerary import (
     InsufficientCatalog,
     advertised_regions,
+    compute_max_days_for_region,
     context_for_region,
     nodes_from_catalog,
+    range_nodes_from_catalog,
 )
 from services.corridor_itinerary import (
     InvalidCorridor,
@@ -103,6 +113,10 @@ async def create_trip(
     # SPEC-36: Corridor mode vs single-city mode
     if request.segments is not None:
         return await _create_corridor_trip(request, user_id)
+
+    # SPEC-40: range create when end_date is present
+    if request.end_date is not None:
+        return await _create_range_trip(request, user_id)
 
     # SPEC-36: single-city mode requires start_date
     if request.start_date is None:
@@ -181,12 +195,16 @@ async def create_trip(
 
 async def _create_corridor_trip(request: CreateTripRequest, user_id: str):
     """SPEC-36: Create a multi-city corridor trip."""
-    if request.start_date is not None or request.geo_region is not None:
+    if (
+        request.start_date is not None
+        or request.geo_region is not None
+        or request.end_date is not None
+    ):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={
                 "error": "invalid_corridor",
-                "message": "Corridor mode must not include start_date or geo_region.",
+                "message": "Corridor mode must not include start_date, end_date, or geo_region.",
                 "field": "segments",
                 "supported_corridors": list(CORRIDORS.keys()),
             },
@@ -373,11 +391,22 @@ async def list_trips(user_id: str = Depends(get_current_user_id)):
         reverse=True,
     )
     featured = _featured_trip(trips)
+    ready = advertised_regions(db_service.list_venues_for_region)
+    max_days_map = {}
+    for r in ready:
+        md = compute_max_days_for_region(db_service.list_venues_for_region, r)
+        if md is not None:
+            max_days_map[r] = md
     return {
-        "supported_regions": advertised_regions(db_service.list_venues_for_region),
+        "supported_regions": ready,
         "supported_corridors": advertised_corridors(db_service.list_venues_for_region),
         "trips": [_summarize_trip(trip).model_dump(mode="json") for trip in trips],
         "featured_trip": featured.model_dump(mode="json") if featured else None,
+        "create_trip_options": {
+            "party_types": [{"id": p.id, "label": p.label} for p in PARTY_TYPES],
+            "interests": [{"id": i.id, "label": i.label} for i in INTERESTS],
+            "max_days_by_region": max_days_map,
+        },
     }
 
 
@@ -687,4 +716,161 @@ async def get_stats(user_id: str = Depends(get_current_user_id)):
         "cache": cache_service.get_stats(),
         "events": db_service.get_event_stats(),
         "venues_loaded": db_service.get_venue_count(),
+    }
+
+
+async def _create_range_trip(request: CreateTripRequest, user_id: str):
+    """SPEC-40: Create a multi-day guided trip with interest scoring."""
+    from datetime import date as date_type
+    from zoneinfo import ZoneInfo
+
+    if request.start_date is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "error": "missing_start_date",
+                "message": "Range create requires start_date.",
+            },
+        )
+    if request.segments is not None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "error": "invalid_corridor",
+                "message": "Range create must not include segments.",
+            },
+        )
+
+    ready = advertised_regions(db_service.list_venues_for_region)
+    geo_region = request.geo_region or (ready[0] if ready else None)
+    if geo_region not in REGIONS or geo_region not in ready:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "error": "unsupported_region",
+                "message": (
+                    f"Travel Buddy is not ready for {request.geo_region or geo_region} yet."
+                ),
+                "supported_regions": ready,
+            },
+        )
+
+    # Parse destination-local dates
+    raw_start = request.start_date
+    raw_end = request.end_date
+    if raw_start.tzinfo is not None:
+        raw_start = raw_start.replace(tzinfo=None)
+    if raw_end.tzinfo is not None:
+        raw_end = raw_end.replace(tzinfo=None)
+    start_local = date_type(raw_start.year, raw_start.month, raw_start.day)
+    end_local = date_type(raw_end.year, raw_end.month, raw_end.day)
+
+    # Validate: reversed
+    if end_local < start_local:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "error": "reversed_dates",
+                "message": "end_date must not be before start_date.",
+            },
+        )
+
+    # Validate: past (in destination timezone, not UTC)
+    from zoneinfo import ZoneInfo as _ZI
+
+    _dest_tz = _ZI(REGIONS[geo_region].timezone)
+    today = datetime.now(tz=_dest_tz).date()
+    if start_local < today:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "error": "past_dates",
+                "message": "start_date must not be in the past.",
+            },
+        )
+
+    # Validate: over-cap
+    num_days = (end_local - start_local).days + 1
+    max_days = compute_max_days_for_region(db_service.list_venues_for_region, geo_region)
+    if max_days is None or num_days > max_days:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "error": "over_capacity",
+                "message": (
+                    f"Maximum {max_days or 0} days for {geo_region}, requested {num_days}."
+                ),
+                "max_days": max_days or 0,
+            },
+        )
+
+    # Validate party type for guided create
+    if request.party and request.party.party_type not in ACCEPTED_PARTY_TYPE_IDS:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "error": "invalid_party_type",
+                "message": f"Unknown party type: {request.party.party_type}",
+            },
+        )
+
+    # Validate interests
+    raw_interests = request.preferences.interest_ids if request.preferences else []
+    try:
+        interest_ids = validate_interest_ids(raw_interests)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "error": "invalid_interests",
+                "message": str(exc),
+            },
+        )
+
+    # Build nodes
+    try:
+        nodes = range_nodes_from_catalog(
+            geo_region=geo_region,
+            start_date_local=start_local.isoformat(),
+            end_date_local=end_local.isoformat(),
+            rows=db_service.list_venues_for_region(geo_region),
+            interest_ids=interest_ids,
+        )
+    except InsufficientCatalog:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "error": "insufficient_capacity",
+                "message": f"Not enough venues for {num_days} days in {geo_region}.",
+            },
+        )
+
+    # Build and save trip (atomic: only after all days succeed)
+    creation_ctx = CreationContext(
+        destination=geo_region,
+        start_date_local=start_local.isoformat(),
+        end_date_local=end_local.isoformat(),
+        interest_ids=interest_ids,
+    )
+    trip = TripState(
+        user_id=user_id,
+        geo_region=geo_region,
+        current_context=context_for_region(geo_region, request.initial_mood),
+        nodes=nodes,
+        schedule_basis="region_local_v1",
+        creation_context=creation_ctx,
+    )
+    db_service.save_trip(trip)
+
+    # SPEC-03: persist party
+    party_in = request.party or TripPartyIn(party_type="solo", size=1)
+    party = db_service.save_trip_party(trip.trip_id, party_in)
+
+    return {
+        "trip_id": trip.trip_id,
+        "status": "created",
+        "message": f"Itinerary created with {len(nodes)} activities over {num_days} days",
+        "nodes": [n.model_dump(mode="json") for n in nodes],
+        "locked_count": sum(1 for n in nodes if n.is_locked),
+        "party": party.model_dump(mode="json"),
     }

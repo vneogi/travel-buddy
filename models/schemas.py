@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional, TypedDict
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from models.ids import generate_node_id
 
@@ -134,6 +134,19 @@ class SupportedCorridor(BaseModel):
     max_days_per_region: Dict[str, int]
 
 
+class CreationContext(BaseModel):
+    """SPEC-40: Persisted inputs from the guided create flow.
+
+    Stored inside TripState JSON so no migration is needed.
+    Party remains in the existing SPEC-03 party contract.
+    """
+
+    destination: Optional[str] = None  # geo_region selected
+    start_date_local: Optional[str] = None  # inclusive YYYY-MM-DD
+    end_date_local: Optional[str] = None  # inclusive YYYY-MM-DD
+    interest_ids: List[str] = Field(default_factory=list)
+
+
 class TripState(BaseModel):
     """The live, mutable trip state object."""
 
@@ -146,6 +159,7 @@ class TripState(BaseModel):
     schedule_basis: Optional[str] = None  # SPEC-35: "region_local_v1" when node times use region TZ
     corridor_id: Optional[str] = None  # SPEC-36: corridor identifier
     segments: List[TripSegment] = []  # SPEC-36: ordered city segments
+    creation_context: Optional[CreationContext] = None  # SPEC-40: guided create inputs
     created_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
 
@@ -238,15 +252,35 @@ class TripEventResponse(BaseModel):
     schedule_warnings: List[str] = []
 
 
+class CreatePreferences(BaseModel):
+    """SPEC-40: Typed preferences for guided create."""
+
+    interest_ids: List[str] = Field(default_factory=list)
+
+    @field_validator("interest_ids", mode="before")
+    @classmethod
+    def _coerce_interest_ids(cls, v):  # noqa: N805
+        """Reject null, string, or object values with a clear message."""
+        if v is None:
+            raise ValueError("interest_ids must be a list of strings, got null")
+        if not isinstance(v, list):
+            raise ValueError(f"interest_ids must be a list of strings, got {type(v).__name__}")
+        for idx, item in enumerate(v):
+            if not isinstance(item, str):
+                raise ValueError(f"interest_ids[{idx}] must be a string, got {type(item).__name__}")
+        return v
+
+
 class CreateTripRequest(BaseModel):
     """POST /api/v1/trip/create - Create a new trip."""
 
     # NOTE: user_id is derived from the auth token server-side; ignored if sent.
     user_id: Optional[str] = None
     start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None  # SPEC-40: inclusive range end
     geo_region: Optional[str] = None
     segments: Optional[List[TripSegmentIn]] = None
-    preferences: dict = {}
+    preferences: Optional[CreatePreferences] = None
     initial_mood: Optional[str] = "exploratory"
     party: Optional[TripPartyIn] = None  # SPEC-03: defaults to solo if absent
 

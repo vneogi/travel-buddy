@@ -67,8 +67,9 @@ body. `/health` still reports process default `geo_fence=dubai_uae`; trip
 The 2026-09-13 phone Ask screenshots show the deterministic Vientiane router
 fallback. They prove region-safe fallback behavior, not a successful hosted
 LLM call. LLM provider readiness remains unverified even if the startup
-boolean was true; provider switching and grounded answers belong to the later
-SPEC-25 phase.
+boolean was true. The grounded trip-scoped remainder in SPEC-25 requires both
+provider reachability and retrieval-backed output; provider switching remains
+later work.
 
 SPEC-36 remains on main (PR #55). SPEC-38 phone pass is recorded in
 `docs/AWAITING_VERIFICATION.md`. Laptop `.env` is still not the hosted

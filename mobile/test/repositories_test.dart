@@ -126,4 +126,38 @@ void main() {
         query: captureAny(named: 'query'))).captured.single as Map;
     expect(q['query'], 'cafe'); // regression guard: must be `query`, not `q`
   });
+
+  test('rangeCreate sends start_date and end_date as YYYY-MM-DD', () async {
+    when(() => api.post('/trip/create', body: any(named: 'body')))
+        .thenAnswer((_) async => {'trip_id': 't-range'});
+    when(() => api.get('/trip/t-range')).thenAnswer((_) async => {
+          'trip_id': 't-range',
+          'user_id': 'u1',
+          'nodes': <Map<String, dynamic>>[],
+        });
+
+    await trips.rangeCreate(
+      geoRegion: 'luang_prabang_laos',
+      startDate: DateTime(2026, 11, 1, 14, 30),
+      endDate: DateTime(2026, 11, 3, 23, 59),
+      partyType: 'friends',
+      partySize: 4,
+      interestIds: ['food_markets'],
+    );
+
+    final body = verify(() => api.post(
+          '/trip/create',
+          body: captureAny(named: 'body'),
+        )).captured.single as Map;
+
+    // Dates must be YYYY-MM-DD, never ISO datetimes with T/Z.
+    expect(body['start_date'], '2026-11-01');
+    expect(body['end_date'], '2026-11-03');
+    expect(body['start_date'], isNot(contains('T')));
+    expect(body['end_date'], isNot(contains('T')));
+    expect(body['geo_region'], 'luang_prabang_laos');
+    expect(body['party']['party_type'], 'friends');
+    expect(body['party']['size'], 4);
+    expect(body['preferences']['interest_ids'], ['food_markets']);
+  });
 }

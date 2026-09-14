@@ -9,6 +9,7 @@ import '../features/chat/chat_screen.dart';
 import '../features/profile/profile_screen.dart';
 import '../features/upgrade/upgrade_screen.dart';
 import '../features/debug/sync_status_screen.dart';
+import '../features/create_trip/create_trip_screen.dart';
 import '../features/driver_card/driver_card_screen.dart';
 import 'redirect_for_auth.dart';
 
@@ -39,6 +40,10 @@ final appRouter = GoRouter(
         tripId: state.pathParameters['tripId']!,
         nodeId: state.pathParameters['nodeId']!,
       ),
+    ),
+    GoRoute(
+      path: '/trip/create',
+      builder: (_, __) => const CreateTripScreen(),
     ),
     ShellRoute(
       builder: (_, state, child) => _AppShell(child: child),

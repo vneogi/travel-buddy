@@ -6,6 +6,11 @@
 > were available; both were taken by the schema plumbing (`venue_external_id`
 > and `taxonomy_term`) while this spec sat unimplemented. Numbers are taken at
 > implementation time.
+>
+> Sequencing: SPEC-40 trip interests are constraints for one itinerary, not a
+> substitute for this durable signal. This capture flow remains deferred until
+> field evidence and catalog depth justify it. SPEC-41 may later consume these
+> signals only to reorder an already feasible candidate set.
 
 ## Goal
 

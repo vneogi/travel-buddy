@@ -112,15 +112,16 @@ grid) is close to ours but more complete. Fold in when the designer engages.
 **UX polish does not capture moat data.** The spine work above is shipped. The
 remaining product order is:
 
-1. SPEC-36 is on main (PR #55).
-2. Execute SPEC-37: hosted HTTPS API plus an installable phone artifact.
-3. Complete online and real airplane-mode acceptance by 2026-09-18 with USB
-   and local tunnels disconnected.
-4. Only then resume map-first polish, multi-night hotel UI, the `syncOnce()`
-   status-count race, and broader consumer work.
+1. Finish SPEC-40 review and owner-approved merge.
+2. SPEC-41 removes known-closed and unreachable recommendations before adding
+   richer recommendation-reason UI.
+3. SPEC-10 hardens Agoda and Booking.com paste as honest partial extraction.
+4. SPEC-25 grounds the existing trip Chat before adding a broader assistant.
+5. Only then resume map-first polish, multi-night hotel UI, inspiration, and
+   broader consumer work.
 
-Full Vault and the map-first shell remain post-field-test unless spare capacity
-appears.
+Full Vault and the map-first shell remain post-reliability unless field evidence
+changes the order.
 
 If it's full Vault vs the October spine (identity, card, anchors), **the
 spine wins.** Behavioral signals that are already registered still beat

@@ -73,11 +73,18 @@ class ApiClient {
     if (code == 404) return const NotFoundException();
     if (code == 422 && data is Map) {
       final detail = data['detail'];
-      if (detail is Map && detail['error'] == 'unsupported_region') {
-        return UnsupportedRegionException(
-          detail['message']?.toString() ??
-              'Travel Buddy is not ready for that destination yet.',
-        );
+      if (detail is Map) {
+        final errorCode = detail['error']?.toString();
+        final message = detail['message']?.toString();
+        if (errorCode == 'unsupported_region') {
+          return UnsupportedRegionException(
+            message ?? 'Travel Buddy is not ready for that destination yet.',
+          );
+        }
+        // Surface all typed 422 detail.message responses
+        if (message != null) {
+          return ValidationException(message);
+        }
       }
     }
     if (code == 503) {

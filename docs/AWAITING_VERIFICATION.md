@@ -37,6 +37,31 @@ are smoke-test.ps1, any unrecorded Anonymous E2E, and deliberate VALIDATE of
 NOT VALID CHECKs. Hosted migration and provider state is maintained only in
 `docs/HOSTED_STATE.md`.
 
+## Finding -- Sep 14 2026 -- Agoda paste, schedule issues, and canned Ask
+
+Owner browsed an Android build from roughly twelve hours earlier; the exact APK
+SHA was not recorded. These screenshots are product evidence, not verification
+of the later SPEC-40 branch.
+
+- Add Booking was tested with Agoda confirmation output. The earlier successful
+  parser evidence used a Booking.com Mad Monkey confirmation. The Agoda fragment
+  did not fill the hotel reliably. The screenshot contains a booking-reference
+  footer but no property name or stay dates, so those missing values cannot be
+  inferred honestly. Provider-aware partial extraction is now a SPEC-10
+  remainder; SPEC-39 remains deferred PDF/OCR intake.
+- The Schedule issues sheet showed eight saved-hours warnings, including night
+  markets and restaurants placed in morning slots. Owner correctly questioned
+  why a venue known to conflict with the proposed time was recommended first.
+  Hard hours, timezone, lock, and reachability feasibility plus staged ranking
+  are specified in SPEC-41. This is separate from weather Heads-up frequency.
+- Trip Chat returned the deterministic region fallback beginning "Based on your
+  query..." and directing the traveller to check with the venue. The Flutter
+  composer is wired to the backend; this is not proof of an LLM-backed or
+  catalog-grounded answer. Grounded trip-scoped Ask is a SPEC-25 remainder.
+
+Do not treat any of the three as closed until a current hosted revision and APK
+pass their spec-specific acceptance checks.
+
 ## Finding -- Sep 14 2026 -- SPEC-38 Cloud Run and Android phone pass
 
 Owner Windows laptop at `main` `fefc4ec` (PR #59 squash). Cloud Run deploy

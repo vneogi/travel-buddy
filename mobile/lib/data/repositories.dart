@@ -2,6 +2,10 @@ import '../core/api_client.dart';
 import 'models.dart';
 
 /// Trip operations: create, fetch, and send events.
+/// Format DateTime as YYYY-MM-DD for date-only API fields.
+String _dateOnly(DateTime d) =>
+    d.toIso8601String().substring(0, 10);
+
 class TripRepository {
   final ApiClient _api;
   TripRepository(this._api);
@@ -31,6 +35,34 @@ class TripRepository {
       'segments': segments.map((s) => s.toJson()).toList(),
       if (mood != null) 'initial_mood': mood,
     });
+    return getTrip(data['trip_id'] as String);
+  }
+
+  /// SPEC-40: Guided range create with dates, party, and interests.
+  Future<TripState> rangeCreate({
+    required String geoRegion,
+    required DateTime startDate,
+    required DateTime endDate,
+    required String partyType,
+    required int partySize,
+    List<String> interestIds = const [],
+    String? mood,
+  }) async {
+    final body = <String, dynamic>{
+      'geo_region': geoRegion,
+      'start_date': _dateOnly(startDate),
+      'end_date': _dateOnly(endDate),
+      'party': {
+        'party_type': partyType,
+        'size': partySize,
+        'members': <Map<String, dynamic>>[],
+      },
+      'preferences': {
+        'interest_ids': interestIds,
+      },
+      if (mood != null) 'initial_mood': mood,
+    };
+    final data = await _api.post('/trip/create', body: body);
     return getTrip(data['trip_id'] as String);
   }
   Future<TripState> getTrip(String tripId) async => TripState.fromJson(

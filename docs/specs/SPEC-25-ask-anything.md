@@ -16,14 +16,105 @@ trip -- and one that cannot become a bypass around the trust contract.
 ## What exists today
 
 Free text already reaches the engine, through `POST /api/v1/trip/event`, which
-carries a `message` string and runs `classify_intent` in `llm_service`. It also
-requires a `trip_id` and an `EventType`.
+carries a `message` string and uses the current deterministic event router. It
+also requires a `trip_id` and an `EventType`.
 
 That single requirement is the whole problem. Every intelligent path in this
 backend is reachable only through a trip, so a search box on a home screen has
 nowhere to post, and a question asked while standing in front of a restaurant
 before any trip exists cannot be asked at all. SPEC-18's central scenario -- I am
 here, is this place worth it -- is exactly that question.
+
+The trip-scoped composer is not yet a grounded assistant. When no configured
+model key is available, or when the model call fails, the server returns a
+region-safe canned response. Field evidence recorded in
+`docs/AWAITING_VERIFICATION.md` showed that fallback. Even with a key, the
+current Ask path does not retrieve catalog hours, dishes, or sourced claims
+before generation. Key presence is therefore necessary for a model call but
+insufficient for a trustworthy answer.
+
+## Remainder: grounded trip-scoped Ask
+
+Fix the existing trip composer before adding trip-less Ask. This is a bounded
+phase on the current `POST /api/v1/trip/event` path; it does not require the
+trip-optional endpoint.
+
+### Retrieval precedes generation
+
+Resolve the trip region and current or next relevant node, then retrieve the
+available catalog facts for that venue and question. Later sources may include
+SPEC-19 claims, but this phase can use the curated venue and dish records that
+already exist.
+
+The answer is constructed from retrieved claims. Empty retrieval produces an
+immediate hedge or refusal. It never gives the model a blank context and asks it
+to improvise a local fact.
+
+The initial grounded intents are deliberately narrow:
+
+- place identity and location;
+- saved opening-hours context, with an explicit staleness/verification hedge;
+- known dish and ingredient facts;
+- what is current or next on this trip;
+- out of scope.
+
+Live opening status, prices, cash acceptance, safety, dietary suitability, and
+unrecorded venue details are not inferred from model knowledge.
+
+### Canned fallback is a named state
+
+The response distinguishes:
+
+- grounded deterministic answer;
+- grounded model-phrased answer;
+- cache hit;
+- no configured key;
+- retrieval miss;
+- budget or breaker refusal;
+- model error fallback.
+
+The traveller need not see implementation names, but tests and observability
+must distinguish these paths. A generic "check with the venue" message cannot
+silently count as a grounded success.
+
+Hosted state records only whether the model key is present and whether a safe
+smoke reached the configured provider. It never records the key. A successful
+provider call still does not pass acceptance unless the answer is grounded in
+retrieved trip data.
+
+### Cost controls
+
+Apply exact and semantic cache, the separate per-identity Ask budget, and the
+circuit breaker before any model call. Anonymous identities receive the lower
+budget. Record model, token count, estimated cost, latency, cache status,
+fallback reason, region, and source IDs without logging the question or any
+secret by default.
+
+Use deterministic templates whenever retrieved data already answers the
+question. A light model may classify an ambiguous intent or phrase retrieved
+facts. The expensive route remains limited to a separately specified discovery
+capability.
+
+### Interim trust contract
+
+Until the full SPEC-17 claim registry lands, trip-scoped Ask may return curated
+catalog values with source class and a `hedge` or `defer` treatment. It cannot
+assert live opening status, price, cash acceptance, or safety. The final
+response type still moves toward the SPEC-17 envelope; a free prose string is
+not the long-term contract.
+
+### Grounded trip-scoped acceptance
+
+- [ ] Key unset or provider failure returns a named fallback without a 500
+- [ ] Retrieval miss returns a hedge/refusal and invokes no generation model
+- [ ] A catalog-backed question cites the retrieved venue or dish source
+- [ ] Laos trip context cannot produce Dubai venue content
+- [ ] Repeated question and context hit cache with zero model calls
+- [ ] Exhausted Ask budget invokes no model
+- [ ] Cost and fallback telemetry is emitted without question text or secrets
+- [ ] Offline mode answers from cache or refuses immediately; it never queues
+- [ ] Hosted smoke proves key presence and one grounded answer or honest refusal
+- [ ] The deterministic canned fingerprint is not accepted as grounded success
 
 ## Why this is not just a text field
 
