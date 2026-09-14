@@ -1,6 +1,6 @@
 # SPEC-41: Hours-Aware Scheduling and Staged Ranking
 
-> Status: SPECIFIED. Not implemented.
+> Status: PHASE A1 MERGED (`2d703f4`). Phase A2 hours eligibility is next.
 >
 > Sequenced after SPEC-40. This spec owns itinerary feasibility and ranking.
 > SPEC-08 owns the structured hours data, SPEC-10 owns locked booking anchors,
