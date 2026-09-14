@@ -72,7 +72,7 @@ def eligible_corridor_venues(rows) -> list:
 
 
 def select_day_venues(rows: Sequence[dict]) -> List[dict]:
-    pool = eligible_venues(rows)
+    pool = eligible_corridor_venues(rows)
     if len(pool) < MIN_STOPS:
         raise InsufficientCatalog(f"need at least {MIN_STOPS} eligible venues, have {len(pool)}")
 
@@ -305,7 +305,7 @@ def range_nodes_from_catalog(
     ed = date_type.fromisoformat(end_date_local)
     num_days = (ed - sd).days + 1  # inclusive
 
-    pool = eligible_venues(rows)
+    pool = eligible_corridor_venues(rows)
     used_ids: set[str] = set()
     all_nodes: List[TripNode] = []
 
@@ -350,11 +350,24 @@ def range_nodes_from_catalog(
 
 
 def compute_max_days_for_region(list_venues_fn, geo_region: str) -> Optional[int]:
-    """Advertised max_days for a region, or None if insufficient catalog."""
+    """Advertised max_days for a region, or None if insufficient catalog.
+
+    Uses eligible_corridor_venues (requires stable venue_id) and deduplicates
+    by venue_id so duplicate entries do not inflate capacity.
+    """
     from config.interests import compute_max_days
 
     try:
-        pool = eligible_venues(list_venues_fn(geo_region))
+        pool = eligible_corridor_venues(list_venues_fn(geo_region))
+        # Deduplicate by venue_id
+        seen: set[str] = set()
+        deduped: list[dict] = []
+        for v in pool:
+            vid = str(v["venue_id"])
+            if vid not in seen:
+                seen.add(vid)
+                deduped.append(v)
+        pool = deduped
     except Exception:
         return None
     md = compute_max_days(len(pool))

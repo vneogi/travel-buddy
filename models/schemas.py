@@ -252,6 +252,12 @@ class TripEventResponse(BaseModel):
     schedule_warnings: List[str] = []
 
 
+class CreatePreferences(BaseModel):
+    """SPEC-40: Typed preferences for guided create."""
+
+    interest_ids: List[str] = Field(default_factory=list)
+
+
 class CreateTripRequest(BaseModel):
     """POST /api/v1/trip/create - Create a new trip."""
 
@@ -261,7 +267,7 @@ class CreateTripRequest(BaseModel):
     end_date: Optional[datetime] = None  # SPEC-40: inclusive range end
     geo_region: Optional[str] = None
     segments: Optional[List[TripSegmentIn]] = None
-    preferences: dict = {}
+    preferences: Optional[CreatePreferences] = None
     initial_mood: Optional[str] = "exploratory"
     party: Optional[TripPartyIn] = None  # SPEC-03: defaults to solo if absent
 

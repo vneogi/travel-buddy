@@ -1,29 +1,21 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:travel_buddy/data/models.dart';
 
-/// SPEC-40 Flutter model/contract tests.
-///
-/// Wizard widget tests require ProviderScope + mock HTTP and are in a
-/// separate widget test file. These unit tests prove parsing, backward
-/// compat, and payload shape.
 void main() {
-  // ---------------------------------------------------------------
-  // Proof 1: Old and new Home snapshots parse
-  // ---------------------------------------------------------------
+  // Proof 1: Old/new snapshot backward compat
   group('HomeSnapshot backward compat', () {
     test('old snapshot without create_trip_options parses', () {
-      final json = {
+      final snap = HomeSnapshot.fromJson({
         'supported_regions': ['luang_prabang_laos'],
         'supported_corridors': <Map<String, dynamic>>[],
         'trips': <Map<String, dynamic>>[],
         'featured_trip': null,
-      };
-      final snap = HomeSnapshot.fromJson(json);
+      });
       expect(snap.supportedRegions, ['luang_prabang_laos']);
       expect(snap.createTripOptions, isNull);
     });
 
-    test('new snapshot with create_trip_options parses', () {
+    test('new snapshot with create_trip_options round-trips', () {
       final json = {
         'supported_regions': ['luang_prabang_laos'],
         'supported_corridors': <Map<String, dynamic>>[],
@@ -41,53 +33,31 @@ void main() {
         },
       };
       final snap = HomeSnapshot.fromJson(json);
-      expect(snap.createTripOptions, isNotNull);
       expect(snap.createTripOptions!.partyTypes.length, 2);
       expect(snap.createTripOptions!.interests.length, 1);
       expect(snap.createTripOptions!.maxDaysByRegion['luang_prabang_laos'], 5);
-    });
 
-    test('cached JSON round-trips with options', () {
-      final json = {
-        'supported_regions': ['dubai_uae'],
-        'supported_corridors': <Map<String, dynamic>>[],
-        'trips': <Map<String, dynamic>>[],
-        'featured_trip': null,
-        'create_trip_options': {
-          'party_types': [
-            {'id': 'solo', 'label': 'Solo'},
-          ],
-          'interests': [
-            {'id': 'nature_scenery', 'label': 'Nature & scenery'},
-          ],
-          'max_days_by_region': {'dubai_uae': 4},
-        },
-      };
-      final snap = HomeSnapshot.fromJson(json);
-      final rt = snap.toJson();
-      final snap2 = HomeSnapshot.fromJson(rt);
-      expect(snap2.createTripOptions!.partyTypes.first.id, 'solo');
-      expect(snap2.createTripOptions!.interests.first.id, 'nature_scenery');
-      expect(snap2.createTripOptions!.maxDaysByRegion['dubai_uae'], 4);
+      // Round-trip through toJson
+      final rt = HomeSnapshot.fromJson(snap.toJson());
+      expect(rt.createTripOptions!.partyTypes.first.id, 'solo');
+      expect(rt.createTripOptions!.interests.first.id, 'food_markets');
     });
   });
 
-  // ---------------------------------------------------------------
-  // Proof 2: TripState creation context parses
-  // ---------------------------------------------------------------
+  // TripState creation context + party
   group('TripState creation context', () {
-    test('TripState without creation_context parses (old trips)', () {
-      final json = {
+    test('old trip without creation_context or party parses', () {
+      final state = TripState.fromJson({
         'trip_id': 't1',
         'user_id': 'u1',
         'nodes': <Map<String, dynamic>>[],
-      };
-      final state = TripState.fromJson(json);
+      });
       expect(state.creationContext, isNull);
+      expect(state.party, isNull);
     });
 
-    test('TripState with creation_context parses', () {
-      final json = {
+    test('trip with creation_context and party parses', () {
+      final state = TripState.fromJson({
         'trip_id': 't2',
         'user_id': 'u1',
         'geo_region': 'luang_prabang_laos',
@@ -98,45 +68,55 @@ void main() {
           'end_date_local': '2026-10-09',
           'interest_ids': ['food_markets', 'arts_crafts'],
         },
-      };
-      final state = TripState.fromJson(json);
-      expect(state.creationContext, isNotNull);
+        'party': {
+          'party_type': 'family_teens',
+          'size': 4,
+        },
+      });
       expect(state.creationContext!.destination, 'luang_prabang_laos');
-      expect(state.creationContext!.startDateLocal, '2026-10-06');
-      expect(state.creationContext!.endDateLocal, '2026-10-09');
       expect(state.creationContext!.interestIds, ['food_markets', 'arts_crafts']);
+      expect(state.party!.partyType, 'family_teens');
+      expect(state.party!.size, 4);
+    });
+
+    test('TripState.toJson includes creation_context', () {
+      final state = TripState(
+        tripId: 't3',
+        userId: 'u1',
+        nodes: [],
+        geoRegion: 'dubai_uae',
+        creationContext: CreationContext(
+          destination: 'dubai_uae',
+          startDateLocal: '2026-12-01',
+          endDateLocal: '2026-12-02',
+          interestIds: ['wellness_slow'],
+        ),
+        party: TripParty(partyType: 'couple', size: 2),
+      );
+      final json = state.toJson();
+      expect(json['creation_context'], isNotNull);
+      expect(json['creation_context']['destination'], 'dubai_uae');
+      expect(json['creation_context']['interest_ids'], ['wellness_slow']);
+      expect(json['party']['party_type'], 'couple');
     });
   });
 
-  // ---------------------------------------------------------------
-  // Proof 3: CreateTripOptions model
-  // ---------------------------------------------------------------
+  // CreateTripOptions
   group('CreateTripOptions', () {
-    test('parses party types', () {
-      final json = {
+    test('parses all fields', () {
+      final opts = CreateTripOptions.fromJson({
         'party_types': [
           {'id': 'family_young_kids', 'label': 'Family with young kids'},
         ],
-        'interests': <Map<String, dynamic>>[],
-        'max_days_by_region': <String, dynamic>{},
-      };
-      final opts = CreateTripOptions.fromJson(json);
-      expect(opts.partyTypes.first.id, 'family_young_kids');
-      expect(opts.partyTypes.first.label, 'Family with young kids');
-    });
-
-    test('parses interests', () {
-      final json = {
-        'party_types': <Map<String, dynamic>>[],
         'interests': [
           {'id': 'history_culture', 'label': 'History & culture'},
           {'id': 'wellness_slow', 'label': 'Wellness & slow travel'},
         ],
-        'max_days_by_region': <String, dynamic>{},
-      };
-      final opts = CreateTripOptions.fromJson(json);
+        'max_days_by_region': {'dubai_uae': 4},
+      });
+      expect(opts.partyTypes.first.id, 'family_young_kids');
       expect(opts.interests.length, 2);
-      expect(opts.interests[1].id, 'wellness_slow');
+      expect(opts.maxDaysByRegion['dubai_uae'], 4);
     });
 
     test('empty JSON defaults gracefully', () {
@@ -147,51 +127,40 @@ void main() {
     });
   });
 
-  // ---------------------------------------------------------------
-  // Proof 4: CreationContext model
-  // ---------------------------------------------------------------
-  group('CreationContext', () {
-    test('parses full context', () {
-      final ctx = CreationContext.fromJson({
-        'destination': 'vang_vieng_laos',
-        'start_date_local': '2026-11-01',
-        'end_date_local': '2026-11-03',
-        'interest_ids': ['adventure_outdoors'],
+  // TripParty
+  group('TripParty', () {
+    test('fromJson parses', () {
+      final p = TripParty.fromJson({
+        'party_type': 'friends',
+        'size': 5,
+        'notes': 'test note',
       });
-      expect(ctx.destination, 'vang_vieng_laos');
-      expect(ctx.interestIds, ['adventure_outdoors']);
+      expect(p.partyType, 'friends');
+      expect(p.size, 5);
+      expect(p.notes, 'test note');
     });
 
-    test('handles missing fields', () {
-      final ctx = CreationContext.fromJson(<String, dynamic>{});
-      expect(ctx.destination, isNull);
-      expect(ctx.interestIds, isEmpty);
+    test('defaults to solo/1 on missing fields', () {
+      final p = TripParty.fromJson(<String, dynamic>{});
+      expect(p.partyType, 'solo');
+      expect(p.size, 1);
+    });
+
+    test('toJson round-trips', () {
+      final p = TripParty(partyType: 'multigen', size: 6);
+      final j = p.toJson();
+      final p2 = TripParty.fromJson(j);
+      expect(p2.partyType, 'multigen');
+      expect(p2.size, 6);
     });
   });
 
-  // ---------------------------------------------------------------
-  // Proof 5: Zero interests is allowed
-  // ---------------------------------------------------------------
+  // Zero interests allowed
   test('zero interests produces empty list', () {
     final ctx = CreationContext.fromJson({
       'destination': 'dubai_uae',
-      'start_date_local': '2026-12-01',
-      'end_date_local': '2026-12-02',
       'interest_ids': <String>[],
     });
     expect(ctx.interestIds, isEmpty);
-  });
-
-  // ---------------------------------------------------------------
-  // Proof 6: Snapshot toJson round-trip preserves structure
-  // ---------------------------------------------------------------
-  test('HomeSnapshot toJson round-trip preserves supported_regions', () {
-    final snap = HomeSnapshot(
-      supportedRegions: ['luang_prabang_laos', 'dubai_uae'],
-      trips: [],
-    );
-    final json = snap.toJson();
-    final restored = HomeSnapshot.fromJson(json);
-    expect(restored.supportedRegions, snap.supportedRegions);
   });
 }

@@ -18,6 +18,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from config.disclaimers import FOOD_DISCLAIMER
 from config.interests import (
     INTERESTS,
+    PARTY_TYPE_IDS,
     PARTY_TYPES,
     validate_interest_ids,
 )
@@ -193,12 +194,16 @@ async def create_trip(
 
 async def _create_corridor_trip(request: CreateTripRequest, user_id: str):
     """SPEC-36: Create a multi-city corridor trip."""
-    if request.start_date is not None or request.geo_region is not None:
+    if (
+        request.start_date is not None
+        or request.geo_region is not None
+        or request.end_date is not None
+    ):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={
                 "error": "invalid_corridor",
-                "message": "Corridor mode must not include start_date or geo_region.",
+                "message": "Corridor mode must not include start_date, end_date, or geo_region.",
                 "field": "segments",
                 "supported_corridors": list(CORRIDORS.keys()),
             },
@@ -769,8 +774,11 @@ async def _create_range_trip(request: CreateTripRequest, user_id: str):
             },
         )
 
-    # Validate: past
-    today = datetime.now(tz=timezone.utc).date()
+    # Validate: past (in destination timezone, not UTC)
+    from zoneinfo import ZoneInfo as _ZI
+
+    _dest_tz = _ZI(REGIONS[geo_region].timezone)
+    today = datetime.now(tz=_dest_tz).date()
     if start_local < today:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -795,8 +803,18 @@ async def _create_range_trip(request: CreateTripRequest, user_id: str):
             },
         )
 
+    # Validate party type for guided create
+    if request.party and request.party.party_type not in PARTY_TYPE_IDS:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "error": "invalid_party_type",
+                "message": f"Unknown party type: {request.party.party_type}",
+            },
+        )
+
     # Validate interests
-    raw_interests = (request.preferences or {}).get("interest_ids", [])
+    raw_interests = request.preferences.interest_ids if request.preferences else []
     try:
         interest_ids = validate_interest_ids(raw_interests)
     except ValueError as exc:

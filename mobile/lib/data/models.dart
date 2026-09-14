@@ -210,6 +210,7 @@ class TripState {
   final String? corridorId;
   final List<TripSegment> segments;
   final CreationContext? creationContext;
+  final TripParty? party;
 
   const TripState({
     required this.tripId,
@@ -222,6 +223,7 @@ class TripState {
     this.locationLat,
     this.locationLng,
     this.creationContext,
+    this.party,
   });
 
   factory TripState.fromJson(Map<String, dynamic> j) {
@@ -244,6 +246,10 @@ class TripState {
           ? null
           : CreationContext.fromJson(
               (j['creation_context'] as Map).cast<String, dynamic>()),
+      party: j['party'] == null
+          ? null
+          : TripParty.fromJson(
+              (j['party'] as Map).cast<String, dynamic>()),
     );
   }
 
@@ -260,6 +266,14 @@ class TripState {
         if (corridorId != null) 'corridor_id': corridorId,
         if (segments.isNotEmpty)
           'segments': segments.map((s) => s.toJson()).toList(),
+        if (creationContext != null)
+          'creation_context': {
+            'destination': creationContext!.destination,
+            'start_date_local': creationContext!.startDateLocal,
+            'end_date_local': creationContext!.endDateLocal,
+            'interest_ids': creationContext!.interestIds,
+          },
+        if (party != null) 'party': party!.toJson(),
       };
 }
 
@@ -573,6 +587,31 @@ class CreateTripOptions {
           .map((k, v) => MapEntry(k as String, (v as num).toInt())),
     );
   }
+}
+
+/// SPEC-03/40: Trip party as returned by GET /trip/{id}.
+class TripParty {
+  final String partyType;
+  final int size;
+  final String? notes;
+
+  const TripParty({
+    required this.partyType,
+    this.size = 1,
+    this.notes,
+  });
+
+  factory TripParty.fromJson(Map<String, dynamic> j) => TripParty(
+        partyType: j['party_type'] as String? ?? 'solo',
+        size: (j['size'] as num?)?.toInt() ?? 1,
+        notes: j['notes'] as String?,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'party_type': partyType,
+        'size': size,
+        if (notes != null) 'notes': notes,
+      };
 }
 
 /// SPEC-40: Persisted creation context from the guided create flow.

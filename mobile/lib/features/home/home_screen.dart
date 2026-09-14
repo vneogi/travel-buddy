@@ -76,56 +76,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _createTrip(HomeSnapshot snapshot) async {
-    // SPEC-40: Navigate to guided create wizard
     if (_creating) return;
     context.push('/trip/create');
-    return;
-    // Legacy dialog below is unreachable
-    final supportedRegions = snapshot.supportedRegions;
-    if (supportedRegions.isEmpty) return;
-    final selection = await _showCreateDialog(
-      supportedRegions,
-      createsAdditionalTrip: snapshot.trips.isNotEmpty,
-    );
-    if (selection == null) {
-      return;
-    }
-    if (!mounted) return;
-    setState(() => _creating = true);
-    try {
-      final trip = await ref.read(tripRepoProvider).create(
-            startDate: selection.$2,
-            geoRegion: selection.$1,
-          );
-      ref.invalidate(homeSnapshotProvider);
-      if (mounted) context.go('/trip/${trip.tripId}');
-    } on ApiException catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(error is NetworkException
-                ? "Can't reach Travel Buddy \u2014 check your connection."
-                : error.message),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              "Couldn't create this trip. Check your connection and try again.",
-            ),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _creating = false);
-    }
   }
-
 
   Future<void> _showCorridorDateForm(HomeSnapshot snapshot) async {
     if (_creating || _formOpen || snapshot.supportedCorridors.isEmpty) return;
@@ -176,79 +129,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
 
-  Future<(String, DateTime)?> _showCreateDialog(
-    List<String> supportedRegions, {
-    required bool createsAdditionalTrip,
-  }) async {
-    var region = supportedRegions.first;
-    var date = DateTime.now().add(const Duration(days: 1));
-    return showDialog<(String, DateTime)>(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Create a trip'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (createsAdditionalTrip) ...[
-                const Text(
-                  'You already have a trip. This will create another one.',
-                ),
-                const SizedBox(height: AppSpacing.base),
-              ],
-              DropdownButtonFormField<String>(
-                initialValue: region,
-                decoration: const InputDecoration(labelText: 'Destination'),
-                items: supportedRegions
-                    .map(
-                      (value) => DropdownMenuItem(
-                        value: value,
-                        child: Text(_displayRegion(value)),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    setDialogState(() => region = value);
-                  }
-                },
-              ),
-              const SizedBox(height: AppSpacing.base),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Start date'),
-                subtitle:
-                    Text(MaterialLocalizations.of(context).formatMediumDate(date)),
-                trailing: const Icon(Icons.calendar_today_outlined),
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: date,
-                    firstDate: DateTime.now(),
-                    lastDate: DateTime.now().add(const Duration(days: 730)),
-                  );
-                  if (picked != null) {
-                    setDialogState(() => date = picked);
-                  }
-                },
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(dialogContext, (region, date)),
-              child: const Text('Create'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 class _CreateTripCard extends StatelessWidget {
   final VoidCallback? onTap;

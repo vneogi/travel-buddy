@@ -6,20 +6,15 @@ import '../../core/providers.dart';
 import '../../data/models.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
+import '../home/home_controller.dart';
 
 /// SPEC-40: Five-step guided trip creation wizard.
 ///
+/// Loads [homeSnapshotProvider] for server-advertised options.
 /// Steps: destination, dates, party, interests, review.
 /// Back preserves entered values. Success opens the fetched itinerary.
 class CreateTripScreen extends ConsumerStatefulWidget {
-  final CreateTripOptions? options;
-  final List<String> supportedRegions;
-
-  const CreateTripScreen({
-    super.key,
-    this.options,
-    this.supportedRegions = const [],
-  });
+  const CreateTripScreen({super.key});
 
   @override
   ConsumerState<CreateTripScreen> createState() => _CreateTripScreenState();
@@ -43,16 +38,10 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
   // Step 4: Interests
   final Set<String> _selectedInterests = {};
 
-  int get _maxDays {
-    if (_selectedRegion == null || widget.options == null) return 5;
-    return widget.options!.maxDaysByRegion[_selectedRegion!] ?? 5;
+  int _maxDaysFor(String? region, CreateTripOptions? opts) {
+    if (region == null || opts == null) return 5;
+    return opts.maxDaysByRegion[region] ?? 5;
   }
-
-  List<PartyOption> get _partyOptions =>
-      widget.options?.partyTypes ?? const [];
-
-  List<InterestOption> get _interestOptions =>
-      widget.options?.interests ?? const [];
 
   static const _stepTitles = [
     'Where are you going?',
@@ -62,16 +51,16 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
     'Review & create',
   ];
 
-  bool get _canProceed {
+  bool _canProceed(CreateTripOptions? opts) {
     switch (_step) {
       case 0:
         return _selectedRegion != null;
       case 1:
         return _dateRange != null;
       case 2:
-        return true; // party always has a default
+        return true;
       case 3:
-        return true; // zero interests is allowed
+        return true;
       case 4:
         return !_submitting;
       default:
@@ -101,8 +90,36 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
     }
   }
 
+  /// Fix 8: When destination changes, invalidate dates if above new max.
+  void _onDestinationChanged(String? region, CreateTripOptions? opts) {
+    setState(() {
+      _selectedRegion = region;
+      if (_dateRange != null && region != null) {
+        final max = _maxDaysFor(region, opts);
+        final days = _dateRange!.end.difference(_dateRange!.start).inDays + 1;
+        if (days > max) {
+          _dateRange = null; // Reset: old range exceeds new max
+        }
+      }
+    });
+  }
+
+  /// Fix 2: Clamp/reset party size on type change.
+  void _onPartyTypeChanged(String type) {
+    setState(() {
+      _partyType = type;
+      if (type == 'solo') {
+        _partySize = 1;
+      } else if (type == 'couple') {
+        _partySize = 2;
+      } else if (_partySize < 2) {
+        _partySize = 3; // Safe default above Slider min
+      }
+    });
+  }
+
   Future<void> _submit() async {
-    if (_submitting) return; // guard against double tap
+    if (_submitting) return;
     setState(() {
       _submitting = true;
       _errorMessage = null;
@@ -134,6 +151,39 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Fix 1: Load options from the real provider.
+    final snapshot = ref.watch(homeSnapshotProvider);
+
+    return snapshot.when(
+      loading: () => const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      ),
+      error: (e, _) => Scaffold(
+        appBar: AppBar(title: const Text('Create trip')),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Could not load trip options.'),
+              const SizedBox(height: AppSpacing.base),
+              ElevatedButton(
+                onPressed: () => ref.invalidate(homeSnapshotProvider),
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      ),
+      data: (home) => _buildWizard(home),
+    );
+  }
+
+  Widget _buildWizard(HomeSnapshot home) {
+    final opts = home.createTripOptions;
+    final regions = home.supportedRegions;
+    final partyOptions = opts?.partyTypes ?? const [];
+    final interestOptions = opts?.interests ?? const [];
+
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -157,7 +207,12 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(AppSpacing.base),
-                child: _buildStep(),
+                child: _buildStep(
+                  regions: regions,
+                  opts: opts,
+                  partyOptions: partyOptions,
+                  interestOptions: interestOptions,
+                ),
               ),
             ),
             if (_errorMessage != null)
@@ -166,7 +221,7 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
                     horizontal: AppSpacing.base),
                 child: Text(
                   _errorMessage!,
-                  style: TextStyle(color: AppColors.danger),
+                  style: const TextStyle(color: AppColors.danger),
                 ),
               ),
             Padding(
@@ -174,7 +229,7 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _canProceed ? _next : null,
+                  onPressed: _canProceed(opts) ? _next : null,
                   child: _submitting
                       ? const SizedBox(
                           width: 20,
@@ -192,32 +247,86 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
     );
   }
 
-  Widget _buildStep() {
+  Widget _buildStep({
+    required List<String> regions,
+    required CreateTripOptions? opts,
+    required List<PartyOption> partyOptions,
+    required List<InterestOption> interestOptions,
+  }) {
     switch (_step) {
       case 0:
-        return _buildDestinationStep();
+        return _DestinationStep(
+          regions: regions,
+          selected: _selectedRegion,
+          onChanged: (r) => _onDestinationChanged(r, opts),
+        );
       case 1:
-        return _buildDatesStep();
+        return _DatesStep(
+          maxDays: _maxDaysFor(_selectedRegion, opts),
+          dateRange: _dateRange,
+          onChanged: (r) => setState(() => _dateRange = r),
+        );
       case 2:
-        return _buildPartyStep();
+        return _PartyStep(
+          partyOptions: partyOptions,
+          partyType: _partyType,
+          partySize: _partySize,
+          onTypeChanged: _onPartyTypeChanged,
+          onSizeChanged: (s) => setState(() => _partySize = s),
+        );
       case 3:
-        return _buildInterestsStep();
+        return _InterestsStep(
+          interestOptions: interestOptions,
+          selected: _selectedInterests,
+          onToggle: (id, on) {
+            setState(() {
+              if (on && _selectedInterests.length < 3) {
+                _selectedInterests.add(id);
+              } else {
+                _selectedInterests.remove(id);
+              }
+            });
+          },
+        );
       case 4:
-        return _buildReviewStep();
+        return _ReviewStep(
+          region: _selectedRegion,
+          dateRange: _dateRange,
+          partyType: _partyType,
+          partySize: _partySize,
+          selectedInterests: _selectedInterests,
+          partyOptions: partyOptions,
+          interestOptions: interestOptions,
+        );
       default:
         return const SizedBox.shrink();
     }
   }
+}
 
-  // Step 1: Destination
-  Widget _buildDestinationStep() {
-    final regions = widget.supportedRegions;
-    const displayNames = {
-      'dubai_uae': 'Dubai',
-      'luang_prabang_laos': 'Luang Prabang',
-      'vang_vieng_laos': 'Vang Vieng',
-      'vientiane_laos': 'Vientiane',
-    };
+// ---------------------------------------------------------------------------
+// Step widgets (stateless, extracted for testability)
+// ---------------------------------------------------------------------------
+
+const _displayNames = {
+  'dubai_uae': 'Dubai',
+  'luang_prabang_laos': 'Luang Prabang',
+  'vang_vieng_laos': 'Vang Vieng',
+  'vientiane_laos': 'Vientiane',
+};
+
+class _DestinationStep extends StatelessWidget {
+  final List<String> regions;
+  final String? selected;
+  final ValueChanged<String?> onChanged;
+  const _DestinationStep({
+    required this.regions,
+    required this.selected,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -227,15 +336,15 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
         ...regions.map((r) => Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.sm),
               child: RadioListTile<String>(
-                title: Text(displayNames[r] ?? r),
+                title: Text(_displayNames[r] ?? r),
                 value: r,
-                groupValue: _selectedRegion,
-                onChanged: (v) => setState(() => _selectedRegion = v),
+                groupValue: selected,
+                onChanged: onChanged,
                 shape: RoundedRectangleBorder(
                   borderRadius:
                       BorderRadius.circular(AppSpacing.radiusCard),
                 ),
-                tileColor: _selectedRegion == r
+                tileColor: selected == r
                     ? AppColors.primaryLight
                     : AppColors.card,
               ),
@@ -243,30 +352,40 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
       ],
     );
   }
+}
 
-  // Step 2: Dates
-  Widget _buildDatesStep() {
-    final max = _maxDays;
+class _DatesStep extends StatelessWidget {
+  final int maxDays;
+  final DateTimeRange? dateRange;
+  final ValueChanged<DateTimeRange?> onChanged;
+  const _DatesStep({
+    required this.maxDays,
+    required this.dateRange,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Pick your dates (up to $max days)',
+        Text('Pick your dates (up to $maxDays days)',
             style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: AppSpacing.base),
         SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
             icon: const Icon(Icons.calendar_today),
-            label: Text(_dateRange == null
+            label: Text(dateRange == null
                 ? 'Select date range'
-                : '${_formatDate(_dateRange!.start)} - ${_formatDate(_dateRange!.end)}'),
-            onPressed: _pickDateRange,
+                : '${_fmt(dateRange!.start)} - ${_fmt(dateRange!.end)}'),
+            onPressed: () => _pick(context),
           ),
         ),
-        if (_dateRange != null) ...[
+        if (dateRange != null) ...[
           const SizedBox(height: AppSpacing.sm),
           Text(
-            '${_dateRange!.end.difference(_dateRange!.start).inDays + 1} days',
+            '${dateRange!.end.difference(dateRange!.start).inDays + 1} days',
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ],
@@ -274,80 +393,102 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
     );
   }
 
-  Future<void> _pickDateRange() async {
+  Future<void> _pick(BuildContext context) async {
     final now = DateTime.now();
-    final max = _maxDays;
     final picked = await showDateRangePicker(
       context: context,
       firstDate: now,
       lastDate: now.add(const Duration(days: 365)),
-      initialDateRange: _dateRange,
+      initialDateRange: dateRange,
     );
     if (picked == null) return;
     final days = picked.end.difference(picked.start).inDays + 1;
-    if (days > max) {
-      if (mounted) {
+    if (days > maxDays) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Maximum $max days for this destination')),
+          SnackBar(content: Text('Maximum $maxDays days for this destination')),
         );
       }
       return;
     }
-    setState(() => _dateRange = picked);
+    onChanged(picked);
   }
 
-  String _formatDate(DateTime d) =>
-      '${d.day}/${d.month}/${d.year}';
+  String _fmt(DateTime d) => '${d.day}/${d.month}/${d.year}';
+}
 
-  // Step 3: Party
-  Widget _buildPartyStep() {
+class _PartyStep extends StatelessWidget {
+  final List<PartyOption> partyOptions;
+  final String partyType;
+  final int partySize;
+  final ValueChanged<String> onTypeChanged;
+  final ValueChanged<int> onSizeChanged;
+  const _PartyStep({
+    required this.partyOptions,
+    required this.partyType,
+    required this.partySize,
+    required this.onTypeChanged,
+    required this.onSizeChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final showSlider =
+        partyType != 'solo' && partyType != 'couple';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Who is travelling?',
             style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: AppSpacing.base),
-        ..._partyOptions.map((p) => Padding(
+        ...partyOptions.map((p) => Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.sm),
               child: RadioListTile<String>(
                 title: Text(p.label),
                 value: p.id,
-                groupValue: _partyType,
+                groupValue: partyType,
                 onChanged: (v) {
-                  if (v == null) return;
-                  setState(() {
-                    _partyType = v;
-                    _partySize = v == 'solo' ? 1 : v == 'couple' ? 2 : _partySize;
-                  });
+                  if (v != null) onTypeChanged(v);
                 },
                 shape: RoundedRectangleBorder(
                   borderRadius:
                       BorderRadius.circular(AppSpacing.radiusCard),
                 ),
-                tileColor: _partyType == p.id
+                tileColor: partyType == p.id
                     ? AppColors.primaryLight
                     : AppColors.card,
               ),
             )),
-        if (_partyType != 'solo' && _partyType != 'couple') ...[
+        if (showSlider) ...[
           const SizedBox(height: AppSpacing.base),
           Text('Party size',
               style: Theme.of(context).textTheme.titleSmall),
           Slider(
-            value: _partySize.toDouble(),
+            value: partySize.clamp(2, 12).toDouble(),
             min: 2,
             max: 12,
             divisions: 10,
-            label: '$_partySize',
-            onChanged: (v) => setState(() => _partySize = v.round()),
+            label: '$partySize',
+            onChanged: (v) => onSizeChanged(v.round()),
           ),
         ],
       ],
     );
   }
+}
 
-  // Step 4: Interests
-  Widget _buildInterestsStep() {
+class _InterestsStep extends StatelessWidget {
+  final List<InterestOption> interestOptions;
+  final Set<String> selected;
+  final void Function(String id, bool on) onToggle;
+  const _InterestsStep({
+    required this.interestOptions,
+    required this.selected,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -360,22 +501,12 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
         Wrap(
           spacing: AppSpacing.sm,
           runSpacing: AppSpacing.sm,
-          children: _interestOptions.map((interest) {
-            final selected = _selectedInterests.contains(interest.id);
+          children: interestOptions.map((interest) {
+            final isOn = selected.contains(interest.id);
             return FilterChip(
               label: Text(interest.label),
-              selected: selected,
-              onSelected: (on) {
-                setState(() {
-                  if (on) {
-                    if (_selectedInterests.length < 3) {
-                      _selectedInterests.add(interest.id);
-                    }
-                  } else {
-                    _selectedInterests.remove(interest.id);
-                  }
-                });
-              },
+              selected: isOn,
+              onSelected: (on) => onToggle(interest.id, on),
               selectedColor: AppColors.primaryLight,
               checkmarkColor: AppColors.primary,
             );
@@ -384,21 +515,34 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
       ],
     );
   }
+}
 
-  // Step 5: Review
-  Widget _buildReviewStep() {
-    const displayNames = {
-      'dubai_uae': 'Dubai',
-      'luang_prabang_laos': 'Luang Prabang',
-      'vang_vieng_laos': 'Vang Vieng',
-      'vientiane_laos': 'Vientiane',
-    };
-    final partyLabel = _partyOptions
-        .where((p) => p.id == _partyType)
+class _ReviewStep extends StatelessWidget {
+  final String? region;
+  final DateTimeRange? dateRange;
+  final String partyType;
+  final int partySize;
+  final Set<String> selectedInterests;
+  final List<PartyOption> partyOptions;
+  final List<InterestOption> interestOptions;
+  const _ReviewStep({
+    required this.region,
+    required this.dateRange,
+    required this.partyType,
+    required this.partySize,
+    required this.selectedInterests,
+    required this.partyOptions,
+    required this.interestOptions,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final partyLabel = partyOptions
+        .where((p) => p.id == partyType)
         .map((p) => p.label)
-        .firstOrNull ?? _partyType;
-    final interestLabels = _interestOptions
-        .where((i) => _selectedInterests.contains(i.id))
+        .firstOrNull ?? partyType;
+    final interestLabels = interestOptions
+        .where((i) => selectedInterests.contains(i.id))
         .map((i) => i.label)
         .toList();
 
@@ -408,19 +552,21 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
         Text('Review your trip',
             style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: AppSpacing.base),
-        _reviewRow('Destination', displayNames[_selectedRegion] ?? _selectedRegion ?? ''),
-        if (_dateRange != null)
-          _reviewRow('Dates',
-              '${_formatDate(_dateRange!.start)} - ${_formatDate(_dateRange!.end)}'
-              ' (${_dateRange!.end.difference(_dateRange!.start).inDays + 1} days)'),
-        _reviewRow('Party', '$partyLabel ($_partySize)'),
-        _reviewRow('Interests',
+        _row('Destination', _displayNames[region] ?? region ?? ''),
+        if (dateRange != null)
+          _row('Dates',
+              '${_fmt(dateRange!.start)} - ${_fmt(dateRange!.end)}'
+              ' (${dateRange!.end.difference(dateRange!.start).inDays + 1} days)'),
+        _row('Party', '$partyLabel ($partySize)'),
+        _row('Interests',
             interestLabels.isEmpty ? 'Balanced' : interestLabels.join(', ')),
       ],
     );
   }
 
-  Widget _reviewRow(String label, String value) {
+  String _fmt(DateTime d) => '${d.day}/${d.month}/${d.year}';
+
+  Widget _row(String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: Row(
