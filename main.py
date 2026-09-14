@@ -241,9 +241,10 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 
     # Map typed field errors to domain-specific responses.
-    # Scoped strictly to POST /api/v1/trip/create + preferences.interest_ids.
+    # Scoped strictly to POST /api/v1/trip/create.
     _is_create = request.method == "POST" and request.url.path.endswith("/trip/create")
     if _is_create:
+        _date_fields = frozenset({"start_date", "end_date"})
         for err in exc.errors():
             loc = tuple(err.get("loc", ()))
             # Match (body, preferences, interest_ids, ...)
@@ -254,6 +255,18 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
                         "detail": {
                             "error": "invalid_interests",
                             "message": err.get("msg", str(err)),
+                        },
+                        "request_id": request_id,
+                    },
+                )
+            # Match (body, start_date) or (body, end_date)
+            if len(loc) >= 2 and loc[1] in _date_fields:
+                return JSONResponse(
+                    status_code=422,
+                    content={
+                        "detail": {
+                            "error": "invalid_date",
+                            "message": f"Malformed {loc[1]}: {err.get('msg', str(err))}",
                         },
                         "request_id": request_id,
                     },

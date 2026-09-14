@@ -14,6 +14,7 @@ from fastapi.testclient import TestClient
 
 from main import app
 from config.interests import (
+    ACCEPTED_PARTY_TYPE_IDS,
     INTEREST_IDS,
     INTERESTS,
     MAX_INTERESTS,
@@ -160,10 +161,13 @@ class TestLegacyCompat:
             "proves the test compares against the function, not two POSTs"
         )
 
-    def test_legacy_create_accepts_untyped_preferences(self):
+    def test_legacy_create_ignores_unknown_preference_keys(self):
+        """A legacy client may send extra keys like 'mood'. The backend
+        must accept (and ignore) them rather than 422."""
         body = {
             "start_date": _future_date(10),
             "geo_region": "luang_prabang_laos",
+            "preferences": {"mood": "chill", "interest_ids": []},
         }
         r = client.post("/api/v1/trip/create", json=body, headers=HEADERS)
         assert r.status_code == 200
@@ -183,12 +187,20 @@ class TestRangeCreate:
         assert len(nodes) == 16
 
         tz = ZoneInfo(REGIONS["luang_prabang_laos"].timezone)
-        dates = set()
-        for n in nodes:
+        sd = date.fromisoformat(body["start_date"])
+        expected_dates = [sd + timedelta(days=d) for d in range(4)]
+        for i, n in enumerate(nodes):
             dt = datetime.fromisoformat(n["scheduled_start"])
             local = dt.astimezone(tz)
-            dates.add(local.date())
-        assert len(dates) == 4
+            expected_date = expected_dates[i // VENUES_PER_DAY]
+            assert local.date() == expected_date, (
+                f"Node {i}: expected {expected_date}, got {local.date()}"
+            )
+            # First node of each day must start at 09:00 local
+            if i % VENUES_PER_DAY == 0:
+                assert local.hour == 9 and local.minute == 0, (
+                    f"Node {i} (first of day): expected 09:00 local, got {local.strftime('%H:%M')}"
+                )
 
 
 # ---------------------------------------------------------------
@@ -201,8 +213,8 @@ class TestNoRepeats:
         body = _range_body(num_days=4)
         r = client.post("/api/v1/trip/create", json=body, headers=HEADERS)
         assert r.status_code == 200
-        names = [n["venue_name"] for n in r.json()["nodes"]]
-        assert len(names) == len(set(names)), f"Repeated venues: {names}"
+        ids = [n["venue_id"] for n in r.json()["nodes"]]
+        assert len(ids) == len(set(ids)), f"Repeated venue_ids: {ids}"
 
 
 # ---------------------------------------------------------------
@@ -217,8 +229,8 @@ class TestDeterministic:
         r2 = client.post("/api/v1/trip/create", json=body, headers=HEADERS)
         assert r1.status_code == 200
         assert r2.status_code == 200
-        ids1 = [n["venue_name"] for n in r1.json()["nodes"]]
-        ids2 = [n["venue_name"] for n in r2.json()["nodes"]]
+        ids1 = [n["venue_id"] for n in r1.json()["nodes"]]
+        ids2 = [n["venue_id"] for n in r2.json()["nodes"]]
         assert ids1 == ids2
 
 
@@ -308,26 +320,55 @@ class TestValidation422:
         assert r.json()["detail"]["error"] == "invalid_party_type"
 
     def test_valid_party_types_all_accepted(self):
-        for pt in PARTY_TYPE_IDS:
+        """Every SPEC-03 party type (wizard + legacy) must be accepted."""
+        for pt in ACCEPTED_PARTY_TYPE_IDS:
             body = _range_body(num_days=2, party_type=pt, party_size=2)
             r = client.post("/api/v1/trip/create", json=body, headers=HEADERS)
             assert r.status_code == 200, f"{pt} rejected: {r.json()}"
 
-    def test_past_date_uses_destination_timezone(self):
-        from zoneinfo import ZoneInfo
+    def test_spec03_legacy_party_types_accepted(self):
+        """daddy_kiddo, accessibility_focused, mixed are SPEC-03 vocabulary
+        not advertised by the wizard but must be accepted by the backend."""
+        for pt in ("daddy_kiddo", "accessibility_focused", "mixed"):
+            body = _range_body(num_days=2, party_type=pt, party_size=2)
+            r = client.post("/api/v1/trip/create", json=body, headers=HEADERS)
+            assert r.status_code == 200, f"Legacy party type {pt} rejected: {r.json()}"
 
-        dest_tz = ZoneInfo(REGIONS["vientiane_laos"].timezone)
-        now_dest = datetime.now(tz=dest_tz).date()
-        body = _range_body(geo_region="vientiane_laos", num_days=2)
-        sd = now_dest
-        ed = sd + timedelta(days=1)
-        body["start_date"] = sd.isoformat()
-        body["end_date"] = ed.isoformat()
-        r = client.post("/api/v1/trip/create", json=body, headers=HEADERS)
-        if r.status_code == 422:
-            assert r.json()["detail"]["error"] != "past_dates", (
-                "Today in destination timezone should not be rejected as past"
-            )
+    def test_past_date_uses_destination_timezone(self):
+        """Discriminating timezone proof: freeze UTC to just after Laos
+        local midnight.  17:01 UTC = 00:01 ICT (UTC+7) the next day.
+        'Yesterday-in-Laos' is past even though still 'today' in UTC.
+
+        The mock returns the frozen instant *in the destination timezone*
+        so that .date() yields the Laos local date, matching what
+        datetime.now(tz=dest_tz) returns in production."""
+        dest_tz = ZoneInfo(REGIONS["luang_prabang_laos"].timezone)
+        anchor_utc_date = date.today() + timedelta(days=5)
+        frozen_utc = datetime(
+            anchor_utc_date.year,
+            anchor_utc_date.month,
+            anchor_utc_date.day,
+            17,
+            1,
+            0,
+            tzinfo=timezone.utc,
+        )
+        # In Laos (UTC+7) this is 00:01 on anchor_utc_date+1
+        frozen_laos = frozen_utc.astimezone(dest_tz)
+        laos_today = frozen_laos.date()
+        laos_yesterday = laos_today - timedelta(days=1)
+
+        body = _range_body(geo_region="luang_prabang_laos", num_days=1)
+        body["start_date"] = laos_yesterday.isoformat()
+        body["end_date"] = laos_yesterday.isoformat()
+
+        with patch("routers.trip_router.datetime") as mock_dt:
+            mock_dt.now.return_value = frozen_laos
+            mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
+            r = client.post("/api/v1/trip/create", json=body, headers=HEADERS)
+
+        assert r.status_code == 422
+        assert r.json()["detail"]["error"] == "past_dates"
 
     def test_event_validation_stays_generic(self):
         """POST /trip/event with bad body must return generic detail list,
@@ -349,16 +390,22 @@ class TestValidation422:
 
 
 class TestCapacityAtomicity:
-    def test_insufficient_capacity_no_trip_or_party(self):
+    def test_over_capacity_rejected_no_trip_or_party(self):
+        """Pre-validation over_capacity path: num_days > max_days for the
+        region.  This fires BEFORE range_nodes_from_catalog is called."""
         trips_before = len(db_service._trips)
         parties_before = len(db_service._parties)
         body = _range_body(geo_region="vang_vieng_laos", num_days=10)
         r = client.post("/api/v1/trip/create", json=body, headers=HEADERS)
         assert r.status_code == 422
+        assert r.json()["detail"]["error"] == "over_capacity"
         assert len(db_service._trips) == trips_before
         assert len(db_service._parties) == parties_before
 
-    def test_sabotage_atomicity_mid_build(self):
+    def test_sabotage_insufficient_capacity_mid_build(self):
+        """Mid-build insufficient_capacity path: range_nodes_from_catalog
+        raises InsufficientCatalog after validation passes.  Trip/party
+        must not be persisted."""
         trips_before = len(db_service._trips)
 
         def _explode(**kwargs):
@@ -403,8 +450,8 @@ class TestPersistenceRoundTrip:
         assert ctx is not None
         assert ctx["destination"] == "luang_prabang_laos"
         assert ctx["interest_ids"] == ["food_markets", "arts_crafts"]
-        assert ctx["start_date_local"] is not None
-        assert ctx["end_date_local"] is not None
+        assert ctx["start_date_local"] == body["start_date"]
+        assert ctx["end_date_local"] == body["end_date"]
 
 
 # ---------------------------------------------------------------
@@ -726,3 +773,68 @@ class TestMalformedInterests:
         assert r.status_code == 422
         detail = r.json()["detail"]
         assert detail["error"] == "invalid_interests", f"Got: {detail}"
+
+
+# ---------------------------------------------------------------
+# Malformed date strings
+# ---------------------------------------------------------------
+
+
+class TestMalformedDates:
+    def test_malformed_start_date_returns_typed_422(self):
+        """A non-date string like 'not-a-date' must produce a typed
+        invalid_date 422, scoped to POST /trip/create."""
+        body = {
+            "start_date": "not-a-date",
+            "end_date": _future_date(12),
+            "geo_region": "luang_prabang_laos",
+        }
+        r = client.post("/api/v1/trip/create", json=body, headers=HEADERS)
+        assert r.status_code == 422
+        detail = r.json()["detail"]
+        assert detail["error"] == "invalid_date", f"Got: {detail}"
+        assert "start_date" in detail["message"]
+
+    def test_malformed_end_date_returns_typed_422(self):
+        body = {
+            "start_date": _future_date(10),
+            "end_date": "2026-99-99",
+            "geo_region": "luang_prabang_laos",
+        }
+        r = client.post("/api/v1/trip/create", json=body, headers=HEADERS)
+        assert r.status_code == 422
+        detail = r.json()["detail"]
+        assert detail["error"] == "invalid_date", f"Got: {detail}"
+        assert "end_date" in detail["message"]
+
+    def test_date_validation_not_remapped_for_other_routes(self):
+        """Ensure the typed date remap is scoped to POST /trip/create.
+        A bad body on another endpoint must NOT return our typed error."""
+        r = client.post(
+            "/api/v1/trip/event",
+            json={"trip_id": 12345},
+            headers=HEADERS,
+        )
+        assert r.status_code == 422
+        detail = r.json()["detail"]
+        assert isinstance(detail, list), f"Expected generic list detail, got: {detail}"
+
+
+# ---------------------------------------------------------------
+# Known non-blocking: trip and party are two persistence writes.
+# This is recorded here, not redesigned in this PR.
+# ---------------------------------------------------------------
+
+
+class TestPersistenceNote:
+    def test_trip_and_party_are_separate_writes(self):
+        """Document that trip and party are two separate persistence
+        calls.  A failure between them could leave an orphan trip.
+        This test records the behavior; it does not fix it."""
+        body = _range_body(num_days=2)
+        r = client.post("/api/v1/trip/create", json=body, headers=HEADERS)
+        assert r.status_code == 200
+        trip_id = r.json()["trip_id"]
+        assert trip_id in db_service._trips
+        # _parties is keyed by trip_id (Dict[str, dict])
+        assert trip_id in db_service._parties

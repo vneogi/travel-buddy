@@ -17,6 +17,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from config.disclaimers import FOOD_DISCLAIMER
 from config.interests import (
+    ACCEPTED_PARTY_TYPE_IDS,
     INTERESTS,
     PARTY_TYPE_IDS,
     PARTY_TYPES,
@@ -804,7 +805,7 @@ async def _create_range_trip(request: CreateTripRequest, user_id: str):
         )
 
     # Validate party type for guided create
-    if request.party and request.party.party_type not in PARTY_TYPE_IDS:
+    if request.party and request.party.party_type not in ACCEPTED_PARTY_TYPE_IDS:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={

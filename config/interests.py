@@ -47,6 +47,14 @@ PARTY_TYPES: Sequence[PartyType] = (
 )
 
 PARTY_TYPE_IDS: FrozenSet[str] = frozenset(p.id for p in PARTY_TYPES)
+"""IDs advertised by the wizard (used in GET /trips options)."""
+
+# Full SPEC-03 accepted vocabulary.  The wizard advertises only the six
+# above, but the backend must accept the complete set so older clients
+# and non-wizard paths (API-direct, future integrations) still work.
+ACCEPTED_PARTY_TYPE_IDS: FrozenSet[str] = PARTY_TYPE_IDS | frozenset(
+    {"daddy_kiddo", "accessibility_focused", "mixed"}
+)
 
 # ---------------------------------------------------------------------------
 # Interest options
