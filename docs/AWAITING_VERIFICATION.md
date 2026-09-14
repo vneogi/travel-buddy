@@ -37,6 +37,29 @@ are smoke-test.ps1, any unrecorded Anonymous E2E, and deliberate VALIDATE of
 NOT VALID CHECKs. Hosted migration and provider state is maintained only in
 `docs/HOSTED_STATE.md`.
 
+## Finding -- Sep 14 2026 -- SPEC-40 merged and laptop Flutter gates passed
+
+PR #61 squash-merged to `main` as `ebdea52`. Post-merge GitHub checks passed:
+lint, backend test, pytest, Docker build, Flutter, Android compile, and main
+image build. Automated deploy correctly skipped.
+
+Before the merge, the owner updated the Windows checkout to the reviewed PR
+head and ran Flutter 3.44.8 / Dart 3.12.2:
+
+- `flutter analyze --no-fatal-infos` exited successfully with informational
+  lints only;
+- SPEC-40 wizard, model, and Home focused suites passed;
+- the full Flutter suite ended `+376: All tests passed!`.
+
+The logged `Persist loved error: type 'Null' is not a subtype of
+type 'Future<void>'` came from an intentional failure-path test and did not
+fail the suite.
+
+Not yet done for `ebdea52`: Cloud Run deployment, signed release APK, or phone
+acceptance of the guided Create flow. The owner chose to defer that APK until a
+later coherent reliability batch unless a standalone SPEC-40 phone checkpoint
+is needed.
+
 ## Finding -- Sep 14 2026 -- Agoda paste, schedule issues, and canned Ask
 
 Owner browsed an Android build from roughly twelve hours earlier; the exact APK

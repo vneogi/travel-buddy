@@ -109,8 +109,8 @@
 | Phone-independent field-test delivery (SPEC-37) | DONE (PR #57, `f6f2f0c`) | 2026-09-13: Cloud Run revision `travel-buddy-00003-5bc` in `asia-south1` serving `https://travel-buddy-196190001420.asia-south1.run.app`. Signed release APK from `f6f2f0c` installed on the owner's Android phone. Owner reported online plus airplane-mode pass (ICT times, maps label, compact warnings, cached itinerary). Details in docs/AWAITING_VERIFICATION.md |
 | Active trip mode (SPEC-38) | DONE (PR #59, `fefc4ec`) | 2026-09-14: Cloud Run `travel-buddy-00004-62g`. Signed APK installed. Owner reported Oct 2-9 corridor (32 stops), LP Oct 6-9, Up next entry, visible cancel, airplane driver card. Single-city start/end dates deferred. Details in docs/AWAITING_VERIFICATION.md |
 | PDF itinerary intake (SPEC-39) | DEFERRED | No implementation brief. PDF/OCR, Day Sheet, and print-pack work remain outside the current sequence |
-| Guided Create Trip foundation (SPEC-40) | IN REVIEW (PR #61) | Five-step destination/date-range/party/interests/review flow backed by deterministic multi-day catalog selection. CI and owner Flutter tests passed during review; merge still requires owner approval |
-| Hours-aware scheduling and staged ranking (SPEC-41) | SPECIFIED | New post-SPEC-40 engine contract. Structured destination-local hours, reachability, locks, and day boundaries define the feasible set before deterministic and later evidence-gated ranking |
+| Guided Create Trip foundation (SPEC-40) | DONE (PR #61, `ebdea52`) | Five-step destination/date-range/party/interests/review flow backed by deterministic multi-day catalog selection. Post-merge CI and owner Flutter tests passed. Hosted deploy and phone acceptance are not yet repeated for this SHA |
+| Hours-aware scheduling and staged ranking (SPEC-41) | SPECIFIED; PHASE A1 BRIEF READY | New post-SPEC-40 engine contract. Structured destination-local hours, reachability, locks, and day boundaries define the feasible set before deterministic and later evidence-gated ranking |
 | Flexible trip span and sparse day editing (SPEC-42) | SPECIFIED, LATER PHASE | Decouples trip duration from auto-fill capacity. Wider spans may contain at most five generated starter days plus first-class empty days with direct Add/Move actions |
 
 Migration numbers are assigned when a spec is implemented, not when it is
@@ -133,8 +133,10 @@ see docs/HOSTED_STATE.md for the credential-safe checks.
 Success for the phone gate was an installable build using a stable hosted
 HTTPS API, with the Laos corridor and pre-cached driver cards working after
 the laptop and USB are disconnected. That gate passed on 2026-09-13. Travel
-is still Oct 2-9; remaining work is hotel/PDF/copilot polish, not re-proving
-the hosted APK path.
+is still Oct 2-9. Remaining work prioritizes schedule feasibility,
+provider-aware booking paste, and grounded trip-scoped Ask. PDF intake remains
+deferred; the hosted APK path is re-run only after a coherent phone-facing
+batch.
 
 1. Device day -- **CLOSED** 2026-08-17. Brief: docs/briefs/DEVICE_DAY.md.
    Dubai raw dump 6bfa1c6; migrations 0011-0018 applied; Laos reloaded;
@@ -190,12 +192,14 @@ Seed-shaped cohorts.
    docs/briefs/GENIE_SPEC_37_PHONE_FIELD_TEST.md.
 3. SPEC-38 Active Trip Mode -- **DONE** PR #59 (`fefc4ec`). Cloud Run
    `travel-buddy-00004-62g` plus signed APK; owner phone pass 2026-09-14.
-4. SPEC-40 Guided Create Trip foundation -- **IN REVIEW** PR #61. Party,
-   interests, and single-city start/end feed deterministic catalog creation.
+4. SPEC-40 Guided Create Trip foundation -- **DONE** PR #61 (`ebdea52`).
+   Party, interests, and single-city start/end feed deterministic catalog
+   creation. Post-merge CI and owner Windows Flutter gates passed.
 5. SPEC-41 hours-aware scheduling and swap -- **NEXT ENGINE PRIORITY**.
    Structured destination-local hours, reachability, locks, and day boundaries
    become hard constraints before ranking. This also removes the post-swap
-   schedule-warning storm at its source.
+   schedule-warning storm at its source. Start with the isolated structured
+   hours core in `docs/briefs/GENIE_SPEC_41_PHASE_A1_HOURS_CORE.md`.
 6. SPEC-10 provider-aware paste -- **NEXT INPUT PRIORITY**. Add Agoda beside
    the proven Booking.com-shaped path, with honest partial extraction and a
    manual floor. This is text paste, not SPEC-39 PDF intake.
@@ -218,7 +222,7 @@ Seed-shaped cohorts.
   after SPEC-41. An LLM may explain solver output; it does not schedule.
 - SPEC-39 PDF/OCR/Day Sheet remains deferred; Agoda paste does not reopen it.
 - SPEC-42 flexible span and sparse-day editing follows the reliability slices.
-  The current SPEC-40 five-day cap remains unchanged in PR #61.
+  The SPEC-40 five-day cap remains unchanged in `ebdea52`.
 - Remaining signal/UI polish.
 - Full SPEC-04 remainder only if field evidence supports it.
 - Trip-less Ask, richer Home, SPEC-24/27, and public-release lifecycle work.
@@ -245,7 +249,7 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 | Hotel paste is provider-narrow | High for real booking intake | Current proof is Booking.com-shaped. Agoda field input did not reliably fill the hotel, and a footer fragment cannot supply absent name or dates. SPEC-10 now owns provider adapters, per-field quality, honest partial extraction, and redacted fixtures |
 | Trip Chat is wired but not grounded | High | The hosted composer returned the deterministic region fallback. Key presence is unverified and, by itself, would not add catalog retrieval. SPEC-25 now puts grounded trip-scoped Ask before trip-less Ask |
 | Create conflates trip span with auto-fill capacity | Medium | SPEC-40 deliberately caps the foundation at five filled days. SPEC-42 later accepts wider spans, generates at most five starter days, and renders remaining dates as editable empty days |
-| Range create persists trip and party in two writes | Medium | A failure between writes can leave an orphan trip. Recorded as a pre-existing SPEC-40 risk; do not redesign persistence inside PR #61 |
+| Range create persists trip and party in two writes | Medium | A failure between writes can leave an orphan trip. Recorded as a pre-existing SPEC-40 risk; preserve the merged contract when persistence is later made transactional |
 | reroute_accepted.replacement_ref is inverted | Closed PR #18 (`ce8fedb`) | Client helper replacementRefForSwap matches node_id and changed venue key. Production `_swap` calls it |
 | Supabase session gate softlocks the app | Closed PR #18 (`ce8fedb`) | app_router calls redirectForAuth; anonymous device needs no session. Owner E2E with dart-defines still in LAPTOP_VERIFY Step 8b |
 | Anonymous data has no path into an account, and signal sits outside referential integrity | Medium | SPEC-09 starts accumulating trip_states, event_log and signal rows under a device UUID that belongs to a device rather than a person. Until SPEC-24 exists, the first sign-in strands all of it, and from the user's side that looks like an app that lost their trip. The schema makes it sharper: trip_states.user_id and event_log.user_id are UUID REFERENCES user_tiers, while signal.user_id is TEXT with no foreign key and no type match, so the table holding the asset is the one table outside the constraint system. Neither a merge nor a SPEC-27 deletion can rely on a cascade, and nothing will complain when a future table is missed -- which is why both specs walk the schema instead of keeping a list. The engineering does not get harder with time; the data does |

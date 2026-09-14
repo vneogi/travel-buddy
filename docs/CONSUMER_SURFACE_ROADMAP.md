@@ -29,7 +29,7 @@ and the anonymous-to-account merge.
 | Social sign-in | Provider flow via Supabase Auth | JWT verification already exists |
 | Account linking and merge | Trigger and sign-out | **All of it** -- SPEC-24 |
 | Home screen layout | Thin list shipped on the October path | Rich home aggregate -- SPEC-26. Create is catalog-backed (SPEC-32) |
-| Add trip journey | SPEC-40 wizard is in review | Feasibility/ranking -- SPEC-41; region registry -- SPEC-13 |
+| Add trip journey | SPEC-40 wizard is merged | Feasibility/ranking -- SPEC-41; region registry -- SPEC-13 |
 | Ask Anything box | Trip-scoped composer reaches the backend | Grounded trip-scoped retrieval first; trip-optional endpoint, budgets and full SPEC-17 envelopes later -- SPEC-25 |
 | Push notifications | Permission and display | Token store and send path -- SPEC-27 |
 | Delete and export | Entry point | **All of it** -- SPEC-27 |
@@ -96,7 +96,7 @@ The immediate order after the field-test gate:
 2. SPEC-37 passed 2026-09-13 (Cloud Run plus signed APK, owner phone);
 3. SPEC-38 passed 2026-09-14 (Cloud Run `travel-buddy-00004-62g` plus signed
    APK, owner phone);
-4. finish review and owner-approved merge of SPEC-40 guided Create Trip;
+4. SPEC-40 guided Create Trip merged as `ebdea52`;
 5. SPEC-41 makes structured hours, reachability, locks, and day boundaries hard
    constraints before deterministic ranking;
 6. SPEC-10 adds Agoda/provider-aware paste with honest partial extraction;
