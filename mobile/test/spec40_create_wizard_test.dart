@@ -61,6 +61,13 @@ final _fixedRange = DateTimeRange(
   end: DateTime(2026, 11, 3),
 );
 
+/// Old/offline snapshot with no create_trip_options.
+final _staleSnapshot = HomeSnapshot(
+  supportedRegions: ['luang_prabang_laos'],
+  trips: [],
+  createTripOptions: null,
+);
+
 /// Injected picker that immediately returns [_fixedRange].
 Future<DateTimeRange?> _fakePicker({
   required BuildContext context,
@@ -68,6 +75,30 @@ Future<DateTimeRange?> _fakePicker({
   required DateTime lastDate,
   DateTimeRange? initialDateRange,
 }) async => _fixedRange;
+
+/// Injected picker returning an 8-day range (exceeds any destination max).
+Future<DateTimeRange?> _overMaxPicker({
+  required BuildContext context,
+  required DateTime firstDate,
+  required DateTime lastDate,
+  DateTimeRange? initialDateRange,
+}) async =>
+    DateTimeRange(
+      start: DateTime(2026, 11, 1),
+      end: DateTime(2026, 11, 8),
+    );
+
+/// Injected picker returning a 5-day range (fits LP max=5 but not Dubai max=4).
+Future<DateTimeRange?> _fiveDayPicker({
+  required BuildContext context,
+  required DateTime firstDate,
+  required DateTime lastDate,
+  DateTimeRange? initialDateRange,
+}) async =>
+    DateTimeRange(
+      start: DateTime(2026, 11, 1),
+      end: DateTime(2026, 11, 5),
+    );
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -86,7 +117,9 @@ Widget _app({
   double textScale = 1.0,
   MockTripRepository? repo,
   DateRangePickerBuilder? picker,
+  HomeSnapshot? snapshot,
 }) {
+  final snap = snapshot ?? _snapshot;
   final router = GoRouter(
     initialLocation: '/trip/create',
     routes: [
@@ -106,7 +139,7 @@ Widget _app({
   );
   return ProviderScope(
     overrides: [
-      homeSnapshotProvider.overrideWith((_) async => _snapshot),
+      homeSnapshotProvider.overrideWith((_) async => snap),
       if (repo != null) tripRepoProvider.overrideWithValue(repo),
     ],
     child: MediaQuery(
@@ -345,11 +378,12 @@ void main() {
     await t.pumpAndSettle();
     await _toStep5(t);
 
-    await t.tap(find.widgetWithText(ElevatedButton, 'Create trip'));
+    // Both taps locate the same keyed primary action.
+    final keyFinder = find.byKey(const Key('create_trip_submit'));
+    await t.tap(keyFinder);
     await t.pump();
-    // Second tap while first is in-flight: button now shows a spinner,
-    // so find by key (the label text is gone while _submitting).
-    await t.tap(find.byKey(const Key('create_trip_submit')));
+    // Second tap while repo Future is pending.
+    await t.tap(keyFinder);
     await t.pump();
 
     // Complete the future
@@ -422,7 +456,8 @@ void main() {
   // -----------------------------------------------------------------------
   // Later-step 800x600 and large-text reachability
   // -----------------------------------------------------------------------
-  testWidgets('800x600 party step reachable without overflow', (t) async {
+  testWidgets('800x600 party step: non-solo party opens slider without overflow',
+      (t) async {
     await t.pumpWidget(_app(
       size: const Size(800, 600),
       picker: _fakePicker,
@@ -430,6 +465,11 @@ void main() {
     await t.pumpAndSettle();
     await _toStep3(t);
     expect(find.text('Who is travelling?'), findsOneWidget);
+
+    // Select Friends (non-solo, non-couple) to reveal slider.
+    await t.tap(find.text('Friends'));
+    await t.pump();
+    expect(find.byType(Slider), findsOneWidget);
     expect(t.takeException(), isNull);
   });
 
@@ -493,7 +533,9 @@ void main() {
   // -----------------------------------------------------------------------
   // Destination gating: region without maxDays disabled
   // -----------------------------------------------------------------------
-  testWidgets('unavailable region cannot be selected', (t) async {
+  testWidgets(
+      'unavailable destination cannot be selected and cannot enable Next',
+      (t) async {
     final snap = HomeSnapshot(
       supportedRegions: ['luang_prabang_laos', 'unknown_region'],
       trips: [],
@@ -503,16 +545,88 @@ void main() {
         maxDaysByRegion: {'luang_prabang_laos': 5},
       ),
     );
-    await t.pumpWidget(ProviderScope(
-      overrides: [
-        homeSnapshotProvider.overrideWith((_) async => snap),
-      ],
-      child: MaterialApp(
-        theme: AppTheme.light,
-        home: const CreateTripScreen(),
-      ),
-    ));
+    await t.pumpWidget(_app(snapshot: snap));
     await t.pumpAndSettle();
     expect(find.text('Unavailable'), findsOneWidget);
+
+    // Attempt to tap the unavailable region.
+    await t.tap(find.text('unknown_region'));
+    await t.pump();
+
+    // Next must be disabled (no region with known maxDays selected).
+    final btn = t.widget<ElevatedButton>(
+        find.widgetWithText(ElevatedButton, 'Next'));
+    expect(btn.onPressed, isNull);
+  });
+
+  // -----------------------------------------------------------------------
+  // Production-path proof: over-max date range refused
+  // -----------------------------------------------------------------------
+  testWidgets('injected over-max date range is refused', (t) async {
+    await t.pumpWidget(_app(picker: _overMaxPicker));
+    await t.pumpAndSettle();
+
+    // Step 1: select Dubai (max 4 days)
+    await t.tap(find.text('Dubai'));
+    await t.pump();
+    await t.tap(find.widgetWithText(ElevatedButton, 'Next'));
+    await t.pumpAndSettle();
+
+    // Step 2: tap date picker -- returns 8-day range
+    await t.tap(find.widgetWithText(OutlinedButton, 'Select date range'));
+    await t.pumpAndSettle();
+
+    // Snackbar with refusal message.
+    expect(find.textContaining('Maximum 4 days'), findsOneWidget);
+    // Range was NOT accepted -- still shows placeholder.
+    expect(find.text('Select date range'), findsOneWidget);
+  });
+
+  // -----------------------------------------------------------------------
+  // Production-path proof: destination change clears invalid range
+  // -----------------------------------------------------------------------
+  testWidgets('changing destination clears range invalid for new max',
+      (t) async {
+    await t.pumpWidget(_app(picker: _fiveDayPicker));
+    await t.pumpAndSettle();
+
+    // Step 1: select Luang Prabang (max 5)
+    await t.tap(find.text('Luang Prabang'));
+    await t.pump();
+    await t.tap(find.widgetWithText(ElevatedButton, 'Next'));
+    await t.pumpAndSettle();
+
+    // Step 2: pick 5-day range
+    await t.tap(find.widgetWithText(OutlinedButton, 'Select date range'));
+    await t.pumpAndSettle();
+    expect(find.textContaining('5 days'), findsOneWidget);
+
+    // Go back to step 1
+    await t.tap(find.byIcon(Icons.arrow_back));
+    await t.pumpAndSettle();
+
+    // Switch to Dubai (max 4) -- 5-day range should be cleared
+    await t.tap(find.text('Dubai'));
+    await t.pump();
+    await t.tap(find.widgetWithText(ElevatedButton, 'Next'));
+    await t.pumpAndSettle();
+
+    // Dates step shows placeholder (range was cleared).
+    expect(find.text('Select date range'), findsOneWidget);
+  });
+
+  // -----------------------------------------------------------------------
+  // Production-path proof: stale snapshot without create_trip_options
+  // -----------------------------------------------------------------------
+  testWidgets(
+      'old snapshot without create_trip_options shows unavailable state',
+      (t) async {
+    await t.pumpWidget(_app(snapshot: _staleSnapshot));
+    await t.pumpAndSettle();
+
+    expect(
+        find.text('Trip creation is currently unavailable.'), findsOneWidget);
+    expect(find.text('Retry'), findsOneWidget);
+    expect(find.text('Back'), findsOneWidget);
   });
 }

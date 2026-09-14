@@ -56,11 +56,14 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
     return opts.maxDaysByRegion[region]; // null when absent
   }
 
-  /// Calendar-day count: pure date arithmetic, no DST dependency.
+  /// Calendar-day count: pure UTC arithmetic, no DST dependency.
   static int _calendarDays(DateTimeRange range) {
-    final startDate = DateUtils.dateOnly(range.start);
-    final endDate = DateUtils.dateOnly(range.end);
-    return (endDate.difference(startDate).inDays) + 1;
+    final s = range.start;
+    final e = range.end;
+    return (DateTime.utc(e.year, e.month, e.day)
+                .difference(DateTime.utc(s.year, s.month, s.day))
+                .inDays) +
+        1;
   }
 
   static const _stepTitles = [
@@ -197,7 +200,46 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
           ),
         ),
       ),
-      data: (home) => _buildWizard(home),
+      data: (home) {
+        if (home.createTripOptions == null) {
+          return _buildUnavailable();
+        }
+        return _buildWizard(home);
+      },
+    );
+  }
+
+  /// Shown when [CreateTripOptions] is missing (old/offline snapshot or
+  /// mid-refresh state change).  Offers Back + Retry, no wizard chrome.
+  Widget _buildUnavailable() {
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
+        title: const Text('Create trip'),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.cloud_off, size: 48, color: Colors.grey),
+            const SizedBox(height: AppSpacing.base),
+            const Text('Trip creation is currently unavailable.'),
+            const SizedBox(height: AppSpacing.base),
+            ElevatedButton(
+              onPressed: () => ref.invalidate(homeSnapshotProvider),
+              child: const Text('Retry'),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            OutlinedButton(
+              onPressed: () => Navigator.of(context).maybePop(),
+              child: const Text('Back'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -286,8 +328,15 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
           onChanged: (r) => _onDestinationChanged(r, opts),
         );
       case 1:
+        final maxDays = _maxDaysFor(_selectedRegion, opts);
+        if (maxDays == null) {
+          // Options disappeared during provider refresh or state change.
+          return const Center(
+            child: Text('Destination data unavailable. Please go back.'),
+          );
+        }
         return _DatesStep(
-          maxDays: _maxDaysFor(_selectedRegion, opts)!,
+          maxDays: maxDays,
           dateRange: _dateRange,
           onChanged: (r) => setState(() => _dateRange = r),
           pickerBuilder: widget.datePickerBuilder,
@@ -433,12 +482,12 @@ class _DatesStep extends StatelessWidget {
   }
 
   Future<void> _pick(BuildContext context) async {
-    final now = DateTime.now();
+    final now = DateUtils.dateOnly(DateTime.now());
     final picker = pickerBuilder ?? showDateRangePicker;
     final picked = await picker(
       context: context,
       firstDate: now,
-      lastDate: now.add(const Duration(days: 365)),
+      lastDate: DateTime(now.year + 1, now.month, now.day),
       initialDateRange: dateRange,
     );
     if (picked == null) return;

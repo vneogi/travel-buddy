@@ -77,6 +77,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Future<void> _createTrip(HomeSnapshot snapshot) async {
     if (_creating) return;
+    if (snapshot.supportedRegions.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No destinations available right now.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
     setState(() => _creating = true);
     context.push('/trip/create');
     // Reset after a frame so the card re-enables when user comes back.

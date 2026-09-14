@@ -101,4 +101,44 @@ void main() {
     // Wizard step 1 should be visible
     expect(find.text('Where are you going?'), findsOneWidget);
   }, timeout: const Timeout(Duration(seconds: 20)));
+
+  testWidgets('empty supportedRegions does not navigate from Home',
+      (tester) async {
+    final router = GoRouter(
+      routes: [
+        GoRoute(path: '/', builder: (_, __) => const HomeScreen()),
+        GoRoute(
+          path: '/trip/create',
+          builder: (_, __) => const Scaffold(
+            body: Center(child: Text('Wizard')),
+          ),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          homeSnapshotProvider.overrideWith(
+            (_) async => const HomeSnapshot(
+              supportedRegions: [],
+              trips: [],
+            ),
+          ),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    // Tap the create card
+    await tester.tap(find.text('Create a trip'));
+    await tester.pumpAndSettle();
+
+    // Must NOT navigate to the wizard.
+    expect(find.text('Wizard'), findsNothing);
+    // Should show snackbar instead.
+    expect(find.text('No destinations available right now.'), findsOneWidget);
+  }, timeout: const Timeout(Duration(seconds: 20)));
 }
