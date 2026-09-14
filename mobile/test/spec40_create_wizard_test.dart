@@ -347,8 +347,9 @@ void main() {
 
     await t.tap(find.widgetWithText(ElevatedButton, 'Create trip'));
     await t.pump();
-    // Second tap while first is in-flight
-    await t.tap(find.widgetWithText(ElevatedButton, 'Create trip'));
+    // Second tap while first is in-flight: button now shows a spinner,
+    // so find by key (the label text is gone while _submitting).
+    await t.tap(find.byKey(const Key('create_trip_submit')));
     await t.pump();
 
     // Complete the future
@@ -458,13 +459,11 @@ void main() {
   // Loading and error states
   // -----------------------------------------------------------------------
   testWidgets('loading state shows spinner', (t) async {
+    // Use a Completer that is never completed -- no pending Timer.
+    final never = Completer<HomeSnapshot>();
     await t.pumpWidget(ProviderScope(
       overrides: [
-        homeSnapshotProvider.overrideWith(
-            (_) => Future<HomeSnapshot>.delayed(
-                  const Duration(seconds: 10),
-                  () => _snapshot,
-                )),
+        homeSnapshotProvider.overrideWith((_) => never.future),
       ],
       child: MaterialApp(
         theme: AppTheme.light,

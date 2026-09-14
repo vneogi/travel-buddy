@@ -252,6 +252,7 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
+                  key: const Key('create_trip_submit'),
                   onPressed: _canProceed(opts) ? _next : null,
                   child: _submitting
                       ? const SizedBox(
@@ -477,9 +478,6 @@ class _PartyStep extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Who is travelling?',
-            style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: AppSpacing.base),
         ...partyOptions.map((p) => Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.sm),
               child: RadioListTile<String>(
