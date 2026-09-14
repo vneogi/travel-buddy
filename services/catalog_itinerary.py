@@ -7,6 +7,7 @@ LLM, or the reroute quota path.
 from datetime import datetime, timedelta, timezone
 from typing import Iterable, List, Optional, Sequence
 
+from config.interests import VENUES_PER_DAY
 from config.regions import REGIONS, require_region
 from models.schemas import CurrentContext, TripNode
 
@@ -184,8 +185,6 @@ def advertised_regions(list_venues) -> List[str]:
 # SPEC-40: Interest-scored deterministic range builder
 # ---------------------------------------------------------------------------
 
-RANGE_VENUES_PER_DAY = 4
-
 
 def _interest_score(venue: dict, interest_ids: Sequence[str]) -> float:
     """Score a venue against requested interests.
@@ -225,7 +224,7 @@ def select_day_venues_scored(
     interest_ids: Sequence[str],
     used_venue_ids: set,
 ) -> List[dict]:
-    """Pick exactly RANGE_VENUES_PER_DAY unique venues for one day.
+    """Pick exactly VENUES_PER_DAY unique venues for one day.
 
     1. Exclude already-used venues (cross-day uniqueness).
     2. Score by interest matches.
@@ -235,10 +234,8 @@ def select_day_venues_scored(
     Raises InsufficientCatalog if not enough remain.
     """
     available = [v for v in pool if _venue_key(v) not in used_venue_ids]
-    if len(available) < RANGE_VENUES_PER_DAY:
-        raise InsufficientCatalog(
-            f"need {RANGE_VENUES_PER_DAY} unused venues, have {len(available)}"
-        )
+    if len(available) < VENUES_PER_DAY:
+        raise InsufficientCatalog(f"need {VENUES_PER_DAY} unused venues, have {len(available)}")
 
     # Sort: highest interest score first, then name, then venue_id for determinism
     scored = sorted(
@@ -255,7 +252,7 @@ def select_day_venues_scored(
 
     # Pass 1: one per bucket for diversity
     for venue in scored:
-        if len(chosen) >= RANGE_VENUES_PER_DAY:
+        if len(chosen) >= VENUES_PER_DAY:
             break
         bidx = _bucket_index(venue)
         if bidx not in used_buckets:
@@ -265,7 +262,7 @@ def select_day_venues_scored(
     # Pass 2: fill remaining from scored order
     chosen_keys = {_venue_key(v) for v in chosen}
     for venue in scored:
-        if len(chosen) >= RANGE_VENUES_PER_DAY:
+        if len(chosen) >= VENUES_PER_DAY:
             break
         if _venue_key(venue) not in chosen_keys:
             chosen.append(venue)
@@ -273,7 +270,31 @@ def select_day_venues_scored(
 
     # Final sort for deterministic schedule order: by name then id
     chosen.sort(key=lambda v: ((v.get("name") or "").lower(), str(v.get("venue_id") or "")))
-    return chosen[:RANGE_VENUES_PER_DAY]
+    result = chosen[:VENUES_PER_DAY]
+    # Assert exactly VENUES_PER_DAY unique venue_ids selected
+    result_ids = {str(v["venue_id"]) for v in result}
+    if len(result_ids) != VENUES_PER_DAY:
+        raise InsufficientCatalog(
+            f"expected {VENUES_PER_DAY} unique venue IDs, got {len(result_ids)}"
+        )
+    return result
+
+
+def _dedup_by_venue_id(pool: List[dict]) -> List[dict]:
+    """Deduplicate eligible corridor venues by venue_id.
+
+    Keeps the first occurrence of each venue_id.  Every entry in *pool*
+    is guaranteed to have a non-None venue_id (ensured by
+    eligible_corridor_venues).
+    """
+    seen: set[str] = set()
+    result: list[dict] = []
+    for v in pool:
+        vid = str(v["venue_id"])
+        if vid not in seen:
+            seen.add(vid)
+            result.append(v)
+    return result
 
 
 def _venue_key(venue: dict) -> str:
@@ -291,7 +312,7 @@ def range_nodes_from_catalog(
 ) -> List[TripNode]:
     """Build a deterministic multi-day itinerary for a date range.
 
-    Exactly RANGE_VENUES_PER_DAY venues per day, no repeats across the
+    Exactly VENUES_PER_DAY venues per day, no repeats across the
     entire trip.  Schedule from 09:00 in the region IANA timezone, stored
     as UTC.
     """
@@ -305,7 +326,7 @@ def range_nodes_from_catalog(
     ed = date_type.fromisoformat(end_date_local)
     num_days = (ed - sd).days + 1  # inclusive
 
-    pool = eligible_corridor_venues(rows)
+    pool = _dedup_by_venue_id(eligible_corridor_venues(rows))
     used_ids: set[str] = set()
     all_nodes: List[TripNode] = []
 
@@ -358,16 +379,7 @@ def compute_max_days_for_region(list_venues_fn, geo_region: str) -> Optional[int
     from config.interests import compute_max_days
 
     try:
-        pool = eligible_corridor_venues(list_venues_fn(geo_region))
-        # Deduplicate by venue_id
-        seen: set[str] = set()
-        deduped: list[dict] = []
-        for v in pool:
-            vid = str(v["venue_id"])
-            if vid not in seen:
-                seen.add(vid)
-                deduped.append(v)
-        pool = deduped
+        pool = _dedup_by_venue_id(eligible_corridor_venues(list_venues_fn(geo_region)))
     except Exception:
         return None
     md = compute_max_days(len(pool))

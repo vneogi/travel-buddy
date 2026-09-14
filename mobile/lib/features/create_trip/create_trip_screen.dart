@@ -38,9 +38,18 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
   // Step 4: Interests
   final Set<String> _selectedInterests = {};
 
-  int _maxDaysFor(String? region, CreateTripOptions? opts) {
-    if (region == null || opts == null) return 5;
-    return opts.maxDaysByRegion[region] ?? 5;
+  /// Returns the server-advertised max days for [region], or null if the
+  /// region is not in the options map.  Never invents a fallback.
+  int? _maxDaysFor(String? region, CreateTripOptions? opts) {
+    if (region == null || opts == null) return null;
+    return opts.maxDaysByRegion[region]; // null when absent
+  }
+
+  /// Calendar-day count: pure date arithmetic, no DST dependency.
+  static int _calendarDays(DateTimeRange range) {
+    final startDate = DateUtils.dateOnly(range.start);
+    final endDate = DateUtils.dateOnly(range.end);
+    return (endDate.difference(startDate).inDays) + 1;
   }
 
   static const _stepTitles = [
@@ -54,7 +63,9 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
   bool _canProceed(CreateTripOptions? opts) {
     switch (_step) {
       case 0:
-        return _selectedRegion != null;
+        // Must have a region AND that region must have a known max
+        return _selectedRegion != null &&
+            _maxDaysFor(_selectedRegion, opts) != null;
       case 1:
         return _dateRange != null;
       case 2:
@@ -90,21 +101,20 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
     }
   }
 
-  /// Fix 8: When destination changes, invalidate dates if above new max.
+  /// When destination changes, invalidate dates if above new max.
   void _onDestinationChanged(String? region, CreateTripOptions? opts) {
     setState(() {
       _selectedRegion = region;
       if (_dateRange != null && region != null) {
         final max = _maxDaysFor(region, opts);
-        final days = _dateRange!.end.difference(_dateRange!.start).inDays + 1;
-        if (days > max) {
-          _dateRange = null; // Reset: old range exceeds new max
+        if (max == null || _calendarDays(_dateRange!) > max) {
+          _dateRange = null;
         }
       }
     });
   }
 
-  /// Fix 2: Clamp/reset party size on type change.
+  /// Clamp/reset party size on type change.
   void _onPartyTypeChanged(String type) {
     setState(() {
       _partyType = type;
@@ -113,7 +123,7 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
       } else if (type == 'couple') {
         _partySize = 2;
       } else if (_partySize < 2) {
-        _partySize = 3; // Safe default above Slider min
+        _partySize = 3;
       }
     });
   }
@@ -135,13 +145,16 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
             interestIds: _selectedInterests.toList(),
           );
       ref.invalidate(homeSnapshotProvider);
-      if (mounted) context.go('/trip/${trip.tripId}');
+      if (!mounted) return;
+      context.go('/trip/${trip.tripId}');
     } on ApiException catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = e.message;
         _submitting = false;
       });
     } catch (_) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = 'Something went wrong. Please try again.';
         _submitting = false;
@@ -151,7 +164,6 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Fix 1: Load options from the real provider.
     final snapshot = ref.watch(homeSnapshotProvider);
 
     return snapshot.when(
@@ -257,12 +269,13 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
       case 0:
         return _DestinationStep(
           regions: regions,
+          maxDaysByRegion: opts?.maxDaysByRegion ?? const {},
           selected: _selectedRegion,
           onChanged: (r) => _onDestinationChanged(r, opts),
         );
       case 1:
         return _DatesStep(
-          maxDays: _maxDaysFor(_selectedRegion, opts),
+          maxDays: _maxDaysFor(_selectedRegion, opts)!,
           dateRange: _dateRange,
           onChanged: (r) => setState(() => _dateRange = r),
         );
@@ -305,7 +318,7 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
 }
 
 // ---------------------------------------------------------------------------
-// Step widgets (stateless, extracted for testability)
+// Step widgets
 // ---------------------------------------------------------------------------
 
 const _displayNames = {
@@ -317,10 +330,12 @@ const _displayNames = {
 
 class _DestinationStep extends StatelessWidget {
   final List<String> regions;
+  final Map<String, int> maxDaysByRegion;
   final String? selected;
   final ValueChanged<String?> onChanged;
   const _DestinationStep({
     required this.regions,
+    required this.maxDaysByRegion,
     required this.selected,
     required this.onChanged,
   });
@@ -333,22 +348,31 @@ class _DestinationStep extends StatelessWidget {
         Text('Choose your destination',
             style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: AppSpacing.base),
-        ...regions.map((r) => Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-              child: RadioListTile<String>(
-                title: Text(_displayNames[r] ?? r),
-                value: r,
-                groupValue: selected,
-                onChanged: onChanged,
-                shape: RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius.circular(AppSpacing.radiusCard),
-                ),
-                tileColor: selected == r
-                    ? AppColors.primaryLight
-                    : AppColors.card,
+        ...regions.map((r) {
+          final maxDays = maxDaysByRegion[r];
+          final available = maxDays != null;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+            child: RadioListTile<String>(
+              title: Text(_displayNames[r] ?? r),
+              subtitle: available
+                  ? Text('Up to $maxDays days')
+                  : const Text('Unavailable'),
+              value: r,
+              groupValue: selected,
+              onChanged: available ? onChanged : null,
+              shape: RoundedRectangleBorder(
+                borderRadius:
+                    BorderRadius.circular(AppSpacing.radiusCard),
               ),
-            )),
+              tileColor: selected == r
+                  ? AppColors.primaryLight
+                  : available
+                      ? AppColors.card
+                      : Colors.grey.shade200,
+            ),
+          );
+        }),
       ],
     );
   }
@@ -385,7 +409,7 @@ class _DatesStep extends StatelessWidget {
         if (dateRange != null) ...[
           const SizedBox(height: AppSpacing.sm),
           Text(
-            '${dateRange!.end.difference(dateRange!.start).inDays + 1} days',
+            '${_CreateTripScreenState._calendarDays(dateRange!)} days',
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ],
@@ -402,7 +426,7 @@ class _DatesStep extends StatelessWidget {
       initialDateRange: dateRange,
     );
     if (picked == null) return;
-    final days = picked.end.difference(picked.start).inDays + 1;
+    final days = _CreateTripScreenState._calendarDays(picked);
     if (days > maxDays) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -414,7 +438,7 @@ class _DatesStep extends StatelessWidget {
     onChanged(picked);
   }
 
-  String _fmt(DateTime d) => '${d.day}/${d.month}/${d.year}';
+  String _fmt(DateTime d) => '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 }
 
 class _PartyStep extends StatelessWidget {
@@ -555,8 +579,8 @@ class _ReviewStep extends StatelessWidget {
         _row('Destination', _displayNames[region] ?? region ?? ''),
         if (dateRange != null)
           _row('Dates',
-              '${_fmt(dateRange!.start)} - ${_fmt(dateRange!.end)}'
-              ' (${dateRange!.end.difference(dateRange!.start).inDays + 1} days)'),
+              '${_fmtDate(dateRange!.start)} - ${_fmtDate(dateRange!.end)}'
+              ' (${_CreateTripScreenState._calendarDays(dateRange!)} days)'),
         _row('Party', '$partyLabel ($partySize)'),
         _row('Interests',
             interestLabels.isEmpty ? 'Balanced' : interestLabels.join(', ')),
@@ -564,7 +588,7 @@ class _ReviewStep extends StatelessWidget {
     );
   }
 
-  String _fmt(DateTime d) => '${d.day}/${d.month}/${d.year}';
+  String _fmtDate(DateTime d) => '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
   Widget _row(String label, String value) {
     return Padding(

@@ -47,3 +47,10 @@ class WeatherUnavailableException extends ApiException {
     super.m = 'Weather data temporarily unavailable.',
   ]);
 }
+
+/// SPEC-40: Generic typed 422 validation error.
+/// Surfaces the server's detail.message for all typed 422 responses
+/// not handled by a specific exception class.
+class ValidationException extends ApiException {
+  const ValidationException([super.m = 'Validation error.']);
+}

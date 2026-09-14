@@ -2,6 +2,10 @@ import '../core/api_client.dart';
 import 'models.dart';
 
 /// Trip operations: create, fetch, and send events.
+/// Format DateTime as YYYY-MM-DD for date-only API fields.
+String _dateOnly(DateTime d) =>
+    d.toIso8601String().substring(0, 10);
+
 class TripRepository {
   final ApiClient _api;
   TripRepository(this._api);
@@ -46,8 +50,8 @@ class TripRepository {
   }) async {
     final body = <String, dynamic>{
       'geo_region': geoRegion,
-      'start_date': startDate.toIso8601String(),
-      'end_date': endDate.toIso8601String(),
+      'start_date': _dateOnly(startDate),
+      'end_date': _dateOnly(endDate),
       'party': {
         'party_type': partyType,
         'size': partySize,

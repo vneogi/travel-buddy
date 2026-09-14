@@ -77,7 +77,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Future<void> _createTrip(HomeSnapshot snapshot) async {
     if (_creating) return;
+    setState(() => _creating = true);
     context.push('/trip/create');
+    // Reset after a frame so the card re-enables when user comes back.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _creating = false);
+    });
   }
 
   Future<void> _showCorridorDateForm(HomeSnapshot snapshot) async {

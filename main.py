@@ -218,7 +218,11 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    """Log validation failures -- this bug class (Pydantic extra field) cost hours."""
+    """Log validation failures -- this bug class (Pydantic extra field) cost hours.
+
+    SPEC-40: When the error touches preferences.interest_ids, surface our
+    typed invalid_interests error rather than Pydantic's generic list.
+    """
     request_id = getattr(request.state, "request_id", "unknown")
     logger.warning(
         "Validation error on %s %s request_id=%s: %s",
@@ -235,6 +239,23 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         exc_type="RequestValidationError",
         message=str(exc.errors()),
     )
+
+    # Map typed field errors to domain-specific responses
+    for err in exc.errors():
+        loc = tuple(err.get("loc", ()))
+        # Match (body, preferences, interest_ids, ...)
+        if len(loc) >= 3 and loc[1] == "preferences" and loc[2] == "interest_ids":
+            return JSONResponse(
+                status_code=422,
+                content={
+                    "detail": {
+                        "error": "invalid_interests",
+                        "message": err.get("msg", str(err)),
+                    },
+                    "request_id": request_id,
+                },
+            )
+
     return JSONResponse(
         status_code=422,
         content={"detail": exc.errors(), "request_id": request_id},

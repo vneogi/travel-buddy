@@ -520,3 +520,92 @@ class TestRegistryValidation:
         r = client.post("/api/v1/trip/create", json=body, headers=HEADERS)
         assert r.status_code == 200
         assert len(r.json()["nodes"]) == 8
+
+
+# ---------------------------------------------------------------
+# Fix 1: Duplicate-ID build failure coverage
+# ---------------------------------------------------------------
+
+
+class TestDuplicateIDBuildFailure:
+    def test_builder_rejects_pool_with_only_duplicate_ids(self):
+        """If dedup leaves fewer than VENUES_PER_DAY venues, build fails."""
+
+        fake_rows = [
+            {
+                "name": f"DupVenue{i}",
+                "category": "temple",
+                "lat": 1.0,
+                "lng": 2.0,
+                "venue_id": "SAME_ID",
+            }
+            for i in range(20)
+        ]
+        with pytest.raises(InsufficientCatalog):
+            range_nodes_from_catalog(
+                geo_region="luang_prabang_laos",
+                start_date_local=_future_date(10),
+                end_date_local=_future_date(10),
+                rows=fake_rows,
+            )
+
+    def test_builder_deduplicates_before_selection(self):
+        """Builder with mixed unique/duplicate IDs only uses unique ones."""
+        from services.catalog_itinerary import _dedup_by_venue_id
+
+        rows = [
+            {
+                "name": f"V{i}",
+                "category": "temple",
+                "lat": 1.0,
+                "lng": 2.0,
+                "venue_id": f"id_{i % 5}",
+            }
+            for i in range(20)
+        ]
+        pool = _dedup_by_venue_id(eligible_corridor_venues(rows))
+        assert len(pool) == 5  # 20 rows -> 5 unique IDs
+        ids = [str(v["venue_id"]) for v in pool]
+        assert len(ids) == len(set(ids))  # all unique
+
+
+# ---------------------------------------------------------------
+# Fix 9: Malformed interest_ids tests
+# ---------------------------------------------------------------
+
+
+class TestMalformedInterests:
+    """Malformed interest_ids must return typed invalid_interests, not
+    Pydantic's generic 422 list.
+    """
+
+    def test_null_interest_ids_accepted_as_empty(self):
+        """null interest_ids means balanced (empty list), not an error."""
+        body = _range_body(num_days=2)
+        body["preferences"] = {"interest_ids": None}
+        r = client.post("/api/v1/trip/create", json=body, headers=HEADERS)
+        assert r.status_code == 200, r.json()
+
+    def test_string_interest_ids_returns_typed_422(self):
+        body = _range_body(num_days=2)
+        body["preferences"] = {"interest_ids": "food_markets"}
+        r = client.post("/api/v1/trip/create", json=body, headers=HEADERS)
+        assert r.status_code == 422
+        detail = r.json()["detail"]
+        assert detail["error"] == "invalid_interests", f"Got: {detail}"
+
+    def test_object_interest_ids_returns_typed_422(self):
+        body = _range_body(num_days=2)
+        body["preferences"] = {"interest_ids": {"food": True}}
+        r = client.post("/api/v1/trip/create", json=body, headers=HEADERS)
+        assert r.status_code == 422
+        detail = r.json()["detail"]
+        assert detail["error"] == "invalid_interests", f"Got: {detail}"
+
+    def test_list_of_ints_returns_typed_422(self):
+        body = _range_body(num_days=2)
+        body["preferences"] = {"interest_ids": [1, 2, 3]}
+        r = client.post("/api/v1/trip/create", json=body, headers=HEADERS)
+        assert r.status_code == 422
+        detail = r.json()["detail"]
+        assert detail["error"] == "invalid_interests", f"Got: {detail}"

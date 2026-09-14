@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional, TypedDict
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from models.ids import generate_node_id
 
@@ -256,6 +256,19 @@ class CreatePreferences(BaseModel):
     """SPEC-40: Typed preferences for guided create."""
 
     interest_ids: List[str] = Field(default_factory=list)
+
+    @field_validator("interest_ids", mode="before")
+    @classmethod
+    def _coerce_interest_ids(cls, v):  # noqa: N805
+        """Reject null, string, or object values with a clear message."""
+        if v is None:
+            return []
+        if not isinstance(v, list):
+            raise ValueError(f"interest_ids must be a list of strings, got {type(v).__name__}")
+        for idx, item in enumerate(v):
+            if not isinstance(item, str):
+                raise ValueError(f"interest_ids[{idx}] must be a string, got {type(item).__name__}")
+        return v
 
 
 class CreateTripRequest(BaseModel):
