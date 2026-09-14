@@ -1,6 +1,6 @@
 # SPEC-40: Guided Create Trip Foundation
 
-> Status: SPECIFIED. Not implemented.
+> Status: IMPLEMENTED IN PR #61; IN REVIEW, NOT MERGED.
 >
 > SPEC-39 PDF intake remains deferred. This spec deliberately stops before
 > LLM generation, vector memory, and similar-trip inspiration. It creates the
@@ -97,6 +97,11 @@ For each requested day:
 Same catalog + destination + dates + interests must produce the same venue ID
 sequence.
 
+This foundation intentionally does not make opening hours, transit, or learned
+preferences part of selection. SPEC-41 owns the next engine layer: structured
+hours and reachability as hard constraints, followed by deterministic and later
+evidence-gated ranking.
+
 ## API and persisted contract
 
 `GET /api/v1/trips` keeps existing fields and adds:
@@ -138,6 +143,11 @@ the existing party contract. No migration is required for creation context
 stored inside trip state JSON.
 
 Corridor create remains segment-based and unchanged.
+
+The current persistence implementation writes the trip and party separately.
+A failure between those writes can leave an orphan trip. This is a known
+pre-existing risk, not redesigned in this foundation. A future persistence
+transaction must preserve the wire and creation-context contracts above.
 
 ## Flutter flow
 
@@ -197,6 +207,9 @@ Each guard must include a sabotage proof where practical.
 
 ## Follow-up
 
-The next brief may add inspiration and generation using this exact creation
+Hours-aware feasibility and staged ranking under SPEC-41 come before inspiration
+or model-generated itineraries.
+
+A later brief may add inspiration and generation using this exact creation
 context. It must define source/provenance, latency and cost budgets, fallback
 behavior, and how similar trips are anonymized before any implementation.

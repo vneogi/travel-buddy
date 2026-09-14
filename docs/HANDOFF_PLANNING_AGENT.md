@@ -5,9 +5,11 @@ Those two files are the contract. This file is only the baton: what is true
 now, what the previous planning agent already adjudicated, and what the
 next agent must not reopen in the first week.
 
-Read this file and the two contracts above. The first job is SPEC-37
-field-test delivery from reviewed `main` (`1f2c43d`). SPEC-36 is merged
-(PR #55). Execution brief: `docs/briefs/GENIE_SPEC_37_PHONE_FIELD_TEST.md`.
+Read this file and the two contracts above. The first job is finishing review
+of SPEC-40 PR #61 without merging before owner approval. SPEC-36, SPEC-37, and
+SPEC-38 are done. The next product sequence is SPEC-41 feasibility, the
+SPEC-10 Agoda/provider-aware paste remainder, and the SPEC-25 grounded
+trip-scoped Ask remainder.
 
 ## Who does what (unchanged)
 
@@ -55,8 +57,8 @@ October spine status: ALL 7 CORE ITEMS COMPLETE & HARDENED ON MAIN.
 
 Status tables: `docs/PROJECT_STATUS.md`. Device-only queue:
 `docs/AWAITING_VERIFICATION.md`. Hosted schema/provider ledger:
-`docs/HOSTED_STATE.md`. Next delivery gate:
-`docs/specs/SPEC-37-phone-field-test-delivery.md`.
+`docs/HOSTED_STATE.md`. Current implementation contract:
+`docs/specs/SPEC-40-guided-create-trip.md`.
 
 ## Third-party review -- already adjudicated
 
@@ -78,7 +80,7 @@ Fixed in PR #18 (`ce8fedb`):
 Still true (do not "fix" by rescoping the field-test gate):
 
 - Offline itinerary reads and pre-cached driver cards are production paths;
-  preserve them through SPEC-36 and SPEC-37.
+  preserve them through all later create, scheduling, and Ask work.
 - Chat still sends `ask_info`; broad natural-language mutation remains
   deferred until after the phone gate.
 
@@ -104,27 +106,26 @@ Reject or defer:
   not committed. SPEC-24 and SPEC-27 remain unbuilt; several other specs in
   that number range already have partial or completed slices.
 
-Strategic point that is true and still not a spine change: unique data
-needs many users per city and has no owner. Date a note after the field
-test. SPEC-24 vs accumulating device UUIDs is already a Medium row in
-PROJECT_STATUS; date it, but do not insert identity-merge work before the
-SPEC-36 and SPEC-37 gates.
+Strategic point that remains true: unique data needs many users per city and
+has no owner. SPEC-24 vs accumulating device UUIDs is already a Medium row in
+PROJECT_STATUS. It remains required before non-owner distribution, but it does
+not outrank the field-proven itinerary trust gaps for the owner's trip.
 
 ## First job
 
-All 7 items on the October field-test spine are complete on main.
-SPEC-30 is complete (`f8349a8`, `83c825f`).
-Next tasks:
-1. Execute SPEC-37 from reviewed `main` at `1f2c43d`. Provision a stable
-   hosted HTTPS API, configure hosted secrets, build an installable artifact
-   for the owner's phone. Execution brief:
-   `docs/briefs/GENIE_SPEC_37_PHONE_FIELD_TEST.md`. Do not deploy an
-   unreviewed commit.
-2. By **2026-09-18**, run the real airplane-mode drill from the installed
-   artifact with USB and local tunnels disconnected. Record the build SHA,
-   platform, and results in `docs/AWAITING_VERIFICATION.md`.
-3. Only then resume multi-night hotel polish, SPEC-17, trip-less Ask, richer
-   Home, and the remaining consumer backlog.
+The phone-independent delivery and airplane-mode gate passed. SPEC-38 passed
+on the owner's phone. Next tasks:
+
+1. Finish SPEC-40 PR #61 review. Verify each Genie diff and CI run. Squash-merge
+   only after explicit owner approval.
+2. Implement SPEC-41 as a bounded reliability slice: destination-local
+   structured hours and reachability are hard constraints before ranking.
+3. Implement the SPEC-10 provider-aware paste remainder with redacted Agoda and
+   Booking.com fixtures and honest partial extraction.
+4. Implement the SPEC-25 grounded trip-scoped Ask remainder. Key presence alone
+   is not acceptance; retrieval and named fallback states are required.
+5. Re-run hosted API, signed APK, and device acceptance for those slices before
+   inspiration, similar-trip generation, or broader consumer work.
 
 Migrations through 0024 and the Maps/OpenWeather local provider credentials are
 already verified; do not ask for them again unless a new migration or

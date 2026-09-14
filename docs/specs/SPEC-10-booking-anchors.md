@@ -1,8 +1,8 @@
 # SPEC-10: Manual Booking Anchors
 
 > Status: CREATE AND EDIT/DELETE IMPLEMENTED (PR #20, PR #37).
-> Windows Sep 4 verified notes on card, edit, and delete. Multi-night stays
-> remain out.
+> Windows Sep 4 verified notes on card, edit, and delete. Provider-aware paste,
+> scheduler integration, and multi-night stays remain.
 >
 > Resequenced to follow SPEC-16. A booking anchor is a locked node. Once nodes
 > are rows rather than keys inside a JSON blob, this spec is a few columns and a
@@ -139,6 +139,85 @@ that could identify an individual reservation.
 - [x] Existing booking can be reopened and edited without changing `node_id`
 - [x] Existing booking can be deleted after explicit confirmation
 - [x] Edit/delete never consume reroute quota or route reservation data to an LLM
+
+## Remainder: provider-aware booking paste
+
+The current on-device text parser is proven against one Booking.com-shaped
+confirmation. Field use with Agoda text did not reliably classify or fill the
+hotel. This is a SPEC-10 remainder, not SPEC-39: pasted confirmation text and
+PDF/OCR intake have different privacy, parsing, and failure contracts.
+
+### Provider and fallback model
+
+Start with a closed adapter registry:
+
+- `booking_com`;
+- `agoda`;
+- generic labelled-field fallback.
+
+Adding a provider adds an adapter and redacted fixtures; it does not rewrite the
+generic parser. Provider detection is a hint, not permission to invent fields.
+Unknown providers always degrade to the generic parser and then the manual
+floor.
+
+Normalize Unicode, whitespace, forwarded-email prefixes, label separators, and
+common date/time forms before extraction. Label aliases include `check-in`,
+`check in`, `arrival`, `check-out`, `checkout`, `departure`, `booking ID`,
+`confirmation`, and separators such as colon, number sign, equals, and `is`.
+
+### Partial extraction is a valid result
+
+Extraction returns a quality for each field:
+
+- `full`: a provider or labelled rule found an unambiguous value;
+- `partial`: a plausible value requires user confirmation;
+- `unknown`: the source did not contain the field.
+
+These are internal parser qualities, not percentages shown to the traveller.
+The UI pre-fills full and partial values, marks what was found, and leaves
+unknown fields empty. It must say which hotel fields are still needed and may
+ask the traveller to paste the section containing the property and dates.
+
+A footer containing only a booking ID can fill the code. It cannot produce a
+hotel name, check-in, or check-out. The parser never promotes a footer,
+self-service sentence, greeting, passenger name, or ID-bearing sentence into
+`venue_name`.
+
+The booking type does not silently remain Flight when the paste was not
+classified. A parse with no useful fields does not claim an email import
+succeeded.
+
+### Privacy and observability
+
+This slice remains on-device and makes zero network calls. Raw paste never
+enters logs, analytics, signals, booking notes, or model prompts. Redacted test
+fixtures contain no live confirmation code, passenger name, address, payment
+detail, or account link.
+
+`import_source` continues to describe the transport (`email`, `pdf`,
+`screenshot`, `manual`). If provider identity is persisted or measured, it uses
+a separate non-PII `import_provider`; it is not encoded into
+`import_source`.
+
+Telemetry may record provider class, full/partial/unknown outcome, and a bitmask
+of fields filled. It never records the extracted values or source text.
+
+### Provider-aware tests and acceptance
+
+- [ ] Existing Booking.com fixture still extracts type, venue, check-in,
+      check-out, and region
+- [ ] At least one redacted Agoda confirmation extracts the same available
+      fields
+- [ ] An Agoda footer-only fixture produces an honest partial result
+- [ ] `booking ID is VALUE` extracts the code without swallowing punctuation
+- [ ] Unknown provider and malformed text never throw
+- [ ] Missing name or dates remain empty rather than receiving defaults
+- [ ] A footer or booking ID sentence never becomes `venue_name`
+- [ ] The UI displays found and missing fields before save
+- [ ] Provider adapters and the generic fallback share one normalized output
+      contract
+- [ ] Extraction opens no socket
+- [ ] Raw text and confirmation code are absent from logs and signals
 
 ## Remainder: edit and delete existing bookings
 

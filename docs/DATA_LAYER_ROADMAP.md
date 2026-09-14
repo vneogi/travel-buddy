@@ -258,19 +258,24 @@ reserve a file number.
 The original schema sequence through normalization, booking anchors, identity,
 signals, and driver-card search is implemented and hosted through migration
 0024. SPEC-14 retired dietary suitability rather than adding a safety claim.
-The remaining `venue_attribute_source`, `derived_feature`, and batch-job work
-is not required for the owner field test.
+The phone-independent delivery gate passed. The remaining
+`venue_attribute_source`, `derived_feature`, and batch-job work is not required
+for the owner's itinerary reliability work.
 
-The immediate pre-trip sequence is now:
+The immediate sequence is now:
 
-1. finish and merge SPEC-36 only after backend and Flutter review;
-2. execute SPEC-37 with a hosted HTTPS API and installable phone artifact;
-3. pass online and airplane-mode acceptance without a laptop transport; and
-4. defer new schema work until after that evidence.
+1. finish SPEC-40 review and owner-approved merge;
+2. implement SPEC-41 hard feasibility using the existing structured-hours
+   JSONB and region timezone contract;
+3. harden SPEC-10 provider-aware paste and SPEC-25 grounded trip-scoped Ask;
+4. defer learned personalization until field signals clear minimum sample
+   thresholds.
 
-No migration is planned for SPEC-36 or SPEC-37. If implementation reveals one,
-assign the next free number at that time and update `docs/HOSTED_STATE.md` only
-after observing its live sentinel.
+SPEC-41 should not need a new hours table: structured hours already exist.
+If implementation reveals a schema change, assign the next free migration
+number at that time and update `docs/HOSTED_STATE.md` only after observing its
+live sentinel. `derived_feature` remains the later home of evidence-gated
+personalization; it is not a prerequisite for deterministic ranking.
 
 ## Not decided
 

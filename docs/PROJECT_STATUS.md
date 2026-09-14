@@ -24,7 +24,7 @@
 - AI: LiteLLM paths exist (gpt-4o heavy, gpt-4o-mini light,
   text-embedding-3-small embeddings), but the 2026-09-13 hosted phone Ask
   evidence used the deterministic router fallback. Live LLM-backed Ask is not
-  verified.
+  verified, and the current Ask path is not catalog-grounded even with a key.
 - Data as last loaded: 74 venues (16 Dubai, 23 Luang Prabang, 15 Vang Vieng,
   20 Vientiane), 44 venue dishes, 30 dish-glossary entries. Confirm with a
   count query against venues_rag rather than trusting these numbers.
@@ -34,7 +34,7 @@
   hierarchy. Signal emission is wired for most but not all registered types.
   Hearts persist across process death (verified Aug 30 on Windows).
   `session_start` emits from the app lifecycle (SPEC-30, `f8349a8`).
-  Sync Status must still await `syncOnce()` before reading counts.
+  Sync Status now awaits `syncOnce()` before reading counts.
 - Migrations 0001 to 0024 are applied on the hosted database. Migrations
   0011-0018 were verified on device day 2026-08-17; 0019-0024 were verified
   from live schema sentinels on 2026-09-06. Migration 0023 includes the live
@@ -69,7 +69,7 @@
 | Localized names | PARTLY VERIFIED | Ten of 58 venues carry a name confirmed against Wikidata or OSM, with source and ref recorded. Three classes of wrong-script token are fixed. The remaining 48 stay source=generated |
 | Curation round-trip | DONE | scripts/format_venue_json.py converts between the ASCII-escaped repo form and a readable UTF-8 copy under curation/, which is gitignored. Byte-identical round-trip is asserted |
 | Signal capture (SPEC-01) | DONE | All registered types accepted, both backends |
-| Offline queue (SPEC-02) | PARTIAL | SQLite outbox, sync engine and crash recovery are done. PR #23 (`dab16c0`) added resetAuthHalted() and HALTED (401). Hearts survive app kill (Aug 30 Windows). Sync Status still does not await `syncOnce()` before reading counts |
+| Offline queue (SPEC-02) | PARTIAL | SQLite outbox, sync engine and crash recovery are done. PR #23 (`dab16c0`) added resetAuthHalted() and HALTED (401). Hearts survive app kill (Aug 30 Windows). Sync Status awaits `syncOnce()` before reading counts. Background sync while killed remains outside this slice |
 | Party context (SPEC-03) | DONE | Server-side stamping, both backends, migration 0003 applied |
 | Observability (SPEC-05) | DONE | Ring buffer, request IDs, debug endpoint |
 | Signal registry (SPEC-06) | DONE | models/signal_types.py plus drift test |
@@ -81,8 +81,8 @@
 | Offline vault (SPEC-04) | CACHE FLOOR DONE; RESCUE REMOVED | PR #22 (`b7e10c3`) + PR #23 (`dab16c0`) shipped offline itinerary fallback and cached driver cards. Sep 5 owner decision retired the duplicate Hotel Rescue AppBar shortcut; code removed in the `refactor/remove-hotel-rescue` PR per `docs/briefs/GENIE_REMOVE_HOTEL_RESCUE.md`. Driver-card action on hotel bookings retained. Full vault remains post-field-test discovery |
 | Anonymous identity (SPEC-09) | DONE (client + server) | Client half landed PR #16 (`7173a3f`): UUID v4 in flutter_secure_storage, Anonymous header, TB_DEBUG_USER_ID removed. Server half already verified. Record any remaining Anonymous E2E gap explicitly; the laptop is available |
 | Itinerary normalisation (SPEC-16) | IMPLEMENTED | Decompose and compose land in services/itinerary_normaliser.py, dual-write in both backends, round-trip equality asserted, wire format unchanged. node_id is stable across reschedules via state_json and now comes from models/ids.py. SPEC-30 (`f8349a8`) writes `trip_edge.observed_duration_minutes` from consecutive arrivals |
-| Booking anchors (SPEC-10) | PARTIAL (create plus edit/delete) | PR #20 (`f6328e9`) plus PR #37 (`364d873`). Immovable locked nodes, booking metadata, parser and AddBookingSheet. Windows Sep 4 verified notes, edit, and delete. Daily hotel anchor and preceding-evening flight rules remain |
-| Forced-choice preferences (SPEC-11) | SPECIFIED | Not implemented. Cold-start preference capture |
+| Booking anchors (SPEC-10) | PARTIAL (create plus edit/delete) | PR #20 (`f6328e9`) plus PR #37 (`364d873`). Immovable locked nodes, booking metadata, parser and AddBookingSheet. Booking.com-shaped paste was verified; Agoda/provider-aware partial extraction, daily hotel anchor, and preceding-evening flight rules remain |
+| Forced-choice preferences (SPEC-11) | SPECIFIED | Not implemented. Cold-start preference capture remains after field evidence; SPEC-40 interests are trip constraints, not a durable preference profile |
 | Show driver cards (SPEC-12) | DONE (October slice) | Full-screen offline card from SQLite cache_place, FactView assert/ask/refuse tiers, geoRegion-threaded native script, driver_card_shown/name_confirmed signals. Laos card render passed Sep 5. Native `geo:` remains first choice; Windows falls back to an OpenStreetMap HTTPS hand-off, with visible coordinates last. No Fair Fare until sourced |
 | Region and locale registry (SPEC-13) | SPECIFIED | Not implemented. Rising in priority: a city-onboarding pipeline needs it for bounding box, languages, currency and fare bands. Makes adding a city a row rather than a code change |
 | Dietary model (SPEC-14) | IMPLEMENTED | Retirement landed. The app makes no dietary suitability claim. suitable_for is stripped from API responses, never presented or filtered on. Ingredient facts stay as facts with a food disclaimer at the point of the recommendation. halal-versus-pork risk closed |
@@ -96,7 +96,7 @@
 | Money as a dimension (SPEC-23) | SPECIFIED | Not implemented. The engineering contract under VISION section 20, and roadmap concern 7. A band and an amount are different things and both are needed; no amount is storable without its currency; a band is meaningless until anchored to a region, which is what makes price tolerance portable between cities; transport cost belongs on trip_edge; budget is revealed from rejections rather than asked for, with a volunteered hard cap honoured exactly; amounts are SPEC-17 claims on a weeks-scale horizon and degrade to a band when stale. Depends on SPEC-13, SPEC-16 and SPEC-17 |
 
 | Identity lifecycle (SPEC-24) | SPECIFIED | Not implemented, and the design is deliberately settled ahead of the build. Sign-in itself is nearly free because Supabase Auth owns the provider flow and security.py already verifies the token; the work is what happens to the anonymous history. Owns credential aliases, the anonymous-to-account merge, multi-device, and sign-out. Merge direction is fixed one way, which extends the upgrade-on-sight rule already live on identity_kind. Union rather than dedupe; tier and quota both resolve to the maximum, since taking the minimum makes sign-in a way to refill the daily reroute allowance |
-| Ask Anything surface (SPEC-25) | PARTIAL (trip-scoped October slice) | The itinerary composer and per-trip home entry use existing trip chat. The Sep 13 hosted phone food questions returned the deterministic Vientiane fallback, not an LLM/corpus answer. One-stop cancel/swap are structural; cancel is a skip, not a swap. Broad mutations refuse. Provider switching, latency, memory, trip-optional ask, budgets, SPEC-17 envelopes, discovery, and offline answers remain |
+| Ask Anything surface (SPEC-25) | PARTIAL (composer only) | The itinerary composer and per-trip home entry reach the backend. Hosted phone food questions returned the deterministic Vientiane fallback, not an LLM/corpus answer. Grounded trip-scoped retrieval is now the first remainder; trip-optional Ask, budgets, full SPEC-17 envelopes, discovery, and offline answers follow |
 | Home surface (SPEC-26) | IMPLEMENTED (snapshot) | GET /trips now returns featured_trip: active trip (or earliest upcoming) with actionable stop (no state_json, no full nodes). Dart HomeSnapshot parses and caches it. Home renders Now/Up next card above trip list. Offline cache renders same card with cache age. Full SPEC-22 migration remains |
 | App lifecycle and data rights (SPEC-27) | SPECIFIED | Not implemented. Owns push transport for candidates produced by capabilities such as SPEC-35, with tokens that survive the SPEC-24 merge and delivery through the SPEC-22 interruption budget enforced server-side. Also owns deletion/export under DPDP and GDPR and a minimum supported client that blocks writes but never reads |
 | Trip inspiration (SPEC-28) | DECIDED, NOT SCHEDULED | Opt-in, delayed, region-level public trip snapshots as inspiration. No live people/location, DMs or comments in v1. Requires identity, deletion/export and moderation gates |
@@ -109,7 +109,8 @@
 | Phone-independent field-test delivery (SPEC-37) | DONE (PR #57, `f6f2f0c`) | 2026-09-13: Cloud Run revision `travel-buddy-00003-5bc` in `asia-south1` serving `https://travel-buddy-196190001420.asia-south1.run.app`. Signed release APK from `f6f2f0c` installed on the owner's Android phone. Owner reported online plus airplane-mode pass (ICT times, maps label, compact warnings, cached itinerary). Details in docs/AWAITING_VERIFICATION.md |
 | Active trip mode (SPEC-38) | DONE (PR #59, `fefc4ec`) | 2026-09-14: Cloud Run `travel-buddy-00004-62g`. Signed APK installed. Owner reported Oct 2-9 corridor (32 stops), LP Oct 6-9, Up next entry, visible cancel, airplane driver card. Single-city start/end dates deferred. Details in docs/AWAITING_VERIFICATION.md |
 | PDF itinerary intake (SPEC-39) | DEFERRED | No implementation brief. PDF/OCR, Day Sheet, and print-pack work remain outside the current sequence |
-| Guided Create Trip foundation (SPEC-40) | SPECIFIED | Five-step destination/date-range/party/interests/review flow backed by deterministic multi-day catalog selection. LLM and similar-trip inspiration are a later brief |
+| Guided Create Trip foundation (SPEC-40) | IN REVIEW (PR #61) | Five-step destination/date-range/party/interests/review flow backed by deterministic multi-day catalog selection. CI and owner Flutter tests passed during review; merge still requires owner approval |
+| Hours-aware scheduling and staged ranking (SPEC-41) | SPECIFIED | New post-SPEC-40 engine contract. Structured destination-local hours, reachability, locks, and day boundaries define the feasible set before deterministic and later evidence-gated ranking |
 
 Migration numbers are assigned when a spec is implemented, not when it is
 written. SPEC-11, SPEC-13, SPEC-14 and SPEC-15 each claimed a number, and the
@@ -188,19 +189,34 @@ Seed-shaped cohorts.
    docs/briefs/GENIE_SPEC_37_PHONE_FIELD_TEST.md.
 3. SPEC-38 Active Trip Mode -- **DONE** PR #59 (`fefc4ec`). Cloud Run
    `travel-buddy-00004-62g` plus signed APK; owner phone pass 2026-09-14.
-4. SPEC-40 Guided Create Trip foundation -- **SPECIFIED**. Party, interests,
-   and single-city start/end feed deterministic catalog creation first.
-5. Inspiration/LLM generation follows only after SPEC-40 establishes the
-   typed input and fallback contract. PDF import (SPEC-39) stays deferred.
-6. Then SPEC-17, grounded trip-less Ask, SPEC-24/27.
+4. SPEC-40 Guided Create Trip foundation -- **IN REVIEW** PR #61. Party,
+   interests, and single-city start/end feed deterministic catalog creation.
+5. SPEC-41 hours-aware scheduling and swap -- **NEXT ENGINE PRIORITY**.
+   Structured destination-local hours, reachability, locks, and day boundaries
+   become hard constraints before ranking. This also removes the post-swap
+   schedule-warning storm at its source.
+6. SPEC-10 provider-aware paste -- **NEXT INPUT PRIORITY**. Add Agoda beside
+   the proven Booking.com-shaped path, with honest partial extraction and a
+   manual floor. This is text paste, not SPEC-39 PDF intake.
+7. SPEC-25 grounded trip-scoped Ask -- **NEXT COPILOT PRIORITY**. Retrieve
+   catalog and trip facts before generation; name no-key, retrieval-miss,
+   budget, breaker, and model-error fallbacks.
+8. Re-run the current hosted/API/APK acceptance for those bounded slices before
+   starting inspiration or model-generated itineraries.
 
 ### Deferred after the phone gate
 
 - Multi-night hotel UI, unless the owner's real booking cannot be represented.
 - Corridor span vs the real Oct 2-9 PDF (closed for the corridor path: 8-day
-  2/2/4 create is live). Single-city create still uses one start date.
-- Full SPEC-17 trust and verification, then SPEC-18/19/20.
-- Remaining signal/UI polish, including the `syncOnce()` status-count race.
+  2/2/4 create is live). SPEC-40 owns single-city start/end dates.
+- Full SPEC-17 trust and verification, then SPEC-18/19/20. The bounded
+  trip-scoped Ask remainder may use hedged curated catalog facts first.
+- SPEC-11 forced-choice capture and any learned personalization remain after
+  field evidence. SPEC-41 starts with deterministic content-based ranking.
+- Inspiration, similar-trip retrieval, and LLM itinerary generation remain
+  after SPEC-41. An LLM may explain solver output; it does not schedule.
+- SPEC-39 PDF/OCR/Day Sheet remains deferred; Agoda paste does not reopen it.
+- Remaining signal/UI polish.
 - Full SPEC-04 remainder only if field evidence supports it.
 - Trip-less Ask, richer Home, SPEC-24/27, and public-release lifecycle work.
 - Swappable LLM provider; every intelligent path currently uses one hosted
@@ -222,6 +238,10 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 
 | Issue | Severity | Detail |
 |-------|----------|--------|
+| Known-closed venues can be scheduled and offered by swap | High | Structured weekday hours exist, but create and swap do not use them as target-slot hard constraints. Validation can warn only after mutation and can report unrelated nodes. SPEC-41 owns feasibility-first scheduling and scoped warnings |
+| Hotel paste is provider-narrow | High for real booking intake | Current proof is Booking.com-shaped. Agoda field input did not reliably fill the hotel, and a footer fragment cannot supply absent name or dates. SPEC-10 now owns provider adapters, per-field quality, honest partial extraction, and redacted fixtures |
+| Trip Chat is wired but not grounded | High | The hosted composer returned the deterministic region fallback. Key presence is unverified and, by itself, would not add catalog retrieval. SPEC-25 now puts grounded trip-scoped Ask before trip-less Ask |
+| Range create persists trip and party in two writes | Medium | A failure between writes can leave an orphan trip. Recorded as a pre-existing SPEC-40 risk; do not redesign persistence inside PR #61 |
 | reroute_accepted.replacement_ref is inverted | Closed PR #18 (`ce8fedb`) | Client helper replacementRefForSwap matches node_id and changed venue key. Production `_swap` calls it |
 | Supabase session gate softlocks the app | Closed PR #18 (`ce8fedb`) | app_router calls redirectForAuth; anonymous device needs no session. Owner E2E with dart-defines still in LAPTOP_VERIFY Step 8b |
 | Anonymous data has no path into an account, and signal sits outside referential integrity | Medium | SPEC-09 starts accumulating trip_states, event_log and signal rows under a device UUID that belongs to a device rather than a person. Until SPEC-24 exists, the first sign-in strands all of it, and from the user's side that looks like an app that lost their trip. The schema makes it sharper: trip_states.user_id and event_log.user_id are UUID REFERENCES user_tiers, while signal.user_id is TEXT with no foreign key and no type match, so the table holding the asset is the one table outside the constraint system. Neither a merge nor a SPEC-27 deletion can rely on a cascade, and nothing will complain when a future table is missed -- which is why both specs walk the schema instead of keeping a list. The engineering does not get harder with time; the data does |

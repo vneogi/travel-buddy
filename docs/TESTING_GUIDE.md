@@ -175,9 +175,8 @@ First load the corridor and driver cards online. Then enable airplane mode:
 2. Open a pre-cached driver card with local name, landmark, and coordinates.
 3. Tap loved on a venue while offline.
 4. Force-kill and reopen again. The heart must still show as filled (SPEC-02
-   durable hearts; verified on Windows Aug 30). Sync Status still calls
-   `syncOnce()` without awaiting it before reading counts; do not treat a
-   stale count as a hearts-persistence failure.
+   durable hearts; verified on Windows Aug 30). Sync Status now awaits
+   `syncOnce()` before reading counts.
 5. Re-enable the network. The queued action must sync once without duplication.
 6. Query the destination store for the row. An `accepted=1` log line is not
    proof of persistence -- the sync engine once reported exactly that while
