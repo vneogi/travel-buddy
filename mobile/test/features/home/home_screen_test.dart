@@ -2,15 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mocktail/mocktail.dart';
 
-import 'package:travel_buddy/core/providers.dart';
 import 'package:travel_buddy/data/models.dart';
-import 'package:travel_buddy/data/repositories.dart';
+import 'package:travel_buddy/features/create_trip/create_trip_screen.dart';
 import 'package:travel_buddy/features/home/home_controller.dart';
 import 'package:travel_buddy/features/home/home_screen.dart';
-
-class _MockTripRepository extends Mock implements TripRepository {}
 
 void main() {
   testWidgets('home renders a designed empty state', (tester) async {
@@ -66,25 +62,13 @@ void main() {
     expect(find.textContaining('Showing saved trips while offline'), findsOneWidget);
   }, timeout: const Timeout(Duration(seconds: 20)));
 
-  testWidgets('create posts the selected laos region', (tester) async {
-    registerFallbackValue(DateTime.utc(2026, 10, 5));
-    final repository = _MockTripRepository();
-    when(
-      () => repository.create(
-        startDate: any(named: 'startDate'),
-        geoRegion: any(named: 'geoRegion'),
-        mood: any(named: 'mood'),
-      ),
-    ).thenAnswer(
-      (_) async => const TripState(tripId: 'laos-1', userId: 'u1', nodes: []),
-    );
-
+  testWidgets('create card opens guided wizard', (tester) async {
     final router = GoRouter(
       routes: [
         GoRoute(path: '/', builder: (_, __) => const HomeScreen()),
         GoRoute(
-          path: '/trip/:tripId',
-          builder: (_, __) => const Scaffold(body: Text('trip opened')),
+          path: '/trip/create',
+          builder: (_, __) => const CreateTripScreen(),
         ),
       ],
     );
@@ -92,11 +76,15 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          tripRepoProvider.overrideWithValue(repository),
           homeSnapshotProvider.overrideWith(
             (_) async => const HomeSnapshot(
               supportedRegions: ['luang_prabang_laos', 'dubai_uae'],
               trips: [],
+              createTripOptions: CreateTripOptions(
+                partyTypes: [],
+                interests: [],
+                maxDaysByRegion: {'luang_prabang_laos': 5, 'dubai_uae': 4},
+              ),
             ),
           ),
         ],
@@ -106,19 +94,11 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
+    // Tap the create card
     await tester.tap(find.text('Create a trip'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'Create'));
-    await tester.pumpAndSettle();
 
-    final captured = verify(
-      () => repository.create(
-        startDate: any(named: 'startDate'),
-        geoRegion: captureAny(named: 'geoRegion'),
-        mood: any(named: 'mood'),
-      ),
-    ).captured;
-    expect(captured.single, 'luang_prabang_laos');
-    expect(find.text('trip opened'), findsOneWidget);
+    // Wizard step 1 should be visible
+    expect(find.text('Where are you going?'), findsOneWidget);
   }, timeout: const Timeout(Duration(seconds: 20)));
 }

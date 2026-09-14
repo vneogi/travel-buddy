@@ -8,13 +8,24 @@ import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../home/home_controller.dart';
 
+/// Signature matching [showDateRangePicker] for test injection.
+typedef DateRangePickerBuilder = Future<DateTimeRange?> Function({
+  required BuildContext context,
+  required DateTime firstDate,
+  required DateTime lastDate,
+  DateTimeRange? initialDateRange,
+});
+
 /// SPEC-40: Five-step guided trip creation wizard.
 ///
 /// Loads [homeSnapshotProvider] for server-advertised options.
 /// Steps: destination, dates, party, interests, review.
 /// Back preserves entered values. Success opens the fetched itinerary.
 class CreateTripScreen extends ConsumerStatefulWidget {
-  const CreateTripScreen({super.key});
+  /// Optional override for date picker. Defaults to [showDateRangePicker].
+  final DateRangePickerBuilder? datePickerBuilder;
+
+  const CreateTripScreen({super.key, this.datePickerBuilder});
 
   @override
   ConsumerState<CreateTripScreen> createState() => _CreateTripScreenState();
@@ -278,6 +289,7 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
           maxDays: _maxDaysFor(_selectedRegion, opts)!,
           dateRange: _dateRange,
           onChanged: (r) => setState(() => _dateRange = r),
+          pickerBuilder: widget.datePickerBuilder,
         );
       case 2:
         return _PartyStep(
@@ -382,10 +394,12 @@ class _DatesStep extends StatelessWidget {
   final int maxDays;
   final DateTimeRange? dateRange;
   final ValueChanged<DateTimeRange?> onChanged;
+  final DateRangePickerBuilder? pickerBuilder;
   const _DatesStep({
     required this.maxDays,
     required this.dateRange,
     required this.onChanged,
+    this.pickerBuilder,
   });
 
   @override
@@ -419,7 +433,8 @@ class _DatesStep extends StatelessWidget {
 
   Future<void> _pick(BuildContext context) async {
     final now = DateTime.now();
-    final picked = await showDateRangePicker(
+    final picker = pickerBuilder ?? showDateRangePicker;
+    final picked = await picker(
       context: context,
       firstDate: now,
       lastDate: now.add(const Duration(days: 365)),

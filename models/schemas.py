@@ -262,7 +262,7 @@ class CreatePreferences(BaseModel):
     def _coerce_interest_ids(cls, v):  # noqa: N805
         """Reject null, string, or object values with a clear message."""
         if v is None:
-            return []
+            raise ValueError("interest_ids must be a list of strings, got null")
         if not isinstance(v, list):
             raise ValueError(f"interest_ids must be a list of strings, got {type(v).__name__}")
         for idx, item in enumerate(v):

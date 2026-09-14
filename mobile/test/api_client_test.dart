@@ -213,4 +213,85 @@ void main() {
       throwsA(isA<WeatherUnavailableException>()),
     );
   });
+
+  test('maps typed 422 over_capacity to ValidationException', () async {
+    final dio = Dio(BaseOptions(baseUrl: 'http://localhost:9999/api/v1'));
+    final client = ApiClient(
+      tokenProvider: () async => null,
+      deviceIdProvider: () async => 'device-id',
+      dioOverride: dio,
+    );
+    dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) => handler.reject(
+          DioException(
+            requestOptions: options,
+            response: Response(
+              requestOptions: options,
+              statusCode: 422,
+              data: {
+                'detail': {
+                  'error': 'over_capacity',
+                  'message': 'Maximum 5 days for luang_prabang_laos, requested 8.',
+                },
+              },
+            ),
+            type: DioExceptionType.badResponse,
+          ),
+        ),
+      ),
+    );
+
+    await expectLater(
+      client.post('/trip/create', body: const {}),
+      throwsA(
+        isA<ValidationException>().having(
+          (e) => e.message,
+          'message',
+          'Maximum 5 days for luang_prabang_laos, requested 8.',
+        ),
+      ),
+    );
+  });
+
+  test('maps typed 422 invalid_interests to ValidationException', () async {
+    final dio = Dio(BaseOptions(baseUrl: 'http://localhost:9999/api/v1'));
+    final client = ApiClient(
+      tokenProvider: () async => null,
+      deviceIdProvider: () async => 'device-id',
+      dioOverride: dio,
+    );
+    dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) => handler.reject(
+          DioException(
+            requestOptions: options,
+            response: Response(
+              requestOptions: options,
+              statusCode: 422,
+              data: {
+                'detail': {
+                  'error': 'invalid_interests',
+                  'message':
+                      'interest_ids must be a list of strings, got null',
+                },
+              },
+            ),
+            type: DioExceptionType.badResponse,
+          ),
+        ),
+      ),
+    );
+
+    await expectLater(
+      client.post('/trip/create', body: const {}),
+      throwsA(
+        isA<ValidationException>().having(
+          (e) => e.message,
+          'message',
+          contains('interest_ids'),
+        ),
+      ),
+    );
+  });
 }

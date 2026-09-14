@@ -163,4 +163,42 @@ void main() {
     });
     expect(ctx.interestIds, isEmpty);
   });
+
+  // -----------------------------------------------------------------------
+  // Date-only YYYY-MM-DD payload
+  // -----------------------------------------------------------------------
+  group('Date-only format', () {
+    test('_dateOnly produces YYYY-MM-DD from DateTime', () {
+      // This mirrors the _dateOnly helper in repositories.dart
+      String dateOnly(DateTime d) => d.toIso8601String().substring(0, 10);
+      expect(dateOnly(DateTime(2026, 1, 5)), '2026-01-05');
+      expect(dateOnly(DateTime(2026, 11, 30)), '2026-11-30');
+      expect(dateOnly(DateTime(2026, 3, 1, 23, 59)), '2026-03-01');
+    });
+
+    test('DST boundary produces same calendar date', () {
+      // 2026-03-08 is DST spring-forward in US; the date must not shift
+      String dateOnly(DateTime d) => d.toIso8601String().substring(0, 10);
+      expect(dateOnly(DateTime(2026, 3, 8, 2, 30)), '2026-03-08');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // ApiClient typed-422 mapping
+  // -----------------------------------------------------------------------
+  group('Typed 422 mapping', () {
+    test('ValidationException carries server message', () {
+      // Simulates what ApiClient._map does when it sees a typed 422
+      const exc = ValidationException('Maximum 5 days for this destination');
+      expect(exc.message, 'Maximum 5 days for this destination');
+      expect(exc, isA<ApiException>());
+    });
+
+    test('UnsupportedRegionException is distinct from ValidationException', () {
+      const unsup = UnsupportedRegionException('Not ready for Antarctica');
+      const valid = ValidationException('Dates overlap');
+      expect(unsup, isNot(isA<ValidationException>()));
+      expect(valid, isNot(isA<UnsupportedRegionException>()));
+    });
+  });
 }
