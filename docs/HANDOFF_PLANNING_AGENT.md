@@ -5,11 +5,11 @@ Those two files are the contract. This file is only the baton: what is true
 now, what the previous planning agent already adjudicated, and what the
 next agent must not reopen in the first week.
 
-Read this file and the two contracts above. The first job is finishing review
-of SPEC-40 PR #61 without merging before owner approval. SPEC-36, SPEC-37, and
-SPEC-38 are done. The next product sequence is SPEC-41 feasibility, the
-SPEC-10 Agoda/provider-aware paste remainder, and the SPEC-25 grounded
-trip-scoped Ask remainder.
+Read this file and the two contracts above. SPEC-36 through SPEC-38 are done,
+and SPEC-40 PR #61 squash-merged as `ebdea52`. The first job is SPEC-41 Phase A
+feasibility. The following product sequence is the SPEC-10
+Agoda/provider-aware paste remainder and the SPEC-25 grounded trip-scoped Ask
+remainder.
 
 ## Who does what (unchanged)
 
@@ -57,8 +57,8 @@ October spine status: ALL 7 CORE ITEMS COMPLETE & HARDENED ON MAIN.
 
 Status tables: `docs/PROJECT_STATUS.md`. Device-only queue:
 `docs/AWAITING_VERIFICATION.md`. Hosted schema/provider ledger:
-`docs/HOSTED_STATE.md`. Current implementation contract:
-`docs/specs/SPEC-40-guided-create-trip.md`.
+`docs/HOSTED_STATE.md`. Next implementation contract:
+`docs/specs/SPEC-41-hours-aware-scheduling.md`.
 
 ## Third-party review -- already adjudicated
 
@@ -116,10 +116,13 @@ not outrank the field-proven itinerary trust gaps for the owner's trip.
 The phone-independent delivery and airplane-mode gate passed. SPEC-38 passed
 on the owner's phone. Next tasks:
 
-1. Finish SPEC-40 PR #61 review. Verify each Genie diff and CI run. Squash-merge
-   only after explicit owner approval.
+1. SPEC-40 is done as `ebdea52`; do not reopen its current five-day foundation
+   while implementing later sparse-span work.
 2. Implement SPEC-41 as a bounded reliability slice: destination-local
    structured hours and reachability are hard constraints before ranking.
+   Start with `docs/briefs/GENIE_SPEC_41_PHASE_A1_HOURS_CORE.md`; it preserves
+   structured hours and proves the evaluator without changing itinerary
+   behavior.
 3. Implement the SPEC-10 provider-aware paste remainder with redacted Agoda and
    Booking.com fixtures and honest partial extraction.
 4. Implement the SPEC-25 grounded trip-scoped Ask remainder. Key presence alone

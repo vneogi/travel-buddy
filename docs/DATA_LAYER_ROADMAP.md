@@ -264,7 +264,7 @@ for the owner's itinerary reliability work.
 
 The immediate sequence is now:
 
-1. finish SPEC-40 review and owner-approved merge;
+1. SPEC-40 is merged as `ebdea52`;
 2. implement SPEC-41 hard feasibility using the existing structured-hours
    JSONB and region timezone contract;
 3. harden SPEC-10 provider-aware paste and SPEC-25 grounded trip-scoped Ask;

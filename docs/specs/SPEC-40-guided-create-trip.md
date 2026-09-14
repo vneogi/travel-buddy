@@ -1,6 +1,6 @@
 # SPEC-40: Guided Create Trip Foundation
 
-> Status: IMPLEMENTED IN PR #61; IN REVIEW, NOT MERGED.
+> Status: DONE. PR #61 squash-merged as `ebdea52`.
 >
 > SPEC-39 PDF intake remains deferred. This spec deliberately stops before
 > LLM generation, vector memory, and similar-trip inspiration. It creates the

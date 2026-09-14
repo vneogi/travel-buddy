@@ -112,7 +112,7 @@ grid) is close to ours but more complete. Fold in when the designer engages.
 **UX polish does not capture moat data.** The spine work above is shipped. The
 remaining product order is:
 
-1. Finish SPEC-40 review and owner-approved merge.
+1. SPEC-40 is merged as `ebdea52`.
 2. SPEC-41 removes known-closed and unreachable recommendations before adding
    richer recommendation-reason UI.
 3. SPEC-10 hardens Agoda and Booking.com paste as honest partial extraction.

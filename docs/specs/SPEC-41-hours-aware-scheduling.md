@@ -146,6 +146,12 @@ fallback. A small number of interactions must not materially move the schedule.
 Collaborative filtering, user embeddings, and cross-user similarity remain out
 until volume and deletion semantics justify them.
 
+The suggested 10-15% learned contribution is an experiment hypothesis, not a
+fixed production constant. Phase B must first define score normalization,
+minimum samples, offline evaluation, and a maximum influence bound. Until that
+evidence exists, learned weight is zero and the deterministic ranker is the
+complete ranking path.
+
 Stage 4 is not part of the first implementation brief. Phase A ships stages 1
 through 3 and the LLM boundary tests. A later Phase B may activate
 personalization only after its signal thresholds and deletion behavior are
