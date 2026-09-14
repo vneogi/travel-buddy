@@ -240,21 +240,24 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         message=str(exc.errors()),
     )
 
-    # Map typed field errors to domain-specific responses
-    for err in exc.errors():
-        loc = tuple(err.get("loc", ()))
-        # Match (body, preferences, interest_ids, ...)
-        if len(loc) >= 3 and loc[1] == "preferences" and loc[2] == "interest_ids":
-            return JSONResponse(
-                status_code=422,
-                content={
-                    "detail": {
-                        "error": "invalid_interests",
-                        "message": err.get("msg", str(err)),
+    # Map typed field errors to domain-specific responses.
+    # Scoped strictly to POST /api/v1/trip/create + preferences.interest_ids.
+    _is_create = request.method == "POST" and request.url.path.endswith("/trip/create")
+    if _is_create:
+        for err in exc.errors():
+            loc = tuple(err.get("loc", ()))
+            # Match (body, preferences, interest_ids, ...)
+            if len(loc) >= 3 and loc[1] == "preferences" and loc[2] == "interest_ids":
+                return JSONResponse(
+                    status_code=422,
+                    content={
+                        "detail": {
+                            "error": "invalid_interests",
+                            "message": err.get("msg", str(err)),
+                        },
+                        "request_id": request_id,
                     },
-                    "request_id": request_id,
-                },
-            )
+                )
 
     return JSONResponse(
         status_code=422,

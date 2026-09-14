@@ -44,6 +44,10 @@ NON_ASCII_ALLOWLIST = frozenset(
         "docs/specs/SPEC-09-anonymous-identity.md",
         "scripts/README.md",
         "supabase/migrations/README.md",
+        # SPEC-40 briefs authored by planning agent; brief says do not edit.
+        "docs/briefs/GENIE_SPEC_40_FIX_1_BACKEND.md",
+        "docs/briefs/GENIE_SPEC_40_FIX_2_FLUTTER_HOOKS.md",
+        "docs/briefs/GENIE_SPEC_40_FIX_3_WIZARD_TESTS.md",
     }
 )
 
