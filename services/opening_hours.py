@@ -119,68 +119,73 @@ def check_slot(
     if not isinstance(hours_structured, dict):
         return HoursResult.UNKNOWN
 
+    # Validate the entire structure upfront.  Any malformed or incomplete
+    # data makes the result unknowable -- we must never guess "open".
+    if not _validate_structure(hours_structured):
+        return HoursResult.UNKNOWN
+
     day_key = _weekday_key(start)
     prev_key = _prev_weekday_key(start)
+    today_windows = hours_structured[day_key]  # safe: validated above
+    prev_windows = hours_structured[prev_key]
 
-    # ---- Resolve today's windows ----------------------------------------
-    today_windows = hours_structured.get(day_key)
-    if today_windows is None:
-        # Missing weekday key -> unknown, not open
-        return HoursResult.UNKNOWN
-    if not isinstance(today_windows, list):
-        return HoursResult.UNKNOWN
-
-    # Empty list -> explicitly closed
-    if len(today_windows) == 0:
-        return HoursResult.CLOSED
-
-    # ---- Build candidate intervals --------------------------------------
-    # Each interval is (open_offset, close_offset) relative to the
-    # start-of-day of the *window's opening day*.
-    #
-    # For the slot, offsets are relative to midnight of *start's date*.
+    # ---- Build slot offsets relative to today's midnight -----------------
     midnight = start.replace(hour=0, minute=0, second=0, microsecond=0)
     slot_open = start - midnight
     slot_close = slot_open + timedelta(minutes=duration_minutes)
 
-    # 1) Today's own windows
+    # 1) Today's own windows (may be empty => skip to overnight check)
     for win in today_windows:
-        parsed = _parse_window(win)
-        if parsed is None:
-            continue  # malformed single window -> skip, keep checking
-        w_open, w_close = parsed
+        w_open, w_close = _parse_window_safe(win)  # validated
         if w_close > w_open:
             # Same-day window
             if _slot_fits_window(slot_open, slot_close, w_open, w_close):
                 return HoursResult.FITS
         else:
             # Overnight window (close <= open): opens today, closes tomorrow.
-            # Effective close is w_close + 24h from today's midnight.
             eff_close = w_close + timedelta(days=1)
             if _slot_fits_window(slot_open, slot_close, w_open, eff_close):
                 return HoursResult.FITS
 
-    # 2) Previous day's overnight windows that extend into today
-    prev_windows = hours_structured.get(prev_key)
-    if isinstance(prev_windows, list):
-        for win in prev_windows:
-            parsed = _parse_window(win)
-            if parsed is None:
-                continue
-            w_open, w_close = parsed
-            if w_close <= w_open:
-                # Overnight: opened yesterday, closes today.
-                # From today's midnight perspective, the window spans
-                # [-(24h - w_open), w_close].
-                # But for the slot (relative to today's midnight),
-                # only the part from 00:00 to w_close is relevant.
-                eff_open = timedelta(0)  # midnight (earliest today)
-                eff_close = w_close
-                if _slot_fits_window(slot_open, slot_close, eff_open, eff_close):
-                    return HoursResult.FITS
+    # 2) Previous day's overnight windows that extend into today.
+    #    This runs even when today_windows is [] -- an explicitly closed
+    #    day can still be reached by yesterday's overnight window.
+    for win in prev_windows:
+        w_open, w_close = _parse_window_safe(win)  # validated
+        if w_close <= w_open:
+            # Overnight: opened yesterday, closes today.
+            eff_open = timedelta(0)  # midnight (earliest today)
+            eff_close = w_close
+            if _slot_fits_window(slot_open, slot_close, eff_open, eff_close):
+                return HoursResult.FITS
 
     # ---- No window matched -> closed ------------------------------------
     return HoursResult.CLOSED
+
+
+def _validate_structure(hours: Dict[str, Any]) -> bool:
+    """Return True only when the entire structure is well-formed.
+
+    Requirements:
+    - All seven weekday keys present.
+    - Every value is a list.
+    - Every element inside each list is a 2-element [HH:MM, HH:MM].
+    """
+    for key in _WEEKDAY_KEYS:
+        windows = hours.get(key)
+        if windows is None or not isinstance(windows, list):
+            return False
+        for win in windows:
+            if _parse_window(win) is None:
+                return False
+    return True
+
+
+def _parse_window_safe(win: Any) -> tuple:
+    """Parse a validated window.  Only call after _validate_structure."""
+    result = _parse_window(win)
+    assert result is not None, "_parse_window_safe called on unvalidated data"
+    return result
 
 
 def _parse_window(win: Any) -> Optional[tuple]:

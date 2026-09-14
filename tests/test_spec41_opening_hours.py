@@ -18,7 +18,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-from services.opening_hours import HoursResult, check_slot
+from services.opening_hours import _WEEKDAY_KEYS, HoursResult, check_slot
 
 # ---------------------------------------------------------------------------
 # Timezone fixtures
@@ -160,15 +160,14 @@ class TestUnknownAndMalformed:
         start = _ict(2026, 9, 14, 10)
         assert check_slot("09:00-17:00", start, 60) == HoursResult.UNKNOWN
 
-    def test_malformed_window_returns_unknown_or_closed(self):
-        # Windows that are not [str, str] -- skip malformed, exhaust list
+    def test_malformed_window_returns_unknown(self):
+        # A malformed window anywhere in the structure -> UNKNOWN
         hours = {
             "mon": [[123, 456]],
-            **{d: [["09:00", "17:00"]] for d in _SPLIT_HOURS if d != "mon"},
+            **{d: [["09:00", "17:00"]] for d in _WEEKDAY_KEYS if d != "mon"},
         }
         start = _ict(2026, 9, 14, 10)  # Monday
-        # Only malformed windows on Monday -> no match -> CLOSED
-        assert check_slot(hours, start, 60) == HoursResult.CLOSED
+        assert check_slot(hours, start, 60) == HoursResult.UNKNOWN
 
     def test_missing_weekday_key_returns_unknown(self):
         # Hours dict that has no "mon" key
@@ -179,6 +178,55 @@ class TestUnknownAndMalformed:
     def test_list_as_hours_returns_unknown(self):
         start = _ict(2026, 9, 14, 10)
         assert check_slot([["09:00", "17:00"]], start, 60) == HoursResult.UNKNOWN
+
+
+class TestValidationRegression:
+    """Regression tests for upfront structure validation and overnight + closed."""
+
+    def test_malformed_only_current_day_returns_unknown(self):
+        """All windows on current weekday are malformed -> UNKNOWN."""
+        hours = {d: [["09:00", "17:00"]] for d in _WEEKDAY_KEYS}
+        hours["mon"] = [["not", "valid"]]
+        start = _ict(2026, 9, 14, 10)  # Monday
+        assert check_slot(hours, start, 60) == HoursResult.UNKNOWN
+
+    def test_malformed_alongside_valid_returns_unknown(self):
+        """One malformed window next to a valid one -> UNKNOWN."""
+        hours = {d: [["09:00", "17:00"]] for d in _WEEKDAY_KEYS}
+        hours["mon"] = [["08:00", "12:00"], ["bad", "data"]]
+        start = _ict(2026, 9, 14, 9)  # Monday 09:00 fits first window
+        assert check_slot(hours, start, 60) == HoursResult.UNKNOWN
+
+    def test_missing_non_current_weekday_returns_unknown(self):
+        """A valid current-day slot cannot be FITS when another key is missing."""
+        hours = {d: [["09:00", "17:00"]] for d in _WEEKDAY_KEYS}
+        del hours["fri"]  # remove a non-current weekday
+        start = _ict(2026, 9, 14, 10)  # Monday -- would fit
+        assert check_slot(hours, start, 60) == HoursResult.UNKNOWN
+
+    def test_overnight_covers_empty_next_day(self):
+        """Monday 20:00-02:00 + Tuesday [] -> Tuesday 00:30/60 = FITS."""
+        hours = {d: [] for d in _WEEKDAY_KEYS}
+        hours["mon"] = [["20:00", "02:00"]]
+        # Tuesday is [] but Monday overnight extends to 02:00 Tue
+        start = _ict(2026, 9, 15, 0, 30)  # Tuesday
+        assert check_slot(hours, start, 60) == HoursResult.FITS
+
+    def test_empty_day_without_previous_overnight_is_closed(self):
+        """Tuesday [] with no Monday overnight -> CLOSED."""
+        hours = {d: [["09:00", "17:00"]] for d in _WEEKDAY_KEYS}
+        hours["tue"] = []
+        # Monday has 09:00-17:00 (no overnight) so Tuesday is truly closed.
+        start = _ict(2026, 9, 15, 0, 30)  # Tuesday
+        assert check_slot(hours, start, 60) == HoursResult.CLOSED
+
+    def test_malformed_previous_day_returns_unknown(self):
+        """Previous-day windows malformed -> entire structure is UNKNOWN."""
+        hours = {d: [] for d in _WEEKDAY_KEYS}
+        hours["mon"] = [["bad", "times"]]  # malformed
+        hours["tue"] = [["09:00", "17:00"]]  # valid today
+        start = _ict(2026, 9, 15, 10)  # Tuesday
+        assert check_slot(hours, start, 60) == HoursResult.UNKNOWN
 
 
 class TestProgrammerInputErrors:
