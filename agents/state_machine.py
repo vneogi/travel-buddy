@@ -373,7 +373,7 @@ class TripStateMachine:
                     break
             if not inserted:
                 nodes.append(booking_node)
-            result = reschedule_and_validate(nodes)
+            result = reschedule_and_validate(nodes, mutated_node_ids={booking_node.node_id})
             trip_state.nodes = result.nodes
             state["schedule_warnings"] = result.warnings
             return state
@@ -444,7 +444,7 @@ class TripStateMachine:
                         break
                 if not inserted:
                     nodes.append(node)
-                result = reschedule_and_validate(nodes)
+                result = reschedule_and_validate(nodes, mutated_node_ids={target_id})
                 trip_state.nodes = result.nodes
                 state["schedule_warnings"] = result.warnings
             return state
@@ -453,7 +453,7 @@ class TripStateMachine:
         if event_type == EventType.DELETE_BOOKING.value:
             target_id = state.get("target_node_id")
             trip_state.nodes = [n for n in trip_state.nodes if n.node_id != target_id]
-            result = reschedule_and_validate(list(trip_state.nodes))
+            result = reschedule_and_validate(list(trip_state.nodes), mutated_node_ids=set())
             trip_state.nodes = result.nodes
             state["schedule_warnings"] = result.warnings
             return state
@@ -468,7 +468,7 @@ class TripStateMachine:
                         return state
                     node.status = NodeStatus.SKIPPED
                     break
-            result = reschedule_and_validate(list(trip_state.nodes))
+            result = reschedule_and_validate(list(trip_state.nodes), mutated_node_ids={target})
             trip_state.nodes = result.nodes
             state["schedule_warnings"] = result.warnings
             return state
@@ -499,7 +499,7 @@ class TripStateMachine:
                     or cn.scheduled_start != orig.scheduled_start
                 ):
                     _mutated.add(cn.node_id)
-            result = reschedule_and_validate(candidate_nodes, mutated_node_ids=_mutated or None)
+            result = reschedule_and_validate(candidate_nodes, mutated_node_ids=_mutated)
             state["loop_depth"] = attempt + 1
             if not result.has_hard_conflict:
                 accepted = result

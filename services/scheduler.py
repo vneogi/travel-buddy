@@ -91,8 +91,13 @@ def reschedule_and_validate(
             node.scheduled_start = start
 
         # Hours check: mutated node, shifted downstream, or unscoped.
+        # Booking nodes (flights, hotels, trains, tours) are locked calendar
+        # anchors without venue opening hours -- skip hours evaluation.
+        _is_booking = getattr(node, "node_kind", "activity") == "booking"
         _is_shifted = node.scheduled_start != original_starts.get(node.node_id)
-        _should_check = mutated_node_ids is None or node.node_id in mutated_node_ids or _is_shifted
+        _should_check = not _is_booking and (
+            mutated_node_ids is None or node.node_id in mutated_node_ids or _is_shifted
+        )
         if _should_check:
             structured = getattr(node, "opening_hours_structured", None)
             geo = getattr(node, "geo_region", None)

@@ -252,16 +252,23 @@ class TestCreateHoursFiltering:
                 assert hr != HoursResult.CLOSED, f"{n.venue_name} at {n.scheduled_start} is CLOSED"
 
     def test_range_nodes_insufficient_capacity_raises(self):
-        """range_nodes_from_catalog raises InsufficientCatalog for hours-ineligible pool."""
-        rows = _pool_of(4, structured=_make_hours({}), dwell=60)
+        """range_nodes_from_catalog raises InsufficientCatalog when hours-eligible
+        count is below the needed threshold, NOT from identity shortage.
+
+        10 unique identity-eligible venues (well above the 8-stop two-day
+        requirement) but only 3 are open at 09:00; the remaining 7 are
+        evening-only (CLOSED for morning slots).  Proves the failure is from
+        hours filtering, not from running out of unique identities."""
+        rows = _pool_of(3, structured=_make_hours({}), dwell=60)
         rows.extend(
             [
                 _make_venue_row(
                     f"Eve_{i}", structured=_evening_hours(), category="market", dwell=60
                 )
-                for i in range(2)
+                for i in range(7)
             ]
         )
+        assert len(rows) == 10  # well above 8 needed identities
         with pytest.raises(InsufficientCatalog):
             range_nodes_from_catalog(
                 geo_region=GEO,
@@ -622,9 +629,8 @@ class TestHydrationProof:
             result = sm._node_venue_search(state)
         assert len(result["venues_found"]) == 0
 
-    def test_sabotage_without_hydration_closed_passes(self):
-        """Without hydration, incomplete CLOSED venue has None structured hours,
-        so hours_for_slot returns UNKNOWN and the venue would pass the filter."""
+    def test_null_structured_hours_returns_unknown(self):
+        """Helper contract: None structured hours yields UNKNOWN, not CLOSED."""
         hr = hours_for_slot(None, _ict_to_utc(2026, 9, 14, 9), 90, GEO)
         assert hr == HoursResult.UNKNOWN
 
@@ -728,10 +734,228 @@ class TestApplyRetry:
         }
         result = sm._node_apply_structural(state)
         warnings = result.get("schedule_warnings", [])
-        assert any("Unknown New" in w for w in warnings)
+        unknown_warnings = [w for w in warnings if "Unknown New" in w]
+        assert len(unknown_warnings) == 1, (
+            f"Expected exactly 1 warning naming Unknown New, got {unknown_warnings}"
+        )
         for w in warnings:
             assert "Untouched_C" not in w
             assert "Untouched_E" not in w
+
+
+# ---------------------------------------------------------------------------
+# Warning-scope regression tests (SPEC-41 A2)
+# ---------------------------------------------------------------------------
+
+
+class TestWarningScope:
+    """Prove that every state-machine scheduler call passes accurate scopes."""
+
+    def test_cancel_on_legacy_trip_no_unknown_warnings(self):
+        """Canceling on a trip whose legacy activity nodes have null structured
+        hours must NOT emit trip-wide UNKNOWN warnings."""
+        h = auth("spec41-ws-cancel")
+        r = client.post(
+            "/api/v1/trip/create",
+            json={"geo_region": GEO, "start_date": "2026-09-14"},
+            headers=h,
+        )
+        assert r.status_code == 200
+        trip_id = r.json()["trip_id"]
+        nodes = r.json()["nodes"]
+        # Wipe structured hours on all stored nodes to simulate legacy data
+        stored = db_mod.db_service._trips[trip_id]
+        for n_dict in stored["nodes"]:
+            n_dict["opening_hours_structured"] = None
+        target = nodes[0]["node_id"]
+        r2 = client.post(
+            "/api/v1/trip/event",
+            json={
+                "trip_id": trip_id,
+                "event_type": "cancel_activity",
+                "message": "cancel this",
+                "target_node_id": target,
+            },
+            headers=h,
+        )
+        assert r2.status_code == 200
+        warnings = r2.json().get("schedule_warnings", [])
+        unknown_w = [w for w in warnings if "unknown" in w.lower()]
+        assert unknown_w == [], f"Legacy nodes should not emit UNKNOWN warnings: {unknown_w}"
+
+    def test_add_booking_no_hours_warning(self):
+        """Adding a hotel booking must NOT emit an opening-hours warning."""
+        h = auth("spec41-ws-addbk")
+        r = client.post(
+            "/api/v1/trip/create",
+            json={"geo_region": GEO, "start_date": "2026-09-14"},
+            headers=h,
+        )
+        assert r.status_code == 200
+        trip_id = r.json()["trip_id"]
+        r2 = client.post(
+            "/api/v1/trip/event",
+            json={
+                "trip_id": trip_id,
+                "event_type": "add_booking",
+                "message": "2026-09-14T18:00:00+07:00",
+                "preferences": {
+                    "venue_name": "Riverside Hotel",
+                    "booking_type": "hotel",
+                    "duration_minutes": 720,
+                },
+            },
+            headers=h,
+        )
+        assert r2.status_code == 200
+        warnings = r2.json().get("schedule_warnings", [])
+        hours_w = [w for w in warnings if "opening hours" in w.lower() or "unknown" in w.lower()]
+        assert hours_w == [], f"Booking should not trigger hours warnings: {hours_w}"
+
+    def test_edit_booking_no_hours_warning(self):
+        """Editing a booking must NOT emit an opening-hours warning."""
+        h = auth("spec41-ws-editbk")
+        r = client.post(
+            "/api/v1/trip/create",
+            json={"geo_region": GEO, "start_date": "2026-09-14"},
+            headers=h,
+        )
+        assert r.status_code == 200
+        trip_id = r.json()["trip_id"]
+        # First add a booking
+        r2 = client.post(
+            "/api/v1/trip/event",
+            json={
+                "trip_id": trip_id,
+                "event_type": "add_booking",
+                "message": "2026-09-14T18:00:00+07:00",
+                "preferences": {
+                    "venue_name": "Train Station",
+                    "booking_type": "train",
+                    "duration_minutes": 60,
+                },
+            },
+            headers=h,
+        )
+        assert r2.status_code == 200
+        booking = next(n for n in r2.json()["updated_nodes"] if n.get("node_kind") == "booking")
+        # Edit the booking's duration
+        r3 = client.post(
+            "/api/v1/trip/event",
+            json={
+                "trip_id": trip_id,
+                "event_type": "edit_booking",
+                "message": "update duration",
+                "target_node_id": booking["node_id"],
+                "preferences": {
+                    "duration_minutes": 120,
+                    "scheduled_start": "2026-09-14T19:00:00+07:00",
+                },
+            },
+            headers=h,
+        )
+        assert r3.status_code == 200
+        warnings = r3.json().get("schedule_warnings", [])
+        hours_w = [w for w in warnings if "opening hours" in w.lower() or "unknown" in w.lower()]
+        assert hours_w == [], f"Booking edit should not trigger hours warnings: {hours_w}"
+
+    def test_empty_mutated_set_no_full_scan(self):
+        """Passing mutated_node_ids=set() must NOT check ANY node's hours."""
+        closed_hours = {d: [] for d in _ALL_DAYS}
+        nodes = [
+            TripNode(
+                venue_name=f"Legacy_{i}",
+                venue_id=f"vid_legacy_{i}",
+                scheduled_start=_ict_to_utc(2026, 9, 14, 9 + i * 2),
+                duration_minutes=60,
+                opening_hours_structured=closed_hours,
+                geo_region=GEO,
+                lat=19.89,
+                lng=102.13,
+            )
+            for i in range(3)
+        ]
+        result = reschedule_and_validate(nodes, mutated_node_ids=set())
+        assert result.warnings == []
+        assert result.has_hard_conflict is False
+
+    def test_empty_set_still_checks_shifted_downstream(self):
+        """Even with mutated_node_ids=set(), a shifted downstream activity
+        must still be checked for hours conflicts."""
+        morning = _make_hours({"mon": [["08:00", "11:00"]]})
+        nodes = [
+            TripNode(
+                venue_name="Pusher",
+                venue_id="vid_push_ws",
+                scheduled_start=_ict_to_utc(2026, 9, 14, 9),
+                duration_minutes=180,  # pushes next node to 12:00
+                opening_hours_structured=_make_hours({}),
+                geo_region=GEO,
+                lat=19.89,
+                lng=102.13,
+            ),
+            TripNode(
+                venue_name="Fragile",
+                venue_id="vid_fragile_ws",
+                scheduled_start=_ict_to_utc(2026, 9, 14, 10),
+                duration_minutes=60,
+                opening_hours_structured=morning,
+                geo_region=GEO,
+                lat=19.89,
+                lng=102.13,
+            ),
+        ]
+        result = reschedule_and_validate(nodes, mutated_node_ids=set())
+        assert result.has_hard_conflict is True
+        assert any("Fragile" in w for w in result.warnings)
+
+    def test_delete_booking_no_legacy_warnings(self):
+        """Deleting a booking with mutated_node_ids=set() must not warn on
+        surrounding legacy nodes with null structured hours."""
+        h = auth("spec41-ws-delbk")
+        r = client.post(
+            "/api/v1/trip/create",
+            json={"geo_region": GEO, "start_date": "2026-09-14"},
+            headers=h,
+        )
+        assert r.status_code == 200
+        trip_id = r.json()["trip_id"]
+        # Wipe structured hours to simulate legacy
+        stored = db_mod.db_service._trips[trip_id]
+        for n_dict in stored["nodes"]:
+            n_dict["opening_hours_structured"] = None
+        # Add a booking
+        r2 = client.post(
+            "/api/v1/trip/event",
+            json={
+                "trip_id": trip_id,
+                "event_type": "add_booking",
+                "message": "2026-09-14T18:00:00+07:00",
+                "preferences": {
+                    "venue_name": "Flight Out",
+                    "booking_type": "flight",
+                    "duration_minutes": 120,
+                },
+            },
+            headers=h,
+        )
+        assert r2.status_code == 200
+        booking = next(n for n in r2.json()["updated_nodes"] if n.get("node_kind") == "booking")
+        # Delete the booking
+        r3 = client.post(
+            "/api/v1/trip/event",
+            json={
+                "trip_id": trip_id,
+                "event_type": "delete_booking",
+                "message": "remove flight",
+                "target_node_id": booking["node_id"],
+            },
+            headers=h,
+        )
+        assert r3.status_code == 200
+        warnings = r3.json().get("schedule_warnings", [])
+        unknown_w = [w for w in warnings if "unknown" in w.lower()]
+        assert unknown_w == [], f"Delete-booking should not scan legacy nodes: {unknown_w}"
 
 
 # ---------------------------------------------------------------------------
