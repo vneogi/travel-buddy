@@ -339,9 +339,10 @@ class TestValidation422:
         local midnight.  17:01 UTC = 00:01 ICT (UTC+7) the next day.
         'Yesterday-in-Laos' is past even though still 'today' in UTC.
 
-        The mock returns the frozen instant *in the destination timezone*
-        so that .date() yields the Laos local date, matching what
-        datetime.now(tz=dest_tz) returns in production."""
+        The mock's now(tz=...) respects the requested timezone via
+        frozen_utc.astimezone(tz), so an incorrect implementation that
+        used datetime.now(tz=timezone.utc).date() would see the UTC
+        date and NOT reject the request."""
         dest_tz = ZoneInfo(REGIONS["luang_prabang_laos"].timezone)
         anchor_utc_date = date.today() + timedelta(days=5)
         frozen_utc = datetime(
@@ -354,16 +355,29 @@ class TestValidation422:
             tzinfo=timezone.utc,
         )
         # In Laos (UTC+7) this is 00:01 on anchor_utc_date+1
-        frozen_laos = frozen_utc.astimezone(dest_tz)
-        laos_today = frozen_laos.date()
+        laos_today = frozen_utc.astimezone(dest_tz).date()
         laos_yesterday = laos_today - timedelta(days=1)
+
+        # Sabotage proof: UTC date is still anchor_utc_date, which
+        # equals laos_yesterday.  A UTC-based check would NOT reject.
+        utc_today = frozen_utc.astimezone(timezone.utc).date()
+        assert utc_today == laos_yesterday, (
+            "Precondition: UTC date must equal the submitted start_date "
+            "so a naive UTC-based check would pass (not reject)"
+        )
+        assert laos_today > laos_yesterday, (
+            "Precondition: Laos local date has advanced past the submitted start_date"
+        )
 
         body = _range_body(geo_region="luang_prabang_laos", num_days=1)
         body["start_date"] = laos_yesterday.isoformat()
         body["end_date"] = laos_yesterday.isoformat()
 
+        def _tz_aware_now(tz=None):
+            return frozen_utc.astimezone(tz) if tz else frozen_utc
+
         with patch("routers.trip_router.datetime") as mock_dt:
-            mock_dt.now.return_value = frozen_laos
+            mock_dt.now.side_effect = _tz_aware_now
             mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
             r = client.post("/api/v1/trip/create", json=body, headers=HEADERS)
 
@@ -404,9 +418,10 @@ class TestCapacityAtomicity:
 
     def test_sabotage_insufficient_capacity_mid_build(self):
         """Mid-build insufficient_capacity path: range_nodes_from_catalog
-        raises InsufficientCatalog after validation passes.  Trip/party
-        must not be persisted."""
+        raises InsufficientCatalog after validation passes.  Neither trip
+        nor party must be persisted."""
         trips_before = len(db_service._trips)
+        parties_before = len(db_service._parties)
 
         def _explode(**kwargs):
             raise InsufficientCatalog("sabotage mid-build")
@@ -420,6 +435,7 @@ class TestCapacityAtomicity:
         assert r.status_code == 422
         assert r.json()["detail"]["error"] == "insufficient_capacity"
         assert len(db_service._trips) == trips_before
+        assert len(db_service._parties) == parties_before
 
 
 # ---------------------------------------------------------------
@@ -820,21 +836,7 @@ class TestMalformedDates:
         assert isinstance(detail, list), f"Expected generic list detail, got: {detail}"
 
 
-# ---------------------------------------------------------------
-# Known non-blocking: trip and party are two persistence writes.
-# This is recorded here, not redesigned in this PR.
-# ---------------------------------------------------------------
-
-
-class TestPersistenceNote:
-    def test_trip_and_party_are_separate_writes(self):
-        """Document that trip and party are two separate persistence
-        calls.  A failure between them could leave an orphan trip.
-        This test records the behavior; it does not fix it."""
-        body = _range_body(num_days=2)
-        r = client.post("/api/v1/trip/create", json=body, headers=HEADERS)
-        assert r.status_code == 200
-        trip_id = r.json()["trip_id"]
-        assert trip_id in db_service._trips
-        # _parties is keyed by trip_id (Dict[str, dict])
-        assert trip_id in db_service._parties
+# Known non-blocking: trip and party are two separate persistence
+# writes.  A failure between them could leave an orphan trip.
+# This risk belongs in documentation, not a test that locks to
+# the in-memory storage internals.
