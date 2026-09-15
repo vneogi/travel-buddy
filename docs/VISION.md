@@ -1,19 +1,29 @@
 # Travel Buddy — Product Vision & Strategy
-*Last updated: Aug 2026. Owner: Vikrant. This is the "why" and "for whom." Technical spec lives in MASTER_BRD.md.*
+*Last updated: Sep 2026. Owner: Vikrant. This is the "why" and "for whom." Technical spec lives in MASTER_BRD.md.*
 
 ## 1. The one-line thesis
 
-**Travel Buddy is the AI companion that works *while you're on the trip* — the friend on the ground who reflows your day when plans change, especially off the beaten path and offline.**
+**Travel Buddy is the AI companion that works *while you're on the trip* — the friend on the ground who keeps your day feasible when reality changes, especially off the beaten path and offline.**
 
-Not another pre-trip planner. The in-the-moment layer nobody has built well.
+Not another pre-trip planner. The in-the-moment layer remains under-served.
 
 ## 2. The gap we're attacking
 
-Every major travel product — Google, Booking, Expedia, Tripadvisor, Kayak, and the AI planners (Mindtrip, Layla, Wanderlog) — optimizes for the **pre-trip and booking** moments: research, itinerary generation, reservations. That market is crowded and commoditized; a foundation model will draft a Dubai itinerary for free.
+Major travel products — Google, Booking, Expedia, Tripadvisor, Kayak, and AI
+planners such as Mindtrip and Layla — are strongest in the **pre-trip and
+booking** moments: research, itinerary generation and reservations. Some now
+extend into trip management and location-aware assistance, so the category is
+not empty; however, generic itinerary generation is crowded and commoditized.
+A foundation model will draft a Dubai itinerary for free.
 
 **The under-served moment is on-trip.** Once you land, plans break: you're tired, it's 44C, a venue's shut, a train's cancelled, your mood shifts. Today you're back to juggling Maps, a static itinerary doc, and group chats. Incumbents don't prioritize this because it doesn't directly drive a booking. (Validated first-hand: extended travel in China, June 2026 — excellent pre-trip tools, zero real on-trip companion.)
 
-**Our wedge: the live, self-correcting itinerary.** Locked reservations stay fixed; everything else reflows automatically around real-world context (weather, closures, transit, fatigue, mood). This is the product, not a feature bolted onto a booking funnel.
+**Our wedge: the live, self-correcting itinerary.** Locked reservations stay
+fixed; the engine proposes feasible changes around real-world context (weather,
+closures, transit, fatigue, mood), explains the trade-off, and the traveller
+confirms any mutation. "Self-correcting" means the product detects and helps
+recover from a broken day; it does not mean silent autonomous edits. This is the
+product, not a feature bolted onto a booking funnel.
 
 ## 3. Who we're for (and where we start)
 
@@ -55,24 +65,59 @@ monetizing — but it is under-evidenced (effective n<8) and carries no zero-CAC
 acquisition story of its own, so it sits *behind* the backpacker beachhead for
 seeding and is revisited after the field test. See the MARKET_STRATEGY addendum.
 
-## 4. The moat: a flywheel, not a feature
+## 4. The moat: a governed decision flywheel, not a feature
 
-The state-loop is a strong product wedge, but any funded team can copy a software feature. The durable moat is a **compounding data flywheel** no competitor can copy overnight:
+The state-loop is a strong product wedge, but any funded team can copy a
+software feature. The durable moat can only emerge from a **compounding,
+governed decision flywheel**:
 
-> Superior **on-trip** experience -> users generate **proprietary real-time local signals** (what's actually open, actually crowded, actually worth it; plus observed reroute behavior) -> the re-planning engine gets **better than anyone's** -> attracts more on-trip users -> more signal.
+> Superior **on-trip** decisions -> travellers generate consented local facts
+> and decision outcomes -> city data and ranking improve -> recovery becomes
+> more reliable -> retained travellers produce denser outcomes.
 
-You can't clone an accumulated, fresh, on-the-ground data asset — you have to out-*accumulate* it, across exactly the diverse destinations we're seeding. That asset + the engine + an engaged on-trip user base is what we're ultimately building.
+The valuable record is not a chat transcript or a heart in isolation. For each
+recommendation it is the authorised context, catalog and constraint versions,
+complete feasible exposure set, exclusions and reasons, score components,
+displayed order, traveller acceptance or rejection, and later trip outcome.
+That is how we can eventually learn which alternative worked for a tired couple
+at 15:00 without letting a model invent the schedule or rewrite history.
 
-**What the moat is NOT:** breadth (city count), a slick UI alone, or "we use AI." Those are table stakes or easily copied.
+The moat has four reinforcing layers:
+
+1. **Feasibility engine:** deterministic locks, hours, walking, geography,
+   party and time-window rules that fail closed.
+2. **Decision-outcome data:** versioned exposures and results generic planners
+   do not observe.
+3. **City operations loop:** sourced claims, local-script identity, corrections,
+   freshness and measurable refusal quality.
+4. **Trust and recovery:** offline continuity, named uncertainty, reversible
+   proposals and traveller confirmation.
+
+None is a moat merely because it exists in code. Today these are moat
+foundations. Defensibility begins only when retained real-world use produces
+enough overlapping, quality-controlled outcomes to improve the product.
+
+**What the moat is NOT:** city count, booking inventory, a slick UI, a prompt,
+model choice, LangGraph or any other agent framework, a vector store, or "we use
+AI." Those are available to every funded competitor.
 
 ## 5. Offline resilience is core, not a checkbox
 
-Our users are frequently in low- or no-connectivity areas. An on-trip companion that dies without signal is useless. **Offline-first is a defining USP**, not a nice-to-have: cached itinerary + local data + maps, event queueing, sync on reconnect, graceful degradation. This is also a genuine engineering differentiator (incumbent apps are near-useless offline).
+Our users are frequently in low- or no-connectivity areas. An on-trip companion
+that dies without signal is useless. **Offline-first is a defining USP**, not a
+nice-to-have: cached itinerary + local data + maps, event queueing, sync on
+reconnect, graceful degradation. This is also a genuine engineering
+differentiator because many planning and booking experiences degrade sharply
+offline.
 
 ## 6. What we are explicitly NOT doing
 
 - **Not chasing "10 cities before launch."** Breadth is a vanity metric that spreads a small team thin and produces shallow, stale data. **We chase trip-over-trip retention in one place first**, then expand as a repeatable, quality-controlled pipeline.
 - **Not competing head-on with booking funnels.** We complement them; we may earn affiliate revenue from them later.
+- **Not treating autonomous agents as the product.** Natural language is an
+  interface into grounded queries and typed commands. Models may interpret and
+  explain; deterministic domain services decide feasibility, and the traveller
+  confirms mutations.
 - **Not optimizing token cost as the main worry.** Infra is cheap at our scale (low hundreds/mo). The real costs are user acquisition and local ops — spend attention there. The free tier's marginal cost stays near-zero (aggressive semantic cache + light-model routing).
 
 ## 7. North-star metric
@@ -122,6 +167,9 @@ months — expected and fine.
 - **On-trip > pre-trip.** When in doubt, improve the in-the-moment experience.
 - **Deep > wide.** Retention in one city beats presence in ten.
 - **Trust is the product.** We're the anti-tourist-trap local friend; never sacrifice that for a sponsor dollar.
+- **The framework is replaceable; the domain record is not.** Keep the
+  feasibility engine and typed trip commands independent of model, agent
+  framework, booking provider and user channel.
 - **Compound the moat monthly.** Traction, unique tech, or unique data — every month, one of them.
 
 ## 11. In-trip capabilities & how they compound into the moat
@@ -394,10 +442,13 @@ the activity layer.
    day and a toddler" is an *orders of magnitude* richer training signal than a bare ❤.
 2. **Switching cost becomes massive** — your full trip history + preferences + booking data +
    cross-trip memory = painful to leave.
-3. **Integration depth = technical moat** — MCP connections to 20+ services, LLM extraction
-   of booking confirmations, calendar sync. Months of work competitors must replicate.
-4. **The "one-stop-shop" positioning** — travelers currently juggle 8-12 apps (flights, hotels,
-   transit, activities, reviews, maps, translate, currency). Consolidation is the unmet desire.
+3. **Governed context depth compounds the engine** — booking confirmations,
+   calendar facts and provider data normalize into the same typed trip
+   contracts. Connector count is not a moat; reliable use of that context in
+   feasible decisions can become one.
+4. **One coherent trip surface** — travellers should not have to reconcile
+   contradictory itinerary, booking and context views. This does not require us
+   to own every booking or utility category.
 
 **What changes:** The scheduler now reads *constraints* (flights, check-in/out, inter-city
 transport) in addition to *preferences*. Recommendations factor in transit-to-airport, hotel
@@ -436,12 +487,17 @@ trip_stay {stay_id, trip_id, accommodation_name, address,
 
 **Input methods (phased):**
 - Phase 1 (Laos): manual form at trip creation (flight number, hotel name, dates)
-- Phase 2: "Paste your confirmation email/text" → LLM extracts structured data
+- Phase 2: "Paste your confirmation email/text" → on-device provider-aware
+  extraction into reviewable structured fields
 - Phase 3: Forward confirmation to `trips@travelbuddy.app` → server-side parsing
-- Phase 4: MCP integration (Gmail, Google Calendar, Apple Calendar) → auto-import
+- Phase 4: optional privacy-reviewed provider connectors emit the same
+  structured booking fields. They remain ingest adapters, not tools exposed to
+  a free-form agent loop.
 
-**Competitive context:** TripIt does email-parsing well but has ZERO intelligence. We do
-email-parsing (later) AND use the data to make *smart decisions*. That's the combined wedge.
+**Competitive context:** TripIt established confirmation parsing and trip
+organisation. Our intended difference is to use reviewed booking anchors in
+constraint-safe on-trip decisions rather than treating import itself as the
+wedge.
 
 ## 19. Food & dining as a first-class moment
 
@@ -534,43 +590,76 @@ user_preference {pref_id, user_id, pref_type, value, confidence,
 - Decay: preferences from 2+ years ago weight less (people change)
 - Context-dependent: "prefers slow pace" only applies when `party_type = family`
 
-**MCP / Agent Memory integration:**
-- Agent memory stores the preference model + trip summaries as persistent context
-- Each new trip starts with "what I know about this traveler" injected into the planner prompt
-- Engine uses preferences as **soft weights** (never hard filters unless explicitly set — surprise
-  and serendipity are valuable; over-personalisation creates a filter bubble)
+**Governed memory boundary:**
+- Explicit preferences and consented derived behavioral features are separate
+  data planes with provenance, confidence, deletion and retention rules.
+- Each new trip receives only the authorised, trip-relevant projection of what
+  the product knows about the traveller.
+- The deterministic engine uses preferences as **soft weights** (never hard
+  filters unless explicitly set — surprise and serendipity are valuable;
+  over-personalisation creates a filter bubble).
+- Chat history, a vector-memory product, or an opaque agent summary is not the
+  authority for itinerary state or durable preference.
 
 **Timing:** post-Laos. Requires accumulated signal data to derive preferences from. The Laos trip
 *generates* the data; cross-trip memory *consumes* it on the second trip.
 
-## 23. Competitive positioning — why we win
+## 23. Competitive positioning — what we must earn
 
-The "most popular travel app in the world" requires combining three things no incumbent has:
+The category no longer consists only of static itinerary generators. Mindtrip
+combines broad POI coverage, visual planning, collaboration and booking;
+Layla combines visual inspiration, conversational refinement and live booking
+partners; Stardrift imports bookings into a map-linked structured itinerary;
+and general assistants such as Instinct and Poke demonstrate that a messaging
+channel can own the user relationship. Feature claims and usage figures remain
+vendor-reported unless independently verified; `docs/MARKET_STRATEGY.md`
+records the dated competitive read.
 
-| | TripIt | Wanderlog | AI Planners | Booking.com | **Travel Buddy** |
-|---|---|---|---|---|---|
-| Full trip context | ✅ | Partial | ❌ | ❌ | ✅ (building) |
-| Live on-trip intelligence | ❌ | ❌ | ❌ | ❌ | ✅ (built) |
-| Offline resilience | ❌ | ❌ | ❌ | ❌ | ✅ (built) |
-| Behavioral data moat | ❌ | ❌ | ❌ | ❌ | ✅ (pipe built) |
-| Cross-trip memory | ❌ | ❌ | ❌ | ❌ | ✅ (designed) |
-| Works in emerging markets | ❌ | ❌ | ❌ | Partial | ✅ (focus) |
+We cannot credibly claim that competitors have no trip context, no on-trip
+features or no useful mobile experience. Nor can we win by matching their
+inventory breadth, booking integrations or visual content one feature at a
+time. The intended position is narrower:
 
-- **1 without 2** = TripIt (passive calendar, no intelligence)
-- **2 without 1** = current Travel Buddy pre-§17 (smart but blind to constraints)
-- **2 without 3** = Mindtrip/Layla (useless when you need it most)
-- **1+2+3 together** = nobody. That's the gap. That's why we win.
+> **Travel Buddy keeps the day feasible when reality changes.**
+
+The product earns that position by combining deterministic feasibility,
+booking anchors, explicit traveller approval, offline continuity, sourced
+local claims and outcome-linked recovery in difficult travel corridors. The
+closest product overlap is a structured planner such as Stardrift; our claimed
+difference must therefore be demonstrated in offline operation, constraint
+validity and recovery quality, not in the presence of chat, maps or drag-and-drop.
+
+**Patterns worth borrowing without copying the competitor strategy:**
+
+1. A linked map and timeline so moving an item makes geographic and temporal
+   consequences visible.
+2. Imported confirmations as fixed anchors around which flexible plans adapt.
+3. Structured visual proposal cards that show the change, trade-off, evidence
+   and confirmation action.
+4. One trip hub for bookings, itinerary, relevant context and offline artifacts.
+5. Chat or messaging as a low-friction interface into the same typed query and
+   command contracts.
+
+These are product patterns, not permission to build them immediately. Timing
+still follows validated field-test pain and the relevant SPEC acceptance gates.
+We explicitly do not borrow silent autonomous mutation, opaque
+personalisation, a free-form tool loop, or a multi-agent framework as product
+identity.
 
 **Updated flywheel:**
-Full context → better recommendations → users do MORE in-app → more behavioral signals →
-engine improves → more context shared → switching cost grows → retention compounds →
-more users → more signal → ...
+Better governed decisions → more accepted or rejected proposals with outcomes
+→ better city data and ranking → more reliable recovery → more on-trip and
+second-trip use → denser evidence.
 
 **What could kill us:**
 - Google launches "Google Travel 2.0" with Gemini on-trip → Mitigation: they optimize for
   booking revenue; we optimize for trust. Different incentives = different product. Also: offline.
 - Apple launches a travel layer in iOS → Mitigation: Apple doesn't serve emerging markets or
   Android (our segment).
+- A general assistant owns the traveller interface and delegates to commodity
+  travel providers → Mitigation: keep the trusted feasibility engine
+  channel-independent and expose only typed, authorised capabilities when a
+  real distribution channel justifies it.
 - We spread too thin (10 cities, no depth) → Mitigation: DEEP > WIDE rule (§6). Retention first.
 - Never enough users to compound data → Mitigation: make non-AI features (Vault, Calendar, Food)
   valuable enough standalone, pre-flywheel.
