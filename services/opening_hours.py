@@ -254,24 +254,34 @@ def next_slot_start(
     if duration_minutes <= 0:
         raise ValueError(f"duration_minutes must be positive; got {duration_minutes}")
 
-    # UNKNOWN hours: schedule at cursor (preserve uncertainty).
-    if not isinstance(structured, dict) or not _validate_structure(structured):
-        return earliest_start_utc
-
-    from services.destination_tz import to_destination_local, destination_tz
+    from services.destination_tz import destination_tz
 
     tz = destination_tz(geo_region)
     if tz is None:
         local_cursor = earliest_start_utc
+        local_day_ref = local_day
     else:
         local_cursor = earliest_start_utc.astimezone(tz)
-
-    day_key = _weekday_key(local_day)
-    windows = structured[day_key]
+        local_day_ref = local_day.astimezone(tz)
 
     # Day boundaries in local time
-    local_midnight = local_day.replace(hour=0, minute=0, second=0, microsecond=0)
+    local_midnight = local_day_ref.replace(hour=0, minute=0, second=0, microsecond=0)
     local_end_of_day = local_midnight + timedelta(days=1)
+
+    # UNKNOWN hours: schedule at max(cursor, day start) but never outside the day.
+    if not isinstance(structured, dict) or not _validate_structure(structured):
+        candidate_local = max(local_cursor, local_midnight)
+        if candidate_local >= local_end_of_day:
+            return None
+        candidate_end = candidate_local + timedelta(minutes=duration_minutes)
+        if candidate_end > local_end_of_day:
+            return None
+        if tz is not None:
+            return candidate_local.astimezone(timezone.utc)
+        return candidate_local
+
+    day_key = _weekday_key(local_day_ref)
+    windows = structured[day_key]
 
     best: Optional[datetime] = None
 

@@ -452,6 +452,23 @@ def _venue_key(venue: dict) -> str:
     return str(venue.get("venue_id") or venue["name"])
 
 
+def _valid_interest_profiles() -> list[tuple[str, ...]]:
+    """Return all valid interest profiles of size 0..MAX_INTERESTS.
+
+    Used by truthful advertised-capacity calculation so the published
+    max_days value succeeds regardless of which valid interests a user picks.
+    """
+    from itertools import combinations
+
+    from config.interests import INTEREST_IDS, MAX_INTERESTS
+
+    ids = sorted(INTEREST_IDS)
+    profiles: list[tuple[str, ...]] = [()]
+    for size in range(1, MAX_INTERESTS + 1):
+        profiles.extend(combinations(ids, size))
+    return profiles
+
+
 def range_nodes_from_catalog(
     *,
     geo_region: str,
@@ -513,24 +530,24 @@ def range_nodes_from_catalog(
 def compute_max_days_for_region(list_venues_fn, geo_region: str) -> Optional[int]:
     """Advertised max_days for a region, or None if insufficient catalog.
 
-    SPEC-41 A3a: Evaluate all seven possible starting weekdays.  Advertise
-    the largest span buildable for *every* weekday using the same planner
-    as real range create.  Clamped to the product ceiling.
+    SPEC-41 A3a: evaluate all seven possible start weekdays and all valid
+    interest profiles using the real multi-day builder. Advertise only the
+    largest span that succeeds for every weekday and every valid set of
+    interests. Clamped to the product ceiling.
     """
     from config.interests import MAX_DAYS_CEILING
     from datetime import date as date_type
-    from zoneinfo import ZoneInfo
 
     try:
-        pool = _dedup_by_venue_id(eligible_corridor_venues(list_venues_fn(geo_region)))
+        rows = list_venues_fn(geo_region)
+        pool = _dedup_by_venue_id(eligible_corridor_venues(rows))
     except Exception:
         return None
 
     if len(pool) < VENUES_PER_DAY:
         return None
 
-    region = require_region(geo_region)
-    region_tz = ZoneInfo(region.timezone)
+    interest_profiles = _valid_interest_profiles()
 
     # Use a fixed anchor week: 2026-09-14 (Monday) through 2026-09-20 (Sunday)
     anchor_monday = date_type(2026, 9, 14)
@@ -540,21 +557,21 @@ def compute_max_days_for_region(list_venues_fn, geo_region: str) -> Optional[int
         anchor_date = anchor_monday + timedelta(days=wd)
         best_span = 0
         for span in range(1, MAX_DAYS_CEILING + 1):
-            used: set[str] = set()
+            end_date = anchor_date + timedelta(days=span - 1)
             ok = True
-            for d in range(span):
-                dd = anchor_date + timedelta(days=d)
-                ds = datetime(dd.year, dd.month, dd.day, 9, 0, 0, tzinfo=region_tz).astimezone(
-                    timezone.utc
-                )
-                day_nodes, used = pack_day(
-                    candidates=pool,
-                    target_count=VENUES_PER_DAY,
-                    day_start_utc=ds,
-                    geo_region=geo_region,
-                    used_ids=used,
-                )
-                if len(day_nodes) < VENUES_PER_DAY:
+            for interest_ids in interest_profiles:
+                try:
+                    nodes = range_nodes_from_catalog(
+                        geo_region=geo_region,
+                        start_date_local=anchor_date.isoformat(),
+                        end_date_local=end_date.isoformat(),
+                        rows=rows,
+                        interest_ids=interest_ids,
+                    )
+                except InsufficientCatalog:
+                    ok = False
+                    break
+                if len(nodes) < span * VENUES_PER_DAY:
                     ok = False
                     break
             if ok:
@@ -563,6 +580,5 @@ def compute_max_days_for_region(list_venues_fn, geo_region: str) -> Optional[int
                 break
         weekday_maxes.append(best_span)
 
-    # Advertised value: largest span buildable for ALL seven weekdays.
     guaranteed = min(weekday_maxes)
     return guaranteed if guaranteed >= 1 else None
