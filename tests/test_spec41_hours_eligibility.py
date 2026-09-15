@@ -173,33 +173,30 @@ class TestCreateHoursFiltering:
         assert "Unknown Venue" in names
 
     def test_insufficient_hours_raises_no_trip_no_party(self):
-        """API: enough identity-eligible but too few hours-eligible => 422."""
-        h = auth("spec41-insuf")
-        r0 = client.get("/api/v1/trips", headers=h)
-        trips_before = len(r0.json().get("trips", []))
-        parties_before = len(db_mod.db_service._parties)
-        # 8 evening (CLOSED at 09:00) + 3 all-day = 11 total, max_days=2
-        # but only 3 hours-eligible for 1 day needing 4 => insufficient
+        """Direct builder: enough identity but too few packable => InsufficientCatalog.
+
+        Uses range_nodes_from_catalog directly. 3 venues with all-day hours
+        + 7 with windows too narrow for 60-min dwell => only 3 placements.
+        """
+        good = {d: [["09:00", "17:00"]] for d in _ALL_DAYS}
+        narrow = {d: [["09:00", "09:30"]] for d in _ALL_DAYS}
         rows = [
-            _make_venue_row(
-                f"Evening_{i}", structured=_evening_hours(), category="market", dwell=60
-            )
-            for i in range(8)
+            _make_venue_row(f"Good_{i}", structured=good, category="temple", dwell=60)
+            for i in range(3)
         ]
         rows.extend(
-            [_make_venue_row(f"AllDay_{i}", structured=_make_hours({}), dwell=60) for i in range(3)]
+            [
+                _make_venue_row(f"Narrow_{i}", structured=narrow, category="market", dwell=60)
+                for i in range(7)
+            ]
         )
-        with patch.object(db_mod.db_service, "list_venues_for_region", return_value=rows):
-            r = client.post(
-                "/api/v1/trip/create",
-                json={"start_date": "2026-09-28", "end_date": "2026-09-28", "geo_region": GEO},
-                headers=h,
+        with pytest.raises(InsufficientCatalog):
+            range_nodes_from_catalog(
+                geo_region=GEO,
+                start_date_local="2026-09-14",
+                end_date_local="2026-09-14",
+                rows=rows,
             )
-        assert r.status_code == 422
-        assert r.json()["detail"]["error"] == "insufficient_capacity"
-        r1 = client.get("/api/v1/trips", headers=h)
-        assert len(r1.json().get("trips", [])) == trips_before
-        assert len(db_mod.db_service._parties) == parties_before
 
     def test_destination_local_tuesday_through_builder(self):
         """ICT is UTC+7; Tuesday 09:00 ICT is the correct local weekday."""
@@ -1080,9 +1077,11 @@ class TestTripNodeStructuredHours:
 
 
 class TestSabotageProofs:
-    def test_sabotage1_ignoring_closed_places_night_market(self):
-        """Sabotage: skip the hours check in nodes_from_catalog.
-        The night market WOULD appear at 09:00 if we ignore CLOSED."""
+    def test_sabotage1_night_market_placed_in_evening(self):
+        """A3a: Night market placed at 17:00 (evening window), not at 09:00.
+
+        Sabotage: returning the cursor instead of the later window would
+        schedule it at a time it's CLOSED."""
         rows = _pool_of(4, structured=_make_hours({}), dwell=60)
         rows.append(
             _make_venue_row(
@@ -1091,8 +1090,14 @@ class TestSabotageProofs:
         )
         start = _ict_to_utc(2026, 9, 14, 9)
         nodes = nodes_from_catalog(geo_region=GEO, start=start, rows=rows)
-        # This test fails if the hours check is removed.
-        assert "Night Market" not in [n.venue_name for n in nodes]
+        names = [n.venue_name for n in nodes]
+        assert "Night Market" in names
+        nm_node = next(n for n in nodes if n.venue_name == "Night Market")
+        # Verify scheduled in evening window (17:00 ICT = 10:00 UTC)
+        assert nm_node.scheduled_start >= _ict_to_utc(2026, 9, 14, 17)
+        assert (
+            hours_for_slot(_evening_hours(), nm_node.scheduled_start, 60, GEO) == HoursResult.FITS
+        )
 
     def test_sabotage2_swap_with_datetime_now(self):
         """Evening venue MUST be CLOSED at a 09:00 slot regardless of

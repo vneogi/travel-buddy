@@ -27,6 +27,7 @@ from services.catalog_itinerary import (
     eligible_corridor_venues,
     duration_for,
     flatten_opening_hours,
+    pack_day,
 )
 from services.opening_hours import HoursResult, hours_for_slot
 
@@ -139,6 +140,7 @@ def build_corridor_nodes(
 
     Returns (nodes, stored_segments). Raises UnsupportedCorridor if any
     segment lacks enough eligible venues. Never persists partial state.
+    Uses the shared A3a window-packing planner.
     """
     all_nodes: list[TripNode] = []
     stored_segments: list[TripSegment] = []
@@ -170,60 +172,21 @@ def build_corridor_nodes(
                 tzinfo=tz,
             ).astimezone(timezone.utc)
 
-            # SPEC-41 A2: hours-aware corridor day fill
-            from services.catalog_itinerary import (
-                _is_hours_eligible,
-                _make_node,
+            day_nodes, used_ids = pack_day(
+                candidates=pool,
+                target_count=CORRIDOR_STOPS_PER_DAY,
+                day_start_utc=start_dt,
+                geo_region=seg_in.geo_region,
+                used_ids=used_ids,
             )
 
-            cursor = start_dt
-            day_count = 0
-            chosen_ids: set[str] = set()
-            chosen_names: set[str] = set()
-
-            def _try_take_corridor(row: dict) -> bool:
-                nonlocal cursor, day_count
-                key = str(row.get("venue_id") or row["name"])
-                name = row["name"]
-                if key in used_ids or key in chosen_ids or name in chosen_names:
-                    return False
-                if not _is_hours_eligible(row, cursor, seg_in.geo_region):
-                    return False
-                chosen_ids.add(key)
-                chosen_names.add(name)
-                node = _make_node(row, cursor, seg_in.geo_region)
-                all_nodes.append(node)
-                cursor = cursor + timedelta(minutes=node.duration_minutes + 30)
-                day_count += 1
-                return True
-
-            # Bucket-first for diversity
-            for bucket in CATEGORY_BUCKETS:
-                if day_count >= CORRIDOR_STOPS_PER_DAY:
-                    break
-                for row in pool:
-                    if (row.get("category") or "experience").lower() in bucket:
-                        if _try_take_corridor(row):
-                            break
-            # Fill remaining -- loop until stable because the cursor
-            # advances on each placement and may unlock venues that
-            # were CLOSED at the earlier cursor.
-            changed = True
-            while changed and day_count < CORRIDOR_STOPS_PER_DAY:
-                changed = False
-                for row in pool:
-                    if day_count >= CORRIDOR_STOPS_PER_DAY:
-                        break
-                    if _try_take_corridor(row):
-                        changed = True
-
-            if day_count < CORRIDOR_STOPS_PER_DAY:
+            if len(day_nodes) < CORRIDOR_STOPS_PER_DAY:
                 raise UnsupportedCorridor(
                     f"Region {seg_in.geo_region} day {day_date}: only "
-                    f"{day_count} hours-eligible venues, need "
+                    f"{len(day_nodes)} hours-eligible venues, need "
                     f"{CORRIDOR_STOPS_PER_DAY}."
                 )
-            used_ids.update(chosen_ids)
+            all_nodes.extend(day_nodes)
 
         stored_segments.append(
             TripSegment(

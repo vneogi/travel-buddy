@@ -207,6 +207,117 @@ def _parse_window(win: Any) -> Optional[tuple]:
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# SPEC-41 A3a: Next fitting window start
+# ---------------------------------------------------------------------------
+
+
+def next_slot_start(
+    structured: Optional[Dict[str, Any]],
+    earliest_start_utc: datetime,
+    duration_minutes: int,
+    geo_region: Optional[str],
+    local_day: datetime,
+) -> Optional[datetime]:
+    """Return the earliest fitting same-day start at or after the cursor.
+
+    Parameters
+    ----------
+    structured:
+        The structured opening-hours dict, or None / malformed.
+    earliest_start_utc:
+        Timezone-aware UTC cursor -- the earliest the activity may begin.
+    duration_minutes:
+        Positive duration in minutes.
+    geo_region:
+        Region code for timezone lookup.
+    local_day:
+        A destination-local datetime whose *date* component identifies the
+        calendar day.  The activity must start and end on this day.
+
+    Returns
+    -------
+    datetime | None
+        A UTC-aware start time, or None when no fitting window exists.
+        UNKNOWN hours (None/malformed) schedule at the cursor.
+
+    Contract
+    --------
+    * If the cursor already fits, return it unchanged.
+    * Split windows are independent.
+    * Never moves to another local calendar day.
+    * The activity must end before local midnight.
+    * No datetime.now(), Maps, LLM, random, or network calls.
+    """
+    if earliest_start_utc.tzinfo is None:
+        raise ValueError("earliest_start_utc must be timezone-aware")
+    if duration_minutes <= 0:
+        raise ValueError(f"duration_minutes must be positive; got {duration_minutes}")
+
+    # UNKNOWN hours: schedule at cursor (preserve uncertainty).
+    if not isinstance(structured, dict) or not _validate_structure(structured):
+        return earliest_start_utc
+
+    from services.destination_tz import to_destination_local, destination_tz
+
+    tz = destination_tz(geo_region)
+    if tz is None:
+        local_cursor = earliest_start_utc
+    else:
+        local_cursor = earliest_start_utc.astimezone(tz)
+
+    day_key = _weekday_key(local_day)
+    windows = structured[day_key]
+
+    # Day boundaries in local time
+    local_midnight = local_day.replace(hour=0, minute=0, second=0, microsecond=0)
+    local_end_of_day = local_midnight + timedelta(days=1)
+
+    best: Optional[datetime] = None
+
+    for win in windows:
+        w_open_td, w_close_td = _parse_window_safe(win)
+
+        # Only consider same-day windows for the planner.
+        # Overnight windows (close <= open) may run in the evening portion
+        # but the activity must end before local midnight.
+        if w_close_td <= w_open_td:
+            # Overnight: opening is on local_day, closing is next day.
+            # Clamp effective close to local midnight.
+            effective_close = local_midnight + timedelta(days=1)
+        else:
+            effective_close = local_midnight + w_close_td
+
+        window_open_local = local_midnight + w_open_td
+
+        # Candidate start: max(cursor, window open)
+        candidate_local = max(local_cursor, window_open_local)
+
+        # Must start on the target day
+        if candidate_local >= local_end_of_day:
+            continue
+        if candidate_local < local_midnight:
+            continue
+
+        # Must end within the window AND before local midnight
+        candidate_end = candidate_local + timedelta(minutes=duration_minutes)
+        if candidate_end > effective_close:
+            continue
+        if candidate_end > local_end_of_day:
+            continue
+
+        # Convert back to UTC
+        if tz is not None:
+            candidate_utc = candidate_local.astimezone(timezone.utc)
+        else:
+            candidate_utc = candidate_local
+
+        if best is None or candidate_utc < best:
+            best = candidate_utc
+
+    return best
+
+
 def hours_for_slot(
     structured: Optional[Dict[str, Any]],
     start_utc: datetime,
