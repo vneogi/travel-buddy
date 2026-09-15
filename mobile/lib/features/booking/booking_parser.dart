@@ -72,18 +72,52 @@ class ParsedBooking {
       checkoutDateField.isPresent ||
       confirmationCodeField.isPresent;
 
-  /// Human-readable list of fields found.
-  List<String> get foundFields => [
-        if (bookingTypeField.isPresent) 'Booking type',
-        if (venueNameField.isPresent) 'Property name',
-        if (scheduledStartField.isPresent) 'Check-in',
-        if (checkoutDateField.isPresent) 'Check-out',
-        if (durationMinutesField.isPresent) 'Duration',
-        if (confirmationCodeField.isPresent) 'Confirmation code',
-        if (geoRegionField.isPresent) 'Region',
+  /// All extracted fields, parallel with _fieldLabels.
+  List<ExtractedField> get _allFields => [
+        bookingTypeField, venueNameField, scheduledStartField,
+        checkoutDateField, durationMinutesField,
+        confirmationCodeField, geoRegionField,
       ];
 
-  /// Human-readable list of fields still required.
+  static const _fieldLabels = [
+    'Booking type', 'Property name', 'Check-in', 'Check-out',
+    'Duration', 'Confirmation code', 'Region',
+  ];
+
+  /// Fields extracted at full (provider-confirmed) quality.
+  List<String> get confirmedFields {
+    final r = <String>[];
+    for (var i = 0; i < _allFields.length; i++) {
+      if (_allFields[i].isPresent &&
+          _allFields[i].quality == ExtractionQuality.full) {
+        r.add(_fieldLabels[i]);
+      }
+    }
+    return r;
+  }
+
+  /// Fields extracted at partial (needs-review) quality.
+  List<String> get partialFields {
+    final r = <String>[];
+    for (var i = 0; i < _allFields.length; i++) {
+      if (_allFields[i].isPresent &&
+          _allFields[i].quality == ExtractionQuality.partial) {
+        r.add(_fieldLabels[i]);
+      }
+    }
+    return r;
+  }
+
+  /// All fields found (any quality).
+  List<String> get foundFields {
+    final r = <String>[];
+    for (var i = 0; i < _allFields.length; i++) {
+      if (_allFields[i].isPresent) r.add(_fieldLabels[i]);
+    }
+    return r;
+  }
+
+  /// Fields still required for a complete booking.
   List<String> get missingFields => [
         if (!bookingTypeField.isPresent) 'Booking type',
         if (!venueNameField.isPresent) 'Property name',
@@ -197,7 +231,8 @@ bool _hasLabelledFields(String lower) {
       lower.contains('check-out') ||
       lower.contains('booking id') ||
       lower.contains('confirmation') ||
-      lower.contains('reservation');
+      lower.contains('reservation') ||
+      lower.contains('pnr');
 }
 
 // ===================================================================
@@ -209,10 +244,11 @@ ParsedBooking _extractBookingCom(
   String importSource,
   BookingProvider provider,
 ) {
-  // Hotel-context aliases: arrival -> check-in, departure -> check-out
-  final aliased = _applyHotelAliases(text);
+  // Detect booking type from raw text first, then conditionally alias.
+  final rawType = _detectBookingType(text.toLowerCase());
+  final aliased = rawType == 'hotel' ? _applyHotelAliases(text) : text;
   final lower = aliased.toLowerCase();
-  final bookingType = _detectBookingType(lower);
+  final bookingType = rawType;
   final venueName = _extractVenueName(aliased);
   final code = _extractConfirmationCode(aliased);
   final checkIn =
@@ -258,10 +294,11 @@ ParsedBooking _extractAgoda(
   String importSource,
   BookingProvider provider,
 ) {
-  // Hotel-context aliases: arrival -> check-in, departure -> check-out
-  final aliased = _applyHotelAliases(text);
+  // Detect booking type first, alias only when hotel context.
+  final rawType = _detectBookingType(text.toLowerCase());
+  final aliased = rawType == 'hotel' ? _applyHotelAliases(text) : text;
   final lower = aliased.toLowerCase();
-  final bookingType = _detectBookingType(lower);
+  final bookingType = rawType;
 
   // Agoda: "Your booking at PROPERTY is confirmed"
   String? venueName = _extractVenueName(aliased);

@@ -1,0 +1,6 @@
+Agoda.com
+Flight Booking Confirmed
+Airline: FlyDubai FZ302
+Departure: Gate A15, Terminal 2
+Booking ID: AGD1122334
+Dubai, UAE

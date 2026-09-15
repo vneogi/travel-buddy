@@ -121,8 +121,11 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
         }
         _parsedGeoRegion = parsed.geoRegion;
         _importSource = 'email';
+      } else {
+        // Zero-useful-field or junk re-parse: reset to manual.
+        _importSource = 'manual';
+        _parsedGeoRegion = null;
       }
-      // Zero-useful-field parse: do not claim import succeeded.
     });
   }
 
@@ -214,6 +217,14 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
 
   Future<void> _save() async {
     if (_saving) return;
+    // Require venue name before saving -- prevents code-only footer imports
+    // from creating a synthetic "Booking" anchor with no real data.
+    if (_titleController.text.trim().isEmpty) {
+      setState(() {
+        _saveError = 'Property name is required.';
+      });
+      return;
+    }
     // SPEC-33: For hotels, derive duration from check-in / check-out.
     if (_isHotel) {
       if (_checkoutDate == null ||
@@ -323,11 +334,20 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
             'Provider: $providerName',
             style: AppTypography.caption,
           ),
-          if (parsed.foundFields.isNotEmpty)
+          if (parsed.confirmedFields.isNotEmpty)
             Text(
-              'Found: ${parsed.foundFields.join(", ")}',
+              'Found: ${parsed.confirmedFields.join(", ")}',
+              key: const Key('extraction_found'),
               style: AppTypography.caption.copyWith(
                 color: Colors.green[700],
+              ),
+            ),
+          if (parsed.partialFields.isNotEmpty)
+            Text(
+              'Check/confirm: ${parsed.partialFields.join(", ")}',
+              key: const Key('extraction_partial'),
+              style: AppTypography.caption.copyWith(
+                color: Colors.orange[700],
               ),
             ),
           if (parsed.missingFields.isNotEmpty)
