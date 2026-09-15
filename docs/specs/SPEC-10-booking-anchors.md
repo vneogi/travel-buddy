@@ -339,3 +339,6 @@ No log, model prompt, or error detail may contain `confirmation_code`.
 - date grouping,
 - Laos creation,
 - PDF/screenshot/email-provider ingestion.
+- MCP Gmail or calendar ingest. If that connector lands later, it is a
+  SPEC-10/SPEC-43 ingest path that emits the same structured booking
+  fields. It is not an agent tool for the solver, maps, or Ask.

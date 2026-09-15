@@ -11,6 +11,11 @@ meal candidates; SPEC-27 owns closed-app push transport.
 Deliver structured, evidence-backed, timestamped context alerts that expire.
 Phase 1 source: OpenWeather forecasts matched to upcoming itinerary nodes.
 
+This remains an evaluator, not an agent: ingest provider evidence, decide
+whether the active trip is affected, emit typed cards. It does not call an
+LLM, mutate the itinerary, or sit behind a supervisor graph. SPEC-35 extends
+the same shape for departure and meal candidates.
+
 ## Alert Identity and Deduplication
 
 - alert_id is a deterministic hash of (trip_id, alert_type, window_start, affected_node_ids).

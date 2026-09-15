@@ -182,16 +182,20 @@ specified from observed data.
 Allowed:
 
 - map ambiguous natural language to structured filters;
+- propose a structured mutation patch (`SWAP_NODE`, `ADD_BOOKING`, or the
+  existing event equivalent) for the traveller to confirm;
 - summarize why a feasible result matched the trip;
 - phrase retrieved facts through the SPEC-17 trust envelope.
 
 Forbidden:
 
 - emit itinerary nodes or times directly;
+- persist a patch without the existing trip-event path and HITL sheet;
 - choose a venue outside the feasible set;
 - state opening hours or transit not present in a source;
 - override a locked booking;
-- hide insufficient catalog capacity behind generated prose.
+- hide insufficient catalog capacity behind generated prose;
+- invoke the solver through a free-form tool loop or MCP server.
 
 ## Cost and offline behavior
 

@@ -123,6 +123,8 @@ SPEC-39. Learned personalization may later reorder the SPEC-41 feasible set but
 cannot weaken hard constraints. A separate vector database, graph database,
 microservice split, generic agent memory, or collaborative ranker requires
 measured evidence under SPEC-44; none is a city-onboarding prerequisite.
+Natural-language query classifies to typed commands; mutations stay on the
+existing event path plus HITL; proactive alerts stay on SPEC-29/35.
 
 SPEC-42 is the later Create/editor phase: trip span no longer equals catalog
 auto-fill capacity, at most five starter days are populated, and remaining

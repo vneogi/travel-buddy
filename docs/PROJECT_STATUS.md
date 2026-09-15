@@ -20,7 +20,9 @@
 - Orchestrator: hand-rolled sequential pipeline in agents/state_machine.py
   (classify_intent -> check_cache -> venue_search -> apply_structural ->
   generate_response). NOT LangGraph -- langgraph is commented out in
-  requirements.txt and the GraphState TypedDict is unused.
+  requirements.txt and the GraphState TypedDict is unused. SPEC-44 Phase D
+  keeps that split: typed NLQ commands, HITL mutations, SPEC-29/35 alerts,
+  and FastAPI provider ports rather than MCP or a multi-agent runtime.
 - AI: LiteLLM paths exist (gpt-4o heavy, gpt-4o-mini light,
   text-embedding-3-small embeddings), but the 2026-09-13 hosted phone Ask
   evidence used the deterministic router fallback. Live LLM-backed Ask is not

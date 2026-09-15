@@ -86,7 +86,10 @@ Still true (do not "fix" by rescoping the field-test gate):
 - Offline itinerary reads and pre-cached driver cards are production paths;
   preserve them through all later create, scheduling, and Ask work.
 - Chat still sends `ask_info`; broad natural-language mutation remains
-  deferred until after the phone gate.
+  deferred until after the phone gate. When it is built, SPEC-44 Phase D
+  and SPEC-25 require typed commands, retrieval-first Ask, HITL persistence,
+  and SPEC-29/35 evaluators -- not LangGraph, Temporal, MCP solver tools,
+  or a second proactive agent graph.
 
 Reject or defer:
 

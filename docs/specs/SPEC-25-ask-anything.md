@@ -65,6 +65,12 @@ The answer is constructed from retrieved claims. Empty retrieval produces an
 immediate hedge or refusal. It never gives the model a blank context and asks it
 to improvise a local fact.
 
+Natural-language query is not a second product. Classify the utterance into
+a typed command, then retrieve. `ASK_FACT` follows this remainder. Plan
+changes become structured trip events (`SWAP_NODE`, `ADD_BOOKING`, or the
+existing `EventType` equivalents) and never persist from the Ask response
+body. There is no free-form tool loop.
+
 The initial grounded intents are deliberately narrow:
 
 - place identity and location;
@@ -215,6 +221,14 @@ is allowed to return prose, every guarantee in SPEC-17 is optional in practice.
     answer resolves. A single opaque wait is the difference between an interface
     that feels alive and one people stop using on a slow connection.
 
+11. **NLQ maps to typed commands, not an agent graph.** Classify, retrieve,
+    then either a grounded `ASK_FACT` answer or a structured mutation
+    proposal on the existing trip-event path. Informational Ask does not
+    write itinerary rows. A mutation proposal is shown as a confirmation
+    sheet; only traveller confirmation plus the deterministic event path
+    persist it. SPEC-44 Phase D owns the split; this spec owns the Ask
+    command.
+
 ## Tests
 
 - The endpoint answers with no trip in context, and the same question inside a
@@ -241,6 +255,7 @@ is allowed to return prose, every guarantee in SPEC-17 is optional in practice.
 
 - [ ] Ask endpoint with trip as optional context
 - [ ] Closed intent set, each intent routed to an existing capability
+- [ ] NLQ classifies to a typed command; Ask never persists; mutations use HITL
 - [ ] Response type structurally incapable of carrying an unsourced value
 - [ ] Cache, budget and breaker all applied ahead of the model call
 - [ ] Separate ask budget, lower for anonymous identities

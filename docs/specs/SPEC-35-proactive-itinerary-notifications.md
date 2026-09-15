@@ -53,6 +53,12 @@ or marks a candidate delivered. The existing SPEC-29
 The client renders those candidates in-app. OS push transport, device tokens,
 and closed-app delivery remain owned by SPEC-27.
 
+The durable pipeline is: evidence in, impact check against the active trip,
+candidate list out, in-app or later push. SPEC-29 weather cards use the same
+shape. Do not add a proactive agent graph, Temporal workflow, or message bus
+to host this path. A traveller who accepts an alternative still goes through
+the existing swap or booking HITL; the evaluator does not apply it.
+
 ## Schedule-time correctness gate
 
 A departure reminder is unsafe if the itinerary's wall-clock meaning is
@@ -335,6 +341,7 @@ leave-now copy is not gated by the SPEC-22 question-card daily cap.
 ## Explicit non-goals
 
 - Automatic move, swap, cancel, booking, or itinerary mutation.
+- A second multi-agent or durable-workflow runtime for alerts.
 - Turn-by-turn navigation.
 - Scraping or storing Google/TripAdvisor review text.
 - Claiming a curated signature dish is objectively the most popular.

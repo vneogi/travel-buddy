@@ -275,7 +275,9 @@ SPEC-44 fixes the separation:
 
 The LLM may phrase retrieved facts inside SPEC-43's outbound contract. It does
 not schedule, resolve claims, silently create a durable preference, or receive a
-full application object.
+full application object. Natural-language input classifies to typed commands;
+mutations persist only through existing trip events and HITL; proactive alerts
+stay on SPEC-29/35; maps, weather, and the solver remain FastAPI ports.
 
 ## Position on machine learning
 

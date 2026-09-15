@@ -390,6 +390,20 @@ Retrieval miss, absent key, budget refusal, breaker, and model failure are
 distinct treatments. A model call is not attempted when the deterministic
 preconditions fail.
 
+Natural-language input, including conversational query, classifies into a
+closed typed command before any retrieve or mutate step:
+
+- `ASK_FACT` retrieves grounded trip and catalog facts and returns a sourced
+  answer; it never writes itinerary rows;
+- `SWAP_NODE`, `ADD_BOOKING`, and other existing trip-event types become
+  structured patches on the current mutation path;
+- `OUT_OF_SCOPE` refuses with a reason.
+
+Classification may use a light model. Retrieval and feasibility remain
+deterministic. There is no free-form tool loop, supervisor graph, or
+multi-agent runtime on this path. Informational Ask and itinerary mutation
+do not share an execution graph after the command is typed.
+
 ### D2. Four memory planes
 
 1. **Conversation context.** A bounded number of turns for one authorized Ask
@@ -428,6 +442,31 @@ application dictionary directly to a provider.
   trip/source/prompt/model context in the key;
 - restricted fields and raw personal free text make an entry ineligible;
 - expiry means physical purge, not merely read-time rejection.
+
+### D5. Mutations require human confirmation
+
+A model may propose a structured itinerary patch. It cannot persist that
+patch. Persistence uses only the existing trip-event path and the Flutter
+confirmation surface (swap sheet, booking edit, or equivalent HITL card).
+Search and apply remain the SPEC-41 feasibility predicates. Reject any
+design in which an LLM, agent, or background worker writes trip, party, or
+booking rows.
+
+### D6. Proactive recommendations stay on the alert path
+
+Weather, closure, crowd, delay, and departure signals follow SPEC-29 and
+SPEC-35: ingest evidence, evaluate impact on the active trip, emit a
+candidate list, then render in-app or later SPEC-27 push. That path does
+not mutate the itinerary, consume reroute quota, or call an LLM. Do not
+introduce a second agent graph, durable workflow engine, or general event
+bus to host proactive recommendations.
+
+### D7. Provider ports, not MCP as runtime
+
+Maps, weather, flights, places, and the constraint solver are application
+ports behind FastAPI. MCP is reserved for later traveler-side connectors
+such as mail or calendar ingest under SPEC-10 and SPEC-43. It is not how
+the Ask path, swap path, or solver is invoked.
 
 ## Phase E: city platform contract
 
@@ -545,6 +584,12 @@ platform work.
 ### AI and city platform
 
 - [ ] Ask authorization and retrieval precede every optional model call
+- [ ] natural-language input classifies to a typed command with no free-form
+      tool loop
+- [ ] mutation proposals persist only through existing trip events and HITL
+- [ ] proactive candidates stay on SPEC-29/35 evaluators
+- [ ] maps, weather, flights, and the solver remain application ports; MCP is
+      later ingest only
 - [ ] conversation, preference, behavioral, and catalog memory planes have
       distinct authority, scope, retention, and deletion rules
 - [ ] no application object crosses the AI gateway
@@ -576,6 +621,14 @@ platform work.
 - user embeddings and similar-user retrieval before SPEC-43 and adequate data;
 - neural or sequence ranking before an interpretable baseline;
 - autonomous tool-calling agents;
+- LangGraph, AutoGen, or other multi-agent orchestration runtimes;
+- Temporal or equivalent durable agent workflows;
+- Redis Streams, NATS, or a general bus as the proactive alert fabric;
+- OR-Tools or another external CSP engine until `pack_day` constraint
+  volume requires it;
+- MCP as the in-process tool runtime for maps, weather, flights, or the
+  solver;
+- Mem0 or other generic long-term agent-memory products;
 - generic long-term conversation memory;
 - model-generated scheduling or eligibility;
 - active-active multi-region deployment before a legal or service requirement;
