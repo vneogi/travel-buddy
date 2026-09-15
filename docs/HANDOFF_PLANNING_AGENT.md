@@ -123,8 +123,10 @@ on the owner's phone. Next tasks:
 1. SPEC-40 is done as `ebdea52`; do not reopen its current five-day foundation
    while implementing later sparse-span work.
 2. SPEC-41 Phase A3a is merged as `d1fde14`. Same-day opening-window packing
-   and truthful cached capacity are done. Next is A3b deterministic transit and
-   locked-anchor reachability.
+   and truthful cached capacity are done. Next is A3b:
+   `docs/briefs/GENIE_SPEC_41_PHASE_A3B_REACHABILITY.md`. It replaces the
+   30-minute buffer and random/clock mock transit with deterministic walking
+   time, previous-node reachability, and next locked-anchor constraints.
 3. Implement the SPEC-10 provider-aware paste remainder with redacted Agoda and
    Booking.com fixtures and honest partial extraction.
 4. Implement the SPEC-25 grounded trip-scoped Ask remainder. Key presence alone
