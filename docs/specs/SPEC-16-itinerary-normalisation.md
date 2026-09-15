@@ -9,6 +9,10 @@
 >
 > Rationale and priority: `docs/DATA_LAYER_ROADMAP.md` concern 1.
 > Sequencing consequence: SPEC-10 should land on this schema, not before it.
+> SPEC-44 amendment: phase two cannot flip reads until trip graph, party, event,
+> and compatibility projection writes are one transaction and normalized
+> shadow-read equality is observed. The current separate delete/insert calls can
+> leave rows partial while the authoritative blob still looks healthy.
 
 ## Goal
 
@@ -57,6 +61,12 @@ doing booking anchors twice.
 
    This is not indecision. The itinerary is the one structure whose corruption
    ends a trip in progress, and the Oct 2 field test has no fallback.
+
+   Phase two additionally requires SPEC-44 Phase A: atomic graph and
+   compatibility writes, monotonic trip version, idempotent commands, crash
+   rollback proof on PostgreSQL, and a hosted shadow-read mismatch metric at
+   zero. A blob-vs-row unit round trip alone cannot expose a failed production
+   write.
 
 4. **Nodes are ordered by `(day_index, seq)` with sparse `seq`.** Leave gaps, so
    inserting an activity does not rewrite every following row. A reschedule that
@@ -179,6 +189,12 @@ on the same table is still unwritten (SPEC-23).
 - The same trip visited twice by the same venue produces two distinct nodes and
   unambiguous edges.
 - Deleting a trip removes its nodes and edges, with no orphans.
+- Injected failure after node deletion, during node insertion, and during edge
+  insertion leaves the entire old graph and compatibility projection unchanged
+- A shadow composer reads production rows independently of `state_json` and
+  compares the same public wire projection
+- Concurrent mutation against one version produces one commit and one typed
+  `trip_version_conflict`
 - Two arrival signals on consecutive nodes produce an observed duration on the
   edge between them, and re-running the sync does not double count it.
 
@@ -196,6 +212,10 @@ on the same table is still unwritten (SPEC-23).
       `state_json`
 - [ ] Phase two flipped reads to rows, with `state_json` still written and a
       documented one-line revert
+- [ ] SPEC-44 Phase A transaction, concurrency, idempotency, and PostgreSQL
+      adapter gates pass before phase two
+- [ ] normalized shadow-read equality is observed before the authoritative read
+      switch; the mismatch metric and rollback window are documented
 - [ ] No Flutter change required, and none made
 - [ ] Signals accepted with `entity_type = 'trip_node'`; drift guard green
 - [ ] Suite green with skip reasons named (R8); verified from `origin/main` (R10)

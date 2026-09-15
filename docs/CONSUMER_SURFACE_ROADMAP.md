@@ -69,6 +69,7 @@ months. The engineering does not get harder with time; the data does.
 | SPEC-26 | Trip list, home aggregate, empty state, minimum trip creation | SPEC-13, SPEC-16, SPEC-22 |
 | SPEC-27 | Push transport, deletion and export, minimum supported client | SPEC-22, SPEC-24 |
 | SPEC-43 | Security/privacy release foundation: auth, RLS, AI egress, rights, encrypted local data, consent, isolation, logging, abuse and HTTPS | SPEC-01/02/04/05/07/24/25/27 plus the completed Laos build |
+| SPEC-44 | Backend integrity and scale seams: atomic trip graph/party writes, concurrency, idempotency, decision telemetry, embedding spaces, AI-memory boundaries, and city-factory sequencing | Laos reliability tranche; SPEC-43 gates non-owner collection and AI use; SPEC-13/17/20 own city implementation |
 
 `docs/UX_BACKLOG.md` remains the list of screens we want to build. This roadmap
 is about what has to exist beneath them, and SPEC-22 constrains how any of it is
@@ -103,15 +104,25 @@ The immediate order after the field-test gate:
 6. SPEC-10 adds Agoda/provider-aware paste with honest partial extraction;
 7. SPEC-25 grounds the existing trip-scoped composer in catalog and trip facts;
 8. re-verify the hosted API and APK for those slices;
-9. implement SPEC-43 before any non-owner distribution, production LLM
+9. implement SPEC-44 Phase A transactional writes, expected-version conflicts,
+   idempotent commands, and production persistence contracts before
+   normalized-row reads, multi-device mutation, or a second city;
+10. implement SPEC-43 before any non-owner distribution, production LLM
    processing of personal trip data, or the planned December launch;
-10. only then consider inspiration, model-generated itineraries, or a broader
+11. implement SPEC-13, minimum SPEC-17 claims, and SPEC-20; Bangkok must
+    onboard as a versioned pack with no Python, Dart, loader, or advertisement
+    exception;
+12. capture SPEC-44 recommendation decisions only for consented subjects;
+    learned ranking remains disabled until held-out and rollback gates pass;
+13. only then consider inspiration, model-generated itineraries, or a broader
     tester cohort.
 
 SPEC-39 PDF/itinerary import, SPEC-11 forced-choice capture, and similar-trip
 generation stay deferred. Provider-aware confirmation text is SPEC-10, not
 SPEC-39. Learned personalization may later reorder the SPEC-41 feasible set but
-cannot weaken hard constraints.
+cannot weaken hard constraints. A separate vector database, graph database,
+microservice split, generic agent memory, or collaborative ranker requires
+measured evidence under SPEC-44; none is a city-onboarding prerequisite.
 
 SPEC-42 is the later Create/editor phase: trip span no longer equals catalog
 auto-fill capacity, at most five starter days are populated, and remaining

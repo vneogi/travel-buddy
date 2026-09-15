@@ -8,7 +8,9 @@
 > Sequenced after SPEC-40. This spec owns itinerary feasibility and ranking.
 > SPEC-08 owns the structured hours data, SPEC-10 owns locked booking anchors,
 > SPEC-13 owns the future region registry, and SPEC-17 owns traveller-facing
-> factual claims.
+> factual claims. SPEC-44 owns the recommendation-decision record, embedding
+> spaces, derived-feature boundary, and evidence required before Stage 4 can
+> receive non-zero weight.
 
 ## Goal
 
@@ -140,6 +142,12 @@ rendered as a warning afterward.
 Personalization is deferred until enough clean signals exist. The deterministic
 ranker remains the fallback.
 
+An outcome alone is not a training label. Before collecting a cohort for
+learning, SPEC-44 records the complete feasible exposure, exact exclusion
+reasons, component scores, displayed order, policy/catalog/taxonomy versions,
+and sponsored contribution. Accepted/rejected swaps, skips, visits, arrival,
+and dwell link to that immutable decision.
+
 Eligible future inputs include:
 
 - SPEC-11 forced choices;
@@ -157,11 +165,12 @@ fallback. A small number of interactions must not materially move the schedule.
 Collaborative filtering, user embeddings, and cross-user similarity remain out
 until volume and deletion semantics justify them.
 
-The suggested 10-15% learned contribution is an experiment hypothesis, not a
-fixed production constant. Phase B must first define score normalization,
-minimum samples, offline evaluation, and a maximum influence bound. Until that
-evidence exists, learned weight is zero and the deterministic ranker is the
-complete ranking path.
+The earlier suggested 10-15% learned contribution remains an experiment
+hypothesis, not a fixed production constant or starting value. Phase B must
+first define score normalization, minimum evidence, train/evaluation isolation,
+city/party/cold-start/sponsorship slices, rollback, and a maximum influence
+bound. Until that evidence exists, learned weight is zero and the deterministic
+ranker is the complete ranking path.
 
 Stage 4 is not part of the first implementation brief. Phase A ships stages 1
 through 3 and the LLM boundary tests. A later Phase B may activate
@@ -233,9 +242,18 @@ restaurant, a closed weekday, unknown hours, and a locked transport anchor.
 
 Phase B acceptance, deferred:
 
+- [ ] Feasible exposure, exclusions, score components, displayed order,
+      sponsorship, and policy/catalog/taxonomy versions are recorded
+- [ ] Outcomes link to immutable decisions rather than acting as context-free
+      labels
 - [ ] Minimum sample, recency, and fallback rules are specified from field data
+- [ ] Held-out evaluation prevents traveler and trip leakage and beats the
+      frozen deterministic baseline on named quality measures
+- [ ] City, party, cold-start, sparse-data, and sponsorship slices pass
 - [ ] Personalization reorders only the feasible set
 - [ ] Deletion removes the user's derived preference state
+- [ ] A kill switch restores the prior deterministic policy without an app
+      release
 
 ## Explicit non-goals
 

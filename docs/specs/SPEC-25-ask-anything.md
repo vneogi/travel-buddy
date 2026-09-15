@@ -12,6 +12,11 @@
 > before the security foundation, but production LLM processing of personal
 > trip data remains disabled until one redacting allowlist gateway, private
 > cache isolation, provider/region/retention approval, and abuse budgets pass.
+>
+> SPEC-44 architecture amendment: Ask becomes a retrieval-first query service
+> after intent classification rather than sharing structural mutation. Bounded
+> conversation context, explicit preferences, behavioral features, and catalog
+> claims are separate memory planes. No generic traveler-memory blob is created.
 
 ## Goal
 
@@ -94,11 +99,13 @@ retrieved trip data.
 
 ### Cost controls
 
-Apply exact and semantic cache, the separate per-identity Ask budget, and the
-circuit breaker before any model call. Anonymous identities receive the lower
-budget. Record model, token count, estimated cost, latency, cache status,
-fallback reason, region, and source IDs without logging the question or any
-secret by default.
+Apply exact public-fact cache, an approved identity/context-scoped private cache,
+the separate per-identity Ask budget, and the circuit breaker before any model
+call. Anonymous identities receive the lower budget. Record model, token count,
+estimated cost, latency, cache status, fallback reason, region, source IDs,
+prompt version, and model-policy version without logging the question or any
+secret by default. Semantic similarity is not sufficient cache scope for a
+private answer.
 
 Use deterministic templates whenever retrieved data already answers the
 question. A light model may classify an ambiguous intent or phrase retrieved
@@ -194,12 +201,14 @@ is allowed to return prose, every guarantee in SPEC-17 is optional in practice.
    immediate honest no -- and it teaches people the box is unreliable rather than
    that the network was.
 
-9. **The question itself is a signal, and it is the best one we get.** What
-   somebody types unprompted is intent stated in their own words, which no
-   tap-through can match. Queries are recorded under the same pseudonymous
-   identity as every other signal, and they fall under the SPEC-27 deletion path,
-   because free text is the one place a user can put personal information without
-   us asking for it.
+9. **The classified intent is a signal; raw question text is not retained by
+   default.** What somebody types unprompted can contain booking references,
+   health information, another person's data, or any other secret. The closed
+   intent and bounded non-text context may be recorded under the appropriate
+   SPEC-43 purpose. Raw text remains in the short-lived conversation plane and
+   is discarded after response unless a separately specified, explicit,
+   revocable research contribution flow is approved. Any retained research text
+   follows SPEC-27 export/deletion and is excluded from logs and general caches.
 
 10. **Classification does not wait on the answer.** The routing decision is fast
     and the client can show what kind of question it thinks was asked while the
@@ -223,7 +232,10 @@ is allowed to return prose, every guarantee in SPEC-17 is optional in practice.
 - An anonymous identity hits its ceiling earlier than a signed-in one
 - With the network down, a cache-answerable question answers and a
   non-answerable one refuses immediately without enqueuing
-- Each ask emits a signal carrying the query text
+- Each ask may emit a purpose-authorized closed intent signal without raw query
+  text; declining optional analytics emits neither signal nor outbox row
+- Raw question text expires with bounded conversation context and never enters a
+  global semantic cache
 
 ## Acceptance
 
@@ -234,5 +246,7 @@ is allowed to return prose, every guarantee in SPEC-17 is optional in practice.
 - [ ] Separate ask budget, lower for anonymous identities
 - [ ] Cheap model classifies; expensive model reachable only via discovery
 - [ ] Offline behaviour implemented as answer-or-refuse, never queue
-- [ ] Query text recorded as a signal and covered by the deletion path
+- [ ] Purpose-authorized closed intent recorded without raw query text
+- [ ] Conversation context is bounded, identity/trip scoped, short-lived, and
+      covered by deletion; it cannot become an implicit traveler preference
 - [ ] Suite green (R8); verified from `origin/main` (R10)

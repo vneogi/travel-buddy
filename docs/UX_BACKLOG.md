@@ -141,10 +141,15 @@ remaining product order is:
 3. SPEC-10 hardens Agoda and Booking.com paste as honest partial extraction.
 4. SPEC-25 grounds the existing trip Chat before adding a broader assistant.
 5. Re-run the hosted API, signed APK, and owner-device Laos gates.
-6. SPEC-43 closes all twelve security/privacy gaps before another person uses
+6. SPEC-44 Phase A makes trip/party/graph writes transactional and adds
+   concurrency/idempotency before normalized reads, multiple devices, or a
+   second real city. This is backend integrity, not a new screen.
+7. SPEC-43 closes all twelve security/privacy gaps before another person uses
    the app or production LLM processing handles personal trip data.
-7. Only then resume map-first polish, multi-night hotel UI, inspiration, and
-   broader consumer work.
+8. SPEC-13, minimum SPEC-17 claims, and SPEC-20 make Bangkok a versioned city
+   pack rather than another Python/Dart exception.
+9. Only then resume map-first polish, multi-night hotel UI, inspiration,
+   learned ranking, and broader consumer work.
 
 Full Vault and the map-first shell remain post-reliability unless field evidence
 changes the order.

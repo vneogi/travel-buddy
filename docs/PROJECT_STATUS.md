@@ -113,6 +113,7 @@
 | Hours-aware scheduling and staged ranking (SPEC-41) | A3a MERGED (`d1fde14`); A3b NEXT | Create, corridor, and swap refuse known-closed target slots; day packing advances into later opening windows; cached `max_days` is guaranteed across weekdays and valid interest profiles. A3b owns deterministic transit and locked-anchor reachability |
 | Flexible trip span and sparse day editing (SPEC-42) | SPECIFIED, LATER PHASE | Decouples trip duration from auto-fill capacity. Wider spans may contain at most five generated starter days plus first-class empty days with direct Add/Move actions |
 | Security, privacy and data governance foundation (SPEC-43) | SPECIFIED; AFTER LAOS BUILD, BEFORE NON-OWNER DISTRIBUTION | Owns twelve verified gaps across anonymous authentication, RLS, LLM egress, rights/retention, offline encryption, sign-out, consent, cache isolation, signal authorization, logging, abuse limits, and release transport. The current owner-only exception expires before the first external tester or December launch |
+| Backend integrity and future-readiness foundation (SPEC-44) | SPECIFIED; PHASE A AFTER LAOS | Keeps the modular FastAPI/Postgres/pgvector architecture while adding atomic trip/party/graph writes, optimistic concurrency, idempotent commands, production-shaped persistence contracts, recommendation decision telemetry, embedding-space versioning, four explicit AI-memory planes, and the cross-spec city-factory gate. It does not authorize learned ranking before SPEC-43 and sufficient held-out evidence |
 
 Migration numbers are assigned when a spec is implemented, not when it is
 written. SPEC-11, SPEC-13, SPEC-14 and SPEC-15 each claimed a number, and the
@@ -210,10 +211,20 @@ Seed-shaped cohorts.
    budget, breaker, and model-error fallbacks.
 8. Re-run the current hosted/API/APK acceptance for those bounded slices before
    starting security implementation, inspiration, or model-generated itineraries.
-9. SPEC-43 security, privacy, and data governance -- **NEXT RELEASE
+9. SPEC-44 Phase A backend integrity -- **NEXT DATA FOUNDATION AFTER THE LAOS
+   BUILD**. Make trip graph, party, and compatibility projection one
+   transaction; add expected-version conflicts and idempotent commands before
+   normalized-row reads, multi-device use, or a second real city.
+10. SPEC-43 security, privacy, and data governance -- **NEXT RELEASE
    FOUNDATION AFTER THE LAOS BUILD**. Complete all twelve gaps before any
    non-owner APK, production LLM processing of personal trip data, or the
    planned December public launch.
+11. After SPEC-43, implement the SPEC-13 registry, minimum SPEC-17 claim store,
+    and SPEC-20 city factory. Bangkok proves the pack; do not ingest another
+    country through hardcoded exceptions.
+12. Add SPEC-44 recommendation decision telemetry only for consented subjects.
+    Learned ranking remains at zero influence until exposure data, held-out
+    evaluation, safety slices, and rollback pass.
 
 ### Deferred after the phone gate
 
@@ -235,6 +246,12 @@ Seed-shaped cohorts.
 - SPEC-24 identity lifecycle and SPEC-27 data rights are implementation
   dependencies inside the SPEC-43 release foundation, not work that may slip
   past the first non-owner build.
+- SPEC-44 Phase A is an integrity dependency for safe normalized reads and
+  multi-device mutation. Its model, vector, graph, and service extractions are
+  deliberately deferred until measured evidence.
+- Thailand, Vietnam, Cambodia, and Philippines packs wait for SPEC-13/17/20
+  under SPEC-44's city-platform contract. Bangkok is the acceptance case, not a
+  temporary registry and loader exception.
 - Swappable LLM providers are permitted only through SPEC-43's approved
   provider, region, retention, and egress contract.
 
@@ -271,7 +288,12 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 | SPEC-43 gap 11: general request and provider-spend abuse controls are absent | High when access expands | Reroute quota does not bound account creation, bodies, search, Ask, signals, webhooks, or downstream cost. Add gateway, account/IP/device-reputation, size, depth, concurrency, timeout, idempotency, anomaly, and spend controls |
 | SPEC-43 gap 12: release HTTPS and private mobile cache isolation are incomplete | High before release distribution | Release code does not reject HTTP; trip/place cache keys are not consistently identity-scoped; chat text enters route URLs. Enforce TLS at build/startup, identity-key caches, ownership checks, private navigation state, and authorized deep links |
 | Create conflates trip span with auto-fill capacity | Medium | SPEC-40 deliberately caps the foundation at five filled days. SPEC-42 later accepts wider spans, generates at most five starter days, and renders remaining dates as editable empty days |
-| Range create persists trip and party in two writes | Medium | A failure between writes can leave an orphan trip. Recorded as a pre-existing SPEC-40 risk; preserve the merged contract when persistence is later made transactional |
+| Range create persists trip and party in two writes | High before multi-device or non-owner scale | A failure between writes can leave an orphan trip. SPEC-44 Phase A makes trip, party, normalized graph, compatibility projection, and command record one transaction before normalized reads or multi-device use |
+| Trip graph dual-write is non-transactional and blob-authoritative | High before SPEC-16 read cutover | Supabase replaces nodes and edges through separate calls while `get_trip` still reads `state_json`, so partial row writes can remain hidden. SPEC-44 requires crash-injection rollback proof, shadow-read equality, and a rollback window before rows become authoritative |
+| Trip mutation is last-write-wins | High before account linking or multiple devices | Mutation carries no expected trip version, so concurrent devices can silently overwrite newer state. SPEC-44 adds monotonic versioning, typed conflict, refresh/retry, and durable command idempotency |
+| Recommendation outcomes lack exposure context | High before a tester cohort or learned ranking | Signals alone cannot reveal which candidates were feasible, excluded, displayed, sponsored, or scored under which policy. SPEC-44 adds privacy-scoped decision records before learned influence; missing historical exposure cannot be reconstructed |
+| Embedding spaces are not enforced end to end | Medium before re-embedding or corpus Ask | Provider/model columns exist, but mixed-space query prevention and resumable migration do not. Production provider failure may create synthetic vectors. SPEC-44 requires explicit embedding-space identity, lexical fallback, fail-closed writes, and dual-space rollback |
+| City onboarding remains a code change | High before Bangkok | Region, language, currency, bounds, advertisement, seed, and client defaults remain mirrored; loader bounds default non-Dubai cities to Laos. SPEC-44 sequences SPEC-13, minimum SPEC-17, and SPEC-20 before a second-country pack; Bangkok must pass the common refusal pipeline without an exception |
 | reroute_accepted.replacement_ref is inverted | Closed PR #18 (`ce8fedb`) | Client helper replacementRefForSwap matches node_id and changed venue key. Production `_swap` calls it |
 | Supabase session gate softlocks the app | Closed PR #18 (`ce8fedb`) | app_router calls redirectForAuth; anonymous device needs no session. Owner E2E with dart-defines still in LAPTOP_VERIFY Step 8b |
 | observed_duration_minutes writer | Closed PR #32 (`f8349a8`) | Consecutive arrivals update `trip_edge.observed_duration_minutes`. Dual-write preserves the value. Transport cost on the same table is still unwritten (SPEC-23) |

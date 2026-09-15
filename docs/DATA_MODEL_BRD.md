@@ -3,6 +3,14 @@
 *Purpose: define the extensible data model that captures on-trip signals, ingests third-party
 metrics, and layers LLM-derived insight — the proprietary asset that compounds monthly.*
 
+> September 2026 amendment: SPEC-43 is authoritative for identity, consent,
+> retention, deletion, poisoning controls, child data, and the prohibition on
+> behavioral sale/sharing. SPEC-44 is authoritative for recommendation exposure,
+> derived features, embedding spaces, and the separation between explicit
+> preferences, behavioral features, catalog claims, and conversation context.
+> Earlier "memory", raw-query, party-stamping, and immediate vector-learning
+> language in this draft does not override those later release contracts.
+
 ## 0. How to read this
 This is a **design BRD**, not an implementation plan. It defines *concepts, schema, and rules*
 so the data asset is extensible and legally clean from day one. Review targets: is the model
@@ -19,7 +27,9 @@ a migration? Is the provenance/consent model sound enough to survive acquisition
    sentiment, extracted attributes) so they slot in later without reshaping the schema.
 4. Make the **re-planning engine's observed behavior** (what alternatives users accept/reject) a
    first-class, captured signal — this is the proprietary crown jewel no competitor has.
-5. Be **privacy-first and consent-based** so the resulting data asset is legally sellable.
+5. Be **privacy-first and consent-based** so the resulting data remains
+   governable, exportable, deletable, and useful without being sold or shared
+   for behavioral advertising.
 6. Work **offline-first** (capture on-trip in low/no connectivity, sync later) — hard dependency
    for the Laos field test and the whole on-trip thesis.
 
@@ -341,8 +351,9 @@ genuinely new *entities* below (traveler profile + trip party), which the signal
 
 ### 16.1 New entities
 
-#### `traveler_profile` — persistent "who this user is as a traveler"
-One per `app_user`; slow-changing preferences that carry across trips (feeds capability #8 memory).
+#### `traveler_profile` — explicit, editable traveler preferences
+One per `app_user`; slow-changing choices that carry across trips. This is
+traveler authority, not a mixture of declared and inferred memory.
 
 ```
 traveler_profile
@@ -351,13 +362,16 @@ traveler_profile
   traveler_types      TEXT[]    -- self-declared defaults: solo|couple|friends|family_*|...
   dietary             TEXT[]    -- veg|vegan|halal|allergy:nuts|...
   mobility            TEXT[]    -- stairs_ok|wheelchair|low_stamina|stroller|...
-  interest_vector     JSONB     -- learned + declared: {art:0.8, nightlife:0.2, food:0.9,...}
+  interests           TEXT[]    -- explicit editable taxonomy terms
   pace_preference     TEXT      -- packed | balanced | relaxed
   budget_band         TEXT      -- shoestring | mid | premium
   updated_at
 ```
 
-`interest_vector` is *learned* over time from behavioral signals (§16.3) — declared values seed it.
+Behavioral inference never mutates this row. Evidence-gated inferred interests,
+if built later, live in SPEC-44 `derived_feature` with method version, sample
+size, confidence, recency, consent, and deletion behavior. Read-time resolution
+keeps explicit and inferred values visibly distinct.
 
 #### `trip_party` & `party_member` — "who is on THIS trip"
 Per-trip composition. The same user has different parties on different trips (daddy-kiddo vs solo).
@@ -380,11 +394,55 @@ party_member
   role                TEXT      -- self|partner|child|teen|parent|friend|...
   age_band            TEXT      -- infant|toddler|child|teen|adult|senior (NOT exact age — privacy)
   needs               TEXT[]    -- nap_schedule|stroller|dietary:*|low_stamina|...
-  preference_vector   JSONB NULL -- optional per-member interests (drives capability #6)
+  preferences         TEXT[] NULL -- explicit current-trip needs/interests only
 ```
 
-Design notes: **age_band not birth date** (minimize sensitive data on minors). `preference_vector`
-per member is what the multi-preference optimizer (capability #6) reconciles.
+Design notes: **age_band not birth date** (minimize sensitive data on minors).
+The earlier `preference_vector` is superseded by explicit `preferences`. No
+child-level behavioral vector is
+created. A later group optimizer reconciles explicit trip inputs and approved
+aggregate features without profiling a child.
+
+#### `recommendation_decision` and `derived_feature`
+
+An outcome is usable for evaluation or learning only when the exposure that
+caused it is known. SPEC-44 therefore adds an immutable decision record before
+learned ranking:
+
+```
+recommendation_decision
+  decision_id                  UUID PK
+  subject_pseudonym            UUID/TEXT
+  trip_id                      FK NULL
+  geo_region                   FK
+  local_slot
+  context_version
+  catalog_revision
+  taxonomy_revision
+  policy_version
+  feasible_candidate_ids
+  excluded_candidates          JSONB  -- candidate_id + closed reason code
+  component_scores             JSONB  -- explicit named components
+  displayed_candidate_ids
+  selected_candidate_id        NULL
+  sponsored_contribution       JSONB
+  created_at
+```
+
+Restricted booking data, unrestricted free text, exact coordinates when region
+is sufficient, and copied party age bands are forbidden.
+
+```
+derived_feature
+  subject_type, subject_id, feature_key, value
+  computed_at, method_version, sample_size, confidence
+  consent_purpose, source_window_start, source_window_end
+```
+
+Derived features are recomputable and never overwrite explicit preferences or
+curated/field-verified claims. Learned influence starts at zero and remains
+bounded inside the SPEC-41 feasible set after held-out evaluation and rollback
+gates.
 
 ### 16.2 New `signal_type` rows (explicit — capability #1, #5, audience-segmented)
 Insert-only; no schema change. Each row also carries the **party context** at capture time via
@@ -424,34 +482,38 @@ capture priority before Laos.**
 | `llm_audience_fit` | derived | json | placeholder — LLM scores venue fit per party_type from fused signals |
 | (existing) `llm_summary`, `llm_sentiment`, `llm_tourist_trap_score` | derived | json | §4.4 |
 
-### 16.5 Party context on every signal (the segmentation lever)
-To make the moat *segmented* (VISION §11: "loved by daddy-kiddo trips at golden hour"), first-party
-signals stamp the party context at capture time — denormalized into `signal.value_json`:
+### 16.5 Purpose-limited context on signals
+The original proposal stamped the full party context onto every signal. SPEC-43
+supersedes that design. Capture only the fields required by the signal's
+approved purpose and prefer an authorized join or coarse aggregate over copied
+age bands.
 
 ```
-value_json.party_context = {
-  party_type,
-  size,
-  age_bands[],
+value_json.context = {
+  party_type_if_required,
+  coarse_party_bucket_if_required,
   time_of_day,
   weather_bucket,
   day_index
 }
 ```
 
-Rationale: parties/profiles change over time; freezing context on the signal keeps historical
-segmentation correct (don't join to mutable current profile). This is what lets the fused
-place-quality view (§5.2) produce *audience-and-condition-specific* scores rather than a flat rating.
+Each signal type declares the allowed context keys, size/range limits, purpose,
+and retention. Declining or withdrawing the relevant purpose prevents enqueue
+and future use. Exact age bands and unrestricted party notes are not copied to
+general behavioral signals.
 
 ### 16.6 Fusion additions (extends §5)
 - The place-quality read model (§5.2) gains **segment dimensions**: fused score can be sliced by
   `party_type`, `time_window`, `weather_bucket`. Engine reads the slice matching the current trip.
-- **Preference learning:** `traveler_profile.interest_vector` and `party_member.preference_vector`
-  are updated asynchronously from behavioral signals (accepted/loved/dwell -> up; rejected/skipped ->
-  down). This is capability #8 (cross-trip memory) made concrete.
+- **Preference learning:** explicit `traveler_profile.interests` and
+  `party_member.preferences` are never updated from behavior. Approved
+  behavioral inferences live in `derived_feature` and remain separately
+  inspectable and removable.
 - **Multi-preference optimizer (#6)** consumes party member vectors + schedule + transit; its
-  chosen option and the alternatives it weighed are logged as `group_compromise_accepted` -> the
-  optimizer trains on its own outcomes.
+  chosen option, complete feasible alternatives, component scores, displayed
+  order, and policy version are recorded as a SPEC-44 recommendation decision.
+  An outcome links to that immutable exposure; it is not sufficient by itself.
 
 ### 16.7 Privacy additions (extends §8)
 - **Minors:** store `age_band`, never birth date or name for child members. `party_member` for

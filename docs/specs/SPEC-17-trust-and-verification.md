@@ -4,10 +4,11 @@
 > SwapSheet slice; the claims registry, source/staleness system, and full
 > envelope backend remain unimplemented.
 >
-> This spec constrains SPEC-18, SPEC-19 and SPEC-20. Each of those produces
-> unverified assertions at scale; this one governs what may be shown, how, and
-> what it takes to promote a claim. Implement it first or the other three
-> industrialise the failure the Laos names produced.
+> This spec constrains SPEC-18, SPEC-19, SPEC-20 and SPEC-44. Each can produce
+> or use assertions at scale; this one governs what may be shown, how, and what
+> it takes to promote a claim. Implement its minimum claim store before the
+> city factory or behavioral features industrialise the failure the Laos names
+> produced.
 >
 > No migration number is claimed. Numbers are taken at implementation time.
 
@@ -158,6 +159,21 @@ reviewers remembering.
     Missing provenance suppresses the notification; it does not produce a bare
     dish name with implied authority.
 
+17. **Derived behavior cannot silently become catalog truth.** SPEC-44's
+    `derived_feature` may carry observed dwell, lateness, rejection, or
+    acceptance aggregates. It always retains method version, sample size,
+    confidence, recency, and authorized input scope. It never overwrites a
+    curated or field-verified claim. If a derived value is displayed as a fact,
+    it first enters this claim contract with its derivation provenance and
+    resolves to the permitted tier.
+
+18. **Recommendation policy provenance is recorded separately from factual
+    provenance.** A candidate can be factually well sourced and still be ranked
+    because of interest fit, distance, diversity, a learned feature, or payment.
+    SPEC-44 records feasible exposure, score components, policy version, and
+    sponsored contribution. The factual claim envelope is not overloaded to
+    hide ranking influence.
+
 ## Shape
 
     attribute_claim(
@@ -260,6 +276,10 @@ rather than a formality.
 - A notification renderer refuses a dish claim whose source, tier or `as_of`
   value is absent
 - A signature flag alone cannot resolve to the `popular_dish` attribute
+- A derived feature cannot overwrite or outrank a field-verified claim merely
+  because it is newer
+- A recommendation whose rank includes a learned or sponsored contribution
+  exposes that policy provenance independently of its factual claim sources
 
 ## Acceptance
 
@@ -279,4 +299,8 @@ rather than a formality.
       render, with a test that a boosted result cannot display unlabelled
 - [ ] SPEC-35 notification copy consumes the same envelope and cannot promote
       `is_signature` into a popularity claim
+- [ ] behavioral derivations retain method, sample, confidence, recency, and
+      consent scope; they never mutate curated claims in place
+- [ ] SPEC-44 recommendation decisions expose policy and commercial influence
+      without weakening this factual provenance contract
 - [ ] Suite green (R8); verified from `origin/main` (R10)

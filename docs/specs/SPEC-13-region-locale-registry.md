@@ -2,8 +2,9 @@
 
 > Status: SPECIFIED. Not implemented. Post-Laos.
 >
-> Migration `0015`. Allocation: 0011 venues_rag columns, 0012 booking anchors,
-> 0013 preference_choice, 0014 driver_card_shown, 0015 this, 0016 SPEC-14.
+> No migration number is claimed. Numbers are assigned at implementation time.
+> SPEC-44 makes this registry a hard dependency before Bangkok or any other
+> second-city pack is loaded.
 >
 > Driver: `docs/MARKET_STRATEGY.md`. This is the scalability requirement of the
 > corridor made concrete.
@@ -38,15 +39,22 @@ all of which have already cost time or will:
    values be reconciled first, which is itself worth doing, since nothing has
    ever validated them.
 
+   Country-level defaults may live in a small `country_profile` row keyed by
+   ISO 3166-1 alpha-2, with explicit region overrides. A city remains the
+   scheduling and catalog boundary; a country default is never silently used
+   when the region declares a different value.
+
 2. **Fields, chosen because something downstream already needs each one.**
 
    | Field | Needed by |
    |-------|-----------|
-   | `region_key`, `city`, `country` | identity, display |
+   | `region_key`, `city`, `country`, `country_iso` | identity, display, joins |
    | `timezone` | the scheduler, which currently assumes one offset |
-   | `currency`, `typical_meal_cost_band` | cost intelligence, vision section 20 |
+   | `bbox_south`, `bbox_west`, `bbox_north`, `bbox_east` | city-pack discovery and coordinate refusal |
+   | `default_lat`, `default_lng` | explicit map/search fallback, never another city |
+   | `currency`, `currency_exponent`, `typical_meal_cost_band` | cost intelligence, vision section 20 |
    | `languages` (ordered) | SPEC-12, to pick which localized name to show |
-   | `primary_script` | the script guard on curated data |
+   | `primary_script`, `unicode_blocks` | the script guard on curated data |
    | `fare_band_base`, `fare_per_km` | SPEC-12 driver-card fare band |
    | `emergency_numbers` | the Offline Vault, SPEC-04 |
    | `tipping_norm`, `payment_norms` | cost intelligence; includes UPI acceptance |
@@ -71,6 +79,22 @@ all of which have already cost time or will:
    for grouping venues and holding facts. Vision section 30 defers PostGIS
    until venue count forces it, and nothing in this spec changes that.
 
+6. **The registry replaces mirrors rather than creating another one.**
+   `config/regions.py`, Flutter `RegionDefaults`, currency/language dictionaries,
+   loader bounding-box branches, and advertisement allowlists stop being
+   independent authorities. The server publishes one versioned projection and
+   the client caches it for offline use.
+
+7. **Unknown means refusal, never Dubai or Laos.** An unregistered key, missing
+   bounding box, invalid IANA timezone, or incomplete currency convention blocks
+   a city-pack load. Search and Ask return a typed unsupported-region treatment.
+   No write-adjacent path may default `geo_region` to another city.
+
+8. **Registry and pack revisions are distinct.** The registry projection carries
+   its own revision. A city catalog and its pack schema carry separate revisions
+   under SPEC-20. Search, caches, recommendation decisions, and acceptance
+   goldens record the revisions they used.
+
 ## Tests
 
 - A region key absent from the registry fails at write time rather than
@@ -83,13 +107,22 @@ all of which have already cost time or will:
   alone
 - The registry resolves from cache with the API client stubbed to throw on any
   call, per R7
+- Bangkok coordinates outside the current Laos-wide bounds are accepted by the
+  Bangkok row, while Hanoi coordinates cannot pass by accidentally matching a
+  Laos fallback
+- a region with an invalid IANA timezone or currency exponent is refused
+- Python, loader, and Flutter consumers resolve the same versioned projection;
+  a hand-added mirror makes the drift test fail
 - Migration is additive: no `DROP`, no `RENAME`, no type change on existing
   columns
 
 ## Acceptance
 
-- [ ] `region` table in migration `0015`, seeded with the three Laos regions and
-      Dubai, additive-only proven by grep
+- [ ] `region` table in the next migration assigned at implementation, seeded
+      with the three Laos regions and Dubai, additive-only proven by grep
+- [ ] country ISO, city bounding box, explicit default point, IANA timezone,
+      ordered languages, script guard, currency exponent, payment/fare context,
+      and transport modes are representable
 - [ ] Existing `geo_region` values reconciled against the seed, with the
       discrepancies listed rather than silently corrected
 - [ ] `venues_rag.geo_region` foreign key added, or the reason it cannot be
@@ -99,5 +132,8 @@ all of which have already cost time or will:
 - [ ] Registry cached client-side; offline resolution proven by a test that
       fails if a network call occurs
 - [ ] Unregistered region degrades loudly, with a test
+- [ ] independent Python/Dart dictionaries, loader bounds, and advertisement
+      allowlists no longer act as sources of truth
+- [ ] SPEC-20 can validate a pack entirely from the registry projection
 - [ ] Suite green with skip reasons named (R8); verified from `origin/main`
       (R10)

@@ -46,7 +46,7 @@ Both findings point the same way: the data layer needs to record where every
 fact came from and how much to trust it, and it needs somewhere to put facts
 that were computed rather than curated.
 
-## The seven concerns, in order
+## The original seven concerns, in order
 
 ### 1. The itinerary is an opaque blob -- SPEC-16
 
@@ -202,9 +202,86 @@ every trip taken without transport cost on the edge is observation lost for good
 Not the most urgent, because nothing is broken today and the field test does not
 need it, but the cheapest moment to add the columns is before the second city.
 
+## SPEC-44 extension: integrity before scale
+
+The original concerns correctly identified normalized rows, external identity,
+provenance, derived features, edges, taxonomy, and money. Repository review
+found four shared foundations that have to precede those capabilities at scale.
+
+### 8. Normalized writes are not yet atomic
+
+`state_json`, `trip_node`, `trip_edge`, and range-create party rows are written
+through separate calls. The blob remains authoritative and can hide a failed
+node or edge replacement. Before SPEC-16 switches reads, SPEC-44 makes the
+logical trip operation one PostgreSQL transaction and proves rollback with
+injected failures.
+
+The same slice adds a monotonic trip version and idempotent command ID.
+Otherwise account linking and a second device convert a rare race into silent
+last-write-wins data loss.
+
+Cost of delay: every trip increases dual-write reconciliation and backfill; each
+new device increases the probability of conflicting mutations.
+
+### 9. Outcomes are not recommendation training data without exposure
+
+Accepted swaps, rejections, skips, visits, arrival deltas, and dwell are useful
+observations. They are not interpretable labels unless the system also records:
+
+- the complete feasible candidate set;
+- exact exclusion reasons;
+- component scores and displayed order;
+- deterministic policy, catalog, and taxonomy versions;
+- sponsorship contribution;
+- the decision that caused an outcome.
+
+This is the one historical datum that cannot be reconstructed later. SPEC-44
+adds a privacy-scoped recommendation-decision record after SPEC-43 consent and
+ownership gates. Learned influence remains zero until held-out evaluation across
+travelers, contexts, and cities beats the frozen deterministic baseline.
+
+Cost of delay: signals collected without exposure encode the old policy and
+availability bias but cannot reveal either one.
+
+### 10. Embedding space is a data contract
+
+pgvector is already sufficient for current scale. The missing foundation is an
+immutable embedding-space identity covering model, revision, dimension, input
+construction, normalization, and entity type. Queries must not compare mixed
+spaces, and a provider failure must not write a synthetic vector into a real
+production space.
+
+Re-embedding writes a new space beside the old one, records progress, validates
+retrieval goldens, switches through configuration, and retains rollback.
+Lexical localized-name retrieval is the declared fallback; another vector
+database is not.
+
+Cost of delay: mixed vectors silently reduce retrieval quality, while
+unversioned re-embedding turns a model change into downtime or an ambiguous
+partial migration.
+
+### 11. Memory is four governed planes
+
+Conversation context, explicit preferences, behavioral features, and catalog
+claims have different authority, retention, deletion, and cache rules. They do
+not belong in one generic agent-memory blob.
+
+SPEC-44 fixes the separation:
+
+- conversation context is bounded and short-lived;
+- explicit preferences remain editable traveler authority;
+- behavioral features are consent-scoped and recomputable;
+- catalog claims remain sourced and resolved under SPEC-17.
+
+The LLM may phrase retrieved facts inside SPEC-43's outbound contract. It does
+not schedule, resolve claims, silently create a durable preference, or receive a
+full application object.
+
 ## Position on machine learning
 
-**No recommender, and not because of engineering cost.** Collaborative filtering
+**No learned recommender yet, and not because of engineering cost.** The current
+deterministic feasibility and content ranker is the production baseline.
+Collaborative filtering
 -- people who did this also did that -- needs overlap between users and items. At
 one user and 74 venues there is no overlap to find; this is arithmetic, not
 modelling. Meaningful item-to-item co-occurrence needs users in the thousands
@@ -292,16 +369,23 @@ The immediate sequence is now:
 3. harden SPEC-10 provider-aware paste and SPEC-25 grounded trip-scoped Ask;
 4. re-run hosted API, signed APK, and owner-device acceptance for the Laos
    build;
-5. implement SPEC-43 before any non-owner tester or production LLM processing
+5. implement SPEC-44 Phase A transactional trip integrity, expected-version
+   concurrency, idempotent commands, and production persistence contracts;
+6. implement SPEC-43 before any non-owner tester or production LLM processing
    of personal trip data;
-6. defer learned personalization until SPEC-43 is complete and field signals
-   clear minimum sample thresholds.
+7. implement SPEC-13, the minimum SPEC-17 claim store, and SPEC-20 before
+   Bangkok; a second city must be one versioned pack, not another code path;
+8. collect SPEC-44 recommendation decisions only for consented subjects, while
+   learned influence remains zero;
+9. defer learned personalization until exposure, held-out evaluation, slice,
+   rollback, and minimum-evidence gates pass.
 
 SPEC-41 should not need a new hours table: structured hours already exist.
 If implementation reveals a schema change, assign the next free migration
 number at that time and update `docs/HOSTED_STATE.md` only after observing its
 live sentinel. `derived_feature` remains the later home of evidence-gated
-personalization; it is not a prerequisite for deterministic ranking.
+personalization; `recommendation_decision` is the exposure context needed to
+interpret its inputs. Neither is a prerequisite for deterministic ranking.
 
 ## Not decided
 
@@ -318,3 +402,6 @@ personalization; it is not a prerequisite for deterministic ranking.
 - Whether attribute provenance is backfilled for the existing 74 venues or only
   recorded going forward. Backfilling means asserting a source for tags nobody
   can now trace, which may be worse than admitting they are unknown.
+- Whether a separate vector store, feature store, graph database, queue, or
+  service boundary is ever justified. SPEC-44 requires measured volume,
+  latency, isolation, residency, or ownership evidence before adopting one.

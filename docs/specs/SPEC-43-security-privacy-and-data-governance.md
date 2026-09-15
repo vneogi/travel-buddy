@@ -12,6 +12,12 @@
 > This is an engineering and product contract, not legal advice. Market launch
 > still requires counsel to confirm the operating entity, controller roles,
 > jurisdiction triggers, processor contracts, and current local rules.
+>
+> SPEC-44 owns the shared transaction, optimistic-concurrency, idempotent-command,
+> persistence-contract, recommendation-telemetry, embedding-space, and
+> AI-memory architecture. Its Phase A runs after the Laos tranche and before
+> this release foundation. This spec remains authoritative for identity,
+> consent, ownership, retention, deletion, egress, and public-release gates.
 
 ## Goal
 
@@ -521,8 +527,9 @@ launch:
   service accounts;
 - fail production readiness when database, auth, required migrations, or
   security settings are absent;
-- make trip, node, edge, party, event, signal, and webhook writes transactional
-  and idempotent where partial state is unsafe;
+- implement SPEC-44's transactional and idempotent command contract for trip,
+  node, edge, party, event, signal, and webhook writes where partial state is
+  unsafe;
 - establish a migration history and live drift check;
 - pin CI actions to immutable revisions and dependencies to reviewed
   resolutions;

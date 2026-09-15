@@ -76,6 +76,31 @@ forbids chasing city count before retention exists. Six cities is the target the
 *pipeline* is built for, not a launch checklist. Adding a city must become a row
 in a table plus an ingestion run, which is exactly what SPEC-13 makes true.
 
+### September 2026 implementation gate
+
+SPEC-44 tightens the meaning of "pipeline" without changing the market
+decision. Bangkok is the first post-Laos acceptance city because it appears in
+both the Indian-outbound and backpacking paths and has strong measured
+OSM/Wikidata identity coverage. It must prove the SPEC-13/17/20 machinery:
+
+- one country/region registry and cached client projection;
+- one versioned city pack and loader;
+- source-first external venue identity;
+- one taxonomy and hours contract;
+- refuse-not-warn quality and licence gates;
+- deterministic capacity, search, and itinerary goldens;
+- no Python, Dart, loader-bounds, or advertisement exception.
+
+Only after Bangkok passes do we measure and prioritize Chiang Mai and Pai for
+the backpacking continuation. HCMC and Hanoi follow through the same template;
+Cambodia is measured before committing to an OSM-led spine; the Philippines is
+later as a UTC+8 and payment-method stress case. The original six-city list
+remains the cross-region pipeline stress target, not an instruction to skip the
+Thailand route or to ingest six catalogs at once.
+
+No Thailand, Vietnam, Cambodia, or Philippines venue pack is loaded before the
+registry, minimum claims boundary, source identity, and refusal pipeline exist.
+
 ## What this changes in the build
 
 Four consequences, ordered by how expensive they get if deferred.

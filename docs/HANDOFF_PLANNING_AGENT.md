@@ -9,8 +9,11 @@ Read this file and the two contracts above. SPEC-36 through SPEC-38 and
 SPEC-40 are done. SPEC-41 Phase A3a merged as `d1fde14`; A3b deterministic
 transit and locked-anchor reachability remains. Then come SPEC-10
 provider-aware paste and SPEC-25 grounded trip-scoped Ask. After those
-Laos-facing slices and their hosted/API/APK verification, SPEC-43 is the
+Laos-facing slices and their hosted/API/APK verification, SPEC-44 Phase A
+makes trip persistence transactional and concurrency-safe. SPEC-43 is then the
 release foundation before any non-owner tester or the planned December launch.
+The SPEC-13/17/20 city factory follows; Bangkok proves it without a hardcoded
+exception.
 
 ## Who does what (unchanged)
 
@@ -134,23 +137,37 @@ on the owner's phone. Next tasks:
 5. Re-run hosted API, signed APK, and device acceptance for those slices before
    security implementation, inspiration, similar-trip generation, or broader
    consumer work.
-6. Implement SPEC-43 in bounded phases. It owns twelve verified gaps:
+6. Implement SPEC-44 Phase A. Make trip graph, party, compatibility projection,
+   and command record one transaction; add monotonic trip version,
+   `expected_version`, typed conflict, idempotent command IDs, and production
+   PostgreSQL contract tests. Do this before SPEC-16 row-authoritative reads,
+   multi-device mutation, or a second real city.
+7. Implement SPEC-43 in bounded phases. It owns twelve verified gaps:
    server-issued anonymous auth, complete RLS, redacted LLM egress, data rights
    and retention, encrypted offline data, real sign-out, purpose consent,
    private cache isolation, signal ownership/poisoning controls, redacted
    diagnostics, abuse/spend limits, and release HTTPS/cache isolation.
-7. Do not distribute an APK to another person, enable production LLM processing
+8. Do not distribute an APK to another person, enable production LLM processing
    of personal trip data, or claim residency/compliance before SPEC-43's
    applicable gates pass.
+9. After SPEC-43, implement the SPEC-13 region/country registry, minimum
+   SPEC-17 claim store, and SPEC-20 versioned city pack. Bangkok is the
+   acceptance case. Do not add Thailand, Vietnam, Cambodia, or Philippines data
+   through another Python/Dart/loader exception.
+10. Add SPEC-44 recommendation-decision capture only for consented subjects.
+    Record feasible exposure, exclusions, score components, displayed order,
+    sponsorship, and policy/catalog/taxonomy versions. Learned influence stays
+    zero until held-out evidence and rollback gates pass.
 
 Migrations through 0024 and the Maps/OpenWeather local provider credentials are
 already verified; do not ask for them again unless a new migration or
 credential rotation occurs. See `docs/HOSTED_STATE.md`. Local provider success
 does not establish hosted deployment configuration.
 
-Do not start with another full-repo archaeology. The defects that
-matter on itinerary are listed above. If a new claim needs checking,
-verify that claim; do not re-read every migration.
+Do not start with another full-repo archaeology. The defects that matter on
+itinerary are listed above. The future-readiness decisions and explicit
+deferrals are in `docs/specs/SPEC-44-backend-future-readiness.md`. If a new
+claim needs checking, verify that claim; do not re-read every migration.
 
 ## Review habits that already failed here
 
