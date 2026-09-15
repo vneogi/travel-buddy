@@ -190,6 +190,14 @@ Every externally retryable mutation carries a durable `command_id`.
 HTTP requests, mobile outbox retries, webhook retries, and background jobs use
 the same principle.
 
+SPEC-02 may add a separate offline mutation-command outbox only after this
+phase is implemented and the corresponding online command exists. The client
+queues the original `command_id`, `expected_version`, and bounded typed payload;
+it does not reuse the signal outbox, store raw NLQ, or replay an old command
+over newer state. A version or feasibility conflict requires explicit
+reconciliation. This spec supplies the server prerequisite, not authorization
+for optimistic local re-planning.
+
 ### A4. Normalize reads safely
 
 SPEC-16 read cutover proceeds only after transactional writes:

@@ -158,6 +158,32 @@ hotel booking's driver card -> hotel address readable in local script.
 Offline vector maps (P3/MapLibre), OCR of tickets, live translation offline, document scanning,
 sharing/export.
 
+## Future phase: offline map artifacts
+
+Offline vector maps remain a post-city-factory capability. Start this phase
+only after SPEC-13/17/20 have onboarded Bangkok through the versioned city-pack
+path. Its first gate is a real-device prototype using a representative city
+extract. It is not a Laos gate or a Bangkok factory prerequisite.
+
+The city pack may later reference an optional map-artifact manifest containing:
+
+- covered region and bounding box;
+- artifact and source-data revision;
+- byte size, checksum, and compatible schema/render version;
+- source licence and required attribution;
+- download, replacement, rollback, expiry, and deletion policy.
+
+The artifact format, renderer, and object-storage provider remain undecided.
+PMTiles, MapLibre, and Cloudflare R2 are candidates, not contracts. Selection
+requires measured cold-start latency, frame performance, memory, battery,
+download size, storage pressure, update cost, and airplane-mode behavior on
+supported devices. Do not promise a latency, frame rate, or zero-egress cost
+before that evidence exists.
+
+The map is an optional enhancement to the existing SQLite vault. It does not
+replace `cache_trip`, `cache_place`, local-script direction cards, or the signal
+outbox, and it does not introduce a second application database.
+
 ## Review checklist
 - [ ] No network call on the Vault path (test 1 + 2 prove it)
 - [ ] Cold boot works (not just warm cache)

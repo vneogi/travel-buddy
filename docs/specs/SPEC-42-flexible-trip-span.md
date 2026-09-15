@@ -67,8 +67,12 @@ Empty-day treatment provides:
 - optional short copy that the day is intentionally open;
 - no warning, retry, or failure styling.
 
-The empty-day action is available online. A later offline slice may capture an
-intent, but it cannot perform local structural reflow against stale data.
+The empty-day action is available online. Only after SPEC-44 Phase A may the
+SPEC-02 future command outbox queue an explicit, already-confirmed Add or Move
+with `command_id` and `expected_version`. It cannot perform local structural
+reflow against stale data. The cached itinerary stays authoritative until the
+server accepts the command; a conflict becomes an explicit reconciliation
+item.
 
 ### Direct add
 
@@ -188,7 +192,8 @@ reachability, lock, region, or trip-boundary constraints.
 - filling every day with four activities;
 - unlimited unvalidated payload size;
 - moving locked bookings;
-- offline structural replanning;
+- offline structural replanning; the later SPEC-02 command outbox may defer an
+  explicit Add/Move to the server but does not solve locally;
 - free-text itinerary generation;
 - similar-trip inspiration;
 - collaborative planning;

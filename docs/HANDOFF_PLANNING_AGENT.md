@@ -161,6 +161,14 @@ on the owner's phone. Next tasks:
     Record feasible exposure, exclusions, score components, displayed order,
     sponsorship, and policy/catalog/taxonomy versions. Learned influence stays
     zero until held-out evidence and rollback gates pass.
+11. Only after SPEC-44 Phase A and the matching online SPEC-42 action exist,
+    consider SPEC-02's separate SQLite mutation-command outbox. Queue typed
+    confirmed commands with `command_id` and `expected_version`; never perform
+    local reflow or silently resolve a conflict.
+12. Only after Bangkok proves the SPEC-20 city factory, prototype SPEC-04's
+    optional versioned offline map artifact on representative devices. PMTiles,
+    MapLibre, and Cloudflare R2 are candidates, not commitments; measured size,
+    cold start, rendering, memory, battery, update, and offline behavior decide.
 
 Migrations through 0024 and the Maps/OpenWeather local provider credentials are
 already verified; do not ask for them again unless a new migration or

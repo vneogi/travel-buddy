@@ -382,6 +382,17 @@ The immediate sequence is now:
 9. defer learned personalization until exposure, held-out evaluation, slice,
    rollback, and minimum-evidence gates pass.
 
+The offline mutation-command outbox is not an earlier shortcut. It may follow
+SPEC-44 Phase A and the corresponding online command, using the existing
+SQLite database with durable `command_id` and `expected_version`. Stale state
+produces an explicit conflict; it is never silently replayed over a newer trip.
+
+Offline map artifacts follow the city factory, not precede it. Once Bangkok has
+passed SPEC-20, a representative extract may test the optional versioned
+manifest in SPEC-04. Renderer, tile format, and object store remain undecided
+until device measurements establish download size, storage, cold start,
+rendering, memory, battery, update, and airplane-mode behavior.
+
 SPEC-41 should not need a new hours table: structured hours already exist.
 If implementation reveals a schema change, assign the next free migration
 number at that time and update `docs/HOSTED_STATE.md` only after observing its

@@ -148,8 +148,15 @@ remaining product order is:
    the app or production LLM processing handles personal trip data.
 8. SPEC-13, minimum SPEC-17 claims, and SPEC-20 make Bangkok a versioned city
    pack rather than another Python/Dart exception.
-9. Only then resume map-first polish, multi-night hotel UI, inspiration,
-   learned ranking, and broader consumer work.
+9. Only after Bangkok proves that factory, prototype SPEC-04 offline map
+   artifacts on representative devices. PMTiles/MapLibre and the object store
+   remain candidates until size, cold-start, frame, memory, battery, update,
+   and airplane-mode evidence exists.
+10. Only after SPEC-44 Phase A and the matching online command exist, consider
+    a separate SQLite mutation-command outbox. It queues typed confirmed
+    actions and surfaces conflicts; it does not perform local reflow.
+11. Only then resume map-first polish, multi-night hotel UI, inspiration,
+    learned ranking, and broader consumer work.
 
 Full Vault and the map-first shell remain post-reliability unless field evidence
 changes the order.

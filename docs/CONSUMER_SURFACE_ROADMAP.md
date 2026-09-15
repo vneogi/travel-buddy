@@ -126,6 +126,15 @@ measured evidence under SPEC-44; none is a city-onboarding prerequisite.
 Natural-language query classifies to typed commands; mutations stay on the
 existing event path plus HITL; proactive alerts stay on SPEC-29/35.
 
+Two offline extensions remain deliberately later. After SPEC-44 Phase A and
+the corresponding online SPEC-42 command exist, SPEC-02 may add a separate
+SQLite mutation-command outbox using `command_id` and `expected_version`;
+conflicts require explicit reconciliation and the client does not re-plan
+locally. After the SPEC-13/17/20 city factory has onboarded Bangkok, SPEC-04
+may prototype versioned offline map artifacts. Format, renderer, and storage
+provider are selected only after representative real-device measurements.
+Neither extension is part of the current Laos reliability tranche.
+
 SPEC-42 is the later Create/editor phase: trip span no longer equals catalog
 auto-fill capacity, at most five starter days are populated, and remaining
 dates are first-class empty days with direct Add/Move actions. It follows the

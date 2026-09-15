@@ -131,6 +131,14 @@ at that density.
     distributing an OSM-derived multi-city database. Review or social sources
     excluded by SPEC-19 remain excluded.
 
+17. **Offline maps are a later optional artifact, not city data authority.**
+    After Bangkok proves the city factory, a pack may reference the manifest
+    defined by SPEC-04 for a separately built offline map artifact. The manifest
+    is versioned and licensed, but the binary is not required to validate,
+    ingest, search, or advertise a city. Adding it must not create a second
+    venue identity, taxonomy, or ingestion path. Renderer, tile format, and
+    storage provider remain choices made from measured device evidence.
+
 ## Pipeline
 
 1. Register and validate the SPEC-13 country/region record.

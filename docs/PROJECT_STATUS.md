@@ -71,7 +71,7 @@
 | Localized names | PARTLY VERIFIED | Ten of 58 venues carry a name confirmed against Wikidata or OSM, with source and ref recorded. Three classes of wrong-script token are fixed. The remaining 48 stay source=generated |
 | Curation round-trip | DONE | scripts/format_venue_json.py converts between the ASCII-escaped repo form and a readable UTF-8 copy under curation/, which is gitignored. Byte-identical round-trip is asserted |
 | Signal capture (SPEC-01) | DONE | All registered types accepted, both backends |
-| Offline queue (SPEC-02) | PARTIAL | SQLite outbox, sync engine and crash recovery are done. PR #23 (`dab16c0`) added resetAuthHalted() and HALTED (401). Hearts survive app kill (Aug 30 Windows). Sync Status awaits `syncOnce()` before reading counts. Background sync while killed remains outside this slice |
+| Offline queue (SPEC-02) | PARTIAL | SQLite signal outbox, sync engine and crash recovery are done. PR #23 (`dab16c0`) added resetAuthHalted() and HALTED (401). Hearts survive app kill (Aug 30 Windows). A separate typed mutation-command outbox is later: only after SPEC-44 Phase A and the matching online command, with explicit conflict reconciliation and no local reflow |
 | Party context (SPEC-03) | DONE | Server-side stamping, both backends, migration 0003 applied |
 | Observability (SPEC-05) | DONE | Ring buffer, request IDs, debug endpoint |
 | Signal registry (SPEC-06) | DONE | models/signal_types.py plus drift test |
@@ -80,7 +80,7 @@
 | arrival_delta derivation | DONE | Server-derived from visited_confirmed vs scheduled_start |
 | Docs hygiene guard | DONE | tests/test_docs_hygiene.py walks every markdown file outside build and vendor directories, and the SPEC-reference check also scans .py and .sql. Known non-ASCII files are allowlisted; the list may only shrink. The ASCII check itself still covers markdown only |
 | Data format guard | DONE | Every data/ file is ASCII by byte count, venue and glossary files round-trip byte-identically, and Lao-script fields are checked for foreign script |
-| Offline vault (SPEC-04) | CACHE FLOOR DONE; RESCUE REMOVED | PR #22 (`b7e10c3`) + PR #23 (`dab16c0`) shipped offline itinerary fallback and cached driver cards. Sep 5 owner decision retired the duplicate Hotel Rescue AppBar shortcut; code removed in the `refactor/remove-hotel-rescue` PR per `docs/briefs/GENIE_REMOVE_HOTEL_RESCUE.md`. Driver-card action on hotel bookings retained. Full vault remains post-field-test discovery |
+| Offline vault (SPEC-04) | CACHE FLOOR DONE; RESCUE REMOVED | PR #22 (`b7e10c3`) + PR #23 (`dab16c0`) shipped offline itinerary fallback and cached driver cards. Sep 5 owner decision retired the duplicate Hotel Rescue AppBar shortcut; driver-card action on hotel bookings remains. Offline maps are a post-Bangkok-factory measured prototype with an optional versioned artifact manifest, not a current vendor commitment |
 | Anonymous identity (SPEC-09) | DONE (client + server) | Client half landed PR #16 (`7173a3f`): UUID v4 in flutter_secure_storage, Anonymous header, TB_DEBUG_USER_ID removed. Server half already verified. Record any remaining Anonymous E2E gap explicitly; the laptop is available |
 | Itinerary normalisation (SPEC-16) | IMPLEMENTED | Decompose and compose land in services/itinerary_normaliser.py, dual-write in both backends, round-trip equality asserted, wire format unchanged. node_id is stable across reschedules via state_json and now comes from models/ids.py. SPEC-30 (`f8349a8`) writes `trip_edge.observed_duration_minutes` from consecutive arrivals |
 | Booking anchors (SPEC-10) | PARTIAL (create plus edit/delete) | PR #20 (`f6328e9`) plus PR #37 (`364d873`). Immovable locked nodes, booking metadata, parser and AddBookingSheet. Booking.com-shaped paste was verified; Agoda/provider-aware partial extraction, daily hotel anchor, and preceding-evening flight rules remain |
@@ -113,9 +113,9 @@
 | PDF itinerary intake (SPEC-39) | DEFERRED | No implementation brief. PDF/OCR, Day Sheet, and print-pack work remain outside the current sequence |
 | Guided Create Trip foundation (SPEC-40) | DONE (PR #61, `ebdea52`) | Five-step destination/date-range/party/interests/review flow backed by deterministic multi-day catalog selection. Post-merge CI and owner Flutter tests passed. Hosted deploy and phone acceptance are not yet repeated for this SHA |
 | Hours-aware scheduling and staged ranking (SPEC-41) | A3a MERGED (`d1fde14`); A3b NEXT | Create, corridor, and swap refuse known-closed target slots; day packing advances into later opening windows; cached `max_days` is guaranteed across weekdays and valid interest profiles. A3b owns deterministic transit and locked-anchor reachability |
-| Flexible trip span and sparse day editing (SPEC-42) | SPECIFIED, LATER PHASE | Decouples trip duration from auto-fill capacity. Wider spans may contain at most five generated starter days plus first-class empty days with direct Add/Move actions |
+| Flexible trip span and sparse day editing (SPEC-42) | SPECIFIED, LATER PHASE | Decouples trip duration from auto-fill capacity. Wider spans may contain at most five generated starter days plus first-class empty days with direct Add/Move actions. Its online commands must exist before SPEC-02 can queue them offline |
 | Security, privacy and data governance foundation (SPEC-43) | SPECIFIED; AFTER LAOS BUILD, BEFORE NON-OWNER DISTRIBUTION | Owns twelve verified gaps across anonymous authentication, RLS, LLM egress, rights/retention, offline encryption, sign-out, consent, cache isolation, signal authorization, logging, abuse limits, and release transport. The current owner-only exception expires before the first external tester or December launch |
-| Backend integrity and future-readiness foundation (SPEC-44) | SPECIFIED; PHASE A AFTER LAOS | Keeps the modular FastAPI/Postgres/pgvector architecture while adding atomic trip/party/graph writes, optimistic concurrency, idempotent commands, production-shaped persistence contracts, recommendation decision telemetry, embedding-space versioning, four explicit AI-memory planes, and the cross-spec city-factory gate. It does not authorize learned ranking before SPEC-43 and sufficient held-out evidence |
+| Backend integrity and future-readiness foundation (SPEC-44) | SPECIFIED; PHASE A AFTER LAOS | Keeps the modular FastAPI/Postgres/pgvector architecture while adding atomic trip/party/graph writes, optimistic concurrency, idempotent commands, production-shaped persistence contracts, recommendation decision telemetry, embedding-space versioning, four explicit AI-memory planes, and the cross-spec city-factory gate. Phase A is a prerequisite for any offline mutation-command outbox; it does not authorize local reflow or learned ranking |
 
 Migration numbers are assigned when a spec is implemented, not when it is
 written. SPEC-11, SPEC-13, SPEC-14 and SPEC-15 each claimed a number, and the
@@ -241,9 +241,13 @@ Seed-shaped cohorts.
   after SPEC-41. An LLM may explain solver output; it does not schedule.
 - SPEC-39 PDF/OCR/Day Sheet remains deferred; Agoda paste does not reopen it.
 - SPEC-42 flexible span and sparse-day editing follows the reliability slices.
-  The SPEC-40 five-day cap remains unchanged in `ebdea52`.
+  The SPEC-40 five-day cap remains unchanged in `ebdea52`. Only after its
+  online actions and SPEC-44 Phase A exist may SPEC-02 queue typed commands
+  offline; conflicts are not resolved locally.
 - Remaining signal/UI polish.
-- Full SPEC-04 remainder only if field evidence supports it.
+- Full SPEC-04 remainder only if field evidence supports it. Offline maps wait
+  until Bangkok proves the city factory, then begin as a measured device
+  prototype with no preselected tile, renderer, or storage vendor.
 - Trip-less Ask and richer Home.
 - SPEC-24 identity lifecycle and SPEC-27 data rights are implementation
   dependencies inside the SPEC-43 release foundation, not work that may slip

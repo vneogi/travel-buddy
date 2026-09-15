@@ -178,8 +178,51 @@ is 30 minutes of work that saves the trip's data.
 4. Sync-status debug view shows accurate counts.
 5. No code path deletes a queued event except 2xx or itemized permanent rejection.
 
+## Future phase: offline mutation command outbox
+
+Do not start this phase until SPEC-44 Phase A has shipped atomic mutations,
+monotonic trip versions, `expected_version`, durable `command_id`, typed
+conflicts, and idempotent replay. The corresponding online operation must also
+already exist; for direct Add/Move that means SPEC-42. Before non-owner use,
+SPEC-43's applicable local encryption, identity, retention, and sign-out gates
+must pass.
+
+This phase extends the existing SQLite database. It does not replace SQLite
+with Isar or reuse the behavioral-signal `outbox`. A separate
+`command_outbox` stores the minimum typed command envelope:
+
+- `command_id`, authorized identity, trip ID, command type, and schema version;
+- `expected_version` captured from the last authoritative trip snapshot;
+- bounded structured payload, creation time, state, attempts, and last typed
+  failure;
+- no raw natural-language prompt, model transcript, or unrestricted trip
+  snapshot.
+
+The first slice queues only explicit, already-confirmed deterministic commands
+whose target is known, such as moving a flexible node to a selected date and
+time. The server still rechecks feasibility on sync. A request that still
+needs candidate discovery or live evidence, or does not yet have a specified
+target, may be saved as intent but is not a mutation command and is not shown
+as applied. The cached itinerary remains the last authoritative state; the UI
+may show a separate pending-change treatment.
+
+On reconnect, sync sends the original `command_id` and `expected_version`.
+Success replaces the cached trip with the returned authoritative version. A
+version conflict, stale feasibility result, deleted target, or changed lock
+becomes a user-visible reconciliation item. The client never rewrites the
+command onto newer state, chooses a new venue, or silently drops it. Retry after
+an ambiguous transport failure is safe because the server outcome is
+idempotent.
+
+Acceptance requires crash recovery, duplicate replay, old-version conflict,
+changed-hours/lock refusal, sign-out isolation, encrypted local storage where
+required by SPEC-43, and a real-device airplane-mode drill. Broader local
+constraint solving or optimistic structural reflow remains a separate decision
+based on measured field need.
+
 ## Out of scope (deliberately)
-- Local optimistic re-planning / conflict resolution (see B.4 rationale).
+- Local optimistic re-planning or automatic conflict resolution (see B.4 and
+  the future command-outbox phase).
 - Offline map tiles (nice-to-have; the itinerary + venue data matter more).
 - Background sync while app is *terminated* (iOS/Android background tasks) — foreground+resume is
   sufficient for the field test; revisit later.
