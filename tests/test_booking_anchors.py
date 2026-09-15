@@ -90,6 +90,7 @@ class TestSchedulerBookingAnchors:
                 duration_minutes=90,
                 lat=25.19,
                 lng=55.27,
+                geo_region="dubai_uae",
             ),
             TripNode(
                 venue_name="Flight",
@@ -100,6 +101,7 @@ class TestSchedulerBookingAnchors:
                 booking_type="flight",
                 lat=25.25,
                 lng=55.36,
+                geo_region="dubai_uae",
             ),
         ]
         result = reschedule_and_validate(nodes)

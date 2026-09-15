@@ -27,7 +27,11 @@ from models.schemas import (
 )
 from services.db_provider import db_service
 from services.cache_service import cache_service
+import math
+from datetime import timedelta as _td
+
 from services.catalog_itinerary import duration_for as _duration_for
+from services.destination_tz import destination_tz as _dest_tz
 from services.maps_service import maps_service
 from services.opening_hours import HoursResult as _HoursResult
 from services.transit import walking_minutes as _walking_minutes
@@ -88,6 +92,97 @@ VENUE_REQUIRED_EVENTS = {
     EventType.ADD_ACTIVITY.value,
     EventType.REROUTE.value,
 }
+
+
+def _finite(v) -> bool:
+    """True when v is a finite float/int (not None, NaN, or inf)."""
+    return v is not None and math.isfinite(v)
+
+
+def _same_local_day(a_start, b_start, geo_region) -> bool:
+    """True when two UTC datetimes fall on the same destination-local calendar day."""
+    tz = _dest_tz(geo_region)
+    if tz is None:
+        return a_start.date() == b_start.date()
+    return a_start.astimezone(tz).date() == b_start.astimezone(tz).date()
+
+
+def _is_swap_reachable(
+    target_node: TripNode,
+    cand_lat: Optional[float],
+    cand_lng: Optional[float],
+    cand_dwell: int,
+    nodes: List[TripNode],
+    target_idx: int,
+) -> bool:
+    """Unified swap reachability predicate (SPEC-41 A3b).
+
+    Checks:
+      1. prev-active -> candidate  (same region + same local day only)
+      2. candidate -> next-locked  (same region + same local day only)
+
+    Requires finite coordinates on the candidate and on every neighbour
+    it is compared against.  Returns False when coords are missing.
+    """
+    if not _finite(cand_lat) or not _finite(cand_lng):
+        return False
+
+    target_region = getattr(target_node, "geo_region", None)
+
+    # --- prev-active check ---
+    prev_active = None
+    for pi in range(target_idx - 1, -1, -1):
+        pn = nodes[pi]
+        if pn.status == NodeStatus.SKIPPED:
+            continue
+        if pn.node_kind == "booking" and pn.booking_type == "hotel":
+            continue
+        prev_active = pn
+        break
+
+    if prev_active is not None:
+        pa_region = getattr(prev_active, "geo_region", None)
+        if (
+            pa_region
+            and target_region
+            and pa_region == target_region
+            and _same_local_day(
+                prev_active.scheduled_start, target_node.scheduled_start, target_region
+            )
+        ):
+            if not _finite(prev_active.lat) or not _finite(prev_active.lng):
+                return False
+            prev_end = prev_active.scheduled_start + _td(minutes=prev_active.duration_minutes)
+            transfer = _walking_minutes(prev_active.lat, prev_active.lng, cand_lat, cand_lng)
+            if prev_end + _td(minutes=transfer) > target_node.scheduled_start:
+                return False
+
+    # --- next-locked check ---
+    next_lock = None
+    for ni in range(target_idx + 1, len(nodes)):
+        nn = nodes[ni]
+        if nn.status == NodeStatus.SKIPPED:
+            continue
+        if nn.node_kind == "booking" and nn.booking_type == "hotel":
+            continue
+        nn_region = getattr(nn, "geo_region", None)
+        if nn_region != target_region:
+            break  # crossed city boundary
+        if not _same_local_day(target_node.scheduled_start, nn.scheduled_start, target_region):
+            break  # crossed day boundary
+        if nn.is_locked:
+            next_lock = nn
+            break
+
+    if next_lock is not None:
+        if not _finite(next_lock.lat) or not _finite(next_lock.lng):
+            return False
+        cand_end = target_node.scheduled_start + _td(minutes=cand_dwell)
+        transfer = _walking_minutes(cand_lat, cand_lng, next_lock.lat, next_lock.lng)
+        if cand_end + _td(minutes=transfer) > next_lock.scheduled_start:
+            return False
+
+    return True
 
 
 class TripStateMachine:
@@ -237,75 +332,18 @@ class TripStateMachine:
                 if hr == _HoursResult.CLOSED:
                     state["no_candidates"] = True
                     return state
-                # SPEC-41 A3b: reachability from previous active node
+                # SPEC-41 A3b: unified reachability predicate
                 target_idx = trip_state.nodes.index(target_node)
-                prev_active = None
-                for pi in range(target_idx - 1, -1, -1):
-                    pn = trip_state.nodes[pi]
-                    if pn.status == NodeStatus.SKIPPED:
-                        continue
-                    if pn.node_kind == "booking" and pn.booking_type == "hotel":
-                        continue
-                    prev_active = pn
-                    break
-                c_lat = getattr(replacement, "lat", None)
-                c_lng = getattr(replacement, "lng", None)
-                # Walking reachability only within the same geo_region.
-                _target_region = target_node.geo_region
-                if (
-                    prev_active is not None
-                    and getattr(prev_active, "geo_region", None) == _target_region
+                if not _is_swap_reachable(
+                    target_node,
+                    getattr(replacement, "lat", None),
+                    getattr(replacement, "lng", None),
+                    cand_dwell,
+                    trip_state.nodes,
+                    target_idx,
                 ):
-                    from datetime import timedelta as _td
-
-                    p_lat = prev_active.lat
-                    p_lng = prev_active.lng
-                    if (
-                        c_lat is None
-                        or c_lng is None
-                        or p_lat is None
-                        or p_lng is None
-                    ):
-                        state["no_candidates"] = True
-                        return state
-                    prev_end = prev_active.scheduled_start + _td(
-                        minutes=prev_active.duration_minutes
-                    )
-                    transfer = _walking_minutes(p_lat, p_lng, c_lat, c_lng)
-                    if prev_end + _td(minutes=transfer) > target_node.scheduled_start:
-                        state["no_candidates"] = True
-                        return state
-                # Reachability to next locked non-hotel (same region only)
-                next_lock = None
-                for ni in range(target_idx + 1, len(trip_state.nodes)):
-                    nn = trip_state.nodes[ni]
-                    if nn.status == NodeStatus.SKIPPED:
-                        continue
-                    if nn.node_kind == "booking" and nn.booking_type == "hotel":
-                        continue
-                    if getattr(nn, "geo_region", None) != _target_region:
-                        break  # crossed city boundary
-                    if nn.is_locked:
-                        next_lock = nn
-                        break
-                if next_lock is not None:
-                    from datetime import timedelta as _td
-
-                    nl_lat = next_lock.lat
-                    nl_lng = next_lock.lng
-                    if (
-                        c_lat is None
-                        or c_lng is None
-                        or nl_lat is None
-                        or nl_lng is None
-                    ):
-                        state["no_candidates"] = True
-                        return state
-                    cand_end = target_node.scheduled_start + _td(minutes=cand_dwell)
-                    transfer = _walking_minutes(c_lat, c_lng, nl_lat, nl_lng)
-                    if cand_end + _td(minutes=transfer) > next_lock.scheduled_start:
-                        state["no_candidates"] = True
-                        return state
+                    state["no_candidates"] = True
+                    return state
             state["venues_found"] = [
                 VenueSearchResult(
                     venue=replacement,
@@ -367,67 +405,17 @@ class TripStateMachine:
                 if hr == _HoursResult.CLOSED:
                     continue
 
-                # SPEC-41 A3b: reachability from previous active node
+                # SPEC-41 A3b: unified reachability predicate
                 target_idx = trip_state.nodes.index(target_node)
-                prev_active = None
-                for pi in range(target_idx - 1, -1, -1):
-                    pn = trip_state.nodes[pi]
-                    if pn.status == NodeStatus.SKIPPED:
-                        continue
-                    if pn.node_kind == "booking" and pn.booking_type == "hotel":
-                        continue
-                    prev_active = pn
-                    break
-                if prev_active is not None:
-                    c_lat = getattr(v.venue, "lat", None)
-                    c_lng = getattr(v.venue, "lng", None)
-                    p_lat = prev_active.lat
-                    p_lng = prev_active.lng
-                    if (
-                        c_lat is None
-                        or c_lng is None
-                        or p_lat is None
-                        or p_lng is None
-                    ):
-                        continue
-                    from datetime import timedelta as _td
-
-                    prev_end = prev_active.scheduled_start + _td(
-                        minutes=prev_active.duration_minutes
-                    )
-                    transfer = _walking_minutes(p_lat, p_lng, c_lat, c_lng)
-                    if prev_end + _td(minutes=transfer) > target_node.scheduled_start:
-                        continue
-
-                # SPEC-41 A3b: reachability to next locked non-hotel booking
-                next_lock = None
-                for ni in range(target_idx + 1, len(trip_state.nodes)):
-                    nn = trip_state.nodes[ni]
-                    if nn.status == NodeStatus.SKIPPED:
-                        continue
-                    if nn.node_kind == "booking" and nn.booking_type == "hotel":
-                        continue
-                    if nn.is_locked:
-                        next_lock = nn
-                        break
-                if next_lock is not None:
-                    c_lat = getattr(v.venue, "lat", None)
-                    c_lng = getattr(v.venue, "lng", None)
-                    nl_lat = next_lock.lat
-                    nl_lng = next_lock.lng
-                    if (
-                        c_lat is None
-                        or c_lng is None
-                        or nl_lat is None
-                        or nl_lng is None
-                    ):
-                        continue
-                    from datetime import timedelta as _td
-
-                    cand_end = target_node.scheduled_start + _td(minutes=cand_dwell)
-                    transfer = _walking_minutes(c_lat, c_lng, nl_lat, nl_lng)
-                    if cand_end + _td(minutes=transfer) > next_lock.scheduled_start:
-                        continue
+                if not _is_swap_reachable(
+                    target_node,
+                    getattr(v.venue, "lat", None),
+                    getattr(v.venue, "lng", None),
+                    cand_dwell,
+                    trip_state.nodes,
+                    target_idx,
+                ):
+                    continue
 
                 eligible.append(v)
             venues = eligible

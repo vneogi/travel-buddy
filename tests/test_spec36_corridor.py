@@ -132,9 +132,7 @@ class TestCorridorCreate:
                 assert transfer >= MINIMUM_TRANSFER_MINUTES, (
                     f"On {d}, node {i}: transfer {transfer} < floor {MINIMUM_TRANSFER_MINUTES}"
                 )
-                assert transfer > 0, (
-                    f"On {d}, node {i}: zero or negative transfer"
-                )
+                assert transfer > 0, f"On {d}, node {i}: zero or negative transfer"
 
     def test_no_venue_repeats_within_segment(self):
         data = _create()
@@ -499,7 +497,6 @@ class TestEarlierCityMutation:
         data = _create()
         trip_id = data["trip_id"]
         vv_nodes = [n for n in data["nodes"] if n["geo_region"] == "vang_vieng_laos"]
-        vv_first_start = vv_nodes[0]["scheduled_start"]
         vte_node = next(n for n in data["nodes"] if n["geo_region"] == "vientiane_laos")
         target_id = vte_node["node_id"]
         assert vte_node["status"] == "pending", "Precondition: target is pending"
@@ -524,20 +521,18 @@ class TestEarlierCityMutation:
             f"Expected skipped, got {target_after['status']}"
         )
 
-        # 2. Vang Vieng nodes preserved (count, region, order).
-        # SPEC-41 A3b: scheduler now uses walking_minutes, so cross-city
-        # boundaries may shift when reschedule runs for the first time.
-        # The invariant is that VV nodes still exist and stay on VV days.
+        # 2. Vang Vieng nodes preserved (count, region, exact timestamps).
+        # Scheduler only applies walking_minutes within same region + local day,
+        # so cross-city cancel must not shift VV scheduled_start values at all.
         vv_after = [n for n in trip_after["nodes"] if n["geo_region"] == "vang_vieng_laos"]
         assert len(vv_after) == len(vv_nodes), (
             f"VV node count changed: {len(vv_nodes)} -> {len(vv_after)}"
         )
-        for vn in vv_after:
-            dt = datetime.fromisoformat(vn["scheduled_start"])
-            local = dt.astimezone(TZ)
-            assert local.date() in (date(2026, 10, 4), date(2026, 10, 5)), (
-                f"VV node {vn['venue_name']} shifted off its date: {local.date()}"
-            )
+        vv_after_starts = [n["scheduled_start"] for n in vv_after]
+        vv_orig_starts = [n["scheduled_start"] for n in vv_nodes]
+        assert vv_after_starts == vv_orig_starts, (
+            f"VV timestamps shifted: {vv_orig_starts} -> {vv_after_starts}"
+        )
 
     def test_swap_changes_venue_preserves_next_city(self):
         """Swap a VV node with an explicit same-region replacement: venue_id
@@ -546,7 +541,6 @@ class TestEarlierCityMutation:
         trip_id = data["trip_id"]
         vv_nodes = [n for n in data["nodes"] if n["geo_region"] == "vang_vieng_laos"]
         lp_nodes = [n for n in data["nodes"] if n["geo_region"] == "luang_prabang_laos"]
-        lp_first_start = lp_nodes[0]["scheduled_start"]
         vv_target = vv_nodes[0]
         original_venue_id = vv_target["venue_id"]
 
@@ -631,12 +625,17 @@ class TestEarlierCityMutation:
         assert swapped["venue_id"] != original_venue_id, "venue_id unchanged after swap"
         assert swapped["geo_region"] == "vang_vieng_laos"
 
-        # 2. LP nodes preserved (count, region).
-        # SPEC-41 A3b: exact timestamps may shift from walking_minutes in
-        # the scheduler; the invariant is that LP nodes still exist.
+        # 2. LP nodes preserved (count, region, exact timestamps).
+        # Scheduler respects city boundaries: swapping a VV node must not
+        # shift LP scheduled_start values.
         lp_after = [n for n in trip_after["nodes"] if n["geo_region"] == "luang_prabang_laos"]
         assert len(lp_after) == len(lp_nodes), (
             f"LP node count changed: {len(lp_nodes)} -> {len(lp_after)}"
+        )
+        lp_after_starts = [n["scheduled_start"] for n in lp_after]
+        lp_orig_starts = [n["scheduled_start"] for n in lp_nodes]
+        assert lp_after_starts == lp_orig_starts, (
+            f"LP timestamps shifted: {lp_orig_starts} -> {lp_after_starts}"
         )
 
 

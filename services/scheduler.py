@@ -22,6 +22,7 @@ from datetime import timedelta
 from typing import List, Optional, Set
 
 from models.schemas import TripNode, NodeStatus
+from services.destination_tz import destination_tz as _dest_tz
 from services.opening_hours import HoursResult, hours_for_slot
 from services.transit import walking_minutes
 
@@ -35,6 +36,22 @@ class ScheduleResult:
 
 def _has_coords(node: TripNode) -> bool:
     return node.lat is not None and node.lng is not None
+
+
+def _same_region_and_local_day(a: TripNode, b: TripNode) -> bool:
+    """True when both nodes share geo_region AND destination-local calendar date.
+
+    Cross-city or cross-day transitions are NOT walking transfers; the scheduler
+    must preserve the next node's planned start instead of pushing it.
+    """
+    a_region = getattr(a, "geo_region", None)
+    b_region = getattr(b, "geo_region", None)
+    if not a_region or not b_region or a_region != b_region:
+        return False
+    tz = _dest_tz(a_region)
+    if tz is None:
+        return a.scheduled_start.date() == b.scheduled_start.date()
+    return a.scheduled_start.astimezone(tz).date() == b.scheduled_start.astimezone(tz).date()
 
 
 def _is_background_anchor(node: TripNode) -> bool:
@@ -72,10 +89,13 @@ def reschedule_and_validate(
             continue
 
         transit_min = 0
-        if prev_active is not None and _has_coords(prev_active) and _has_coords(node):
-            transit_min = walking_minutes(
-                prev_active.lat, prev_active.lng, node.lat, node.lng
-            )
+        if (
+            prev_active is not None
+            and _same_region_and_local_day(prev_active, node)
+            and _has_coords(prev_active)
+            and _has_coords(node)
+        ):
+            transit_min = walking_minutes(prev_active.lat, prev_active.lng, node.lat, node.lng)
 
         earliest = prev_active_end + timedelta(minutes=transit_min) if prev_active_end else None
 

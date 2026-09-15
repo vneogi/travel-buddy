@@ -157,10 +157,17 @@ def _is_hours_eligible(row: dict, cursor: datetime, geo_region: str) -> bool:
 
 
 def _has_venue_coords(venue: dict) -> bool:
-    """True if the venue dict has finite lat and lng."""
+    """True if the venue dict has finite lat and lng (rejects None, NaN, inf)."""
+    import math as _m
+
     lat = venue.get("lat")
     lng = venue.get("lng")
-    return lat is not None and lng is not None
+    if lat is None or lng is None:
+        return False
+    try:
+        return _m.isfinite(lat) and _m.isfinite(lng)
+    except TypeError:
+        return False
 
 
 def pack_day(
@@ -229,20 +236,47 @@ def pack_day(
             return None  # prev has no coords -> ineligible
         if not _has_venue_coords(venue):
             return None  # candidate has no coords -> ineligible
-        prev_end = prev_node.scheduled_start + timedelta(
-            minutes=prev_node.duration_minutes
-        )
-        transfer = _walking_minutes(
-            prev_node.lat, prev_node.lng, venue["lat"], venue["lng"]
-        )
+        prev_end = prev_node.scheduled_start + timedelta(minutes=prev_node.duration_minutes)
+        transfer = _walking_minutes(prev_node.lat, prev_node.lng, venue["lat"], venue["lng"])
         return prev_end + timedelta(minutes=transfer)
 
     def _fits_next_lock(venue: dict, slot: datetime, dwell: int) -> bool:
-        """True if the candidate can reach the next locked booking in time."""
+        """True if the candidate can reach the next locked booking in time.
+
+        Ignores the lock when it is a hotel (background anchor), belongs to a
+        different geo_region, or falls on a different destination-local day.
+        """
         if next_locked_booking is None:
             return True
         lock = next_locked_booking
-        if lock.lat is None or lock.lng is None:
+        # Hotels are background anchors, not reachability targets.
+        if (
+            getattr(lock, "node_kind", "activity") == "booking"
+            and getattr(lock, "booking_type", "") == "hotel"
+        ):
+            return True
+        # Different region -> not a same-city constraint.
+        lock_region = getattr(lock, "geo_region", None)
+        if lock_region and lock_region != geo_region:
+            return True
+        # Different local day -> not a same-day constraint.
+        if tz is not None:
+            lock_local_day = lock.scheduled_start.astimezone(tz).date()
+            slot_local_day = slot.astimezone(tz).date()
+        else:
+            lock_local_day = lock.scheduled_start.date()
+            slot_local_day = slot.date()
+        if lock_local_day != slot_local_day:
+            return True
+        # Relevant same-day, same-region, non-hotel lock: require coords.
+        import math as _m
+
+        if (
+            lock.lat is None
+            or lock.lng is None
+            or not _m.isfinite(lock.lat)
+            or not _m.isfinite(lock.lng)
+        ):
             return False  # missing lock coords -> ineligible
         if not _has_venue_coords(venue):
             return False
@@ -316,9 +350,7 @@ def pack_day(
                         continue
                     dwell = duration_for(venue)
                     structured = venue.get("opening_hours_structured")
-                    slot = _next_slot_start(
-                        structured, earliest, dwell, geo_region, local_day
-                    )
+                    slot = _next_slot_start(structured, earliest, dwell, geo_region, local_day)
                     if slot is not None and slot == best_start:
                         if not _fits_next_lock(venue, slot, dwell):
                             continue
