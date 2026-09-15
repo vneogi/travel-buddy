@@ -6,12 +6,11 @@ now, what the previous planning agent already adjudicated, and what the
 next agent must not reopen in the first week.
 
 Read this file and the two contracts above. SPEC-36 through SPEC-38 and
-SPEC-40 are done. SPEC-41 Phase A2 merged as `377125e`. The first job is A3a
-window-aware packing and truthful capacity, followed by A3b deterministic
-transit and locked-anchor reachability. Then come SPEC-10 provider-aware paste
-and SPEC-25 grounded trip-scoped Ask. After those Laos-facing slices and their
-hosted/API/APK verification, SPEC-43 is the release foundation before any
-non-owner tester or the planned December launch.
+SPEC-40 are done. SPEC-41 Phase A3a merged as `d1fde14`; A3b deterministic
+transit and locked-anchor reachability remains. Then come SPEC-10
+provider-aware paste and SPEC-25 grounded trip-scoped Ask. After those
+Laos-facing slices and their hosted/API/APK verification, SPEC-43 is the
+release foundation before any non-owner tester or the planned December launch.
 
 ## Who does what (unchanged)
 
@@ -123,10 +122,8 @@ on the owner's phone. Next tasks:
 
 1. SPEC-40 is done as `ebdea52`; do not reopen its current five-day foundation
    while implementing later sparse-span work.
-2. SPEC-41 Phase A2 is merged as `377125e`. Next is A3a:
-   `docs/briefs/GENIE_SPEC_41_PHASE_A3A_WINDOW_PACKING.md`. It schedules
-   venues into later same-day windows and removes the three-region
-   identity-capacity mismatch. A3b then adds deterministic transit and
+2. SPEC-41 Phase A3a is merged as `d1fde14`. Same-day opening-window packing
+   and truthful cached capacity are done. Next is A3b deterministic transit and
    locked-anchor reachability.
 3. Implement the SPEC-10 provider-aware paste remainder with redacted Agoda and
    Booking.com fixtures and honest partial extraction.

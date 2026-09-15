@@ -1,8 +1,9 @@
 # SPEC-41: Hours-Aware Scheduling and Staged Ranking
 
-> Status: PHASE A2 MERGED (`377125e`). Phase A3 is split into window-aware
-> packing/truthful capacity (A3a) and deterministic transit/locked-anchor
-> reachability (A3b).
+> Status: PHASE A3a MERGED (`d1fde14`). Create, corridor, and range planning
+> use same-day opening windows, and advertised capacity is truthful across
+> weekdays and valid interest profiles. A3b deterministic transit and
+> locked-anchor reachability remains.
 >
 > Sequenced after SPEC-40. This spec owns itinerary feasibility and ranking.
 > SPEC-08 owns the structured hours data, SPEC-10 owns locked booking anchors,
