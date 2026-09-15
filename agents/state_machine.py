@@ -608,6 +608,10 @@ class TripStateMachine:
             )
             if candidate_nodes is None:
                 break  # no further candidates to try
+            if not candidate_nodes:
+                # Apply-time recheck failed; advance to next candidate
+                attempt += 1
+                continue
             # SPEC-41 A2: scope warnings to actually-mutated nodes
             original_map = {n.node_id: n for n in trip_state.nodes}
             _mutated = set()
@@ -670,12 +674,33 @@ class TripStateMachine:
             cand_dwell = _duration_for(
                 {"typical_dwell_minutes": getattr(venue, "typical_dwell_minutes", None)}
             )
+            # Find the target slot in the fresh copy
+            target_idx = None
             for i, node in enumerate(nodes):
                 if node.node_id == target_node_id and not node.is_locked:
-                    nodes[i] = self._node_from_venue(
-                        venue, node.scheduled_start, cand_dwell, node.node_id
-                    )
+                    target_idx = i
                     break
+            if target_idx is None:
+                return None
+
+            # Apply-time reachability recheck (SPEC-41 A3b)
+            target_node = nodes[target_idx]
+            geo_region = getattr(target_node, "geo_region", None) or trip_state.geo_region
+            structured = getattr(venue, "opening_hours_structured", None)
+            hr = _hours_for_slot(structured, target_node.scheduled_start, cand_dwell, geo_region)
+            if hr == _HoursResult.CLOSED:
+                return []  # advance to next candidate
+
+            cand_lat = getattr(venue, "lat", None)
+            cand_lng = getattr(venue, "lng", None)
+            if not _is_swap_reachable(
+                target_node, cand_lat, cand_lng, cand_dwell, nodes, target_idx
+            ):
+                return []  # advance to next candidate
+
+            nodes[target_idx] = self._node_from_venue(
+                venue, target_node.scheduled_start, cand_dwell, target_node.node_id
+            )
             return nodes
 
         if event_type == EventType.ADD_ACTIVITY.value:
