@@ -542,7 +542,7 @@ def _catalog_fingerprint(rows: Sequence[dict]) -> str:
     Covers every field that influences venue selection, scoring, scheduling,
     or day-packing: identity (venue_id, name), coordinates (lat, lng),
     ranking (category, vibe_tags), hours (opening_hours_structured), and
-    dwell (suggested_duration_minutes).  Changing any of these invalidates.
+    dwell (typical_dwell_minutes).  Changing any of these invalidates.
 
     No network, clock, or process-random inputs.
     """
@@ -559,7 +559,7 @@ def _catalog_fingerprint(rows: Sequence[dict]) -> str:
             str(row.get("category") or ""),
             json.dumps(sorted(row.get("vibe_tags") or []), sort_keys=True),
             json.dumps(row.get("opening_hours_structured"), sort_keys=True),
-            str(row.get("suggested_duration_minutes") or ""),
+            str(row.get("typical_dwell_minutes") or ""),
         )
         parts.append("|".join(record))
     return hashlib.sha256("\n".join(parts).encode()).hexdigest()

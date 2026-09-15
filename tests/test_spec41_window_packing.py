@@ -851,25 +851,21 @@ class TestCapacityCache:
         invalidate_capacity_cache()
 
     def test_cache_hit_avoids_recomputation(self):
-        """Second call with unchanged catalog does not rerun simulation."""
-        call_count = 0
-        original_fn = db_mod.db_service.list_venues_for_region
+        """Second call with unchanged catalog does not call pack_day again."""
+        from unittest.mock import patch as mock_patch, wraps
 
-        def counting_fn(region):
-            nonlocal call_count
-            call_count += 1
-            return original_fn(region)
+        real_pack_day = pack_day
+        with mock_patch("services.catalog_itinerary.pack_day", wraps=real_pack_day) as spy:
+            r1 = compute_max_days_for_region(db_mod.db_service.list_venues_for_region, GEO)
+            first_calls = spy.call_count
+            assert first_calls > 0, "pack_day must be called on first computation"
 
-        # First call: computes
-        r1 = compute_max_days_for_region(counting_fn, GEO)
-        assert call_count == 1
-
-        # Second call: cache hit, still calls list_venues_fn to get rows
-        # for fingerprinting, but pack_day is NOT called again.
-        # We verify by checking that the result is identical and fast.
-        r2 = compute_max_days_for_region(counting_fn, GEO)
-        assert r2 == r1
-        assert call_count == 2  # list_venues_fn called but simulation skipped
+            r2 = compute_max_days_for_region(db_mod.db_service.list_venues_for_region, GEO)
+            assert r2 == r1
+            assert spy.call_count == first_calls, (
+                f"pack_day called {spy.call_count - first_calls} extra times "
+                f"on cache hit (expected 0)"
+            )
 
     def test_cache_invalidation_on_changed_hours(self):
         """Changing opening hours in catalog rows invalidates the cache."""
@@ -900,17 +896,71 @@ class TestCapacityCache:
         # the fingerprint difference is the definitive proof.)
 
     def test_cache_invalidation_on_changed_dwell(self):
-        """Changing dwell invalidates the fingerprint."""
+        """Changing typical_dwell_minutes forces pack_day to rerun."""
         import copy
+        from unittest.mock import patch as mock_patch, wraps
+
+        rows_original = db_mod.db_service.list_venues_for_region(GEO)
+        rows_long_dwell = copy.deepcopy(rows_original)
+        for row in rows_long_dwell:
+            row["typical_dwell_minutes"] = 999
+
+        # Fingerprints must differ
+        fp1 = _catalog_fingerprint(rows_original)
+        fp2 = _catalog_fingerprint(rows_long_dwell)
+        assert fp1 != fp2, "Fingerprints must differ after dwell change"
+
+        real_pack_day = pack_day
+        with mock_patch("services.catalog_itinerary.pack_day", wraps=real_pack_day) as spy:
+            # Warm the cache with original catalog
+            compute_max_days_for_region(lambda _: rows_original, GEO)
+            after_warm = spy.call_count
+            assert after_warm > 0
+
+            # Call with changed dwell -- cache miss, pack_day must be invoked
+            compute_max_days_for_region(lambda _: rows_long_dwell, GEO)
+            assert spy.call_count > after_warm, (
+                "pack_day was not called after dwell change -- cache was stale"
+            )
+
+    def test_sabotage_dwell_removed_from_fingerprint(self):
+        """Removing typical_dwell_minutes from the fingerprint makes
+        dwell changes invisible to the cache.
+
+        Fails: test_cache_invalidation_on_changed_dwell
+        """
+        import copy
+        import hashlib
+        import json
 
         rows = db_mod.db_service.list_venues_for_region(GEO)
-        rows_long_dwell = copy.deepcopy(rows)
-        for row in rows_long_dwell:
-            row["suggested_duration_minutes"] = 999
+        rows_long = copy.deepcopy(rows)
+        for row in rows_long:
+            row["typical_dwell_minutes"] = 999
 
-        fp1 = _catalog_fingerprint(rows)
-        fp2 = _catalog_fingerprint(rows_long_dwell)
-        assert fp1 != fp2
+        def _fingerprint_without_dwell(catalog_rows):
+            parts = []
+            for row in sorted(
+                catalog_rows,
+                key=lambda r: str(r.get("venue_id") or r.get("name") or ""),
+            ):
+                record = (
+                    str(row.get("venue_id") or ""),
+                    str(row.get("name") or ""),
+                    str(row.get("lat") or ""),
+                    str(row.get("lng") or ""),
+                    str(row.get("category") or ""),
+                    json.dumps(sorted(row.get("vibe_tags") or []), sort_keys=True),
+                    json.dumps(row.get("opening_hours_structured"), sort_keys=True),
+                    # typical_dwell_minutes deliberately omitted
+                )
+                parts.append("|".join(record))
+            return hashlib.sha256("\n".join(parts).encode()).hexdigest()
+
+        # Without dwell in the fingerprint, both catalogs look identical
+        assert _fingerprint_without_dwell(rows) == _fingerprint_without_dwell(rows_long)
+        # But the real fingerprint catches the difference
+        assert _catalog_fingerprint(rows) != _catalog_fingerprint(rows_long)
 
     def test_cache_invalidation_on_changed_vibe_tags(self):
         """Changing vibe_tags (ranking field) invalidates the fingerprint."""
@@ -925,29 +975,27 @@ class TestCapacityCache:
         assert fp1 != fp2
 
     def test_cache_bounded_eviction(self):
-        """Cache evicts oldest entry when exceeding max size."""
+        """Production insert into a full cache evicts the oldest key
+        and keeps size at exactly _CAPACITY_CACHE_MAX_SIZE."""
         from services.catalog_itinerary import (
             _capacity_cache,
             _capacity_cache_order,
             _CAPACITY_CACHE_MAX_SIZE,
         )
 
-        # Fill cache with synthetic entries
-        for i in range(_CAPACITY_CACHE_MAX_SIZE + 5):
-            key = (f"fake_region_{i}", f"fake_fp_{i}")
-            _capacity_cache[key] = i
-            _capacity_cache_order.append(key)
-
-        assert len(_capacity_cache) == _CAPACITY_CACHE_MAX_SIZE + 5
-
-        # Now run a real computation that stores a new entry; it should evict
-        invalidate_capacity_cache()
+        # Fill cache to exactly MAX_SIZE with synthetic entries
         for i in range(_CAPACITY_CACHE_MAX_SIZE):
             key = (f"region_{i}", f"fp_{i}")
             _capacity_cache[key] = i
             _capacity_cache_order.append(key)
         assert len(_capacity_cache) == _CAPACITY_CACHE_MAX_SIZE
 
-        # One more insert should evict the oldest
+        oldest_key = ("region_0", "fp_0")
+        assert oldest_key in _capacity_cache
+
+        # One production insert should evict the oldest and keep size at MAX
         compute_max_days_for_region(db_mod.db_service.list_venues_for_region, GEO)
-        assert len(_capacity_cache) <= _CAPACITY_CACHE_MAX_SIZE + 1  # at most one over
+        assert len(_capacity_cache) == _CAPACITY_CACHE_MAX_SIZE, (
+            f"cache size {len(_capacity_cache)} != {_CAPACITY_CACHE_MAX_SIZE}"
+        )
+        assert oldest_key not in _capacity_cache, "oldest key was not evicted"
