@@ -1,0 +1,20 @@
+Thanks John Smith! Your booking in Vang Vieng is confirmed.
+Mad Monkey Vang Vieng is expecting you on Sun 4 Oct 2026
+Reservation details
+Check-in  Sunday, 4 October 2026 (14:00 - 00:00)
+Check-out Tuesday, 6 October 2026 (until 12:00)
+Your reservation 2 nights, Large Double Room
+Location
+Laos, Vang Vieng, 20/1 Ban Vang Vieng, Vang Vieng, Laos
+Booking reference: 1234.567.890
+PIN code: 9876
+
+--- Expected ---
+provider: booking_com
+bookingType: hotel
+venueName: Mad Monkey Vang Vieng
+scheduledStart: 2026-10-04T14:00
+checkoutDate: 2026-10-06T12:00
+durationMinutes: 2760
+confirmationCode: 1234.567.890
+geoRegion: vang_vieng_laos

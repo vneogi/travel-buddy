@@ -39,6 +39,7 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
   bool _saving = false;
   String? _saveError;
   String? _parsedGeoRegion;
+  ParsedBooking? _lastParsed;
 
   bool get _isEditMode => widget.editNode != null;
   bool get _isHotel => _bookingType == 'hotel';
@@ -100,22 +101,28 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
       importSource: 'email',
     );
     setState(() {
-      if (parsed.bookingType != null) _bookingType = parsed.bookingType!;
-      if (parsed.venueName != null) _titleController.text = parsed.venueName!;
-      if (parsed.confirmationCode != null) {
-        _codeController.text = parsed.confirmationCode!;
+      _lastParsed = parsed;
+      if (parsed.hasUsefulFields) {
+        if (parsed.bookingType != null) _bookingType = parsed.bookingType!;
+        if (parsed.venueName != null) {
+          _titleController.text = parsed.venueName!;
+        }
+        if (parsed.confirmationCode != null) {
+          _codeController.text = parsed.confirmationCode!;
+        }
+        if (parsed.durationMinutes != null) {
+          _durationMinutes = parsed.durationMinutes!;
+        }
+        if (parsed.scheduledStart != null) {
+          _scheduledStart = parsed.scheduledStart!;
+        }
+        if (parsed.checkoutDate != null && _bookingType == 'hotel') {
+          _checkoutDate = parsed.checkoutDate;
+        }
+        _parsedGeoRegion = parsed.geoRegion;
+        _importSource = 'email';
       }
-      if (parsed.durationMinutes != null) {
-        _durationMinutes = parsed.durationMinutes!;
-      }
-      if (parsed.scheduledStart != null) {
-        _scheduledStart = parsed.scheduledStart!;
-      }
-      if (parsed.checkoutDate != null && _bookingType == 'hotel') {
-        _checkoutDate = parsed.checkoutDate;
-      }
-      _parsedGeoRegion = parsed.geoRegion;
-      _importSource = 'email';
+      // Zero-useful-field parse: do not claim import succeeded.
     });
   }
 
@@ -284,6 +291,57 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
     if (mounted) Navigator.of(context).pop();
   }
 
+  Widget _buildExtractionReview() {
+    final parsed = _lastParsed!;
+    final providerName = switch (parsed.provider) {
+      BookingProvider.bookingCom => 'Booking.com',
+      BookingProvider.agoda => 'Agoda',
+      BookingProvider.generic => 'Generic',
+      BookingProvider.unknown => 'Unknown',
+    };
+
+    if (!parsed.hasUsefulFields) {
+      return Padding(
+        padding: const EdgeInsets.only(top: AppSpacing.sm),
+        child: Text(
+          "Couldn't find booking details in the pasted text.",
+          key: const Key('extraction_no_fields'),
+          style: AppTypography.caption.copyWith(
+            color: Theme.of(context).colorScheme.error,
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.sm),
+      child: Column(
+        key: const Key('extraction_review'),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Provider: $providerName',
+            style: AppTypography.caption,
+          ),
+          if (parsed.foundFields.isNotEmpty)
+            Text(
+              'Found: ${parsed.foundFields.join(", ")}',
+              style: AppTypography.caption.copyWith(
+                color: Colors.green[700],
+              ),
+            ),
+          if (parsed.missingFields.isNotEmpty)
+            Text(
+              'Still needed: ${parsed.missingFields.join(", ")}',
+              style: AppTypography.caption.copyWith(
+                color: Theme.of(context).colorScheme.error,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -386,6 +444,7 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
                   onPressed: _autoFill,
                   child: const Text('Auto-fill from paste'),
                 ),
+                if (_lastParsed != null) _buildExtractionReview(),
               ],
             ),
             const SizedBox(height: AppSpacing.lg),
