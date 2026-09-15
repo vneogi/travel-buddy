@@ -1,0 +1,10 @@
+{
+  "provider": "generic",
+  "bookingType": {"value": "flight", "quality": "partial"},
+  "venueName": {"value": null, "quality": "unknown"},
+  "scheduledStart": {"value": null, "quality": "unknown"},
+  "checkoutDate": {"value": null, "quality": "unknown"},
+  "durationMinutes": {"value": null, "quality": "unknown"},
+  "confirmationCode": {"value": "FLT999888", "quality": "partial"},
+  "geoRegion": {"value": "dubai_uae", "quality": "partial"}
+}

@@ -1,0 +1,4 @@
+Hotel reservation
+Check-in: 30 February 2026
+Check-out: 32 March 2026
+Confirmation code: BADDATE1

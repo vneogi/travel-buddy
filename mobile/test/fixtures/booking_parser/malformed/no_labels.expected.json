@@ -1,0 +1,10 @@
+{
+  "provider": "unknown",
+  "bookingType": {"value": null, "quality": "unknown"},
+  "venueName": {"value": null, "quality": "unknown"},
+  "scheduledStart": {"value": null, "quality": "unknown"},
+  "checkoutDate": {"value": null, "quality": "unknown"},
+  "durationMinutes": {"value": null, "quality": "unknown"},
+  "confirmationCode": {"value": null, "quality": "unknown"},
+  "geoRegion": {"value": null, "quality": "unknown"}
+}

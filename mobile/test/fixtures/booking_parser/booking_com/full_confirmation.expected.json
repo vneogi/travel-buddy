@@ -1,0 +1,10 @@
+{
+  "provider": "bookingCom",
+  "bookingType": {"value": "hotel", "quality": "full"},
+  "venueName": {"value": "Mad Monkey Vang Vieng", "quality": "full"},
+  "scheduledStart": {"value": "2026-10-04T14:00:00.000", "quality": "full"},
+  "checkoutDate": {"value": "2026-10-06T12:00:00.000", "quality": "full"},
+  "durationMinutes": {"value": 2760, "quality": "full"},
+  "confirmationCode": {"value": "1234.567.890", "quality": "full"},
+  "geoRegion": {"value": "vang_vieng_laos", "quality": "full"}
+}

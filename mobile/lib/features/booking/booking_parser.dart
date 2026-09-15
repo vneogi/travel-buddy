@@ -144,9 +144,9 @@ String _normalize(String raw) {
   t = t.replaceAll(RegExp(r'[^\S\n]+'), ' ');
   // Forwarded-email quote prefixes (> at line start)
   t = t.replaceAll(RegExp(r'^>+\s?', multiLine: true), '');
-  // Normalize label separators: "Check-in:" "Check-in #" "Check-in ="
-  // Also normalize "check in" -> "check-in", "check out" -> "check-out"
-  // and "arrival" -> "check-in", "departure" -> "check-out" in hotel context
+  // Normalize "check in" / "check out" spelling variants only.
+  // arrival/departure are NOT rewritten here -- they are contextual
+  // aliases handled per-adapter (hotel adapters only).
   t = t.replaceAllMapped(
     RegExp(r'\bcheck[\s-]?in\b', caseSensitive: false),
     (m) => 'check-in',
@@ -155,6 +155,13 @@ String _normalize(String raw) {
     RegExp(r'\b(?:check[\s-]?out|checkout)\b', caseSensitive: false),
     (m) => 'check-out',
   );
+  return t.trim();
+}
+
+/// Hotel-context alias rewrite: arrival -> check-in, departure -> check-out.
+/// Applied only inside detected hotel / provider adapters.
+String _applyHotelAliases(String text) {
+  var t = text;
   t = t.replaceAllMapped(
     RegExp(r'\barrival\b', caseSensitive: false),
     (m) => 'check-in',
@@ -163,7 +170,7 @@ String _normalize(String raw) {
     RegExp(r'\bdeparture\b', caseSensitive: false),
     (m) => 'check-out',
   );
-  return t.trim();
+  return t;
 }
 
 // ===================================================================
@@ -202,16 +209,19 @@ ParsedBooking _extractBookingCom(
   String importSource,
   BookingProvider provider,
 ) {
-  final lower = text.toLowerCase();
+  // Hotel-context aliases: arrival -> check-in, departure -> check-out
+  final aliased = _applyHotelAliases(text);
+  final lower = aliased.toLowerCase();
   final bookingType = _detectBookingType(lower);
-  final venueName = _extractVenueName(text);
-  final code = _extractConfirmationCode(text);
+  final venueName = _extractVenueName(aliased);
+  final code = _extractConfirmationCode(aliased);
   final checkIn =
-      _extractLabeledDate(text, 'check-in') ?? _extractExpectedDate(text);
-  final checkOut = _extractLabeledDate(text, 'check-out');
+      _extractLabeledDate(aliased, 'check-in') ?? _extractExpectedDate(aliased);
+  final checkOut = _extractLabeledDate(aliased, 'check-out');
   final duration = _deriveDuration(checkIn, checkOut);
   final geo = _inferGeoRegion(lower);
 
+  // Booking.com: provider-labelled fields are full quality.
   return ParsedBooking(
     bookingTypeField: bookingType != null
         ? ExtractedField.full(bookingType)
@@ -248,24 +258,26 @@ ParsedBooking _extractAgoda(
   String importSource,
   BookingProvider provider,
 ) {
-  final lower = text.toLowerCase();
+  // Hotel-context aliases: arrival -> check-in, departure -> check-out
+  final aliased = _applyHotelAliases(text);
+  final lower = aliased.toLowerCase();
   final bookingType = _detectBookingType(lower);
 
   // Agoda: "Your booking at PROPERTY is confirmed"
-  String? venueName = _extractVenueName(text);
+  String? venueName = _extractVenueName(aliased);
   if (venueName == null) {
     final agodaAt = RegExp(
       r'(?:your\s+)?(?:booking|reservation)\s+(?:at|for)\s+(.{2,80}?)\s+(?:is|has been)\s+confirmed',
       caseSensitive: false,
-    ).firstMatch(text);
+    ).firstMatch(aliased);
     venueName = agodaAt?.group(1)?.trim();
   }
 
-  final code = _extractConfirmationCode(text);
-  final checkIn = _extractLabeledDate(text, 'check-in') ??
-      _extractIsoDate(text, 'check-in');
-  final checkOut = _extractLabeledDate(text, 'check-out') ??
-      _extractIsoDate(text, 'check-out');
+  final code = _extractConfirmationCode(aliased);
+  final checkIn = _extractLabeledDate(aliased, 'check-in') ??
+      _extractIsoDate(aliased, 'check-in');
+  final checkOut = _extractLabeledDate(aliased, 'check-out') ??
+      _extractIsoDate(aliased, 'check-out');
   final duration = _deriveDuration(checkIn, checkOut);
   final geo = _inferGeoRegion(lower);
 
@@ -317,27 +329,28 @@ ParsedBooking _extractGeneric(
   final duration = _deriveDuration(checkIn, checkOut);
   final geo = _inferGeoRegion(lower);
 
+  // Generic / unknown: all inferred fields are partial quality.
   return ParsedBooking(
     bookingTypeField: bookingType != null
-        ? ExtractedField.full(bookingType)
+        ? ExtractedField.partial(bookingType)
         : const ExtractedField.unknown(),
     venueNameField: venueName != null
-        ? ExtractedField.full(venueName)
+        ? ExtractedField.partial(venueName)
         : const ExtractedField.unknown(),
     scheduledStartField: checkIn != null
-        ? ExtractedField.full(checkIn)
+        ? ExtractedField.partial(checkIn)
         : const ExtractedField.unknown(),
     checkoutDateField: checkOut != null && duration != null && duration > 0
-        ? ExtractedField.full(checkOut)
+        ? ExtractedField.partial(checkOut)
         : const ExtractedField.unknown(),
     durationMinutesField: duration != null && duration > 0
-        ? ExtractedField.full(duration)
+        ? ExtractedField.partial(duration)
         : const ExtractedField.unknown(),
     confirmationCodeField: code != null
-        ? ExtractedField.full(code)
+        ? ExtractedField.partial(code)
         : const ExtractedField.unknown(),
     geoRegionField: geo != null
-        ? ExtractedField.full(geo)
+        ? ExtractedField.partial(geo)
         : const ExtractedField.unknown(),
     provider: provider,
     importSource: importSource,
@@ -519,7 +532,9 @@ const _months = <String, int>{
 
 DateTime? _extractLabeledDate(String text, String label) {
   final match = RegExp(
-    '$label\\s+(?:(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*,?\\s+)?'
+    // Separator: whitespace, colon, hash, equals, or "is".
+    '$label\\s*(?:[:#=]|\\bis\\b)?\\s*'
+    r'(?:(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*,?\s+)?'
     r'(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})'
     r'(?:\s+\((?:until\s+)?(\d{1,2}):(\d{2}))?',
     caseSensitive: false,
@@ -544,11 +559,13 @@ DateTime? _extractIsoDate(String text, String label) {
     caseSensitive: false,
   ).firstMatch(text);
   if (iso != null) {
-    return DateTime(
-      int.parse(iso.group(1)!),
-      int.parse(iso.group(2)!),
-      int.parse(iso.group(3)!),
-    );
+    final y = int.parse(iso.group(1)!);
+    final m = int.parse(iso.group(2)!);
+    final d = int.parse(iso.group(3)!);
+    final dt = DateTime(y, m, d);
+    // Reject impossible dates that Dart silently normalizes.
+    if (dt.year != y || dt.month != m || dt.day != d) return null;
+    return dt;
   }
   return null;
 }
@@ -557,15 +574,14 @@ DateTime? _dateFromMatch(RegExpMatch? match) {
   if (match == null) return null;
   final month = _months[match.group(2)!.toLowerCase()];
   if (month == null) return null;
+  final day = int.parse(match.group(1)!);
+  final year = int.parse(match.group(3)!);
   final hour =
       int.tryParse(match.groupCount >= 4 ? match.group(4) ?? '' : '');
   final minute =
       int.tryParse(match.groupCount >= 5 ? match.group(5) ?? '' : '');
-  return DateTime(
-    int.parse(match.group(3)!),
-    month,
-    int.parse(match.group(1)!),
-    hour ?? 0,
-    minute ?? 0,
-  );
+  final dt = DateTime(year, month, day, hour ?? 0, minute ?? 0);
+  // Dart normalizes impossible dates (Feb 30 -> Mar 2). Reject them.
+  if (dt.year != year || dt.month != month || dt.day != day) return null;
+  return dt;
 }

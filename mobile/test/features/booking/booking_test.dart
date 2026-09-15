@@ -180,5 +180,32 @@ Check-in  Sunday, 4 October 2026 (14:00 - 00:00)
       // Privacy: confirmation_code MUST NOT be in the signal
       expect(valueJson.containsKey('confirmation_code'), isFalse);
     });
+
+    // Privacy: raw pasted text must never enter emitted payloads.
+    // The signal payload should contain only structured fields
+    // (bookingType, importSource, tripId), never the raw paste.
+    test('raw pasted text never appears in signal payload', () async {
+      const rawPasteSnippet = 'Mad Monkey Vang Vieng is expecting you';
+
+      await signalService.emitBookingAdded(
+        bookingType: 'hotel',
+        importSource: 'email',
+        tripId: 'trip_456',
+      );
+
+      final batch = await db.getPendingBatch();
+      expect(batch, hasLength(1));
+      final payloadStr = batch.first['payload_json'] as String;
+      // Raw text must not be anywhere in the serialized payload
+      expect(payloadStr.contains(rawPasteSnippet), isFalse,
+          reason: 'Raw pasted text must never enter signal payloads');
+      // Also confirm no venueName, notes, or other text fields leak
+      final payload = jsonDecode(payloadStr);
+      final valueJson = payload['value_json'] as Map<String, dynamic>;
+      expect(valueJson.containsKey('raw_text'), isFalse);
+      expect(valueJson.containsKey('venue_name'), isFalse);
+      expect(valueJson.containsKey('notes'), isFalse);
+      expect(valueJson.containsKey('confirmation_code'), isFalse);
+    });
   });
 }

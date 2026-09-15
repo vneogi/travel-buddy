@@ -5,13 +5,3 @@ check-in: Sunday, 4 October 2026 (14:00 - 00:00)
 check-out: Tuesday, 6 October 2026 (until 12:00)
 2 nights, Deluxe King Room
 Luang Prabang, Laos
-
---- Expected ---
-provider: agoda
-bookingType: hotel
-venueName: Riverside Palace Luang Prabang
-scheduledStart: 2026-10-04T14:00
-checkoutDate: 2026-10-06T12:00
-durationMinutes: 2760
-confirmationCode: AGD9988776
-geoRegion: luang_prabang_laos

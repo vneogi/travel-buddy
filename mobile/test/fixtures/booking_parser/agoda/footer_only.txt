@@ -4,13 +4,3 @@ View your booking details
 Booking ID: AGD5544332
 Customer Service: help@agoda.com
 https://www.agoda.com/mybooking
-
---- Expected ---
-provider: agoda
-bookingType: absent
-venueName: absent
-scheduledStart: absent
-checkoutDate: absent
-durationMinutes: absent
-confirmationCode: AGD5544332
-geoRegion: absent

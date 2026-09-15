@@ -1,0 +1,10 @@
+{
+  "provider": "generic",
+  "bookingType": {"value": "hotel", "quality": "partial"},
+  "venueName": {"value": null, "quality": "unknown"},
+  "scheduledStart": {"value": null, "quality": "unknown"},
+  "checkoutDate": {"value": null, "quality": "unknown"},
+  "durationMinutes": {"value": null, "quality": "unknown"},
+  "confirmationCode": {"value": "BADDATE1", "quality": "partial"},
+  "geoRegion": {"value": null, "quality": "unknown"}
+}
