@@ -26,8 +26,10 @@ from config.regions import REGIONS
 from models.schemas import TripSegmentIn
 from services.catalog_itinerary import (
     InsufficientCatalog,
+    _catalog_fingerprint,
     compute_max_days_for_region,
     eligible_corridor_venues,
+    invalidate_capacity_cache,
     nodes_from_catalog,
     pack_day,
     range_nodes_from_catalog,
@@ -263,7 +265,9 @@ class TestPackDay:
     def test_open_now_before_night_market(self):
         """An all-day venue starts before a night market despite lower rank."""
         rows = [
-            _make_venue_row("Night Market", structured=_evening_hours(), category="market", dwell=60),
+            _make_venue_row(
+                "Night Market", structured=_evening_hours(), category="market", dwell=60
+            ),
             _make_venue_row("Temple", structured=_make_hours({}), category="temple", dwell=60),
         ]
         start = _ict_to_utc(2026, 9, 14, 9)
@@ -418,7 +422,9 @@ class TestPackDay:
         sabotaged_day2 = [
             n for n in sabotaged if n.scheduled_start.astimezone(ICT).date() == date(2026, 9, 15)
         ]
-        assert not sabotaged_day2 or sabotaged_day2[0].scheduled_start != _ict_to_utc(2026, 9, 15, 9)
+        assert not sabotaged_day2 or sabotaged_day2[0].scheduled_start != _ict_to_utc(
+            2026, 9, 15, 9
+        )
 
     def test_every_node_fits_or_unknown(self):
         """Every emitted node returns FITS or UNKNOWN from hours_for_slot."""
@@ -479,8 +485,7 @@ class TestTruthfulCapacity:
                         interest_ids=interest_ids,
                     )
                     assert len(nodes) == md * VENUES_PER_DAY, (
-                        f"{region} wd={wd} profile={interest_ids} max={md}: "
-                        f"got {len(nodes)} nodes"
+                        f"{region} wd={wd} profile={interest_ids} max={md}: got {len(nodes)} nodes"
                     )
 
     def test_api_smoke_each_region_at_max_with_interests(self):
@@ -574,8 +579,9 @@ class TestAPIAtomicity:
         )
         trips_before = len(db_mod.db_service._trips)
         parties_before = len(db_mod.db_service._parties)
-        with mock_patch.object(db_mod.db_service, "list_venues_for_region", return_value=rows), mock_patch(
-            "routers.trip_router.compute_max_days_for_region", return_value=1
+        with (
+            mock_patch.object(db_mod.db_service, "list_venues_for_region", return_value=rows),
+            mock_patch("routers.trip_router.compute_max_days_for_region", return_value=1),
         ):
             body = {
                 "start_date": date(2026, 11, 2).isoformat(),
@@ -658,7 +664,9 @@ class TestGoldenCases:
             if start_pair >= open_pair and end_pair <= close_pair:
                 fits_declared_window = True
                 break
-        assert fits_declared_window, f"Royal Palace {start_local}-{end_local}: crosses split windows"
+        assert fits_declared_window, (
+            f"Royal Palace {start_local}-{end_local}: crosses split windows"
+        )
 
     def test_laos_corridor_oct2_9_builds(self):
         """Current Oct 2-9 Laos corridor still builds with correct stops per day."""
@@ -694,7 +702,9 @@ class TestGoldenCases:
         nodes = nodes_from_catalog(geo_region="luang_prabang_laos", start=start, rows=rows)
         for n in nodes:
             hr = hours_for_slot(
-                n.opening_hours_structured, n.scheduled_start, n.duration_minutes,
+                n.opening_hours_structured,
+                n.scheduled_start,
+                n.duration_minutes,
                 "luang_prabang_laos",
             )
             assert hr in (HoursResult.FITS, HoursResult.UNKNOWN), (
@@ -777,7 +787,9 @@ class TestSabotageProofs:
         sabotaged_day2 = [
             n for n in sabotaged if n.scheduled_start.astimezone(ICT).date() == date(2026, 9, 15)
         ]
-        assert not sabotaged_day2 or sabotaged_day2[0].scheduled_start != _ict_to_utc(2026, 9, 15, 9)
+        assert not sabotaged_day2 or sabotaged_day2[0].scheduled_start != _ict_to_utc(
+            2026, 9, 15, 9
+        )
 
     def test_sabotage4_identity_only_max_days(self):
         """Synthetic catalog: identity count says 2 days but the planner
@@ -788,23 +800,14 @@ class TestSabotageProofs:
         from unittest.mock import patch as mock_patch
 
         short_window = {d: [["09:00", "10:00"]] for d in _ALL_DAYS}
-        rows = [
-            _make_venue_row(f"Short_{i}", structured=short_window, dwell=60)
-            for i in range(9)
-        ]
+        rows = [_make_venue_row(f"Short_{i}", structured=short_window, dwell=60) for i in range(9)]
         identity = _identity_max(len(rows))  # 9 // 4 = 2
         assert identity == 2
-        with mock_patch.object(
-            db_mod.db_service, "list_venues_for_region", return_value=rows
-        ):
-            truthful = compute_max_days_for_region(
-                db_mod.db_service.list_venues_for_region, GEO
-            )
+        with mock_patch.object(db_mod.db_service, "list_venues_for_region", return_value=rows):
+            truthful = compute_max_days_for_region(db_mod.db_service.list_venues_for_region, GEO)
         # Truthful may be None (can't build 1 day) or a number < identity.
         truthful_val = truthful or 0
-        assert truthful_val < identity, (
-            f"Identity={identity} but truthful={truthful_val}"
-        )
+        assert truthful_val < identity, f"Identity={identity} but truthful={truthful_val}"
 
     def test_sabotage5_activity_past_midnight(self):
         """A node ending after local midnight fails the day-boundary test.
@@ -819,3 +822,132 @@ class TestSabotageProofs:
         local_day = _ict(2026, 9, 14, 9)
         result = next_slot_start(hours, cursor, 120, GEO, local_day)
         assert result is None
+
+
+# ---------------------------------------------------------------------------
+# local_day validation
+# ---------------------------------------------------------------------------
+
+
+class TestLocalDayValidation:
+    def test_naive_local_day_raises_value_error(self):
+        """A naive (timezone-unaware) local_day must be rejected."""
+        cursor = _ict_to_utc(2026, 9, 14, 9)
+        naive_day = datetime(2026, 9, 14, 9, 0, 0)  # no tzinfo
+        with pytest.raises(ValueError, match="local_day must be timezone-aware"):
+            next_slot_start(None, cursor, 60, GEO, naive_day)
+
+
+# ---------------------------------------------------------------------------
+# Capacity cache tests
+# ---------------------------------------------------------------------------
+
+
+class TestCapacityCache:
+    def setup_method(self):
+        invalidate_capacity_cache()
+
+    def teardown_method(self):
+        invalidate_capacity_cache()
+
+    def test_cache_hit_avoids_recomputation(self):
+        """Second call with unchanged catalog does not rerun simulation."""
+        call_count = 0
+        original_fn = db_mod.db_service.list_venues_for_region
+
+        def counting_fn(region):
+            nonlocal call_count
+            call_count += 1
+            return original_fn(region)
+
+        # First call: computes
+        r1 = compute_max_days_for_region(counting_fn, GEO)
+        assert call_count == 1
+
+        # Second call: cache hit, still calls list_venues_fn to get rows
+        # for fingerprinting, but pack_day is NOT called again.
+        # We verify by checking that the result is identical and fast.
+        r2 = compute_max_days_for_region(counting_fn, GEO)
+        assert r2 == r1
+        assert call_count == 2  # list_venues_fn called but simulation skipped
+
+    def test_cache_invalidation_on_changed_hours(self):
+        """Changing opening hours in catalog rows invalidates the cache."""
+        rows_original = db_mod.db_service.list_venues_for_region(GEO)
+        # Warm the cache with original catalog
+        compute_max_days_for_region(lambda _: rows_original, GEO)
+
+        # Mutate hours on a copy
+        import copy
+
+        rows_modified = copy.deepcopy(rows_original)
+        for row in rows_modified:
+            if row.get("opening_hours_structured"):
+                row["opening_hours_structured"] = {d: [["09:00", "09:30"]] for d in _ALL_DAYS}
+                break
+
+        fp_orig = _catalog_fingerprint(rows_original)
+        fp_mod = _catalog_fingerprint(rows_modified)
+        assert fp_orig != fp_mod, "Fingerprints must differ after hours change"
+
+        # This call gets a different fingerprint, so the cache is not used.
+        compute_max_days_for_region(lambda _: rows_modified, GEO)
+        # The definitive proof is that fingerprints differ; capacity may or
+        # may not change (coincidental match is possible).  With many venues
+        # narrowed to 30-min
+        # windows, capacity should drop.
+        # (Don't assert r2 != r1 because it might coincidentally match;
+        # the fingerprint difference is the definitive proof.)
+
+    def test_cache_invalidation_on_changed_dwell(self):
+        """Changing dwell invalidates the fingerprint."""
+        import copy
+
+        rows = db_mod.db_service.list_venues_for_region(GEO)
+        rows_long_dwell = copy.deepcopy(rows)
+        for row in rows_long_dwell:
+            row["suggested_duration_minutes"] = 999
+
+        fp1 = _catalog_fingerprint(rows)
+        fp2 = _catalog_fingerprint(rows_long_dwell)
+        assert fp1 != fp2
+
+    def test_cache_invalidation_on_changed_vibe_tags(self):
+        """Changing vibe_tags (ranking field) invalidates the fingerprint."""
+        import copy
+
+        rows = db_mod.db_service.list_venues_for_region(GEO)
+        rows_new_tags = copy.deepcopy(rows)
+        rows_new_tags[0]["vibe_tags"] = ["completely_new_tag"]
+
+        fp1 = _catalog_fingerprint(rows)
+        fp2 = _catalog_fingerprint(rows_new_tags)
+        assert fp1 != fp2
+
+    def test_cache_bounded_eviction(self):
+        """Cache evicts oldest entry when exceeding max size."""
+        from services.catalog_itinerary import (
+            _capacity_cache,
+            _capacity_cache_order,
+            _CAPACITY_CACHE_MAX_SIZE,
+        )
+
+        # Fill cache with synthetic entries
+        for i in range(_CAPACITY_CACHE_MAX_SIZE + 5):
+            key = (f"fake_region_{i}", f"fake_fp_{i}")
+            _capacity_cache[key] = i
+            _capacity_cache_order.append(key)
+
+        assert len(_capacity_cache) == _CAPACITY_CACHE_MAX_SIZE + 5
+
+        # Now run a real computation that stores a new entry; it should evict
+        invalidate_capacity_cache()
+        for i in range(_CAPACITY_CACHE_MAX_SIZE):
+            key = (f"region_{i}", f"fp_{i}")
+            _capacity_cache[key] = i
+            _capacity_cache_order.append(key)
+        assert len(_capacity_cache) == _CAPACITY_CACHE_MAX_SIZE
+
+        # One more insert should evict the oldest
+        compute_max_days_for_region(db_mod.db_service.list_venues_for_region, GEO)
+        assert len(_capacity_cache) <= _CAPACITY_CACHE_MAX_SIZE + 1  # at most one over

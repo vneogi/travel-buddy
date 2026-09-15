@@ -527,16 +527,65 @@ def range_nodes_from_catalog(
     return all_nodes
 
 
+# ---------------------------------------------------------------------------
+# Bounded catalog-fingerprint cache for compute_max_days_for_region
+# ---------------------------------------------------------------------------
+
+_CAPACITY_CACHE_MAX_SIZE = 32
+_capacity_cache: dict[tuple[str, str], Optional[int]] = {}
+_capacity_cache_order: list[tuple[str, str]] = []  # insertion order for eviction
+
+
+def _catalog_fingerprint(rows: Sequence[dict]) -> str:
+    """Deterministic fingerprint of planner-relevant catalog fields.
+
+    Covers every field that influences venue selection, scoring, scheduling,
+    or day-packing: identity (venue_id, name), coordinates (lat, lng),
+    ranking (category, vibe_tags), hours (opening_hours_structured), and
+    dwell (suggested_duration_minutes).  Changing any of these invalidates.
+
+    No network, clock, or process-random inputs.
+    """
+    import hashlib
+    import json
+
+    parts: list[str] = []
+    for row in sorted(rows, key=lambda r: str(r.get("venue_id") or r.get("name") or "")):
+        record = (
+            str(row.get("venue_id") or ""),
+            str(row.get("name") or ""),
+            str(row.get("lat") or ""),
+            str(row.get("lng") or ""),
+            str(row.get("category") or ""),
+            json.dumps(sorted(row.get("vibe_tags") or []), sort_keys=True),
+            json.dumps(row.get("opening_hours_structured"), sort_keys=True),
+            str(row.get("suggested_duration_minutes") or ""),
+        )
+        parts.append("|".join(record))
+    return hashlib.sha256("\n".join(parts).encode()).hexdigest()
+
+
+def invalidate_capacity_cache() -> None:
+    """Clear the capacity cache.  Useful in tests."""
+    _capacity_cache.clear()
+    _capacity_cache_order.clear()
+
+
 def compute_max_days_for_region(list_venues_fn, geo_region: str) -> Optional[int]:
     """Advertised max_days for a region, or None if insufficient catalog.
 
     SPEC-41 A3a: evaluate all seven possible start weekdays and all valid
-    interest profiles using the real multi-day builder. Advertise only the
-    largest span that succeeds for every weekday and every valid set of
-    interests. Clamped to the product ceiling.
+    interest profiles using incremental day-by-day simulation with the same
+    pack_day planner as range create.  Advertise only the largest span that
+    succeeds for every weekday and every valid set of interests.  Clamped to
+    the product ceiling.
+
+    Results are cached by (geo_region, catalog fingerprint).  Changed hours,
+    dwell, identity or ranking fields invalidate the cache.
     """
     from config.interests import MAX_DAYS_CEILING
     from datetime import date as date_type
+    from zoneinfo import ZoneInfo
 
     try:
         rows = list_venues_fn(geo_region)
@@ -547,6 +596,13 @@ def compute_max_days_for_region(list_venues_fn, geo_region: str) -> Optional[int
     if len(pool) < VENUES_PER_DAY:
         return None
 
+    fp = _catalog_fingerprint(rows)
+    cache_key = (geo_region, fp)
+    if cache_key in _capacity_cache:
+        return _capacity_cache[cache_key]
+
+    region = require_region(geo_region)
+    region_tz = ZoneInfo(region.timezone)
     interest_profiles = _valid_interest_profiles()
 
     # Use a fixed anchor week: 2026-09-14 (Monday) through 2026-09-20 (Sunday)
@@ -555,30 +611,46 @@ def compute_max_days_for_region(list_venues_fn, geo_region: str) -> Optional[int
     weekday_maxes: list[int] = []
     for wd in range(7):  # Mon=0 .. Sun=6
         anchor_date = anchor_monday + timedelta(days=wd)
-        best_span = 0
-        for span in range(1, MAX_DAYS_CEILING + 1):
-            end_date = anchor_date + timedelta(days=span - 1)
-            ok = True
-            for interest_ids in interest_profiles:
-                try:
-                    nodes = range_nodes_from_catalog(
-                        geo_region=geo_region,
-                        start_date_local=anchor_date.isoformat(),
-                        end_date_local=end_date.isoformat(),
-                        rows=rows,
-                        interest_ids=interest_ids,
-                    )
-                except InsufficientCatalog:
-                    ok = False
+        # For each profile, simulate incrementally: carry used_ids day-by-day
+        # until failure or MAX_DAYS_CEILING.  The minimum across all profiles
+        # is the guaranteed span for this weekday.
+        profile_spans: list[int] = []
+        for interest_ids in interest_profiles:
+            span = 0
+            used_ids: set[str] = set()
+            for day_offset in range(MAX_DAYS_CEILING):
+                current_date = anchor_date + timedelta(days=day_offset)
+                day_start = datetime(
+                    current_date.year,
+                    current_date.month,
+                    current_date.day,
+                    9,
+                    0,
+                    0,
+                    tzinfo=region_tz,
+                ).astimezone(timezone.utc)
+                day_nodes, used_ids = pack_day(
+                    candidates=pool,
+                    target_count=VENUES_PER_DAY,
+                    day_start_utc=day_start,
+                    geo_region=geo_region,
+                    used_ids=used_ids,
+                    interest_ids=interest_ids,
+                )
+                if len(day_nodes) < VENUES_PER_DAY:
                     break
-                if len(nodes) < span * VENUES_PER_DAY:
-                    ok = False
-                    break
-            if ok:
-                best_span = span
-            else:
-                break
-        weekday_maxes.append(best_span)
+                span += 1
+            profile_spans.append(span)
+        weekday_maxes.append(min(profile_spans))
 
     guaranteed = min(weekday_maxes)
-    return guaranteed if guaranteed >= 1 else None
+    result = guaranteed if guaranteed >= 1 else None
+
+    # Store in bounded cache
+    if cache_key not in _capacity_cache:
+        if len(_capacity_cache) >= _CAPACITY_CACHE_MAX_SIZE:
+            oldest = _capacity_cache_order.pop(0)
+            _capacity_cache.pop(oldest, None)
+        _capacity_cache_order.append(cache_key)
+    _capacity_cache[cache_key] = result
+    return result

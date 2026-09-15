@@ -251,6 +251,8 @@ def next_slot_start(
     """
     if earliest_start_utc.tzinfo is None:
         raise ValueError("earliest_start_utc must be timezone-aware")
+    if local_day.tzinfo is None:
+        raise ValueError("local_day must be timezone-aware")
     if duration_minutes <= 0:
         raise ValueError(f"duration_minutes must be positive; got {duration_minutes}")
 
