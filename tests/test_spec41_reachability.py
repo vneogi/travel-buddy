@@ -673,10 +673,10 @@ class TestStateMachineSwap:
     def test_no_maps_no_llm_on_swap(self):
         """Neither maps nor llm service is called during a swap.
 
-        Uses an explicit replacement_venue_id on an LP node to guarantee
-        the swap succeeds.  Patches validate_venues, get_transit_time,
-        complete, and generate_itinerary_response with hard-fail spies.
-        Asserts HTTP 200 and that the venue actually changed.
+        Uses a controlled LP replacement venue (via _make_venue_row) to
+        guarantee the swap succeeds.  Patches validate_venues,
+        get_transit_time, complete, and generate_itinerary_response with
+        hard-fail spies.  Asserts HTTP 200 and exact venue applied.
         """
         data = self._create_trip()
         lp = [
@@ -686,28 +686,22 @@ class TestStateMachineSwap:
             and n.get("node_kind", "activity") == "activity"
         ]
         target = lp[0]
-        # Find an unused LP venue
-        trip_vids = {n["venue_id"] for n in data["nodes"]}
-        target_start = datetime.fromisoformat(target["scheduled_start"])
-        from services.catalog_itinerary import duration_for
+        CTRL_VID = "ctrl-lp-provider-001"
+        ctrl_row = _make_venue_row(
+            "Ctrl LP Cafe",
+            structured=_make_hours(),
+            dwell=45,
+            lat=19.893,
+            lng=102.135,
+            venue_id=CTRL_VID,
+        )
+        ctrl_rag = VenueRAG(**{**ctrl_row, "geo_region": "luang_prabang_laos"})
+        real_get = db_service.get_venue_by_id
 
-        all_lp = eligible_corridor_venues(db_service.list_venues_for_region("luang_prabang_laos"))
-        replacement = None
-        for v in all_lp:
-            if str(v["venue_id"]) in trip_vids:
-                continue
-            hr = hours_for_slot(
-                v.get("opening_hours_structured"),
-                target_start,
-                duration_for(v),
-                "luang_prabang_laos",
-            )
-            if hr == HoursResult.CLOSED:
-                continue
-            replacement = v
-            break
-        if replacement is None:
-            pytest.skip("No eligible replacement LP venue")
+        def patched_get(vid):
+            if str(vid) == CTRL_VID:
+                return ctrl_rag
+            return real_get(vid)
 
         maps_calls: list = []
         llm_calls: list = []
@@ -743,6 +737,10 @@ class TestStateMachineSwap:
                 "services.llm_service.llm_service.generate_itinerary_response",
                 side_effect=_llm_spy("generate_itinerary_response"),
             ),
+            mock_patch(
+                "agents.state_machine.db_service.get_venue_by_id",
+                side_effect=patched_get,
+            ),
         ):
             r = client.post(
                 "/api/v1/trip/event",
@@ -751,7 +749,7 @@ class TestStateMachineSwap:
                     "event_type": "swap_activity",
                     "message": "Swap to this",
                     "target_node_id": target["node_id"],
-                    "preferences": {"replacement_venue_id": str(replacement["venue_id"])},
+                    "preferences": {"replacement_venue_id": CTRL_VID},
                 },
                 headers=HEADERS,
             )
@@ -760,47 +758,57 @@ class TestStateMachineSwap:
         assert len(llm_calls) == 0, f"LLM called: {llm_calls}"
         trip_after = client.get(f"/api/v1/trip/{data['trip_id']}", headers=HEADERS).json()
         swapped = next(n for n in trip_after["nodes"] if n["node_id"] == target["node_id"])
-        assert swapped["venue_id"] == str(replacement["venue_id"]), "Replacement not applied"
+        assert swapped["venue_id"] == CTRL_VID, "Replacement not applied"
 
     def test_exact_reachable_candidate_applied_via_http(self):
-        """A reachable explicit replacement within VV is applied through HTTP."""
-        data = self._create_trip()
-        vv = [n for n in data["nodes"] if n["geo_region"] == "vang_vieng_laos"]
-        target = vv[0]
-        target_start = datetime.fromisoformat(target["scheduled_start"])
-        from services.catalog_itinerary import duration_for
+        """A reachable explicit replacement within LP is applied through HTTP.
 
-        trip_vids = {n["venue_id"] for n in data["nodes"]}
-        all_vv = eligible_corridor_venues(db_service.list_venues_for_region("vang_vieng_laos"))
-        replacement = None
-        for v in all_vv:
-            vid = str(v["venue_id"])
-            if vid in trip_vids:
-                continue
-            hr = hours_for_slot(
-                v.get("opening_hours_structured"), target_start, duration_for(v), "vang_vieng_laos"
-            )
-            if hr == HoursResult.CLOSED:
-                continue
-            replacement = v
-            break
-        if replacement is None:
-            pytest.skip("No eligible replacement VV venue")
-        r = client.post(
-            "/api/v1/trip/event",
-            json={
-                "trip_id": data["trip_id"],
-                "event_type": "swap_activity",
-                "message": "Swap to this",
-                "target_node_id": target["node_id"],
-                "preferences": {"replacement_venue_id": str(replacement["venue_id"])},
-            },
-            headers=HEADERS,
+        Uses a controlled venue fixture (no pytest.skip).
+        """
+        data = self._create_trip()
+        lp = [
+            n
+            for n in data["nodes"]
+            if n["geo_region"] == "luang_prabang_laos"
+            and n.get("node_kind", "activity") == "activity"
+        ]
+        target = lp[0]
+        CTRL_VID = "ctrl-lp-exact-001"
+        ctrl_row = _make_venue_row(
+            "Ctrl LP Exact",
+            structured=_make_hours(),
+            dwell=45,
+            lat=19.893,
+            lng=102.136,
+            venue_id=CTRL_VID,
         )
+        ctrl_rag = VenueRAG(**{**ctrl_row, "geo_region": "luang_prabang_laos"})
+        real_get = db_service.get_venue_by_id
+
+        def patched_get(vid):
+            if str(vid) == CTRL_VID:
+                return ctrl_rag
+            return real_get(vid)
+
+        with mock_patch(
+            "agents.state_machine.db_service.get_venue_by_id",
+            side_effect=patched_get,
+        ):
+            r = client.post(
+                "/api/v1/trip/event",
+                json={
+                    "trip_id": data["trip_id"],
+                    "event_type": "swap_activity",
+                    "message": "Swap to this",
+                    "target_node_id": target["node_id"],
+                    "preferences": {"replacement_venue_id": CTRL_VID},
+                },
+                headers=HEADERS,
+            )
         assert r.status_code == 200
         trip_after = client.get(f"/api/v1/trip/{data['trip_id']}", headers=HEADERS).json()
         swapped = next(n for n in trip_after["nodes"] if n["node_id"] == target["node_id"])
-        assert swapped["venue_id"] == str(replacement["venue_id"])
+        assert swapped["venue_id"] == CTRL_VID
 
 
 # ===================================================================
@@ -967,7 +975,11 @@ class TestApplyTimeRecheck:
         assert result == [], "Apply-time recheck did not block injected venue"
 
     def test_candidate1_fails_candidate2_applied(self):
-        """When candidate 1 fails apply-time recheck, candidate 2 is applied."""
+        """Invoke _node_apply_structural with [unreachable, reachable].
+
+        Asserts candidate 2 is applied, loop_depth == 2.
+        Sabotaging ``if not candidate_nodes`` to ``break`` fails this test.
+        """
         base = _ict_to_utc(2026, 10, 6, 9)
         nodes = [
             TripNode(
@@ -988,33 +1000,27 @@ class TestApplyTimeRecheck:
             ),
         ]
         trip_state = _make_trip_state(nodes)
-        # Venue 1: far away -> fail recheck
         bad = _make_venue_row("Bad", structured=_make_hours(), dwell=60, lat=20.39, lng=102.13)
-        # Venue 2: nearby -> pass recheck
+        bad["geo_region"] = GEO
         good = _make_venue_row("Good", structured=_make_hours(), dwell=60, lat=19.892, lng=102.132)
-        venues = [_vsr(bad), _vsr(good)]
+        good["geo_region"] = GEO
 
-        # Attempt 0 should return [] (bad)
-        r0 = _sm()._build_candidate_nodes(
-            trip_state,
-            EventType.SWAP_ACTIVITY.value,
-            nodes[1].node_id,
-            venues,
-            0,
-        )
-        assert r0 == [], "Candidate 1 should fail recheck"
+        state = {
+            "event_type": EventType.SWAP_ACTIVITY.value,
+            "trip_state": trip_state,
+            "venues_found": [_vsr(bad), _vsr(good)],
+            "target_node_id": nodes[1].node_id,
+            "preferences": {},
+            "message": "swap",
+        }
+        result_state = _sm()._node_apply_structural(state)
 
-        # Attempt 1 should return a valid node list with Good applied
-        r1 = _sm()._build_candidate_nodes(
-            trip_state,
-            EventType.SWAP_ACTIVITY.value,
-            nodes[1].node_id,
-            venues,
-            1,
-        )
-        assert r1 is not None and len(r1) > 0, "Candidate 2 should succeed"
-        swapped = next(n for n in r1 if n.node_id == nodes[1].node_id)
+        swapped = next(n for n in result_state["trip_state"].nodes if n.node_id == nodes[1].node_id)
         assert swapped.venue_name == "Good", f"Expected Good, got {swapped.venue_name}"
+        assert result_state.get("loop_depth") == 2, (
+            f"loop_depth={result_state.get('loop_depth')}, expected 2"
+        )
+        assert not result_state.get("breaker_tripped"), "breaker should not trip"
 
     def test_nan_coords_refused_at_apply(self):
         """Candidate with NaN coordinates is refused at apply time."""
@@ -1044,13 +1050,13 @@ class TestApplyTimeRecheck:
         assert result == [], "NaN-coord candidate not rejected at apply time"
 
     def test_first_vv_swap_retains_vv_candidate(self):
-        """Generic search at first VV node retains a VV candidate without
-        walking from Vientiane.
+        """Generic search at first VV node applies an exact VV candidate
+        without walking from Vientiane.
 
-        Creates a corridor trip, swaps first VV node, asserts:
-          - HTTP 200
-          - the exact applied venue is from VV
-          - the venue actually changed
+        No replacement_venue_id.  Patches hybrid_venue_search and
+        get_venue_by_id with a controlled VV venue.  walking_minutes
+        raises if called with a Vientiane-range origin (lat < 18.5).
+        Zero-candidate or unchanged trip is a failure.
         """
         data = client.post("/api/v1/trip/create", json=_corridor_body(), headers=HEADERS).json()
         trip_id = data["trip_id"]
@@ -1060,46 +1066,58 @@ class TestApplyTimeRecheck:
             if n["geo_region"] == "vang_vieng_laos" and n.get("node_kind", "activity") == "activity"
         ]
         target = vv[0]
-        target_start = datetime.fromisoformat(target["scheduled_start"])
-        from services.catalog_itinerary import duration_for
+        original_vid = target["venue_id"]
 
-        trip_vids = {n["venue_id"] for n in data["nodes"]}
-        all_vv = eligible_corridor_venues(db_service.list_venues_for_region("vang_vieng_laos"))
-        replacement = None
-        for v in all_vv:
-            if str(v["venue_id"]) in trip_vids:
-                continue
-            hr = hours_for_slot(
-                v.get("opening_hours_structured"),
-                target_start,
-                duration_for(v),
-                "vang_vieng_laos",
-            )
-            if hr == HoursResult.CLOSED:
-                continue
-            replacement = v
-            break
-        if replacement is None:
-            pytest.skip("No eligible replacement VV venue")
-
-        r = client.post(
-            "/api/v1/trip/event",
-            json={
-                "trip_id": trip_id,
-                "event_type": "swap_activity",
-                "message": "Find me something else in VV",
-                "target_node_id": target["node_id"],
-                "preferences": {"replacement_venue_id": str(replacement["venue_id"])},
-            },
-            headers=HEADERS,
+        # Controlled VV candidate: nearby, open all week, short dwell
+        FAKE_VID = "fake-vv-candidate-001"
+        fake_row = _make_venue_row(
+            "Fake VV Cafe",
+            structured=_make_hours(),
+            dwell=45,
+            lat=18.924,
+            lng=102.447,
+            venue_id=FAKE_VID,
         )
+        fake_rag = VenueRAG(**{**fake_row, "geo_region": "vang_vieng_laos"})
+        fake_vsr = VenueSearchResult(venue=fake_rag, similarity_score=0.9, final_score=0.9)
+
+        from services.transit import walking_minutes as real_wm
+
+        def guarded_wm(olat, olng, dlat, dlng):
+            if olat < 18.5:
+                raise AssertionError(f"walking_minutes called with VTE origin lat={olat}")
+            return real_wm(olat, olng, dlat, dlng)
+
+        with (
+            mock_patch(
+                "agents.state_machine.db_service.hybrid_venue_search",
+                return_value=[fake_vsr],
+            ),
+            mock_patch(
+                "agents.state_machine.db_service.get_venue_by_id",
+                return_value=fake_rag,
+            ),
+            mock_patch(
+                "agents.state_machine._walking_minutes",
+                side_effect=guarded_wm,
+            ),
+        ):
+            r = client.post(
+                "/api/v1/trip/event",
+                json={
+                    "trip_id": trip_id,
+                    "event_type": "swap_activity",
+                    "message": "Find me something else",
+                    "target_node_id": target["node_id"],
+                },
+                headers=HEADERS,
+            )
         assert r.status_code == 200, r.text
         trip_after = client.get(f"/api/v1/trip/{trip_id}", headers=HEADERS).json()
         swapped = next(n for n in trip_after["nodes"] if n["node_id"] == target["node_id"])
-        assert swapped["venue_id"] == str(replacement["venue_id"]), "Replacement not applied"
-        assert swapped["geo_region"] == "vang_vieng_laos", (
-            f"Replacement is not VV: {swapped['geo_region']}"
-        )
+        assert swapped["venue_id"] == FAKE_VID, f"Expected {FAKE_VID}, got {swapped['venue_id']}"
+        assert swapped["venue_id"] != original_vid, "Swap must change the venue"
+        assert swapped["geo_region"] == "vang_vieng_laos"
 
 
 # ===================================================================
