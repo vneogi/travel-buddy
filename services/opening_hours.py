@@ -207,6 +207,129 @@ def _parse_window(win: Any) -> Optional[tuple]:
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# SPEC-41 A3a: Next fitting window start
+# ---------------------------------------------------------------------------
+
+
+def next_slot_start(
+    structured: Optional[Dict[str, Any]],
+    earliest_start_utc: datetime,
+    duration_minutes: int,
+    geo_region: Optional[str],
+    local_day: datetime,
+) -> Optional[datetime]:
+    """Return the earliest fitting same-day start at or after the cursor.
+
+    Parameters
+    ----------
+    structured:
+        The structured opening-hours dict, or None / malformed.
+    earliest_start_utc:
+        Timezone-aware UTC cursor -- the earliest the activity may begin.
+    duration_minutes:
+        Positive duration in minutes.
+    geo_region:
+        Region code for timezone lookup.
+    local_day:
+        A destination-local datetime whose *date* component identifies the
+        calendar day.  The activity must start and end on this day.
+
+    Returns
+    -------
+    datetime | None
+        A UTC-aware start time, or None when no fitting window exists.
+        UNKNOWN hours (None/malformed) schedule at the cursor.
+
+    Contract
+    --------
+    * If the cursor already fits, return it unchanged.
+    * Split windows are independent.
+    * Never moves to another local calendar day.
+    * The activity must end before local midnight.
+    * No datetime.now(), Maps, LLM, random, or network calls.
+    """
+    if earliest_start_utc.tzinfo is None:
+        raise ValueError("earliest_start_utc must be timezone-aware")
+    if local_day.tzinfo is None:
+        raise ValueError("local_day must be timezone-aware")
+    if duration_minutes <= 0:
+        raise ValueError(f"duration_minutes must be positive; got {duration_minutes}")
+
+    from services.destination_tz import destination_tz
+
+    tz = destination_tz(geo_region)
+    if tz is None:
+        local_cursor = earliest_start_utc
+        local_day_ref = local_day
+    else:
+        local_cursor = earliest_start_utc.astimezone(tz)
+        local_day_ref = local_day.astimezone(tz)
+
+    # Day boundaries in local time
+    local_midnight = local_day_ref.replace(hour=0, minute=0, second=0, microsecond=0)
+    local_end_of_day = local_midnight + timedelta(days=1)
+
+    # UNKNOWN hours: schedule at max(cursor, day start) but never outside the day.
+    if not isinstance(structured, dict) or not _validate_structure(structured):
+        candidate_local = max(local_cursor, local_midnight)
+        if candidate_local >= local_end_of_day:
+            return None
+        candidate_end = candidate_local + timedelta(minutes=duration_minutes)
+        if candidate_end > local_end_of_day:
+            return None
+        if tz is not None:
+            return candidate_local.astimezone(timezone.utc)
+        return candidate_local
+
+    day_key = _weekday_key(local_day_ref)
+    windows = structured[day_key]
+
+    best: Optional[datetime] = None
+
+    for win in windows:
+        w_open_td, w_close_td = _parse_window_safe(win)
+
+        # Only consider same-day windows for the planner.
+        # Overnight windows (close <= open) may run in the evening portion
+        # but the activity must end before local midnight.
+        if w_close_td <= w_open_td:
+            # Overnight: opening is on local_day, closing is next day.
+            # Clamp effective close to local midnight.
+            effective_close = local_midnight + timedelta(days=1)
+        else:
+            effective_close = local_midnight + w_close_td
+
+        window_open_local = local_midnight + w_open_td
+
+        # Candidate start: max(cursor, window open)
+        candidate_local = max(local_cursor, window_open_local)
+
+        # Must start on the target day
+        if candidate_local >= local_end_of_day:
+            continue
+        if candidate_local < local_midnight:
+            continue
+
+        # Must end within the window AND before local midnight
+        candidate_end = candidate_local + timedelta(minutes=duration_minutes)
+        if candidate_end > effective_close:
+            continue
+        if candidate_end > local_end_of_day:
+            continue
+
+        # Convert back to UTC
+        if tz is not None:
+            candidate_utc = candidate_local.astimezone(timezone.utc)
+        else:
+            candidate_utc = candidate_local
+
+        if best is None or candidate_utc < best:
+            best = candidate_utc
+
+    return best
+
+
 def hours_for_slot(
     structured: Optional[Dict[str, Any]],
     start_utc: datetime,
