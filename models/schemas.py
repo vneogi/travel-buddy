@@ -75,6 +75,7 @@ class TripNode(BaseModel):
     lat: Optional[float] = None
     lng: Optional[float] = None
     opening_hours: Optional[str] = None  # "HH:MM-HH:MM"; used for re-validation
+    opening_hours_structured: Optional[Dict[str, Any]] = None  # SPEC-41 A2
     geo_region: Optional[str] = None  # Per-node region; overrides trip's default for multi-city
     names_local: Optional[Dict[str, Any]] = (
         None  # SPEC-12: {lang: {value, source}} local script names
@@ -361,6 +362,7 @@ class VenueRAG(BaseModel):
     names_local: Optional[Dict[str, Any]] = None
     landmarks_local: Optional[Dict[str, Any]] = None
     nearest_landmark: Optional[str] = None
+    typical_dwell_minutes: Optional[int] = None  # SPEC-41 A2: candidate dwell
     embedding: Optional[List[float]] = None  # 1536-dim vector
 
 

@@ -529,11 +529,28 @@ class TestEarlierCityMutation:
         vv_target = vv_nodes[0]
         original_venue_id = vv_target["venue_id"]
 
-        # Find a same-region venue NOT already in the trip.
+        # Find a same-region venue NOT already in the trip AND hours-eligible
+        # at the target slot (SPEC-41 A2).
+        from services.opening_hours import HoursResult, hours_for_slot
+        from services.catalog_itinerary import duration_for
+        from datetime import datetime as dt_cls
+
         trip_vids = {n["venue_id"] for n in data["nodes"] if n["geo_region"] == "vang_vieng_laos"}
         all_vv = eligible_corridor_venues(db_service.list_venues_for_region("vang_vieng_laos"))
-        unused = [v for v in all_vv if str(v["venue_id"]) not in trip_vids]
-        assert len(unused) > 0, "Need at least one unused VV venue for swap"
+        target_start = dt_cls.fromisoformat(vv_target["scheduled_start"])
+        unused = [
+            v
+            for v in all_vv
+            if str(v["venue_id"]) not in trip_vids
+            and hours_for_slot(
+                v.get("opening_hours_structured"),
+                target_start,
+                duration_for(v),
+                "vang_vieng_laos",
+            )
+            != HoursResult.CLOSED
+        ]
+        assert len(unused) > 0, "Need at least one unused hours-eligible VV venue"
         replacement_vid = str(unused[0]["venue_id"])
 
         r = client.post(

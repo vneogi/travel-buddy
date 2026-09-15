@@ -200,3 +200,31 @@ def _parse_window(win: Any) -> Optional[tuple]:
     if o is None or c is None:
         return None
     return o, c
+
+
+# ---------------------------------------------------------------------------
+# SPEC-41 A2: Shared helper used by create, corridor, swap, scheduler
+# ---------------------------------------------------------------------------
+
+
+def hours_for_slot(
+    structured: Optional[Dict[str, Any]],
+    start_utc: datetime,
+    duration_minutes: int,
+    geo_region: Optional[str],
+) -> HoursResult:
+    """Evaluate hours eligibility using the region timezone.
+
+    Converts *start_utc* to destination-local time, then delegates to
+    ``check_slot``.  Returns ``UNKNOWN`` when structured hours are
+    absent -- never invents a default.
+
+    Does not call Maps, an LLM, or ``datetime.now()``.
+    """
+    if structured is None:
+        return HoursResult.UNKNOWN
+    # Import here to avoid circular dependency at module load time.
+    from services.destination_tz import to_destination_local
+
+    local_start = to_destination_local(start_utc, geo_region)
+    return check_slot(structured, local_start, duration_minutes)

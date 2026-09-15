@@ -27,7 +27,10 @@ from models.schemas import (
 )
 from services.db_provider import db_service
 from services.cache_service import cache_service
+from services.catalog_itinerary import duration_for as _duration_for
 from services.maps_service import maps_service
+from services.opening_hours import HoursResult as _HoursResult
+from services.opening_hours import hours_for_slot as _hours_for_slot
 from services.scheduler import reschedule_and_validate
 from agents.router_agent import router_agent
 from services.llm_service import llm_service
@@ -218,6 +221,21 @@ class TripStateMachine:
             ):
                 state["no_candidates"] = True
                 return state
+            # SPEC-41 A2: refuse CLOSED for the target slot
+            structured = getattr(replacement, "opening_hours_structured", None)
+            if target_node is not None:
+                cand_dwell = _duration_for(
+                    {"typical_dwell_minutes": getattr(replacement, "typical_dwell_minutes", None)}
+                )
+                hr = _hours_for_slot(
+                    structured,
+                    target_node.scheduled_start,
+                    cand_dwell,
+                    target_region,
+                )
+                if hr == _HoursResult.CLOSED:
+                    state["no_candidates"] = True
+                    return state
             state["venues_found"] = [
                 VenueSearchResult(
                     venue=replacement,
@@ -248,7 +266,41 @@ class TripStateMachine:
         if state["event_type"] == EventType.SWAP_ACTIVITY.value and target_node:
             venues = [result for result in venues if result.venue.venue_id != target_node.venue_id]
 
-        if venues:
+        # SPEC-41 A2: hydrate + hours-filter swap search candidates.
+        # Hybrid-search RPC may omit opening_hours_structured / typical_dwell_minutes;
+        # hydrate each candidate from the catalog so the predicate sees real data.
+        if (
+            state["event_type"] == EventType.SWAP_ACTIVITY.value
+            and target_node is not None
+            and venues
+        ):
+            eligible = []
+            for v in venues:
+                hydrated = db_service.get_venue_by_id(v.venue.venue_id)
+                if hydrated is None:
+                    continue  # unhydratable candidate discarded
+                v = VenueSearchResult(
+                    venue=hydrated,
+                    similarity_score=v.similarity_score,
+                    final_score=v.final_score,
+                )
+                structured = getattr(v.venue, "opening_hours_structured", None)
+                cand_dwell = _duration_for(
+                    {"typical_dwell_minutes": getattr(v.venue, "typical_dwell_minutes", None)}
+                )
+                hr = _hours_for_slot(
+                    structured,
+                    target_node.scheduled_start,
+                    cand_dwell,
+                    geo_region,
+                )
+                if hr != _HoursResult.CLOSED:
+                    eligible.append(v)
+            venues = eligible
+
+        # Maps validation -- swap uses target-slot structured hours as the sole
+        # hours authority; do not call validate_venues (which uses datetime.now()).
+        if venues and state["event_type"] != EventType.SWAP_ACTIVITY.value:
             venue_dicts = [
                 {
                     "name": v.venue.name,
@@ -321,7 +373,7 @@ class TripStateMachine:
                     break
             if not inserted:
                 nodes.append(booking_node)
-            result = reschedule_and_validate(nodes)
+            result = reschedule_and_validate(nodes, mutated_node_ids={booking_node.node_id})
             trip_state.nodes = result.nodes
             state["schedule_warnings"] = result.warnings
             return state
@@ -392,7 +444,7 @@ class TripStateMachine:
                         break
                 if not inserted:
                     nodes.append(node)
-                result = reschedule_and_validate(nodes)
+                result = reschedule_and_validate(nodes, mutated_node_ids={target_id})
                 trip_state.nodes = result.nodes
                 state["schedule_warnings"] = result.warnings
             return state
@@ -401,7 +453,7 @@ class TripStateMachine:
         if event_type == EventType.DELETE_BOOKING.value:
             target_id = state.get("target_node_id")
             trip_state.nodes = [n for n in trip_state.nodes if n.node_id != target_id]
-            result = reschedule_and_validate(list(trip_state.nodes))
+            result = reschedule_and_validate(list(trip_state.nodes), mutated_node_ids=set())
             trip_state.nodes = result.nodes
             state["schedule_warnings"] = result.warnings
             return state
@@ -416,7 +468,7 @@ class TripStateMachine:
                         return state
                     node.status = NodeStatus.SKIPPED
                     break
-            result = reschedule_and_validate(list(trip_state.nodes))
+            result = reschedule_and_validate(list(trip_state.nodes), mutated_node_ids={target})
             trip_state.nodes = result.nodes
             state["schedule_warnings"] = result.warnings
             return state
@@ -434,7 +486,20 @@ class TripStateMachine:
             )
             if candidate_nodes is None:
                 break  # no further candidates to try
-            result = reschedule_and_validate(candidate_nodes)
+            # SPEC-41 A2: scope warnings to actually-mutated nodes
+            original_map = {n.node_id: n for n in trip_state.nodes}
+            _mutated = set()
+            for cn in candidate_nodes:
+                orig = original_map.get(cn.node_id)
+                if orig is None:
+                    _mutated.add(cn.node_id)
+                elif (
+                    cn.venue_id != orig.venue_id
+                    or cn.duration_minutes != orig.duration_minutes
+                    or cn.scheduled_start != orig.scheduled_start
+                ):
+                    _mutated.add(cn.node_id)
+            result = reschedule_and_validate(candidate_nodes, mutated_node_ids=_mutated)
             state["loop_depth"] = attempt + 1
             if not result.has_hard_conflict:
                 accepted = result
@@ -480,10 +545,13 @@ class TripStateMachine:
             if attempt >= len(venues):
                 return None
             venue = venues[attempt].venue
+            cand_dwell = _duration_for(
+                {"typical_dwell_minutes": getattr(venue, "typical_dwell_minutes", None)}
+            )
             for i, node in enumerate(nodes):
                 if node.node_id == target_node_id and not node.is_locked:
                     nodes[i] = self._node_from_venue(
-                        venue, node.scheduled_start, node.duration_minutes, node.node_id
+                        venue, node.scheduled_start, cand_dwell, node.node_id
                     )
                     break
             return nodes
@@ -541,6 +609,7 @@ class TripStateMachine:
             lat=venue.lat,
             lng=venue.lng,
             opening_hours=getattr(venue, "opening_hours", None),
+            opening_hours_structured=getattr(venue, "opening_hours_structured", None),
             geo_region=getattr(venue, "geo_region", None),
             names_local=getattr(venue, "names_local", None),
             landmarks_local=getattr(venue, "landmarks_local", None),
