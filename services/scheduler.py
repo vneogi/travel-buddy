@@ -6,8 +6,8 @@ edit (cancel / swap / add / reroute):
   * LOCKED nodes are fixed anchors -- their reserved start time never moves.
   * Non-locked nodes keep their planned start unless inter-venue transit makes
     that infeasible, in which case they are pushed later.
-  * Transit time between consecutive stops is added from the Distance-Matrix
-    estimate (maps_service) whenever both stops have coordinates.
+  * Transit time between consecutive active stops uses the deterministic
+    walking_minutes helper (SPEC-41 A3b). No random, no clock, no Maps API.
   * Each node venue opening hours are re-checked at its (possibly shifted)
     time.
   * A HARD conflict is flagged when a locked reservation can no longer be
@@ -22,8 +22,8 @@ from datetime import timedelta
 from typing import List, Optional, Set
 
 from models.schemas import TripNode, NodeStatus
-from services.maps_service import maps_service
 from services.opening_hours import HoursResult, hours_for_slot
+from services.transit import walking_minutes
 
 
 @dataclass
@@ -73,9 +73,9 @@ def reschedule_and_validate(
 
         transit_min = 0
         if prev_active is not None and _has_coords(prev_active) and _has_coords(node):
-            transit_min = maps_service.get_transit_time(
+            transit_min = walking_minutes(
                 prev_active.lat, prev_active.lng, node.lat, node.lng
-            )["duration_minutes"]
+            )
 
         earliest = prev_active_end + timedelta(minutes=transit_min) if prev_active_end else None
 

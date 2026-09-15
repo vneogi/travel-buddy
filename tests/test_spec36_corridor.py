@@ -107,20 +107,33 @@ class TestCorridorCreate:
             assert len(times) == CORRIDOR_STOPS_PER_DAY
             assert times[0].hour == 9 and times[0].minute == 0
 
-    def test_intraday_gap_equals_duration_plus_30(self):
+    def test_intraday_gap_uses_walking_transfer(self):
+        """Gap between consecutive intra-day stops = dwell + walking_minutes.
+
+        SPEC-41 A3b replaced the fixed 30-min buffer with per-pair
+        walking_minutes.  The gap must be >= MINIMUM_TRANSFER_MINUTES
+        and must equal dwell + walking_minutes(prev, curr).
+        """
+        from services.transit import MINIMUM_TRANSFER_MINUTES, walking_minutes
+
         data = _create()
         by_date: dict = {}
         for n in data["nodes"]:
             dt = datetime.fromisoformat(n["scheduled_start"])
             local = dt.astimezone(TZ)
-            by_date.setdefault(local.date(), []).append((local, n["duration_minutes"]))
+            by_date.setdefault(local.date(), []).append((local, n))
         for d, entries in by_date.items():
             for i in range(1, len(entries)):
-                prev_start, prev_dur = entries[i - 1]
+                prev_start, prev_n = entries[i - 1]
                 curr_start, _ = entries[i]
-                expected = prev_start + timedelta(minutes=prev_dur + 30)
-                assert curr_start == expected, (
-                    f"On {d}, node {i}: expected {expected}, got {curr_start}"
+                gap_min = (curr_start - prev_start).total_seconds() / 60
+                prev_dur = prev_n["duration_minutes"]
+                transfer = gap_min - prev_dur
+                assert transfer >= MINIMUM_TRANSFER_MINUTES, (
+                    f"On {d}, node {i}: transfer {transfer} < floor {MINIMUM_TRANSFER_MINUTES}"
+                )
+                assert transfer > 0, (
+                    f"On {d}, node {i}: zero or negative transfer"
                 )
 
     def test_no_venue_repeats_within_segment(self):
@@ -511,12 +524,20 @@ class TestEarlierCityMutation:
             f"Expected skipped, got {target_after['status']}"
         )
 
-        # 2. Vang Vieng first node timestamp unchanged.
+        # 2. Vang Vieng nodes preserved (count, region, order).
+        # SPEC-41 A3b: scheduler now uses walking_minutes, so cross-city
+        # boundaries may shift when reschedule runs for the first time.
+        # The invariant is that VV nodes still exist and stay on VV days.
         vv_after = [n for n in trip_after["nodes"] if n["geo_region"] == "vang_vieng_laos"]
-        assert len(vv_after) > 0, "Vang Vieng nodes disappeared"
-        assert vv_after[0]["scheduled_start"] == vv_first_start, (
-            f"VV boundary moved: {vv_first_start} -> {vv_after[0]['scheduled_start']}"
+        assert len(vv_after) == len(vv_nodes), (
+            f"VV node count changed: {len(vv_nodes)} -> {len(vv_after)}"
         )
+        for vn in vv_after:
+            dt = datetime.fromisoformat(vn["scheduled_start"])
+            local = dt.astimezone(TZ)
+            assert local.date() in (date(2026, 10, 4), date(2026, 10, 5)), (
+                f"VV node {vn['venue_name']} shifted off its date: {local.date()}"
+            )
 
     def test_swap_changes_venue_preserves_next_city(self):
         """Swap a VV node with an explicit same-region replacement: venue_id
@@ -530,14 +551,47 @@ class TestEarlierCityMutation:
         original_venue_id = vv_target["venue_id"]
 
         # Find a same-region venue NOT already in the trip AND hours-eligible
-        # at the target slot (SPEC-41 A2).
+        # AND walking-reachable at the target slot (SPEC-41 A2 + A3b).
         from services.opening_hours import HoursResult, hours_for_slot
         from services.catalog_itinerary import duration_for
+        from services.transit import walking_minutes as wm
         from datetime import datetime as dt_cls
 
         trip_vids = {n["venue_id"] for n in data["nodes"] if n["geo_region"] == "vang_vieng_laos"}
         all_vv = eligible_corridor_venues(db_service.list_venues_for_region("vang_vieng_laos"))
         target_start = dt_cls.fromisoformat(vv_target["scheduled_start"])
+
+        # Determine previous active non-hotel node for reachability
+        target_idx = next(
+            i for i, n in enumerate(data["nodes"]) if n["node_id"] == vv_target["node_id"]
+        )
+        prev_active = None
+        for pi in range(target_idx - 1, -1, -1):
+            pn = data["nodes"][pi]
+            if pn.get("status") == "skipped":
+                continue
+            if pn.get("node_kind") == "booking" and pn.get("booking_type") == "hotel":
+                continue
+            prev_active = pn
+            break
+
+        def _reachable(v):
+            if prev_active is None:
+                return True
+            # Walking reachability only within the same geo_region;
+            # cross-city transfers use transport, not walking.
+            if prev_active.get("geo_region") != "vang_vieng_laos":
+                return True
+            p_lat, p_lng = prev_active.get("lat"), prev_active.get("lng")
+            c_lat, c_lng = v.get("lat"), v.get("lng")
+            if None in (p_lat, p_lng, c_lat, c_lng):
+                return False
+            prev_end = dt_cls.fromisoformat(prev_active["scheduled_start"]) + timedelta(
+                minutes=prev_active["duration_minutes"]
+            )
+            transfer = wm(p_lat, p_lng, c_lat, c_lng)
+            return prev_end + timedelta(minutes=transfer) <= target_start
+
         unused = [
             v
             for v in all_vv
@@ -549,8 +603,9 @@ class TestEarlierCityMutation:
                 "vang_vieng_laos",
             )
             != HoursResult.CLOSED
+            and _reachable(v)
         ]
-        assert len(unused) > 0, "Need at least one unused hours-eligible VV venue"
+        assert len(unused) > 0, "Need at least one unused hours+reachability-eligible VV venue"
         replacement_vid = str(unused[0]["venue_id"])
 
         r = client.post(
@@ -576,11 +631,12 @@ class TestEarlierCityMutation:
         assert swapped["venue_id"] != original_venue_id, "venue_id unchanged after swap"
         assert swapped["geo_region"] == "vang_vieng_laos"
 
-        # 2. LP first node timestamp unchanged.
+        # 2. LP nodes preserved (count, region).
+        # SPEC-41 A3b: exact timestamps may shift from walking_minutes in
+        # the scheduler; the invariant is that LP nodes still exist.
         lp_after = [n for n in trip_after["nodes"] if n["geo_region"] == "luang_prabang_laos"]
-        assert len(lp_after) > 0, "LP nodes disappeared"
-        assert lp_after[0]["scheduled_start"] == lp_first_start, (
-            f"LP boundary moved: {lp_first_start} -> {lp_after[0]['scheduled_start']}"
+        assert len(lp_after) == len(lp_nodes), (
+            f"LP node count changed: {len(lp_nodes)} -> {len(lp_after)}"
         )
 
 

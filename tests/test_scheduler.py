@@ -5,25 +5,13 @@ from services.scheduler import reschedule_and_validate
 from models.schemas import TripNode, NodeStatus
 
 
-def _fixed_transit(minutes):
-    def _f(o_lat, o_lng, d_lat, d_lng, mode="driving"):
-        return {
-            "distance_km": 1.0,
-            "duration_minutes": minutes,
-            "mode": mode,
-            "traffic_condition": "light",
-        }
-
-    return _f
-
-
-def _always_open(monkeypatch):
-    monkeypatch.setattr(scheduler_mod.maps_service, "check_venue_open", lambda hours, t=None: True)
+def _fixed_walking(minutes):
+    """Return a callable that replaces walking_minutes with a fixed value."""
+    return lambda *args, **kwargs: minutes
 
 
 def test_unreachable_locked_reservation_flagged(monkeypatch):
-    monkeypatch.setattr(scheduler_mod.maps_service, "get_transit_time", _fixed_transit(90))
-    _always_open(monkeypatch)
+    monkeypatch.setattr(scheduler_mod, "walking_minutes", _fixed_walking(90))
     base = datetime(2026, 8, 5, 9, 0)
     nodes = [
         TripNode(venue_name="A", scheduled_start=base, duration_minutes=60, lat=25.2, lng=55.2),
@@ -44,8 +32,7 @@ def test_unreachable_locked_reservation_flagged(monkeypatch):
 
 
 def test_feasible_keeps_planned_times(monkeypatch):
-    monkeypatch.setattr(scheduler_mod.maps_service, "get_transit_time", _fixed_transit(10))
-    _always_open(monkeypatch)
+    monkeypatch.setattr(scheduler_mod, "walking_minutes", _fixed_walking(10))
     base = datetime(2026, 8, 5, 9, 0)
     nodes = [
         TripNode(venue_name="A", scheduled_start=base, duration_minutes=60, lat=25.2, lng=55.2),
@@ -63,8 +50,7 @@ def test_feasible_keeps_planned_times(monkeypatch):
 
 
 def test_skipped_node_excluded(monkeypatch):
-    monkeypatch.setattr(scheduler_mod.maps_service, "get_transit_time", _fixed_transit(10))
-    _always_open(monkeypatch)
+    monkeypatch.setattr(scheduler_mod, "walking_minutes", _fixed_walking(10))
     base = datetime(2026, 8, 5, 9, 0)
     nodes = [
         TripNode(
@@ -101,8 +87,7 @@ def test_hotel_booking_does_not_push_later_activity(monkeypatch):
     prev_active_end = Oct 4 14:00 + 2760 min = Oct 6 12:00, pushing
     the Oct 5 09:00 activity to Oct 6 12:00+transit.
     """
-    monkeypatch.setattr(scheduler_mod.maps_service, "get_transit_time", _fixed_transit(30))
-    _always_open(monkeypatch)
+    monkeypatch.setattr(scheduler_mod, "walking_minutes", _fixed_walking(30))
 
     hotel_start = datetime(2026, 10, 4, 14, 0)
     activity_start = datetime(2026, 10, 5, 9, 0)
@@ -141,8 +126,7 @@ def test_flight_booking_still_occupies_timeline(monkeypatch):
     a flight ending after the planned start of the next activity
     would no longer push it.
     """
-    monkeypatch.setattr(scheduler_mod.maps_service, "get_transit_time", _fixed_transit(30))
-    _always_open(monkeypatch)
+    monkeypatch.setattr(scheduler_mod, "walking_minutes", _fixed_walking(30))
 
     flight_start = datetime(2026, 10, 5, 9, 0)
     # Flight ends at 12:00. Next activity at 11:00 must be pushed.
@@ -177,8 +161,7 @@ def test_flight_booking_still_occupies_timeline(monkeypatch):
 
 def test_hotel_does_not_trigger_hard_conflict_for_later_locked_node(monkeypatch):
     """A hotel's checkout time must not create a hard conflict with a later locked node."""
-    monkeypatch.setattr(scheduler_mod.maps_service, "get_transit_time", _fixed_transit(0))
-    _always_open(monkeypatch)
+    monkeypatch.setattr(scheduler_mod, "walking_minutes", _fixed_walking(0))
 
     nodes = [
         TripNode(
@@ -211,8 +194,7 @@ def test_hotel_checkin_anchors_transit_origin(monkeypatch):
     Hotel->next transit = 30 min. Next must land at 14:00+30 = 14:30,
     not 10:00+30 = 10:30 (stale prev_active_end) and not checkout-derived.
     """
-    monkeypatch.setattr(scheduler_mod.maps_service, "get_transit_time", _fixed_transit(30))
-    _always_open(monkeypatch)
+    monkeypatch.setattr(scheduler_mod, "walking_minutes", _fixed_walking(30))
 
     nodes = [
         TripNode(
