@@ -254,13 +254,15 @@ class TestCreateHoursFiltering:
 
         10 unique identity-eligible venues (well above the 8-stop two-day
         requirement) but only 3 are open at 09:00; the remaining 7 are
-        evening-only (CLOSED for morning slots).  Proves the failure is from
-        hours filtering, not from running out of unique identities."""
+        evening-only (CLOSED for morning slots) and far away (large walking
+        transfer from morning venues). Proves the failure is from hours +
+        reachability filtering, not from running out of unique identities."""
         rows = _pool_of(3, structured=_make_hours({}), dwell=60)
         rows.extend(
             [
                 _make_venue_row(
-                    f"Eve_{i}", structured=_evening_hours(), category="market", dwell=60
+                    f"Eve_{i}", structured=_evening_hours(), category="market", dwell=60,
+                    lat=20.39, lng=103.13,  # ~60 km away -> walking takes ~720 min
                 )
                 for i in range(7)
             ]

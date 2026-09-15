@@ -1,9 +1,10 @@
 # SPEC-41: Hours-Aware Scheduling and Staged Ranking
 
-> Status: PHASE A3a MERGED (`d1fde14`). Create, corridor, and range planning
-> use same-day opening windows, and advertised capacity is truthful across
-> weekdays and valid interest profiles. A3b deterministic transit and
-> locked-anchor reachability remains.
+> Status: PHASE A COMPLETE. A3a merged as `d1fde14`; A3b was reviewed at
+> branch head `7f25042`. Create, corridor, range planning, swap search/apply,
+> and scheduler validation use deterministic destination-local hours and
+> walking reachability. Advertised capacity is truthful across weekdays and
+> valid interest profiles.
 >
 > Sequenced after SPEC-40. This spec owns itinerary feasibility and ranking.
 > SPEC-08 owns the structured hours data, SPEC-10 owns locked booking anchors,

@@ -366,8 +366,9 @@ for the owner's itinerary reliability work.
 The immediate sequence is now:
 
 1. SPEC-40 is merged as `ebdea52`;
-2. implement SPEC-41 hard feasibility using the existing structured-hours
-   JSONB and region timezone contract;
+2. SPEC-41 Phase A hard feasibility is complete at reviewed branch head
+   `7f25042`, using structured hours, region timezones, deterministic walking,
+   city/day boundaries, and locked-anchor reachability;
 3. harden SPEC-10 provider-aware paste and SPEC-25 grounded trip-scoped Ask;
 4. re-run hosted API, signed APK, and owner-device acceptance for the Laos
    build;

@@ -112,7 +112,7 @@
 | Active trip mode (SPEC-38) | DONE (PR #59, `fefc4ec`) | 2026-09-14: Cloud Run `travel-buddy-00004-62g`. Signed APK installed. Owner reported Oct 2-9 corridor (32 stops), LP Oct 6-9, Up next entry, visible cancel, airplane driver card. Single-city start/end dates deferred. Details in docs/AWAITING_VERIFICATION.md |
 | PDF itinerary intake (SPEC-39) | DEFERRED | No implementation brief. PDF/OCR, Day Sheet, and print-pack work remain outside the current sequence |
 | Guided Create Trip foundation (SPEC-40) | DONE (PR #61, `ebdea52`) | Five-step destination/date-range/party/interests/review flow backed by deterministic multi-day catalog selection. Post-merge CI and owner Flutter tests passed. Hosted deploy and phone acceptance are not yet repeated for this SHA |
-| Hours-aware scheduling and staged ranking (SPEC-41) | A3a MERGED (`d1fde14`); A3b NEXT | Create, corridor, and swap refuse known-closed target slots; day packing advances into later opening windows; cached `max_days` is guaranteed across weekdays and valid interest profiles. A3b owns deterministic transit and locked-anchor reachability |
+| Hours-aware scheduling and staged ranking (SPEC-41) | PHASE A COMPLETE (`d1fde14`, `7f25042`) | Create, corridor, and swap refuse known-closed or walking-unreachable target slots; day packing uses per-pair deterministic walking time and later opening windows; swap search/apply share reachability; locked non-hotel anchors remain reachable; cached `max_days` is guaranteed across weekdays and valid interest profiles |
 | Flexible trip span and sparse day editing (SPEC-42) | SPECIFIED, LATER PHASE | Decouples trip duration from auto-fill capacity. Wider spans may contain at most five generated starter days plus first-class empty days with direct Add/Move actions. Its online commands must exist before SPEC-02 can queue them offline |
 | Security, privacy and data governance foundation (SPEC-43) | SPECIFIED; AFTER LAOS BUILD, BEFORE NON-OWNER DISTRIBUTION | Owns twelve verified gaps across anonymous authentication, RLS, LLM egress, rights/retention, offline encryption, sign-out, consent, cache isolation, signal authorization, logging, abuse limits, and release transport. The current owner-only exception expires before the first external tester or December launch |
 | Backend integrity and future-readiness foundation (SPEC-44) | SPECIFIED; PHASE A AFTER LAOS | Keeps the modular FastAPI/Postgres/pgvector architecture while adding atomic trip/party/graph writes, optimistic concurrency, idempotent commands, production-shaped persistence contracts, recommendation decision telemetry, embedding-space versioning, four explicit AI-memory planes, and the cross-spec city-factory gate. Phase A is a prerequisite for any offline mutation-command outbox; it does not authorize local reflow or learned ranking |
@@ -199,12 +199,13 @@ Seed-shaped cohorts.
 4. SPEC-40 Guided Create Trip foundation -- **DONE** PR #61 (`ebdea52`).
    Party, interests, and single-city start/end feed deterministic catalog
    creation. Post-merge CI and owner Windows Flutter gates passed.
-5. SPEC-41 hours-aware scheduling and swap -- **A3a DONE; A3b NEXT**.
+5. SPEC-41 hours-aware scheduling and swap -- **PHASE A DONE**.
    Phase A1 (`2d703f4`) added `check_slot`; Phase A2 (`377125e`) now
    refuses known-closed create/swap candidates and scopes hours warnings.
    A3a (`d1fde14`) schedules later same-day windows and computes cached,
-   seven-weekday, interest-safe advertised capacity. A3b next adds deterministic
-   transit and locked-anchor reachability.
+   seven-weekday, interest-safe advertised capacity. A3b branch head
+   `7f25042` adds deterministic walking transit, city/day boundaries,
+   apply-time retry, and locked-anchor reachability.
 6. SPEC-10 provider-aware paste -- **NEXT INPUT PRIORITY**. Add Agoda beside
    the proven Booking.com-shaped path, with honest partial extraction and a
    manual floor. This is text paste, not SPEC-39 PDF intake.
@@ -278,7 +279,7 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 | Issue | Severity | Detail |
 |-------|----------|--------|
 | Advertised Laos `max_days` can exceed hours-packable capacity | Closed A3a (`d1fde14`) | Capacity now uses the same incremental `pack_day` planner across every start weekday and valid interest profile, with a bounded catalog fingerprint cache that invalidates on hours, dwell, identity, and ranking changes |
-| Known-closed venues can be scheduled and offered by swap | Closed A2/A3a (`377125e`, `d1fde14`) | Create, corridor, swap search/apply, and affected-node validation share structured destination-local hours eligibility; day packing can wait for a later same-day window. A3b adds reachability |
+| Known-closed or unreachable venues can be scheduled and offered by swap | Closed SPEC-41 Phase A (`377125e`, `d1fde14`, `7f25042`) | Create, corridor, swap search/apply, and affected-node validation share structured destination-local hours and deterministic walking eligibility; apply retries the next candidate; city/day boundaries and locked non-hotel anchors are preserved |
 | Hotel paste is provider-narrow | High for real booking intake | Current proof is Booking.com-shaped. Agoda field input did not reliably fill the hotel, and a footer fragment cannot supply absent name or dates. SPEC-10 now owns provider adapters, per-field quality, honest partial extraction, and redacted fixtures |
 | Trip Chat is wired but not grounded | High | The hosted composer returned the deterministic region fallback. Key presence is unverified and, by itself, would not add catalog retrieval. SPEC-25 now puts grounded trip-scoped Ask before trip-less Ask |
 | SPEC-43 gap 1: self-issued anonymous UUID is a replayable account credential | High before non-owner use | The hosted owner build accepts any canonical UUIDv4 without server issuance, expiry, revocation, or proof of possession. Replace it with Supabase anonymous Auth JWTs, JWKS verification, rotation, and account/IP abuse limits after the Laos build |

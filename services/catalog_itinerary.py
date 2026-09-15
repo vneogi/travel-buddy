@@ -156,6 +156,20 @@ def _is_hours_eligible(row: dict, cursor: datetime, geo_region: str) -> bool:
 # ---------------------------------------------------------------------------
 
 
+def _has_venue_coords(venue: dict) -> bool:
+    """True if the venue dict has finite lat and lng (rejects None, NaN, inf)."""
+    import math as _m
+
+    lat = venue.get("lat")
+    lng = venue.get("lng")
+    if lat is None or lng is None:
+        return False
+    try:
+        return _m.isfinite(lat) and _m.isfinite(lng)
+    except TypeError:
+        return False
+
+
 def pack_day(
     candidates: Sequence[dict],
     target_count: int,
@@ -164,6 +178,7 @@ def pack_day(
     used_ids: set[str],
     interest_ids: Sequence[str] = (),
     bucket_diversity: bool = True,
+    next_locked_booking: Optional[TripNode] = None,
 ) -> tuple[List[TripNode], set[str]]:
     """Fill one day with up to *target_count* venues using window packing.
 
@@ -174,17 +189,20 @@ def pack_day(
 
     1. Exclude used IDs, infrastructure, and identity/geometry invalids
        (already filtered in *candidates*).
-    2. For every remaining candidate, compute its earliest fitting same-day
-       start via ``next_slot_start``.
-    3. Select the candidate with the earliest start; for ties, retain the
-       caller's deterministic rank order (interest score desc, normalized
-       name, venue_id).
-    4. Advance cursor by dwell + 30-minute transfer buffer.
-    5. Repeat until target_count or no candidate fits.
+    2. For every remaining candidate, compute its per-candidate earliest
+       start = prev_end + walking_minutes(prev, C).  First stop of the
+       day has no transfer.
+    3. Pass that earliest start into ``next_slot_start``.
+    4. Select the candidate with the earliest fitting start; for ties,
+       retain the deterministic rank order.
+    5. If a next_locked_booking exists on the same day, verify the
+       candidate can walk there before the lock starts.
+    6. Repeat until target_count or no candidate fits.
 
     Returns (nodes, new_used_ids) without mutating caller inputs.
     """
     from services.destination_tz import destination_tz as _dest_tz
+    from services.transit import walking_minutes as _walking_minutes
     from zoneinfo import ZoneInfo
 
     tz = _dest_tz(geo_region)
@@ -205,8 +223,66 @@ def pack_day(
 
     nodes: List[TripNode] = []
     new_used: set[str] = set(used_ids)  # copy
-    cursor = day_start_utc
     used_buckets: set[int] = set()
+
+    # Previous-node tracking for walking transfer
+    prev_node: Optional[TripNode] = None
+
+    def _candidate_earliest(venue: dict) -> Optional[datetime]:
+        """Compute candidate's earliest arrival accounting for walking transfer."""
+        if prev_node is None:
+            return day_start_utc  # first stop, no transfer
+        if prev_node.lat is None or prev_node.lng is None:
+            return None  # prev has no coords -> ineligible
+        if not _has_venue_coords(venue):
+            return None  # candidate has no coords -> ineligible
+        prev_end = prev_node.scheduled_start + timedelta(minutes=prev_node.duration_minutes)
+        transfer = _walking_minutes(prev_node.lat, prev_node.lng, venue["lat"], venue["lng"])
+        return prev_end + timedelta(minutes=transfer)
+
+    def _fits_next_lock(venue: dict, slot: datetime, dwell: int) -> bool:
+        """True if the candidate can reach the next locked booking in time.
+
+        Ignores the lock when it is a hotel (background anchor), belongs to a
+        different geo_region, or falls on a different destination-local day.
+        """
+        if next_locked_booking is None:
+            return True
+        lock = next_locked_booking
+        # Hotels are background anchors, not reachability targets.
+        if (
+            getattr(lock, "node_kind", "activity") == "booking"
+            and getattr(lock, "booking_type", "") == "hotel"
+        ):
+            return True
+        # Different region -> not a same-city constraint.
+        lock_region = getattr(lock, "geo_region", None)
+        if lock_region and lock_region != geo_region:
+            return True
+        # Different local day -> not a same-day constraint.
+        if tz is not None:
+            lock_local_day = lock.scheduled_start.astimezone(tz).date()
+            slot_local_day = slot.astimezone(tz).date()
+        else:
+            lock_local_day = lock.scheduled_start.date()
+            slot_local_day = slot.date()
+        if lock_local_day != slot_local_day:
+            return True
+        # Relevant same-day, same-region, non-hotel lock: require coords.
+        import math as _m
+
+        if (
+            lock.lat is None
+            or lock.lng is None
+            or not _m.isfinite(lock.lat)
+            or not _m.isfinite(lock.lng)
+        ):
+            return False  # missing lock coords -> ineligible
+        if not _has_venue_coords(venue):
+            return False
+        cand_end = slot + timedelta(minutes=dwell)
+        transfer = _walking_minutes(venue["lat"], venue["lng"], lock.lat, lock.lng)
+        return cand_end + timedelta(minutes=transfer) <= lock.scheduled_start
 
     for _stop in range(target_count):
         best_candidate = None
@@ -218,19 +294,29 @@ def pack_day(
             if vk in new_used:
                 continue
 
+            # Geometry eligibility: candidate must have coordinates
+            if not _has_venue_coords(venue):
+                continue
+
+            # Compute per-candidate earliest arrival from previous node
+            earliest = _candidate_earliest(venue)
+            if earliest is None:
+                continue
+
             dwell = duration_for(venue)
             structured = venue.get("opening_hours_structured")
-            slot = _next_slot_start(structured, cursor, dwell, geo_region, local_day)
+            slot = _next_slot_start(structured, earliest, dwell, geo_region, local_day)
             if slot is None:
+                continue
+
+            # Next-locked-booking check
+            if not _fits_next_lock(venue, slot, dwell):
                 continue
 
             # Bucket diversity: in pass 1, prefer unfilled buckets
             if bucket_diversity and len(nodes) < min(target_count, len(CATEGORY_BUCKETS)):
                 bidx = _bucket_index(venue)
                 if bidx in used_buckets:
-                    # Still consider but only if no bucket-fresh candidate has
-                    # the same or earlier start. We'll let the outer loop
-                    # handle it by only picking bucket-fresh first.
                     pass
 
             if best_start is None or slot < best_start:
@@ -250,18 +336,24 @@ def pack_day(
         if bucket_diversity and len(nodes) < min(target_count, len(CATEGORY_BUCKETS)):
             best_bidx = _bucket_index(best_candidate)
             if best_bidx in used_buckets:
-                # Look for a bucket-fresh candidate at the same start
                 for rank, venue in enumerate(scored):
                     vk = _venue_key(venue)
                     if vk in new_used:
                         continue
+                    if not _has_venue_coords(venue):
+                        continue
                     bidx = _bucket_index(venue)
                     if bidx in used_buckets:
                         continue
+                    earliest = _candidate_earliest(venue)
+                    if earliest is None:
+                        continue
                     dwell = duration_for(venue)
                     structured = venue.get("opening_hours_structured")
-                    slot = _next_slot_start(structured, cursor, dwell, geo_region, local_day)
+                    slot = _next_slot_start(structured, earliest, dwell, geo_region, local_day)
                     if slot is not None and slot == best_start:
+                        if not _fits_next_lock(venue, slot, dwell):
+                            continue
                         best_candidate = venue
                         best_start = slot
                         best_rank = rank
@@ -274,7 +366,7 @@ def pack_day(
         new_used.add(vk)
         node = _make_node(best_candidate, best_start, geo_region)
         nodes.append(node)
-        cursor = best_start + timedelta(minutes=node.duration_minutes + 30)
+        prev_node = node
 
     return nodes, new_used
 

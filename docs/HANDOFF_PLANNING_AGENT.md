@@ -6,13 +6,13 @@ now, what the previous planning agent already adjudicated, and what the
 next agent must not reopen in the first week.
 
 Read this file and the two contracts above. SPEC-36 through SPEC-38 and
-SPEC-40 are done. SPEC-41 Phase A3a merged as `d1fde14`; A3b deterministic
-transit and locked-anchor reachability remains. Then come SPEC-10
-provider-aware paste and SPEC-25 grounded trip-scoped Ask. After those
-Laos-facing slices and their hosted/API/APK verification, SPEC-44 Phase A
-makes trip persistence transactional and concurrency-safe. SPEC-43 is then the
-release foundation before any non-owner tester or the planned December launch.
-The SPEC-13/17/20 city factory follows; Bangkok proves it without a hardcoded
+SPEC-40 are done. SPEC-41 Phase A is complete: A3a merged as `d1fde14` and
+A3b was reviewed at branch head `7f25042`. Next come SPEC-10 provider-aware
+paste and SPEC-25 grounded trip-scoped Ask. After those Laos-facing slices and
+their hosted/API/APK verification, SPEC-44 Phase A makes trip persistence
+transactional and concurrency-safe. SPEC-43 is then the release foundation
+before any non-owner tester or the planned December launch. The SPEC-13/17/20
+city factory follows; Bangkok proves it without a hardcoded
 exception.
 
 ## Who does what (unchanged)
@@ -128,11 +128,10 @@ on the owner's phone. Next tasks:
 
 1. SPEC-40 is done as `ebdea52`; do not reopen its current five-day foundation
    while implementing later sparse-span work.
-2. SPEC-41 Phase A3a is merged as `d1fde14`. Same-day opening-window packing
-   and truthful cached capacity are done. Next is A3b:
-   `docs/briefs/GENIE_SPEC_41_PHASE_A3B_REACHABILITY.md`. It replaces the
-   30-minute buffer and random/clock mock transit with deterministic walking
-   time, previous-node reachability, and next locked-anchor constraints.
+2. SPEC-41 Phase A is complete. A3a merged as `d1fde14`; A3b branch head
+   `7f25042` replaces the 30-minute buffer and random/clock mock transit with
+   deterministic walking time, city/day boundaries, apply-time retry,
+   previous-node reachability, and next locked-anchor constraints.
 3. Implement the SPEC-10 provider-aware paste remainder with redacted Agoda and
    Booking.com fixtures and honest partial extraction.
 4. Implement the SPEC-25 grounded trip-scoped Ask remainder. Key presence alone
