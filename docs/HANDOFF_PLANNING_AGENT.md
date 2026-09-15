@@ -6,9 +6,10 @@ now, what the previous planning agent already adjudicated, and what the
 next agent must not reopen in the first week.
 
 Read this file and the two contracts above. SPEC-36 through SPEC-38 and
-SPEC-40 are done. SPEC-41 Phase A1 merged as `2d703f4`. The first job is
-Phase A2 hours eligibility. Then SPEC-10 provider-aware paste and SPEC-25
-grounded trip-scoped Ask.
+SPEC-40 are done. SPEC-41 Phase A2 merged as `377125e`. The first job is A3a
+window-aware packing and truthful capacity, followed by A3b deterministic
+transit and locked-anchor reachability. Then come SPEC-10 provider-aware paste
+and SPEC-25 grounded trip-scoped Ask.
 
 ## Who does what (unchanged)
 
@@ -117,10 +118,11 @@ on the owner's phone. Next tasks:
 
 1. SPEC-40 is done as `ebdea52`; do not reopen its current five-day foundation
    while implementing later sparse-span work.
-2. SPEC-41 Phase A1 is merged as `2d703f4`. Next is Phase A2:
-   `docs/briefs/GENIE_SPEC_41_PHASE_A2_HOURS_ELIGIBILITY.md`. Create, corridor,
-   and swap must call `check_slot` before persistence. Known-closed venues
-   are never offered. Hours warnings stay scoped to the mutated nodes.
+2. SPEC-41 Phase A2 is merged as `377125e`. Next is A3a:
+   `docs/briefs/GENIE_SPEC_41_PHASE_A3A_WINDOW_PACKING.md`. It schedules
+   venues into later same-day windows and removes the three-region
+   identity-capacity mismatch. A3b then adds deterministic transit and
+   locked-anchor reachability.
 3. Implement the SPEC-10 provider-aware paste remainder with redacted Agoda and
    Booking.com fixtures and honest partial extraction.
 4. Implement the SPEC-25 grounded trip-scoped Ask remainder. Key presence alone
