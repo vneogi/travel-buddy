@@ -1,6 +1,8 @@
 # SPEC-41: Hours-Aware Scheduling and Staged Ranking
 
-> Status: PHASE A1 MERGED (`2d703f4`). Phase A2 hours eligibility is next.
+> Status: PHASE A2 MERGED (`377125e`). Phase A3 is split into window-aware
+> packing/truthful capacity (A3a) and deterministic transit/locked-anchor
+> reachability (A3b).
 >
 > Sequenced after SPEC-40. This spec owns itinerary feasibility and ranking.
 > SPEC-08 owns the structured hours data, SPEC-10 owns locked booking anchors,
@@ -110,6 +112,14 @@ infeasible candidate.
 
 Creation schedules each local calendar day independently. Work on one day
 cannot push the next day's first stop.
+
+Phase A3 implementation is deliberately split:
+
+- A3a schedules candidates into their earliest fitting same-day structured
+  hours window and makes pre-date `max_days` conservative across all seven
+  possible start weekdays.
+- A3b replaces random/synthetic transit in feasibility decisions and enforces
+  reachability from the previous active node and to the next locked anchor.
 
 The create paths under SPEC-32, SPEC-36, and SPEC-40 validate before
 persistence. A failed validation leaves no trip, party, or partial schedule.

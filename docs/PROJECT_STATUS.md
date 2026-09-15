@@ -110,7 +110,7 @@
 | Active trip mode (SPEC-38) | DONE (PR #59, `fefc4ec`) | 2026-09-14: Cloud Run `travel-buddy-00004-62g`. Signed APK installed. Owner reported Oct 2-9 corridor (32 stops), LP Oct 6-9, Up next entry, visible cancel, airplane driver card. Single-city start/end dates deferred. Details in docs/AWAITING_VERIFICATION.md |
 | PDF itinerary intake (SPEC-39) | DEFERRED | No implementation brief. PDF/OCR, Day Sheet, and print-pack work remain outside the current sequence |
 | Guided Create Trip foundation (SPEC-40) | DONE (PR #61, `ebdea52`) | Five-step destination/date-range/party/interests/review flow backed by deterministic multi-day catalog selection. Post-merge CI and owner Flutter tests passed. Hosted deploy and phone acceptance are not yet repeated for this SHA |
-| Hours-aware scheduling and staged ranking (SPEC-41) | A1 MERGED (PR #63, `2d703f4`); A2 NEXT | Evaluator and provider parity are on main. Create/swap still flatten hours and warn after the fact. Next: `docs/briefs/GENIE_SPEC_41_PHASE_A2_HOURS_ELIGIBILITY.md` |
+| Hours-aware scheduling and staged ranking (SPEC-41) | A2 MERGED (PR #65, `377125e`); A3a NEXT | Create, corridor, and swap now refuse known-closed target slots and scope warnings. A3a owns same-day window packing and truthful `max_days`; A3b owns deterministic transit and locked-anchor reachability |
 | Flexible trip span and sparse day editing (SPEC-42) | SPECIFIED, LATER PHASE | Decouples trip duration from auto-fill capacity. Wider spans may contain at most five generated starter days plus first-class empty days with direct Add/Move actions |
 
 Migration numbers are assigned when a spec is implemented, not when it is
@@ -196,10 +196,11 @@ Seed-shaped cohorts.
    Party, interests, and single-city start/end feed deterministic catalog
    creation. Post-merge CI and owner Windows Flutter gates passed.
 5. SPEC-41 hours-aware scheduling and swap -- **NEXT ENGINE PRIORITY**.
-   Phase A1 (`2d703f4`) added `check_slot` and preserved structured hours.
-   Phase A2 (`docs/briefs/GENIE_SPEC_41_PHASE_A2_HOURS_ELIGIBILITY.md`) must
-   refuse known-closed create/swap candidates and scope hours warnings.
-   Transit, locks, and window retiming remain Phase A3.
+   Phase A1 (`2d703f4`) added `check_slot`; Phase A2 (`377125e`) now
+   refuses known-closed create/swap candidates and scopes hours warnings.
+   A3a (`docs/briefs/GENIE_SPEC_41_PHASE_A3A_WINDOW_PACKING.md`) schedules
+   later same-day windows and fixes advertised capacity. A3b then adds
+   deterministic transit and locked-anchor reachability.
 6. SPEC-10 provider-aware paste -- **NEXT INPUT PRIORITY**. Add Agoda beside
    the proven Booking.com-shaped path, with honest partial extraction and a
    manual floor. This is text paste, not SPEC-39 PDF intake.
@@ -245,7 +246,8 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 
 | Issue | Severity | Detail |
 |-------|----------|--------|
-| Known-closed venues can be scheduled and offered by swap | High | Structured weekday hours exist, but create and swap do not use them as target-slot hard constraints. Validation can warn only after mutation and can report unrelated nodes. SPEC-41 owns feasibility-first scheduling and scoped warnings |
+| Advertised Laos `max_days` can exceed hours-packable capacity | High until A3a | A2 correctly refuses known-closed placements, exposing that all three Laos identity-based maxima can return `insufficient_capacity`. A3a must schedule later same-day windows and compute a seven-weekday guaranteed maximum before the next APK |
+| Known-closed venues can be scheduled and offered by swap | Closed PR #65 (`377125e`) | Create, corridor, swap search/apply, and affected-node validation now share structured destination-local hours eligibility. A3a adds later-window packing; A3b adds reachability |
 | Hotel paste is provider-narrow | High for real booking intake | Current proof is Booking.com-shaped. Agoda field input did not reliably fill the hotel, and a footer fragment cannot supply absent name or dates. SPEC-10 now owns provider adapters, per-field quality, honest partial extraction, and redacted fixtures |
 | Trip Chat is wired but not grounded | High | The hosted composer returned the deterministic region fallback. Key presence is unverified and, by itself, would not add catalog retrieval. SPEC-25 now puts grounded trip-scoped Ask before trip-less Ask |
 | Create conflates trip span with auto-fill capacity | Medium | SPEC-40 deliberately caps the foundation at five filled days. SPEC-42 later accepts wider spans, generates at most five starter days, and renders remaining dates as editable empty days |
