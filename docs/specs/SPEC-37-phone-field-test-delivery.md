@@ -8,6 +8,12 @@
 > Travel remains Oct 2-9 2026. Hotel/PDF polish is outside this spec.
 >
 > Execution brief: `docs/briefs/GENIE_SPEC_37_PHONE_FIELD_TEST.md`.
+>
+> SPEC-43 security amendment: this completed gate authorizes only the owner's
+> field build. It is not a beta or public-release gate. Keep anonymous UUID
+> auth and personal-data LLM processing inside that owner-only exception until
+> SPEC-43 replaces them and enforces release HTTPS, cache isolation, and abuse
+> controls.
 
 ## Goal
 
@@ -29,7 +35,9 @@ owner must be able to leave the laptop behind.
 - Rotate the previously exposed Google Maps key before installing it on the
   hosted service; retain API and application restrictions.
 - Set hosted Supabase URL and service-role key.
-- Set the LLM key required by existing intelligent paths.
+- Leave the production LLM key unset for personal trip traffic until SPEC-43's
+  redacting egress and provider/region/retention controls pass. Deterministic
+  owner-field fallback is acceptable.
 - Set `TB_GOOGLE_MAPS_API_KEY` and `TB_OPENWEATHER_API_KEY`.
 - Set `TB_ALLOW_ANONYMOUS=true` until the account flow replaces device
   identity.

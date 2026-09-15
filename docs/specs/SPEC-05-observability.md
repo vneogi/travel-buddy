@@ -2,6 +2,13 @@
 *Implements roadmap item #7. Motivation: a 500 with no visible traceback cost ~2 hours of
 debugging. In Laos there is no laptop terminal to scroll — errors must be visible from the phone.*
 
+> SPEC-43 security amendment: before non-owner distribution, diagnostics use a
+> centralized field allowlist and secret/PII redaction, return only stable
+> public error codes, require administrator IAM even in debug deployments,
+> reject production debug mode, and enforce regional log access and retention.
+> Validation values, questions, booking fields, receipts, tokens, provider URLs,
+> prompts, and responses are not log fields.
+
 ## Requirements
 1. **No silent 500s.** A global exception handler logs the full traceback + request context.
 2. **Readable from the device.** A debug endpoint returns recent errors so they can be viewed

@@ -68,6 +68,7 @@ months. The engineering does not get harder with time; the data does.
 | SPEC-25 | Trip-less query endpoint, closed intent set, cost bounds, offline behaviour | SPEC-17, SPEC-18, SPEC-22 |
 | SPEC-26 | Trip list, home aggregate, empty state, minimum trip creation | SPEC-13, SPEC-16, SPEC-22 |
 | SPEC-27 | Push transport, deletion and export, minimum supported client | SPEC-22, SPEC-24 |
+| SPEC-43 | Security/privacy release foundation: auth, RLS, AI egress, rights, encrypted local data, consent, isolation, logging, abuse and HTTPS | SPEC-01/02/04/05/07/24/25/27 plus the completed Laos build |
 
 `docs/UX_BACKLOG.md` remains the list of screens we want to build. This roadmap
 is about what has to exist beneath them, and SPEC-22 constrains how any of it is
@@ -102,7 +103,10 @@ The immediate order after the field-test gate:
 6. SPEC-10 adds Agoda/provider-aware paste with honest partial extraction;
 7. SPEC-25 grounds the existing trip-scoped composer in catalog and trip facts;
 8. re-verify the hosted API and APK for those slices;
-9. only then consider inspiration or model-generated itineraries.
+9. implement SPEC-43 before any non-owner distribution, production LLM
+   processing of personal trip data, or the planned December launch;
+10. only then consider inspiration, model-generated itineraries, or a broader
+    tester cohort.
 
 SPEC-39 PDF/itinerary import, SPEC-11 forced-choice capture, and similar-trip
 generation stay deferred. Provider-aware confirmation text is SPEC-10, not
@@ -118,12 +122,15 @@ the active SPEC-40 PR.
 The full SPEC-25 contract still needs SPEC-17's real envelope, so trip-less Ask
 follows the trust work. The bounded grounded trip-scoped remainder may use
 hedged curated catalog facts first. SPEC-27 should not be later than the first
-build that goes to people who are not us; SPEC-37 is owner field-test delivery,
-not a public launch.
+build that goes to people who are not us; it is now an implementation
+dependency inside SPEC-43. SPEC-37 is owner field-test delivery, not a public
+launch. The current owner-only exception does not authorize a friend, family
+member, beta cohort, or store-distributed build.
 
 ## Deliberately not specified here
 
-Swappable LLM providers, including local models, still has no owning spec. It
-maps to the stated objective about next-generation optionality and it is not a
-consumer surface concern, so it takes the next free spec number rather than being
-folded into one of these four.
+The product behavior of provider switching, local models, and open-weight
+fallback remains outside this consumer roadmap. SPEC-43 now owns the security
+boundary: no provider may receive personal data without an approved outbound
+schema, region, retention mode, contract, and subprocessor record. A later
+capability spec may add provider optionality inside that boundary.

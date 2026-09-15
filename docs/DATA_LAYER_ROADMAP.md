@@ -210,8 +210,9 @@ one user and 74 venues there is no overlap to find; this is arithmetic, not
 modelling. Meaningful item-to-item co-occurrence needs users in the thousands
 per city, and until then content-based retrieval over the taxonomy strictly
 dominates it. That is what `hybrid_venue_search` already does, and the LLM
-supplies the reasoning on top. Adding a recommender now would be building a
-model with no data to fit.
+may eventually phrase approved reasoning on top only after SPEC-43's egress
+contract. Adding a recommender now would be building a model with no data to
+fit.
 
 **Batch compute, yes, and from the first trip.** The distinction that makes this
 work at our scale: personalisation needs many users, but data correction needs
@@ -236,6 +237,27 @@ mining over itineraries, and embedding-based user vectors all become possible
 without rework once `derived_feature` exists and nodes are rows. That is the
 whole point of doing the plumbing first: the model is the cheap part, and the
 schema it needs is the expensive part.
+
+## Governance gate before the data flywheel expands
+
+SPEC-43 is the release boundary between one-owner field testing and collecting
+data from a real cohort. Its twelve gaps are data-layer concerns as much as
+security concerns:
+
+- identity must be server-issued, revocable, and mergeable;
+- every personal table and object path must enforce ownership;
+- the itinerary vault and behavioral plane must be separated;
+- optional capture needs a versioned purpose and withdrawal record;
+- private caches, logs, model prompts, backups, and derived features need
+  retention and deletion behavior;
+- signal influence needs provenance, ownership, quality, and sample-size gates;
+- a data region means storage, logs, backups, support, processors, and model
+  execution, not only the primary database.
+
+Do not create `derived_feature`, a user embedding, collaborative profile, or
+similar-trip index before this gate. Retrofitting consent and erasure into a
+trained or aggregated system is more expensive and less reliable than making
+the raw-to-derived contract explicit first.
 
 ## A process defect the reprioritisation just created
 
@@ -268,8 +290,12 @@ The immediate sequence is now:
 2. implement SPEC-41 hard feasibility using the existing structured-hours
    JSONB and region timezone contract;
 3. harden SPEC-10 provider-aware paste and SPEC-25 grounded trip-scoped Ask;
-4. defer learned personalization until field signals clear minimum sample
-   thresholds.
+4. re-run hosted API, signed APK, and owner-device acceptance for the Laos
+   build;
+5. implement SPEC-43 before any non-owner tester or production LLM processing
+   of personal trip data;
+6. defer learned personalization until SPEC-43 is complete and field signals
+   clear minimum sample thresholds.
 
 SPEC-41 should not need a new hours table: structured hours already exist.
 If implementation reveals a schema change, assign the next free migration
@@ -282,8 +308,10 @@ personalization; it is not a prerequisite for deterministic ranking.
 - Whether a graph database is adopted at all, or whether explicit edges in
   PostgreSQL are sufficient indefinitely. This roadmap makes the choice possible
   and does not make it.
-- Which model provider serves which task once open-weight models are viable.
-  `services/llm_service.py` already isolates this behind one gateway.
+- Which approved model provider serves which task once open-weight models are
+  viable. SPEC-43 first requires a single redacting egress contract and an
+  approved provider, region, retention, and subprocessor record; code-level
+  fallback alone is not provider governance.
 - Whether `derived_feature` stays in PostgreSQL or moves to a dedicated store
   once volume justifies it. The read-time resolution rule means callers do not
   need to know.

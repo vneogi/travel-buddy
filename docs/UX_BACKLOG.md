@@ -63,6 +63,29 @@ installable phone artifact, online corridor proof, then a cold-reopen
 airplane-mode drill with USB and local tunnels disconnected. This work is ahead
 of visual polish because a laptop-tethered demo cannot accompany the traveller.
 
+### P1 -- Public-release privacy and account controls
+
+SPEC-43 owns the release foundation after the Laos build. The visible mobile
+surfaces are:
+
+- a real sign-out that stops sync, revokes the session, and clears prior
+  identity data rather than only navigating;
+- `Export my data`, `Delete account`, and `Clear offline data`, each with
+  progress, retry, and a completion receipt;
+- separate, plain-language choices for optional analytics, personalization,
+  location features, and marketing;
+- masked booking references and private notes with explicit reveal;
+- an AI disclosure and a clear distinction between sourced facts,
+  deterministic answers, and model-phrased answers;
+- privacy-safe notification previews and owner-authorized deep links before OS
+  push exists;
+- an adult-account position with coarse family age bands, no child identity,
+  and no child-level behavioral profile.
+
+These controls precede the first non-owner build. They are not visual polish:
+without them, account switching, deletion, consent, and restricted data have no
+usable product contract.
+
 ### P2 — Side-by-side swap comparison (`SwapSheet`)
 **Capability #2.** Original vs proposed alternative showing the **delta**: time, distance, cost, and
 **"climate comfort"** (steal the term). Confirm → haptic → local update → queued sync.
@@ -117,7 +140,10 @@ remaining product order is:
    richer recommendation-reason UI.
 3. SPEC-10 hardens Agoda and Booking.com paste as honest partial extraction.
 4. SPEC-25 grounds the existing trip Chat before adding a broader assistant.
-5. Only then resume map-first polish, multi-night hotel UI, inspiration, and
+5. Re-run the hosted API, signed APK, and owner-device Laos gates.
+6. SPEC-43 closes all twelve security/privacy gaps before another person uses
+   the app or production LLM processing handles personal trip data.
+7. Only then resume map-first polish, multi-night hotel UI, inspiration, and
    broader consumer work.
 
 Full Vault and the map-first shell remain post-reliability unless field evidence

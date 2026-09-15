@@ -7,6 +7,12 @@ appropriate interaction points. Currently only `user_loved` is emitted.
 This is the moat data — the behavioral flywheel that makes the product
 learn from use.
 
+> SPEC-43 security amendment: emission is not permission or evidence quality.
+> Before a non-owner cohort, trip-linked signals require trip ownership,
+> every type has a closed value/size schema, optional capture requires its
+> purpose grant, and no signal influences ranking without provenance,
+> plausibility, contributor-quality, and minimum-sample gates.
+
 ## Signal types (client-emittable)
 
 | Type | Trigger | value_text | value_json |

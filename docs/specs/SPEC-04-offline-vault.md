@@ -7,6 +7,11 @@
 > `refactor/remove-hotel-rescue` PR. Full vault (passes, emergency pack, phrase
 > pack, cache_vault tables) remains post-field-test discovery, not an active
 > build.
+>
+> SPEC-43 security amendment: the existing cache floor and any future vault
+> contain sensitive travel and booking data. Encryption, backup exclusion,
+> identity scoping, masked booking fields, sign-out wipe, and deletion proof
+> are release requirements even if the larger rescue-pack UI remains deferred.
 
 ## What SPEC-04 still adds (vs SPEC-02 and SPEC-12)
 

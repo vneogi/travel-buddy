@@ -69,13 +69,17 @@ Set these environment variables (values from your secrets, never in this repo):
 |---|---|
 | `TB_SUPABASE_URL` | Hosted Supabase project URL |
 | `TB_SUPABASE_KEY` | Service-role key (never in Flutter) |
-| `TB_LITELLM_API_KEY` | LLM provider key |
+| `TB_LITELLM_API_KEY` | Leave unset for personal trip traffic until SPEC-43's redacting egress and provider/region/retention gate |
 | `TB_GOOGLE_MAPS_API_KEY` | Rotated Maps API key (API restrictions only) |
 | `TB_OPENWEATHER_API_KEY` | OpenWeather API key |
 
 Leave `TB_SUPABASE_JWT_SECRET` unset for anonymous field testing.
 
 `TB_DEBUG` and `TB_ALLOW_ANONYMOUS` were set in the deploy command above.
+This configuration is owner-only. It must not be used for a friend, family
+member, beta cohort, or public launch. SPEC-43 replaces the self-issued
+anonymous credential, audits RLS/grants, and adds gateway abuse controls before
+non-owner distribution.
 
 ## 5. Configure health check
 

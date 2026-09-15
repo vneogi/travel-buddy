@@ -3,6 +3,12 @@
 *Goal: prove the full path — versioned schema -> ingest API -> Flutter emitter -> test — for ONE
 signal type (`user_loved`). All other signal types (§16) follow this exact pattern afterward.*
 
+> SPEC-43 security amendment: the completed transport does not itself authorize
+> collection. Before a non-owner cohort, optional analytics, personalization,
+> location, and marketing use a versioned purpose/consent ledger. Decline blocks
+> outbox creation; withdrawal purges unsent rows and propagates to person-linked
+> features and training inputs.
+
 ## Guiding rules (do not skip)
 1. **Vertical slice, not schema-first.** A signal in the DB with no client emitter is worthless.
    This spec is DONE only when a tap in the Flutter app results in a row in Supabase AND a passing

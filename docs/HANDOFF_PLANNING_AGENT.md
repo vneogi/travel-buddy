@@ -9,7 +9,9 @@ Read this file and the two contracts above. SPEC-36 through SPEC-38 and
 SPEC-40 are done. SPEC-41 Phase A2 merged as `377125e`. The first job is A3a
 window-aware packing and truthful capacity, followed by A3b deterministic
 transit and locked-anchor reachability. Then come SPEC-10 provider-aware paste
-and SPEC-25 grounded trip-scoped Ask.
+and SPEC-25 grounded trip-scoped Ask. After those Laos-facing slices and their
+hosted/API/APK verification, SPEC-43 is the release foundation before any
+non-owner tester or the planned December launch.
 
 ## Who does what (unchanged)
 
@@ -94,8 +96,9 @@ Reject or defer:
   precision; delay is already clamped to 15 minutes.
 - "No widget tests" -- SPEC-22 added render widget tests on `1b9b1b3`.
 - Hardcoded `POST /trip/create` -- demo fixture, not this month.
-- Prompt injection, shared anonymous UUID, missing rate limit -- true,
-  not October-blocking.
+- Prompt injection, shared anonymous UUID, and missing rate limits are true.
+  They are not owner-only Laos blockers, but are now explicit SPEC-43 release
+  blockers before any non-owner distribution.
 - Wiring offline itinerary reads by editing the README instead of
   SPEC-12 / thin SPEC-04.
 - Deleting `ACTIVE` / `visited_confirmed`.
@@ -104,7 +107,9 @@ Reject or defer:
   mid-trip replanning is moderate. The field test is one working trip
   on a phone, not a user-acquisition plan. VISION Part III remains
   not committed. SPEC-24 and SPEC-27 remain unbuilt; several other specs in
-  that number range already have partial or completed slices.
+  that number range already have partial or completed slices. SPEC-24 and
+  SPEC-27 are now dependencies inside SPEC-43 and cannot slip past the first
+  non-owner build.
 
 Strategic point that remains true: unique data needs many users per city and
 has no owner. SPEC-24 vs accumulating device UUIDs is already a Medium row in
@@ -128,7 +133,16 @@ on the owner's phone. Next tasks:
 4. Implement the SPEC-25 grounded trip-scoped Ask remainder. Key presence alone
    is not acceptance; retrieval and named fallback states are required.
 5. Re-run hosted API, signed APK, and device acceptance for those slices before
-   inspiration, similar-trip generation, or broader consumer work.
+   security implementation, inspiration, similar-trip generation, or broader
+   consumer work.
+6. Implement SPEC-43 in bounded phases. It owns twelve verified gaps:
+   server-issued anonymous auth, complete RLS, redacted LLM egress, data rights
+   and retention, encrypted offline data, real sign-out, purpose consent,
+   private cache isolation, signal ownership/poisoning controls, redacted
+   diagnostics, abuse/spend limits, and release HTTPS/cache isolation.
+7. Do not distribute an APK to another person, enable production LLM processing
+   of personal trip data, or claim residency/compliance before SPEC-43's
+   applicable gates pass.
 
 Migrations through 0024 and the Maps/OpenWeather local provider credentials are
 already verified; do not ask for them again unless a new migration or

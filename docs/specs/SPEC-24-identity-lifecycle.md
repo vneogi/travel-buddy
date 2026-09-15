@@ -7,6 +7,11 @@
 >
 > The design should be settled before the field test even though the build can
 > wait, for the reason in the next section.
+>
+> SPEC-43 security amendment: implementation is part of the public-release
+> foundation after the Laos build. Supabase anonymous Auth replaces the
+> self-issued `Authorization: Anonymous <uuid>` credential. The legacy UUID
+> remains migration input only, not proof for new sessions.
 
 ## Goal
 
@@ -68,8 +73,10 @@ nobody goes looking for work that is not there.
    theirs, so it has to earn the interruption.
 
 3. **A credential points at an identity; it is not the identity.** An
-   `identity_link` table maps a credential -- a device UUID under SPEC-09 or a
-   Supabase subject after sign-in -- onto the surviving `user_tiers.user_id`. This
+   `identity_link` table maps a Supabase anonymous or permanent Auth subject
+   onto the surviving `user_tiers.user_id`. A legacy SPEC-09 device UUID may be
+   linked once during the controlled migration, but cannot authenticate a new
+   session after cutover. This
    is deliberately the cheaper of the two available shapes. The pure form
    introduces a `person_id` and demotes `user_tiers.user_id` to one more
    credential, which is more correct and rewrites every identity column in the
@@ -84,11 +91,12 @@ nobody goes looking for work that is not there.
    upgrade-on-sight for `identity_kind`, extended from a column to the whole row
    set. One rule, stated once, in both places.
 
-5. **Possession of the device secret is the proof.** The client calls the link
-   endpoint carrying both the Supabase bearer token and the anonymous device UUID
-   from secure storage. Holding the secret is exactly the trust level anonymous
-   identity already has, so this adds no new assumption. It does mean an attacker
-   who has the device has the data, which was already true.
+5. **A server-issued Auth session is the proof.** Supabase anonymous sign-in
+   supplies a short-lived, revocable JWT without requiring profile PII. The
+   backend verifies project JWKS, issuer, audience, expiry, subject, role, and
+   anonymous claim. Linking to Google or Apple requires both the current
+   anonymous Auth session and the new permanent Auth session. A bare device UUID
+   is not a bearer secret and does not authorize a link.
 
 6. **The merge is one transaction, idempotent under a client-supplied merge id,
    and safe to retry.** The client is frequently on bad hotel wifi; a merge that
@@ -145,7 +153,8 @@ nobody goes looking for work that is not there.
 
 - [ ] `identity_link` table with credential kind, credential value, and the
       surviving user id
-- [ ] Link endpoint requiring both the bearer token and the device UUID
+- [ ] Link endpoint requiring both the current anonymous Auth session and the
+      new permanent Auth session; legacy UUID migration is separately bounded
 - [ ] Merge is transactional, idempotent on a merge id, and retry-safe
 - [ ] Every identity-carrying table rewritten, including `signal` despite it
       having no foreign key

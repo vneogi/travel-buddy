@@ -3,6 +3,11 @@
 *Goal: signals and itinerary reads survive low/no connectivity, then sync exactly-once. This is what
 makes the Laos trip produce the moat data — and it's USP #7 (offline resilience).*
 
+> SPEC-43 security amendment: keep SQLite and the offline-first invariants, but
+> encrypt restricted/private records with hardware-backed keys, exclude them
+> from platform backup, key every private cache by identity, verify cached
+> ownership, purge on sign-out/deletion, and reject non-HTTPS release endpoints.
+
 ## Why this is the riskiest spec
 Failure here is **silent**: events vanish or duplicate, and you don't find out until you're home with
 a corrupted dataset. Every requirement below exists to prevent a specific silent-loss mode. Do not

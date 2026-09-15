@@ -7,6 +7,11 @@
 > and SPEC-22 for how any of it is rendered. It does not depend on SPEC-18 being
 > finished: the intent router can return a refusal for the discovery intent and
 > still be correct.
+>
+> SPEC-43 security amendment: the grounded owner-only slice may be completed
+> before the security foundation, but production LLM processing of personal
+> trip data remains disabled until one redacting allowlist gateway, private
+> cache isolation, provider/region/retention approval, and abuse budgets pass.
 
 ## Goal
 
@@ -32,6 +37,11 @@ region-safe canned response. Field evidence recorded in
 current Ask path does not retrieve catalog hours, dishes, or sourced claims
 before generation. Key presence is therefore necessary for a model call but
 insufficient for a trustworthy answer.
+
+The current heavy response path can also serialize booking references, notes,
+times, and coordinates from itinerary nodes. Grounding does not authorize that
+transfer. SPEC-43 defines the outbound DTO and fields that may never cross the
+model or embedding boundary.
 
 ## Remainder: grounded trip-scoped Ask
 

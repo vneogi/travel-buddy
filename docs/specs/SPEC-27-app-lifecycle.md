@@ -6,6 +6,11 @@
 > model that both notification delivery and deletion have to address.
 > SPEC-35 supplies departure and meal notification candidates; this spec owns
 > their eventual closed-app transport, not their product rules.
+>
+> SPEC-43 security amendment: identity merge, real sign-out, local wipe,
+> export, deletion, retention jobs, backup tombstones, and restore proof are
+> release blockers before the first non-owner build. They are implemented as
+> part of the SPEC-43 foundation after the Laos build.
 
 ## Goal
 
@@ -83,16 +88,26 @@ each reaches across the client and the server so neither side naturally owns it.
 11. **Export is the same data in a form a human can read.** An export nobody can
     open satisfies the letter of the right and none of its purpose.
 
+12. **Deletion includes local stores, caches, processors, and restored
+    backups.** Logical deletion of the live database is not completion. The
+    device is wiped, private caches and model artifacts are purged, processors
+    receive the request, and a tombstone prevents a later restore from making
+    the identity active again.
+
+13. **Retention is per data class and enforced by jobs.** SPEC-43 owns the
+    proposed defaults and counsel review. An expiry predicate that leaves the
+    row in storage is not retention enforcement.
+
 ## Version and schema safety
 
-12. **The server declares a minimum supported client, and the client refuses to
+14. **The server declares a minimum supported client, and the client refuses to
     write below it -- never to read.** An offline client can hold cached data for
     weeks and its user may be in a place where updating is not possible. Blocking
     reads strands somebody in a foreign country with a phone that has their
     itinerary and will not show it. Blocking writes is enough, because the risk is
     a stale client writing a shape the server no longer understands.
 
-13. **The refusal explains itself and names what still works.** "Update to sync;
+15. **The refusal explains itself and names what still works.** "Update to sync;
     your saved trips are still here" is the difference between a bug report and an
     understood state.
 
@@ -121,6 +136,9 @@ each reaches across the client and the server so neither side naturally owns it.
 - [ ] Trip-critical default; everything else opt-in and off
 - [ ] Delete and export endpoints, both walking the schema
 - [ ] Aliases covered by deletion
+- [ ] Local identity-scoped wipe, processor deletion, backup tombstone, and
+      deletion-after-restore proof
+- [ ] Per-class retention jobs and completion evidence
 - [ ] Derived aggregates documented as non-identifying, with a test
 - [ ] Minimum supported client declared, blocking writes only
 - [ ] Suite green (R8); verified from `origin/main` (R10)

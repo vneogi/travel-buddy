@@ -112,6 +112,7 @@
 | Guided Create Trip foundation (SPEC-40) | DONE (PR #61, `ebdea52`) | Five-step destination/date-range/party/interests/review flow backed by deterministic multi-day catalog selection. Post-merge CI and owner Flutter tests passed. Hosted deploy and phone acceptance are not yet repeated for this SHA |
 | Hours-aware scheduling and staged ranking (SPEC-41) | A2 MERGED (PR #65, `377125e`); A3a NEXT | Create, corridor, and swap now refuse known-closed target slots and scope warnings. A3a owns same-day window packing and truthful `max_days`; A3b owns deterministic transit and locked-anchor reachability |
 | Flexible trip span and sparse day editing (SPEC-42) | SPECIFIED, LATER PHASE | Decouples trip duration from auto-fill capacity. Wider spans may contain at most five generated starter days plus first-class empty days with direct Add/Move actions |
+| Security, privacy and data governance foundation (SPEC-43) | SPECIFIED; AFTER LAOS BUILD, BEFORE NON-OWNER DISTRIBUTION | Owns twelve verified gaps across anonymous authentication, RLS, LLM egress, rights/retention, offline encryption, sign-out, consent, cache isolation, signal authorization, logging, abuse limits, and release transport. The current owner-only exception expires before the first external tester or December launch |
 
 Migration numbers are assigned when a spec is implemented, not when it is
 written. SPEC-11, SPEC-13, SPEC-14 and SPEC-15 each claimed a number, and the
@@ -208,7 +209,11 @@ Seed-shaped cohorts.
    catalog and trip facts before generation; name no-key, retrieval-miss,
    budget, breaker, and model-error fallbacks.
 8. Re-run the current hosted/API/APK acceptance for those bounded slices before
-   starting inspiration or model-generated itineraries.
+   starting security implementation, inspiration, or model-generated itineraries.
+9. SPEC-43 security, privacy, and data governance -- **NEXT RELEASE
+   FOUNDATION AFTER THE LAOS BUILD**. Complete all twelve gaps before any
+   non-owner APK, production LLM processing of personal trip data, or the
+   planned December public launch.
 
 ### Deferred after the phone gate
 
@@ -226,9 +231,12 @@ Seed-shaped cohorts.
   The SPEC-40 five-day cap remains unchanged in `ebdea52`.
 - Remaining signal/UI polish.
 - Full SPEC-04 remainder only if field evidence supports it.
-- Trip-less Ask, richer Home, SPEC-24/27, and public-release lifecycle work.
-- Swappable LLM provider; every intelligent path currently uses one hosted
-  vendor.
+- Trip-less Ask and richer Home.
+- SPEC-24 identity lifecycle and SPEC-27 data rights are implementation
+  dependencies inside the SPEC-43 release foundation, not work that may slip
+  past the first non-owner build.
+- Swappable LLM providers are permitted only through SPEC-43's approved
+  provider, region, retention, and egress contract.
 
 The Dubai raw snapshot is already durable at
 `data/dubai_uae_raw_snapshot.json` (`6bfa1c6`). Do not rerun the closed export.
@@ -250,11 +258,22 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 | Known-closed venues can be scheduled and offered by swap | Closed PR #65 (`377125e`) | Create, corridor, swap search/apply, and affected-node validation now share structured destination-local hours eligibility. A3a adds later-window packing; A3b adds reachability |
 | Hotel paste is provider-narrow | High for real booking intake | Current proof is Booking.com-shaped. Agoda field input did not reliably fill the hotel, and a footer fragment cannot supply absent name or dates. SPEC-10 now owns provider adapters, per-field quality, honest partial extraction, and redacted fixtures |
 | Trip Chat is wired but not grounded | High | The hosted composer returned the deterministic region fallback. Key presence is unverified and, by itself, would not add catalog retrieval. SPEC-25 now puts grounded trip-scoped Ask before trip-less Ask |
+| SPEC-43 gap 1: self-issued anonymous UUID is a replayable account credential | High before non-owner use | The hosted owner build accepts any canonical UUIDv4 without server issuance, expiry, revocation, or proof of possession. Replace it with Supabase anonymous Auth JWTs, JWKS verification, rotation, and account/IP abuse limits after the Laos build |
+| SPEC-43 gap 2: RLS and public grants are not comprehensive | High | Migration 0007 omits core personal tables and uses permissive party inserts; service-role access bypasses RLS. Audit the live schema, revoke by default, enforce owner policies on every personal table, and prove isolation with two hosted JWTs |
+| SPEC-43 gap 3: personal trip fields can cross the LLM boundary | High; production personal LLM use blocked | Heavy prompts can serialize booking codes, notes, exact times, and coordinates, while fallback can cross providers. Use deterministic create/swap plus one redacting allowlist gateway and an approved provider-region-retention matrix |
+| SPEC-43 gap 4: export, deletion, and retention are unimplemented | High before public launch | SPEC-27 is specified only. Build self-service rights, schema-walking erasure, physical expiry, backup tombstones, and restore tests before non-owner distribution |
+| SPEC-43 gap 5: offline trip and booking data is plaintext and backup policy is implicit | High before non-owner use | SQLite holds trips, booking fields, signals, alerts, and outcomes while Android backup exclusions are absent. Encrypt with hardware-backed keys, exclude backups, mask restricted fields, and test extracted artifacts |
+| SPEC-43 gap 6: sign-out does not revoke or clear the prior identity | High before shared-device use | Profile navigation is not logout. Stop sync, clear/revoke tokens, wipe every identity-scoped local row, create a fresh anonymous identity, and prove account-switch isolation |
+| SPEC-43 gap 7: behavioral consent is a pass-through stub | High before collecting a tester cohort | Necessary operation, analytics, personalization, location, and marketing are not separated. Add a versioned purpose ledger, block optional capture before choice, and propagate withdrawal to outbox, features, and training inputs |
+| SPEC-43 gap 8: semantic cache can cross user boundaries | High when Ask is model-backed | Region and venue are insufficient private cache keys. Cache only public facts globally; otherwise use owner plus complete context/source/version scope, refuse restricted content, and actively purge expiry |
+| SPEC-43 gap 9: trip-linked signals lack ownership and poisoning controls | High before learned ranking | A supplied trip ID can be used for party/derived context without an ownership gate. Require ownership in ingest and derivation transactions, close every signal schema, and gate influence by provenance, quality, plausibility, and sample size |
+| SPEC-43 gap 10: errors and provider failures can retain sensitive values | High under debug/provider failure | Validation values, provider URLs, messages, and tracebacks can enter diagnostics. Centralize redaction, return stable public errors, protect debug with admin IAM, reject production debug, regionalize logs, and enforce retention |
+| SPEC-43 gap 11: general request and provider-spend abuse controls are absent | High when access expands | Reroute quota does not bound account creation, bodies, search, Ask, signals, webhooks, or downstream cost. Add gateway, account/IP/device-reputation, size, depth, concurrency, timeout, idempotency, anomaly, and spend controls |
+| SPEC-43 gap 12: release HTTPS and private mobile cache isolation are incomplete | High before release distribution | Release code does not reject HTTP; trip/place cache keys are not consistently identity-scoped; chat text enters route URLs. Enforce TLS at build/startup, identity-key caches, ownership checks, private navigation state, and authorized deep links |
 | Create conflates trip span with auto-fill capacity | Medium | SPEC-40 deliberately caps the foundation at five filled days. SPEC-42 later accepts wider spans, generates at most five starter days, and renders remaining dates as editable empty days |
 | Range create persists trip and party in two writes | Medium | A failure between writes can leave an orphan trip. Recorded as a pre-existing SPEC-40 risk; preserve the merged contract when persistence is later made transactional |
 | reroute_accepted.replacement_ref is inverted | Closed PR #18 (`ce8fedb`) | Client helper replacementRefForSwap matches node_id and changed venue key. Production `_swap` calls it |
 | Supabase session gate softlocks the app | Closed PR #18 (`ce8fedb`) | app_router calls redirectForAuth; anonymous device needs no session. Owner E2E with dart-defines still in LAPTOP_VERIFY Step 8b |
-| Anonymous data has no path into an account, and signal sits outside referential integrity | Medium | SPEC-09 starts accumulating trip_states, event_log and signal rows under a device UUID that belongs to a device rather than a person. Until SPEC-24 exists, the first sign-in strands all of it, and from the user's side that looks like an app that lost their trip. The schema makes it sharper: trip_states.user_id and event_log.user_id are UUID REFERENCES user_tiers, while signal.user_id is TEXT with no foreign key and no type match, so the table holding the asset is the one table outside the constraint system. Neither a merge nor a SPEC-27 deletion can rely on a cascade, and nothing will complain when a future table is missed -- which is why both specs walk the schema instead of keeping a list. The engineering does not get harder with time; the data does |
 | observed_duration_minutes writer | Closed PR #32 (`f8349a8`) | Consecutive arrivals update `trip_edge.observed_duration_minutes`. Dual-write preserves the value. Transport cost on the same table is still unwritten (SPEC-23) |
 | The five Supabase tests have never run | Closed Aug 17 2026 | Live device-day pytest with TB_SUPABASE_URL set; tests/test_supabase_integration.py included. Run pytest -q -ra to confirm |
 | Non-Laos local dish names remain unbackfilled | Low | 0015's names_local backfill is correctly scoped to the three Laos regions, so any Dubai dish carrying a name_local keeps a null names_local rather than a wrong language tag. That is the right trade, but it leaves a second pass owed once the Dubai rows are exported and their language confirmed |

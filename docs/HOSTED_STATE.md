@@ -59,6 +59,13 @@ region `asia-south1`. Owner deployed from local `main` at `fefc4ec` on
 | Health | HTTP 200 `GET /api/v1/health` (`status=healthy`, `venues_loaded=74`) |
 | Flags on the deploy command | `TB_DEBUG=false`, `TB_ALLOW_ANONYMOUS=true` |
 
+Release posture: this is an owner-only field-test service, not a beta or public
+launch. SPEC-43 records twelve security/privacy gaps that must close after the
+Laos build and before another person receives an APK. In particular, the
+self-issued anonymous UUID remains a temporary owner credential, and production
+LLM processing of personal trip data remains disabled until the redacting
+egress and provider/region/retention controls pass.
+
 Secret values are not recorded. Startup booleans (`llm_key_present`,
 `supabase_configured`) live in Cloud Run logs, not in the public health
 body. `/health` still reports process default `geo_fence=dubai_uae`; trip

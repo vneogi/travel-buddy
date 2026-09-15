@@ -1,5 +1,11 @@
 # SPEC-09: Anonymous Device Identity
 
+> SPEC-43 security amendment: this self-issued UUID path remains an owner-only
+> field-test credential. Before any non-owner build, Supabase anonymous Auth
+> issues the short-lived JWT and the UUID becomes a non-secret diagnostic or
+> one-time legacy migration input. SPEC-24 owns linking that anonymous Auth
+> subject to Google or Apple without losing history.
+
 ## Goal
 
 Replace the `--dart-define=TB_DEBUG_USER_ID` hardcoded UUID with a per-device
