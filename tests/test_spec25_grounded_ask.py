@@ -28,8 +28,8 @@ from services.ask_service import (
     load_dish_glossary,
     _region_matches,
     _is_dietary_question,
-    _classify_plan_change,
     _render_structured_hours,
+    _validate_structured_hours,
 )
 
 
@@ -55,6 +55,11 @@ LAOS_VENUE = {
     "opening_hours_structured": {
         "mon": [["17:00", "23:00"]],
         "tue": [["17:00", "23:00"]],
+        "wed": [["17:00", "23:00"]],
+        "thu": [["17:00", "23:00"]],
+        "fri": [["17:00", "23:00"]],
+        "sat": [["17:00", "23:00"]],
+        "sun": [["17:00", "23:00"]],
     },
     "geo_region": "vientiane_laos",
 }
@@ -276,21 +281,58 @@ class TestPlanChange:
         assert resp.proposal is None
         assert "clarify" in resp.answer.lower()
 
-    def test_sub_classifier_swap(self):
-        assert _classify_plan_change("Swap this for something else") == "swap_activity"
+    @pytest.mark.asyncio
+    async def test_remove_reaches_plan_change(self):
+        """'remove' must reach PLAN_CHANGE via main classifier."""
+        svc = _svc()
+        resp = await svc.handle_ask(
+            question="Remove this activity",
+            geo_region="vientiane_laos",
+            user_id="u1",
+            target_node_id="n1",
+        )
+        assert resp.intent == AskIntent.PLAN_CHANGE
+        assert resp.proposal is not None
+        assert resp.proposal["event_type"] == "cancel_activity"
 
-    def test_sub_classifier_cancel(self):
-        assert _classify_plan_change("Cancel this activity") == "cancel_activity"
+    @pytest.mark.asyncio
+    async def test_shift_reaches_plan_change(self):
+        """'shift' must reach PLAN_CHANGE and map to reroute."""
+        svc = _svc()
+        resp = await svc.handle_ask(
+            question="Shift this to later",
+            geo_region="vientiane_laos",
+            user_id="u1",
+        )
+        assert resp.intent == AskIntent.PLAN_CHANGE
+        assert resp.proposal is not None
+        assert resp.proposal["event_type"] == "reroute"
 
-    def test_sub_classifier_reschedule(self):
-        assert _classify_plan_change("Move this to later") == "reschedule"
+    @pytest.mark.asyncio
+    async def test_switch_reaches_plan_change(self):
+        """'switch' must reach PLAN_CHANGE and map to swap_activity."""
+        svc = _svc()
+        resp = await svc.handle_ask(
+            question="Switch this for something else",
+            geo_region="vientiane_laos",
+            user_id="u1",
+        )
+        assert resp.intent == AskIntent.PLAN_CHANGE
+        assert resp.proposal is not None
+        assert resp.proposal["event_type"] == "swap_activity"
 
-    def test_sub_classifier_add(self):
-        assert _classify_plan_change("Add a new activity") == "add_activity"
-
-    def test_sub_classifier_ambiguous(self):
-        # swap + cancel both score 1 -> ambiguous
-        assert _classify_plan_change("Swap or cancel this") is None
+    @pytest.mark.asyncio
+    async def test_insert_reaches_plan_change(self):
+        """'insert' must reach PLAN_CHANGE and map to add_activity."""
+        svc = _svc()
+        resp = await svc.handle_ask(
+            question="Insert a visit to the museum",
+            geo_region="vientiane_laos",
+            user_id="u1",
+        )
+        assert resp.intent == AskIntent.PLAN_CHANGE
+        assert resp.proposal is not None
+        assert resp.proposal["event_type"] == "add_activity"
 
 
 # ===========================================================================
@@ -408,17 +450,64 @@ class TestHoursAuthority:
         assert "Mon 17:00-23:00" in resp.answer
         assert "Tue 17:00-23:00" in resp.answer
 
-    def test_render_structured_hours(self):
-        structured = {
-            "mon": [["09:00", "17:00"]],
-            "wed": [["09:00", "12:00"], ["14:00", "17:00"]],
+    @pytest.mark.asyncio
+    async def test_malformed_structured_hours_returns_miss(self):
+        """Partial weekdays (missing days) must produce RETRIEVAL_MISS."""
+        venue = {
+            **LAOS_VENUE,
+            "venue_id": "partial-v",
+            "opening_hours_structured": {"mon": [["09:00", "17:00"]]},
         }
-        result = _render_structured_hours(structured)
-        assert "Mon 09:00-17:00" in result
-        assert "Wed 09:00-12:00, 14:00-17:00" in result
+        svc = _svc(venues=[venue])
+        resp = await svc.handle_ask(
+            question="What time does it open?",
+            geo_region="vientiane_laos",
+            user_id="u1",
+            venue_name="Ban Anou Night Market",
+        )
+        assert resp.path == AskPath.RETRIEVAL_MISS
 
-    def test_render_structured_hours_empty(self):
-        assert _render_structured_hours({}) == "hours not specified"
+    @pytest.mark.asyncio
+    async def test_empty_dict_structured_hours_returns_miss(self):
+        venue = {
+            **LAOS_VENUE,
+            "venue_id": "empty-v",
+            "opening_hours_structured": {},
+        }
+        svc = _svc(venues=[venue])
+        resp = await svc.handle_ask(
+            question="What time does it open?",
+            geo_region="vientiane_laos",
+            user_id="u1",
+            venue_name="Ban Anou Night Market",
+        )
+        assert resp.path == AskPath.RETRIEVAL_MISS
+
+    def test_validate_valid(self):
+        assert _validate_structured_hours(LAOS_VENUE["opening_hours_structured"])
+
+    def test_validate_missing_days(self):
+        assert not _validate_structured_hours({"mon": [["09:00", "17:00"]]})
+
+    def test_validate_bad_slot_format(self):
+        bad = {
+            d: [["9am", "5pm"]]
+            for d in [
+                "mon",
+                "tue",
+                "wed",
+                "thu",
+                "fri",
+                "sat",
+                "sun",
+            ]
+        }
+        assert not _validate_structured_hours(bad)
+
+    def test_render_full_week(self):
+        result = _render_structured_hours(LAOS_VENUE["opening_hours_structured"])
+        assert "Mon 17:00-23:00" in result
+        assert "Sun 17:00-23:00" in result
 
 
 # ===========================================================================
@@ -625,6 +714,60 @@ class TestHTTPIntegration:
         )
         data = r.json()
         assert data["updated_nodes"] == []
+
+    def test_http_second_catalog_request_returns_cache_hit(self):
+        """Proof: two identical HTTP ASK_INFO requests; second is cache_hit."""
+        payload = {
+            "trip_id": "ask-trip-1",
+            "event_type": "ask_info",
+            "message": "Tell me about Ban Anou Night Market",
+        }
+        r1 = self.client.post("/api/v1/trip/event", json=payload, headers=self.headers)
+        assert r1.status_code == 200
+        ask1 = r1.json().get("ask_response")
+        assert ask1 is not None
+        assert ask1["path"] != "cache_hit"
+
+        r2 = self.client.post("/api/v1/trip/event", json=payload, headers=self.headers)
+        assert r2.status_code == 200
+        ask2 = r2.json().get("ask_response")
+        assert ask2 is not None
+        assert ask2["path"] == "cache_hit", f"Expected cache_hit, got {ask2['path']}"
+        assert ask2["from_cache"] is True
+
+
+# ===========================================================================
+# Cache-hit telemetry carries source_ids
+# ===========================================================================
+
+
+class TestCacheHitTelemetry:
+    @pytest.mark.asyncio
+    async def test_cache_hit_telemetry_has_source_ids(self):
+        """Cache-hit telemetry must carry the cached source_ids."""
+        svc = _svc(venues=[LAOS_VENUE])
+        # First call populates cache
+        r1 = await svc.handle_ask(
+            question="What are the opening hours?",
+            geo_region="vientiane_laos",
+            user_id="u1",
+            venue_name="Ban Anou Night Market",
+        )
+        assert r1.source_ids  # non-empty
+        original_ids = list(r1.source_ids)
+
+        # Second call is cache hit
+        await svc.handle_ask(
+            question="What are the opening hours?",
+            geo_region="vientiane_laos",
+            user_id="u1",
+            venue_name="Ban Anou Night Market",
+        )
+        # Telemetry for the cache hit (second entry)
+        assert len(svc.telemetry_log) == 2
+        tel_hit = svc.telemetry_log[1]
+        assert tel_hit.cache_status == "hit"
+        assert tel_hit.source_ids == original_ids
 
 
 # ===========================================================================

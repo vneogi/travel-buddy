@@ -304,34 +304,39 @@ def test_next_eligible_returns_none_at_end():
 
 @pytest.mark.asyncio
 async def test_process_event_captures_luang_prabang_context():
-    """Run process_event for an ASK_INFO at Oct 7 06:00Z on the
-    Laos corridor.  SPEC-25: the grounded Ask service resolves
-    geo_region from the current node.  The answer must reference
-    Luang Prabang context, NOT Vientiane or Dubai."""
+    """SPEC-37 exact-context proof: ASK_INFO 'What's next?' at Oct 7
+    06:00Z on the Laos corridor must resolve lp1 (Wat Xieng Thong) as
+    the current node and return a typed envelope with trip_state
+    source_class and destination-local time."""
     from agents.state_machine import state_machine
 
     trip = _laos_corridor_trip()
 
-    # SPEC-25: ASK_INFO now uses the grounded Ask pipeline which
-    # resolves geo_region internally. We verify via the response text
-    # and the ask_response envelope.
     result = await state_machine.process_event(
         trip_state=trip,
         event_type=EventType.ASK_INFO.value,
-        message="What temples should I visit here?",
+        message="What's next?",
         now_utc=datetime(2026, 10, 7, 6, 0, tzinfo=timezone.utc),
     )
 
-    # The response must exist (not crash)
+    # Response must exist
     assert result.get("response"), "Ask must produce a response"
-    # The response text must not contain Dubai references
-    response_lower = result["response"].lower()
-    assert "dubai" not in response_lower, "Luang Prabang ask must not mention Dubai"
-    # The ask_response envelope MUST be present (SPEC-25 -- not optional)
+    # Typed envelope must be present
     ask = result.get("ask_response")
-    assert ask is not None, "ask_response envelope must be present for ASK_INFO"
-    assert "tier" in ask and "path" in ask and "intent" in ask
-    assert "dubai" not in ask.get("answer", "").lower()
+    assert ask is not None, "ask_response envelope must be present"
+    assert ask["intent"] == "trip_current_next"
+    assert ask["path"] == "grounded_deterministic"
+    assert ask["source_class"] == "trip_state"
+    # Must mention Wat Xieng Thong (the current LP node)
+    assert "Wat Xieng Thong" in result["response"], (
+        f"Expected Wat Xieng Thong in response, got: {result['response']}"
+    )
+    # Must use destination-local time (Laos is UTC+7, 05:30Z = 12:30 local)
+    assert "12:30" in result["response"], (
+        f"Expected 12:30 (local) in response, got: {result['response']}"
+    )
+    # Must NOT mention Dubai
+    assert "dubai" not in result["response"].lower()
 
 
 @pytest.mark.asyncio
@@ -367,3 +372,59 @@ async def test_process_event_fallback_preserves_luang_prabang_on_llm_failure():
         "dish_fact",
         "out_of_scope",
     )
+
+
+@pytest.mark.asyncio
+async def test_cross_city_next_node_uses_own_geo_region():
+    """Proof: at a cross-city boundary the next node's summary
+    must use that node's own geo_region for timezone conversion,
+    not the trip-level geo_region or the current node's region.
+
+    Dubai is UTC+4, Laos is UTC+7.  A node at 10:00 UTC renders
+    as 14:00 in Dubai but 17:00 in Laos.  If we see 17:00 for
+    the Laos next node, it used the correct region.
+    """
+    from agents.state_machine import state_machine
+
+    trip = TripState(
+        trip_id="cross-tz-1",
+        user_id="u1",
+        geo_region="dubai_uae",  # trip-level is Dubai
+        nodes=[
+            TripNode(
+                node_id="d-current",
+                venue_name="Burj Khalifa",
+                venue_id="burj",
+                duration_minutes=60,
+                scheduled_start=datetime(2026, 10, 7, 5, 0, tzinfo=timezone.utc),
+                is_locked=False,
+                status=NodeStatus.PENDING,
+                geo_region="dubai_uae",  # UTC+4 -> 09:00 local
+            ),
+            TripNode(
+                node_id="lao-next",
+                venue_name="Wat Xieng Thong",
+                venue_id="wat_xt",
+                duration_minutes=90,
+                scheduled_start=datetime(2026, 10, 7, 10, 0, tzinfo=timezone.utc),
+                is_locked=False,
+                status=NodeStatus.PENDING,
+                geo_region="luang_prabang_laos",  # UTC+7 -> 17:00 local
+            ),
+        ],
+    )
+
+    result = await state_machine.process_event(
+        trip_state=trip,
+        event_type=EventType.ASK_INFO.value,
+        message="What's next?",
+        now_utc=datetime(2026, 10, 7, 5, 30, tzinfo=timezone.utc),
+    )
+
+    assert result.get("response")
+    # Next node (Laos, UTC+7) should show 17:00, not 14:00 (Dubai)
+    assert "17:00" in result["response"], (
+        f"Next node should use Laos time 17:00, got: {result['response']}"
+    )
+    # Should NOT show Dubai's 14:00 for the next node
+    assert "Wat Xieng Thong" in result["response"]

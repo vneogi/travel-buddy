@@ -948,7 +948,10 @@ class TripStateMachine:
             )
         next_summary = None
         if next_node:
-            local_start = _to_local(next_node.scheduled_start, geo_region)
+            # Use the next node's own geo_region for timezone conversion,
+            # not the current node's, so cross-city corridors are correct.
+            next_geo = getattr(next_node, "geo_region", None) or geo_region
+            local_start = _to_local(next_node.scheduled_start, next_geo)
             next_summary = (
                 f"{next_node.venue_name} at "
                 f"{local_start.strftime('%H:%M')} "

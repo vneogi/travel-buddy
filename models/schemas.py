@@ -240,7 +240,7 @@ class TripEventRequest(BaseModel):
 class PlanChangeProposal(BaseModel):
     """SPEC-25: Typed plan-change proposal for HITL confirmation."""
 
-    event_type: Literal["swap_activity", "cancel_activity", "add_activity", "reschedule"]
+    event_type: Literal["swap_activity", "cancel_activity", "add_activity", "reroute"]
     target_node_id: str = ""
     summary: str = ""
 

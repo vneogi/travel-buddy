@@ -277,17 +277,31 @@ _CURRENT_NEXT_KEYWORDS = {
     "upcoming",
 }
 _PLAN_CHANGE_KEYWORDS = {
+    # Must be a superset of all sub-classifier keywords so the main
+    # classifier can reach PLAN_CHANGE for every phrase the sub-classifier
+    # handles.
     "swap",
     "replace",
-    "cancel",
-    "change plan",
-    "reschedule",
-    "reroute",
-    "add activity",
-    "different place",
+    "switch",
     "something else",
-    "move",
+    "different place",
+    "cancel",
+    "remove",
+    "delete",
+    "drop",
     "skip",
+    "add",
+    "insert",
+    "include",
+    "add activity",
+    "move",
+    "reschedule",
+    "shift",
+    "earlier",
+    "later",
+    "push",
+    "reroute",
+    "change plan",
 }
 
 
@@ -331,15 +345,33 @@ _SWAP_KEYWORDS = {"swap", "replace", "switch", "something else", "different plac
 def _classify_plan_change(message: str) -> Optional[str]:
     """Sub-classify a PLAN_CHANGE into an unambiguous command.
 
-    Returns one of 'cancel_activity', 'add_activity', 'reschedule',
+    Returns one of 'cancel_activity', 'add_activity', 'reroute',
     'swap_activity', or None when ambiguous.
+
+    Uses word-boundary matching so 'remove' does not false-hit 'move'.
     """
+    import re
+
     lower = message.lower()
+
+    def _hits(keywords: set) -> int:
+        total = 0
+        for kw in keywords:
+            if " " in kw:
+                # Multi-word: plain substring
+                if kw in lower:
+                    total += 1
+            else:
+                # Single-word: word-boundary
+                if re.search(r"\b" + re.escape(kw) + r"\b", lower):
+                    total += 1
+        return total
+
     scores = {
-        "cancel_activity": sum(1 for kw in _CANCEL_KEYWORDS if kw in lower),
-        "add_activity": sum(1 for kw in _ADD_KEYWORDS if kw in lower),
-        "reschedule": sum(1 for kw in _MOVE_KEYWORDS if kw in lower),
-        "swap_activity": sum(1 for kw in _SWAP_KEYWORDS if kw in lower),
+        "cancel_activity": _hits(_CANCEL_KEYWORDS),
+        "add_activity": _hits(_ADD_KEYWORDS),
+        "reroute": _hits(_MOVE_KEYWORDS),
+        "swap_activity": _hits(_SWAP_KEYWORDS),
     }
     best = max(scores, key=scores.get)  # type: ignore[arg-type]
     if scores[best] == 0:
@@ -356,11 +388,38 @@ def _classify_plan_change(message: str) -> Optional[str]:
 # ---------------------------------------------------------------------------
 
 _DAY_ORDER = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+_HH_MM_RE = __import__("re").compile(r"^\d{2}:\d{2}$")
+
+
+def _is_valid_slot(slot: Any) -> bool:
+    """A valid slot is a two-element list of HH:MM strings."""
+    return (
+        isinstance(slot, (list, tuple))
+        and len(slot) == 2
+        and isinstance(slot[0], str)
+        and isinstance(slot[1], str)
+        and bool(_HH_MM_RE.match(slot[0]))
+        and bool(_HH_MM_RE.match(slot[1]))
+    )
+
+
+def _validate_structured_hours(structured: Any) -> bool:
+    """SPEC-41: structured hours must have all 7 weekdays with valid windows."""
+    if not isinstance(structured, dict):
+        return False
+    for day in _DAY_ORDER:
+        slots = structured.get(day)
+        if not isinstance(slots, list) or not slots:
+            return False
+        if not all(_is_valid_slot(s) for s in slots):
+            return False
+    return True
 
 
 def _render_structured_hours(structured: Dict[str, Any]) -> str:
-    """Render an opening_hours_structured dict to human-readable text.
+    """Render a validated opening_hours_structured dict to human-readable text.
 
+    Caller must validate first; this function assumes valid input.
     Example input:  {"mon": [["17:00", "23:00"]], "tue": [["17:00", "23:00"]]}
     Example output: "Mon 17:00-23:00, Tue 17:00-23:00"
     """
@@ -369,7 +428,7 @@ def _render_structured_hours(structured: Dict[str, Any]) -> str:
         slots = structured.get(day)
         if not slots:
             continue
-        slot_strs = [f"{s[0]}-{s[1]}" if len(s) >= 2 else str(s) for s in slots]
+        slot_strs = [f"{s[0]}-{s[1]}" for s in slots]
         parts.append(f"{day.capitalize()} {', '.join(slot_strs)}")
     return ", ".join(parts) if parts else "hours not specified"
 
@@ -439,22 +498,27 @@ def retrieve_catalog_facts(
         flat_hours = venue.get("opening_hours", "")
         _dflt = {"09:00-23:00", "09:00-22:00", "08:00-22:00"}
 
-        if structured:
-            # Render structured hours directly (blocker 4).
-            rendered = _render_structured_hours(structured)
-            facts.append(
-                CatalogFact(
-                    fact_type="opening_hours",
-                    text=(
-                        f"{venue['name']} hours: {rendered}. "
-                        "These are catalog hours and may not reflect "
-                        "holidays or temporary closures -- verify locally."
-                    ),
-                    source_id=venue.get("venue_id", venue["name"]),
-                    source_class="curated_catalog",
-                    geo_region=geo_region,
+        if structured is not None:
+            # Structured data present: use it only if SPEC-41-valid.
+            # Malformed/partial structured -> RETRIEVAL_MISS (no fallback
+            # to flat_hours, because flat is the legacy format for the
+            # same data; the structured form is canonical).
+            if _validate_structured_hours(structured):
+                rendered = _render_structured_hours(structured)
+                facts.append(
+                    CatalogFact(
+                        fact_type="opening_hours",
+                        text=(
+                            f"{venue['name']} hours: {rendered}. "
+                            "These are catalog hours and may not reflect "
+                            "holidays or temporary closures -- verify locally."
+                        ),
+                        source_id=venue.get("venue_id", venue["name"]),
+                        source_class="curated_catalog",
+                        geo_region=geo_region,
+                    )
                 )
-            )
+            # else: malformed structured -> facts stays empty -> miss
         elif flat_hours and flat_hours not in _dflt:
             facts.append(
                 CatalogFact(
@@ -745,6 +809,7 @@ class AskService:
             if cached is not None:
                 tel.path = AskPath.CACHE_HIT.value
                 tel.cache_status = "hit"
+                tel.source_ids = list(cached.source_ids)
                 tel.latency_ms = (time.monotonic() - t0) * 1000
                 self._emit_telemetry(tel)
                 return cached
