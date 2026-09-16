@@ -7,6 +7,10 @@ This slice: NO llm.complete calls. Deterministic templates or refuse.
 SPEC-14: never emit suitable_for / dietary suitability claims.
 SPEC-43: question text never stored in telemetry or cache keys.
 SPEC-41: prefer structured hours; flat defaults get hedge/refuse.
+
+Status: PARTIAL -- model fallback, budget gating, circuit breaker
+activation, Flutter acceptance, and offline acceptance remain deferred
+in this deterministic-only slice.
 """
 
 from __future__ import annotations
@@ -151,9 +155,14 @@ class AskBudget:
 # ---------------------------------------------------------------------------
 
 
-def _cache_key(question: str, geo_region: str, venue_id: str) -> str:
-    """Deterministic cache key scoped to question + region + venue."""
-    raw = f"{question.strip().lower()}|{geo_region}|{venue_id}"
+# Bump when venue/dish catalog data changes to invalidate stale cache.
+_CATALOG_VERSION = "2026-09-16-v1"
+
+
+def _cache_key(question: str, geo_region: str, venue_id: str, catalog_version: str = "") -> str:
+    """Deterministic cache key scoped to question + region + venue + catalog."""
+    cv = catalog_version or _CATALOG_VERSION
+    raw = f"{question.strip().lower()}|{geo_region}|{venue_id}|{cv}"
     return hashlib.sha256(raw.encode()).hexdigest()
 
 
@@ -310,6 +319,62 @@ def _is_dietary_question(message: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
+# Plan-change sub-classifier (blocker 3)
+# ---------------------------------------------------------------------------
+
+_CANCEL_KEYWORDS = {"cancel", "remove", "delete", "drop"}
+_ADD_KEYWORDS = {"add", "insert", "include", "add activity"}
+_MOVE_KEYWORDS = {"move", "reschedule", "shift", "earlier", "later", "push"}
+_SWAP_KEYWORDS = {"swap", "replace", "switch", "something else", "different place"}
+
+
+def _classify_plan_change(message: str) -> Optional[str]:
+    """Sub-classify a PLAN_CHANGE into an unambiguous command.
+
+    Returns one of 'cancel_activity', 'add_activity', 'reschedule',
+    'swap_activity', or None when ambiguous.
+    """
+    lower = message.lower()
+    scores = {
+        "cancel_activity": sum(1 for kw in _CANCEL_KEYWORDS if kw in lower),
+        "add_activity": sum(1 for kw in _ADD_KEYWORDS if kw in lower),
+        "reschedule": sum(1 for kw in _MOVE_KEYWORDS if kw in lower),
+        "swap_activity": sum(1 for kw in _SWAP_KEYWORDS if kw in lower),
+    }
+    best = max(scores, key=scores.get)  # type: ignore[arg-type]
+    if scores[best] == 0:
+        return None  # no keyword hit at all
+    # Ambiguous: two commands score equally
+    top_score = scores[best]
+    if sum(1 for v in scores.values() if v == top_score) > 1:
+        return None
+    return best
+
+
+# ---------------------------------------------------------------------------
+# Structured-hours renderer (blocker 4)
+# ---------------------------------------------------------------------------
+
+_DAY_ORDER = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+
+
+def _render_structured_hours(structured: Dict[str, Any]) -> str:
+    """Render an opening_hours_structured dict to human-readable text.
+
+    Example input:  {"mon": [["17:00", "23:00"]], "tue": [["17:00", "23:00"]]}
+    Example output: "Mon 17:00-23:00, Tue 17:00-23:00"
+    """
+    parts = []
+    for day in _DAY_ORDER:
+        slots = structured.get(day)
+        if not slots:
+            continue
+        slot_strs = [f"{s[0]}-{s[1]}" if len(s) >= 2 else str(s) for s in slots]
+        parts.append(f"{day.capitalize()} {', '.join(slot_strs)}")
+    return ", ".join(parts) if parts else "hours not specified"
+
+
+# ---------------------------------------------------------------------------
 # Catalog retrieval (SPEC-14: no suitable_for, SPEC-41: structured hours)
 # ---------------------------------------------------------------------------
 
@@ -375,11 +440,13 @@ def retrieve_catalog_facts(
         _dflt = {"09:00-23:00", "09:00-22:00", "08:00-22:00"}
 
         if structured:
+            # Render structured hours directly (blocker 4).
+            rendered = _render_structured_hours(structured)
             facts.append(
                 CatalogFact(
                     fact_type="opening_hours",
                     text=(
-                        f"{venue['name']} catalog hours: {flat_hours}. "
+                        f"{venue['name']} hours: {rendered}. "
                         "These are catalog hours and may not reflect "
                         "holidays or temporary closures -- verify locally."
                     ),
@@ -537,10 +604,21 @@ except ImportError:
     _FOOD_DISCLAIMER = "Confirm ingredients with the venue."
 
 
+# ---------------------------------------------------------------------------
+# Module-level singletons (survive across HTTP requests -- blocker 1)
+# ---------------------------------------------------------------------------
+
+_shared_cache = AskCache()
+_shared_budget = AskBudget()
+
+
 class AskService:
     """SPEC-25 grounded trip-scoped Ask.
 
     This slice: deterministic templates or refuse. No llm.complete.
+
+    Cache, budget, and breaker are module-level singletons so they
+    survive across HTTP requests.  Unit tests may inject their own.
     """
 
     def __init__(
@@ -548,12 +626,14 @@ class AskService:
         llm_service: Any = None,
         db: Any = None,
         dish_glossary: Optional[Dict] = None,
+        cache: Optional[AskCache] = None,
+        budget: Optional[AskBudget] = None,
     ) -> None:
         self.llm = llm_service
         self.db = db
         self.dish_glossary = dish_glossary
-        self.cache = AskCache()
-        self.budget = AskBudget()
+        self.cache = cache if cache is not None else _shared_cache
+        self.budget = budget if budget is not None else _shared_budget
         self._breaker_failures = 0
         self._breaker_threshold = 3
         self._telemetry_log: List[AskTelemetry] = []
@@ -625,19 +705,34 @@ class AskService:
 
         # PLAN_CHANGE: typed HITL proposal, never mutate
         if intent == AskIntent.PLAN_CHANGE:
+            sub_cmd = _classify_plan_change(question)
+            if sub_cmd is not None:
+                proposal = {
+                    "event_type": sub_cmd,
+                    "target_node_id": target_node_id or "",
+                    "summary": (
+                        f"Proposed: {sub_cmd.replace('_', ' ')}. "
+                        "Confirm on the trip controls to apply."
+                    ),
+                }
+                answer = (
+                    f"That sounds like a plan change ({sub_cmd.replace('_', ' ')}). "
+                    "I'll prepare a proposal for your review."
+                )
+            else:
+                # Ambiguous -- defer without executable proposal
+                proposal = None
+                answer = (
+                    "That sounds like a plan change, but I'm not sure "
+                    "exactly what you'd like. Could you clarify whether "
+                    "you want to swap, cancel, add, or reschedule?"
+                )
             resp = AskResponse(
-                answer=("That sounds like a plan change. I'll prepare a proposal for your review."),
+                answer=answer,
                 tier=TrustTier.DEFER,
                 path=AskPath.GROUNDED_DETERMINISTIC,
                 intent=intent,
-                proposal={
-                    "event_type": "swap_activity",
-                    "target_node_id": target_node_id or "",
-                    "summary": (
-                        "Swap the current activity for an alternative. "
-                        "Confirm on the trip controls to apply."
-                    ),
-                },
+                proposal=proposal,
             )
             tel.path = resp.path.value
             tel.latency_ms = (time.monotonic() - t0) * 1000

@@ -8,6 +8,7 @@ Includes HTTP integration tests via TestClient.
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 from unittest.mock import patch, AsyncMock
 
@@ -27,6 +28,8 @@ from services.ask_service import (
     load_dish_glossary,
     _region_matches,
     _is_dietary_question,
+    _classify_plan_change,
+    _render_structured_hours,
 )
 
 
@@ -96,9 +99,12 @@ def _laos_glossary():
 
 
 def _svc(venues=None, glossary=None, dish_glossary=None):
+    """Create an AskService with isolated cache/budget per test."""
     return AskService(
         db=FakeDB(venues=venues or []),
         dish_glossary=dish_glossary or glossary,
+        cache=AskCache(),
+        budget=AskBudget(),
     )
 
 
@@ -243,6 +249,49 @@ class TestPlanChange:
         assert resp.proposal["target_node_id"] == "node-42"
         assert not hasattr(resp, "updated_nodes")
 
+    @pytest.mark.asyncio
+    async def test_cancel_returns_cancel_proposal(self):
+        svc = _svc()
+        resp = await svc.handle_ask(
+            question="Cancel this activity",
+            geo_region="vientiane_laos",
+            user_id="u1",
+            target_node_id="node-7",
+        )
+        assert resp.intent == AskIntent.PLAN_CHANGE
+        assert resp.proposal is not None
+        assert resp.proposal["event_type"] == "cancel_activity"
+
+    @pytest.mark.asyncio
+    async def test_ambiguous_defers_without_proposal(self):
+        """swap + cancel both score 1 -> ambiguous -> no proposal."""
+        svc = _svc()
+        resp = await svc.handle_ask(
+            question="Swap or cancel this activity",
+            geo_region="vientiane_laos",
+            user_id="u1",
+        )
+        assert resp.intent == AskIntent.PLAN_CHANGE
+        assert resp.tier == TrustTier.DEFER
+        assert resp.proposal is None
+        assert "clarify" in resp.answer.lower()
+
+    def test_sub_classifier_swap(self):
+        assert _classify_plan_change("Swap this for something else") == "swap_activity"
+
+    def test_sub_classifier_cancel(self):
+        assert _classify_plan_change("Cancel this activity") == "cancel_activity"
+
+    def test_sub_classifier_reschedule(self):
+        assert _classify_plan_change("Move this to later") == "reschedule"
+
+    def test_sub_classifier_add(self):
+        assert _classify_plan_change("Add a new activity") == "add_activity"
+
+    def test_sub_classifier_ambiguous(self):
+        # swap + cancel both score 1 -> ambiguous
+        assert _classify_plan_change("Swap or cancel this") is None
+
 
 # ===========================================================================
 # Bug #4: Cache isolation -- TRIP_CURRENT_NEXT never cached
@@ -355,6 +404,21 @@ class TestHoursAuthority:
         assert resp.path == AskPath.GROUNDED_DETERMINISTIC
         assert resp.tier == TrustTier.HEDGE
         assert resp.tier != TrustTier.ASSERT
+        # Blocker 4: structured hours must be rendered directly
+        assert "Mon 17:00-23:00" in resp.answer
+        assert "Tue 17:00-23:00" in resp.answer
+
+    def test_render_structured_hours(self):
+        structured = {
+            "mon": [["09:00", "17:00"]],
+            "wed": [["09:00", "12:00"], ["14:00", "17:00"]],
+        }
+        result = _render_structured_hours(structured)
+        assert "Mon 09:00-17:00" in result
+        assert "Wed 09:00-12:00, 14:00-17:00" in result
+
+    def test_render_structured_hours_empty(self):
+        assert _render_structured_hours({}) == "hours not specified"
 
 
 # ===========================================================================
@@ -463,6 +527,19 @@ class TestTelemetry:
         assert tel.geo_region == "vientiane_laos"
         assert tel.source_ids
 
+    @pytest.mark.asyncio
+    async def test_telemetry_emitted_to_logger(self, caplog):
+        """Prove _emit_telemetry actually calls logger.info."""
+        svc = _svc(venues=[LAOS_VENUE])
+        with caplog.at_level(logging.INFO, logger="ask_service"):
+            await svc.handle_ask(
+                question="What are the opening hours?",
+                geo_region="vientiane_laos",
+                user_id="u1",
+                venue_name="Ban Anou Night Market",
+            )
+        assert any("ask_telemetry" in r.message for r in caplog.records)
+
 
 # ===========================================================================
 # HTTP integration: Bug #1 (envelope present), Bug #2 (no save_trip)
@@ -553,6 +630,47 @@ class TestHTTPIntegration:
 # ===========================================================================
 # Named path coverage
 # ===========================================================================
+
+
+class TestSingletonPersistence:
+    """Blocker 1: cache/budget must survive across AskService instances."""
+
+    def test_shared_cache_persists_across_instances(self):
+        cache = AskCache()
+        svc1 = AskService(db=FakeDB(), cache=cache, budget=AskBudget())
+        svc2 = AskService(db=FakeDB(), cache=cache, budget=AskBudget())
+        # svc1 writes to cache
+        resp = AskResponse(
+            answer="test",
+            tier=TrustTier.HEDGE,
+            path=AskPath.GROUNDED_DETERMINISTIC,
+            intent=AskIntent.PLACE_IDENTITY,
+            source_ids=["v1"],
+        )
+        svc1.cache.put("q", "r", "v", resp)
+        # svc2 reads from the same cache
+        hit = svc2.cache.get("q", "r", "v")
+        assert hit is not None
+        assert hit.from_cache is True
+
+    def test_shared_budget_persists_across_instances(self):
+        budget = AskBudget()
+        svc1 = AskService(db=FakeDB(), cache=AskCache(), budget=budget)
+        svc2 = AskService(db=FakeDB(), cache=AskCache(), budget=budget)
+        for _ in range(5):
+            svc1.budget.consume("u1", is_anonymous=True)
+        assert svc2.budget.remaining("u1", is_anonymous=True) == 0
+
+
+class TestCacheVersion:
+    """Cache key includes catalog version to invalidate stale data."""
+
+    def test_different_versions_do_not_collide(self):
+        from services.ask_service import _cache_key
+
+        k1 = _cache_key("q", "r", "v", catalog_version="v1")
+        k2 = _cache_key("q", "r", "v", catalog_version="v2")
+        assert k1 != k2
 
 
 class TestNamedPaths:

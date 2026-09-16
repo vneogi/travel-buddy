@@ -327,10 +327,11 @@ async def test_process_event_captures_luang_prabang_context():
     # The response text must not contain Dubai references
     response_lower = result["response"].lower()
     assert "dubai" not in response_lower, "Luang Prabang ask must not mention Dubai"
-    # The ask_response envelope must be present (SPEC-25)
+    # The ask_response envelope MUST be present (SPEC-25 -- not optional)
     ask = result.get("ask_response")
-    if ask:  # Grounded Ask path produces an envelope
-        assert "dubai" not in ask.get("answer", "").lower()
+    assert ask is not None, "ask_response envelope must be present for ASK_INFO"
+    assert "tier" in ask and "path" in ask and "intent" in ask
+    assert "dubai" not in ask.get("answer", "").lower()
 
 
 @pytest.mark.asyncio
@@ -355,4 +356,14 @@ async def test_process_event_fallback_preserves_luang_prabang_on_llm_failure():
     response_lower = result["response"].lower()
     assert "dubai" not in response_lower, (
         "Fallback response must not mention Dubai for a Luang Prabang trip"
+    )
+    # Envelope must still be present even on retrieval miss
+    ask = result.get("ask_response")
+    assert ask is not None, "ask_response must be present on fallback too"
+    assert ask["tier"] in ("hedge", "refuse")
+    assert ask["intent"] in (
+        "place_identity",
+        "opening_hours",
+        "dish_fact",
+        "out_of_scope",
     )

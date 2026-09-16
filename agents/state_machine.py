@@ -33,6 +33,7 @@ from datetime import timedelta as _td
 
 from services.catalog_itinerary import duration_for as _duration_for
 from services.destination_tz import destination_tz as _dest_tz
+from services.destination_tz import to_destination_local as _to_local
 from services.maps_service import maps_service
 from services.opening_hours import HoursResult as _HoursResult
 from services.transit import walking_minutes as _walking_minutes
@@ -939,16 +940,18 @@ class TripStateMachine:
 
         current_summary = None
         if current_node:
+            local_start = _to_local(current_node.scheduled_start, geo_region)
             current_summary = (
                 f"{current_node.venue_name} at "
-                f"{current_node.scheduled_start.strftime('%H:%M')} "
+                f"{local_start.strftime('%H:%M')} "
                 f"({current_node.duration_minutes} min)"
             )
         next_summary = None
         if next_node:
+            local_start = _to_local(next_node.scheduled_start, geo_region)
             next_summary = (
                 f"{next_node.venue_name} at "
-                f"{next_node.scheduled_start.strftime('%H:%M')} "
+                f"{local_start.strftime('%H:%M')} "
                 f"({next_node.duration_minutes} min)"
             )
 
@@ -979,7 +982,15 @@ class TripStateMachine:
         )
 
         state["response"] = ask_resp.answer
-        # Bug #1: structured Ask envelope for downstream
+        # Bug #1: structured Ask envelope for downstream.
+        # Proposal must match PlanChangeProposal schema when present.
+        proposal_dict = None
+        if ask_resp.proposal is not None:
+            proposal_dict = {
+                "event_type": ask_resp.proposal.get("event_type", "swap_activity"),
+                "target_node_id": ask_resp.proposal.get("target_node_id", ""),
+                "summary": ask_resp.proposal.get("summary", ""),
+            }
         state["ask_response"] = {
             "answer": ask_resp.answer,
             "tier": ask_resp.tier.value,
@@ -989,7 +1000,7 @@ class TripStateMachine:
             "source_class": ask_resp.source_class,
             "from_cache": ask_resp.from_cache,
             "fallback_reason": ask_resp.fallback_reason,
-            "proposal": ask_resp.proposal,
+            "proposal": proposal_dict,
             "food_disclaimer": ask_resp.food_disclaimer,
         }
         return state
