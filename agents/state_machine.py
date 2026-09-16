@@ -27,6 +27,7 @@ from models.schemas import (
 )
 from services.db_provider import db_service
 from services.cache_service import cache_service
+from services.ask_service import AskService, AskPath
 import math
 from datetime import timedelta as _td
 
@@ -799,6 +800,10 @@ class TripStateMachine:
             state["response"] = "Booking removed from your itinerary."
             return state
 
+        # SPEC-25: Grounded trip-scoped Ask -- retrieval-first
+        if state["event_type"] == EventType.ASK_INFO.value:
+            return await self._handle_grounded_ask(state)
+
         if state.get("breaker_tripped"):
             state["response"] = self._fallback_response(state)
             return state
@@ -895,6 +900,86 @@ class TripStateMachine:
 
         return state
 
+    async def _handle_grounded_ask(self, state: Dict) -> Dict:
+        """SPEC-25: Grounded trip-scoped Ask via retrieval-first pipeline.
+
+        Ask never persists itinerary nodes. Mutations return a proposal
+        for the confirmation sheet.
+        """
+        trip = state["trip_state"]
+        now_utc = state.get("now_utc") or datetime.now(timezone.utc)
+        target_id = state.get("target_node_id")
+
+        current_node = None
+        next_node = None
+        if target_id:
+            current_node = next((n for n in trip.nodes if n.node_id == target_id), None)
+        if current_node is None:
+            current_node = _current_or_next_pending(trip.nodes, now_utc)
+        if current_node:
+            next_node = _next_eligible_pending(trip.nodes, current_node, now_utc)
+
+        geo_region = getattr(current_node, "geo_region", None) or trip.geo_region or ""
+        venue_name = current_node.venue_name if current_node else None
+        venue_id = getattr(current_node, "venue_id", None) if current_node else None
+        next_venue_name = next_node.venue_name if next_node else None
+
+        current_summary = None
+        if current_node:
+            current_summary = (
+                f"{current_node.venue_name} at "
+                f"{current_node.scheduled_start.strftime('%H:%M')} "
+                f"({current_node.duration_minutes} min)"
+            )
+        next_summary = None
+        if next_node:
+            next_summary = (
+                f"{next_node.venue_name} at "
+                f"{next_node.scheduled_start.strftime('%H:%M')} "
+                f"({next_node.duration_minutes} min)"
+            )
+
+        # Lazy-init the ask service (dish glossary loaded once)
+        if not hasattr(self, "_ask_service"):
+            dish_glossary = _load_dish_glossary(geo_region)
+            self._ask_service = AskService(
+                llm_service=llm_service,
+                db=db_service,
+                dish_glossary=dish_glossary,
+            )
+
+        user_id = state.get("user_id", "anonymous")
+        is_anonymous = state.get("is_anonymous", True)
+        llm_key_present = bool(settings.litellm_api_key or settings.gemini_api_key)
+
+        ask_resp = await self._ask_service.handle_ask(
+            question=state["message"],
+            geo_region=geo_region,
+            user_id=user_id,
+            is_anonymous=is_anonymous,
+            venue_name=venue_name,
+            venue_id=venue_id or "",
+            next_venue_name=next_venue_name,
+            current_node_summary=current_summary,
+            next_node_summary=next_summary,
+            llm_key_present=llm_key_present,
+        )
+
+        state["response"] = ask_resp.answer
+        # Attach structured Ask envelope for client rendering
+        state["ask_response"] = {
+            "answer": ask_resp.answer,
+            "tier": ask_resp.tier.value,
+            "path": ask_resp.path.value,
+            "intent": ask_resp.intent.value,
+            "source_ids": ask_resp.source_ids,
+            "source_class": ask_resp.source_class,
+            "from_cache": ask_resp.from_cache,
+            "fallback_reason": ask_resp.fallback_reason,
+        }
+        # SPEC-25: Ask never persists itinerary nodes.
+        return state
+
     def _fallback_response(self, state: Dict) -> str:
         return (
             "I couldn't safely rework the schedule around your locked "
@@ -902,6 +987,27 @@ class TripStateMachine:
             "different activity, a nearer venue, or freeing up a locked slot. "
             "Your locked reservations remain intact."
         )
+
+
+def _load_dish_glossary(geo_region: str) -> Optional[Dict]:
+    """Load the dish glossary for the given region."""
+    import json
+    from pathlib import Path
+
+    data_dir = Path(__file__).resolve().parent.parent / "data"
+    # Try region-specific glossary first
+    for candidate in [
+        data_dir / f"{geo_region}_dish_glossary.json",
+        data_dir / "laos_dish_glossary.json",
+    ]:
+        if candidate.exists():
+            with open(candidate) as f:
+                glossary = json.load(f)
+            # Only return if region matches
+            region_key = glossary.get("geo_region", glossary.get("region", ""))
+            if region_key and (region_key in geo_region or geo_region in region_key):
+                return glossary
+    return None
 
 
 # Singleton instance

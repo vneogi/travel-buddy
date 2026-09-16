@@ -604,6 +604,7 @@ async def process_trip_event(
         reroutes_remaining=remaining,
         food_disclaimer=FOOD_DISCLAIMER,
         schedule_warnings=result.get("schedule_warnings") or [],
+        ask_response=result.get("ask_response"),
     )
 
 

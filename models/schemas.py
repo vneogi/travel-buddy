@@ -251,6 +251,8 @@ class TripEventResponse(BaseModel):
     food_disclaimer: Optional[str] = None
     # SPEC-37: Structured schedule warnings (replaces inline concatenation).
     schedule_warnings: List[str] = []
+    # SPEC-25: Grounded Ask response envelope.
+    ask_response: Optional[Dict[str, Any]] = None
 
 
 class CreatePreferences(BaseModel):
