@@ -62,6 +62,77 @@ physical point of intent that we do not. That assessment was about serving
 travellers *inside* India. This decision is about serving Indian travellers
 *abroad*, which is a different and less contested position.
 
+### September 2026 category read
+
+Open-ended competitive research broadens the threat beyond a regional app:
+
+- **Mindtrip** competes on breadth: a large POI corpus, visual planning,
+  collaboration, booking and a unified trip surface.
+- **Layla** competes from inspiration to transaction: visual discovery,
+  conversational refinement and live booking partners.
+- **Stardrift** is the nearest product-pattern overlap: booking import,
+  calendar-aware context, an editable itinerary and linked live map.
+- **General assistants such as Instinct and Poke** may own the interface through
+  SMS, WhatsApp or another existing channel, then delegate fulfilment to travel
+  providers.
+
+This is a dated directional read, not diligence. Mindtrip's published POI scale
+and investment are corroborated, but a cited 350,000 MAU figure was not.
+Layla's trip count and rating are company claims. Stardrift's advertised
+features are visible, but claims of broad commercial success were not
+independently established. None of these products discloses enough architecture
+to conclude that a multi-agent framework caused its traction.
+
+The implication is not that the category is empty. Planning, booking import,
+maps, conversational editing and personalisation are active competitive
+surfaces. Travel Buddy therefore does not position as the only product with
+on-trip capability. It positions around a narrower job:
+
+> **Keep the traveller's day feasible when reality changes.**
+
+That claim must be earned through safe recovery around locked bookings,
+deterministic constraint validity, explicit confirmation, offline continuity
+and sourced local information in corridors where those properties matter. In
+market language, lead with the traveller outcome ("my day broke and the app
+helped me recover"), not "AI agents," orchestration frameworks or model names.
+
+### Product patterns to borrow
+
+Borrow proven interaction patterns while preserving our product boundary:
+
+1. **Linked map and timeline:** a move should reveal both route and schedule
+   consequences, as structured editors such as Stardrift demonstrate.
+2. **Confirmation-to-anchor:** imported booking text becomes typed, reviewable
+   fixed context; SPEC-10 is the entry, not autonomous inbox access.
+3. **Structured proposal cards:** show what changes, why, the evidence and the
+   confirmation action instead of returning a chat paragraph.
+4. **One trip hub:** itinerary, bookings, context and offline artifacts should
+   feel like one product even when backed by separate authorities.
+5. **Low-friction conversational entry:** chat or a future messaging channel may
+   invoke the same closed typed commands; the channel never becomes the trip
+   authority.
+
+Do not infer build order from this list. Each pattern still needs a validated
+user problem and its own SPEC. Do not borrow unconfirmed automatic mutation,
+opaque cross-trip memory, broad booking inventory as the first battleground, or
+a multi-agent runtime as product differentiation.
+
+### What this changes in go-to-market proof
+
+Generated itinerary count is not competitive proof. Before claiming a moat,
+measure:
+
+- on-trip reopen and second-trip return;
+- feasible proposals accepted and rejected, with the full exposure and reason
+  record needed to interpret the outcome;
+- broken-lock and infeasible-mutation rates;
+- successful offline access and recovery actions;
+- correction latency and claim freshness within each city pack.
+
+The acquisition wedge remains the Offline Vault for the backpacker corridor and
+confirmation import for booking-heavy travellers. These are useful before the
+flywheel has density and lead naturally into the recovery job we intend to own.
+
 ## The corridor: six cities after Laos
 
 Dubai, Bangkok, Singapore, Baku, Tbilisi, Almaty.
