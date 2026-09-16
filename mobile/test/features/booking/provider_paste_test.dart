@@ -113,10 +113,12 @@ List<FixtureCase> loadFixtures(String fixtureRoot) {
     // Validate exact root keys: provider + 7 fields, nothing else.
     final expectedRootKeys = {'provider', ..._requiredFields};
     final actualRootKeys = expectedJson.keys.toSet();
-    if (actualRootKeys != expectedRootKeys) {
+    final extraRootKeys = actualRootKeys.difference(expectedRootKeys);
+    final missingRootKeys = expectedRootKeys.difference(actualRootKeys);
+    if (extraRootKeys.isNotEmpty || missingRootKeys.isNotEmpty) {
       fail('$name: root keys mismatch \u2014 '
-          'extra: ${actualRootKeys.difference(expectedRootKeys)}, '
-          'missing: ${expectedRootKeys.difference(actualRootKeys)}');
+          'extra: $extraRootKeys, '
+          'missing: $missingRootKeys');
     }
 
     // Validate provider.
@@ -132,11 +134,13 @@ List<FixtureCase> loadFixtures(String fixtureRoot) {
 
       // Each field must have exactly {value, quality}.
       final fieldKeys = entry.keys.toSet();
-      const expectedFieldKeys = {'value', 'quality'};
-      if (fieldKeys != expectedFieldKeys) {
+      final expectedFieldKeys = const {'value', 'quality'};
+      final extraFieldKeys = fieldKeys.difference(expectedFieldKeys);
+      final missingFieldKeys = expectedFieldKeys.difference(fieldKeys);
+      if (extraFieldKeys.isNotEmpty || missingFieldKeys.isNotEmpty) {
         fail('$name.$field: field keys mismatch \u2014 '
-            'extra: ${fieldKeys.difference(expectedFieldKeys)}, '
-            'missing: ${expectedFieldKeys.difference(fieldKeys)}');
+            'extra: $extraFieldKeys, '
+            'missing: $missingFieldKeys');
       }
 
       final quality = entry['quality'] as String?;
@@ -208,7 +212,7 @@ void assertField<T>(
 // ================================================================
 
 void main() {
-  final fixtureRoot = 'test/fixtures/booking_parser';
+  const fixtureRoot = 'test/fixtures/booking_parser';
 
   // ================================================================
   // Path normalization proof

@@ -10,6 +10,20 @@ import 'package:travel_buddy/offline/offline_database.dart';
 import 'package:travel_buddy/services/signal_service.dart';
 
 // ================================================================
+// Test helpers
+// ================================================================
+
+/// Scroll a control into view, settle, tap it, and settle again.
+/// Never uses warnIfMissed: false -- the control must actually
+/// receive the tap.
+Future<void> tapVisible(WidgetTester tester, Finder finder) async {
+  await tester.ensureVisible(finder);
+  await tester.pumpAndSettle();
+  await tester.tap(finder);
+  await tester.pumpAndSettle();
+}
+
+// ================================================================
 // Test doubles
 // ================================================================
 
@@ -128,8 +142,7 @@ void main() {
       await tester.pumpWidget(buildSheet());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Paste confirmation text'));
-      await tester.pumpAndSettle();
+      await tapVisible(tester, find.text('Paste confirmation text'));
 
       const bookingText =
           'Booking.com\n'
@@ -139,8 +152,7 @@ void main() {
           'Dubai, UAE\nBooking reference: HTL7890123';
       await tester.enterText(find.byType(TextField).last, bookingText);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Auto-fill from paste'));
-      await tester.pumpAndSettle();
+      await tapVisible(tester, find.text('Auto-fill from paste'));
 
       expect(find.byKey(const Key('extraction_review')), findsOneWidget);
       expect(find.textContaining('Provider: Booking.com'), findsOneWidget);
@@ -151,15 +163,14 @@ void main() {
       await tester.pumpWidget(buildSheet());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Paste confirmation text'));
-      await tester.pumpAndSettle();
+      await tapVisible(tester, find.text('Paste confirmation text'));
+
       await tester.enterText(
         find.byType(TextField).last,
         'Hello! How are you? Visit our website.',
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Auto-fill from paste'));
-      await tester.pumpAndSettle();
+      await tapVisible(tester, find.text('Auto-fill from paste'));
 
       expect(find.byKey(const Key('extraction_no_fields')), findsOneWidget);
     }, timeout: const Timeout(Duration(seconds: 20)));
@@ -174,8 +185,7 @@ void main() {
       await tester.pumpWidget(buildSheet());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Paste confirmation text'));
-      await tester.pumpAndSettle();
+      await tapVisible(tester, find.text('Paste confirmation text'));
 
       const genericText =
           'Your reservation is ready\n'
@@ -185,8 +195,7 @@ void main() {
           'Confirmation code: RSV12345\nDubai, UAE';
       await tester.enterText(find.byType(TextField).last, genericText);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Auto-fill from paste'));
-      await tester.pumpAndSettle();
+      await tapVisible(tester, find.text('Auto-fill from paste'));
 
       expect(find.byKey(const Key('extraction_review')), findsOneWidget);
       expect(find.byKey(const Key('extraction_partial')), findsOneWidget);
@@ -205,8 +214,7 @@ void main() {
         await tester.pumpWidget(buildSheet());
         await tester.pumpAndSettle();
 
-        await tester.tap(find.text('Paste confirmation text'));
-        await tester.pumpAndSettle();
+        await tapVisible(tester, find.text('Paste confirmation text'));
 
         // First parse: good Booking.com data
         const goodText =
@@ -217,8 +225,7 @@ void main() {
             'Dubai, UAE\nBooking reference: HTL7890123';
         await tester.enterText(find.byType(TextField).last, goodText);
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Auto-fill from paste'));
-        await tester.pumpAndSettle();
+        await tapVisible(tester, find.text('Auto-fill from paste'));
         expect(find.byKey(const Key('extraction_review')), findsOneWidget);
 
         // Second parse: junk data
@@ -227,8 +234,7 @@ void main() {
           'Total junk, no booking info.',
         );
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Auto-fill from paste'));
-        await tester.pumpAndSettle();
+        await tapVisible(tester, find.text('Auto-fill from paste'));
 
         expect(find.byKey(const Key('extraction_no_fields')), findsOneWidget);
         expect(find.byKey(const Key('extraction_review')), findsNothing,
@@ -236,8 +242,7 @@ void main() {
 
         // Title field still has the venue from the first parse.
         // Save must succeed deterministically.
-        await tester.tap(find.text('Save Anchor'));
-        await tester.pumpAndSettle();
+        await tapVisible(tester, find.text('Save Anchor'));
 
         // Assert exactly one signal call with importSource=manual.
         expect(signalService.calls, hasLength(1),
@@ -265,8 +270,7 @@ void main() {
         await tester.pumpWidget(buildSheet());
         await tester.pumpAndSettle();
 
-        await tester.tap(find.text('Paste confirmation text'));
-        await tester.pumpAndSettle();
+        await tapVisible(tester, find.text('Paste confirmation text'));
 
         const footerText =
             'Agoda.com\nManage your booking\n'
@@ -276,8 +280,7 @@ void main() {
             'https://www.agoda.com/mybooking';
         await tester.enterText(find.byType(TextField).last, footerText);
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Auto-fill from paste'));
-        await tester.pumpAndSettle();
+        await tapVisible(tester, find.text('Auto-fill from paste'));
 
         // Footer may populate confirmation code, but venue/title is empty.
         final titleFields = find.widgetWithText(TextField, 'Title / Venue');
@@ -287,8 +290,7 @@ void main() {
         }
 
         // Try to save.
-        await tester.tap(find.text('Save Anchor'));
-        await tester.pumpAndSettle();
+        await tapVisible(tester, find.text('Save Anchor'));
 
         // Save blocked with error.
         expect(find.textContaining('Property name is required'), findsOneWidget,
