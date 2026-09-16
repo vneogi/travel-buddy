@@ -27,7 +27,7 @@ from models.schemas import (
 )
 from services.db_provider import db_service
 from services.cache_service import cache_service
-from services.ask_service import AskService, AskPath
+from services.ask_service import AskService, AskPath, load_dish_glossary
 import math
 from datetime import timedelta as _td
 
@@ -200,6 +200,8 @@ class TripStateMachine:
         target_node_id: Optional[str] = None,
         preferences: Optional[dict] = None,
         now_utc: Optional[datetime] = None,
+        user_id: str = "anonymous",
+        is_anonymous: bool = True,
     ) -> Dict:
         state = {
             "trip_state": trip_state,
@@ -216,18 +218,25 @@ class TripStateMachine:
             "schedule_warnings": [],
             "breaker_tripped": False,
             "no_candidates": False,
+            "user_id": user_id,
+            "is_anonymous": is_anonymous,
         }
 
+        # Bug #4: ASK_INFO bypasses legacy semantic cache entirely
+        is_ask = event_type == EventType.ASK_INFO.value
+
         state = self._node_classify_intent(state)
-        state = self._node_check_cache(state)
+        if not is_ask:
+            state = self._node_check_cache(state)
 
         if not state["from_cache"]:
             state = self._node_venue_search(state)
             state = self._node_apply_structural(state)
             state = await self._node_generate_response(state)
-            # Only cache LIGHT (informational) responses \u2014 never mutations.
+            # Only cache non-ASK LIGHT responses -- never mutations.
             if (
-                state["routing_tier"] == RoutingTier.LIGHT
+                not is_ask
+                and state["routing_tier"] == RoutingTier.LIGHT
                 and state["event_type"] not in STRUCTURAL_EDIT_EVENTS
             ):
                 trip = state["trip_state"]
@@ -242,7 +251,8 @@ class TripStateMachine:
                     venue_name=venue,
                 )
 
-        return {
+        # Bug #1: copy ask_response onto return dict
+        result = {
             "updated_trip_state": state["trip_state"],
             "response": state["response"],
             "routing_tier_used": state["routing_tier"].value,
@@ -250,6 +260,9 @@ class TripStateMachine:
             "venues_found": state["venues_found"],
             "schedule_warnings": state.get("schedule_warnings") or [],
         }
+        if "ask_response" in state:
+            result["ask_response"] = state["ask_response"]
+        return result
 
     # =========================================================================
     # Graph Nodes
@@ -939,20 +952,19 @@ class TripStateMachine:
                 f"({next_node.duration_minutes} min)"
             )
 
-        # Lazy-init the ask service (dish glossary loaded once)
-        if not hasattr(self, "_ask_service"):
-            dish_glossary = _load_dish_glossary(geo_region)
-            self._ask_service = AskService(
-                llm_service=llm_service,
-                db=db_service,
-                dish_glossary=dish_glossary,
-            )
+        # Bug #9: per-request glossary, exact region match
+        dish_glossary = load_dish_glossary(geo_region)
+        ask_svc = AskService(
+            llm_service=llm_service,
+            db=db_service,
+            dish_glossary=dish_glossary,
+        )
 
         user_id = state.get("user_id", "anonymous")
         is_anonymous = state.get("is_anonymous", True)
         llm_key_present = bool(settings.litellm_api_key or settings.gemini_api_key)
 
-        ask_resp = await self._ask_service.handle_ask(
+        ask_resp = await ask_svc.handle_ask(
             question=state["message"],
             geo_region=geo_region,
             user_id=user_id,
@@ -963,10 +975,11 @@ class TripStateMachine:
             current_node_summary=current_summary,
             next_node_summary=next_summary,
             llm_key_present=llm_key_present,
+            target_node_id=state.get("target_node_id"),
         )
 
         state["response"] = ask_resp.answer
-        # Attach structured Ask envelope for client rendering
+        # Bug #1: structured Ask envelope for downstream
         state["ask_response"] = {
             "answer": ask_resp.answer,
             "tier": ask_resp.tier.value,
@@ -976,8 +989,9 @@ class TripStateMachine:
             "source_class": ask_resp.source_class,
             "from_cache": ask_resp.from_cache,
             "fallback_reason": ask_resp.fallback_reason,
+            "proposal": ask_resp.proposal,
+            "food_disclaimer": ask_resp.food_disclaimer,
         }
-        # SPEC-25: Ask never persists itinerary nodes.
         return state
 
     def _fallback_response(self, state: Dict) -> str:
@@ -987,27 +1001,6 @@ class TripStateMachine:
             "different activity, a nearer venue, or freeing up a locked slot. "
             "Your locked reservations remain intact."
         )
-
-
-def _load_dish_glossary(geo_region: str) -> Optional[Dict]:
-    """Load the dish glossary for the given region."""
-    import json
-    from pathlib import Path
-
-    data_dir = Path(__file__).resolve().parent.parent / "data"
-    # Try region-specific glossary first
-    for candidate in [
-        data_dir / f"{geo_region}_dish_glossary.json",
-        data_dir / "laos_dish_glossary.json",
-    ]:
-        if candidate.exists():
-            with open(candidate) as f:
-                glossary = json.load(f)
-            # Only return if region matches
-            region_key = glossary.get("geo_region", glossary.get("region", ""))
-            if region_key and (region_key in geo_region or geo_region in region_key):
-                return glossary
-    return None
 
 
 # Singleton instance

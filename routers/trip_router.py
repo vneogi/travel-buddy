@@ -430,8 +430,10 @@ async def get_trip(trip_id: str, user_id: str = Depends(get_current_user_id)):
 @router.post("/trip/event", response_model=TripEventResponse)
 async def process_trip_event(
     request: TripEventRequest,
-    user_id: str = Depends(get_current_user_id),
+    identity: "ResolvedIdentity" = Depends(resolve_identity),
 ):
+    user_id = identity.user_id
+    is_anonymous = identity.identity_kind == "anonymous"
     """Process a trip event with the full guardrail stack."""
 
     # --- Ownership: authorize before doing any work or consuming quota ---
@@ -571,18 +573,23 @@ async def process_trip_event(
                 },
             )
 
-    # Levers 2-5 are handled inside the state machine / router agent / search.
+    # Bug #3: pass authenticated identity into process_event
     result = await state_machine.process_event(
         trip_state=trip,
         event_type=request.event_type.value,
         message=request.message,
         target_node_id=request.target_node_id,
         preferences=request.preferences,
+        user_id=user_id,
+        is_anonymous=is_anonymous,
     )
 
+    # Bug #2: ASK_INFO does not save_trip or bump updated_at
+    is_ask = request.event_type == EventType.ASK_INFO
     updated_trip = result["updated_trip_state"]
-    updated_trip.updated_at = datetime.now(tz=timezone.utc)
-    db_service.save_trip(updated_trip)
+    if not is_ask:
+        updated_trip.updated_at = datetime.now(tz=timezone.utc)
+        db_service.save_trip(updated_trip)
 
     db_service.log_event(
         user_id=user_id,
@@ -598,7 +605,7 @@ async def process_trip_event(
         trip_id=request.trip_id,
         status="processed",
         message=result["response"],
-        updated_nodes=updated_trip.nodes,
+        updated_nodes=[] if is_ask else updated_trip.nodes,
         routing_tier_used=result["routing_tier_used"],
         from_cache=result["from_cache"],
         reroutes_remaining=remaining,

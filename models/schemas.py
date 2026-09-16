@@ -237,6 +237,21 @@ class TripEventRequest(BaseModel):
     preferences: Optional[dict] = None
 
 
+class AskResponseEnvelope(BaseModel):
+    """SPEC-25: Typed Ask response envelope."""
+
+    answer: str
+    tier: str
+    path: str
+    intent: str
+    source_ids: List[str] = []
+    source_class: str = ""
+    from_cache: bool = False
+    fallback_reason: str = ""
+    proposal: Optional[Dict[str, Any]] = None
+    food_disclaimer: Optional[str] = None
+
+
 class TripEventResponse(BaseModel):
     """Response after processing a trip event."""
 
@@ -247,12 +262,9 @@ class TripEventResponse(BaseModel):
     routing_tier_used: str = "light"
     from_cache: bool = False
     reroutes_remaining: Optional[int] = None
-    # SPEC-14: food disclaimer at the point of the recommendation.
     food_disclaimer: Optional[str] = None
-    # SPEC-37: Structured schedule warnings (replaces inline concatenation).
     schedule_warnings: List[str] = []
-    # SPEC-25: Grounded Ask response envelope.
-    ask_response: Optional[Dict[str, Any]] = None
+    ask_response: Optional[AskResponseEnvelope] = None
 
 
 class CreatePreferences(BaseModel):

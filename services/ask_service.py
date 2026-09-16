@@ -1,19 +1,27 @@
-"""SPEC-25: Grounded trip-scoped Ask service.
+"""SPEC-25: Grounded trip-scoped Ask service (correction pass).
 
-Retrieval-first query: classify -> retrieve -> answer (or refuse).
-Ask never persists itinerary rows. Mutations stay HITL on the
-existing event path.
+Retrieval-first query: classify -> retrieve -> template (or refuse).
+Ask never persists itinerary rows. Mutations stay HITL.
 
-Guard order: exact cache -> per-identity budget -> circuit breaker -> model.
+This slice: NO llm.complete calls. Deterministic templates or refuse.
+SPEC-14: never emit suitable_for / dietary suitability claims.
+SPEC-43: question text never stored in telemetry or cache keys.
+SPEC-41: prefer structured hours; flat defaults get hedge/refuse.
 """
 
 from __future__ import annotations
 
 import hashlib
+import json
+import logging
 import time
 from dataclasses import dataclass, field
 from enum import Enum
+from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+
+logger = logging.getLogger("ask_service")
 
 
 # ---------------------------------------------------------------------------
@@ -61,6 +69,7 @@ class AskPath(str, Enum):
     BUDGET_EXHAUSTED = "budget_exhausted"
     BREAKER_OPEN = "breaker_open"
     MODEL_ERROR_FALLBACK = "model_error_fallback"
+    OUT_OF_SCOPE = "out_of_scope"
 
 
 @dataclass
@@ -75,6 +84,8 @@ class AskResponse:
     source_class: str = ""
     from_cache: bool = False
     fallback_reason: str = ""
+    proposal: Optional[Dict[str, Any]] = None
+    food_disclaimer: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------
@@ -114,7 +125,7 @@ class AskBudget:
     """In-memory per-identity Ask budget.
 
     Anonymous identities get a lower ceiling.
-    Budget is consumed *before* the model call.
+    Deterministic/cache answers never consume budget.
     """
 
     def __init__(self) -> None:
@@ -146,8 +157,17 @@ def _cache_key(question: str, geo_region: str, venue_id: str) -> str:
     return hashlib.sha256(raw.encode()).hexdigest()
 
 
+_CACHEABLE_INTENTS = frozenset(
+    {AskIntent.PLACE_IDENTITY, AskIntent.OPENING_HOURS, AskIntent.DISH_FACT}
+)
+
+
 class AskCache:
-    """Exact-match public-fact cache. Not identity-scoped (public catalog only)."""
+    """Exact-match public-fact cache.
+
+    Never caches TRIP_CURRENT_NEXT, PLAN_CHANGE, OUT_OF_SCOPE,
+    refusals, or model-phrased prose.
+    """
 
     def __init__(self) -> None:
         self._store: Dict[str, AskResponse] = {}
@@ -165,10 +185,22 @@ class AskCache:
                 source_ids=list(hit.source_ids),
                 source_class=hit.source_class,
                 from_cache=True,
+                food_disclaimer=hit.food_disclaimer,
             )
         return None
 
-    def put(self, question: str, geo_region: str, venue_id: str, response: AskResponse) -> None:
+    def put(
+        self,
+        question: str,
+        geo_region: str,
+        venue_id: str,
+        response: AskResponse,
+    ) -> None:
+        """Store only if the response is safe to cache."""
+        if response.intent not in _CACHEABLE_INTENTS:
+            return
+        if response.path != AskPath.GROUNDED_DETERMINISTIC:
+            return
         key = _cache_key(question, geo_region, venue_id)
         self._store[key] = response
 
@@ -203,11 +235,16 @@ _DISH_KEYWORDS = {
     "recommend food",
     "street food",
     "what should i eat",
+}
+_DIETARY_KEYWORDS = {
     "halal",
     "vegetarian",
     "vegan",
     "allergy",
     "allergen",
+    "gluten free",
+    "kosher",
+    "dairy free",
 }
 _PLACE_KEYWORDS = {
     "where is",
@@ -255,7 +292,7 @@ def classify_ask_intent(message: str) -> AskIntent:
     scores = {
         AskIntent.PLAN_CHANGE: _score(_PLAN_CHANGE_KEYWORDS),
         AskIntent.OPENING_HOURS: _score(_HOURS_KEYWORDS),
-        AskIntent.DISH_FACT: _score(_DISH_KEYWORDS),
+        AskIntent.DISH_FACT: _score(_DISH_KEYWORDS) + _score(_DIETARY_KEYWORDS),
         AskIntent.PLACE_IDENTITY: _score(_PLACE_KEYWORDS),
         AskIntent.TRIP_CURRENT_NEXT: _score(_CURRENT_NEXT_KEYWORDS),
     }
@@ -266,8 +303,14 @@ def classify_ask_intent(message: str) -> AskIntent:
     return best
 
 
+def _is_dietary_question(message: str) -> bool:
+    """Check if the question is specifically about dietary suitability."""
+    lower = message.lower()
+    return any(kw in lower for kw in _DIETARY_KEYWORDS)
+
+
 # ---------------------------------------------------------------------------
-# Catalog retrieval
+# Catalog retrieval (SPEC-14: no suitable_for, SPEC-41: structured hours)
 # ---------------------------------------------------------------------------
 
 
@@ -297,6 +340,9 @@ def retrieve_catalog_facts(
     """
     facts: List[CatalogFact] = []
 
+    if not geo_region:
+        return facts  # Empty region is always a miss
+
     # Find the venue in the catalog by name + region
     venue = None
     if venue_name:
@@ -324,15 +370,32 @@ def retrieve_catalog_facts(
         )
 
     elif intent == AskIntent.OPENING_HOURS and venue:
-        hours = venue.get("opening_hours", "")
-        if hours:
+        structured = venue.get("opening_hours_structured")
+        flat_hours = venue.get("opening_hours", "")
+        _dflt = {"09:00-23:00", "09:00-22:00", "08:00-22:00"}
+
+        if structured:
             facts.append(
                 CatalogFact(
                     fact_type="opening_hours",
                     text=(
-                        f"{venue['name']} recorded hours: {hours}. "
-                        "These are catalog hours and may not reflect holidays or "
-                        "temporary closures -- verify locally."
+                        f"{venue['name']} catalog hours: {flat_hours}. "
+                        "These are catalog hours and may not reflect "
+                        "holidays or temporary closures -- verify locally."
+                    ),
+                    source_id=venue.get("venue_id", venue["name"]),
+                    source_class="curated_catalog",
+                    geo_region=geo_region,
+                )
+            )
+        elif flat_hours and flat_hours not in _dflt:
+            facts.append(
+                CatalogFact(
+                    fact_type="opening_hours",
+                    text=(
+                        f"{venue['name']} recorded hours: {flat_hours}. "
+                        "These are catalog hours and may not reflect "
+                        "holidays or temporary closures -- verify locally."
                     ),
                     source_id=venue.get("venue_id", venue["name"]),
                     source_class="curated_catalog",
@@ -363,12 +426,10 @@ def retrieve_catalog_facts(
                     ):
                         desc = dish.get("description", "")
                         contains = dish.get("contains", [])
-                        suitable = dish.get("suitable_for", [])
+                        # SPEC-14: NEVER include suitable_for
                         text_parts = [f"{dish.get('name_en', '')}: {desc}"]
                         if contains:
                             text_parts.append(f"Contains: {', '.join(contains)}")
-                        if suitable:
-                            text_parts.append(f"Suitable for: {', '.join(suitable)}")
                         facts.append(
                             CatalogFact(
                                 fact_type="dish",
@@ -395,11 +456,9 @@ def _region_matches(glossary_region: str, trip_region: str) -> bool:
     """
     if not glossary_region or not trip_region:
         return False
-    return (
-        glossary_region == trip_region
-        or glossary_region in trip_region
-        or trip_region in glossary_region
-    )
+    if glossary_region == trip_region:
+        return True
+    return glossary_region in trip_region.split("_")
 
 
 # ---------------------------------------------------------------------------
@@ -446,14 +505,42 @@ def format_deterministic_answer(
 
 
 # ---------------------------------------------------------------------------
-# Core Ask handler
+# Dish glossary loader (per-request, exact region match)
 # ---------------------------------------------------------------------------
+
+
+def load_dish_glossary(geo_region: str) -> Optional[Dict]:
+    """Load the dish glossary for the given region."""
+    if not geo_region:
+        return None
+    data_dir = Path(__file__).resolve().parent.parent / "data"
+    exact = data_dir / f"{geo_region}_dish_glossary.json"
+    if exact.exists():
+        with open(exact) as f:
+            return json.load(f)
+    for candidate in sorted(data_dir.glob("*_dish_glossary.json")):
+        with open(candidate) as f:
+            glossary = json.load(f)
+        region_key = glossary.get("geo_region", glossary.get("region", ""))
+        if _region_matches(region_key, geo_region):
+            return glossary
+    return None
+
+
+# ---------------------------------------------------------------------------
+# Core Ask handler (no llm.complete this slice)
+# ---------------------------------------------------------------------------
+
+try:
+    from config.disclaimers import FOOD_DISCLAIMER as _FOOD_DISCLAIMER
+except ImportError:
+    _FOOD_DISCLAIMER = "Confirm ingredients with the venue."
 
 
 class AskService:
     """SPEC-25 grounded trip-scoped Ask.
 
-    Guard order: exact cache -> budget -> circuit breaker -> model.
+    This slice: deterministic templates or refuse. No llm.complete.
     """
 
     def __init__(
@@ -478,8 +565,21 @@ class AskService:
     def _breaker_open(self) -> bool:
         return self._breaker_failures >= self._breaker_threshold
 
-    def _record_telemetry(self, t: AskTelemetry) -> None:
+    def _emit_telemetry(self, t: AskTelemetry) -> None:
+        """Emit telemetry record. SPEC-43: no question text."""
         self._telemetry_log.append(t)
+        logger.info(
+            "ask_telemetry",
+            extra={
+                "intent": t.intent,
+                "path": t.path,
+                "geo_region": t.geo_region,
+                "source_ids": t.source_ids,
+                "cache_status": t.cache_status,
+                "fallback_reason": t.fallback_reason,
+                "latency_ms": t.latency_ms,
+            },
+        )
 
     async def handle_ask(
         self,
@@ -493,11 +593,11 @@ class AskService:
         current_node_summary: Optional[str] = None,
         next_node_summary: Optional[str] = None,
         llm_key_present: bool = False,
+        target_node_id: Optional[str] = None,
     ) -> AskResponse:
         """Handle a trip-scoped Ask question.
 
-        Returns a grounded response or a named refusal.
-        Never persists itinerary nodes.
+        No llm.complete this slice. Deterministic templates or refuse.
         """
         t0 = time.monotonic()
         tel = AskTelemetry(geo_region=geo_region)
@@ -506,33 +606,86 @@ class AskService:
         intent = classify_ask_intent(question)
         tel.intent = intent.value
 
-        # Plan-change: return proposal for confirmation sheet
-        if intent == AskIntent.PLAN_CHANGE:
+        # OUT_OF_SCOPE: refuse immediately
+        if intent == AskIntent.OUT_OF_SCOPE:
             resp = AskResponse(
                 answer=(
-                    "That sounds like a plan change. Use the trip controls to "
-                    "swap, cancel, or add activities -- changes require your "
-                    "confirmation before they take effect."
+                    "I can help with questions about your trip venues, "
+                    "hours, and local food. For other topics, try a "
+                    "general search."
                 ),
-                tier=TrustTier.DEFER,
-                path=AskPath.GROUNDED_DETERMINISTIC,
+                tier=TrustTier.REFUSE,
+                path=AskPath.OUT_OF_SCOPE,
                 intent=intent,
             )
             tel.path = resp.path.value
             tel.latency_ms = (time.monotonic() - t0) * 1000
-            self._record_telemetry(tel)
+            self._emit_telemetry(tel)
             return resp
 
-        # 2. Exact cache check
-        cached = self.cache.get(question, geo_region, venue_id or "")
-        if cached is not None:
-            tel.path = AskPath.CACHE_HIT.value
-            tel.cache_status = "hit"
+        # PLAN_CHANGE: typed HITL proposal, never mutate
+        if intent == AskIntent.PLAN_CHANGE:
+            resp = AskResponse(
+                answer=("That sounds like a plan change. I'll prepare a proposal for your review."),
+                tier=TrustTier.DEFER,
+                path=AskPath.GROUNDED_DETERMINISTIC,
+                intent=intent,
+                proposal={
+                    "event_type": "swap_activity",
+                    "target_node_id": target_node_id or "",
+                    "summary": (
+                        "Swap the current activity for an alternative. "
+                        "Confirm on the trip controls to apply."
+                    ),
+                },
+            )
+            tel.path = resp.path.value
             tel.latency_ms = (time.monotonic() - t0) * 1000
-            self._record_telemetry(tel)
-            return cached
+            self._emit_telemetry(tel)
+            return resp
 
-        # 3. Retrieve catalog facts
+        # Cache check (only catalog intents)
+        if intent in _CACHEABLE_INTENTS:
+            cached = self.cache.get(question, geo_region, venue_id or "")
+            if cached is not None:
+                tel.path = AskPath.CACHE_HIT.value
+                tel.cache_status = "hit"
+                tel.latency_ms = (time.monotonic() - t0) * 1000
+                self._emit_telemetry(tel)
+                return cached
+
+        # TRIP_CURRENT_NEXT: template from node summaries, never cached
+        if intent == AskIntent.TRIP_CURRENT_NEXT:
+            det = format_deterministic_answer(
+                intent=intent,
+                facts=[],
+                current_node_summary=current_node_summary,
+                next_node_summary=next_node_summary,
+            )
+            if det is not None:
+                resp = AskResponse(
+                    answer=det,
+                    tier=TrustTier.HEDGE,
+                    path=AskPath.GROUNDED_DETERMINISTIC,
+                    intent=intent,
+                    source_class="trip_state",
+                )
+                tel.path = resp.path.value
+                tel.latency_ms = (time.monotonic() - t0) * 1000
+                self._emit_telemetry(tel)
+                return resp
+            resp = AskResponse(
+                answer="I don't have enough trip context to answer that right now.",
+                tier=TrustTier.REFUSE,
+                path=AskPath.RETRIEVAL_MISS,
+                intent=intent,
+            )
+            tel.path = resp.path.value
+            tel.latency_ms = (time.monotonic() - t0) * 1000
+            self._emit_telemetry(tel)
+            return resp
+
+        # Retrieve catalog facts
         facts = retrieve_catalog_facts(
             intent=intent,
             geo_region=geo_region,
@@ -543,13 +696,13 @@ class AskService:
         )
         tel.source_ids = [f.source_id for f in facts]
 
-        # 4. Retrieval miss -> hedge/refuse, no model call
-        if not facts and intent != AskIntent.TRIP_CURRENT_NEXT:
+        # Retrieval miss -> refuse
+        if not facts:
             resp = AskResponse(
                 answer=(
-                    "I don't have verified information for that question in "
-                    "this region. Check with the venue directly for the most "
-                    "accurate answer."
+                    "I don't have verified information for that "
+                    "question in this region. Check with the venue "
+                    "directly for the most accurate answer."
                 ),
                 tier=TrustTier.REFUSE,
                 path=AskPath.RETRIEVAL_MISS,
@@ -557,10 +710,33 @@ class AskService:
             )
             tel.path = resp.path.value
             tel.latency_ms = (time.monotonic() - t0) * 1000
-            self._record_telemetry(tel)
+            self._emit_telemetry(tel)
             return resp
 
-        # 5. Try deterministic template first
+        # SPEC-14: dietary questions get hedge with disclaimer
+        dietary_q = _is_dietary_question(question)
+        if dietary_q and intent == AskIntent.DISH_FACT:
+            ingredient_lines = [f.text for f in facts]
+            source_ids = [f.source_id for f in facts]
+            resp = AskResponse(
+                answer=(
+                    "I have ingredient information but cannot confirm "
+                    "dietary suitability. " + "\n".join(ingredient_lines)
+                ),
+                tier=TrustTier.HEDGE,
+                path=AskPath.GROUNDED_DETERMINISTIC,
+                intent=intent,
+                source_ids=source_ids,
+                source_class="curated_catalog",
+                food_disclaimer=_FOOD_DISCLAIMER,
+            )
+            self.cache.put(question, geo_region, venue_id or "", resp)
+            tel.path = resp.path.value
+            tel.latency_ms = (time.monotonic() - t0) * 1000
+            self._emit_telemetry(tel)
+            return resp
+
+        # Deterministic template
         det_answer = format_deterministic_answer(
             intent=intent,
             facts=facts,
@@ -571,6 +747,7 @@ class AskService:
         )
         if det_answer is not None:
             source_class = facts[0].source_class if facts else "trip_state"
+            food_disc = _FOOD_DISCLAIMER if intent == AskIntent.DISH_FACT else None
             resp = AskResponse(
                 answer=det_answer,
                 tier=TrustTier.HEDGE,
@@ -578,123 +755,27 @@ class AskService:
                 intent=intent,
                 source_ids=[f.source_id for f in facts],
                 source_class=source_class,
+                food_disclaimer=food_disc,
             )
-            # Cache grounded deterministic answers
             self.cache.put(question, geo_region, venue_id or "", resp)
             tel.path = resp.path.value
             tel.cache_status = "miss_then_store"
             tel.latency_ms = (time.monotonic() - t0) * 1000
-            self._record_telemetry(tel)
+            self._emit_telemetry(tel)
             return resp
 
-        # --- Guards before model call ---
-
-        # 6. No LLM key
-        if not llm_key_present:
-            resp = AskResponse(
-                answer=(
-                    "Ask is available but the model service is not configured. "
-                    "Try again when the service is fully set up."
-                ),
-                tier=TrustTier.REFUSE,
-                path=AskPath.NO_KEY,
-                intent=intent,
-                fallback_reason="TB_LITELLM_API_KEY not set",
-            )
-            tel.path = resp.path.value
-            tel.fallback_reason = resp.fallback_reason
-            tel.latency_ms = (time.monotonic() - t0) * 1000
-            self._record_telemetry(tel)
-            return resp
-
-        # 7. Budget check
-        if not self.budget.consume(user_id, is_anonymous):
-            resp = AskResponse(
-                answer="You've reached your Ask limit for now. Try again later.",
-                tier=TrustTier.REFUSE,
-                path=AskPath.BUDGET_EXHAUSTED,
-                intent=intent,
-                fallback_reason="ask_budget_exhausted",
-            )
-            tel.path = resp.path.value
-            tel.fallback_reason = resp.fallback_reason
-            tel.latency_ms = (time.monotonic() - t0) * 1000
-            self._record_telemetry(tel)
-            return resp
-
-        # 8. Circuit breaker
-        if self._breaker_open():
-            resp = AskResponse(
-                answer="The Ask service is temporarily unavailable. Please try again shortly.",
-                tier=TrustTier.REFUSE,
-                path=AskPath.BREAKER_OPEN,
-                intent=intent,
-                fallback_reason="circuit_breaker_open",
-            )
-            tel.path = resp.path.value
-            tel.fallback_reason = resp.fallback_reason
-            tel.latency_ms = (time.monotonic() - t0) * 1000
-            self._record_telemetry(tel)
-            return resp
-
-        # 9. Model call (light model only, SPEC-25 DD7)
-        # Only used to phrase retrieved facts -- never to generate facts.
-        try:
-            fact_context = "\n".join(f.text for f in facts)
-            result = await self.llm.complete(
-                messages=[
-                    {
-                        "role": "system",
-                        "content": (
-                            "You are Travel Buddy AI. Rephrase the following "
-                            "verified facts into a concise, helpful answer. "
-                            "Do not add any information not present in the facts. "
-                            f"Region: {geo_region}."
-                        ),
-                    },
-                    {
-                        "role": "user",
-                        "content": f"Question: {question}\n\nFacts:\n{fact_context}",
-                    },
-                ],
-                routing_tier="light",
-                temperature=0.3,
-                max_tokens=150,
-            )
-            tel.model = result.get("model_used", "")
-            tel.tokens_in = result.get("tokens", {}).get("input", 0)
-            tel.tokens_out = result.get("tokens", {}).get("output", 0)
-            tel.cost_usd = result.get("cost_usd", 0.0)
-
-            resp = AskResponse(
-                answer=result["content"],
-                tier=TrustTier.HEDGE,
-                path=AskPath.GROUNDED_MODEL_PHRASED,
-                intent=intent,
-                source_ids=[f.source_id for f in facts],
-                source_class=facts[0].source_class if facts else "",
-            )
-            self.cache.put(question, geo_region, venue_id or "", resp)
-            self._breaker_failures = 0  # reset on success
-            tel.path = resp.path.value
-            tel.latency_ms = (time.monotonic() - t0) * 1000
-            self._record_telemetry(tel)
-            return resp
-
-        except Exception as exc:
-            self._breaker_failures += 1
-            resp = AskResponse(
-                answer=(
-                    "I couldn't process that question right now. "
-                    "The information may be available -- please try again."
-                ),
-                tier=TrustTier.REFUSE,
-                path=AskPath.MODEL_ERROR_FALLBACK,
-                intent=intent,
-                fallback_reason=f"model_error: {type(exc).__name__}",
-            )
-            tel.path = resp.path.value
-            tel.fallback_reason = resp.fallback_reason
-            tel.latency_ms = (time.monotonic() - t0) * 1000
-            self._record_telemetry(tel)
-            return resp
+        # Facts found but no template -- refuse this slice
+        resp = AskResponse(
+            answer=(
+                "I found some information but cannot format a "
+                "verified answer right now. Check with the venue "
+                "directly."
+            ),
+            tier=TrustTier.REFUSE,
+            path=AskPath.RETRIEVAL_MISS,
+            intent=intent,
+        )
+        tel.path = resp.path.value
+        tel.latency_ms = (time.monotonic() - t0) * 1000
+        self._emit_telemetry(tel)
+        return resp
