@@ -54,20 +54,20 @@ void main() {
 
     test('extracts Booking.com hostel name and stay dates from email', () {
       const email = '''
-Thanks Vikrant Vilas! Your booking in Vang Vieng is confirmed.
-Mad Monkey Vang Vieng is expecting you on Sun 4 Oct 2026
+Thanks Alex Rivera! Your booking in Vang Vieng is confirmed.
+Silver Leaf Riverside Vang Vieng is expecting you on Sun 4 Oct 2026
 Reservation details
 Check-in  Sunday, 4 October 2026 (14:00 - 00:00)
 Check-out Tuesday, 6 October 2026 (until 12:00)
-Your reservation 2 nights, Large Double Room
+Your reservation 2 nights, Deluxe River View
 Location
-Laos, Vang Vieng, 20/1 Ban Vang Vieng, Vang Vieng, Laos
+Laos, Vang Vieng, 42 Thanon Luang, Vang Vieng, Laos
 ''';
 
       final result = extractBookingFromText(email);
 
       expect(result.bookingType, equals('hotel'));
-      expect(result.venueName, equals('Mad Monkey Vang Vieng'));
+      expect(result.venueName, equals('Silver Leaf Riverside Vang Vieng'));
       expect(result.scheduledStart, equals(DateTime(2026, 10, 4, 14)));
       expect(result.durationMinutes, equals(46 * 60));
       expect(result.confirmationCode, isNull);
@@ -77,8 +77,8 @@ Laos, Vang Vieng, 20/1 Ban Vang Vieng, Vang Vieng, Laos
 
     test('does not treat Reservation details as a confirmation code', () {
       const email = '''
-Thanks Vikrant Vilas! Your booking in Vang Vieng is confirmed.
-Mad Monkey Vang Vieng is expecting you on Sun 4 Oct 2026
+Thanks Alex Rivera! Your booking in Vang Vieng is confirmed.
+Silver Leaf Riverside Vang Vieng is expecting you on Sun 4 Oct 2026
 Reservation details
 Check-in  Sunday, 4 October 2026 (14:00 - 00:00)
 ''';
@@ -89,9 +89,9 @@ Check-in  Sunday, 4 October 2026 (14:00 - 00:00)
     test('supports dotted Booking.com references and explicit PIN labels', () {
       expect(
         extractBookingFromText(
-          'Hotel stay\nBooking reference: 1234.567.890',
+          'Hotel stay\nBooking reference: 9876.543.210',
         ).confirmationCode,
-        '1234.567.890',
+        '9876.543.210',
       );
       expect(
         extractBookingFromText('Hotel stay\nPIN code: 9876').confirmationCode,
@@ -185,7 +185,7 @@ Check-in  Sunday, 4 October 2026 (14:00 - 00:00)
     // The signal payload should contain only structured fields
     // (bookingType, importSource, tripId), never the raw paste.
     test('raw pasted text never appears in signal payload', () async {
-      const rawPasteSnippet = 'Mad Monkey Vang Vieng is expecting you';
+      const rawPasteSnippet = 'Silver Leaf Riverside Vang Vieng is expecting you';
 
       await signalService.emitBookingAdded(
         bookingType: 'hotel',

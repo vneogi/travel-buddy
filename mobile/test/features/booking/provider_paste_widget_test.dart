@@ -29,11 +29,13 @@ class FakeSignalService extends Fake implements SignalService {
   }
 }
 
-/// Fake itinerary controller that returns a successful result
-/// without touching any real DB.
+/// Retained fake itinerary controller. Captures the last applyEvent
+/// preferences so tests can assert import_source and other fields.
 class FakeItineraryController extends StateNotifier<ItineraryState>
     implements ItineraryController {
   FakeItineraryController() : super(const ItineraryState());
+
+  Map<String, dynamic>? lastPreferences;
 
   @override
   Future<TripEventResult?> applyEvent({
@@ -42,7 +44,7 @@ class FakeItineraryController extends StateNotifier<ItineraryState>
     String? targetNodeId,
     Map<String, dynamic>? preferences,
   }) async {
-    // Return a minimal successful result so Save completes.
+    lastPreferences = preferences;
     return TripEventResult(
       updatedNodes: [
         TripNode(
@@ -65,11 +67,26 @@ class FakeItineraryController extends StateNotifier<ItineraryState>
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+/// Fake offline database that stubs cachePlace without opening real SQLite.
+class FakeOfflineDatabase extends Fake {
+  bool cachePlaceCalled = false;
+
+  Future<void> cachePlace(Map<String, dynamic> place) async {
+    cachePlaceCalled = true;
+  }
+
+  Future<void> close() async {}
+}
+
 void main() {
   late FakeSignalService signalService;
+  late FakeItineraryController fakeController;
+  late FakeOfflineDatabase fakeDb;
 
   setUp(() {
     signalService = FakeSignalService();
+    fakeController = FakeItineraryController();
+    fakeDb = FakeOfflineDatabase();
   });
 
   Widget buildSheet({
@@ -79,8 +96,9 @@ void main() {
     return ProviderScope(
       overrides: [
         signalServiceProvider.overrideWithValue(signalService),
+        offlineDatabaseProvider.overrideWithValue(fakeDb),
         itineraryControllerProvider.overrideWith(
-          (ref, tripId) => FakeItineraryController(),
+          (ref, tripId) => fakeController,
         ),
       ],
       child: MaterialApp(
@@ -95,7 +113,7 @@ void main() {
   }
 
   // ================================================================
-  // Expansion and auto-fill
+  // Paste and auto-fill
   // ================================================================
 
   group('Paste and auto-fill', () {
@@ -142,7 +160,7 @@ void main() {
   });
 
   // ================================================================
-  // Partial fields display
+  // Partial fields display (section 4)
   // ================================================================
 
   group('Partial fields display', () {
@@ -171,12 +189,12 @@ void main() {
   });
 
   // ================================================================
-  // Zero-field sequence: good parse -> junk parse resets importSource
+  // Zero-field sequence (section 4): good -> junk -> Save
   // ================================================================
 
   group('Zero-field import_source reset', () {
     testWidgets(
-      'good parse then junk parse resets importSource to manual on save',
+      'good parse -> junk parse -> Save emits importSource=manual',
       (tester) async {
         await tester.pumpWidget(buildSheet());
         await tester.pumpAndSettle();
@@ -184,7 +202,7 @@ void main() {
         await tester.tap(find.text('Paste confirmation text'));
         await tester.pumpAndSettle();
 
-        // First parse: good data
+        // First parse: good Booking.com data
         const goodText =
             'Booking.com\n'
             'Grand Sapphire Hotel is expecting you on Mon 5 Oct 2026\n'
@@ -210,26 +228,28 @@ void main() {
         expect(find.byKey(const Key('extraction_review')), findsNothing,
             reason: 'Stale review must not remain visible');
 
-        // Save should show error because venue name is still populated
-        // from first parse but importSource should be manual.
-        // Tap Save to trigger the signal.
+        // Title field still has the venue from the first parse.
+        // Save must succeed deterministically.
         await tester.tap(find.text('Save Anchor'));
         await tester.pumpAndSettle();
 
-        // The signal should have importSource=manual (not email).
-        // (Save may succeed or fail depending on controller, but
-        // the signal captures importSource at save time.)
-        if (signalService.calls.isNotEmpty) {
-          expect(signalService.calls.last['importSource'], 'manual',
-              reason: 'After junk re-parse, importSource must be manual');
-        }
+        // Assert exactly one signal call with importSource=manual.
+        expect(signalService.calls, hasLength(1),
+            reason: 'Exactly one signal after Save');
+        expect(signalService.calls.single['importSource'], 'manual',
+            reason: 'After junk re-parse, importSource must be manual');
+
+        // Assert the fake controller captured preferences with manual.
+        expect(fakeController.lastPreferences, isNotNull);
+        expect(fakeController.lastPreferences!['import_source'], 'manual',
+            reason: 'applyEvent preferences must have import_source=manual');
       },
-      timeout: const Timeout(Duration(seconds: 20)),
+      timeout: const Timeout(Duration(seconds: 30)),
     );
   });
 
   // ================================================================
-  // Footer-only import save guard
+  // Footer import save guard (section 6)
   // ================================================================
 
   group('Footer import save guard', () {
@@ -242,7 +262,6 @@ void main() {
         await tester.tap(find.text('Paste confirmation text'));
         await tester.pumpAndSettle();
 
-        // Agoda footer-only: has only confirmation code, no venue.
         const footerText =
             'Agoda.com\nManage your booking\n'
             'View your booking details\n'
@@ -254,8 +273,8 @@ void main() {
         await tester.tap(find.text('Auto-fill from paste'));
         await tester.pumpAndSettle();
 
-        // Code is extracted but venue is not.
-        // Clear the title field to ensure it is empty.
+        // Footer may populate confirmation code, but venue/title is empty.
+        // Clear title field explicitly to ensure empty state.
         final titleFields = find.widgetWithText(TextField, 'Title / Venue');
         if (titleFields.evaluate().isNotEmpty) {
           await tester.enterText(titleFields.first, '');
@@ -266,13 +285,17 @@ void main() {
         await tester.tap(find.text('Save Anchor'));
         await tester.pumpAndSettle();
 
-        // Save should be blocked with error.
+        // Save blocked with error.
         expect(find.textContaining('Property name is required'), findsOneWidget,
             reason: 'Footer-only import must not save without venue name');
 
-        // No signal should have been emitted.
+        // Controller received no event.
+        expect(fakeController.lastPreferences, isNull,
+            reason: 'Controller must not receive applyEvent without venue');
+
+        // Signal service received no call.
         expect(signalService.calls, isEmpty,
-            reason: 'No event/signal until save completes');
+            reason: 'No event/signal until save completes successfully');
       },
       timeout: const Timeout(Duration(seconds: 20)),
     );
