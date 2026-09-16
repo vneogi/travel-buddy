@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/disclaimers.dart';
+import '../../core/connectivity_helper.dart';
 import '../../core/destination_tz.dart';
 import '../../data/models.dart';
+import '../../render/fact_envelope.dart';
+import '../../render/fact_view.dart';
+import '../../render/offline_state.dart';
 import '../../theme/colors.dart';
 import '../../theme/typography.dart';
 import '../../theme/spacing.dart';
@@ -24,8 +27,9 @@ class ChatScreen extends ConsumerStatefulWidget {
 
 class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _controller = TextEditingController();
-  final _messages = <_ChatMessage>[];
+  final _messages = <_ChatEntry>[];
   bool _isThinking = false;
+  final _connectivity = ConnectivityHelper();
 
   @override
   void initState() {
@@ -55,7 +59,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     reverse: true,
                     padding: const EdgeInsets.all(AppSpacing.base),
                     itemCount: _messages.length,
-                    itemBuilder: (_, i) => _messages[_messages.length - 1 - i].build(),
+                    itemBuilder: (_, i) {
+                      final entry = _messages[_messages.length - 1 - i];
+                      return entry.build(
+                        onConfirmProposal: entry.askResponse?.proposal != null
+                            ? () => _confirmAskProposal(entry.askResponse!.proposal!)
+                            : null,
+                      );
+                    },
                   ),
           ),
           if (_isThinking)
@@ -80,7 +91,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     _controller.clear();
 
     setState(() {
-      _messages.add(_ChatMessage(text: text, isUser: true));
+      _messages.add(_ChatEntry.user(text));
       _isThinking = true;
     });
 
@@ -89,26 +100,24 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       if (intent == AskIntent.multipleChanges) {
         setState(() {
           _isThinking = false;
-          _messages.add(const _ChatMessage(
-            text: 'I can safely change one stop at a time. '
-                'Try "cancel next stop" or "swap next stop".',
-            isUser: false,
+          _messages.add(const _ChatEntry.plainAssistant(
+            'I can safely change one stop at a time. '
+            'Try "cancel next stop" or "swap next stop".',
           ));
         });
         return;
       }
-      final state = ref.read(itineraryControllerProvider(widget.tripId));
+      final itState = ref.read(itineraryControllerProvider(widget.tripId));
       final target = nextMovableStop(
-        state.nodes,
+        itState.nodes,
         DateTime.now().toUtc(),
-        excludedNodeIds: state.nodeOutcomes.keys.toSet(),
+        excludedNodeIds: itState.nodeOutcomes.keys.toSet(),
       );
       if (intent != AskIntent.question && target == null) {
         setState(() {
           _isThinking = false;
-          _messages.add(const _ChatMessage(
-            text: 'There is no movable upcoming stop to change.',
-            isUser: false,
+          _messages.add(const _ChatEntry.plainAssistant(
+            'There is no movable upcoming stop to change.',
           ));
         });
         return;
@@ -119,47 +128,85 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         if (!confirmed) {
           setState(() {
             _isThinking = false;
-            _messages.add(_ChatMessage(
-              text: 'Kept ${target.venueName}.',
-              isUser: false,
+            _messages.add(_ChatEntry.plainAssistant(
+              'Kept ${target.venueName}.',
             ));
           });
           return;
         }
       }
+      final eventType = switch (intent) {
+        AskIntent.cancelNext => EventType.cancelActivity,
+        AskIntent.swapNext => EventType.swapActivity,
+        _ => EventType.askInfo,
+      };
+
+      // SPEC-25: Offline ask_info -> refuse; never enqueue.
+      if (eventType == EventType.askInfo) {
+        final online = await _connectivity.checkConnectivity();
+        if (!mounted) return;
+        if (!online) {
+          setState(() {
+            _isThinking = false;
+            _messages.add(const _ChatEntry.offlineRefuse());
+          });
+          return;
+        }
+      }
+
       final result = await ref.read(tripEventProvider).sendEvent(
         tripId: widget.tripId,
-        type: switch (intent) {
-          AskIntent.cancelNext => EventType.cancelActivity,
-          AskIntent.swapNext => EventType.swapActivity,
-          _ => EventType.askInfo,
-        },
+        type: eventType,
         message: text,
         targetNodeId: intent == AskIntent.question ? null : target?.nodeId,
       );
+      if (!mounted) return;
       setState(() {
         _isThinking = false;
-        if (result != null) {
-          // SPEC-14: append food disclaimer to assistant responses.
-          final withDisclaimer =
-              '${result.message}\n\n$kFoodDisclaimerShort';
-          _messages.add(_ChatMessage(text: withDisclaimer, isUser: false));
-        } else {
-          _messages.add(const _ChatMessage(
-            text: 'I could not complete that request. Please try again.',
-            isUser: false,
+        if (result == null) {
+          _messages.add(const _ChatEntry.plainAssistant(
+            'I could not complete that request. Please try again.',
           ));
+          return;
+        }
+        // SPEC-25: ask_info with typed envelope -> render via FactView.
+        final ask = result.askResponse;
+        if (ask != null) {
+          _messages.add(_ChatEntry.askFact(ask));
+        } else {
+          // Non-Ask events (swap/cancel/add) keep plain text.
+          _messages.add(_ChatEntry.plainAssistant(result.message));
         }
       });
     } catch (_) {
+      if (!mounted) return;
       setState(() {
         _isThinking = false;
-        _messages.add(const _ChatMessage(
-          text: 'I could not reach Travel Buddy. Check your connection and try again.',
-          isUser: false,
+        _messages.add(const _ChatEntry.plainAssistant(
+          'I could not reach Travel Buddy. Check your connection and try again.',
         ));
       });
     }
+  }
+
+  /// SPEC-25: Confirm a plan-change proposal from Ask.
+  Future<void> _confirmAskProposal(AskProposal proposal) async {
+    final eventType = switch (proposal.eventType) {
+      'swap_activity' => EventType.swapActivity,
+      'cancel_activity' => EventType.cancelActivity,
+      'add_activity' => EventType.addActivity,
+      'reroute' => EventType.reroute,
+      _ => null,
+    };
+    if (eventType == null) return;
+    await ref.read(tripEventProvider).sendEvent(
+      tripId: widget.tripId,
+      type: eventType,
+      message: proposal.summary,
+      targetNodeId: proposal.targetNodeId.isNotEmpty
+          ? proposal.targetNodeId
+          : null,
+    );
   }
 
   Future<bool> _confirmCancellation(TripNode target) async {
@@ -209,12 +256,117 @@ AskIntent classifyAskIntent(String text) {
   return AskIntent.question;
 }
 
-class _ChatMessage {
-  final String text;
-  final bool isUser;
-  const _ChatMessage({required this.text, required this.isUser});
+// ---------------------------------------------------------------------------
+// SPEC-25: Chat entry types (user bubble, plain assistant, Ask fact, offline)
+// ---------------------------------------------------------------------------
 
-  Widget build() {
+enum _EntryKind { user, plainAssistant, askFact, offlineRefuse }
+
+class _ChatEntry {
+  final _EntryKind kind;
+  final String text;
+  final AskResponse? askResponse;
+
+  const _ChatEntry.user(this.text)
+      : kind = _EntryKind.user,
+        askResponse = null;
+
+  const _ChatEntry.plainAssistant(this.text)
+      : kind = _EntryKind.plainAssistant,
+        askResponse = null;
+
+  const _ChatEntry.askFact(AskResponse ask)
+      : kind = _EntryKind.askFact,
+        text = '',
+        askResponse = ask;
+
+  const _ChatEntry.offlineRefuse()
+      : kind = _EntryKind.offlineRefuse,
+        text = '',
+        askResponse = null;
+
+  Widget build({VoidCallback? onConfirmProposal}) {
+    switch (kind) {
+      case _EntryKind.user:
+        return _textBubble(text, isUser: true);
+      case _EntryKind.plainAssistant:
+        return _textBubble(text, isUser: false);
+      case _EntryKind.offlineRefuse:
+        return Align(
+          key: const Key('ask_offline_refuse'),
+          alignment: Alignment.centerLeft,
+          child: Container(
+            margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+            constraints: const BoxConstraints(maxWidth: 280),
+            child: const OfflineStateView(
+              state: OfflineState.unavailable,
+              child: SizedBox.shrink(),
+            ),
+          ),
+        );
+      case _EntryKind.askFact:
+        return _buildAskFact(onConfirmProposal);
+    }
+  }
+
+  Widget _buildAskFact(VoidCallback? onConfirmProposal) {
+    final ask = askResponse!;
+    // Ask UI never treats as asserted -- downgrade to hedge.
+    final factTier = ask.tier == AskTier.assert_
+        ? FactTier.hedge
+        : FactTier.fromWire(ask.tier.wire);
+    final envelope = FactEnvelope(
+      value: ask.answer,
+      source: ask.sourceClass.isNotEmpty ? ask.sourceClass : ask.path,
+      confidence: 0.0,
+      tier: factTier,
+      asOf: DateTime.now(),
+    );
+    if (ask.intent == 'plan_change' && ask.proposal != null) {
+      return Align(
+        key: const Key('ask_plan_change_confirm'),
+        alignment: Alignment.centerLeft,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+          constraints: const BoxConstraints(maxWidth: 280),
+          child: FactView(
+            envelope: envelope,
+            attribute: 'plan_change',
+            onConfirm: onConfirmProposal,
+          ),
+        ),
+      );
+    }
+    final showDisclaimer =
+        ask.intent == 'dish_fact' && ask.foodDisclaimer != null;
+    return Align(
+      key: const Key('ask_fact_view'),
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+        constraints: const BoxConstraints(maxWidth: 280),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            FactView(envelope: envelope, attribute: ask.intent),
+            if (showDisclaimer)
+              Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.xs),
+                child: Text(
+                  ask.foodDisclaimer!,
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.muted,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static Widget _textBubble(String text, {required bool isUser}) {
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
