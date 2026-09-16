@@ -1,0 +1,10 @@
+{
+  "provider": "generic",
+  "bookingType": {"value": "hotel", "quality": "partial"},
+  "venueName": {"value": "Sunset Beach Resort", "quality": "partial"},
+  "scheduledStart": {"value": "2026-10-05T00:00:00.000", "quality": "partial"},
+  "checkoutDate": {"value": "2026-10-07T00:00:00.000", "quality": "partial"},
+  "durationMinutes": {"value": 2880, "quality": "partial"},
+  "confirmationCode": {"value": "RSV12345", "quality": "partial"},
+  "geoRegion": {"value": "dubai_uae", "quality": "partial"}
+}

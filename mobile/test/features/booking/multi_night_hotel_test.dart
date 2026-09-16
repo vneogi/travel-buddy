@@ -161,7 +161,7 @@ void main() {
     test('hotel with 2-night duration is one TripNode with long duration', () {
       final hotel = TripNode.fromJson({
         'node_id': 'h2',
-        'venue_name': 'Mad Monkey',
+        'venue_name': 'Silver Leaf Riverside',
         'scheduled_start': '2026-10-04T14:00:00Z',
         'duration_minutes': 2760, // 46 hours
         'is_locked': true,
@@ -216,8 +216,8 @@ void main() {
   group('Parser: Booking.com check-in/check-out fills hotel dates', () {
     test('paste with both dates populates checkoutDate', () {
       const email = '''
-Thanks Vikrant Vilas! Your booking in Vang Vieng is confirmed.
-Mad Monkey Vang Vieng is expecting you on Sun 4 Oct 2026
+Thanks Alex Rivera! Your booking in Vang Vieng is confirmed.
+Silver Leaf Riverside Vang Vieng is expecting you on Sun 4 Oct 2026
 Reservation details
 Check-in  Sunday, 4 October 2026 (14:00 - 00:00)
 Check-out Tuesday, 6 October 2026 (until 12:00)

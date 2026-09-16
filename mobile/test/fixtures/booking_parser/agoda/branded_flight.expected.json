@@ -1,0 +1,10 @@
+{
+  "provider": "agoda",
+  "bookingType": {"value": "flight", "quality": "full"},
+  "venueName": {"value": null, "quality": "unknown"},
+  "scheduledStart": {"value": null, "quality": "unknown"},
+  "checkoutDate": {"value": null, "quality": "unknown"},
+  "durationMinutes": {"value": null, "quality": "unknown"},
+  "confirmationCode": {"value": "AGD1122334", "quality": "full"},
+  "geoRegion": {"value": "dubai_uae", "quality": "full"}
+}

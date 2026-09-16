@@ -1,0 +1,6 @@
+Your reservation is ready
+Hotel: Sunset Beach Resort
+Check-in: 5 October 2026
+Check-out: 7 October 2026
+Confirmation code: RSV12345
+Dubai, UAE

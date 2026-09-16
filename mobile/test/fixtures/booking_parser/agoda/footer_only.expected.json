@@ -1,0 +1,10 @@
+{
+  "provider": "agoda",
+  "bookingType": {"value": null, "quality": "unknown"},
+  "venueName": {"value": null, "quality": "unknown"},
+  "scheduledStart": {"value": null, "quality": "unknown"},
+  "checkoutDate": {"value": null, "quality": "unknown"},
+  "durationMinutes": {"value": null, "quality": "unknown"},
+  "confirmationCode": {"value": "AGD5544332", "quality": "full"},
+  "geoRegion": {"value": null, "quality": "unknown"}
+}

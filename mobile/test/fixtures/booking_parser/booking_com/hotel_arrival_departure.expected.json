@@ -1,0 +1,10 @@
+{
+  "provider": "bookingCom",
+  "bookingType": {"value": "hotel", "quality": "full"},
+  "venueName": {"value": "Grand Sapphire Hotel", "quality": "full"},
+  "scheduledStart": {"value": "2026-10-05T15:00:00.000", "quality": "full"},
+  "checkoutDate": {"value": "2026-10-07T11:00:00.000", "quality": "full"},
+  "durationMinutes": {"value": 2640, "quality": "full"},
+  "confirmationCode": {"value": "HTL7890123", "quality": "full"},
+  "geoRegion": {"value": "dubai_uae", "quality": "full"}
+}
