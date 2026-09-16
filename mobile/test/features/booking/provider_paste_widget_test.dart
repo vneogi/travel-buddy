@@ -14,17 +14,19 @@ import 'package:travel_buddy/services/signal_service.dart';
 // ================================================================
 
 class FakeSignalService extends Fake implements SignalService {
-  final calls = <Map<String, String>>[];
+  final calls = <Map<String, String?>>[];
 
   @override
   Future<void> emitBookingAdded({
     required String bookingType,
     required String importSource,
-    required String tripId,
+    String? placeRef,
+    String? tripId,
   }) async {
     calls.add({
       'bookingType': bookingType,
       'importSource': importSource,
+      'placeRef': placeRef,
       'tripId': tripId,
     });
   }
@@ -47,20 +49,24 @@ class FakeItineraryController extends StateNotifier<ItineraryState>
   }) async {
     lastPreferences = preferences;
     return TripEventResult(
+      message: 'Saved',
       updatedNodes: [
         TripNode(
           nodeId: 'fake-node-1',
-          tripId: 'trip-test',
           nodeKind: 'booking',
           venueName: preferences?['venue_name'] as String? ?? 'Test',
-          scheduledStart: DateTime.now(),
+          scheduledStart: DateTime(2026, 10, 5),
           durationMinutes: 180,
-          sortOrder: 0,
+          isLocked: true,
+          status: NodeStatus.pending,
+          vibeTags: const [],
           bookingType: preferences?['booking_type'] as String?,
           importSource: preferences?['import_source'] as String?,
           confirmationCode: preferences?['confirmation_code'] as String?,
         ),
       ],
+      routingTier: 'light',
+      fromCache: false,
     );
   }
 
@@ -160,7 +166,7 @@ void main() {
   });
 
   // ================================================================
-  // Partial fields display (section 4)
+  // Partial fields display
   // ================================================================
 
   group('Partial fields display', () {
@@ -189,7 +195,7 @@ void main() {
   });
 
   // ================================================================
-  // Zero-field sequence (section 4): good -> junk -> Save
+  // Zero-field sequence: good -> junk -> Save
   // ================================================================
 
   group('Zero-field import_source reset', () {
@@ -249,7 +255,7 @@ void main() {
   });
 
   // ================================================================
-  // Footer import save guard (section 6)
+  // Footer import save guard
   // ================================================================
 
   group('Footer import save guard', () {
@@ -274,7 +280,6 @@ void main() {
         await tester.pumpAndSettle();
 
         // Footer may populate confirmation code, but venue/title is empty.
-        // Clear title field explicitly to ensure empty state.
         final titleFields = find.widgetWithText(TextField, 'Title / Venue');
         if (titleFields.evaluate().isNotEmpty) {
           await tester.enterText(titleFields.first, '');

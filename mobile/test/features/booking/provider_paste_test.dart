@@ -31,6 +31,17 @@ const _requiredFields = <String>[
   'durationMinutes', 'confirmationCode', 'geoRegion',
 ];
 
+/// Normalize a fixture-relative path to always use forward slashes.
+/// Strips a known suffix (e.g. '.txt') by length, not replaceAll,
+/// so the suffix pattern cannot accidentally match interior text.
+String _normalizeFixtureKey(String relativePath, String suffix) {
+  final normalized = relativePath.replaceAll(Platform.pathSeparator, '/');
+  if (normalized.endsWith(suffix)) {
+    return normalized.substring(0, normalized.length - suffix.length);
+  }
+  return normalized;
+}
+
 class FixtureCase {
   final String name;
   final String rawText;
@@ -49,11 +60,14 @@ List<FixtureCase> loadFixtures(String fixtureRoot) {
   final discoveredJson = <String>{};
   for (final providerDir in root.listSync().whereType<Directory>()) {
     for (final file in providerDir.listSync().whereType<File>()) {
-      final rel = file.path.substring(fixtureRoot.length + 1);
-      if (rel.endsWith('.txt')) {
-        discoveredTxt.add(rel.replaceAll('.txt', ''));
-      } else if (rel.endsWith('.expected.json')) {
-        discoveredJson.add(rel.replaceAll('.expected.json', ''));
+      final rel = file.path.substring(root.path.length + 1);
+      final normalized = rel.replaceAll(Platform.pathSeparator, '/');
+      if (normalized.endsWith('.txt')) {
+        discoveredTxt.add(
+            _normalizeFixtureKey(rel, '.txt'));
+      } else if (normalized.endsWith('.expected.json')) {
+        discoveredJson.add(
+            _normalizeFixtureKey(rel, '.expected.json'));
       }
     }
   }
@@ -100,7 +114,7 @@ List<FixtureCase> loadFixtures(String fixtureRoot) {
     final expectedRootKeys = {'provider', ..._requiredFields};
     final actualRootKeys = expectedJson.keys.toSet();
     if (actualRootKeys != expectedRootKeys) {
-      fail('$name: root keys mismatch — '
+      fail('$name: root keys mismatch \u2014 '
           'extra: ${actualRootKeys.difference(expectedRootKeys)}, '
           'missing: ${expectedRootKeys.difference(actualRootKeys)}');
     }
@@ -120,7 +134,7 @@ List<FixtureCase> loadFixtures(String fixtureRoot) {
       final fieldKeys = entry.keys.toSet();
       const expectedFieldKeys = {'value', 'quality'};
       if (fieldKeys != expectedFieldKeys) {
-        fail('$name.$field: field keys mismatch — '
+        fail('$name.$field: field keys mismatch \u2014 '
             'extra: ${fieldKeys.difference(expectedFieldKeys)}, '
             'missing: ${expectedFieldKeys.difference(fieldKeys)}');
       }
@@ -195,6 +209,39 @@ void assertField<T>(
 
 void main() {
   final fixtureRoot = 'test/fixtures/booking_parser';
+
+  // ================================================================
+  // Path normalization proof
+  // ================================================================
+
+  group('Fixture path normalization', () {
+    test('backslash paths normalize to forward slash', () {
+      expect(
+        _normalizeFixtureKey(r'agoda\branded_flight.txt', '.txt'),
+        'agoda/branded_flight',
+      );
+      expect(
+        _normalizeFixtureKey(r'booking_com\full_confirmation.expected.json',
+            '.expected.json'),
+        'booking_com/full_confirmation',
+      );
+    });
+
+    test('POSIX paths unchanged', () {
+      expect(
+        _normalizeFixtureKey('generic/labelled_fields.txt', '.txt'),
+        'generic/labelled_fields',
+      );
+    });
+
+    test('suffix removal is exact (not replaceAll)', () {
+      // A name containing .txt in the middle must not be corrupted.
+      expect(
+        _normalizeFixtureKey('odd.txt_case/fixture.txt', '.txt'),
+        'odd.txt_case/fixture',
+      );
+    });
+  });
 
   // ================================================================
   // Parameterized golden corpus (11 cases)
@@ -402,34 +449,19 @@ void main() {
   });
 
   // ================================================================
-  // Sabotage proofs (section 8)
-  //
-  // Each test documents a specific mutation that MUST fail the suite.
-  // The comment describes the mutation; the test asserts the property
-  // that would be violated.
+  // Sabotage proofs
   // ================================================================
 
   group('Sabotage proofs', () {
-    // SP1: Delete/rename one .expected.json.
-    // -> loadFixtures() fails with "Declared fixtures missing .expected.json".
-    // Verified: the loader checks declared.difference(discoveredJson).
     test('SP1: missing expected JSON detected by loader', () {
-      // This is a structural proof: loadFixtures asserts all 11 .expected.json exist.
-      // Renaming one would make loadFixtures fail before any test runs.
       final cases = loadFixtures(fixtureRoot);
       expect(cases.length, 11);
     });
 
-    // SP2: Add an orphan .expected.json.
-    // -> loadFixtures() fails with "Orphan .expected.json files".
-    // Verified: the loader checks discoveredJson.difference(declared).
     test('SP2: orphan detection is structural', () {
-      // Proof: any .expected.json not in _declaredFixtures fails the loader.
       expect(_declaredFixtures.length, 11);
     });
 
-    // SP3: Change a quality to an invalid string (e.g. "high").
-    // -> _parseQuality throws TestFailure.
     test('SP3: invalid quality string throws', () {
       expect(
         () => _parseQuality('test', 'field', 'high'),
@@ -441,8 +473,6 @@ void main() {
       );
     });
 
-    // SP4: Remove 'pnr' from _hasLabelledFields.
-    // -> generic/flight_departure would route to unknown instead of generic.
     test('SP4: PNR routes to generic provider', () {
       final r = extractBookingFromText(
         File('$fixtureRoot/generic/flight_departure.txt').readAsStringSync(),
@@ -451,8 +481,6 @@ void main() {
           reason: 'Removing pnr from _hasLabelledFields would make this unknown');
     });
 
-    // SP5: Apply hotel aliases to every Booking.com/Agoda payload.
-    // -> Branded flights would convert Departure to check-out.
     test('SP5: branded flight Departure not aliased to check-out', () {
       final bc = extractBookingFromText(
         File('$fixtureRoot/booking_com/branded_flight.txt').readAsStringSync(),
@@ -470,30 +498,17 @@ void main() {
 
     // SP6: Remove importSource='manual' reset in _autoFill else branch.
     // -> Widget test for zero-field sequence would get importSource=email.
-    // (Proven in provider_paste_widget_test.dart, not here.)
-    test('SP6: documented -- proven in widget test', () {
-      // This sabotage is proven by the widget test that asserts
-      // signalService.calls.single['importSource'] == 'manual'.
-      // Here we verify the parser side: zero-field parse has no useful fields.
-      final r = extractBookingFromText(
-        File('$fixtureRoot/malformed/no_labels.txt').readAsStringSync(),
-      );
-      expect(r.hasUsefulFields, isFalse);
-    });
+    // Proven in provider_paste_widget_test.dart via:
+    //   expect(signalService.calls, hasLength(1));
+    //   expect(signalService.calls.single['importSource'], 'manual');
 
     // SP7: Reintroduce conditional signal assertion.
     // -> Widget test would silently pass with zero signal calls.
     // Proven in provider_paste_widget_test.dart via:
     //   expect(signalService.calls, hasLength(1));
-    //   expect(signalService.calls.single['importSource'], 'manual');
     // No placeholder test here -- the widget test IS the proof.
 
-    // SP8: Allow footer-only save without venue/title.
-    // -> A synthetic "Booking" anchor would be created from code-only footer.
-    // (Proven in provider_paste_widget_test.dart, not here.)
-    test('SP8: documented -- footer guard proven in widget test', () {
-      // Widget test asserts: save blocked with 'Property name is required',
-      // signal service receives no calls.
+    test('SP8: footer-only has no venue (save guard proven in widget test)', () {
       final r = extractBookingFromText(
         File('$fixtureRoot/agoda/footer_only.txt').readAsStringSync(),
       );
