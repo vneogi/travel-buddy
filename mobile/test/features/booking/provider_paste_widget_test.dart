@@ -6,6 +6,7 @@ import 'package:travel_buddy/core/providers.dart';
 import 'package:travel_buddy/data/models.dart';
 import 'package:travel_buddy/features/booking/add_booking_sheet.dart';
 import 'package:travel_buddy/features/itinerary/itinerary_notifier.dart';
+import 'package:travel_buddy/offline/offline_database.dart';
 import 'package:travel_buddy/services/signal_service.dart';
 
 // ================================================================
@@ -68,14 +69,13 @@ class FakeItineraryController extends StateNotifier<ItineraryState>
 }
 
 /// Fake offline database that stubs cachePlace without opening real SQLite.
-class FakeOfflineDatabase extends Fake {
+class FakeOfflineDatabase extends Fake implements OfflineDatabase {
   bool cachePlaceCalled = false;
 
-  Future<void> cachePlace(Map<String, dynamic> place) async {
+  @override
+  Future<void> cachePlace(String placeRef, String dataJson) async {
     cachePlaceCalled = true;
   }
-
-  Future<void> close() async {}
 }
 
 void main() {

@@ -96,6 +96,15 @@ List<FixtureCase> loadFixtures(String fixtureRoot) {
     final expectedJson =
         jsonDecode(jsonFile.readAsStringSync()) as Map<String, dynamic>;
 
+    // Validate exact root keys: provider + 7 fields, nothing else.
+    final expectedRootKeys = {'provider', ..._requiredFields};
+    final actualRootKeys = expectedJson.keys.toSet();
+    if (actualRootKeys != expectedRootKeys) {
+      fail('$name: root keys mismatch — '
+          'extra: ${actualRootKeys.difference(expectedRootKeys)}, '
+          'missing: ${expectedRootKeys.difference(actualRootKeys)}');
+    }
+
     // Validate provider.
     final provider = expectedJson['provider'] as String?;
     if (provider == null || !_validProviders.contains(provider)) {
@@ -103,19 +112,23 @@ List<FixtureCase> loadFixtures(String fixtureRoot) {
           '(valid: $_validProviders)');
     }
 
-    // Validate all seven required fields.
+    // Validate all seven required fields with exact key sets.
     for (final field in _requiredFields) {
-      if (!expectedJson.containsKey(field)) {
-        fail('$name: missing required field "$field"');
-      }
       final entry = expectedJson[field] as Map<String, dynamic>;
+
+      // Each field must have exactly {value, quality}.
+      final fieldKeys = entry.keys.toSet();
+      const expectedFieldKeys = {'value', 'quality'};
+      if (fieldKeys != expectedFieldKeys) {
+        fail('$name.$field: field keys mismatch — '
+            'extra: ${fieldKeys.difference(expectedFieldKeys)}, '
+            'missing: ${expectedFieldKeys.difference(fieldKeys)}');
+      }
+
       final quality = entry['quality'] as String?;
       if (quality == null || !_validQualities.contains(quality)) {
         fail('$name.$field: invalid quality "$quality" '
             '(valid: $_validQualities)');
-      }
-      if (!entry.containsKey('value')) {
-        fail('$name.$field: missing "value" key');
       }
     }
 
@@ -470,14 +483,10 @@ void main() {
 
     // SP7: Reintroduce conditional signal assertion.
     // -> Widget test would silently pass with zero signal calls.
-    // (Proven in provider_paste_widget_test.dart, not here.)
-    test('SP7: documented -- proven in widget test', () {
-      // The widget test uses:
-      //   expect(signalService.calls, hasLength(1));
-      //   expect(signalService.calls.single['importSource'], 'manual');
-      // A conditional `if (calls.isNotEmpty)` would silently pass with 0 calls.
-      expect(true, isTrue); // Structural proof lives in widget test.
-    });
+    // Proven in provider_paste_widget_test.dart via:
+    //   expect(signalService.calls, hasLength(1));
+    //   expect(signalService.calls.single['importSource'], 'manual');
+    // No placeholder test here -- the widget test IS the proof.
 
     // SP8: Allow footer-only save without venue/title.
     // -> A synthetic "Booking" anchor would be created from code-only footer.
