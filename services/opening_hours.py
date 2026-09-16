@@ -181,6 +181,19 @@ def _validate_structure(hours: Dict[str, Any]) -> bool:
     return True
 
 
+def is_valid_structured_hours(hours: Any) -> bool:
+    """Public wrapper for _validate_structure.
+
+    Returns True when *hours* is a well-formed SPEC-41 structured-hours
+    dict (seven weekday keys, valid [HH:MM, HH:MM] windows, empty lists
+    for closed days).  Returns False for anything else including None,
+    non-dict types, and dicts with missing or malformed entries.
+    """
+    if not isinstance(hours, dict):
+        return False
+    return _validate_structure(hours)
+
+
 def _parse_window_safe(win: Any) -> tuple:
     """Parse a validated window.  Only call after _validate_structure."""
     result = _parse_window(win)

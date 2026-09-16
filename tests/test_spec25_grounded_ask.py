@@ -29,8 +29,8 @@ from services.ask_service import (
     _region_matches,
     _is_dietary_question,
     _render_structured_hours,
-    _validate_structured_hours,
 )
+from services.opening_hours import is_valid_structured_hours
 
 
 # ---------------------------------------------------------------------------
@@ -421,6 +421,48 @@ class TestSpec14Dietary:
 # ===========================================================================
 
 
+# Fixture: venue closed Sunday, open Mon-Sat
+LAOS_VENUE_CLOSED_SUNDAY = {
+    **LAOS_VENUE,
+    "venue_id": "closed-sun-v",
+    "opening_hours_structured": {
+        "mon": [["17:00", "23:00"]],
+        "tue": [["17:00", "23:00"]],
+        "wed": [["17:00", "23:00"]],
+        "thu": [["17:00", "23:00"]],
+        "fri": [["17:00", "23:00"]],
+        "sat": [["17:00", "23:00"]],
+        "sun": [],  # explicitly closed
+    },
+}
+
+# Fixture: impossible clock (25:99)
+LAOS_VENUE_BAD_CLOCK = {
+    **LAOS_VENUE,
+    "venue_id": "bad-clock-v",
+    "opening_hours_structured": {
+        d: [["25:99", "26:00"]]
+        for d in [
+            "mon",
+            "tue",
+            "wed",
+            "thu",
+            "fri",
+            "sat",
+            "sun",
+        ]
+    },
+}
+
+# Fixture: invalid structured + non-default flat (for no-flat-fallback test)
+LAOS_VENUE_INVALID_PLUS_FLAT = {
+    **LAOS_VENUE,
+    "venue_id": "invalid-flat-v",
+    "opening_hours": "18:00-01:00",  # non-default flat
+    "opening_hours_structured": {"mon": [["18:00", "01:00"]]},  # partial -> invalid
+}
+
+
 class TestHoursAuthority:
     @pytest.mark.asyncio
     async def test_default_hours_returns_miss(self):
@@ -436,7 +478,7 @@ class TestHoursAuthority:
 
     @pytest.mark.asyncio
     async def test_structured_hours_returns_hedge(self):
-        svc = _svc(venues=[LAOS_VENUE])  # has structured
+        svc = _svc(venues=[LAOS_VENUE])  # has structured (7-day)
         resp = await svc.handle_ask(
             question="What time does it open?",
             geo_region="vientiane_laos",
@@ -445,14 +487,35 @@ class TestHoursAuthority:
         )
         assert resp.path == AskPath.GROUNDED_DETERMINISTIC
         assert resp.tier == TrustTier.HEDGE
-        assert resp.tier != TrustTier.ASSERT
-        # Blocker 4: structured hours must be rendered directly
         assert "Mon 17:00-23:00" in resp.answer
         assert "Tue 17:00-23:00" in resp.answer
 
+    # ---- Brief test 1: closed day is grounded ----
     @pytest.mark.asyncio
-    async def test_malformed_structured_hours_returns_miss(self):
-        """Partial weekdays (missing days) must produce RETRIEVAL_MISS."""
+    async def test_closed_day_is_grounded(self):
+        """Venue closed Sunday (sun: []) must still be GROUNDED_DETERMINISTIC.
+
+        Answer must render Mon-Sat hours and must NOT claim Sunday is open.
+        """
+        svc = _svc(venues=[LAOS_VENUE_CLOSED_SUNDAY])
+        resp = await svc.handle_ask(
+            question="What are the opening hours?",
+            geo_region="vientiane_laos",
+            user_id="u1",
+            venue_name="Ban Anou Night Market",
+        )
+        assert resp.path == AskPath.GROUNDED_DETERMINISTIC, (
+            f"Closed-Sunday venue must be grounded, got {resp.path}"
+        )
+        assert "Mon 17:00-23:00" in resp.answer
+        assert "Sat 17:00-23:00" in resp.answer
+        # Sunday is closed -> must not appear in rendered hours
+        assert "Sun" not in resp.answer
+
+    # ---- Brief test 2: partial week still misses ----
+    @pytest.mark.asyncio
+    async def test_partial_week_returns_miss(self):
+        """Only 'mon' present -> RETRIEVAL_MISS."""
         venue = {
             **LAOS_VENUE,
             "venue_id": "partial-v",
@@ -467,8 +530,10 @@ class TestHoursAuthority:
         )
         assert resp.path == AskPath.RETRIEVAL_MISS
 
+    # ---- Brief test 3: empty dict still misses ----
     @pytest.mark.asyncio
-    async def test_empty_dict_structured_hours_returns_miss(self):
+    async def test_empty_dict_returns_miss(self):
+        """opening_hours_structured: {} -> RETRIEVAL_MISS."""
         venue = {
             **LAOS_VENUE,
             "venue_id": "empty-v",
@@ -483,11 +548,48 @@ class TestHoursAuthority:
         )
         assert resp.path == AskPath.RETRIEVAL_MISS
 
-    def test_validate_valid(self):
-        assert _validate_structured_hours(LAOS_VENUE["opening_hours_structured"])
+    # ---- Brief test 4: impossible clock still misses ----
+    @pytest.mark.asyncio
+    async def test_impossible_clock_returns_miss(self):
+        """All seven days present, slot [25:99, 26:00] -> RETRIEVAL_MISS."""
+        svc = _svc(venues=[LAOS_VENUE_BAD_CLOCK])
+        resp = await svc.handle_ask(
+            question="What time does it open?",
+            geo_region="vientiane_laos",
+            user_id="u1",
+            venue_name="Ban Anou Night Market",
+        )
+        assert resp.path == AskPath.RETRIEVAL_MISS
 
-    def test_validate_missing_days(self):
-        assert not _validate_structured_hours({"mon": [["09:00", "17:00"]]})
+    # ---- Brief test 5: no flat fallback ----
+    @pytest.mark.asyncio
+    async def test_invalid_structured_no_flat_fallback(self):
+        """Invalid structured + non-default flat hours -> RETRIEVAL_MISS.
+
+        The flat string must NOT be surfaced when structured data exists.
+        """
+        svc = _svc(venues=[LAOS_VENUE_INVALID_PLUS_FLAT])
+        resp = await svc.handle_ask(
+            question="What time does it open?",
+            geo_region="vientiane_laos",
+            user_id="u1",
+            venue_name="Ban Anou Night Market",
+        )
+        assert resp.path == AskPath.RETRIEVAL_MISS
+        assert "18:00-01:00" not in resp.answer  # flat string not leaked
+
+    # ---- Validator unit tests (via SPEC-41 import) ----
+    def test_validate_valid_full_week(self):
+        assert is_valid_structured_hours(LAOS_VENUE["opening_hours_structured"])
+
+    def test_validate_closed_day_valid(self):
+        assert is_valid_structured_hours(LAOS_VENUE_CLOSED_SUNDAY["opening_hours_structured"])
+
+    def test_validate_missing_days_invalid(self):
+        assert not is_valid_structured_hours({"mon": [["09:00", "17:00"]]})
+
+    def test_validate_impossible_clock_invalid(self):
+        assert not is_valid_structured_hours(LAOS_VENUE_BAD_CLOCK["opening_hours_structured"])
 
     def test_validate_bad_slot_format(self):
         bad = {
@@ -502,12 +604,17 @@ class TestHoursAuthority:
                 "sun",
             ]
         }
-        assert not _validate_structured_hours(bad)
+        assert not is_valid_structured_hours(bad)
 
     def test_render_full_week(self):
         result = _render_structured_hours(LAOS_VENUE["opening_hours_structured"])
         assert "Mon 17:00-23:00" in result
         assert "Sun 17:00-23:00" in result
+
+    def test_render_skips_closed_day(self):
+        result = _render_structured_hours(LAOS_VENUE_CLOSED_SUNDAY["opening_hours_structured"])
+        assert "Mon 17:00-23:00" in result
+        assert "Sun" not in result
 
 
 # ===========================================================================

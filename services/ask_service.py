@@ -24,6 +24,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from services.opening_hours import is_valid_structured_hours as _validate_structured_hours
 
 logger = logging.getLogger("ask_service")
 
@@ -388,32 +389,9 @@ def _classify_plan_change(message: str) -> Optional[str]:
 # ---------------------------------------------------------------------------
 
 _DAY_ORDER = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
-_HH_MM_RE = __import__("re").compile(r"^\d{2}:\d{2}$")
 
-
-def _is_valid_slot(slot: Any) -> bool:
-    """A valid slot is a two-element list of HH:MM strings."""
-    return (
-        isinstance(slot, (list, tuple))
-        and len(slot) == 2
-        and isinstance(slot[0], str)
-        and isinstance(slot[1], str)
-        and bool(_HH_MM_RE.match(slot[0]))
-        and bool(_HH_MM_RE.match(slot[1]))
-    )
-
-
-def _validate_structured_hours(structured: Any) -> bool:
-    """SPEC-41: structured hours must have all 7 weekdays with valid windows."""
-    if not isinstance(structured, dict):
-        return False
-    for day in _DAY_ORDER:
-        slots = structured.get(day)
-        if not isinstance(slots, list) or not slots:
-            return False
-        if not all(_is_valid_slot(s) for s in slots):
-            return False
-    return True
+# Hours validation delegates to the canonical SPEC-41 evaluator
+# (imported at module top as _validate_structured_hours).
 
 
 def _render_structured_hours(structured: Dict[str, Any]) -> str:
