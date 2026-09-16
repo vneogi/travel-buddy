@@ -35,7 +35,7 @@ const _requiredFields = <String>[
 /// Strips a known suffix (e.g. '.txt') by length, not replaceAll,
 /// so the suffix pattern cannot accidentally match interior text.
 String _normalizeFixtureKey(String relativePath, String suffix) {
-  final normalized = relativePath.replaceAll(Platform.pathSeparator, '/');
+  final normalized = relativePath.replaceAll('\\', '/');
   if (normalized.endsWith(suffix)) {
     return normalized.substring(0, normalized.length - suffix.length);
   }
@@ -61,7 +61,7 @@ List<FixtureCase> loadFixtures(String fixtureRoot) {
   for (final providerDir in root.listSync().whereType<Directory>()) {
     for (final file in providerDir.listSync().whereType<File>()) {
       final rel = file.path.substring(root.path.length + 1);
-      final normalized = rel.replaceAll(Platform.pathSeparator, '/');
+      final normalized = rel.replaceAll('\\', '/');
       if (normalized.endsWith('.txt')) {
         discoveredTxt.add(
             _normalizeFixtureKey(rel, '.txt'));
