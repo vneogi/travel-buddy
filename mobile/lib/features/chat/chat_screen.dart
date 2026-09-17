@@ -71,7 +71,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                   entry.userText,
                                 )
                             : null,
-                        onDismissProposal: hasProposal ? () {} : null,
+                        onDismissProposal: hasProposal
+                            ? () => setState(() => _messages.remove(entry))
+                            : null,
                       );
                     },
                   ),
@@ -165,7 +167,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         tripId: widget.tripId,
         type: eventType,
         message: text,
-        targetNodeId: intent == AskIntent.question ? null : target?.nodeId,
+        targetNodeId: target?.nodeId,
       );
       if (!mounted) return;
       setState(() {
@@ -217,13 +219,25 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ProposalEventType.addActivity => EventType.addActivity,
       ProposalEventType.reroute => EventType.reroute,
     };
+    // Use proposal target if backend provided one; otherwise fall back to
+    // the current/next movable stop (same resolution _send uses).
+    String? resolvedTarget = proposal.targetNodeId.isNotEmpty
+        ? proposal.targetNodeId
+        : null;
+    if (resolvedTarget == null) {
+      final itState = ref.read(itineraryControllerProvider(widget.tripId));
+      final fallback = nextMovableStop(
+        itState.nodes,
+        DateTime.now().toUtc(),
+        excludedNodeIds: itState.nodeOutcomes.keys.toSet(),
+      );
+      resolvedTarget = fallback?.nodeId;
+    }
     await ref.read(tripEventProvider).sendEvent(
       tripId: widget.tripId,
       type: eventType,
       message: originalText,
-      targetNodeId: proposal.targetNodeId.isNotEmpty
-          ? proposal.targetNodeId
-          : null,
+      targetNodeId: resolvedTarget,
     );
   }
 

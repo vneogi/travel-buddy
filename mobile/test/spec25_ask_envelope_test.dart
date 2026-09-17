@@ -103,6 +103,20 @@ AskResponse _planChange() => const AskResponse(
       ),
     );
 
+/// Plan-change with empty targetNodeId: confirm must fall back to
+/// nextMovableStop (harness node 'n1').
+AskResponse _planChangeEmptyTarget() => const AskResponse(
+      answer: 'I can swap that activity for you.',
+      tier: AskTier.defer_,
+      path: AskPath.groundedDeterministic,
+      intent: AskResponseIntent.planChange,
+      proposal: AskProposal(
+        eventType: ProposalEventType.swapActivity,
+        targetNodeId: '',
+        summary: 'Swap for a museum',
+      ),
+    );
+
 TripNode _node({
   required String id,
   required String name,
@@ -446,23 +460,25 @@ void main() {
   });
 
   // =========================================================================
-  // 8. ChatScreen plan-change confirm: sendEvent with correct args.
+  // 8. ChatScreen plan-change confirm with empty target -> fallback to n1.
   // =========================================================================
   group('ChatScreen plan-change confirm', () {
     testWidgets(
-      'confirm sends EventType.swapActivity with original text and targetNodeId',
+      'confirm with empty target falls back to nextMovableStop',
       (tester) async {
+        // 'Is there a museum nearby?' classifies as AskIntent.question.
+        // Backend returns plan_change with EMPTY targetNodeId.
         final harness = await _ChatHarness.create(
           nextResult: TripEventResult(
             message: '',
             updatedNodes: const [],
             routingTier: 'light',
             fromCache: false,
-            askResponse: _planChange(),
+            askResponse: _planChangeEmptyTarget(),
           ),
         );
         await harness.pump(tester);
-        await harness.send(tester, 'replace next stop with a museum');
+        await harness.send(tester, 'Is there a museum nearby?');
 
         // AskBubble with confirm is present.
         expect(find.byType(ConfirmAffordance), findsOneWidget);
@@ -472,22 +488,66 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        // Verify second sendEvent used the original text, not proposal.summary.
+        // Verify both sendEvent calls.
         final captured = verify(() => harness.mockService.sendEvent(
               tripId: captureAny(named: 'tripId'),
               type: captureAny(named: 'type'),
               message: captureAny(named: 'message'),
               targetNodeId: captureAny(named: 'targetNodeId'),
             )).captured;
-        // Two calls: first askInfo, second swapActivity.
-        expect(captured.length, 8); // 4 named args x 2 calls
-        // Second call (indices 4-7): type, message, targetNodeId.
+        // Two calls: first askInfo, second swapActivity (4 args each).
+        expect(captured.length, 8);
+        // First call: askInfo sends target 'n1' (not null).
+        expect(captured[1], EventType.askInfo);
+        expect(captured[3], 'n1');
+        // Second call: swapActivity, original text, fallback 'n1'.
         expect(captured[5], EventType.swapActivity);
-        expect(captured[6], 'replace next stop with a museum');
-        expect(captured[7], 'node-42');
+        expect(captured[6], 'Is there a museum nearby?');
+        expect(captured[7], 'n1');
 
         harness.dispose();
       },
     );
+  });
+
+  // =========================================================================
+  // 9. ChatScreen dismiss: removes proposal entry, no sendEvent.
+  // =========================================================================
+  group('ChatScreen dismiss', () {
+    testWidgets('dismiss removes proposal entry from chat', (tester) async {
+      final harness = await _ChatHarness.create(
+        nextResult: TripEventResult(
+          message: '',
+          updatedNodes: const [],
+          routingTier: 'light',
+          fromCache: false,
+          askResponse: _planChangeEmptyTarget(),
+        ),
+      );
+      await harness.pump(tester);
+      await harness.send(tester, 'Is there a museum nearby?');
+
+      // Proposal is visible.
+      expect(find.byType(ConfirmAffordance), findsOneWidget);
+      expect(find.byKey(const Key('ask_plan_change_confirm')), findsOneWidget);
+
+      // Tap dismiss (X icon).
+      await tester.tap(find.byIcon(Icons.close));
+      await tester.pump();
+
+      // Proposal entry removed from chat.
+      expect(find.byType(ConfirmAffordance), findsNothing);
+      expect(find.byKey(const Key('ask_plan_change_confirm')), findsNothing);
+
+      // Only the first sendEvent (askInfo) happened; no confirm call.
+      verify(() => harness.mockService.sendEvent(
+            tripId: any(named: 'tripId'),
+            type: any(named: 'type'),
+            message: any(named: 'message'),
+            targetNodeId: any(named: 'targetNodeId'),
+          )).called(1);
+
+      harness.dispose();
+    });
   });
 }
