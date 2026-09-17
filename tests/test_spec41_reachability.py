@@ -489,12 +489,17 @@ class TestSchedulerWalking:
         assert result.has_hard_conflict is True
 
     def test_hotel_does_not_create_overrun(self):
-        """Hotel dwell does not push later activity to a different DAY.
+        """Hotel dwell does not push later activity -- background anchor.
 
-        SPEC-10 hotel morning origin shifts the first activity of a covered
-        day by walking time from the hotel, but does NOT push it across days
-        the way the hotel's 2760-min timeline duration would if hotels were
-        treated as regular stops.
+        SPEC-10 hotel morning origin on a later covered day computes
+        local 09:00 -> UTC as the origin instant.  For vang_vieng_laos
+        (UTC+7), local 09:00 Oct 5 = 02:00 UTC.  Walking ~19 min gives
+        02:19 UTC, which is well before the activity at 09:00 UTC.
+        So the activity stays exactly at its original time.
+
+        Sabotage proof: removing _is_background_anchor would push
+        the activity to Oct 6 12:00 + transit via the hotel's 2760-min
+        timeline duration.
         """
         hotel_start = datetime(2026, 10, 4, 14, 0, tzinfo=timezone.utc)
         activity_start = datetime(2026, 10, 5, 9, 0, tzinfo=timezone.utc)
@@ -521,10 +526,8 @@ class TestSchedulerWalking:
         ]
         result = reschedule_and_validate(nodes)
         activity = [n for n in result.nodes if n.venue_name == "Activity"][0]
-        # SPEC-10: hotel morning origin adds walking time but stays same day.
-        assert activity.scheduled_start.date() == activity_start.date()
-        # Must not push to Oct 6 (which would happen without background anchor).
-        assert activity.scheduled_start < datetime(2026, 10, 6, 0, 0, tzinfo=timezone.utc)
+        # Exact: activity stays at its original time (hotel origin < activity).
+        assert activity.scheduled_start == activity_start
         assert result.has_hard_conflict is False
 
     def test_two_calls_same_result_no_drift(self):

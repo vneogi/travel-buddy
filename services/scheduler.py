@@ -124,14 +124,12 @@ def reschedule_and_validate(
                         and _m.isfinite(_htl.lng)
                     )
                     if _h_ok and _has_coords(node):
-                        _origin_instant = hotel_morning_origin(
-                            _htl,
-                            _geo,
-                            _nld,
-                            _ensure_aware(node.scheduled_start),
-                        )
-                        _walk = walking_minutes(_htl.lat, _htl.lng, node.lat, node.lng)
-                        _hotel_earliest = _origin_instant + timedelta(minutes=_walk)
+                        _origin_instant = hotel_morning_origin(_htl, _geo, _nld)
+                        if _origin_instant is not None:
+                            _node_utc = _ensure_aware(node.scheduled_start)
+                            if _node_utc >= _origin_instant:
+                                _walk = walking_minutes(_htl.lat, _htl.lng, node.lat, node.lng)
+                                _hotel_earliest = _origin_instant + timedelta(minutes=_walk)
 
         # ----- Chain walking from prev_active -----
         transit_min = 0

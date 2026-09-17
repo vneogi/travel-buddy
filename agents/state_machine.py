@@ -160,16 +160,14 @@ def _is_swap_reachable(
             target_node, nodes, target_region, _slot_ld
         ):
             if _finite(_htl.lat) and _finite(_htl.lng):
-                _origin_instant = hotel_morning_origin(
-                    _htl,
-                    target_region,
-                    _slot_ld,
-                    _ensure_aware(target_node.scheduled_start),
-                )
-                _walk = _walking_minutes(_htl.lat, _htl.lng, cand_lat, cand_lng)
-                if _origin_instant + _td(minutes=_walk) > target_node.scheduled_start:
-                    return False
-                _used_hotel_origin = True
+                _origin_instant = hotel_morning_origin(_htl, target_region, _slot_ld)
+                if _origin_instant is not None:
+                    _target_utc = _ensure_aware(target_node.scheduled_start)
+                    if _target_utc >= _origin_instant:
+                        _walk = _walking_minutes(_htl.lat, _htl.lng, cand_lat, cand_lng)
+                        if _origin_instant + _td(minutes=_walk) > _target_utc:
+                            return False
+                        _used_hotel_origin = True
 
     if not _used_hotel_origin and prev_active is not None:
         pa_region = getattr(prev_active, "geo_region", None)

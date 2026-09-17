@@ -303,17 +303,44 @@ def violates_hotel_return(
     return activity_end + timedelta(minutes=walk) > wall
 
 
+def local_09_utc(geo_region: str, local_date) -> datetime:
+    """Return the UTC instant of 09:00 destination-local on *local_date*."""
+    tz = _dest_tz(geo_region)
+    if tz is not None:
+        morning_local = datetime(
+            local_date.year,
+            local_date.month,
+            local_date.day,
+            9,
+            0,
+            0,
+            tzinfo=tz,
+        )
+        return morning_local.astimezone(timezone.utc)
+    return datetime(
+        local_date.year,
+        local_date.month,
+        local_date.day,
+        9,
+        0,
+        0,
+        tzinfo=timezone.utc,
+    )
+
+
 def hotel_morning_origin(
     hotel: TripNode,
     geo_region: str,
     local_date,
-    day_pack_start_utc: datetime,
-) -> datetime:
+) -> Optional[datetime]:
     """UTC instant from which the first activity of *local_date*
     should compute walking departure from the hotel.
 
-    On the check-in local day: use the check-in instant.
-    On later covered mornings: use day_pack_start_utc (existing 09:00 cursor).
+    On the check-in local day: use hotel.scheduled_start (the check-in
+    instant).  Activities scheduled before that instant are not shifted.
+    On later covered mornings: use destination-local 09:00 converted to UTC.
+
+    Returns None if the hotel does not cover *local_date*.
     """
     start = _ensure_aware(hotel.scheduled_start)
     tz = _dest_tz(geo_region)
@@ -324,7 +351,7 @@ def hotel_morning_origin(
 
     if local_date == checkin_local_date:
         return start
-    return day_pack_start_utc
+    return local_09_utc(geo_region, local_date)
 
 
 def is_first_unlocked_activity(
