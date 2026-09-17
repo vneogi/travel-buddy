@@ -489,7 +489,13 @@ class TestSchedulerWalking:
         assert result.has_hard_conflict is True
 
     def test_hotel_does_not_create_overrun(self):
-        """Hotel dwell does not push later activity or trigger hard conflict."""
+        """Hotel dwell does not push later activity to a different DAY.
+
+        SPEC-10 hotel morning origin shifts the first activity of a covered
+        day by walking time from the hotel, but does NOT push it across days
+        the way the hotel's 2760-min timeline duration would if hotels were
+        treated as regular stops.
+        """
         hotel_start = datetime(2026, 10, 4, 14, 0, tzinfo=timezone.utc)
         activity_start = datetime(2026, 10, 5, 9, 0, tzinfo=timezone.utc)
         nodes = [
@@ -515,7 +521,10 @@ class TestSchedulerWalking:
         ]
         result = reschedule_and_validate(nodes)
         activity = [n for n in result.nodes if n.venue_name == "Activity"][0]
-        assert activity.scheduled_start == activity_start
+        # SPEC-10: hotel morning origin adds walking time but stays same day.
+        assert activity.scheduled_start.date() == activity_start.date()
+        # Must not push to Oct 6 (which would happen without background anchor).
+        assert activity.scheduled_start < datetime(2026, 10, 6, 0, 0, tzinfo=timezone.utc)
         assert result.has_hard_conflict is False
 
     def test_two_calls_same_result_no_drift(self):

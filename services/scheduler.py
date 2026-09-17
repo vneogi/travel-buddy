@@ -23,10 +23,13 @@ from typing import List, Optional, Set
 
 from models.schemas import TripNode, NodeStatus
 from services.booking_constraints import (
+    _ensure_aware,
+    _local_date_of,
+    find_constraining_flight,
     find_covering_hotel,
-    find_next_flight_constraint,
-    hotel_evening_wall,
     hotel_morning_origin,
+    is_first_unlocked_activity,
+    is_last_unlocked_activity,
     is_locked_flight,
     violates_flight_cutoff,
     violates_hotel_return,
@@ -86,14 +89,13 @@ def reschedule_and_validate(
 
     SPEC-10: preceding-evening flight cutoff and hotel evening-return wall.
     """
+    import math as _m
+
     warnings: List[str] = []
     has_hard_conflict = False
 
     # Snapshot original start times to detect shifted nodes.
     original_starts = {n.node_id: n.scheduled_start for n in nodes}
-
-    # Pre-collect locked flights for cross-midnight cutoff checks.
-    locked_flights = [n for n in nodes if is_locked_flight(n)]
 
     prev_active = None
     prev_active_end = None
@@ -102,6 +104,36 @@ def reschedule_and_validate(
         if node.status == NodeStatus.SKIPPED:
             continue
 
+        # ----- SPEC-10: hotel morning origin for first unlocked activity -----
+        _hotel_earliest = None
+        _is_activity = (
+            not node.is_locked
+            and not _is_background_anchor(node)
+            and getattr(node, "node_kind", "activity") != "booking"
+        )
+        if _is_activity:
+            _geo = getattr(node, "geo_region", None)
+            if _geo:
+                _nld = _local_date_of(_ensure_aware(node.scheduled_start), _geo)
+                _htl = find_covering_hotel(nodes, _geo, _nld)
+                if _htl is not None and is_first_unlocked_activity(node, nodes, _geo, _nld):
+                    _h_ok = (
+                        _htl.lat is not None
+                        and _htl.lng is not None
+                        and _m.isfinite(_htl.lat)
+                        and _m.isfinite(_htl.lng)
+                    )
+                    if _h_ok and _has_coords(node):
+                        _origin_instant = hotel_morning_origin(
+                            _htl,
+                            _geo,
+                            _nld,
+                            _ensure_aware(node.scheduled_start),
+                        )
+                        _walk = walking_minutes(_htl.lat, _htl.lng, node.lat, node.lng)
+                        _hotel_earliest = _origin_instant + timedelta(minutes=_walk)
+
+        # ----- Chain walking from prev_active -----
         transit_min = 0
         if (
             prev_active is not None
@@ -113,20 +145,31 @@ def reschedule_and_validate(
 
         earliest = prev_active_end + timedelta(minutes=transit_min) if prev_active_end else None
 
+        # Hotel origin: use the later of hotel-walk and chain-walk.
+        if _hotel_earliest is not None:
+            if earliest is not None and earliest.tzinfo is None:
+                earliest = earliest.replace(tzinfo=timezone.utc)
+            if earliest is None or _hotel_earliest > earliest:
+                earliest = _hotel_earliest
+
         if node.is_locked:
-            if earliest is not None and earliest > node.scheduled_start:
+            _ns = _ensure_aware(node.scheduled_start)
+            if earliest is not None and _ensure_aware(earliest) > _ns:
                 has_hard_conflict = True
             start = node.scheduled_start
         else:
-            if earliest is not None and earliest > node.scheduled_start:
+            _ns = _ensure_aware(node.scheduled_start)
+            if earliest is not None and _ensure_aware(earliest) > _ns:
                 start = earliest
             else:
                 start = node.scheduled_start
             node.scheduled_start = start
 
-            # SPEC-10: check preceding-evening flight cutoff for unlocked non-hotel activities.
-            if not _is_background_anchor(node):
-                for fl in locked_flights:
+            # SPEC-10: flight cutoff -- scoped to the earliest future
+            # flight in the same region on the same/next local day.
+            if _is_activity:
+                fl = find_constraining_flight(nodes, node)
+                if fl is not None:
                     if violates_flight_cutoff(
                         node.scheduled_start,
                         node.duration_minutes,
@@ -136,32 +179,29 @@ def reschedule_and_validate(
                     ):
                         has_hard_conflict = True
                         warnings.append(f"'{node.venue_name}' conflicts with a scheduled flight.")
-                        break
 
-            # SPEC-10: hotel evening-return wall for last unlocked activity.
-            geo = getattr(node, "geo_region", None)
-            if geo and _has_coords(node):
-                tz = _dest_tz(geo)
-                _ns = node.scheduled_start
-                if _ns.tzinfo is None:
-                    _ns = _ns.replace(tzinfo=timezone.utc)
-                if tz is not None:
-                    node_local_date = _ns.astimezone(tz).date()
-                else:
-                    node_local_date = _ns.date()
-                hotel = find_covering_hotel(nodes, geo, node_local_date)
-                if hotel is not None:
-                    if violates_hotel_return(
-                        node.scheduled_start,
-                        node.duration_minutes,
-                        hotel,
-                        geo,
-                        node_local_date,
-                        activity_lat=node.lat,
-                        activity_lng=node.lng,
-                    ):
-                        has_hard_conflict = True
-                        warnings.append(f"'{node.venue_name}' cannot return to the hotel in time.")
+            # SPEC-10: hotel evening-return wall -- only the LAST unlocked
+            # activity of each region/local day.
+            if _is_activity:
+                geo = getattr(node, "geo_region", None)
+                if geo and _has_coords(node):
+                    _nld2 = _local_date_of(_ensure_aware(node.scheduled_start), geo)
+                    if is_last_unlocked_activity(node, nodes, geo, _nld2):
+                        hotel = find_covering_hotel(nodes, geo, _nld2)
+                        if hotel is not None:
+                            if violates_hotel_return(
+                                node.scheduled_start,
+                                node.duration_minutes,
+                                hotel,
+                                geo,
+                                _nld2,
+                                activity_lat=node.lat,
+                                activity_lng=node.lng,
+                            ):
+                                has_hard_conflict = True
+                                warnings.append(
+                                    f"'{node.venue_name}' cannot return to the hotel in time."
+                                )
 
         # Hours check: mutated node, shifted downstream, or unscoped.
         # Booking nodes (flights, hotels, trains, tours) are locked calendar

@@ -11,8 +11,12 @@ No randomness, no server clock, no network, no LLM.
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
-from models.schemas import TripNode
+from models.schemas import NodeStatus, TripNode
 from services.destination_tz import destination_tz as _dest_tz
+
+# ---------------------------------------------------------------------------
+# Naive-datetime guard
+# ---------------------------------------------------------------------------
 
 
 def _ensure_aware(dt: datetime) -> datetime:
@@ -20,6 +24,15 @@ def _ensure_aware(dt: datetime) -> datetime:
     if dt.tzinfo is None:
         return dt.replace(tzinfo=timezone.utc)
     return dt
+
+
+def _local_date_of(dt: datetime, geo_region: str):
+    """Destination-local date of *dt* in *geo_region*."""
+    aware = _ensure_aware(dt)
+    tz = _dest_tz(geo_region)
+    if tz is not None:
+        return aware.astimezone(tz).date()
+    return aware.date()
 
 
 # ---------------------------------------------------------------------------
@@ -107,31 +120,52 @@ def violates_flight_cutoff(
     return False
 
 
-def find_next_flight_constraint(
+def find_constraining_flight(
     nodes: List[TripNode],
-    geo_region: str,
-    local_date,
+    activity: TripNode,
 ) -> Optional[TripNode]:
-    """Return the next locked flight that constrains *local_date*.
+    """Return the earliest locked flight that constrains *activity*.
 
-    A flight constrains local_date when the flight's destination-local
-    date is local_date OR the next calendar day (cross-midnight: a 07:00
-    flight on D+1 constrains activities on evening of D).
+    Rules:
+      - Flight must be AFTER the activity in schedule order.
+      - Same geo_region.
+      - Flight's local date is the same local day as the activity OR the
+        immediately following local day (cross-midnight).
+      - Among qualifying flights, pick the earliest by scheduled_start,
+        then node_id for determinism.
     """
-    tz = _dest_tz(geo_region)
+    act_region = getattr(activity, "geo_region", None)
+    if not act_region:
+        return None
+
+    act_start = _ensure_aware(activity.scheduled_start)
+    act_local_date = _local_date_of(act_start, act_region)
+
+    best: Optional[TripNode] = None
     for node in nodes:
         if not is_locked_flight(node):
             continue
+        fl_region = getattr(node, "geo_region", None)
+        if fl_region != act_region:
+            continue
         fl_start = _ensure_aware(node.scheduled_start)
-        if tz is not None:
-            flight_local = fl_start.astimezone(tz).date()
+        # Flight must be after the activity
+        if fl_start <= act_start:
+            continue
+        fl_local_date = _local_date_of(fl_start, act_region)
+        delta_days = (fl_local_date - act_local_date).days
+        if delta_days not in (0, 1):
+            continue
+        # Eligible -- pick earliest, then node_id
+        if best is None:
+            best = node
         else:
-            flight_local = fl_start.date()
-        # Same day or next day (cross-midnight constraint)
-        delta = (flight_local - local_date).days
-        if delta in (0, 1):
-            return node
-    return None
+            best_start = _ensure_aware(best.scheduled_start)
+            if fl_start < best_start:
+                best = node
+            elif fl_start == best_start and node.node_id < best.node_id:
+                best = node
+    return best
 
 
 # ---------------------------------------------------------------------------
@@ -193,7 +227,6 @@ def find_covering_hotel(
             if best is None:
                 best = node
             else:
-                # Prefer later check-in, then node_id
                 if node.scheduled_start > best.scheduled_start:
                     best = node
                 elif node.scheduled_start == best.scheduled_start and node.node_id > best.node_id:
@@ -202,11 +235,7 @@ def find_covering_hotel(
 
 
 def hotel_evening_wall(hotel: TripNode, geo_region: str, local_date) -> datetime:
-    """Return the UTC instant of HOTEL_RETURN_LOCAL_HOUR on *local_date*.
-
-    This is the latest UTC moment by which the last activity's end +
-    walking must complete.
-    """
+    """Return the UTC instant of HOTEL_RETURN_LOCAL_HOUR on *local_date*."""
     tz = _dest_tz(geo_region)
     if tz is not None:
         wall_local = datetime(
@@ -280,7 +309,7 @@ def hotel_morning_origin(
     local_date,
     day_pack_start_utc: datetime,
 ) -> datetime:
-    """Return the UTC instant from which the first activity of *local_date*
+    """UTC instant from which the first activity of *local_date*
     should compute walking departure from the hotel.
 
     On the check-in local day: use the check-in instant.
@@ -296,3 +325,54 @@ def hotel_morning_origin(
     if local_date == checkin_local_date:
         return start
     return day_pack_start_utc
+
+
+def is_first_unlocked_activity(
+    node: TripNode,
+    all_nodes: List[TripNode],
+    geo_region: str,
+    local_date,
+) -> bool:
+    """True when *node* is the first unlocked non-booking activity on
+    *local_date* in *geo_region* (excludes skipped/locked/bookings)."""
+    for n in all_nodes:
+        if n.node_id == node.node_id:
+            return True
+        if n.status == NodeStatus.SKIPPED:
+            continue
+        if n.is_locked:
+            continue
+        if getattr(n, "node_kind", "activity") == "booking":
+            continue
+        n_region = getattr(n, "geo_region", None)
+        if n_region != geo_region:
+            continue
+        n_date = _local_date_of(_ensure_aware(n.scheduled_start), geo_region)
+        if n_date == local_date:
+            return False  # found an earlier unlocked activity
+    return True
+
+
+def is_last_unlocked_activity(
+    node: TripNode,
+    all_nodes: List[TripNode],
+    geo_region: str,
+    local_date,
+) -> bool:
+    """True when *node* is the last unlocked non-booking activity on
+    *local_date* in *geo_region*."""
+    last = None
+    for n in all_nodes:
+        if n.status == NodeStatus.SKIPPED:
+            continue
+        if n.is_locked:
+            continue
+        if getattr(n, "node_kind", "activity") == "booking":
+            continue
+        n_region = getattr(n, "geo_region", None)
+        if n_region != geo_region:
+            continue
+        n_date = _local_date_of(_ensure_aware(n.scheduled_start), geo_region)
+        if n_date == local_date:
+            last = n
+    return last is not None and last.node_id == node.node_id

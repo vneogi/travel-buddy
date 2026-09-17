@@ -137,9 +137,14 @@ def test_hotel_booking_does_not_push_later_activity(monkeypatch):
     ]
     result = reschedule_and_validate(nodes)
 
-    # The activity must stay at Oct 5 09:00 -- NOT pushed to Oct 6.
+    # SPEC-10: hotel morning origin shifts first activity by walk time
+    # (the hotel still does not push via timeline occupancy to Oct 6).
     blue_lagoon = [n for n in result.nodes if n.venue_name == "Blue Lagoon"][0]
-    assert blue_lagoon.scheduled_start == activity_start
+    # On a later covered day, origin = day_pack_start_utc (09:00 naive) + 30 min walk
+    from datetime import timezone as _tz
+
+    expected = activity_start.replace(tzinfo=_tz.utc) + timedelta(minutes=30)
+    assert blue_lagoon.scheduled_start == expected
     assert result.has_hard_conflict is False
 
 

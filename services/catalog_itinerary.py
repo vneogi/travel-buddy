@@ -10,15 +10,6 @@ from typing import Iterable, List, Optional, Sequence
 from config.interests import VENUES_PER_DAY
 from config.regions import REGIONS, require_region
 from models.schemas import CurrentContext, TripNode
-from services.booking_constraints import (
-    find_covering_hotel,
-    find_next_flight_constraint,
-    hotel_evening_wall,
-    hotel_morning_origin,
-    is_locked_flight,
-    violates_flight_cutoff,
-    violates_hotel_return,
-)
 from services.opening_hours import HoursResult as _HoursResult
 from services.opening_hours import hours_for_slot as _hours_for_slot
 from services.opening_hours import next_slot_start as _next_slot_start
@@ -188,7 +179,6 @@ def pack_day(
     interest_ids: Sequence[str] = (),
     bucket_diversity: bool = True,
     next_locked_booking: Optional[TripNode] = None,
-    all_trip_nodes: Optional[List[TripNode]] = None,
 ) -> tuple[List[TripNode], set[str]]:
     """Fill one day with up to *target_count* venues using window packing.
 
@@ -201,14 +191,13 @@ def pack_day(
        (already filtered in *candidates*).
     2. For every remaining candidate, compute its per-candidate earliest
        start = prev_end + walking_minutes(prev, C).  First stop of the
-       day has no transfer (unless a hotel covers this day).
+       day has no transfer.
     3. Pass that earliest start into ``next_slot_start``.
     4. Select the candidate with the earliest fitting start; for ties,
        retain the deterministic rank order.
     5. If a next_locked_booking exists on the same day, verify the
        candidate can walk there before the lock starts.
-    6. Check flight cutoff (cross-midnight) and hotel evening return.
-    7. Repeat until target_count or no candidate fits.
+    6. Repeat until target_count or no candidate fits.
 
     Returns (nodes, new_used_ids) without mutating caller inputs.
     """
@@ -221,13 +210,6 @@ def pack_day(
         local_day = day_start_utc.astimezone(tz)
     else:
         local_day = day_start_utc
-    local_date = local_day.date() if hasattr(local_day, "date") else local_day
-
-    # SPEC-10: Resolve covering hotel and constraining flight for this day.
-    _all_nodes = all_trip_nodes or []
-    day_hotel = find_covering_hotel(_all_nodes, geo_region, local_date)
-    day_flight = find_next_flight_constraint(_all_nodes, geo_region, local_date)
-
     # Pre-score and sort candidates for deterministic tie-breaking.
     scored = sorted(
         candidates,
@@ -246,36 +228,9 @@ def pack_day(
     prev_node: Optional[TripNode] = None
 
     def _candidate_earliest(venue: dict) -> Optional[datetime]:
-        """Compute candidate's earliest arrival accounting for walking transfer.
-
-        SPEC-10: First stop of a hotel-covered day uses hotel as walking origin.
-        """
+        """Compute candidate's earliest arrival accounting for walking transfer."""
         if prev_node is None:
-            # First stop of the day.
-            if day_hotel is not None and _has_venue_coords(venue):
-                import math as _m
-
-                h_has = (
-                    day_hotel.lat is not None
-                    and day_hotel.lng is not None
-                    and _m.isfinite(day_hotel.lat)
-                    and _m.isfinite(day_hotel.lng)
-                )
-                if h_has:
-                    origin_instant = hotel_morning_origin(
-                        day_hotel,
-                        geo_region,
-                        local_date,
-                        day_start_utc,
-                    )
-                    walk = _walking_minutes(
-                        day_hotel.lat,
-                        day_hotel.lng,
-                        venue["lat"],
-                        venue["lng"],
-                    )
-                    return max(day_start_utc, origin_instant + timedelta(minutes=walk))
-            return day_start_utc  # no hotel or no coords
+            return day_start_utc
         if prev_node.lat is None or prev_node.lng is None:
             return None  # prev has no coords -> ineligible
         if not _has_venue_coords(venue):
@@ -289,21 +244,7 @@ def pack_day(
 
         Ignores the lock when it is a hotel (background anchor), belongs to a
         different geo_region, or falls on a different destination-local day.
-
-        SPEC-10: Also checks cross-midnight flight cutoff.
         """
-        # SPEC-10: flight cutoff (cross-midnight)
-        if day_flight is not None:
-            v_lat = venue.get("lat") if _has_venue_coords(venue) else None
-            v_lng = venue.get("lng") if _has_venue_coords(venue) else None
-            if violates_flight_cutoff(
-                slot,
-                dwell,
-                day_flight,
-                activity_lat=v_lat,
-                activity_lng=v_lng,
-            ):
-                return False
         if next_locked_booking is None:
             return True
         lock = next_locked_booking
@@ -370,19 +311,6 @@ def pack_day(
             # Next-locked-booking check
             if not _fits_next_lock(venue, slot, dwell):
                 continue
-
-            # SPEC-10: hotel evening-return wall
-            if day_hotel is not None and _has_venue_coords(venue):
-                if violates_hotel_return(
-                    slot,
-                    dwell,
-                    day_hotel,
-                    geo_region,
-                    local_date,
-                    activity_lat=venue["lat"],
-                    activity_lng=venue["lng"],
-                ):
-                    continue
 
             # Bucket diversity: in pass 1, prefer unfilled buckets
             if bucket_diversity and len(nodes) < min(target_count, len(CATEGORY_BUCKETS)):
