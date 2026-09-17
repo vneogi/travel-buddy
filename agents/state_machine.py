@@ -30,8 +30,15 @@ from services.cache_service import cache_service
 import math
 from datetime import timedelta as _td
 
+from services.booking_constraints import (
+    find_covering_hotel,
+    find_next_flight_constraint,
+    violates_flight_cutoff,
+    violates_hotel_return,
+)
 from services.catalog_itinerary import duration_for as _duration_for
 from services.destination_tz import destination_tz as _dest_tz
+from services.destination_tz import to_destination_local as _to_local
 from services.maps_service import maps_service
 from services.opening_hours import HoursResult as _HoursResult
 from services.transit import walking_minutes as _walking_minutes
@@ -181,6 +188,44 @@ def _is_swap_reachable(
         transfer = _walking_minutes(cand_lat, cand_lng, next_lock.lat, next_lock.lng)
         if cand_end + _td(minutes=transfer) > next_lock.scheduled_start:
             return False
+
+    # --- SPEC-10: flight cutoff ---
+    if target_region:
+        tz = _dest_tz(target_region)
+        if tz is not None:
+            slot_local = target_node.scheduled_start.astimezone(tz).date()
+        else:
+            slot_local = target_node.scheduled_start.date()
+        fl = find_next_flight_constraint(nodes, target_region, slot_local)
+        if fl is not None:
+            if violates_flight_cutoff(
+                target_node.scheduled_start,
+                cand_dwell,
+                fl,
+                activity_lat=cand_lat,
+                activity_lng=cand_lng,
+            ):
+                return False
+
+    # --- SPEC-10: hotel evening-return wall ---
+    if target_region and _finite(cand_lat) and _finite(cand_lng):
+        tz = _dest_tz(target_region)
+        if tz is not None:
+            slot_local_date = target_node.scheduled_start.astimezone(tz).date()
+        else:
+            slot_local_date = target_node.scheduled_start.date()
+        hotel = find_covering_hotel(nodes, target_region, slot_local_date)
+        if hotel is not None:
+            if violates_hotel_return(
+                target_node.scheduled_start,
+                cand_dwell,
+                hotel,
+                target_region,
+                slot_local_date,
+                activity_lat=cand_lat,
+                activity_lng=cand_lng,
+            ):
+                return False
 
     return True
 

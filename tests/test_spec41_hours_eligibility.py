@@ -261,8 +261,12 @@ class TestCreateHoursFiltering:
         rows.extend(
             [
                 _make_venue_row(
-                    f"Eve_{i}", structured=_evening_hours(), category="market", dwell=60,
-                    lat=20.39, lng=103.13,  # ~60 km away -> walking takes ~720 min
+                    f"Eve_{i}",
+                    structured=_evening_hours(),
+                    category="market",
+                    dwell=60,
+                    lat=20.39,
+                    lng=103.13,  # ~60 km away -> walking takes ~720 min
                 )
                 for i in range(7)
             ]
