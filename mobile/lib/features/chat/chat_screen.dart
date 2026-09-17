@@ -3,9 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/connectivity_helper.dart';
 import '../../core/destination_tz.dart';
 import '../../data/models.dart';
-import '../../render/fact_envelope.dart';
-import '../../render/fact_view.dart';
 import '../../render/offline_state.dart';
+import 'ask_bubble.dart';
 import '../../theme/colors.dart';
 import '../../theme/typography.dart';
 import '../../theme/spacing.dart';
@@ -169,9 +168,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ));
           return;
         }
-        // SPEC-25: ask_info with typed envelope -> render via FactView.
+        // SPEC-25: ask_info with typed envelope -> render via AskBubble.
         final ask = result.askResponse;
-        if (ask != null) {
+        if (eventType == EventType.askInfo) {
+          if (ask != null) {
+            _messages.add(_ChatEntry.askFact(ask));
+          } else {
+            // askInfo + missing envelope is a client error -- show failure.
+            _messages.add(const _ChatEntry.plainAssistant(
+              'I could not complete that request. Please try again.',
+            ));
+          }
+        } else if (ask != null) {
+          // Non-Ask events that still carry an envelope (unlikely, but safe).
           _messages.add(_ChatEntry.askFact(ask));
         } else {
           // Non-Ask events (swap/cancel/add) keep plain text.
@@ -310,57 +319,14 @@ class _ChatEntry {
   }
 
   Widget _buildAskFact(VoidCallback? onConfirmProposal) {
-    final ask = askResponse!;
-    // Ask UI never treats as asserted -- downgrade to hedge.
-    final factTier = ask.tier == AskTier.assert_
-        ? FactTier.hedge
-        : FactTier.fromWire(ask.tier.wire);
-    final envelope = FactEnvelope(
-      value: ask.answer,
-      source: ask.sourceClass.isNotEmpty ? ask.sourceClass : ask.path,
-      confidence: 0.0,
-      tier: factTier,
-      asOf: DateTime.now(),
-    );
-    if (ask.intent == 'plan_change' && ask.proposal != null) {
-      return Align(
-        key: const Key('ask_plan_change_confirm'),
-        alignment: Alignment.centerLeft,
-        child: Container(
-          margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-          constraints: const BoxConstraints(maxWidth: 280),
-          child: FactView(
-            envelope: envelope,
-            attribute: 'plan_change',
-            onConfirm: onConfirmProposal,
-          ),
-        ),
-      );
-    }
-    final showDisclaimer =
-        ask.intent == 'dish_fact' && ask.foodDisclaimer != null;
     return Align(
-      key: const Key('ask_fact_view'),
       alignment: Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.only(bottom: AppSpacing.sm),
         constraints: const BoxConstraints(maxWidth: 280),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            FactView(envelope: envelope, attribute: ask.intent),
-            if (showDisclaimer)
-              Padding(
-                padding: const EdgeInsets.only(top: AppSpacing.xs),
-                child: Text(
-                  ask.foodDisclaimer!,
-                  style: AppTypography.caption.copyWith(
-                    color: AppColors.muted,
-                  ),
-                ),
-              ),
-          ],
+        child: AskBubble(
+          askResponse: askResponse!,
+          onConfirm: onConfirmProposal,
         ),
       ),
     );

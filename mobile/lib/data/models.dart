@@ -550,11 +550,19 @@ class AskResponse {
     if (tierWire == null || tierWire is! String) {
       throw ArgumentError('AskResponse: missing or invalid "tier"');
     }
+    final path = j['path'] as String? ?? '';
+    if (path.isEmpty) {
+      throw ArgumentError('AskResponse: missing or empty "path"');
+    }
+    final intent = j['intent'] as String? ?? '';
+    if (intent.isEmpty) {
+      throw ArgumentError('AskResponse: missing or empty "intent"');
+    }
     return AskResponse(
       answer: j['answer'] as String? ?? '',
       tier: AskTier.fromWire(tierWire),
-      path: j['path'] as String? ?? '',
-      intent: j['intent'] as String? ?? '',
+      path: path,
+      intent: intent,
       sourceIds: ((j['source_ids'] as List?) ?? const []).cast<String>(),
       sourceClass: j['source_class'] as String? ?? '',
       fromCache: j['from_cache'] as bool? ?? false,
