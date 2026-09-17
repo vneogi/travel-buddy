@@ -1,9 +1,10 @@
-"""SPEC-10 booking-anchor constraints for scheduler and packing.
+"""SPEC-10 booking-anchor constraints.
 
 Named constants and shared predicates used by:
   - services/scheduler.py  (reschedule_and_validate)
-  - services/catalog_itinerary.py  (pack_day, _fits_next_lock)
   - agents/state_machine.py  (swap search/apply, add_booking)
+
+pack_day flight/hotel constraints remain deferred.
 
 No randomness, no server clock, no network, no LLM.
 """
@@ -342,6 +343,9 @@ def hotel_morning_origin(
 
     Returns None if the hotel does not cover *local_date*.
     """
+    if local_date not in hotel_covered_dates(hotel, geo_region):
+        return None
+
     start = _ensure_aware(hotel.scheduled_start)
     tz = _dest_tz(geo_region)
     if tz is not None:

@@ -10,10 +10,9 @@ Tests cover:
   - Privacy: confirmation codes never surface in logs or warnings
   - Integration: flight add via HTTP, hotel swap via HTTP
   - Consistent walking_minutes patching
-  - Packing: deferred (pack_day does not wire SPEC-10 constraints)
 
-SPEC-10 PARTIAL: pack_day flight/hotel constraints are deferred.
-Scheduler + state-machine paths are production-complete.
+SPEC-10 scheduler + state-machine slice implemented.
+pack_day flight/hotel constraints remain deferred.
 """
 
 import importlib
@@ -28,7 +27,7 @@ import services.scheduler as scheduler_mod
 # Import the actual module, not the __init__.py re-export
 _sm_mod = importlib.import_module("agents.state_machine")
 
-from models.schemas import NodeStatus, TripNode
+from models.schemas import NodeStatus, TripNode, VenueRAG
 from services.booking_constraints import (
     HOTEL_RETURN_LOCAL_HOUR,
     PRE_FLIGHT_BUFFER_MINUTES,
@@ -52,6 +51,21 @@ from services.scheduler import reschedule_and_validate
 # Regions used in tests
 LAO = "vang_vieng_laos"  # UTC+7
 DUBAI = "dubai_uae"  # UTC+4
+
+# Deterministic replacement venue for hotel swap integration
+REPLACEMENT_VENUE_ID = "test-swap-replacement-001"
+REPLACEMENT_VENUE_NAME = "Riverside Brunch Cafe"
+REPLACEMENT_VENUE = VenueRAG(
+    venue_id=REPLACEMENT_VENUE_ID,
+    name=REPLACEMENT_VENUE_NAME,
+    description="Quiet brunch spot on the river",
+    micro_location="Nam Song riverbank",
+    lat=18.935,
+    lng=102.465,
+    vibe_tags=["calm", "brunch"],
+    geo_region=LAO,
+    typical_dwell_minutes=60,
+)
 
 
 def _vv_trip_body():
@@ -357,14 +371,18 @@ class TestHotelMorningOrigin:
         origin = hotel_morning_origin(h, LAO, date(2026, 10, 4))
         assert origin == datetime(2026, 10, 4, 7, 0, tzinfo=timezone.utc)
 
+    def test_uncovered_date_returns_none(self):
+        """hotel_morning_origin returns None for a date outside coverage."""
+        h = _hotel(datetime(2026, 10, 4, 7, 0, tzinfo=timezone.utc))  # covers Oct 4-5
+        assert hotel_morning_origin(h, LAO, date(2026, 10, 7)) is None
+        assert hotel_morning_origin(h, LAO, date(2026, 10, 3)) is None
+
     def test_target_at_1100_proves_origin_is_0900(self, monkeypatch):
         """Activity at 11:00 local (04:00 UTC) on a later covered morning.
         Hotel origin = 09:00 local (02:00 UTC) + 15 min walk = 02:15 UTC.
         02:15 UTC < 04:00 UTC, so no shift.  Proves origin is 09:00, not 11:00.
 
-        If origin were node.scheduled_start (04:00 UTC), walk would give
-        04:15 UTC, which would also not shift -- but the walking spy
-        confirms the hotel coords are the origin.
+        Walking spy confirms the hotel coords are the origin.
         """
         calls = _spy_walking(monkeypatch, 15)
         h = _hotel(
@@ -558,21 +576,20 @@ class TestFlightIntegration:
         from tests.conftest import auth
         from services.database_service import db_service
 
-        # 1. Create trip to get a trip_id and user
         user_id = "flight-integ-user"
         created = client.post(
             "/api/v1/trip/create",
             headers=auth(user_id),
-            json={"start_date": "2026-10-05T09:00:00"},
+            json=_vv_trip_body(),
         )
         assert created.status_code == 200
         trip_id = created.json()["trip_id"]
 
-        # 2. Inject a real unlocked activity ending after the 04:30 cutoff.
-        #    Flight at 07:00 local = 00:00 UTC Oct 6.
-        #    Cutoff = 04:30 local = 21:30 UTC Oct 5.
-        #    Activity: starts 20:00 UTC Oct 5, duration 120 min,
-        #    ends 22:00 UTC > 21:30 UTC cutoff.
+        # Inject a real unlocked activity ending after the 04:30 cutoff.
+        # Flight at 07:00 local = 00:00 UTC Oct 6.
+        # Cutoff = 04:30 local = 21:30 UTC Oct 5.
+        # Activity: starts 20:00 UTC Oct 5, duration 120 min,
+        # ends 22:00 UTC > 21:30 UTC cutoff.
         trip_state = db_service.get_trip(trip_id)
         late_node = TripNode(
             venue_name="Night Market Dinner",
@@ -585,11 +602,10 @@ class TestFlightIntegration:
         trip_state.nodes.append(late_node)
         db_service.save_trip(trip_state)
 
-        # 3. Patch LLM to raise if called
+        _patch_walking(monkeypatch, 10)
+
         def _llm_bomb(*a, **kw):
             raise AssertionError("LLM must not be called for add_booking")
-
-        _patch_walking(monkeypatch, 10)
 
         with mock_patch("services.llm_service.llm_service.complete", side_effect=_llm_bomb):
             resp = client.post(
@@ -613,13 +629,13 @@ class TestFlightIntegration:
         assert resp.status_code == 200
         body = resp.json()
 
-        # 4. Warning names the exact late activity
+        # Warning names the exact late activity
         warnings = body.get("schedule_warnings", [])
         assert any("Night Market Dinner" in w for w in warnings), (
             f"Expected warning about Night Market Dinner, got: {warnings}"
         )
 
-        # 5. Flight unmoved at 00:00 UTC Oct 6
+        # Flight unmoved at 00:00 UTC Oct 6
         flight_node = next(
             (n for n in body["updated_nodes"] if n.get("booking_type") == "flight"),
             None,
@@ -630,16 +646,16 @@ class TestFlightIntegration:
 
 
 # ---------------------------------------------------------------------------
-# 11. Integration: hotel swap with exact walking proof
+# 11. Integration: hotel swap with deterministic candidate and exact proofs
 # ---------------------------------------------------------------------------
 
 
 class TestHotelSwapIntegration:
     """Add a hotel checking in the previous day, covering the tested morning.
-    Swap the first unlocked activity with deterministic candidates.
-    Assert exact walking call from hotel coords, node_id preserved, venue changed."""
+    Swap the first unlocked activity using a deterministic replacement venue.
+    Assert exact walking origin, venue mutation, and non-refusal response."""
 
-    def test_hotel_swap_uses_hotel_origin(self, client, monkeypatch):
+    def test_hotel_swap_deterministic(self, client, monkeypatch):
         from tests.conftest import auth
         from services.database_service import db_service
 
@@ -654,7 +670,7 @@ class TestHotelSwapIntegration:
         monkeypatch.setattr(scheduler_mod, "walking_minutes", _wm_spy)
         monkeypatch.setattr(_sm_mod, "_walking_minutes", _wm_spy)
 
-        # 1. Create trip starting Oct 5
+        # 1. Create trip starting Oct 5 in VV
         created = client.post(
             "/api/v1/trip/create",
             headers=auth(user_id),
@@ -684,7 +700,10 @@ class TestHotelSwapIntegration:
         )
         assert hotel_resp.status_code == 200
 
-        # 3. Find the first unlocked activity on Oct 5
+        # 3. Inject the deterministic replacement venue into the catalog
+        db_service.add_venue(REPLACEMENT_VENUE)
+
+        # 4. Find the first unlocked activity on Oct 5 and record pre-swap state
         trip_state = db_service.get_trip(trip_id)
         activities = [
             n
@@ -694,17 +713,17 @@ class TestHotelSwapIntegration:
         assert len(activities) > 0
         target = activities[0]
         target_node_id = target.node_id
+        target_original_venue_id = target.venue_id
+        target_original_venue_name = target.venue_name
         target_local_date = _local_date_of(_ensure_aware(target.scheduled_start), "vang_vieng_laos")
         assert target_local_date == date(2026, 10, 5)
-
-        # Verify target is first unlocked on that day
         assert is_first_unlocked_activity(
             target, trip_state.nodes, "vang_vieng_laos", target_local_date
         )
 
         walk_calls.clear()
 
-        # 4. Swap that activity
+        # 5. Swap using deterministic replacement_venue_id
         swap_resp = client.post(
             "/api/v1/trip/event",
             headers=auth(user_id),
@@ -713,21 +732,146 @@ class TestHotelSwapIntegration:
                 "event_type": "swap_activity",
                 "message": "Something different",
                 "target_node_id": target_node_id,
+                "preferences": {
+                    "replacement_venue_id": REPLACEMENT_VENUE_ID,
+                },
             },
         )
         assert swap_resp.status_code == 200
         swap_body = swap_resp.json()
 
-        # 5. Assert walking was called with hotel coords as origin
+        # 6. Assert walking was called with hotel coords as origin
         hotel_origin_calls = [c for c in walk_calls if c[0] == 18.920 and c[1] == 102.450]
         assert len(hotel_origin_calls) > 0, (
             f"Expected walking from hotel (18.920, 102.450), got: {walk_calls}"
         )
+        # At least one hotel origin call must target the replacement venue coords
+        hotel_to_replacement = [
+            c
+            for c in hotel_origin_calls
+            if c[2] == round(REPLACEMENT_VENUE.lat, 3) and c[3] == round(REPLACEMENT_VENUE.lng, 3)
+        ]
+        assert len(hotel_to_replacement) > 0, (
+            f"Expected hotel->replacement walk (18.920,102.450)->(18.935,102.465), "
+            f"got hotel calls: {hotel_origin_calls}"
+        )
 
-        # 6. Assert the target node_id is preserved but venue may have changed
+        # 7. Assert the target node_id is preserved
         updated_nodes = swap_body["updated_nodes"]
         swapped = next((n for n in updated_nodes if n["node_id"] == target_node_id), None)
-        assert swapped is not None, "Target node_id must be preserved"
+        assert swapped is not None, "Target node_id must be preserved after swap"
+
+        # 8. Assert venue changed to the exact deterministic replacement
+        assert swapped["venue_id"] == REPLACEMENT_VENUE_ID
+        assert swapped["venue_name"] == REPLACEMENT_VENUE_NAME
+        assert swapped["venue_id"] != target_original_venue_id
+        assert swapped["venue_name"] != target_original_venue_name
+
+        # 9. Assert this was NOT the no-candidate/refusal path
+        response_text = swap_body.get("response", "")
+        assert "couldn't find" not in response_text.lower(), (
+            f"Swap was refused (no-candidate path): {response_text}"
+        )
+        assert "unchanged" not in response_text.lower(), f"Swap reported unchanged: {response_text}"
+
+    def test_removing_hotel_origin_fails_swap(self, client, monkeypatch):
+        """Sabotage proof: if hotel_morning_origin returns None unconditionally,
+        the swap must either fail or produce different walking calls (no hotel
+        origin), demonstrating the hotel-origin logic is exercised."""
+        from tests.conftest import auth
+        from services.database_service import db_service
+
+        user_id = "hotel-sabotage-user"
+        walk_calls = []
+
+        def _wm_spy(olat, olng, dlat, dlng):
+            walk_calls.append((round(olat, 3), round(olng, 3), round(dlat, 3), round(dlng, 3)))
+            return 10
+
+        monkeypatch.setattr("services.transit.walking_minutes", _wm_spy)
+        monkeypatch.setattr(scheduler_mod, "walking_minutes", _wm_spy)
+        monkeypatch.setattr(_sm_mod, "_walking_minutes", _wm_spy)
+
+        # Sabotage: hotel_morning_origin always returns None
+        monkeypatch.setattr(
+            "services.booking_constraints.hotel_morning_origin",
+            lambda *a, **kw: None,
+        )
+        monkeypatch.setattr(
+            "services.scheduler.hotel_morning_origin",
+            lambda *a, **kw: None,
+        )
+        monkeypatch.setattr(
+            _sm_mod,
+            "hotel_morning_origin",
+            lambda *a, **kw: None,
+        )
+
+        created = client.post(
+            "/api/v1/trip/create",
+            headers=auth(user_id),
+            json=_vv_trip_body(),
+        )
+        assert created.status_code == 200
+        trip_id = created.json()["trip_id"]
+
+        client.post(
+            "/api/v1/trip/event",
+            headers=auth(user_id),
+            json={
+                "trip_id": trip_id,
+                "event_type": "add_booking",
+                "message": "Hotel",
+                "preferences": {
+                    "venue_name": "River View Hotel",
+                    "booking_type": "hotel",
+                    "scheduled_start": "2026-10-04T07:00:00Z",
+                    "duration_minutes": 2760,
+                    "lat": 18.920,
+                    "lng": 102.450,
+                    "geo_region": "vang_vieng_laos",
+                },
+            },
+        )
+
+        # Ensure replacement venue exists
+        try:
+            db_service.add_venue(REPLACEMENT_VENUE)
+        except Exception:
+            pass  # may already exist
+
+        trip_state = db_service.get_trip(trip_id)
+        activities = [
+            n
+            for n in trip_state.nodes
+            if not n.is_locked and getattr(n, "node_kind", "activity") == "activity"
+        ]
+        assert len(activities) > 0
+        target_node_id = activities[0].node_id
+
+        walk_calls.clear()
+
+        swap_resp = client.post(
+            "/api/v1/trip/event",
+            headers=auth(user_id),
+            json={
+                "trip_id": trip_id,
+                "event_type": "swap_activity",
+                "message": "Something different",
+                "target_node_id": target_node_id,
+                "preferences": {
+                    "replacement_venue_id": REPLACEMENT_VENUE_ID,
+                },
+            },
+        )
+        assert swap_resp.status_code == 200
+
+        # With hotel origin sabotaged, no walking call should use hotel coords
+        hotel_origin_calls = [c for c in walk_calls if c[0] == 18.920 and c[1] == 102.450]
+        assert len(hotel_origin_calls) == 0, (
+            f"Sabotaged hotel_morning_origin should produce no hotel-origin walks, "
+            f"got: {hotel_origin_calls}"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -768,15 +912,15 @@ class TestProductionWiring:
 
 
 # ---------------------------------------------------------------------------
-# 13. Packing deferred
+# 13. Packing status
 # ---------------------------------------------------------------------------
 
 
 class TestPackingDeferred:
     """pack_day does not wire SPEC-10 flight/hotel constraints.
 
-    This is intentional: SPEC-10 is PARTIAL.  Scheduler and state-machine
-    are the production constraint paths.  pack_day constraints are deferred.
+    SPEC-10 scheduler + state-machine slice is implemented.
+    pack_day constraints remain deferred.
     """
 
     def test_pack_day_has_no_all_trip_nodes_parameter(self):
