@@ -30,8 +30,20 @@ from services.cache_service import cache_service
 import math
 from datetime import timedelta as _td
 
+from services.booking_constraints import (
+    _ensure_aware,
+    _local_date_of,
+    find_constraining_flight,
+    find_covering_hotel,
+    hotel_morning_origin,
+    is_first_unlocked_activity,
+    is_last_unlocked_activity,
+    violates_flight_cutoff,
+    violates_hotel_return,
+)
 from services.catalog_itinerary import duration_for as _duration_for
 from services.destination_tz import destination_tz as _dest_tz
+from services.destination_tz import to_destination_local as _to_local
 from services.maps_service import maps_service
 from services.opening_hours import HoursResult as _HoursResult
 from services.transit import walking_minutes as _walking_minutes
@@ -129,7 +141,7 @@ def _is_swap_reachable(
 
     target_region = getattr(target_node, "geo_region", None)
 
-    # --- prev-active check ---
+    # --- prev-active check (SPEC-10: hotel origin for first-of-day) ---
     prev_active = None
     for pi in range(target_idx - 1, -1, -1):
         pn = nodes[pi]
@@ -140,14 +152,33 @@ def _is_swap_reachable(
         prev_active = pn
         break
 
-    if prev_active is not None:
+    _used_hotel_origin = False
+    if target_region:
+        _slot_ld = _local_date_of(_ensure_aware(target_node.scheduled_start), target_region)
+        _htl = find_covering_hotel(nodes, target_region, _slot_ld)
+        if _htl is not None and is_first_unlocked_activity(
+            target_node, nodes, target_region, _slot_ld
+        ):
+            if _finite(_htl.lat) and _finite(_htl.lng):
+                _origin_instant = hotel_morning_origin(_htl, target_region, _slot_ld)
+                if _origin_instant is not None:
+                    _target_utc = _ensure_aware(target_node.scheduled_start)
+                    if _target_utc >= _origin_instant:
+                        _walk = _walking_minutes(_htl.lat, _htl.lng, cand_lat, cand_lng)
+                        if _origin_instant + _td(minutes=_walk) > _target_utc:
+                            return False
+                        _used_hotel_origin = True
+
+    if not _used_hotel_origin and prev_active is not None:
         pa_region = getattr(prev_active, "geo_region", None)
         if (
             pa_region
             and target_region
             and pa_region == target_region
             and _same_local_day(
-                prev_active.scheduled_start, target_node.scheduled_start, target_region
+                prev_active.scheduled_start,
+                target_node.scheduled_start,
+                target_region,
             )
         ):
             if not _finite(prev_active.lat) or not _finite(prev_active.lng):
@@ -167,9 +198,9 @@ def _is_swap_reachable(
             continue
         nn_region = getattr(nn, "geo_region", None)
         if nn_region != target_region:
-            break  # crossed city boundary
+            break
         if not _same_local_day(target_node.scheduled_start, nn.scheduled_start, target_region):
-            break  # crossed day boundary
+            break
         if nn.is_locked:
             next_lock = nn
             break
@@ -181,6 +212,36 @@ def _is_swap_reachable(
         transfer = _walking_minutes(cand_lat, cand_lng, next_lock.lat, next_lock.lng)
         if cand_end + _td(minutes=transfer) > next_lock.scheduled_start:
             return False
+
+    # --- SPEC-10: flight cutoff (scoped to future flights, same region) ---
+    if target_region:
+        fl = find_constraining_flight(nodes, target_node)
+        if fl is not None:
+            if violates_flight_cutoff(
+                target_node.scheduled_start,
+                cand_dwell,
+                fl,
+                activity_lat=cand_lat,
+                activity_lng=cand_lng,
+            ):
+                return False
+
+    # --- SPEC-10: hotel return wall (only last unlocked of the day) ---
+    if target_region and _finite(cand_lat) and _finite(cand_lng):
+        _slot_ld2 = _local_date_of(_ensure_aware(target_node.scheduled_start), target_region)
+        if is_last_unlocked_activity(target_node, nodes, target_region, _slot_ld2):
+            hotel = find_covering_hotel(nodes, target_region, _slot_ld2)
+            if hotel is not None:
+                if violates_hotel_return(
+                    target_node.scheduled_start,
+                    cand_dwell,
+                    hotel,
+                    target_region,
+                    _slot_ld2,
+                    activity_lat=cand_lat,
+                    activity_lng=cand_lng,
+                ):
+                    return False
 
     return True
 

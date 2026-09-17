@@ -210,7 +210,6 @@ def pack_day(
         local_day = day_start_utc.astimezone(tz)
     else:
         local_day = day_start_utc
-
     # Pre-score and sort candidates for deterministic tie-breaking.
     scored = sorted(
         candidates,
@@ -231,7 +230,7 @@ def pack_day(
     def _candidate_earliest(venue: dict) -> Optional[datetime]:
         """Compute candidate's earliest arrival accounting for walking transfer."""
         if prev_node is None:
-            return day_start_utc  # first stop, no transfer
+            return day_start_utc
         if prev_node.lat is None or prev_node.lng is None:
             return None  # prev has no coords -> ineligible
         if not _has_venue_coords(venue):

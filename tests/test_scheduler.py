@@ -137,7 +137,9 @@ def test_hotel_booking_does_not_push_later_activity(monkeypatch):
     ]
     result = reschedule_and_validate(nodes)
 
-    # The activity must stay at Oct 5 09:00 -- NOT pushed to Oct 6.
+    # SPEC-10: hotel morning origin is local 09:00 (= 02:00 UTC for VV).
+    # 02:00 UTC + 30 walk = 02:30 UTC, which is well before the activity
+    # at 09:00 UTC.  So the activity stays at its original time.
     blue_lagoon = [n for n in result.nodes if n.venue_name == "Blue Lagoon"][0]
     assert blue_lagoon.scheduled_start == activity_start
     assert result.has_hard_conflict is False
