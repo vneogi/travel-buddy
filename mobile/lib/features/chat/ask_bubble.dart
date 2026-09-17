@@ -32,11 +32,11 @@ class AskBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final ask = askResponse;
     final isPlanChange =
-        ask.intent == 'plan_change' && ask.proposal != null;
+        ask.intent == AskResponseIntent.planChange && ask.proposal != null;
     final showDisclaimer =
-        ask.intent == 'dish_fact' && ask.foodDisclaimer != null;
+        ask.intent == AskResponseIntent.dishFact && ask.foodDisclaimer != null;
     final caption =
-        ask.sourceClass.isNotEmpty ? ask.sourceClass : ask.path;
+        ask.sourceClass.isNotEmpty ? ask.sourceClass : ask.path.wire;
 
     return Container(
       key: Key(isPlanChange ? 'ask_plan_change_confirm' : 'ask_fact_view'),
@@ -79,8 +79,8 @@ class AskBubble extends StatelessWidget {
               ),
             ),
 
-          // Plan-change confirm -- only with known proposal.
-          if (isPlanChange && _isKnownEventType(ask.proposal!.eventType))
+          // Plan-change confirm -- all ProposalEventType values are known.
+          if (isPlanChange)
             Padding(
               padding: const EdgeInsets.only(top: AppSpacing.sm),
               child: ConfirmAffordance(
@@ -93,13 +93,4 @@ class AskBubble extends StatelessWidget {
     );
   }
 
-  static bool _isKnownEventType(String eventType) {
-    const known = {
-      'swap_activity',
-      'cancel_activity',
-      'add_activity',
-      'reroute',
-    };
-    return known.contains(eventType);
-  }
 }

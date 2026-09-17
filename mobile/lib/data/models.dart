@@ -483,9 +483,66 @@ class HomeSnapshot {
 // SPEC-25: Ask response envelope (mirrors backend AskResponseEnvelope)
 // ---------------------------------------------------------------------------
 
+/// Closed set of Ask paths matching the backend Literal.
+enum AskPath {
+  groundedDeterministic('grounded_deterministic'),
+  groundedModelPhrased('grounded_model_phrased'),
+  cacheHit('cache_hit'),
+  noKey('no_key'),
+  retrievalMiss('retrieval_miss'),
+  budgetExhausted('budget_exhausted'),
+  breakerOpen('breaker_open'),
+  modelErrorFallback('model_error_fallback'),
+  outOfScope('out_of_scope');
+
+  final String wire;
+  const AskPath(this.wire);
+
+  static AskPath fromWire(String s) => AskPath.values.firstWhere(
+        (e) => e.wire == s,
+        orElse: () => throw ArgumentError('Unknown AskPath: "$s"'),
+      );
+}
+
+/// Closed set of Ask intents matching the backend Literal.
+enum AskResponseIntent {
+  placeIdentity('place_identity'),
+  openingHours('opening_hours'),
+  dishFact('dish_fact'),
+  tripCurrentNext('trip_current_next'),
+  planChange('plan_change'),
+  outOfScope('out_of_scope');
+
+  final String wire;
+  const AskResponseIntent(this.wire);
+
+  static AskResponseIntent fromWire(String s) =>
+      AskResponseIntent.values.firstWhere(
+        (e) => e.wire == s,
+        orElse: () => throw ArgumentError('Unknown AskResponseIntent: "$s"'),
+      );
+}
+
+/// Closed set of proposal event types matching the backend Literal.
+enum ProposalEventType {
+  swapActivity('swap_activity'),
+  cancelActivity('cancel_activity'),
+  addActivity('add_activity'),
+  reroute('reroute');
+
+  final String wire;
+  const ProposalEventType(this.wire);
+
+  static ProposalEventType fromWire(String s) =>
+      ProposalEventType.values.firstWhere(
+        (e) => e.wire == s,
+        orElse: () => throw ArgumentError('Unknown ProposalEventType: "$s"'),
+      );
+}
+
 /// Typed plan-change proposal returned inside an Ask envelope.
 class AskProposal {
-  final String eventType; // swap_activity | cancel_activity | add_activity | reroute
+  final ProposalEventType eventType;
   final String targetNodeId;
   final String summary;
 
@@ -496,7 +553,7 @@ class AskProposal {
   });
 
   factory AskProposal.fromJson(Map<String, dynamic> j) => AskProposal(
-        eventType: j['event_type'] as String,
+        eventType: ProposalEventType.fromWire(j['event_type'] as String),
         targetNodeId: j['target_node_id'] as String? ?? '',
         summary: j['summary'] as String? ?? '',
       );
@@ -523,8 +580,8 @@ enum AskTier {
 class AskResponse {
   final String answer;
   final AskTier tier;
-  final String path;
-  final String intent;
+  final AskPath path;
+  final AskResponseIntent intent;
   final List<String> sourceIds;
   final String sourceClass;
   final bool fromCache;
@@ -550,19 +607,11 @@ class AskResponse {
     if (tierWire == null || tierWire is! String) {
       throw ArgumentError('AskResponse: missing or invalid "tier"');
     }
-    final path = j['path'] as String? ?? '';
-    if (path.isEmpty) {
-      throw ArgumentError('AskResponse: missing or empty "path"');
-    }
-    final intent = j['intent'] as String? ?? '';
-    if (intent.isEmpty) {
-      throw ArgumentError('AskResponse: missing or empty "intent"');
-    }
     return AskResponse(
       answer: j['answer'] as String? ?? '',
       tier: AskTier.fromWire(tierWire),
-      path: path,
-      intent: intent,
+      path: AskPath.fromWire(j['path'] as String? ?? ''),
+      intent: AskResponseIntent.fromWire(j['intent'] as String? ?? ''),
       sourceIds: ((j['source_ids'] as List?) ?? const []).cast<String>(),
       sourceClass: j['source_class'] as String? ?? '',
       fromCache: j['from_cache'] as bool? ?? false,

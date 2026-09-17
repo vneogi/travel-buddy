@@ -15,10 +15,12 @@ import '../itinerary/current_window.dart';
 class ChatScreen extends ConsumerStatefulWidget {
   final String tripId;
   final String? initialQuestion;
+  final ConnectivityHelper? connectivityOverride;
   const ChatScreen({
     super.key,
     required this.tripId,
     this.initialQuestion,
+    this.connectivityOverride,
   });
   @override
   ConsumerState<ChatScreen> createState() => _ChatScreenState();
@@ -28,11 +30,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _controller = TextEditingController();
   final _messages = <_ChatEntry>[];
   bool _isThinking = false;
-  final _connectivity = ConnectivityHelper();
+  late final ConnectivityHelper _connectivity;
 
   @override
   void initState() {
     super.initState();
+    _connectivity = widget.connectivityOverride ?? ConnectivityHelper();
     final initial = widget.initialQuestion?.trim();
     if (initial != null && initial.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _send(initial));
@@ -60,10 +63,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     itemCount: _messages.length,
                     itemBuilder: (_, i) {
                       final entry = _messages[_messages.length - 1 - i];
+                      final hasProposal = entry.askResponse?.proposal != null;
                       return entry.build(
-                        onConfirmProposal: entry.askResponse?.proposal != null
-                            ? () => _confirmAskProposal(entry.askResponse!.proposal!)
+                        onConfirmProposal: hasProposal
+                            ? () => _confirmAskProposal(
+                                  entry.askResponse!.proposal!,
+                                  entry.userText,
+                                )
                             : null,
+                        onDismissProposal: hasProposal ? () {} : null,
                       );
                     },
                   ),
@@ -172,7 +180,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         final ask = result.askResponse;
         if (eventType == EventType.askInfo) {
           if (ask != null) {
-            _messages.add(_ChatEntry.askFact(ask));
+            _messages.add(_ChatEntry.askFact(ask, userText: text));
           } else {
             // askInfo + missing envelope is a client error -- show failure.
             _messages.add(const _ChatEntry.plainAssistant(
@@ -181,7 +189,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           }
         } else if (ask != null) {
           // Non-Ask events that still carry an envelope (unlikely, but safe).
-          _messages.add(_ChatEntry.askFact(ask));
+          _messages.add(_ChatEntry.askFact(ask, userText: text));
         } else {
           // Non-Ask events (swap/cancel/add) keep plain text.
           _messages.add(_ChatEntry.plainAssistant(result.message));
@@ -199,19 +207,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   /// SPEC-25: Confirm a plan-change proposal from Ask.
-  Future<void> _confirmAskProposal(AskProposal proposal) async {
+  Future<void> _confirmAskProposal(
+    AskProposal proposal,
+    String originalText,
+  ) async {
     final eventType = switch (proposal.eventType) {
-      'swap_activity' => EventType.swapActivity,
-      'cancel_activity' => EventType.cancelActivity,
-      'add_activity' => EventType.addActivity,
-      'reroute' => EventType.reroute,
-      _ => null,
+      ProposalEventType.swapActivity => EventType.swapActivity,
+      ProposalEventType.cancelActivity => EventType.cancelActivity,
+      ProposalEventType.addActivity => EventType.addActivity,
+      ProposalEventType.reroute => EventType.reroute,
     };
-    if (eventType == null) return;
     await ref.read(tripEventProvider).sendEvent(
       tripId: widget.tripId,
       type: eventType,
-      message: proposal.summary,
+      message: originalText,
       targetNodeId: proposal.targetNodeId.isNotEmpty
           ? proposal.targetNodeId
           : null,
@@ -275,16 +284,20 @@ class _ChatEntry {
   final _EntryKind kind;
   final String text;
   final AskResponse? askResponse;
+  /// Original user question text, preserved for plan-change confirm.
+  final String userText;
 
   const _ChatEntry.user(this.text)
       : kind = _EntryKind.user,
-        askResponse = null;
+        askResponse = null,
+        userText = '';
 
   const _ChatEntry.plainAssistant(this.text)
       : kind = _EntryKind.plainAssistant,
-        askResponse = null;
+        askResponse = null,
+        userText = '';
 
-  const _ChatEntry.askFact(AskResponse ask)
+  const _ChatEntry.askFact(AskResponse ask, {this.userText = ''})
       : kind = _EntryKind.askFact,
         text = '',
         askResponse = ask;
@@ -292,9 +305,13 @@ class _ChatEntry {
   const _ChatEntry.offlineRefuse()
       : kind = _EntryKind.offlineRefuse,
         text = '',
-        askResponse = null;
+        askResponse = null,
+        userText = '';
 
-  Widget build({VoidCallback? onConfirmProposal}) {
+  Widget build({
+    VoidCallback? onConfirmProposal,
+    VoidCallback? onDismissProposal,
+  }) {
     switch (kind) {
       case _EntryKind.user:
         return _textBubble(text, isUser: true);
@@ -314,11 +331,14 @@ class _ChatEntry {
           ),
         );
       case _EntryKind.askFact:
-        return _buildAskFact(onConfirmProposal);
+        return _buildAskFact(onConfirmProposal, onDismissProposal);
     }
   }
 
-  Widget _buildAskFact(VoidCallback? onConfirmProposal) {
+  Widget _buildAskFact(
+    VoidCallback? onConfirmProposal,
+    VoidCallback? onDismissProposal,
+  ) {
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
@@ -327,6 +347,7 @@ class _ChatEntry {
         child: AskBubble(
           askResponse: askResponse!,
           onConfirm: onConfirmProposal,
+          onDismiss: onDismissProposal,
         ),
       ),
     );
