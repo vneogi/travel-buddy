@@ -2,9 +2,9 @@
 
 > Status: SPECIFIED. Not implemented.
 >
-> Sequence: SPEC-41 A3b is complete at reviewed branch head `7f25042`. Finish
-> the remaining Laos reliability tranche: SPEC-10 provider-aware paste,
-> SPEC-25 grounded trip-scoped Ask, and the resulting hosted API / signed APK
+> Sequence: SPEC-41 A3b is complete at reviewed branch head `7f25042`. SPEC-10
+> paste and flight/hotel scheduler are on main. Finish SPEC-25 grounded
+> trip-scoped Ask after laptop tests, then hosted API / signed APK
 > verification. Then implement this spec's integrity phase before normalized
 > itinerary reads, multiple devices, or a second real city. SPEC-43 remains
 > the release gate before any non-owner distribution or production LLM
@@ -540,9 +540,9 @@ Before the first non-owner release:
 
 ## Delivery sequence
 
-1. With SPEC-41 A3b complete at `7f25042`, finish SPEC-10 provider-aware
-   paste, SPEC-25 grounded trip-scoped Ask, and the Laos hosted/API/APK
-   re-verification.
+1. With SPEC-41 A3b complete at `7f25042` and SPEC-10 paste plus
+   flight/hotel scheduler on main, finish SPEC-25 grounded trip-scoped Ask
+   after laptop tests, then the Laos hosted/API/APK re-verification.
 2. Implement Phase A transactional integrity, concurrency, idempotency, and
    persistence contracts.
 3. Implement SPEC-43, including SPEC-24/27 dependencies, before any non-owner

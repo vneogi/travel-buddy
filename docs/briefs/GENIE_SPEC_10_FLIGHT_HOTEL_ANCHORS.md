@@ -1,5 +1,8 @@
 # Genie Brief: SPEC-10 remainder -- preceding-evening flight and daily hotel anchor
 
+Landed on main as `e7a0457` (from `6cb7c05`). Historical execution brief;
+do not reopen the branch. `pack_day` booking wiring remains deferred.
+
 Start a new branch from `origin/main` (must include SPEC-41 A3b `436c1c5`
 and SPEC-10 provider-aware paste `fc6926b`):
 
@@ -259,4 +262,5 @@ Do not quote walking minutes in user-facing strings.
   as a daily anchor" is true in production paths, not comments.
 - Named constants exist and tests fail if they are removed.
 - A3b hotel background-anchor and walking determinism remain.
-- Commit on `feat/spec10-flight-hotel-anchors`, pushed. No merge.
+- Commit on `feat/spec10-flight-hotel-anchors`, pushed. Later merged to
+  main as `e7a0457`.

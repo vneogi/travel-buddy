@@ -83,7 +83,7 @@
 | Offline vault (SPEC-04) | CACHE FLOOR DONE; RESCUE REMOVED | PR #22 (`b7e10c3`) + PR #23 (`dab16c0`) shipped offline itinerary fallback and cached driver cards. Sep 5 owner decision retired the duplicate Hotel Rescue AppBar shortcut; driver-card action on hotel bookings remains. Offline maps are a post-Bangkok-factory measured prototype with an optional versioned artifact manifest, not a current vendor commitment |
 | Anonymous identity (SPEC-09) | DONE (client + server) | Client half landed PR #16 (`7173a3f`): UUID v4 in flutter_secure_storage, Anonymous header, TB_DEBUG_USER_ID removed. Server half already verified. Record any remaining Anonymous E2E gap explicitly; the laptop is available |
 | Itinerary normalisation (SPEC-16) | IMPLEMENTED | Decompose and compose land in services/itinerary_normaliser.py, dual-write in both backends, round-trip equality asserted, wire format unchanged. node_id is stable across reschedules via state_json and now comes from models/ids.py. SPEC-30 (`f8349a8`) writes `trip_edge.observed_duration_minutes` from consecutive arrivals |
-| Booking anchors (SPEC-10) | PARTIAL | Create/edit/delete on main (PR #20, PR #37). Provider-aware paste on main (`fc6926b`). Flight cutoff and hotel origin/return on `feat/spec10-flight-hotel-anchors` (`6cb7c05`), not merged. `pack_day` booking constraints, multi-night UI, and server-side document consent remain |
+| Booking anchors (SPEC-10) | PARTIAL | Create/edit/delete on main (PR #20, PR #37). Provider-aware paste on main (`fc6926b`). Flight cutoff and hotel origin/return on main (`e7a0457`). `pack_day` booking constraints, multi-night UI, and server-side document consent remain |
 | Forced-choice preferences (SPEC-11) | SPECIFIED | Not implemented. Cold-start preference capture remains after field evidence; SPEC-40 interests are trip constraints, not a durable preference profile |
 | Show driver cards (SPEC-12) | DONE (October slice) | Full-screen offline card from SQLite cache_place, FactView assert/ask/refuse tiers, geoRegion-threaded native script, driver_card_shown/name_confirmed signals. Laos card render passed Sep 5. Native `geo:` remains first choice; Windows falls back to an OpenStreetMap HTTPS hand-off, with visible coordinates last. No Fair Fare until sourced |
 | Region and locale registry (SPEC-13) | SPECIFIED | Not implemented. Rising in priority: a city-onboarding pipeline needs it for bounding box, languages, currency and fare bands. Makes adding a city a row rather than a code change |
@@ -137,7 +137,7 @@ see docs/HOSTED_STATE.md for the credential-safe checks.
 Success for the phone gate was an installable build using a stable hosted
 HTTPS API, with the Laos corridor and pre-cached driver cards working after
 the laptop and USB are disconnected. That gate passed on 2026-09-13. Travel
-is still Oct 2-9. Remaining work is merging SPEC-10 flight/hotel anchors and
+is still Oct 2-9. Remaining work is laptop verification then merge of
 SPEC-25 grounded Ask, then hosted APK. PDF intake remains deferred.
 
 1. Device day -- **CLOSED** 2026-08-17. Brief: docs/briefs/DEVICE_DAY.md.
@@ -207,15 +207,16 @@ Seed-shaped cohorts.
 6. SPEC-10 provider-aware paste -- **DONE on main** (`fc6926b`). Agoda beside
    Booking.com, honest partial extraction, redacted fixtures. Flutter UI
    UNVERIFIED.
-7. SPEC-10 flight cutoff and hotel daily anchor -- **IMPLEMENTED, NOT MERGED**
-   (`feat/spec10-flight-hotel-anchors` `6cb7c05`). Scheduler and swap enforce
-   the 150-minute pre-flight wall and hotel morning origin / 21:00 return.
-   `pack_day` wiring is deferred; do not call SPEC-10 complete.
+7. SPEC-10 flight cutoff and hotel daily anchor -- **DONE on main**
+   (`e7a0457`, from `6cb7c05`). Scheduler and swap enforce the 150-minute
+   pre-flight wall and hotel morning origin / 21:00 return. `pack_day`
+   wiring is deferred; do not call SPEC-10 complete.
 8. SPEC-25 grounded trip-scoped Ask -- **IMPLEMENTED, NOT MERGED**
-   (`feat/spec25-grounded-ask` `a586e78`). Flutter UNVERIFIED until laptop
-   `flutter test`. Trip-optional Ask, model phrasing/budget/breaker UX remain.
-9. Merge those two branches after independent pytest (and Flutter for SPEC-25),
-   then re-run hosted API/APK before SPEC-43/44 consumer expansion.
+   (`feat/spec25-grounded-ask` `a586e78`). Wait for laptop `pytest -q` and
+   `flutter test mobile/test/spec25_ask_envelope_test.dart`. Trip-optional
+   Ask, model phrasing/budget/breaker UX remain.
+9. After that laptop run, merge SPEC-25, then re-run hosted API/APK before
+   SPEC-43/44 consumer expansion. No deploy or APK until then.
 10. SPEC-44 Phase A backend integrity -- **NEXT DATA FOUNDATION AFTER THE LAOS
    BUILD**. Make trip graph, party, and compatibility projection one
    transaction; add expected-version conflicts and idempotent commands before

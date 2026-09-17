@@ -15,7 +15,16 @@ other.
 Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 `#85` and so on; those numbers cannot be reconciled against `git log`.
 
-## Finding -- Sep 17 2026 -- SPEC-10 flight/hotel remainder reviewed, not merged
+## Finding -- Sep 17 2026 -- SPEC-10 flight/hotel remainder merged to main
+
+Owner accepted the scheduler slice as production-ready. Merged
+`feat/spec10-flight-hotel-anchors` (`6cb7c05`) to main as `e7a0457`.
+`pack_day` is still unwired; SPEC-10 stays PARTIAL. No deploy or APK.
+SPEC-25 stays on `feat/spec25-grounded-ask` `a586e78` until laptop
+`pytest -q` and `flutter test mobile/test/spec25_ask_envelope_test.dart`.
+Planning did not re-run pytest.
+
+## Finding -- Sep 17 2026 -- SPEC-10 flight/hotel remainder reviewed, then merged
 
 Planning review of `feat/spec10-flight-hotel-anchors` `6cb7c05`. Scheduler and
 swap enforce a 150-minute pre-flight cutoff and hotel morning origin / 21:00
@@ -24,8 +33,8 @@ Deterministic `replacement_venue_id` swap proof asserts venue_id/name change
 and hotel-origin walking. `pack_day` is still unwired; SPEC-10 stays PARTIAL.
 
 Genie reported 736 pytest passed, 5 skipped, 40 SPEC-41 reachability tests,
-ruff clean. The planning agent did not re-run pytest or Flutter. Do not merge
-until an independent pytest watch. Do not deploy or APK.
+ruff clean. The planning agent did not re-run pytest or Flutter. Later the
+same day the owner merged this branch to main as `e7a0457`.
 
 SPEC-25 remains on `feat/spec25-grounded-ask` `a586e78`, Flutter UNVERIFIED.
 

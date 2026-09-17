@@ -3,8 +3,9 @@
 > Status: SPECIFIED. Not implemented.
 >
 > Sequence: start after the Laos reliability and build tranche is complete:
-> SPEC-41 scheduling, SPEC-10 provider-aware paste, SPEC-25 grounded
-> trip-scoped Ask, and the resulting hosted API / signed APK verification.
+> SPEC-41 scheduling, SPEC-10 paste and flight/hotel scheduler, SPEC-25
+> grounded trip-scoped Ask, and the resulting hosted API / signed APK
+> verification.
 > Finish this spec before any build is distributed to a person other than the
 > owner, before production LLM processing of personal trip data, and before the
 > planned December 2026 public launch.

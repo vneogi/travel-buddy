@@ -1,9 +1,9 @@
 # SPEC-10: Manual Booking Anchors
 
 > Status: PARTIAL. Create/edit/delete on main (PR #20, PR #37). Provider-aware
-> paste on main (`fc6926b`). Flight cutoff and hotel origin/return implemented
-> on `feat/spec10-flight-hotel-anchors` (`6cb7c05`), not merged. `pack_day`
-> flight/hotel wiring, multi-night UI, and server-side document consent remain.
+> paste on main (`fc6926b`). Flight cutoff and hotel origin/return on main
+> (`e7a0457`, from `6cb7c05`). `pack_day` flight/hotel wiring, multi-night UI,
+> and server-side document consent remain.
 >
 > Resequenced to follow SPEC-16. A booking anchor is a locked node. Once nodes
 > are rows rather than keys inside a JSON blob, this spec is a few columns and a
@@ -129,10 +129,9 @@ that could identify an individual reservation.
 - [x] Old trip JSON loads, with a test that proves it
 - [x] Booking nodes locked and unmovable
 - [x] Flight constrains the preceding evening; hotel acts as a daily anchor
-      (scheduler + swap on `feat/spec10-flight-hotel-anchors` `6cb7c05`;
-      `pack_day` still deferred)
+      (scheduler + swap on main `e7a0457`; `pack_day` still deferred)
 - [x] `confirmation_code` absent from schedule warnings and add_booking logs
-      (tests on that branch; planning agent did not re-run pytest)
+      (tests on that merge; planning agent did not re-run pytest)
 - [x] `booking_added` in the registry and migration 0021; drift guard green
 - [x] Text paste plus manual entry shipped end to end, degrading to manual entry
 - [x] Text extraction runs on the device, proven by the no-network test
@@ -263,10 +262,10 @@ new pytest run by the planning agent.
 ## Remainder: pack_day flight and hotel constraints
 
 Deferred. Scheduler `reschedule_and_validate` and swap `_is_swap_reachable`
-enforce the 150-minute pre-flight cutoff and hotel morning origin / 21:00
-local return. `pack_day` does not take bookings; create/corridor still pack
-as if no hotel origin and no next-morning flight. Do not describe SPEC-10
-as complete while this is true.
+on main (`e7a0457`) enforce the 150-minute pre-flight cutoff and hotel
+morning origin / 21:00 local return. `pack_day` does not take bookings;
+create/corridor still pack as if no hotel origin and no next-morning flight.
+Do not describe SPEC-10 as complete while this is true.
 
 ## Remainder: edit and delete existing bookings
 
