@@ -1,8 +1,9 @@
 # SPEC-10: Manual Booking Anchors
 
-> Status: CREATE AND EDIT/DELETE IMPLEMENTED (PR #20, PR #37).
-> Windows Sep 4 verified notes on card, edit, and delete. Provider-aware paste,
-> scheduler integration, and multi-night stays remain.
+> Status: PARTIAL. Create/edit/delete on main (PR #20, PR #37). Provider-aware
+> paste on main (`fc6926b`). Flight cutoff and hotel origin/return implemented
+> on `feat/spec10-flight-hotel-anchors` (`6cb7c05`), not merged. `pack_day`
+> flight/hotel wiring, multi-night UI, and server-side document consent remain.
 >
 > Resequenced to follow SPEC-16. A booking anchor is a locked node. Once nodes
 > are rows rather than keys inside a JSON blob, this spec is a few columns and a
@@ -127,8 +128,11 @@ that could identify an individual reservation.
       the node, all defaulted
 - [x] Old trip JSON loads, with a test that proves it
 - [x] Booking nodes locked and unmovable
-- [ ] Flight constrains the preceding evening; hotel acts as a daily anchor
-- [ ] `confirmation_code` absent from all logs
+- [x] Flight constrains the preceding evening; hotel acts as a daily anchor
+      (scheduler + swap on `feat/spec10-flight-hotel-anchors` `6cb7c05`;
+      `pack_day` still deferred)
+- [x] `confirmation_code` absent from schedule warnings and add_booking logs
+      (tests on that branch; planning agent did not re-run pytest)
 - [x] `booking_added` in the registry and migration 0021; drift guard green
 - [x] Text paste plus manual entry shipped end to end, degrading to manual entry
 - [x] Text extraction runs on the device, proven by the no-network test
@@ -142,10 +146,13 @@ that could identify an individual reservation.
 
 ## Remainder: provider-aware booking paste
 
-The current on-device text parser is proven against one Booking.com-shaped
-confirmation. Field use with Agoda text did not reliably classify or fill the
-hotel. This is a SPEC-10 remainder, not SPEC-39: pasted confirmation text and
-PDF/OCR intake have different privacy, parsing, and failure contracts.
+Status: IMPLEMENTED on main (`fc6926b`). This is text paste, not SPEC-39
+PDF/OCR. Flutter display of found/missing fields is UNVERIFIED without the
+Windows SDK.
+
+The on-device parser now has Booking.com and Agoda adapters plus a generic
+labelled-field fallback. Unknown providers degrade to the generic parser and
+then the manual floor. This remains text paste, not SPEC-39 PDF/OCR.
 
 ### Provider and fallback model
 
@@ -232,22 +239,34 @@ worse than an unfilled optional field.
 
 ### Provider-aware tests and acceptance
 
-- [ ] Existing Booking.com fixture still extracts type, venue, check-in,
+Landed on main with `fc6926b`. Tick marks record that implementation, not a
+new pytest run by the planning agent.
+
+- [x] Existing Booking.com fixture still extracts type, venue, check-in,
       check-out, and region
-- [ ] At least one redacted Agoda confirmation extracts the same available
+- [x] At least one redacted Agoda confirmation extracts the same available
       fields
-- [ ] An Agoda footer-only fixture produces an honest partial result
-- [ ] `booking ID is VALUE` extracts the code without swallowing punctuation
-- [ ] Unknown provider and malformed text never throw
-- [ ] Missing name or dates remain empty rather than receiving defaults
-- [ ] A footer or booking ID sentence never becomes `venue_name`
-- [ ] The UI displays found and missing fields before save
-- [ ] Provider adapters and the generic fallback share one normalized output
+- [x] An Agoda footer-only fixture produces an honest partial result
+- [x] `booking ID is VALUE` extracts the code without swallowing punctuation
+- [x] Unknown provider and malformed text never throw
+- [x] Missing name or dates remain empty rather than receiving defaults
+- [x] A footer or booking ID sentence never becomes `venue_name`
+- [x] The UI displays found and missing fields before save (code on main;
+      Flutter UNVERIFIED)
+- [x] Provider adapters and the generic fallback share one normalized output
       contract
-- [ ] Sanitized corpus reports exact-match outcomes per field and provider
-- [ ] Golden corpus contains zero invented values and zero parser exceptions
-- [ ] Extraction opens no socket
-- [ ] Raw text and confirmation code are absent from logs and signals
+- [x] Sanitized corpus reports exact-match outcomes per field and provider
+- [x] Golden corpus contains zero invented values and zero parser exceptions
+- [x] Extraction opens no socket
+- [x] Raw text and confirmation code are absent from logs and signals
+
+## Remainder: pack_day flight and hotel constraints
+
+Deferred. Scheduler `reschedule_and_validate` and swap `_is_swap_reachable`
+enforce the 150-minute pre-flight cutoff and hotel morning origin / 21:00
+local return. `pack_day` does not take bookings; create/corridor still pack
+as if no hotel origin and no next-morning flight. Do not describe SPEC-10
+as complete while this is true.
 
 ## Remainder: edit and delete existing bookings
 

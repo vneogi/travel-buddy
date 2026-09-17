@@ -7,10 +7,13 @@ next agent must not reopen in the first week.
 
 Read this file and the two contracts above. SPEC-36 through SPEC-38 and
 SPEC-40 are done. SPEC-41 Phase A is complete: A3a merged as `d1fde14` and
-A3b was reviewed at branch head `7f25042`. Next come SPEC-10 provider-aware
-paste and SPEC-25 grounded trip-scoped Ask. After those Laos-facing slices and
-their hosted/API/APK verification, SPEC-44 Phase A makes trip persistence
-transactional and concurrency-safe. SPEC-43 is then the release foundation
+A3b was reviewed at branch head `7f25042`. SPEC-10 paste is on main
+(`fc6926b`). Flight/hotel scheduler remainder is on
+`feat/spec10-flight-hotel-anchors` (`6cb7c05`), not merged; `pack_day`
+booking constraints stay deferred. SPEC-25 grounded trip-scoped Ask is on
+`feat/spec25-grounded-ask` (`a586e78`), Flutter UNVERIFIED. After those
+merges and hosted/API/APK verification, SPEC-44 Phase A makes trip
+persistence transactional. SPEC-43 is then the release foundation
 before any non-owner tester or the planned December launch. The SPEC-13/17/20
 city factory follows; Bangkok proves it without a hardcoded
 exception.
@@ -132,10 +135,14 @@ on the owner's phone. Next tasks:
    `7f25042` replaces the 30-minute buffer and random/clock mock transit with
    deterministic walking time, city/day boundaries, apply-time retry,
    previous-node reachability, and next locked-anchor constraints.
-3. Implement the SPEC-10 provider-aware paste remainder with redacted Agoda and
-   Booking.com fixtures and honest partial extraction.
-4. Implement the SPEC-25 grounded trip-scoped Ask remainder. Key presence alone
-   is not acceptance; retrieval and named fallback states are required.
+3. SPEC-10 provider-aware paste is on main (`fc6926b`). Do not reopen Agoda
+   adapters unless a new redacted fixture fails. Flight/hotel scheduler
+   remainder is reviewed at `feat/spec10-flight-hotel-anchors` `6cb7c05`;
+   merge when ready. Keep SPEC-10 PARTIAL until `pack_day` takes bookings.
+4. SPEC-25 grounded trip-scoped Ask is on `feat/spec25-grounded-ask`
+   `a586e78`. Do not merge until laptop `pytest -q` and
+   `flutter test mobile/test/spec25_ask_envelope_test.dart`. Key presence
+   alone is not acceptance.
 5. Re-run hosted API, signed APK, and device acceptance for those slices before
    security implementation, inspiration, similar-trip generation, or broader
    consumer work.
