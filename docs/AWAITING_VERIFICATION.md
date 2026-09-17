@@ -15,6 +15,39 @@ other.
 Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 `#85` and so on; those numbers cannot be reconciled against `git log`.
 
+## Finding -- Sep 18 2026 -- old-APK itinerary and booking field session
+
+Owner exercised the prior signed Android APK; this is product evidence from an
+older build, not verification of current main.
+
+- One swap returned "No alternative venues found nearby." The target was about
+  23 km away. The refusal is the correct safe outcome, but the screenshot does
+  not prove distance was the exclusion reason; hours, region, identity,
+  duplication, reachability, or sparse catalog could also remove every
+  candidate. A future refusal detail should expose a privacy-safe reason count.
+- Destination cards and the date picker showed catalog-derived limits such as
+  "Up to 2 days" and "Maximum 2 days for this destination." Owner wants all
+  destination-specific date caps removed. SPEC-42 now requires an uncapped
+  user-facing trip span separated from auto-fill capacity; only a high API
+  abuse/accident bound may remain.
+- Itinerary cards looked tappable but only their small action icons responded.
+  VISION now requires a tap-open offline place-detail surface with grounded
+  summary, attributed photo when available, and sourced, freshness-stamped
+  insider tips. A decorative flip alone is not the contract.
+- Flexible activity times displayed minute-level precision, and some four-stop
+  days ended around 12:30. SPEC-41 now separates exact feasibility from a
+  human-readable time grid and requires a human-shaped default day when the
+  feasible catalog supports one.
+- Real Agoda email and flattened PDF text did not produce a useful parse.
+  SPEC-10 now treats parser perfection as field-corpus work and sequences
+  native share/PDF/OCR before any privacy-reviewed forwarding mailbox.
+- A hotel entered as Oct 2 18:02 check-in and Oct 3 15:00 check-out rendered as
+  a single Oct 3 01:02 anchor. The exact +7-hour shift is strong evidence of
+  local-wall-time/UTC double interpretation; the single card also hides the
+  stay interval. Reproduce on current main. SPEC-10 now requires both endpoints,
+  covered-date rendering, one conversion boundary, and reviewed arrival/
+  departure intent before itinerary reflow.
+
 ## Finding -- Sep 17 2026 -- SPEC-10 flight/hotel remainder merged to main
 
 Owner accepted the scheduler slice as production-ready. Merged

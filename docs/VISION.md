@@ -196,6 +196,36 @@ whose *data* is proprietary and outcome-linked, not the ones that are generic gl
 at golden hour when rerouted-to"); (c) cross-trip memory (#8) turns the data moat into
 personal **switching cost**. Build priority concentrates in #2/#4/#5/#6/#7.
 
+### Place cards open into useful local context
+
+An itinerary card is an obvious tap target. Tapping an activity card must have
+a response; icon-only actions do not make the rest of the card inert. Open a
+place-detail sheet or page, with a light card-turn transition only if motion and
+accessibility testing support it. Do not rely on a literal flip gesture or a
+hidden reverse side.
+
+The first useful detail surface contains:
+
+- a three-to-four-line grounded description;
+- one licensed, attributed, cacheable photo when available;
+- practical timing and arrival context;
+- an "Insider tips" section for entrance/gate details, where to ask a taxi to
+  stop, short-walk alternatives, nearby useful places, and other local
+  friction reducers;
+- existing love, swap, cancel, and driver-card actions with clear labels.
+
+This surface is part of the governed city-data loop, not generated decoration.
+Every tip carries source, `as_of`, confidence/tier, and an attribute-specific
+freshness horizon under SPEC-17. Review extraction may produce a hedged claim;
+it never becomes an asserted fact merely because many reviews repeat it.
+Safety-sensitive advice follows SPEC-17's stricter rule. Superseded claims
+remain auditable, while the resolver selects the current display value.
+
+Cache the trip's place-detail payload for offline use. Missing photos or tips
+degrade to the sourced text already available; the card never blocks on a
+network request. Useful/incorrect feedback and field-confirmed corrections may
+feed the claim pipeline only with purpose consent and stable claim identity.
+
 ## 12. Audience-aware recommendations (extends §3)
 
 Recommendations, pacing, food, and reroute logic MUST key off **who is travelling**, held in

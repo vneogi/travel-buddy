@@ -29,9 +29,17 @@ trip.
 The create UI does not disable or reject a date range because a region has
 fewer venues than the number of selected calendar days.
 
-A separate, documented technical sanity limit may protect against accidental
-multi-year selections or abusive payloads. It is not calculated from venue
-capacity and is not presented as a recommendation for trip length.
+There is no user-facing destination-specific maximum such as "up to 2 days" or
+"maximum 2 days for this destination." The destination list and date picker do
+not advertise, disable, or reject dates using catalog capacity. A traveller may
+select the trip they are actually taking even when only part of it can be
+auto-filled.
+
+A high, documented API safety bound may still protect against malformed,
+accidental multi-year, or abusive payloads. It is not calculated from venue
+capacity, is not shown as destination advice, and returns a validation error
+rather than silently shortening the trip. This is an infrastructure guard, not
+a product maximum.
 
 ### At most five generated starter days
 
@@ -177,6 +185,7 @@ reachability, lock, region, or trip-boundary constraints.
 
 - [ ] Trip span and auto-populated-day capacity are separate API concepts
 - [ ] A valid long trip is not rejected because the catalog fills only five days
+- [ ] Destination cards and the date picker show no catalog-derived day maximum
 - [ ] Initial generation populates no more than five deterministic dates
 - [ ] Every date in the inclusive span renders, including empty days
 - [ ] Empty days provide a direct Add activity action

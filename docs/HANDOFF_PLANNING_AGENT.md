@@ -142,35 +142,40 @@ on the owner's phone. Next tasks:
    `a586e78`. Do not merge until laptop `pytest -q` and
    `flutter test mobile/test/spec25_ask_envelope_test.dart`. Key presence
    alone is not acceptance.
-5. After SPEC-25 merge, re-run hosted API, signed APK, and device acceptance
-   before security implementation, inspiration, similar-trip generation, or
-   broader consumer work.
-6. Implement SPEC-44 Phase A. Make trip graph, party, compatibility projection,
+5. Reproduce the Sep 18 old-APK findings against current main before the next
+   hosted build. The likely +7-hour hotel check-in shift is a booking
+   correctness blocker if it survives. Catalog-derived destination date caps,
+   inert card bodies, false minute precision, morning-heavy days, and real
+   Agoda/PDF recall are recorded in PROJECT_STATUS and their owning specs.
+6. After SPEC-25 merge and that triage, re-run hosted API, signed APK, and
+   device acceptance before security implementation, inspiration,
+   similar-trip generation, or broader consumer work.
+7. Implement SPEC-44 Phase A. Make trip graph, party, compatibility projection,
    and command record one transaction; add monotonic trip version,
    `expected_version`, typed conflict, idempotent command IDs, and production
    PostgreSQL contract tests. Do this before SPEC-16 row-authoritative reads,
    multi-device mutation, or a second real city.
-7. Implement SPEC-43 in bounded phases. It owns twelve verified gaps:
+8. Implement SPEC-43 in bounded phases. It owns twelve verified gaps:
    server-issued anonymous auth, complete RLS, redacted LLM egress, data rights
    and retention, encrypted offline data, real sign-out, purpose consent,
    private cache isolation, signal ownership/poisoning controls, redacted
    diagnostics, abuse/spend limits, and release HTTPS/cache isolation.
-8. Do not distribute an APK to another person, enable production LLM processing
+9. Do not distribute an APK to another person, enable production LLM processing
    of personal trip data, or claim residency/compliance before SPEC-43's
    applicable gates pass.
-9. After SPEC-43, implement the SPEC-13 region/country registry, minimum
+10. After SPEC-43, implement the SPEC-13 region/country registry, minimum
    SPEC-17 claim store, and SPEC-20 versioned city pack. Bangkok is the
    acceptance case. Do not add Thailand, Vietnam, Cambodia, or Philippines data
    through another Python/Dart/loader exception.
-10. Add SPEC-44 recommendation-decision capture only for consented subjects.
+11. Add SPEC-44 recommendation-decision capture only for consented subjects.
     Record feasible exposure, exclusions, score components, displayed order,
     sponsorship, and policy/catalog/taxonomy versions. Learned influence stays
     zero until held-out evidence and rollback gates pass.
-11. Only after SPEC-44 Phase A and the matching online SPEC-42 action exist,
+12. Only after SPEC-44 Phase A and the matching online SPEC-42 action exist,
     consider SPEC-02's separate SQLite mutation-command outbox. Queue typed
     confirmed commands with `command_id` and `expected_version`; never perform
     local reflow or silently resolve a conflict.
-12. Only after Bangkok proves the SPEC-20 city factory, prototype SPEC-04's
+13. Only after Bangkok proves the SPEC-20 city factory, prototype SPEC-04's
     optional versioned offline map artifact on representative devices. PMTiles,
     MapLibre, and Cloudflare R2 are candidates, not commitments; measured size,
     cold start, rendering, memory, battery, update, and offline behavior decide.

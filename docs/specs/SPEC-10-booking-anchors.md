@@ -259,6 +259,30 @@ new pytest run by the planning agent.
 - [x] Extraction opens no socket
 - [x] Raw text and confirmation code are absent from logs and signals
 
+### Field perfection and future import channels
+
+The Sep 18 old-APK field session did not extract useful fields from the owner's
+real Agoda email or pasted PDF text. Synthetic/redacted fixtures prove parser
+behavior, not sufficient real-world recall. Keep paste available as a
+best-effort assist, but do not present Agoda or PDF text paste as perfected
+until a consented, sanitized corpus of real layouts passes per-field review.
+
+Future hardening should proceed in this order:
+
+1. collect owner-supplied, redacted examples from Agoda, Booking.com, Trip.com,
+   Airbnb, Expedia, airlines, rail, and tours;
+2. preserve layout during share/import instead of relying only on flattened
+   clipboard text;
+3. add native PDF/screenshot share intake and on-device OCR under SPEC-39;
+4. consider a forwarding address only after SPEC-43 defines sender
+   authentication, consent, regional processing, retention/deletion, abuse
+   controls, and confirmation-code redaction.
+
+A forwarding mailbox is an ingestion service, not a shortcut around privacy.
+It must extract into the same typed booking draft, show every field for human
+confirmation, retain no raw message beyond the declared processing window, and
+never let an LLM persist an anchor without HITL.
+
 ## Remainder: pack_day flight and hotel constraints
 
 Deferred. Scheduler `reschedule_and_validate` and swap `_is_swap_reachable`
@@ -266,6 +290,42 @@ on main (`e7a0457`) enforce the 150-minute pre-flight cutoff and hotel
 morning origin / 21:00 local return. `pack_day` does not take bookings;
 create/corridor still pack as if no hotel origin and no next-morning flight.
 Do not describe SPEC-10 as complete while this is true.
+
+## Remainder: stay interval semantics and post-arrival intent
+
+The Sep 18 old-APK session exposed a likely timezone defect: a manually entered
+Oct 2 18:02 hotel check-in rendered as Oct 3 01:02 in Laos, exactly a seven-hour
+shift. The itinerary card also represented the multi-night stay as one point,
+which hid checkout semantics. Reproduce against current main before fixing, but
+treat local booking times as destination-local wall times and convert exactly
+once at the API boundary.
+
+A hotel is an interval with named check-in and check-out, even if the current
+compatibility model stores it as one node plus duration. The UI shows both
+values and renders coverage on every local date without duplicating the
+booking identity. Editing either endpoint recomputes covered dates, morning
+origin, evening return, and affected flexible nodes.
+
+Bookings define what is possible, not what the traveller wants immediately
+afterward. Add explicit intent around arrivals and departures rather than
+guessing:
+
+- after arrival: rest/check in, keep the time open, or start exploring;
+- before departure/check-out: pack/transfer buffer, keep the time open, or
+  allow activities;
+- a conservative default reserves recovery and transfer time until the
+  traveller chooses otherwise;
+- all flexible nodes affected by the choice are proposed as one reviewed
+  reflow and persist only after HITL confirmation.
+
+Acceptance for this remainder includes:
+
+- destination-local check-in and check-out round-trip without a UTC day shift;
+- both endpoints are visible and editable;
+- a stay appears across all covered local dates with one stable booking ID;
+- add/edit/delete recomputes affected hotel constraints before persistence;
+- the traveller can choose recovery/departure intent and preview the reflow;
+- dismissing the proposal leaves the itinerary unchanged.
 
 ## Remainder: edit and delete existing bookings
 

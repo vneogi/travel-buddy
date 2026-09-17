@@ -112,6 +112,26 @@ Sponsored influence, if present, is applied only after feasibility and remains
 subject to the SPEC-17 disclosure contract. Payment can never reopen an
 infeasible candidate.
 
+### Human-shaped day and time presentation
+
+Feasibility is not the same as a good-looking day. Packing every venue into its
+earliest valid slot can produce four activities ending around lunch, while
+adding exact walking minutes can expose false precision such as 10:52.
+
+Keep exact instants for hard constraints and locked bookings. Flexible
+activities should start on a human-readable time grid, rounding forward rather
+than backward so transit feasibility is not weakened. The UI may label an
+estimated flexible start as approximate; it must never round a locked booking
+or imply that an estimate is confirmed.
+
+Default generation distributes a day across suitable morning, afternoon, and
+evening windows when the feasible catalog supports that shape. It may still
+produce a short day when opening hours, travel, bookings, traveller pace, or
+catalog capacity require one. It leaves honest open time instead of adding
+low-quality filler. A later pace control may let the traveller choose relaxed,
+balanced, or full days; until then the deterministic policy and its day envelope
+must be explicit and tested.
+
 ## Stage 3: schedule and validate
 
 Creation schedules each local calendar day independently. Work on one day
@@ -222,6 +242,9 @@ online mutation contract.
 - swap search and apply share the same target-slot feasibility result;
 - warning output is limited to nodes affected by the operation;
 - deterministic inputs produce the same ordered venue IDs;
+- flexible starts use the documented time grid without rounding backward;
+- a feasible mixed-window catalog does not collapse every stop into the morning;
+- insufficient capacity leaves open time instead of adding infeasible filler;
 - interest and later personalization change only feasible-set order;
 - sponsored weight cannot restore an excluded candidate;
 - LLM sabotage cannot place a closed or unreachable venue;
@@ -242,6 +265,8 @@ restaurant, a closed weekday, unknown hours, and a locked transport anchor.
 - [ ] Swap search and apply cannot disagree on feasibility
 - [ ] Warnings are scoped and do not repeat unrelated trip-wide issues
 - [ ] Ranking is deterministic without behavioural history
+- [ ] Flexible activity times avoid false minute-level precision
+- [ ] Default packing produces a human-shaped day when feasible
 - [ ] LLM paths cannot change the solver result
 - [ ] Full Python and Flutter suites are green from `origin/main`
 
