@@ -145,8 +145,10 @@ on the owner's phone. Next tasks:
 5. Reproduce the Sep 18 old-APK findings against current main before the next
    hosted build. The likely +7-hour hotel check-in shift is a booking
    correctness blocker if it survives. Catalog-derived destination date caps,
-   inert card bodies, false minute precision, morning-heavy days, and real
-   Agoda/PDF recall are recorded in PROJECT_STATUS and their owning specs.
+   inert card bodies, clock-time packing versus named slots, travel-day
+   remaining slots, and real Agoda/PDF recall are recorded in PROJECT_STATUS
+   and their owning specs. Slot-shaped days are specified in SPEC-41; do not
+   implement them before the hotel timezone triage and SPEC-25 laptop tests.
 6. After SPEC-25 merge and that triage, re-run hosted API, signed APK, and
    device acceptance before security implementation, inspiration,
    similar-trip generation, or broader consumer work.

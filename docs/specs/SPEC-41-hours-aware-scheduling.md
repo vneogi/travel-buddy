@@ -112,25 +112,63 @@ Sponsored influence, if present, is applied only after feasibility and remains
 subject to the SPEC-17 disclosure contract. Payment can never reopen an
 infeasible candidate.
 
-### Human-shaped day and time presentation
+### Slot-shaped days, not clock-shaped days
 
-Feasibility is not the same as a good-looking day. Packing every venue into its
-earliest valid slot can produce four activities ending around lunch, while
-adding exact walking minutes can expose false precision such as 10:52.
+Flexible itinerary UI shows coarse destination-local slots, not invented clock
+times. Groups, pace, and traffic make 10:52 unusable as a promise.
 
-Keep exact instants for hard constraints and locked bookings. Flexible
-activities should start on a human-readable time grid, rounding forward rather
-than backward so transit feasibility is not weakened. The UI may label an
-estimated flexible start as approximate; it must never round a locked booking
-or imply that an estimate is confirmed.
+The default full in-city day has four named slots:
 
-Default generation distributes a day across suitable morning, afternoon, and
-evening windows when the feasible catalog supports that shape. It may still
-produce a short day when opening hours, travel, bookings, traveller pace, or
-catalog capacity require one. It leaves honest open time instead of adding
-low-quality filler. A later pace control may let the traveller choose relaxed,
-balanced, or full days; until then the deterministic policy and its day envelope
-must be explicit and tested.
+```text
+morning_tour
+lunch
+afternoon_evening_tour
+dinner
+```
+
+Breakfast is optional later; it is not a default generated slot. An afternoon
+show and dinner may share one remaining evening after a late arrival; they are
+not a fifth default slot on a full day.
+
+Keep exact instants internally for hours, walking, locked bookings, and
+validation. Render locked flights, trains, and hotel check-in/out as exact
+local times. Render flexible stops as the slot name. Do not display walking
+arithmetic as the traveller-facing start.
+
+A catalog venue occupies one or more slots from its dwell and category:
+
+- a typical sight or activity occupies `morning_tour` or
+  `afternoon_evening_tour`;
+- a restaurant occupies `lunch` or `dinner`;
+- a known whole-day excursion (canyoneering, island hopping, long out-of-city
+  tour) occupies morning and afternoon, including lunch on site or packed, and
+  leaves `dinner` as the only remaining generated recommendation that day.
+
+Do not pack four city stops around a whole-day trip. Do not invent filler to
+look busy.
+
+### Travel days consume slots before packing
+
+Arrival, departure, and inter-city transfer days derive remaining slots from
+the locked booking plus buffer, then pack only what still fits.
+
+Conservative defaults until the traveller confirms a more ambitious intent:
+
+- landing or arriving early evening: `dinner` only;
+- arriving mid-afternoon (for example a 15:00 Vientiane to Luang Prabang
+  train) plus hotel check-in: remaining evening may hold one show or walk
+  plus `dinner`, never a morning-style tour;
+- departing on a morning flight or train: no tour that morning; hotel-near
+  logistics only if the remaining window is honest;
+- checkout day: remaining morning activity, if any, stays near the hotel.
+
+Buffers already specified for pre-flight cutoff and hotel return still apply.
+`pack_day` must consume those remaining slots; earliest-fit four-stop packing
+on a travel day is a product bug even when every venue is open.
+
+A later HITL intent (rest vs explore after arrival; tight vs open before
+departure) may restore extra remaining slots. It cannot restore a slot the
+booking and buffer have already consumed. Empty remaining time stays empty.
 
 ## Stage 3: schedule and validate
 
@@ -242,9 +280,13 @@ online mutation contract.
 - swap search and apply share the same target-slot feasibility result;
 - warning output is limited to nodes affected by the operation;
 - deterministic inputs produce the same ordered venue IDs;
-- flexible starts use the documented time grid without rounding backward;
-- a feasible mixed-window catalog does not collapse every stop into the morning;
-- insufficient capacity leaves open time instead of adding infeasible filler;
+- flexible itinerary rendering uses named slots, not walking-derived minutes;
+- a feasible mixed-window catalog fills morning, lunch, afternoon/evening, and
+  dinner rather than four morning stops;
+- a whole-day excursion occupies morning and afternoon and leaves dinner;
+- an early-evening arrival packs dinner only;
+- a mid-afternoon arrival plus hotel check-in packs at most evening plus dinner;
+- insufficient remaining slots leave open time instead of adding filler;
 - interest and later personalization change only feasible-set order;
 - sponsored weight cannot restore an excluded candidate;
 - LLM sabotage cannot place a closed or unreachable venue;
@@ -265,8 +307,9 @@ restaurant, a closed weekday, unknown hours, and a locked transport anchor.
 - [ ] Swap search and apply cannot disagree on feasibility
 - [ ] Warnings are scoped and do not repeat unrelated trip-wide issues
 - [ ] Ranking is deterministic without behavioural history
-- [ ] Flexible activity times avoid false minute-level precision
-- [ ] Default packing produces a human-shaped day when feasible
+- [ ] Flexible stops render as named slots; locked bookings keep exact times
+- [ ] Default in-city generation uses morning, lunch, afternoon/evening, dinner
+- [ ] Whole-day excursions and travel days pack only remaining slots
 - [ ] LLM paths cannot change the solver result
 - [ ] Full Python and Flutter suites are green from `origin/main`
 

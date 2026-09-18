@@ -291,6 +291,13 @@ morning origin / 21:00 local return. `pack_day` does not take bookings;
 create/corridor still pack as if no hotel origin and no next-morning flight.
 Do not describe SPEC-10 as complete while this is true.
 
+When `pack_day` is wired, it must occupy SPEC-41 remaining slots from the
+booking plus buffer, not place four earliest-fit city stops on an arrival or
+departure day. A 15:00 inter-city arrival plus hotel check-in leaves evening
+plus dinner. An early-evening landing leaves dinner only. A whole-day booked
+tour leaves dinner only. Conservative defaults apply until HITL intent restores
+a remaining slot.
+
 ## Remainder: stay interval semantics and post-arrival intent
 
 The Sep 18 old-APK session exposed a likely timezone defect: a manually entered
@@ -307,14 +314,15 @@ booking identity. Editing either endpoint recomputes covered dates, morning
 origin, evening return, and affected flexible nodes.
 
 Bookings define what is possible, not what the traveller wants immediately
-afterward. Add explicit intent around arrivals and departures rather than
-guessing:
+afterward. Remaining SPEC-41 slots are computed first from booking time plus
+buffer and hotel check-in. Intent may only choose among slots that remain:
 
-- after arrival: rest/check in, keep the time open, or start exploring;
+- after arrival: rest/check in, keep the time open, or use remaining evening
+  slots (show plus dinner, or dinner only);
 - before departure/check-out: pack/transfer buffer, keep the time open, or
-  allow activities;
-- a conservative default reserves recovery and transfer time until the
-  traveller chooses otherwise;
+  allow a remaining hotel-near morning slot;
+- the conservative default is the lighter remaining set until the traveller
+  confirms more;
 - all flexible nodes affected by the choice are proposed as one reviewed
   reflow and persist only after HITL confirmation.
 

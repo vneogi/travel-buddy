@@ -184,7 +184,7 @@ whose *data* is proprietary and outcome-linked, not the ones that are generic gl
 | 1 | Reads the group, adjusts silently | Audience model (profile + per-trip party) as recommender input | audience-segmented accept/reject | segmented data |
 | 2 | Owns "what now?" — **proactive** reroute | Provider-backed context alerts surface evidence before pain; synthetic transit is never a traveller fact and any mutation requires confirmation | reroute_suggested/accepted/rejected | acceptance-rate data (capture pre-Laos) |
 | 3 | Invisible logistics (food/toilet/fare) | Micro-intent handlers on location+time, ranked by fused score | acted-on micro-suggestions | table-stakes glue |
-| 4 | Right *time*, not just place | Time as first-class ranking dim; scheduler slots optimal time | arrival_delta, dwell, timed crowding | outcome-linked timing |
+| 4 | Right *time*, not just place | Named day slots plus booking-derived remaining windows; exact times stay on locks | arrival_delta, dwell, timed crowding | outcome-linked timing |
 | 5 | Protects against regret (anti-trap) | Fused quality + trap-score + user disappointment signals steer gently | not_as_described, disliked | on-brand, core |
 | 6 | Reconciles split group desires | Multi-preference optimizer over party + schedule + transit | group-compromise acceptance | flagship, ~nobody has it |
 | 7 | Calm in the unexpected — offline | Offline-first cache + curated "help me now" pack per city | offline usage patterns | structural (incumbents won't) |
@@ -507,13 +507,19 @@ trip_stay {stay_id, trip_id, accommodation_name, address,
 ```
 
 **Engine impact:**
-- Scheduler computes AVAILABLE WINDOWS per day from legs + stays
+- Scheduler computes remaining named slots per day from legs + stays
+  (`morning_tour`, `lunch`, `afternoon_evening_tour`, `dinner`)
+- Flexible cards show those slot names; flights, trains, and hotel times stay
+  exact
+- Whole-day excursions occupy morning and afternoon; dinner may still generate
 - Departure buffer: 2h domestic flights, 3h international, 1h trains/buses
-- Check-out day: morning activities must be near hotel (bags!)
-- Transit day: activities only at origin AM + destination PM
-- Jet-lag awareness: first day after long-haul = gentle schedule
-- Last day: "morning only" with airport transit time baked in
-- Hotel location = daily anchor → radius-filter activities from there
+- Check-out day: remaining morning activity, if any, must be near hotel (bags)
+- Transit / arrival day: pack only remaining destination slots (dinner only
+  after an early-evening landing; evening plus dinner after a mid-afternoon
+  arrival and hotel check-in)
+- Jet-lag awareness: first day after long-haul = gentle remaining slots
+- Last day: remaining morning only, with airport transit time baked in
+- Hotel location = daily anchor for remaining in-city slots
 
 **Input methods (phased):**
 - Phase 1 (Laos): manual form at trip creation (flight number, hotel name, dates)

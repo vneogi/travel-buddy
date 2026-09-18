@@ -85,7 +85,8 @@ item.
 ### Direct add
 
 `Add activity` starts from the selected local date. The traveller may choose a
-time or a broad slot such as morning, afternoon, or evening.
+named SPEC-41 slot (`morning_tour`, `lunch`, `afternoon_evening_tour`,
+`dinner`) rather than a clock time.
 
 Candidate search and apply both use SPEC-41:
 

@@ -35,9 +35,10 @@ older build, not verification of current main.
   summary, attributed photo when available, and sourced, freshness-stamped
   insider tips. A decorative flip alone is not the contract.
 - Flexible activity times displayed minute-level precision, and some four-stop
-  days ended around 12:30. SPEC-41 now separates exact feasibility from a
-  human-readable time grid and requires a human-shaped default day when the
-  feasible catalog supports one.
+  days ended around 12:30. SPEC-41 now requires named slots (morning tour,
+  lunch, afternoon/evening tour, dinner), whole-day excursion occupancy, and
+  booking-derived remaining slots on travel days. Exact times stay on locked
+  bookings only.
 - Real Agoda email and flattened PDF text did not produce a useful parse.
   SPEC-10 now treats parser perfection as field-corpus work and sequences
   native share/PDF/OCR before any privacy-reviewed forwarding mailbox.
