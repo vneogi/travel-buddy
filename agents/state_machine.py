@@ -44,6 +44,7 @@ from services.booking_constraints import (
 from services.catalog_itinerary import duration_for as _duration_for
 from services.destination_tz import destination_tz as _dest_tz
 from services.destination_tz import to_destination_local as _to_local
+from services.destination_tz import parse_destination_wall_time as _parse_wall_time
 from services.maps_service import maps_service
 from services.opening_hours import HoursResult as _HoursResult
 from services.transit import walking_minutes as _walking_minutes
@@ -519,16 +520,10 @@ class TripStateMachine:
         if event_type == EventType.ADD_BOOKING.value:
             prefs = state.get("preferences") or {}
             raw_start = prefs.get("scheduled_start") or state.get("message")
+            booking_region = prefs.get("geo_region") or trip_state.geo_region
             try:
-                if isinstance(raw_start, str):
-                    start_dt = datetime.fromisoformat(raw_start.replace("Z", "+00:00"))
-                else:
-                    start_dt = raw_start or datetime.now(tz=timezone.utc)
-                if start_dt.tzinfo is None:
-                    start_dt = start_dt.replace(tzinfo=timezone.utc)
-                else:
-                    start_dt = start_dt.astimezone(timezone.utc)
-            except Exception:
+                start_dt = _parse_wall_time(raw_start, booking_region)
+            except (ValueError, TypeError):
                 start_dt = datetime.now(tz=timezone.utc)
 
             booking_node = TripNode(
@@ -598,19 +593,17 @@ class TripStateMachine:
                 node.geo_region = prefs["geo_region"]
             if "scheduled_start" in prefs:
                 raw = prefs["scheduled_start"]
+                edit_region = (
+                    prefs.get("geo_region")
+                    or getattr(node, "geo_region", None)
+                    or trip_state.geo_region
+                )
                 try:
-                    if isinstance(raw, str):
-                        new_start = datetime.fromisoformat(raw.replace("Z", "+00:00"))
-                    else:
-                        new_start = raw
-                    if new_start.tzinfo is None:
-                        new_start = new_start.replace(tzinfo=timezone.utc)
-                    else:
-                        new_start = new_start.astimezone(timezone.utc)
+                    new_start = _parse_wall_time(raw, edit_region)
                     if new_start != node.scheduled_start:
                         node.scheduled_start = new_start
                         schedule_changed = True
-                except Exception:
+                except (ValueError, TypeError):
                     pass
             # node_kind and is_locked are NEVER changed by edit
             assert node.node_kind == "booking"
