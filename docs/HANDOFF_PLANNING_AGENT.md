@@ -140,16 +140,14 @@ on the owner's phone. Next tasks:
    unless a new redacted fixture fails. Keep SPEC-10 PARTIAL until
    `pack_day` takes bookings.
 4. SPEC-25 trip-scoped grounded Ask is on main (`30a4270`). Laptop Flutter
-   Ask envelope tests passed. Owner `pytest -q` on `a586e78` had the
-   four env-guard failures already fixed as `933c705`. Owner `pytest -q`
-   on `ef5f4d0` left two: docs count hygiene, and `api_key=None` using
-   settings when `.env` has a key (correct production behavior; the old
-   alerts test assumed no key). Trip-optional Ask remains.
+   Ask envelope tests passed. Owner Windows `pytest -q` on `3e5ec6d` is
+   green (details in AWAITING_VERIFICATION). Trip-optional Ask remains.
 5. Hotel wall-time conversion, weather empty-key, and swap canned copy
    after `no_candidates` are on main (`933c705`). Catalog date caps, named
    slots, hotel coords, and dual check-in/out stay specified.
-6. Next owner gate: `pytest -q` on current main after the two `ef5f4d0`
-   follow-ups, then hosted API, signed APK, and device Ask. After that, do not start
+6. Next owner gate is hosted API, signed APK, and device Ask when the
+   owner asks for a deploy. Until then, specified remainders are catalog
+   date caps, named slots, hotel coords, and dual check-in/out. Do not start
    security implementation, inspiration, similar-trip generation, or
    broader consumer work until the phone gate.
 7. Implement SPEC-44 Phase A. Make trip graph, party, compatibility projection,

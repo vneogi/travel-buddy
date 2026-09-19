@@ -15,6 +15,13 @@ other.
 Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 `#85` and so on; those numbers cannot be reconciled against `git log`.
 
+## Finding -- Sep 19 2026 -- pytest on main 3e5ec6d green
+
+Owner Windows after fast-forward to `3e5ec6d`: `pytest -q` 817 passed,
+13 warnings, 0 failed. The two `ef5f4d0` failures are closed. Flutter Ask
+envelope tests already passed earlier the same day. Hosted Ask and signed
+APK are still unverified on this SHA.
+
 ## Finding -- Sep 19 2026 -- pytest on main ef5f4d0, two remaining
 
 Owner Windows after fast-forward to `ef5f4d0`. The four env-guard failures

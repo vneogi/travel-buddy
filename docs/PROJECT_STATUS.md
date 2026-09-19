@@ -218,11 +218,9 @@ Seed-shaped cohorts.
 9. SPEC-25 grounded trip-scoped Ask -- **DONE on main** (`30a4270`, from
    `a586e78`). Laptop Flutter Ask envelope tests passed. Trip-optional Ask,
    model phrasing/budget/breaker UX remain.
-10. Owner Windows `pytest -q` on `ef5f4d0` left two failures: living-docs
-    count hygiene, and `WeatherProvider(api_key=None)` still using `.env`.
-    Empty string stays unconfigured. After those land, hosted API/APK and
-    device Ask before SPEC-43/44 consumer expansion. No deploy or APK
-    until then.
+10. Owner Windows `pytest -q` on `3e5ec6d` is green. Hosted API/APK and
+    device Ask wait for an explicit deploy. SPEC-43/44 stay after the
+    Laos build. No deploy or APK until then.
 11. SPEC-44 Phase A backend integrity -- **NEXT DATA FOUNDATION AFTER THE LAOS
    BUILD**. Make trip graph, party, and compatibility projection one
    transaction; add expected-version conflicts and idempotent commands before
