@@ -479,6 +479,152 @@ class HomeSnapshot {
       };
 }
 
+// ---------------------------------------------------------------------------
+// SPEC-25: Ask response envelope (mirrors backend AskResponseEnvelope)
+// ---------------------------------------------------------------------------
+
+/// Closed set of Ask paths matching the backend Literal.
+enum AskPath {
+  groundedDeterministic('grounded_deterministic'),
+  groundedModelPhrased('grounded_model_phrased'),
+  cacheHit('cache_hit'),
+  noKey('no_key'),
+  retrievalMiss('retrieval_miss'),
+  budgetExhausted('budget_exhausted'),
+  breakerOpen('breaker_open'),
+  modelErrorFallback('model_error_fallback'),
+  outOfScope('out_of_scope');
+
+  final String wire;
+  const AskPath(this.wire);
+
+  static AskPath fromWire(String s) => AskPath.values.firstWhere(
+        (e) => e.wire == s,
+        orElse: () => throw ArgumentError('Unknown AskPath: "$s"'),
+      );
+}
+
+/// Closed set of Ask intents matching the backend Literal.
+enum AskResponseIntent {
+  placeIdentity('place_identity'),
+  openingHours('opening_hours'),
+  dishFact('dish_fact'),
+  tripCurrentNext('trip_current_next'),
+  planChange('plan_change'),
+  outOfScope('out_of_scope');
+
+  final String wire;
+  const AskResponseIntent(this.wire);
+
+  static AskResponseIntent fromWire(String s) =>
+      AskResponseIntent.values.firstWhere(
+        (e) => e.wire == s,
+        orElse: () => throw ArgumentError('Unknown AskResponseIntent: "$s"'),
+      );
+}
+
+/// Closed set of proposal event types matching the backend Literal.
+enum ProposalEventType {
+  swapActivity('swap_activity'),
+  cancelActivity('cancel_activity'),
+  addActivity('add_activity'),
+  reroute('reroute');
+
+  final String wire;
+  const ProposalEventType(this.wire);
+
+  static ProposalEventType fromWire(String s) =>
+      ProposalEventType.values.firstWhere(
+        (e) => e.wire == s,
+        orElse: () => throw ArgumentError('Unknown ProposalEventType: "$s"'),
+      );
+}
+
+/// Typed plan-change proposal returned inside an Ask envelope.
+class AskProposal {
+  final ProposalEventType eventType;
+  final String targetNodeId;
+  final String summary;
+
+  const AskProposal({
+    required this.eventType,
+    this.targetNodeId = '',
+    this.summary = '',
+  });
+
+  factory AskProposal.fromJson(Map<String, dynamic> j) => AskProposal(
+        eventType: ProposalEventType.fromWire(j['event_type'] as String),
+        targetNodeId: j['target_node_id'] as String? ?? '',
+        summary: j['summary'] as String? ?? '',
+      );
+}
+
+/// Closed set of Ask tiers matching the backend wire values.
+enum AskTier {
+  assert_('assert'),
+  hedge('hedge'),
+  ask('ask'),
+  defer_('defer'),
+  refuse('refuse');
+
+  final String wire;
+  const AskTier(this.wire);
+
+  static AskTier fromWire(String s) => AskTier.values.firstWhere(
+        (e) => e.wire == s,
+        orElse: () => throw ArgumentError('Unknown AskTier: "$s"'),
+      );
+}
+
+/// SPEC-25 typed Ask response. Parsed from `ask_response` on TripEventResult.
+class AskResponse {
+  final String answer;
+  final AskTier tier;
+  final AskPath path;
+  final AskResponseIntent intent;
+  final List<String> sourceIds;
+  final String sourceClass;
+  final bool fromCache;
+  final String? fallbackReason;
+  final AskProposal? proposal;
+  final String? foodDisclaimer;
+
+  const AskResponse({
+    required this.answer,
+    required this.tier,
+    required this.path,
+    required this.intent,
+    this.sourceIds = const [],
+    this.sourceClass = '',
+    this.fromCache = false,
+    this.fallbackReason,
+    this.proposal,
+    this.foodDisclaimer,
+  });
+
+  factory AskResponse.fromJson(Map<String, dynamic> j) {
+    final tierWire = j['tier'];
+    if (tierWire == null || tierWire is! String) {
+      throw ArgumentError('AskResponse: missing or invalid "tier"');
+    }
+    return AskResponse(
+      answer: j['answer'] as String? ?? '',
+      tier: AskTier.fromWire(tierWire),
+      path: AskPath.fromWire(j['path'] as String? ?? ''),
+      intent: AskResponseIntent.fromWire(j['intent'] as String? ?? ''),
+      sourceIds: ((j['source_ids'] as List?) ?? const []).cast<String>(),
+      sourceClass: j['source_class'] as String? ?? '',
+      fromCache: j['from_cache'] as bool? ?? false,
+      fallbackReason: j['fallback_reason'] as String?,
+      proposal: j['proposal'] == null
+          ? null
+          : AskProposal.fromJson(
+              (j['proposal'] as Map).cast<String, dynamic>()),
+      foodDisclaimer: j['food_disclaimer'] as String?,
+    );
+  }
+}
+
 class TripEventResult {
   /// May include a "Heads up: ..." scheduler note at the end.
   final String message;
@@ -488,6 +634,8 @@ class TripEventResult {
   final int? reroutesRemaining;
   /// SPEC-37: Structured schedule warnings from the backend.
   final List<String> scheduleWarnings;
+  /// SPEC-25: Typed Ask envelope (present only for ask_info events).
+  final AskResponse? askResponse;
 
   const TripEventResult({
     required this.message,
@@ -496,19 +644,26 @@ class TripEventResult {
     required this.fromCache,
     this.reroutesRemaining,
     this.scheduleWarnings = const [],
+    this.askResponse,
   });
 
-  factory TripEventResult.fromJson(Map<String, dynamic> j) => TripEventResult(
-        message: j['message'] as String? ?? '',
-        updatedNodes: ((j['updated_nodes'] as List?) ?? const [])
-            .map((n) => TripNode.fromJson(n as Map<String, dynamic>))
-            .toList(),
-        routingTier: j['routing_tier_used'] as String? ?? 'light',
-        fromCache: j['from_cache'] as bool? ?? false,
-        reroutesRemaining: (j['reroutes_remaining'] as num?)?.toInt(),
-        scheduleWarnings: ((j['schedule_warnings'] as List?) ?? const [])
-            .cast<String>(),
-      );
+  factory TripEventResult.fromJson(Map<String, dynamic> j) {
+    final askJson = j['ask_response'] as Map?;
+    return TripEventResult(
+      message: j['message'] as String? ?? '',
+      updatedNodes: ((j['updated_nodes'] as List?) ?? const [])
+          .map((n) => TripNode.fromJson(n as Map<String, dynamic>))
+          .toList(),
+      routingTier: j['routing_tier_used'] as String? ?? 'light',
+      fromCache: j['from_cache'] as bool? ?? false,
+      reroutesRemaining: (j['reroutes_remaining'] as num?)?.toInt(),
+      scheduleWarnings: ((j['schedule_warnings'] as List?) ?? const [])
+          .cast<String>(),
+      askResponse: askJson == null
+          ? null
+          : AskResponse.fromJson(askJson.cast<String, dynamic>()),
+    );
+  }
 }
 
 class UserStatus {

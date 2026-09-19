@@ -10,7 +10,7 @@ import uuid
 import datetime as _dt_module
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional, TypedDict
+from typing import Any, Dict, List, Literal, Optional, TypedDict
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -237,6 +237,46 @@ class TripEventRequest(BaseModel):
     preferences: Optional[dict] = None
 
 
+class PlanChangeProposal(BaseModel):
+    """SPEC-25: Typed plan-change proposal for HITL confirmation."""
+
+    event_type: Literal["swap_activity", "cancel_activity", "add_activity", "reroute"]
+    target_node_id: str = ""
+    summary: str = ""
+
+
+class AskResponseEnvelope(BaseModel):
+    """SPEC-25: Typed Ask response envelope."""
+
+    answer: str
+    tier: Literal["assert", "hedge", "ask", "defer", "refuse"]
+    path: Literal[
+        "grounded_deterministic",
+        "grounded_model_phrased",
+        "cache_hit",
+        "no_key",
+        "retrieval_miss",
+        "budget_exhausted",
+        "breaker_open",
+        "model_error_fallback",
+        "out_of_scope",
+    ]
+    intent: Literal[
+        "place_identity",
+        "opening_hours",
+        "dish_fact",
+        "trip_current_next",
+        "plan_change",
+        "out_of_scope",
+    ]
+    source_ids: List[str] = []
+    source_class: str = ""
+    from_cache: bool = False
+    fallback_reason: str = ""
+    proposal: Optional[PlanChangeProposal] = None
+    food_disclaimer: Optional[str] = None
+
+
 class TripEventResponse(BaseModel):
     """Response after processing a trip event."""
 
@@ -247,10 +287,9 @@ class TripEventResponse(BaseModel):
     routing_tier_used: str = "light"
     from_cache: bool = False
     reroutes_remaining: Optional[int] = None
-    # SPEC-14: food disclaimer at the point of the recommendation.
     food_disclaimer: Optional[str] = None
-    # SPEC-37: Structured schedule warnings (replaces inline concatenation).
     schedule_warnings: List[str] = []
+    ask_response: Optional[AskResponseEnvelope] = None
 
 
 class CreatePreferences(BaseModel):

@@ -27,6 +27,7 @@ from models.schemas import (
 )
 from services.db_provider import db_service
 from services.cache_service import cache_service
+from services.ask_service import AskService, AskPath, load_dish_glossary
 import math
 from datetime import timedelta as _td
 
@@ -261,6 +262,8 @@ class TripStateMachine:
         target_node_id: Optional[str] = None,
         preferences: Optional[dict] = None,
         now_utc: Optional[datetime] = None,
+        user_id: str = "anonymous",
+        is_anonymous: bool = True,
     ) -> Dict:
         state = {
             "trip_state": trip_state,
@@ -277,18 +280,25 @@ class TripStateMachine:
             "schedule_warnings": [],
             "breaker_tripped": False,
             "no_candidates": False,
+            "user_id": user_id,
+            "is_anonymous": is_anonymous,
         }
 
+        # Bug #4: ASK_INFO bypasses legacy semantic cache entirely
+        is_ask = event_type == EventType.ASK_INFO.value
+
         state = self._node_classify_intent(state)
-        state = self._node_check_cache(state)
+        if not is_ask:
+            state = self._node_check_cache(state)
 
         if not state["from_cache"]:
             state = self._node_venue_search(state)
             state = self._node_apply_structural(state)
             state = await self._node_generate_response(state)
-            # Only cache LIGHT (informational) responses \u2014 never mutations.
+            # Only cache non-ASK LIGHT responses -- never mutations.
             if (
-                state["routing_tier"] == RoutingTier.LIGHT
+                not is_ask
+                and state["routing_tier"] == RoutingTier.LIGHT
                 and state["event_type"] not in STRUCTURAL_EDIT_EVENTS
             ):
                 trip = state["trip_state"]
@@ -303,7 +313,8 @@ class TripStateMachine:
                     venue_name=venue,
                 )
 
-        return {
+        # Bug #1: copy ask_response onto return dict
+        result = {
             "updated_trip_state": state["trip_state"],
             "response": state["response"],
             "routing_tier_used": state["routing_tier"].value,
@@ -311,6 +322,9 @@ class TripStateMachine:
             "venues_found": state["venues_found"],
             "schedule_warnings": state.get("schedule_warnings") or [],
         }
+        if "ask_response" in state:
+            result["ask_response"] = state["ask_response"]
+        return result
 
     # =========================================================================
     # Graph Nodes
@@ -853,6 +867,10 @@ class TripStateMachine:
             state["response"] = "Booking removed from your itinerary."
             return state
 
+        # SPEC-25: Grounded trip-scoped Ask -- retrieval-first
+        if state["event_type"] == EventType.ASK_INFO.value:
+            return await self._handle_grounded_ask(state)
+
         if state.get("breaker_tripped"):
             state["response"] = self._fallback_response(state)
             return state
@@ -960,6 +978,100 @@ class TripStateMachine:
                 },
             )
 
+        return state
+
+    async def _handle_grounded_ask(self, state: Dict) -> Dict:
+        """SPEC-25: Grounded trip-scoped Ask via retrieval-first pipeline.
+
+        Ask never persists itinerary nodes. Mutations return a proposal
+        for the confirmation sheet.
+        """
+        trip = state["trip_state"]
+        now_utc = state.get("now_utc") or datetime.now(timezone.utc)
+        target_id = state.get("target_node_id")
+
+        current_node = None
+        next_node = None
+        if target_id:
+            current_node = next((n for n in trip.nodes if n.node_id == target_id), None)
+        if current_node is None:
+            current_node = _current_or_next_pending(trip.nodes, now_utc)
+        if current_node:
+            next_node = _next_eligible_pending(trip.nodes, current_node, now_utc)
+
+        geo_region = getattr(current_node, "geo_region", None) or trip.geo_region or ""
+        venue_name = current_node.venue_name if current_node else None
+        venue_id = getattr(current_node, "venue_id", None) if current_node else None
+        next_venue_name = next_node.venue_name if next_node else None
+
+        current_summary = None
+        if current_node:
+            local_start = _to_local(current_node.scheduled_start, geo_region)
+            current_summary = (
+                f"{current_node.venue_name} at "
+                f"{local_start.strftime('%H:%M')} "
+                f"({current_node.duration_minutes} min)"
+            )
+        next_summary = None
+        if next_node:
+            # Use the next node's own geo_region for timezone conversion,
+            # not the current node's, so cross-city corridors are correct.
+            next_geo = getattr(next_node, "geo_region", None) or geo_region
+            local_start = _to_local(next_node.scheduled_start, next_geo)
+            next_summary = (
+                f"{next_node.venue_name} at "
+                f"{local_start.strftime('%H:%M')} "
+                f"({next_node.duration_minutes} min)"
+            )
+
+        # Bug #9: per-request glossary, exact region match
+        dish_glossary = load_dish_glossary(geo_region)
+        ask_svc = AskService(
+            llm_service=llm_service,
+            db=db_service,
+            dish_glossary=dish_glossary,
+        )
+
+        user_id = state.get("user_id", "anonymous")
+        is_anonymous = state.get("is_anonymous", True)
+        llm_key_present = bool(settings.litellm_api_key or settings.gemini_api_key)
+
+        ask_resp = await ask_svc.handle_ask(
+            question=state["message"],
+            geo_region=geo_region,
+            user_id=user_id,
+            is_anonymous=is_anonymous,
+            venue_name=venue_name,
+            venue_id=venue_id or "",
+            next_venue_name=next_venue_name,
+            current_node_summary=current_summary,
+            next_node_summary=next_summary,
+            llm_key_present=llm_key_present,
+            target_node_id=state.get("target_node_id"),
+        )
+
+        state["response"] = ask_resp.answer
+        # Bug #1: structured Ask envelope for downstream.
+        # Proposal must match PlanChangeProposal schema when present.
+        proposal_dict = None
+        if ask_resp.proposal is not None:
+            proposal_dict = {
+                "event_type": ask_resp.proposal.get("event_type", "swap_activity"),
+                "target_node_id": ask_resp.proposal.get("target_node_id", ""),
+                "summary": ask_resp.proposal.get("summary", ""),
+            }
+        state["ask_response"] = {
+            "answer": ask_resp.answer,
+            "tier": ask_resp.tier.value,
+            "path": ask_resp.path.value,
+            "intent": ask_resp.intent.value,
+            "source_ids": ask_resp.source_ids,
+            "source_class": ask_resp.source_class,
+            "from_cache": ask_resp.from_cache,
+            "fallback_reason": ask_resp.fallback_reason,
+            "proposal": proposal_dict,
+            "food_disclaimer": ask_resp.food_disclaimer,
+        }
         return state
 
     def _fallback_response(self, state: Dict) -> str:
