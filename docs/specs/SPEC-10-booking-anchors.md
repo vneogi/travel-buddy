@@ -2,8 +2,9 @@
 
 > Status: PARTIAL. Create/edit/delete on main (PR #20, PR #37). Provider-aware
 > paste on main (`fc6926b`). Flight cutoff and hotel origin/return on main
-> (`e7a0457`, from `6cb7c05`). `pack_day` flight/hotel wiring, multi-night UI,
-> and server-side document consent remain.
+> (`e7a0457`). Destination-local booking wall times on main (`933c705`, from
+> `1cd7c6a`). `pack_day` flight/hotel wiring, multi-night UI, dual check-in/
+> checkout display, hotel geocode, and server-side document consent remain.
 >
 > Resequenced to follow SPEC-16. A booking anchor is a locked node. Once nodes
 > are rows rather than keys inside a JSON blob, this spec is a few columns and a
@@ -300,12 +301,10 @@ a remaining slot.
 
 ## Remainder: stay interval semantics and post-arrival intent
 
-The Sep 18 old-APK session exposed a likely timezone defect: a manually entered
-Oct 2 18:02 hotel check-in rendered as Oct 3 01:02 in Laos, exactly a seven-hour
-shift. The itinerary card also represented the multi-night stay as one point,
-which hid checkout semantics. Reproduce against current main before fixing, but
-treat local booking times as destination-local wall times and convert exactly
-once at the API boundary.
+Naive booking ISO without an offset is destination-local wall time on main
+(`933c705`). Owner Windows: Oct 2 18:02 Vientiane hotel rendered 18:02 on 2 Oct,
+not 01:02 on 3 Oct. Dual timestamps, checkout visibility, and hotel geocode
+remain.
 
 A hotel is an interval with named check-in and check-out, even if the current
 compatibility model stores it as one node plus duration. The UI shows both

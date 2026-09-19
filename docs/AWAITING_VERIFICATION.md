@@ -88,7 +88,15 @@ Configured-key suite still red at that finding. Follow-up
 `feat/spec41-configured-env-guards`. Planning review: weather empty-key
 is correct; swap canned return is *before* `no_candidates` and can claim
 a swap that did not apply. Remainder brief:
-`docs/briefs/GENIE_SWAP_NO_CANDIDATE_COPY.md`. Do not merge.
+`docs/briefs/GENIE_SWAP_NO_CANDIDATE_COPY.md` landed as `ca3074f`. Merged
+to main as `933c705` (includes `1cd7c6a` wall-time conversion).
+
+## Finding -- Sep 19 2026 -- merged destination-local times and env guards
+
+On main as `933c705`. Owner Windows already verified 18:02 Vientiane hotel
+on `1cd7c6a`. Planning accepted `ca3074f` swap-order proof. Remaining
+unverified on this SHA: full `pytest -q` with keys loaded, hotel checkout
+UI, hotel geocode, named slots.
 
 ## Finding -- Sep 18 2026 -- old-APK itinerary and booking field session
 

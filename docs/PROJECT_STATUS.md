@@ -83,7 +83,7 @@
 | Offline vault (SPEC-04) | CACHE FLOOR DONE; RESCUE REMOVED | PR #22 (`b7e10c3`) + PR #23 (`dab16c0`) shipped offline itinerary fallback and cached driver cards. Sep 5 owner decision retired the duplicate Hotel Rescue AppBar shortcut; driver-card action on hotel bookings remains. Offline maps are a post-Bangkok-factory measured prototype with an optional versioned artifact manifest, not a current vendor commitment |
 | Anonymous identity (SPEC-09) | DONE (client + server) | Client half landed PR #16 (`7173a3f`): UUID v4 in flutter_secure_storage, Anonymous header, TB_DEBUG_USER_ID removed. Server half already verified. Record any remaining Anonymous E2E gap explicitly; the laptop is available |
 | Itinerary normalisation (SPEC-16) | IMPLEMENTED | Decompose and compose land in services/itinerary_normaliser.py, dual-write in both backends, round-trip equality asserted, wire format unchanged. node_id is stable across reschedules via state_json and now comes from models/ids.py. SPEC-30 (`f8349a8`) writes `trip_edge.observed_duration_minutes` from consecutive arrivals |
-| Booking anchors (SPEC-10) | PARTIAL | Create/edit/delete on main (PR #20, PR #37). Provider-aware paste on main (`fc6926b`). Flight cutoff and hotel origin/return on main (`e7a0457`). `pack_day` booking constraints, multi-night UI, and server-side document consent remain |
+| Booking anchors (SPEC-10) | PARTIAL | Create/edit/delete on main (PR #20, PR #37). Provider-aware paste on main (`fc6926b`). Flight cutoff and hotel origin/return on main (`e7a0457`). Naive wall times are destination-local on main (`933c705`). `pack_day` booking constraints, multi-night UI, dual check-in/out display, hotel coords, and server-side document consent remain |
 | Forced-choice preferences (SPEC-11) | SPECIFIED | Not implemented. Cold-start preference capture remains after field evidence; SPEC-40 interests are trip constraints, not a durable preference profile |
 | Show driver cards (SPEC-12) | DONE (October slice) | Full-screen offline card from SQLite cache_place, FactView assert/ask/refuse tiers, geoRegion-threaded native script, driver_card_shown/name_confirmed signals. Laos card render passed Sep 5. Native `geo:` remains first choice; Windows falls back to an OpenStreetMap HTTPS hand-off, with visible coordinates last. No Fair Fare until sourced |
 | Region and locale registry (SPEC-13) | SPECIFIED | Not implemented. Rising in priority: a city-onboarding pipeline needs it for bounding box, languages, currency and fare bands. Makes adding a city a row rather than a code change |
@@ -211,24 +211,28 @@ Seed-shaped cohorts.
    (`e7a0457`, from `6cb7c05`). Scheduler and swap enforce the 150-minute
    pre-flight wall and hotel morning origin / 21:00 return. `pack_day`
    wiring is deferred; do not call SPEC-10 complete.
-8. SPEC-25 grounded trip-scoped Ask -- **IMPLEMENTED, NOT MERGED**
+8. Destination-local booking times and configured-env guards -- **DONE on
+   main** (`933c705`, from `1cd7c6a` + `1757daf` + `ca3074f`). Naive ISO is
+   destination-local; `WeatherProvider(api_key="")` stays unconfigured;
+   swap copy is canned after breaker and no-candidate refusal.
+9. SPEC-25 grounded trip-scoped Ask -- **IMPLEMENTED, NOT MERGED**
    (`feat/spec25-grounded-ask` `a586e78`). Wait for laptop `pytest -q` and
    `flutter test mobile/test/spec25_ask_envelope_test.dart`. Trip-optional
    Ask, model phrasing/budget/breaker UX remain.
-9. After that laptop run, merge SPEC-25, then re-run hosted API/APK before
+10. After that laptop run, merge SPEC-25, then re-run hosted API/APK before
    SPEC-43/44 consumer expansion. No deploy or APK until then.
-10. SPEC-44 Phase A backend integrity -- **NEXT DATA FOUNDATION AFTER THE LAOS
+11. SPEC-44 Phase A backend integrity -- **NEXT DATA FOUNDATION AFTER THE LAOS
    BUILD**. Make trip graph, party, and compatibility projection one
    transaction; add expected-version conflicts and idempotent commands before
    normalized-row reads, multi-device use, or a second real city.
-11. SPEC-43 security, privacy, and data governance -- **NEXT RELEASE
+12. SPEC-43 security, privacy, and data governance -- **NEXT RELEASE
    FOUNDATION AFTER THE LAOS BUILD**. Complete all twelve gaps before any
    non-owner APK, production LLM processing of personal trip data, or the
    planned December public launch.
-12. After SPEC-43, implement the SPEC-13 registry, minimum SPEC-17 claim store,
+13. After SPEC-43, implement the SPEC-13 registry, minimum SPEC-17 claim store,
     and SPEC-20 city factory. Bangkok proves the pack; do not ingest another
     country through hardcoded exceptions.
-13. Add SPEC-44 recommendation decision telemetry only for consented subjects.
+14. Add SPEC-44 recommendation decision telemetry only for consented subjects.
     Learned ranking remains at zero influence until exposure data, held-out
     evaluation, safety slices, and rollback pass.
 
@@ -284,11 +288,11 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 | Destination-specific date caps make real trips impossible to enter | High product friction | Sep 18 old APK showed "Up to 2 days" and rejected a longer destination stay. SPEC-42 removes catalog-derived user-facing limits, keeps trip span separate from at-most-five-day starter generation, and allows only a high API safety bound |
 | Activity cards have no place-detail response | Medium, retention surface | A card tap should open an offline detail sheet/page with grounded short description, attributed photo when available, and sourced/fresh insider tips. VISION defines the product direction; SPEC-17 governs claims and review extraction |
 | Generated schedules expose false precision and ignore remaining-day shape | Medium | Exact walking arithmetic can render 10:52, and earliest-fit packing can finish four stops by lunch or ignore a 15:00 arrival. SPEC-41 now requires named slots (morning, lunch, afternoon/evening, dinner), whole-day excursion occupancy, and travel-day remaining slots from bookings plus buffer |
-| Hotel stay can shift local date and collapse to one timestamp | Conversion verified on laptop `1cd7c6a`; remainder is UI | Sep 19 Windows: naive 18:02 Vientiane hotel rendered 18:02 on 2 Oct, not 01:02 on 3 Oct. Checkout still hidden; add_booking still sends no coords. Do not merge that branch until `docs/briefs/GENIE_CONFIGURED_ENV_GUARDS.md` lands or is explicitly deferred |
+| Hotel stay can shift local date and collapse to one timestamp | Conversion on main (`933c705`); remainder is UI | Sep 19 Windows: naive 18:02 Vientiane hotel rendered 18:02 on 2 Oct, not 01:02 on 3 Oct. Checkout still hidden; add_booking still sends no coords |
 | Real booking paste recall is not release-grade | Medium | Owner's Agoda email and flattened PDF text did not yield useful fields in the old APK. Keep paste best-effort; expand a consented redacted field corpus, then native share/PDF/OCR. A forwarding mailbox waits for SPEC-43 controls |
 | Advertised Laos `max_days` can exceed hours-packable capacity | Closed A3a (`d1fde14`) | Capacity now uses the same incremental `pack_day` planner across every start weekday and valid interest profile, with a bounded catalog fingerprint cache that invalidates on hours, dwell, identity, and ranking changes |
 | Known-closed or unreachable venues can be scheduled and offered by swap | Closed SPEC-41 Phase A (`377125e`, `d1fde14`, `7f25042`) | Create, corridor, swap search/apply, and affected-node validation share structured destination-local hours and deterministic walking eligibility; apply retries the next candidate; city/day boundaries and locked non-hotel anchors are preserved |
-| Swap copy and empty weather key leak through configured `.env` | Medium test/prod isolation | Laptop `pytest -q -ra` 4 failed / 748 passed with real keys. `WeatherProvider(api_key="")` uses settings; swap calls `generate_itinerary_response` when LiteLLM/Gemini is set. Brief: `docs/briefs/GENIE_CONFIGURED_ENV_GUARDS.md` |
+| Swap copy and empty weather key leak through configured `.env` | Closed on main (`933c705`) | Empty constructor key stays unconfigured. Swap canned copy runs after breaker and `no_candidates`, so a failed swap cannot say it applied |
 | Trip Chat is wired but not grounded | High | The hosted composer returned the deterministic region fallback. Key presence is unverified and, by itself, would not add catalog retrieval. SPEC-25 now puts grounded trip-scoped Ask before trip-less Ask |
 | SPEC-43 gap 1: self-issued anonymous UUID is a replayable account credential | High before non-owner use | The hosted owner build accepts any canonical UUIDv4 without server issuance, expiry, revocation, or proof of possession. Replace it with Supabase anonymous Auth JWTs, JWKS verification, rotation, and account/IP abuse limits after the Laos build |
 | SPEC-43 gap 2: RLS and public grants are not comprehensive | High | Migration 0007 omits core personal tables and uses permissive party inserts; service-role access bypasses RLS. Audit the live schema, revoke by default, enforce owner policies on every personal table, and prove isolation with two hosted JWTs |

@@ -9,7 +9,9 @@ Read this file and the two contracts above. SPEC-36 through SPEC-38 and
 SPEC-40 are done. SPEC-41 Phase A is complete: A3a merged as `d1fde14` and
 A3b was reviewed at branch head `7f25042`. SPEC-10 paste is on main
 (`fc6926b`). Flight/hotel scheduler remainder is on main (`e7a0457`);
-`pack_day` booking constraints stay deferred. SPEC-25 grounded trip-scoped
+destination-local booking times, weather empty-key, and swap canned copy
+after honest refusal are on main (`933c705`). `pack_day` booking
+constraints stay deferred. SPEC-25 grounded trip-scoped
 Ask is on `feat/spec25-grounded-ask` (`a586e78`), Flutter UNVERIFIED, wait
 for laptop tests. After that merge and hosted/API/APK verification, SPEC-44
 Phase A makes trip persistence transactional. SPEC-43 is then the release
@@ -142,13 +144,10 @@ on the owner's phone. Next tasks:
    `a586e78`. Do not merge until laptop `pytest -q` and
    `flutter test mobile/test/spec25_ask_envelope_test.dart`. Key presence
    alone is not acceptance.
-5. Hotel wall-time conversion is laptop-verified on
-   `feat/spec10-booking-local-time` `1cd7c6a` (18:02 local, not 01:02 next
-   day). Next Genie slice is `docs/briefs/GENIE_CONFIGURED_ENV_GUARDS.md`
-   from that branch: empty OpenWeather constructor key, swap never LLM
-   with keys loaded. Do not merge 1cd7c6a until that lands or the owner
-   defers it. Catalog date caps, named slots, hotel coords, and dual
-   check-in/out stay specified, not that brief.
+5. Hotel wall-time conversion, weather empty-key, and swap canned copy
+   after `no_candidates` are on main (`933c705`). Catalog date caps, named
+   slots, hotel coords, and dual check-in/out stay specified. Do not merge
+   SPEC-25 until laptop pytest and Flutter Ask tests.
 6. After SPEC-25 merge and that triage, re-run hosted API, signed APK, and
    device acceptance before security implementation, inspiration,
    similar-trip generation, or broader consumer work.
