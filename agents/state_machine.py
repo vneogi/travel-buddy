@@ -853,6 +853,16 @@ class TripStateMachine:
             state["response"] = "Booking removed from your itinerary."
             return state
 
+        # SPEC-41: swap_activity uses a deterministic response -- never LLM.
+        if state["event_type"] == EventType.SWAP_ACTIVITY.value:
+            venues = state.get("venues_found") or []
+            if venues:
+                name = venues[0].venue.name
+                state["response"] = f"Swapped to {name}."
+            else:
+                state["response"] = "Activity swapped."
+            return state
+
         if state.get("breaker_tripped"):
             state["response"] = self._fallback_response(state)
             return state
