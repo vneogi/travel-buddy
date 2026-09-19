@@ -421,13 +421,20 @@ def test_weather_provider_clamps_probability():
 # =========================================================================
 
 
-def test_empty_string_api_key_is_unconfigured():
-    """Explicit api_key='' is treated as unconfigured."""
+def test_empty_string_api_key_is_unconfigured(monkeypatch):
+    """Explicit api_key='' stays unconfigured even when settings has a key.
+
+    api_key=None still means 'use settings' (SPEC-41 configured-env guard).
+    """
+    monkeypatch.setattr(
+        "services.weather_provider.settings.openweather_api_key",
+        "real-key-from-env",
+    )
     provider = WeatherProvider(api_key="")
     assert not provider.is_configured
 
     provider2 = WeatherProvider(api_key=None)
-    assert not provider2.is_configured
+    assert provider2.is_configured
 
     provider3 = WeatherProvider(api_key="real-key")
     assert provider3.is_configured

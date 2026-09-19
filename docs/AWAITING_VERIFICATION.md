@@ -15,6 +15,20 @@ other.
 Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 `#85` and so on; those numbers cannot be reconciled against `git log`.
 
+## Finding -- Sep 19 2026 -- pytest on main ef5f4d0, two remaining
+
+Owner Windows after fast-forward to `ef5f4d0`. The four env-guard failures
+from `a586e78` are gone. Two remain:
+
+- `test_empty_string_api_key_is_unconfigured`: `WeatherProvider(api_key="")`
+  is unconfigured; `api_key=None` still uses `.env` and is configured. That
+  is the `933c705` contract (`None` means settings). The alerts test still
+  asserted None is unconfigured.
+- `test_living_docs_do_not_hardcode_test_counts`: PROJECT_STATUS sequence
+  item 9 said "18 passed" (R16).
+
+Swap LLM and empty-string weather guards held.
+
 ## Finding -- Sep 19 2026 -- SPEC-25 merged; four pytest fails were env-guards
 
 Owner Windows on `feat/spec25-grounded-ask` `a586e78`:

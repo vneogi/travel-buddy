@@ -98,7 +98,7 @@
 | Money as a dimension (SPEC-23) | SPECIFIED | Not implemented. The engineering contract under VISION section 20, and roadmap concern 7. A band and an amount are different things and both are needed; no amount is storable without its currency; a band is meaningless until anchored to a region, which is what makes price tolerance portable between cities; transport cost belongs on trip_edge; budget is revealed from rejections rather than asked for, with a volunteered hard cap honoured exactly; amounts are SPEC-17 claims on a weeks-scale horizon and degrade to a band when stale. Depends on SPEC-13, SPEC-16 and SPEC-17 |
 
 | Identity lifecycle (SPEC-24) | SPECIFIED | Not implemented, and the design is deliberately settled ahead of the build. Sign-in itself is nearly free because Supabase Auth owns the provider flow and security.py already verifies the token; the work is what happens to the anonymous history. Owns credential aliases, the anonymous-to-account merge, multi-device, and sign-out. Merge direction is fixed one way, which extends the upgrade-on-sight rule already live on identity_kind. Union rather than dedupe; tier and quota both resolve to the maximum, since taking the minimum makes sign-in a way to refill the daily reroute allowance |
-| Ask Anything surface (SPEC-25) | PARTIAL (trip-scoped on main) | Grounded trip-scoped Ask on main (`30a4270`). Owner Windows Flutter envelope tests passed (18). Trip-optional Ask, budgets, full SPEC-17 envelopes, discovery, and hosted/device Ask remain |
+| Ask Anything surface (SPEC-25) | PARTIAL (trip-scoped on main) | Grounded trip-scoped Ask on main (`30a4270`). Owner Windows Flutter envelope tests passed. Trip-optional Ask, budgets, full SPEC-17 envelopes, discovery, and hosted/device Ask remain |
 | Home surface (SPEC-26) | IMPLEMENTED (snapshot) | GET /trips now returns featured_trip: active trip (or earliest upcoming) with actionable stop (no state_json, no full nodes). Dart HomeSnapshot parses and caches it. Home renders Now/Up next card above trip list. Offline cache renders same card with cache age. Full SPEC-22 migration remains |
 | App lifecycle and data rights (SPEC-27) | SPECIFIED | Not implemented. Owns push transport for candidates produced by capabilities such as SPEC-35, with tokens that survive the SPEC-24 merge and delivery through the SPEC-22 interruption budget enforced server-side. Also owns deletion/export under DPDP and GDPR and a minimum supported client that blocks writes but never reads |
 | Trip inspiration (SPEC-28) | DECIDED, NOT SCHEDULED | Opt-in, delayed, region-level public trip snapshots as inspiration. No live people/location, DMs or comments in v1. Requires identity, deletion/export and moderation gates |
@@ -216,11 +216,13 @@ Seed-shaped cohorts.
    destination-local; `WeatherProvider(api_key="")` stays unconfigured;
    swap copy is canned after breaker and no-candidate refusal.
 9. SPEC-25 grounded trip-scoped Ask -- **DONE on main** (`30a4270`, from
-   `a586e78`). Laptop Flutter Ask envelope 18 passed. Trip-optional Ask,
+   `a586e78`). Laptop Flutter Ask envelope tests passed. Trip-optional Ask,
    model phrasing/budget/breaker UX remain.
-10. Re-run `pytest -q` on current main (the four `a586e78` failures should
-    be gone), then hosted API/APK and device Ask before SPEC-43/44
-    consumer expansion. No deploy or APK until then.
+10. Owner Windows `pytest -q` on `ef5f4d0` left two failures: living-docs
+    count hygiene, and `WeatherProvider(api_key=None)` still using `.env`.
+    Empty string stays unconfigured. After those land, hosted API/APK and
+    device Ask before SPEC-43/44 consumer expansion. No deploy or APK
+    until then.
 11. SPEC-44 Phase A backend integrity -- **NEXT DATA FOUNDATION AFTER THE LAOS
    BUILD**. Make trip graph, party, and compatibility projection one
    transaction; add expected-version conflicts and idempotent commands before
