@@ -56,7 +56,7 @@ class WeatherProvider:
         api_key: Optional[str] = None,
         http_client: Optional[httpx.AsyncClient] = None,
     ):
-        self.api_key = api_key or settings.openweather_api_key
+        self.api_key = api_key if api_key is not None else settings.openweather_api_key
         self._http_client = http_client
         self._cache: Dict[str, Tuple[List[ForecastBlock], datetime, float]] = {}
 

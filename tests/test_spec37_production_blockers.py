@@ -112,8 +112,11 @@ async def test_heavy_llm_failure_returns_canned_response_not_500():
     the except clause must use info_ctx (hoisted before try) and
     return a canned response, not raise.
 
-    We mock venue_search and apply_structural so the SWAP event
+    We mock venue_search and apply_structural so the ADD_ACTIVITY event
     actually reaches the LLM call with routing_tier == HEAVY.
+
+    (SWAP_ACTIVITY now returns a deterministic response and never calls
+    the LLM -- SPEC-41 configured-env guard.)
     """
     from agents.state_machine import state_machine
 
@@ -157,8 +160,8 @@ async def test_heavy_llm_failure_returns_canned_response_not_500():
     ):
         result = await state_machine.process_event(
             trip_state=trip,
-            event_type=EventType.SWAP_ACTIVITY.value,
-            message="swap this for something quieter",
+            event_type=EventType.ADD_ACTIVITY.value,
+            message="add a quiet temple visit",
             target_node_id="lp1",
             now_utc=datetime(2026, 10, 7, 6, 0, tzinfo=timezone.utc),
         )
