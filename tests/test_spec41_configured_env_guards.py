@@ -201,3 +201,62 @@ class TestSwapActivityNoLLM:
         assert "Guard Test Cafe" in response_text, (
             f"Expected venue name in response, got: {response_text}"
         )
+
+
+# ---------------------------------------------------------------------------
+# 3. Refused swap keeps honest refusal, never says "Swapped..."
+# ---------------------------------------------------------------------------
+
+
+class TestSwapNoCandidateCopy:
+    def test_refused_swap_shows_refusal_not_swapped(self, client, monkeypatch):
+        """When swap finds no candidates, the response must be the honest
+        refusal ('couldn\'t find'), never 'Swapped to ...' or 'Activity swapped.'"""
+        from tests.conftest import auth
+
+        created = client.post(
+            "/api/v1/trip/create",
+            headers=auth("no-cand-user"),
+            json={
+                "start_date": "2026-10-05T09:00:00",
+                "geo_region": "vang_vieng_laos",
+            },
+        )
+        assert created.status_code == 200
+        trip_id = created.json()["trip_id"]
+
+        fetched = client.get(f"/api/v1/trip/{trip_id}", headers=auth("no-cand-user"))
+        nodes = fetched.json()["nodes"]
+        target = next(
+            (
+                n
+                for n in nodes
+                if not n.get("is_locked") and n.get("node_kind", "activity") == "activity"
+            ),
+            None,
+        )
+        assert target is not None
+
+        # Patch venue search to return nothing -- forces no_candidates
+        monkeypatch.setattr(
+            "services.database_service.db_service.hybrid_venue_search",
+            lambda **kw: [],
+        )
+
+        swap_resp = client.post(
+            "/api/v1/trip/event",
+            headers=auth("no-cand-user"),
+            json={
+                "trip_id": trip_id,
+                "event_type": "swap_activity",
+                "message": "Something completely different",
+                "target_node_id": target["node_id"],
+            },
+        )
+        assert swap_resp.status_code == 200
+        msg = swap_resp.json().get("message", "")
+
+        # Must be the honest refusal
+        assert "couldn't find" in msg.lower(), f"Expected honest refusal, got: {msg}"
+        # Must NOT say "Swapped"
+        assert "swapped" not in msg.lower(), f"Refused swap must not say 'Swapped', got: {msg}"

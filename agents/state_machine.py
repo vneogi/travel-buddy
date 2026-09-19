@@ -853,16 +853,6 @@ class TripStateMachine:
             state["response"] = "Booking removed from your itinerary."
             return state
 
-        # SPEC-41: swap_activity uses a deterministic response -- never LLM.
-        if state["event_type"] == EventType.SWAP_ACTIVITY.value:
-            venues = state.get("venues_found") or []
-            if venues:
-                name = venues[0].venue.name
-                state["response"] = f"Swapped to {name}."
-            else:
-                state["response"] = "Activity swapped."
-            return state
-
         if state.get("breaker_tripped"):
             state["response"] = self._fallback_response(state)
             return state
@@ -872,6 +862,19 @@ class TripStateMachine:
                 "I couldn't find a suitable alternative nearby that fits your "
                 "preferences and transit range, so your itinerary is unchanged."
             )
+            return state
+
+        # SPEC-41: swap_activity uses a deterministic response -- never LLM.
+        # Placed AFTER no_candidates / breaker_tripped so a refused swap
+        # keeps the honest refusal and never says "Swapped to ...".
+        if state["event_type"] == EventType.SWAP_ACTIVITY.value:
+            target_id = state.get("target_node_id")
+            trip = state["trip_state"]
+            applied = next((n for n in trip.nodes if n.node_id == target_id), None)
+            if applied is not None:
+                state["response"] = f"Swapped to {applied.venue_name}."
+            else:
+                state["response"] = "Activity swapped."
             return state
 
         if settings.litellm_api_key or settings.gemini_api_key:
