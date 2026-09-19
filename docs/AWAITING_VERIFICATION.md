@@ -15,6 +15,18 @@ other.
 Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 `#85` and so on; those numbers cannot be reconciled against `git log`.
 
+## Finding -- Sep 19 2026 -- SPEC-25 merged; four pytest fails were env-guards
+
+Owner Windows on `feat/spec25-grounded-ask` `a586e78`:
+`flutter test test/spec25_ask_envelope_test.dart` 18 passed.
+`pytest -q` 4 failed / 755 passed / 13 warnings: empty OpenWeather key and
+swap LLM with keys loaded. Those four are the `933c705` guards, not SPEC-25
+regressions.
+
+Merged `feat/spec25-grounded-ask` to main as `30a4270`. One conflict:
+keep `parse_destination_wall_time` import beside Ask. Planning did not
+re-run pytest after the merge. Next laptop check is `pytest -q` on main.
+
 ## Finding -- Sep 19 2026 -- laptop pytest on feat/spec10-booking-local-time
 
 Owner Windows PowerShell on `feat/spec10-booking-local-time`. Booking slice

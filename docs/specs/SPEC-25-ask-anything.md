@@ -1,7 +1,8 @@
 # SPEC-25: The Ask Anything Surface
 
-> Status: PARTIAL. The trip-scoped October slice is implemented; the
-> trip-optional surface and full contract below are not.
+> Status: PARTIAL. Trip-scoped grounded Ask is on main (`30a4270`, from
+> `a586e78`). Owner Windows: `flutter test test/spec25_ask_envelope_test.dart`
+> 18 passed. The trip-optional surface and full contract below are not.
 >
 > Depends on SPEC-17 for the response envelope, SPEC-18 for the discovery path,
 > and SPEC-22 for how any of it is rendered. It does not depend on SPEC-18 being

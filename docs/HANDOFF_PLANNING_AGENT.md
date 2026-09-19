@@ -11,9 +11,8 @@ A3b was reviewed at branch head `7f25042`. SPEC-10 paste is on main
 (`fc6926b`). Flight/hotel scheduler remainder is on main (`e7a0457`);
 destination-local booking times, weather empty-key, and swap canned copy
 after honest refusal are on main (`933c705`). `pack_day` booking
-constraints stay deferred. SPEC-25 grounded trip-scoped
-Ask is on `feat/spec25-grounded-ask` (`a586e78`), Flutter UNVERIFIED, wait
-for laptop tests. After that merge and hosted/API/APK verification, SPEC-44
+constraints stay deferred. SPEC-25 trip-scoped grounded Ask is on main
+(`30a4270`); trip-optional Ask remains. After hosted/API/APK verification, SPEC-44
 Phase A makes trip persistence transactional. SPEC-43 is then the release
 foundation before any non-owner tester or the planned December launch. The
 SPEC-13/17/20 city factory follows; Bangkok proves it without a hardcoded
@@ -140,17 +139,18 @@ on the owner's phone. Next tasks:
    scheduler remainder is on main (`e7a0457`). Do not reopen Agoda adapters
    unless a new redacted fixture fails. Keep SPEC-10 PARTIAL until
    `pack_day` takes bookings.
-4. SPEC-25 grounded trip-scoped Ask is on `feat/spec25-grounded-ask`
-   `a586e78`. Do not merge until laptop `pytest -q` and
-   `flutter test mobile/test/spec25_ask_envelope_test.dart`. Key presence
-   alone is not acceptance.
+4. SPEC-25 trip-scoped grounded Ask is on main (`30a4270`). Laptop Flutter
+   Ask envelope tests passed (18). Owner `pytest -q` on `a586e78` was
+   755 passed / 4 failed; those four are the env-guard cases already on
+   main as `933c705`. Trip-optional Ask, model phrasing/budget/breaker UX
+   remain. Key presence is not acceptance.
 5. Hotel wall-time conversion, weather empty-key, and swap canned copy
    after `no_candidates` are on main (`933c705`). Catalog date caps, named
-   slots, hotel coords, and dual check-in/out stay specified. Do not merge
-   SPEC-25 until laptop pytest and Flutter Ask tests.
-6. After SPEC-25 merge and that triage, re-run hosted API, signed APK, and
-   device acceptance before security implementation, inspiration,
-   similar-trip generation, or broader consumer work.
+   slots, hotel coords, and dual check-in/out stay specified.
+6. Next owner gate: `pytest -q` on current main (expect those four green),
+   then hosted API, signed APK, and device Ask. After that, do not start
+   security implementation, inspiration, similar-trip generation, or
+   broader consumer work until the phone gate.
 7. Implement SPEC-44 Phase A. Make trip graph, party, compatibility projection,
    and command record one transaction; add monotonic trip version,
    `expected_version`, typed conflict, idempotent command IDs, and production
