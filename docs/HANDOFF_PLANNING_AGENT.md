@@ -142,13 +142,13 @@ on the owner's phone. Next tasks:
    `a586e78`. Do not merge until laptop `pytest -q` and
    `flutter test mobile/test/spec25_ask_envelope_test.dart`. Key presence
    alone is not acceptance.
-5. Reproduce the Sep 18 old-APK findings against current main before the next
-   hosted build. Genie brief for the hotel +7-hour shift:
-   `docs/briefs/GENIE_SPEC_10_BOOKING_LOCAL_TIME.md`. That is the only
-   implementation allowed before laptop tests. Catalog-derived destination
-   date caps, inert card bodies, named slots, and real Agoda/PDF recall stay
-   specified, not this branch. Do not implement slot-shaped days before the
-   hotel timezone triage and SPEC-25 laptop tests.
+5. Hotel wall-time conversion is laptop-verified on
+   `feat/spec10-booking-local-time` `1cd7c6a` (18:02 local, not 01:02 next
+   day). Next Genie slice is `docs/briefs/GENIE_CONFIGURED_ENV_GUARDS.md`
+   from that branch: empty OpenWeather constructor key, swap never LLM
+   with keys loaded. Do not merge 1cd7c6a until that lands or the owner
+   defers it. Catalog date caps, named slots, hotel coords, and dual
+   check-in/out stay specified, not that brief.
 6. After SPEC-25 merge and that triage, re-run hosted API, signed APK, and
    device acceptance before security implementation, inspiration,
    similar-trip generation, or broader consumer work.

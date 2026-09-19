@@ -43,9 +43,48 @@ Full `pytest -q -ra`: 4 failed, 748 passed. Failures:
   HTTP 200 with canned fallback after the mock/await failure. Genie CI
   without those keys would not take that branch.
 
-Do not treat these four as a booking-time regression. Do not merge until the
-Flutter/UI 18:02 round-trip on local uvicorn from this branch. Flutter and
-manual hotel card still owed.
+Do not treat these four as a booking-time regression. Flutter and the
+manual hotel card were still owed at that moment.
+
+## Finding -- Sep 19 2026 -- laptop UI 18:02 pass; analyze infos-only
+
+Owner Windows desktop against local uvicorn on
+`feat/spec10-booking-local-time` with `TB_ALLOW_ANONYMOUS=true`.
+
+Hotel timezone:
+
+- Add Booking check-in 2/10/2026 18:02, check-out 3/10/2026 15:00.
+- Itinerary showed the hotel at 18:02 on Friday 2 October, with Saturday
+  3 October starting below. The old 01:02 Oct 3 shift did not recur.
+- Card still shows a single time, not both endpoints. One save used title
+  Dhavara Boutique Hotel in the form and New Hotel - OYO on the card;
+  conversion is proven, identity of every save is not.
+
+Auth:
+
+- First Flutter run without `TB_ALLOW_ANONYMOUS` got Session expired and
+  `/trips` 401. Health was 200. Restarting uvicorn with
+  `TB_ALLOW_ANONYMOUS=true` and JWT unset unblocked the app.
+
+Flutter:
+
+- `flutter test` -- 420 passed. Logged sync/outbox errors were
+  failure-path tests.
+- `flutter analyze --no-fatal-infos` -- 97 infos, 0 errors, 0 warnings.
+  Existing dangling-doc and prefer_const noise. Not a hotel-time
+  regression. Do not churn them in the env-guards slice.
+
+Booking reflow / hotel coords (not this merge):
+
+- 11:00 flight left earlier activities in place plus "conflicts with a
+  scheduled flight" warnings (`pack_day` remainder).
+- "cannot return to the hotel in time" on Champa Lao: add_booking sends
+  no lat/lng; `violates_hotel_return` treats missing hotel coords as
+  ineligible.
+- Destination list still shows Up to N days (SPEC-42).
+
+Configured-key suite still red. Follow-up brief:
+`docs/briefs/GENIE_CONFIGURED_ENV_GUARDS.md`.
 
 ## Finding -- Sep 18 2026 -- old-APK itinerary and booking field session
 
