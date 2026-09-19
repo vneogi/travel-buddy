@@ -83,8 +83,12 @@ Booking reflow / hotel coords (not this merge):
   ineligible.
 - Destination list still shows Up to N days (SPEC-42).
 
-Configured-key suite still red. Follow-up brief:
-`docs/briefs/GENIE_CONFIGURED_ENV_GUARDS.md`.
+Configured-key suite still red at that finding. Follow-up
+`docs/briefs/GENIE_CONFIGURED_ENV_GUARDS.md` landed as `1757daf` on
+`feat/spec41-configured-env-guards`. Planning review: weather empty-key
+is correct; swap canned return is *before* `no_candidates` and can claim
+a swap that did not apply. Remainder brief:
+`docs/briefs/GENIE_SWAP_NO_CANDIDATE_COPY.md`. Do not merge.
 
 ## Finding -- Sep 18 2026 -- old-APK itinerary and booking field session
 
