@@ -15,6 +15,38 @@ other.
 Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 `#85` and so on; those numbers cannot be reconciled against `git log`.
 
+## Finding -- Sep 19 2026 -- laptop pytest on feat/spec10-booking-local-time
+
+Owner Windows PowerShell on `feat/spec10-booking-local-time`. Booking slice
+green; full suite had four failures from live `.env` keys, not from the
+naive-as-UTC fix.
+
+Passed:
+
+- `pytest -q tests/test_spec10_booking_local_time.py` -- 11 passed
+  (including naive 18:02 round-trip). LiteLLM event-loop DeprecationWarning
+  only.
+- `pytest -q tests/test_spec10_flight_hotel_anchors.py tests/test_booking_anchors.py`
+  -- 49 passed.
+
+Full `pytest -q -ra`: 4 failed, 748 passed. Failures:
+
+- `test_no_openweather_key_returns_unconfigured_empty` and
+  `test_empty_string_api_key_is_unconfigured`: `WeatherProvider(api_key="")`
+  still uses `settings.openweather_api_key` because empty string is falsy
+  (`api_key or settings.openweather_api_key`). Laptop has a real OpenWeather
+  key, so `is_configured` stays true and alerts return `available`.
+- `TestSwapStateMachine.test_swap_invokes_no_llm` and
+  `TestStateMachineSwap.test_no_maps_no_llm_on_swap`:
+  `_node_generate_response` calls `generate_itinerary_response` when
+  `settings.litellm_api_key` or `settings.gemini_api_key` is set. Swap still
+  HTTP 200 with canned fallback after the mock/await failure. Genie CI
+  without those keys would not take that branch.
+
+Do not treat these four as a booking-time regression. Do not merge until the
+Flutter/UI 18:02 round-trip on local uvicorn from this branch. Flutter and
+manual hotel card still owed.
+
 ## Finding -- Sep 18 2026 -- old-APK itinerary and booking field session
 
 Owner exercised the prior signed Android APK; this is product evidence from an
