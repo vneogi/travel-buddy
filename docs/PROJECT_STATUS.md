@@ -219,8 +219,10 @@ Seed-shaped cohorts.
    `a586e78`). Laptop Flutter Ask envelope tests passed. Trip-optional Ask,
    model phrasing/budget/breaker UX remain.
 10. Owner Windows `pytest -q` on `3e5ec6d` is green. Hosted API/APK and
-    device Ask wait for an explicit deploy. SPEC-43/44 stay after the
-    Laos build. No deploy or APK until then.
+    device Ask wait for an explicit deploy. Next Genie slice is
+    `docs/briefs/GENIE_SPEC_42_UNCAP_TRIP_SPAN.md` (catalog date caps).
+    Hotel stay display and named slots follow that sequence. SPEC-43/44
+    stay after the Laos build. No deploy or APK until then.
 11. SPEC-44 Phase A backend integrity -- **NEXT DATA FOUNDATION AFTER THE LAOS
    BUILD**. Make trip graph, party, and compatibility projection one
    transaction; add expected-version conflicts and idempotent commands before

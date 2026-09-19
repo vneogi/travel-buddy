@@ -11,7 +11,7 @@ A3b was reviewed at branch head `7f25042`. SPEC-10 paste is on main
 (`fc6926b`). Flight/hotel scheduler remainder is on main (`e7a0457`);
 destination-local booking times, weather empty-key, and swap canned copy
 after honest refusal are on main (`933c705`). `pack_day` booking
-constraints stay deferred. SPEC-25 trip-scoped grounded Ask is on main
+constraints stay deferred until `GENIE_SPEC_41_NAMED_SLOTS`. SPEC-25 trip-scoped grounded Ask is on main
 (`30a4270`); trip-optional Ask remains. After hosted/API/APK verification, SPEC-44
 Phase A makes trip persistence transactional. SPEC-43 is then the release
 foundation before any non-owner tester or the planned December launch. The
@@ -143,13 +143,14 @@ on the owner's phone. Next tasks:
    Ask envelope tests passed. Owner Windows `pytest -q` on `3e5ec6d` is
    green (details in AWAITING_VERIFICATION). Trip-optional Ask remains.
 5. Hotel wall-time conversion, weather empty-key, and swap canned copy
-   after `no_candidates` are on main (`933c705`). Catalog date caps, named
-   slots, hotel coords, and dual check-in/out stay specified.
-6. Next owner gate is hosted API, signed APK, and device Ask when the
-   owner asks for a deploy. Until then, specified remainders are catalog
-   date caps, named slots, hotel coords, and dual check-in/out. Do not start
-   security implementation, inspiration, similar-trip generation, or
-   broader consumer work until the phone gate.
+   after `no_candidates` are on main (`933c705`).
+6. Specified remainders are sequenced in
+   `docs/briefs/GENIE_REMAINDERS_SEQUENCE.md`. Next Genie slice is
+   `docs/briefs/GENIE_SPEC_42_UNCAP_TRIP_SPAN.md` only. Hotel stay display
+   and named slots wait. Hosted API/APK still wait for an explicit
+   deploy. Do not start security implementation, inspiration,
+   similar-trip generation, or broader consumer work until the phone
+   gate.
 7. Implement SPEC-44 Phase A. Make trip graph, party, compatibility projection,
    and command record one transaction; add monotonic trip version,
    `expected_version`, typed conflict, idempotent command IDs, and production
