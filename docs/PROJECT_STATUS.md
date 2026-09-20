@@ -220,30 +220,35 @@ Seed-shaped cohorts.
    `a586e78`). Laptop Flutter Ask envelope tests passed. Trip-optional Ask,
    model phrasing/budget/breaker UX remain.
 10. SPEC-42 uncap / sparse-span foundation -- **PARTIAL on main**
-    (`adc99d2`, merge `17e58ac`). Catalog date caps are gone. Owner
-    Windows flutter analyze had no errors; full flutter test was green.
-    Add/Move remain later. Next Genie slice is
-    `docs/briefs/GENIE_SPEC_10_HOTEL_STAY_DISPLAY.md`. Named slots
-    follow. Hosted API/APK still wait for an explicit deploy. SPEC-43/44
-    stay after the Laos build. No deploy or APK until then.
-11. SPEC-44 Phase A backend integrity -- **NEXT DATA FOUNDATION AFTER THE LAOS
+    (`adc99d2`, merge `17e58ac`). Catalog date caps are gone. Add/Move
+    remain later.
+11. SPEC-10 hotel stay display -- **DONE on main** (`1f251a3`, merge
+    `7b62818`). Dual check-in/out on hotel cards; multi-night coverage
+    reuses one node_id; catalog name-match fills coords only when both
+    lat and lng are absent. Owner Windows flutter analyze had 0 errors;
+    full flutter test was green. Next Genie slice is
+    `docs/briefs/GENIE_SPEC_41_NAMED_SLOTS.md`. Hosted API/APK still
+    wait for an explicit deploy. SPEC-43/44 stay after the Laos build.
+    No deploy or APK until then.
+12. SPEC-44 Phase A backend integrity -- **NEXT DATA FOUNDATION AFTER THE LAOS
    BUILD**. Make trip graph, party, and compatibility projection one
    transaction; add expected-version conflicts and idempotent commands before
    normalized-row reads, multi-device use, or a second real city.
-12. SPEC-43 security, privacy, and data governance -- **NEXT RELEASE
+13. SPEC-43 security, privacy, and data governance -- **NEXT RELEASE
    FOUNDATION AFTER THE LAOS BUILD**. Complete all twelve gaps before any
    non-owner APK, production LLM processing of personal trip data, or the
    planned December public launch.
-13. After SPEC-43, implement the SPEC-13 registry, minimum SPEC-17 claim store,
+14. After SPEC-43, implement the SPEC-13 registry, minimum SPEC-17 claim store,
     and SPEC-20 city factory. Bangkok proves the pack; do not ingest another
     country through hardcoded exceptions.
-14. Add SPEC-44 recommendation decision telemetry only for consented subjects.
+15. Add SPEC-44 recommendation decision telemetry only for consented subjects.
     Learned ranking remains at zero influence until exposure data, held-out
     evaluation, safety slices, and rollback pass.
 
 ### Deferred after the phone gate
 
-- Multi-night hotel UI, unless the owner's real booking cannot be represented.
+- Multi-night hotel stay presentation is on main (`7b62818`). Remaining
+  hotel work is named slots / `pack_day` occupancy, not a second stay UI.
 - Corridor span vs the real Oct 2-9 PDF (closed for the corridor path: 8-day
   2/2/4 create is live). SPEC-40 owns single-city start/end dates.
 - Full SPEC-17 trust and verification, then SPEC-18/19/20. The bounded

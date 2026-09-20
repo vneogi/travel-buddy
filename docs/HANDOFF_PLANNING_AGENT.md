@@ -13,7 +13,9 @@ destination-local booking times, weather empty-key, and swap canned copy
 after honest refusal are on main (`933c705`). `pack_day` booking
 constraints stay deferred until `GENIE_SPEC_41_NAMED_SLOTS`. SPEC-25 trip-scoped grounded Ask is on main
 (`30a4270`); trip-optional Ask remains. SPEC-42 uncap / empty-date
-render is PARTIAL on main (`17e58ac`); Add/Move remain. After hosted/API/APK verification, SPEC-44
+render is PARTIAL on main (`17e58ac`); Add/Move remain. SPEC-10 hotel
+stay display is on main (`1f251a3`, merge `7b62818`). Next Genie slice
+is `docs/briefs/GENIE_SPEC_41_NAMED_SLOTS.md`. After hosted/API/APK verification, SPEC-44
 Phase A makes trip persistence transactional. SPEC-43 is then the release
 foundation before any non-owner tester or the planned December launch. The
 SPEC-13/17/20 city factory follows; Bangkok proves it without a hardcoded
@@ -69,7 +71,7 @@ Status tables: `docs/PROJECT_STATUS.md`. Device-only queue:
 `docs/RELEASE_READINESS.md`. City sequence:
 `docs/MARKET_STRATEGY.md` (Sep 2026 Banana Pancake addendum). Next
 implementation contract after hotel-stay display:
-`docs/briefs/GENIE_SPEC_10_HOTEL_STAY_DISPLAY.md`.
+`docs/briefs/GENIE_SPEC_41_NAMED_SLOTS.md`.
 
 ## Third-party review -- already adjudicated
 
@@ -151,9 +153,10 @@ on the owner's phone. Next tasks:
    after `no_candidates` are on main (`933c705`).
 6. Specified remainders are sequenced in
    `docs/briefs/GENIE_REMAINDERS_SEQUENCE.md`. Slice 1 (uncap) is on
-   main (`17e58ac`). Next Genie slice is
-   `docs/briefs/GENIE_SPEC_10_HOTEL_STAY_DISPLAY.md` only. Named slots
-   wait. Hosted API/APK still wait for an explicit deploy. Do not start
+   main (`17e58ac`). Slice 2 (hotel stay display) is on main
+   (`1f251a3`, merge `7b62818`). Next Genie slice is
+   `docs/briefs/GENIE_SPEC_41_NAMED_SLOTS.md` only. Hosted API/APK
+   still wait for an explicit deploy. Do not start
    security implementation, inspiration, similar-trip generation, or
    broader consumer work until the phone gate.
 7. Implement SPEC-44 Phase A. Make trip graph, party, compatibility projection,

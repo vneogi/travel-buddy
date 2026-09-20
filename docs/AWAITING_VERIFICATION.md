@@ -15,6 +15,16 @@ other.
 Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 `#85` and so on; those numbers cannot be reconciled against `git log`.
 
+## Finding -- Sep 20 2026 -- hotel stay Flutter green on 1f251a3
+
+Owner Windows on `feat/spec10-hotel-stay-display` at `1f251a3`.
+`flutter analyze`: 0 errors, 0 warnings (infos only; same class as main).
+`flutter test test/spec10_hotel_stay_display_test.dart
+test/features/itinerary/date_scope_test.dart`: all passed.
+Full `flutter test`: all passed. The `29509a0` compile error
+(`nodeKeys.putIfAbsent` on a public nullable field) is closed.
+Hosted API and signed APK remain unverified.
+
 ## Finding -- Sep 19 2026 -- pytest on main 3e5ec6d green
 
 Owner Windows after fast-forward to `3e5ec6d`: `pytest -q` 817 passed,
