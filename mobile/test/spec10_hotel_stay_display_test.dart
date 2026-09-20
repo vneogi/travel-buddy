@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:travel_buddy/data/models.dart';
-import 'package:travel_buddy/core/destination_tz.dart';
 import 'package:travel_buddy/features/itinerary/date_scope.dart';
 import 'package:travel_buddy/widgets/activity_card.dart';
 

@@ -743,12 +743,12 @@ class _DateScopedTimeline extends StatelessWidget {
         // node IDs we have already rendered so repeated hotel
         // presentations get a ValueKey instead of sharing one
         // GlobalKey.  Focus (scroll-to) stays on the first.
+        final keys = nodeKeys;
         final bool isFirstOccurrence =
             seenNodeIds.add(node.nodeId); // true if newly added
         final Key widgetKey;
-        if (nodeKeys != null && isFirstOccurrence) {
-          widgetKey =
-              nodeKeys.putIfAbsent(node.nodeId, () => GlobalKey());
+        if (keys != null && isFirstOccurrence) {
+          widgetKey = keys.putIfAbsent(node.nodeId, () => GlobalKey());
         } else {
           widgetKey = ValueKey('${node.nodeId}_$i');
         }
