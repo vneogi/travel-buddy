@@ -699,7 +699,7 @@ class _DateScopedTimeline extends StatelessWidget {
         endLocal: DateTime.parse(ctx.endDateLocal!),
       );
     } else {
-      groups = groupNodesByCalendarDate(nodes);
+      groups = groupNodesByCalendarDateWithHotelStays(nodes);
     }
 
     // Build a flat list of view items: headers + cards.
@@ -715,6 +715,7 @@ class _DateScopedTimeline extends StatelessWidget {
       }
     }
 
+    final seenNodeIds = <String>{};
     final children = List<Widget>.generate(items.length, (i) {
         final item = items[i];
         if (item.isHeader) {
@@ -729,6 +730,8 @@ class _DateScopedTimeline extends StatelessWidget {
         TripNode? next;
         for (var j = i + 1; j < items.length; j++) {
           if (!items[j].isHeader && !items[j].isEmptyDay) {
+            // SPEC-10: skip later presentations of the same hotel node.
+            if (items[j].node!.nodeId == node.nodeId) continue;
             next = items[j].node;
             break;
           }
@@ -736,8 +739,21 @@ class _DateScopedTimeline extends StatelessWidget {
         // Cross-city boundary: use globally-ordered next from corridor.
         next ??= globalNextNode;
 
+        // SPEC-10: hotels appear on multiple dates.  Track which
+        // node IDs we have already rendered so repeated hotel
+        // presentations get a ValueKey instead of sharing one
+        // GlobalKey.  Focus (scroll-to) stays on the first.
+        final keys = nodeKeys;
+        final bool isFirstOccurrence =
+            seenNodeIds.add(node.nodeId); // true if newly added
+        final Key widgetKey;
+        if (keys != null && isFirstOccurrence) {
+          widgetKey = keys.putIfAbsent(node.nodeId, () => GlobalKey());
+        } else {
+          widgetKey = ValueKey('${node.nodeId}_$i');
+        }
         return KeyedSubtree(
-          key: nodeKeys?.putIfAbsent(node.nodeId, () => GlobalKey()),
+          key: widgetKey,
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 220),
             transitionBuilder: (child, anim) =>

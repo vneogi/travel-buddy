@@ -50,6 +50,66 @@ List<ItineraryDayGroup> groupNodesByCalendarDate(List<TripNode> nodes) {
   return result;
 }
 
+/// SPEC-10: Presentation-layer grouping that expands hotel bookings across
+/// every destination-local covered night [check-in date, checkout date).
+///
+/// The same TripNode object (same node_id) appears in every covered date
+/// group.  Flights, trains, tours, and ordinary activities remain on
+/// their single scheduledStart date.
+///
+/// Uses a bucket map so that a hotel spanning Oct 2-4 places the node
+/// into the Oct 2 and Oct 3 buckets.  This may merge non-contiguous
+/// same-date inputs (unlike [groupNodesByCalendarDate] which preserves
+/// A/B/A ordering).  That is acceptable for the presentation layer.
+List<ItineraryDayGroup> groupNodesByCalendarDateWithHotelStays(
+    List<TripNode> nodes) {
+  final buckets = <int, List<TripNode>>{};
+  final keyOrder = <int>[];
+
+  for (final node in nodes) {
+    final dates = _coveredDateKeys(node);
+    for (final key in dates) {
+      if (!buckets.containsKey(key)) {
+        buckets[key] = [];
+        keyOrder.add(key);
+      }
+      buckets[key]!.add(node);
+    }
+  }
+
+  return keyOrder
+      .map((key) => ItineraryDayGroup(
+            date: _dateFromKey(key),
+            nodes: List<TripNode>.unmodifiable(buckets[key]!),
+          ))
+      .toList();
+}
+
+/// Return the date keys a node covers.
+///
+/// Hotels: [check-in local date, checkout local date) — one key per
+/// covered night.  Everything else: a single key for scheduledStart.
+List<int> _coveredDateKeys(TripNode node) {
+  final local = toDestinationLocal(node.scheduledStart, node.geoRegion);
+  final startKey = _dateKey(local);
+  if (node.nodeKind != 'booking' || node.bookingType != 'hotel') {
+    return [startKey];
+  }
+  final checkoutUtc =
+      node.scheduledStart.add(Duration(minutes: node.durationMinutes));
+  final checkoutLocal = toDestinationLocal(checkoutUtc, node.geoRegion);
+  final endKey = _dateKey(checkoutLocal);
+  if (endKey <= startKey) return [startKey];
+  final keys = <int>[];
+  var cursor = _dateFromKey(startKey);
+  final endDate = _dateFromKey(endKey);
+  while (cursor.isBefore(endDate)) {
+    keys.add(_dateKey(cursor));
+    cursor = cursor.add(const Duration(days: 1));
+  }
+  return keys;
+}
+
 // ---- private helpers ----
 
 int _dateKey(DateTime dt) => dt.year * 10000 + dt.month * 100 + dt.day;
@@ -99,7 +159,9 @@ const regionDisplayNames = {
 ///
 /// Follows TripState.segments order; never alphabetical.
 /// Nodes with unknown region go to 'Other stops'.
-/// Preserves input node order and delegates to [groupNodesByCalendarDate].
+/// Preserves input node order and delegates to
+/// [groupNodesByCalendarDateWithHotelStays] so multi-night hotels appear
+/// on every covered date.
 List<CorridorCityGroup> groupNodesByCorridor({
   required List<TripNode> nodes,
   required List<TripSegment> segments,
@@ -116,7 +178,7 @@ List<CorridorCityGroup> groupNodesByCorridor({
         usedNodeIndexes.add(i);
       }
     }
-    final dayGroups = groupNodesByCalendarDate(segNodes);
+    final dayGroups = groupNodesByCalendarDateWithHotelStays(segNodes);
     final displayName = regionDisplayNames[seg.geoRegion] ?? seg.geoRegion;
     result.add(CorridorCityGroup(
       geoRegion: seg.geoRegion,
@@ -138,7 +200,7 @@ List<CorridorCityGroup> groupNodesByCorridor({
       geoRegion: 'other',
       displayName: 'Other stops',
       dateRange: '',
-      dayGroups: groupNodesByCalendarDate(remainingNodes),
+      dayGroups: groupNodesByCalendarDateWithHotelStays(remainingNodes),
     ));
   }
 
@@ -152,12 +214,14 @@ List<CorridorCityGroup> groupNodesByCorridor({
 /// Walks every calendar date from [startLocal] to [endLocal] inclusive.
 /// Days with nodes get their nodes; days without get an empty group.
 /// This ensures the UI renders date headers for all dates in the span.
+/// Uses [groupNodesByCalendarDateWithHotelStays] so multi-night hotels
+/// appear on every covered date.
 List<ItineraryDayGroup> spanAwareDayGroups({
   required List<TripNode> nodes,
   required DateTime startLocal,
   required DateTime endLocal,
 }) {
-  final populated = groupNodesByCalendarDate(nodes);
+  final populated = groupNodesByCalendarDateWithHotelStays(nodes);
   final byKey = <int, ItineraryDayGroup>{};
   for (final g in populated) {
     byKey[_dateKey(g.date)] = g;
@@ -223,7 +287,7 @@ List<CorridorCityGroup> spanAwareCorridorGroups({
       geoRegion: 'other',
       displayName: 'Other stops',
       dateRange: '',
-      dayGroups: groupNodesByCalendarDate(remainingNodes),
+      dayGroups: groupNodesByCalendarDateWithHotelStays(remainingNodes),
     ));
   }
 
