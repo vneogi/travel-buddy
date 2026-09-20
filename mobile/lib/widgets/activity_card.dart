@@ -126,6 +126,19 @@ class ActivityCard extends StatelessWidget {
                           color: isActive ? AppColors.accent : AppColors.muted,
                         ),
                       ),
+                      // SPEC-10: hotel dual timestamps (check-in / check-out)
+                      if (node.nodeKind == 'booking' &&
+                          node.bookingType == 'hotel') ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          _formatTime(node.scheduledStart
+                              .add(Duration(minutes: node.durationMinutes))),
+                          style: AppTypography.caption.copyWith(
+                            color: AppColors.muted,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
                       if (isActive)
                         Container(
                           margin: const EdgeInsets.only(top: AppSpacing.xs),

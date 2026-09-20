@@ -42,6 +42,10 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
   ParsedBooking? _lastParsed;
 
   bool get _isEditMode => widget.editNode != null;
+  // SPEC-10: resolved hotel/venue coordinates.
+  double? _resolvedLat;
+  double? _resolvedLng;
+
   bool get _isHotel => _bookingType == 'hotel';
 
   @override
@@ -50,6 +54,8 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
     final edit = widget.editNode;
     if (edit != null) {
       _bookingType = edit.bookingType ?? 'flight';
+      _resolvedLat = edit.lat;
+      _resolvedLng = edit.lng;
       _titleController.text = edit.venueName;
       _codeController.text = edit.confirmationCode ?? '';
       _notesController.text = edit.bookingNotes ?? '';
@@ -256,6 +262,9 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
         'duration_minutes': _durationMinutes,
         'booking_type': _bookingType,
         if (_parsedGeoRegion != null) 'geo_region': _parsedGeoRegion,
+        // SPEC-10: send lat/lng when available (edit node or catalog match).
+        if (_resolvedLat != null) 'lat': _resolvedLat,
+        if (_resolvedLng != null) 'lng': _resolvedLng,
         'confirmation_code': _codeController.text.trim().isEmpty
             ? null
             : _codeController.text.trim(),

@@ -540,16 +540,28 @@ class TripStateMachine:
             except (ValueError, TypeError):
                 start_dt = datetime.now(tz=timezone.utc)
 
+            bk_lat = prefs.get("lat")
+            bk_lng = prefs.get("lng")
+            bk_region = prefs.get("geo_region") or trip_state.geo_region
+            bk_name = prefs.get("venue_name") or prefs.get("title") or "Booking"
+            # SPEC-10: catalog name-match for missing coords
+            if (bk_lat is None or bk_lng is None) and bk_region:
+                from services.catalog_name_match import catalog_coords_for_name
+
+                cat_lat, cat_lng = catalog_coords_for_name(bk_name, bk_region)
+                if cat_lat is not None and cat_lng is not None:
+                    bk_lat = cat_lat
+                    bk_lng = cat_lng
             booking_node = TripNode(
-                venue_name=prefs.get("venue_name") or prefs.get("title") or "Booking",
+                venue_name=bk_name,
                 scheduled_start=start_dt,
                 duration_minutes=int(prefs.get("duration_minutes", 90)),
                 is_locked=True,
                 status=NodeStatus.PENDING,
                 micro_location=prefs.get("micro_location"),
-                lat=prefs.get("lat"),
-                lng=prefs.get("lng"),
-                geo_region=prefs.get("geo_region") or trip_state.geo_region,
+                lat=bk_lat,
+                lng=bk_lng,
+                geo_region=bk_region,
                 node_kind="booking",
                 booking_type=prefs.get("booking_type", "flight"),
                 confirmation_code=prefs.get("confirmation_code"),
