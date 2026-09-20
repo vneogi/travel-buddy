@@ -944,7 +944,7 @@ void main() {
     expect(button.onPressed, isNull, reason: 'Create should be disabled on overlap');
   });
 
-  testWidgets('CorridorDateForm: Vang Vieng >3 days disables Create',
+  testWidgets('CorridorDateForm: 4-day Vang Vieng keeps Create enabled (SPEC-42)',
       (tester) async {
     const corridor = _laosCorridor;
     await tester.pumpWidget(MaterialApp(
@@ -958,7 +958,7 @@ void main() {
       find.byType(CorridorDateForm),
     );
     final base = DateTime.now().add(const Duration(days: 5));
-    // Vang Vieng: 4 days (exceeds its catalog-backed cap of 3).
+    // SPEC-42: no per-region cap. 4-day VV in a valid ordered corridor is fine.
     state.setRangesForTest([
       DateTimeRange(start: base, end: base),
       DateTimeRange(start: base.add(const Duration(days: 2)),
@@ -968,12 +968,15 @@ void main() {
     ]);
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('exceeds 3 days'), findsOneWidget);
+    // No per-region error.
+    expect(find.textContaining('exceeds'), findsNothing);
+    // Create button enabled.
     final button = tester.widget<FilledButton>(find.byType(FilledButton));
-    expect(button.onPressed, isNull);
+    expect(button.onPressed, isNotNull,
+        reason: 'SPEC-42: per-region caps removed; Create should be enabled');
   });
 
-  testWidgets('CorridorDateForm: >8 total days shows error + Create disabled',
+  testWidgets('CorridorDateForm: 11 populated days under 90-day span keeps Create enabled (SPEC-42)',
       (tester) async {
     const corridor = _laosCorridor;
     await tester.pumpWidget(MaterialApp(
@@ -987,7 +990,7 @@ void main() {
       find.byType(CorridorDateForm),
     );
     final base = DateTime.now().add(const Duration(days: 5));
-    // 4 + 3 + 4 = 11 days, each city valid but total exceeds 8.
+    // SPEC-42: no total-day cap. 4+3+4 = 11 days, inclusive span = 11 < 90.
     state.setRangesForTest([
       DateTimeRange(start: base, end: base.add(const Duration(days: 3))),
       DateTimeRange(start: base.add(const Duration(days: 4)),
@@ -997,9 +1000,45 @@ void main() {
     ]);
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('exceeds the 8-day limit'), findsOneWidget);
+    // No total-day or per-region error.
+    expect(find.textContaining('exceeds'), findsNothing);
+    // Create button enabled.
     final button = tester.widget<FilledButton>(find.byType(FilledButton));
-    expect(button.onPressed, isNull);
+    expect(button.onPressed, isNotNull,
+        reason: 'SPEC-42: total-day cap removed; Create should be enabled');
+  });
+
+  testWidgets('CorridorDateForm: 91-day inclusive span disables Create (SPEC-42)',
+      (tester) async {
+    const corridor = _laosCorridor;
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: CorridorDateForm(corridor: corridor),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    final state = tester.state<CorridorDateFormState>(
+      find.byType(CorridorDateForm),
+    );
+    final base = DateTime.now().add(const Duration(days: 5));
+    // Inclusive span: base to base+90 = 91 days. Exceeds 90-day sanity limit.
+    state.setRangesForTest([
+      DateTimeRange(start: base, end: base.add(const Duration(days: 1))),
+      DateTimeRange(start: base.add(const Duration(days: 45)),
+          end: base.add(const Duration(days: 46))),
+      DateTimeRange(start: base.add(const Duration(days: 89)),
+          end: base.add(const Duration(days: 90))),
+    ]);
+    await tester.pumpAndSettle();
+
+    // Error message about 90-day safety limit.
+    expect(find.textContaining('Corridor span exceeds the 90-day safety limit.'),
+        findsOneWidget);
+    // Create button disabled.
+    final button = tester.widget<FilledButton>(find.byType(FilledButton));
+    expect(button.onPressed, isNull,
+        reason: 'SPEC-42: 91-day inclusive span must disable Create');
   });
 
   testWidgets('CorridorDateForm: valid submit pops with 3 segments',
