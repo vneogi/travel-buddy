@@ -509,8 +509,8 @@ class TestTruthfulCapacity:
             )
             assert resp.status_code == 200, f"{region} at max {md}: {resp.json()}"
 
-    def test_one_above_max_rejected(self):
-        """One day above advertised max is rejected when below product ceiling."""
+    def test_one_above_max_accepted_spec42(self):
+        """SPEC-42: one day above catalog max now succeeds with sparse generation."""
         r = client.get("/api/v1/trips", headers=HEADERS)
         max_days = r.json()["create_trip_options"]["max_days_by_region"]
         for region, md in max_days.items():
@@ -525,7 +525,7 @@ class TestTruthfulCapacity:
                 "geo_region": region,
             }
             resp = client.post("/api/v1/trip/create", json=body, headers=h)
-            assert resp.status_code == 422, f"{region} md+1={md + 1}: {resp.json()}"
+            assert resp.status_code == 200, f"{region} md+1={md + 1}: {resp.json()}"
 
     def test_mismatch_allowlist_removed(self):
         """The three-region A2 mismatch allowlist no longer exists."""
@@ -561,8 +561,12 @@ class TestTruthfulCapacity:
 
 
 class TestAPIAtomicity:
-    def test_insufficient_capacity_returns_422_without_persisting_trip_or_party(self):
-        """API path stays atomic when hours-constrained packing fails mid-build."""
+    def test_sparse_create_with_limited_hours_succeeds(self):
+        """SPEC-42: sparse generation handles hours-constrained pools gracefully.
+
+        3 good + 7 narrow-hours venues: only 3 packable, below VENUES_PER_DAY.
+        Sparse generation creates a trip with zero populated days (empty nodes).
+        """
         from unittest.mock import patch as mock_patch
 
         good = {d: [["09:00", "17:00"]] for d in _ALL_DAYS}
@@ -577,12 +581,7 @@ class TestAPIAtomicity:
                 for i in range(7)
             ]
         )
-        trips_before = len(db_mod.db_service._trips)
-        parties_before = len(db_mod.db_service._parties)
-        with (
-            mock_patch.object(db_mod.db_service, "list_venues_for_region", return_value=rows),
-            mock_patch("routers.trip_router.compute_max_days_for_region", return_value=1),
-        ):
+        with mock_patch.object(db_mod.db_service, "list_venues_for_region", return_value=rows):
             body = {
                 "start_date": date(2026, 11, 2).isoformat(),
                 "end_date": date(2026, 11, 2).isoformat(),
@@ -590,10 +589,7 @@ class TestAPIAtomicity:
                 "party": {"party_type": "friends", "size": 3, "members": []},
             }
             resp = client.post("/api/v1/trip/create", json=body, headers=auth("spec41-atomicity"))
-        assert resp.status_code == 422
-        assert resp.json()["detail"]["error"] == "insufficient_capacity"
-        assert len(db_mod.db_service._trips) == trips_before
-        assert len(db_mod.db_service._parties) == parties_before
+        assert resp.status_code == 200, f"Expected 200, got {resp.status_code}: {resp.json()}"
 
 
 # ---------------------------------------------------------------------------

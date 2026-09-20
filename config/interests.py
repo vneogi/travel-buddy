@@ -17,6 +17,12 @@ from typing import Dict, FrozenSet, List, Sequence
 MAX_DAYS_CEILING = 5
 """Hard product limit on single-city range days."""
 
+MAX_AUTO_POPULATED_DAYS = 5
+"""Initial generation populates at most this many starter days."""
+
+TRIP_SPAN_SANITY_DAYS = 90
+"""API safety bound: reject trips longer than 90 inclusive days."""
+
 VENUES_PER_DAY = 4
 """Exact unique catalog venues placed per day in range mode."""
 

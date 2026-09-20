@@ -300,10 +300,11 @@ class TestValidation422:
         assert r.json()["detail"]["error"] == "past_dates"
 
     def test_over_cap_returns_422(self):
-        body = _range_body(num_days=20)
+        """SPEC-42: 91 inclusive days triggers the sanity bound, not catalog cap."""
+        body = _range_body(num_days=91)
         r = client.post("/api/v1/trip/create", json=body, headers=HEADERS)
         assert r.status_code == 422
-        assert r.json()["detail"]["error"] == "over_capacity"
+        assert r.json()["detail"]["error"] == "trip_span_exceeded"
 
     def test_too_many_interests_returns_422(self):
         body = _range_body(
@@ -404,38 +405,23 @@ class TestValidation422:
 
 
 class TestCapacityAtomicity:
-    def test_over_capacity_rejected_no_trip_or_party(self):
-        """Pre-validation over_capacity path: num_days > max_days for the
-        region.  This fires BEFORE range_nodes_from_catalog is called."""
+    def test_sanity_bound_rejected_no_trip_or_party(self):
+        """SPEC-42: 91-day sanity bound fires BEFORE range_nodes_from_catalog."""
         trips_before = len(db_service._trips)
         parties_before = len(db_service._parties)
-        body = _range_body(geo_region="vang_vieng_laos", num_days=10)
+        body = _range_body(geo_region="vang_vieng_laos", num_days=91)
         r = client.post("/api/v1/trip/create", json=body, headers=HEADERS)
         assert r.status_code == 422
-        assert r.json()["detail"]["error"] == "over_capacity"
+        assert r.json()["detail"]["error"] == "trip_span_exceeded"
         assert len(db_service._trips) == trips_before
         assert len(db_service._parties) == parties_before
 
-    def test_sabotage_insufficient_capacity_mid_build(self):
-        """Mid-build insufficient_capacity path: range_nodes_from_catalog
-        raises InsufficientCatalog after validation passes.  Neither trip
-        nor party must be persisted."""
-        trips_before = len(db_service._trips)
-        parties_before = len(db_service._parties)
-
-        def _explode(**kwargs):
-            raise InsufficientCatalog("sabotage mid-build")
-
-        with patch(
-            "routers.trip_router.range_nodes_from_catalog",
-            side_effect=_explode,
-        ):
-            body = _range_body(num_days=2)
-            r = client.post("/api/v1/trip/create", json=body, headers=HEADERS)
-        assert r.status_code == 422
-        assert r.json()["detail"]["error"] == "insufficient_capacity"
-        assert len(db_service._trips) == trips_before
-        assert len(db_service._parties) == parties_before
+    def test_sparse_create_succeeds_even_with_limited_catalog(self):
+        """SPEC-42: a trip span longer than catalog content succeeds
+        with sparse generation -- no InsufficientCatalog 422."""
+        body = _range_body(geo_region="vang_vieng_laos", num_days=10)
+        r = client.post("/api/v1/trip/create", json=body, headers=HEADERS)
+        assert r.status_code == 200, f"Expected 200, got {r.status_code}: {r.json()}"
 
 
 # ---------------------------------------------------------------
@@ -681,7 +667,8 @@ class TestVenueIDEligibility:
         assert len(deduped) == 1
         assert compute_max_days(len(deduped)) == 0
 
-    def test_builder_rejects_pool_with_only_duplicate_ids(self):
+    def test_builder_returns_empty_with_only_duplicate_ids(self):
+        """SPEC-42: sparse generation returns empty nodes, not InsufficientCatalog."""
         fake_rows = [
             {
                 "name": f"DupVenue{i}",
@@ -692,13 +679,13 @@ class TestVenueIDEligibility:
             }
             for i in range(20)
         ]
-        with pytest.raises(InsufficientCatalog):
-            range_nodes_from_catalog(
-                geo_region="luang_prabang_laos",
-                start_date_local=_future_date(10),
-                end_date_local=_future_date(10),
-                rows=fake_rows,
-            )
+        nodes = range_nodes_from_catalog(
+            geo_region="luang_prabang_laos",
+            start_date_local=_future_date(10),
+            end_date_local=_future_date(10),
+            rows=fake_rows,
+        )
+        assert nodes == []
 
     def test_dedup_helper_preserves_unique(self):
         rows = [

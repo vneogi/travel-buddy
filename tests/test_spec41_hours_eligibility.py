@@ -172,11 +172,12 @@ class TestCreateHoursFiltering:
         names = [n.venue_name for n in nodes]
         assert "Unknown Venue" in names
 
-    def test_insufficient_hours_raises_no_trip_no_party(self):
-        """Direct builder: enough identity but too few packable => InsufficientCatalog.
+    def test_insufficient_hours_returns_empty(self):
+        """SPEC-42: sparse generation returns empty, not InsufficientCatalog.
 
         Uses range_nodes_from_catalog directly. 3 venues with all-day hours
-        + 7 with windows too narrow for 60-min dwell => only 3 placements.
+        + 7 with windows too narrow for 60-min dwell => only 3 placements,
+        which is below VENUES_PER_DAY, so no day is fully packed.
         """
         good = {d: [["09:00", "17:00"]] for d in _ALL_DAYS}
         narrow = {d: [["09:00", "09:30"]] for d in _ALL_DAYS}
@@ -190,13 +191,13 @@ class TestCreateHoursFiltering:
                 for i in range(7)
             ]
         )
-        with pytest.raises(InsufficientCatalog):
-            range_nodes_from_catalog(
-                geo_region=GEO,
-                start_date_local="2026-09-14",
-                end_date_local="2026-09-14",
-                rows=rows,
-            )
+        nodes = range_nodes_from_catalog(
+            geo_region=GEO,
+            start_date_local="2026-09-14",
+            end_date_local="2026-09-14",
+            rows=rows,
+        )
+        assert nodes == []
 
     def test_destination_local_tuesday_through_builder(self):
         """ICT is UTC+7; Tuesday 09:00 ICT is the correct local weekday."""
@@ -248,15 +249,12 @@ class TestCreateHoursFiltering:
                 )
                 assert hr != HoursResult.CLOSED, f"{n.venue_name} at {n.scheduled_start} is CLOSED"
 
-    def test_range_nodes_insufficient_capacity_raises(self):
-        """range_nodes_from_catalog raises InsufficientCatalog when hours-eligible
-        count is below the needed threshold, NOT from identity shortage.
+    def test_range_nodes_insufficient_capacity_returns_partial(self):
+        """SPEC-42: sparse generation returns partial nodes, not InsufficientCatalog.
 
         10 unique identity-eligible venues (well above the 8-stop two-day
         requirement) but only 3 are open at 09:00; the remaining 7 are
-        evening-only (CLOSED for morning slots) and far away (large walking
-        transfer from morning venues). Proves the failure is from hours +
-        reachability filtering, not from running out of unique identities."""
+        evening-only and far away. Proves sparse generation handles gracefully."""
         rows = _pool_of(3, structured=_make_hours({}), dwell=60)
         rows.extend(
             [
@@ -272,13 +270,14 @@ class TestCreateHoursFiltering:
             ]
         )
         assert len(rows) == 10  # well above 8 needed identities
-        with pytest.raises(InsufficientCatalog):
-            range_nodes_from_catalog(
-                geo_region=GEO,
-                start_date_local="2026-09-14",
-                end_date_local="2026-09-15",
-                rows=rows,
-            )
+        nodes = range_nodes_from_catalog(
+            geo_region=GEO,
+            start_date_local="2026-09-14",
+            end_date_local="2026-09-15",
+            rows=rows,
+        )
+        # Sparse: fewer nodes than a full 2-day pack, possibly empty
+        assert len(nodes) < 8
 
 
 # ---------------------------------------------------------------------------

@@ -194,49 +194,53 @@ class TestCorridorValidation:
             }
         )
 
-    def test_vientiane_over_four_days_rejected(self):
-        self._assert_invalid(
-            _corridor_body(
-                starts=[
-                    ("2026-10-01", "2026-10-05"),
-                    ("2026-10-06", "2026-10-07"),
-                    ("2026-10-08", "2026-10-09"),
-                ]
-            )
+    def test_vientiane_over_four_days_accepted_spec42(self):
+        """SPEC-42: catalog-derived per-city max is no longer a cap."""
+        body = _corridor_body(
+            starts=[
+                ("2026-10-01", "2026-10-05"),
+                ("2026-10-06", "2026-10-07"),
+                ("2026-10-08", "2026-10-09"),
+            ]
         )
+        r = client.post("/api/v1/trip/create", json=body, headers=HEADERS)
+        assert r.status_code == 200, r.text
 
-    def test_vang_vieng_over_three_days_rejected(self):
-        self._assert_invalid(
-            _corridor_body(
-                starts=[
-                    ("2026-10-01", "2026-10-02"),
-                    ("2026-10-03", "2026-10-06"),
-                    ("2026-10-07", "2026-10-08"),
-                ]
-            )
+    def test_vang_vieng_over_three_days_accepted_spec42(self):
+        """SPEC-42: catalog-derived per-city max is no longer a cap."""
+        body = _corridor_body(
+            starts=[
+                ("2026-10-01", "2026-10-02"),
+                ("2026-10-03", "2026-10-06"),
+                ("2026-10-07", "2026-10-08"),
+            ]
         )
+        r = client.post("/api/v1/trip/create", json=body, headers=HEADERS)
+        assert r.status_code == 200, r.text
 
-    def test_luang_prabang_over_four_days_rejected(self):
-        self._assert_invalid(
-            _corridor_body(
-                starts=[
-                    ("2026-10-01", "2026-10-02"),
-                    ("2026-10-03", "2026-10-04"),
-                    ("2026-10-05", "2026-10-09"),
-                ]
-            )
+    def test_luang_prabang_over_four_days_accepted_spec42(self):
+        """SPEC-42: catalog-derived per-city max is no longer a cap."""
+        body = _corridor_body(
+            starts=[
+                ("2026-10-01", "2026-10-02"),
+                ("2026-10-03", "2026-10-04"),
+                ("2026-10-05", "2026-10-09"),
+            ]
         )
+        r = client.post("/api/v1/trip/create", json=body, headers=HEADERS)
+        assert r.status_code == 200, r.text
 
-    def test_total_over_eight_days_rejected(self):
-        self._assert_invalid(
-            _corridor_body(
-                starts=[
-                    ("2026-10-01", "2026-10-04"),
-                    ("2026-10-05", "2026-10-07"),
-                    ("2026-10-08", "2026-10-11"),
-                ]
-            )
+    def test_total_over_eight_days_accepted_spec42(self):
+        """SPEC-42: catalog-derived total max is no longer a cap."""
+        body = _corridor_body(
+            starts=[
+                ("2026-10-01", "2026-10-04"),
+                ("2026-10-05", "2026-10-07"),
+                ("2026-10-08", "2026-10-11"),
+            ]
         )
+        r = client.post("/api/v1/trip/create", json=body, headers=HEADERS)
+        assert r.status_code == 200, r.text
 
     def test_segments_plus_start_date_rejected(self):
         body = _corridor_body()

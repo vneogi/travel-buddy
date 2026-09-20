@@ -39,6 +39,7 @@ from models.schemas import (
     TripSegment,
     EventType,
 )
+from config.interests import MAX_AUTO_POPULATED_DAYS, TRIP_SPAN_SANITY_DAYS
 from services.catalog_itinerary import (
     InsufficientCatalog,
     advertised_regions,
@@ -406,6 +407,8 @@ async def list_trips(user_id: str = Depends(get_current_user_id)):
             "party_types": [{"id": p.id, "label": p.label} for p in PARTY_TYPES],
             "interests": [{"id": i.id, "label": i.label} for i in INTERESTS],
             "max_days_by_region": max_days_map,
+            "max_auto_populated_days": MAX_AUTO_POPULATED_DAYS,
+            "trip_span_sanity_days": TRIP_SPAN_SANITY_DAYS,
         },
     }
 
@@ -797,18 +800,18 @@ async def _create_range_trip(request: CreateTripRequest, user_id: str):
             },
         )
 
-    # Validate: over-cap
+    # Validate: 90-day API sanity bound (SPEC-42)
     num_days = (end_local - start_local).days + 1
-    max_days = compute_max_days_for_region(db_service.list_venues_for_region, geo_region)
-    if max_days is None or num_days > max_days:
+    if num_days > TRIP_SPAN_SANITY_DAYS:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={
-                "error": "over_capacity",
+                "error": "trip_span_exceeded",
                 "message": (
-                    f"Maximum {max_days or 0} days for {geo_region}, requested {num_days}."
+                    f"Trip span {num_days} days exceeds the "
+                    f"{TRIP_SPAN_SANITY_DAYS}-day safety limit."
                 ),
-                "max_days": max_days or 0,
+                "max_span_days": TRIP_SPAN_SANITY_DAYS,
             },
         )
 
@@ -835,23 +838,15 @@ async def _create_range_trip(request: CreateTripRequest, user_id: str):
             },
         )
 
-    # Build nodes
-    try:
-        nodes = range_nodes_from_catalog(
-            geo_region=geo_region,
-            start_date_local=start_local.isoformat(),
-            end_date_local=end_local.isoformat(),
-            rows=db_service.list_venues_for_region(geo_region),
-            interest_ids=interest_ids,
-        )
-    except InsufficientCatalog:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail={
-                "error": "insufficient_capacity",
-                "message": f"Not enough venues for {num_days} days in {geo_region}.",
-            },
-        )
+    # Build nodes -- sparse generation (SPEC-42): populates
+    # min(5, calendar_days, feasible_days); never raises InsufficientCatalog.
+    nodes = range_nodes_from_catalog(
+        geo_region=geo_region,
+        start_date_local=start_local.isoformat(),
+        end_date_local=end_local.isoformat(),
+        rows=db_service.list_venues_for_region(geo_region),
+        interest_ids=interest_ids,
+    )
 
     # Build and save trip (atomic: only after all days succeed)
     creation_ctx = CreationContext(
