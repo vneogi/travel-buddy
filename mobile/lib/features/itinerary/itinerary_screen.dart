@@ -333,16 +333,7 @@ class ItineraryScreen extends ConsumerWidget {
                   },
                 ),
                 Expanded(
-                  child: state.nodes.isEmpty
-                      ? Center(
-                          child: Text(
-                            'No activities yet.',
-                            style: AppTypography.body.copyWith(
-                              color: AppColors.muted,
-                            ),
-                          ),
-                        )
-                      : state.segments.isNotEmpty
+                  child: state.segments.isNotEmpty
                           ? _CorridorTimeline(
                               nodes: state.nodes,
                               segments: state.segments,
@@ -374,9 +365,19 @@ class ItineraryScreen extends ConsumerWidget {
                                   _deleteBooking(context, ref, node),
                               sig: _sig,
                             )
+                          : (state.nodes.isEmpty && state.creationContext == null)
+                          ? Center(
+                              child: Text(
+                                'No activities yet.',
+                                style: AppTypography.body.copyWith(
+                                  color: AppColors.muted,
+                                ),
+                              ),
+                            )
                           : _FocusedDateScopedTimeline(
                               nodes: state.nodes,
                               state: state,
+                              creationContext: state.creationContext,
                               focusNodeId: focusNodeId,
                               onSwap: (node) => _swap(context, ref, node),
                               onCancel: (node) => _cancel(context, ref, node),
@@ -497,7 +498,8 @@ class _CorridorTimelineState extends State<_CorridorTimeline> {
 
   @override
   Widget build(BuildContext context) {
-    final cityGroups = groupNodesByCorridor(
+    // SPEC-42: use segment dates for full-span corridor rendering.
+    final cityGroups = spanAwareCorridorGroups(
       nodes: widget.nodes,
       segments: widget.segments,
     );
@@ -559,6 +561,7 @@ class _CorridorTimelineState extends State<_CorridorTimeline> {
 class _FocusedDateScopedTimeline extends StatefulWidget {
   final List<TripNode> nodes;
   final ItineraryState state;
+  final CreationContext? creationContext;
   final String? focusNodeId;
   final void Function(TripNode) onSwap;
   final void Function(TripNode) onCancel;
@@ -571,6 +574,7 @@ class _FocusedDateScopedTimeline extends StatefulWidget {
   const _FocusedDateScopedTimeline({
     required this.nodes,
     required this.state,
+    this.creationContext,
     this.focusNodeId,
     required this.onSwap,
     required this.onCancel,
@@ -637,6 +641,7 @@ class _FocusedDateScopedTimelineState
   Widget build(BuildContext context) => _DateScopedTimeline(
         nodes: widget.nodes,
         state: widget.state,
+        creationContext: widget.creationContext,
         onSwap: widget.onSwap,
         onCancel: widget.onCancel,
         onOutcome: widget.onOutcome,
@@ -651,6 +656,7 @@ class _FocusedDateScopedTimelineState
 class _DateScopedTimeline extends StatelessWidget {
   final List<TripNode> nodes;
   final ItineraryState state;
+  final CreationContext? creationContext;
   final void Function(TripNode) onSwap;
   final void Function(TripNode) onCancel;
   final void Function(TripNode) onOutcome;
@@ -665,6 +671,7 @@ class _DateScopedTimeline extends StatelessWidget {
   const _DateScopedTimeline({
     required this.nodes,
     required this.state,
+    this.creationContext,
     required this.onSwap,
     required this.onCancel,
     required this.onOutcome,
@@ -679,10 +686,21 @@ class _DateScopedTimeline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // SPEC-42: spanAwareDayGroups exists but ItineraryState does not
-    // yet carry creationContext.  Wiring is a follow-up; for now,
-    // fall back to populated-days-only grouping.
-    final groups = groupNodesByCalendarDate(nodes);
+    // SPEC-42: render every date in the trip span, including empty days.
+    final List<ItineraryDayGroup> groups;
+    final ctx = creationContext;
+    if (!isCorridor &&
+        ctx != null &&
+        ctx.startDateLocal != null &&
+        ctx.endDateLocal != null) {
+      groups = spanAwareDayGroups(
+        nodes: nodes,
+        startLocal: DateTime.parse(ctx.startDateLocal!),
+        endLocal: DateTime.parse(ctx.endDateLocal!),
+      );
+    } else {
+      groups = groupNodesByCalendarDate(nodes);
+    }
 
     // Build a flat list of view items: headers + cards.
     final items = <_TimelineItem>[];
@@ -710,7 +728,7 @@ class _DateScopedTimeline extends StatelessWidget {
         // which crosses date boundaries.
         TripNode? next;
         for (var j = i + 1; j < items.length; j++) {
-          if (!items[j].isHeader) {
+          if (!items[j].isHeader && !items[j].isEmptyDay) {
             next = items[j].node;
             break;
           }

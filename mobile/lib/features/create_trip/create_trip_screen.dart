@@ -49,13 +49,6 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
   // Step 4: Interests
   final Set<String> _selectedInterests = {};
 
-  /// Returns the server-advertised max days for [region], or null if the
-  /// region is not in the options map.  Never invents a fallback.
-  int? _maxDaysFor(String? region, CreateTripOptions? opts) {
-    if (region == null || opts == null) return null;
-    return opts.maxDaysByRegion[region]; // null when absent
-  }
-
   /// Calendar-day count: pure UTC arithmetic, no DST dependency.
   static int _calendarDays(DateTimeRange range) {
     final s = range.start;
@@ -359,6 +352,7 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
           selectedInterests: _selectedInterests,
           partyOptions: partyOptions,
           interestOptions: interestOptions,
+          maxAutoPopulatedDays: opts?.maxAutoPopulatedDays ?? 5,
         );
       default:
         return const SizedBox.shrink();
@@ -589,6 +583,7 @@ class _ReviewStep extends StatelessWidget {
   final Set<String> selectedInterests;
   final List<PartyOption> partyOptions;
   final List<InterestOption> interestOptions;
+  final int maxAutoPopulatedDays;
   const _ReviewStep({
     required this.region,
     required this.dateRange,
@@ -597,6 +592,7 @@ class _ReviewStep extends StatelessWidget {
     required this.selectedInterests,
     required this.partyOptions,
     required this.interestOptions,
+    this.maxAutoPopulatedDays = 5,
   });
 
   @override
@@ -624,6 +620,15 @@ class _ReviewStep extends StatelessWidget {
         _row('Party', '$partyLabel ($partySize)'),
         _row('Interests',
             interestLabels.isEmpty ? 'Balanced' : interestLabels.join(', ')),
+        if (dateRange != null) ...const [SizedBox(height: 8)],
+        if (dateRange != null)
+          Text(
+            'Up to $maxAutoPopulatedDays dates receive starter suggestions. '
+            'Remaining dates stay open for you to fill.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Colors.grey,
+                ),
+          ),
       ],
     );
   }
