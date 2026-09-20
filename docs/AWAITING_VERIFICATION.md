@@ -15,6 +15,16 @@ other.
 Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 `#85` and so on; those numbers cannot be reconciled against `git log`.
 
+## Finding -- Sep 20 2026 -- named slots Flutter green on f1feb17
+
+Owner Windows on `feat/spec41-named-slots` at `f1feb17`.
+`flutter analyze`: 0 errors, 0 warnings (infos only; same class as main).
+`flutter test test/spec41_named_slots_test.dart
+test/spec10_hotel_stay_display_test.dart
+test/features/itinerary/date_scope_test.dart`: all passed.
+Full `flutter test`: all passed. Hosted API and signed APK remain
+unverified.
+
 ## Finding -- Sep 20 2026 -- hotel stay Flutter green on 1f251a3
 
 Owner Windows on `feat/spec10-hotel-stay-display` at `1f251a3`.

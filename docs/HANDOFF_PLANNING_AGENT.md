@@ -10,12 +10,14 @@ SPEC-40 are done. SPEC-41 Phase A is complete: A3a merged as `d1fde14` and
 A3b was reviewed at branch head `7f25042`. SPEC-10 paste is on main
 (`fc6926b`). Flight/hotel scheduler remainder is on main (`e7a0457`);
 destination-local booking times, weather empty-key, and swap canned copy
-after honest refusal are on main (`933c705`). `pack_day` booking
-constraints stay deferred until `GENIE_SPEC_41_NAMED_SLOTS`. SPEC-25 trip-scoped grounded Ask is on main
+after honest refusal are on main (`933c705`). SPEC-41 named day slots
+are on main (`f1feb17`, merge `9173b23`). Create-then-book HITL reflow
+remains. SPEC-25 trip-scoped grounded Ask is on main
 (`30a4270`); trip-optional Ask remains. SPEC-42 uncap / empty-date
 render is PARTIAL on main (`17e58ac`); Add/Move remain. SPEC-10 hotel
-stay display is on main (`1f251a3`, merge `7b62818`). Next Genie slice
-is `docs/briefs/GENIE_SPEC_41_NAMED_SLOTS.md`. After hosted/API/APK verification, SPEC-44
+stay display is on main (`1f251a3`, merge `7b62818`). Remainder
+sequence slices 1-3 are on main. Hosted API/APK still wait for an
+explicit deploy. After hosted/API/APK verification, SPEC-44
 Phase A makes trip persistence transactional. SPEC-43 is then the release
 foundation before any non-owner tester or the planned December launch. The
 SPEC-13/17/20 city factory follows; Bangkok proves it without a hardcoded
@@ -70,8 +72,9 @@ Status tables: `docs/PROJECT_STATUS.md`. Device-only queue:
 `docs/HOSTED_STATE.md`. Owner-to-store launch ledger:
 `docs/RELEASE_READINESS.md`. City sequence:
 `docs/MARKET_STRATEGY.md` (Sep 2026 Banana Pancake addendum). Next
-implementation contract after hotel-stay display:
-`docs/briefs/GENIE_SPEC_41_NAMED_SLOTS.md`.
+implementation contract after the remainder sequence: hosted API/APK
+wait for an explicit deploy. Do not start SPEC-42 Add/Move, SPEC-43,
+or SPEC-44 until that gate.
 
 ## Third-party review -- already adjudicated
 
@@ -145,7 +148,7 @@ on the owner's phone. Next tasks:
 3. SPEC-10 provider-aware paste is on main (`fc6926b`). Flight/hotel
    scheduler remainder is on main (`e7a0457`). Do not reopen Agoda adapters
    unless a new redacted fixture fails. Keep SPEC-10 PARTIAL until
-   `pack_day` takes bookings.
+   create-then-book HITL reflow exists.
 4. SPEC-25 trip-scoped grounded Ask is on main (`30a4270`). Laptop Flutter
    Ask envelope tests passed. Owner Windows `pytest -q` on `3e5ec6d` is
    green (details in AWAITING_VERIFICATION). Trip-optional Ask remains.
@@ -154,9 +157,9 @@ on the owner's phone. Next tasks:
 6. Specified remainders are sequenced in
    `docs/briefs/GENIE_REMAINDERS_SEQUENCE.md`. Slice 1 (uncap) is on
    main (`17e58ac`). Slice 2 (hotel stay display) is on main
-   (`1f251a3`, merge `7b62818`). Next Genie slice is
-   `docs/briefs/GENIE_SPEC_41_NAMED_SLOTS.md` only. Hosted API/APK
-   still wait for an explicit deploy. Do not start
+   (`1f251a3`, merge `7b62818`). Slice 3 (named slots) is on main
+   (`f1feb17`, merge `9173b23`). Create-then-book HITL reflow remains.
+   Hosted API/APK still wait for an explicit deploy. Do not start
    security implementation, inspiration, similar-trip generation, or
    broader consumer work until the phone gate.
 7. Implement SPEC-44 Phase A. Make trip graph, party, compatibility projection,
