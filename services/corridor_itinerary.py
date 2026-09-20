@@ -86,6 +86,17 @@ def validate_corridor_segments(
             f"Total {total_days} days exceeds the {TRIP_SPAN_SANITY_DAYS}-day safety limit."
         )
 
+    # SPEC-42: inclusive corridor span (first start through last end),
+    # which includes inter-segment gaps.
+    if segments:
+        inclusive_span = (segments[-1].ends_on - segments[0].starts_on).days + 1
+        if inclusive_span > TRIP_SPAN_SANITY_DAYS:
+            raise InvalidCorridor(
+                f"Inclusive corridor span {inclusive_span} days "
+                f"(including gaps) exceeds the "
+                f"{TRIP_SPAN_SANITY_DAYS}-day safety limit."
+            )
+
 
 def _select_corridor_day(
     pool: List[dict],
@@ -139,14 +150,18 @@ def build_corridor_nodes(
 ) -> tuple[List[TripNode], List[TripSegment]]:
     """Build all nodes for a corridor trip.
 
-    Returns (nodes, stored_segments). Raises UnsupportedCorridor if any
-    segment lacks enough eligible venues. Never persists partial state.
-    Uses the shared A3a window-packing planner.
+    Returns (nodes, stored_segments).  SPEC-42: sparse population with
+    a global budget of MAX_AUTO_POPULATED_DAYS across all segments.
+    Regions with zero packable venues produce no nodes (not an error).
     """
     all_nodes: list[TripNode] = []
     stored_segments: list[TripSegment] = []
 
     from config.interests import MAX_AUTO_POPULATED_DAYS
+    from services.catalog_itinerary import _select_populated_day_indices
+
+    # SPEC-42: global budget of starter days across the whole corridor.
+    global_budget = MAX_AUTO_POPULATED_DAYS
 
     for seg_in in segments:
         region = require_region(seg_in.geo_region)
@@ -155,69 +170,60 @@ def build_corridor_nodes(
         pool = eligible_corridor_venues(rows)
 
         span = (seg_in.ends_on - seg_in.starts_on).days + 1
-        if len(pool) < CORRIDOR_STOPS_PER_DAY:
-            raise UnsupportedCorridor(
-                f"Region {seg_in.geo_region} has {len(pool)} eligible venues "
-                f"but needs at least {CORRIDOR_STOPS_PER_DAY}."
-            )
 
-        # SPEC-42: sparse corridor days -- populate at most
-        # MAX_AUTO_POPULATED_DAYS days per segment, choosing
-        # first+last when feasible.
-        from services.catalog_itinerary import _select_populated_day_indices
+        if global_budget > 0 and len(pool) >= CORRIDOR_STOPS_PER_DAY:
+            # Probe feasible days using actual segment dates
+            feasible = 0
+            probe_used: set[str] = set()
+            for day_i in range(min(global_budget, span)):
+                probe_date = seg_in.starts_on + timedelta(days=day_i)
+                probe_start = datetime(
+                    probe_date.year,
+                    probe_date.month,
+                    probe_date.day,
+                    9,
+                    0,
+                    0,
+                    tzinfo=tz,
+                ).astimezone(timezone.utc)
+                day_nodes, probe_used = pack_day(
+                    candidates=pool,
+                    target_count=CORRIDOR_STOPS_PER_DAY,
+                    day_start_utc=probe_start,
+                    geo_region=seg_in.geo_region,
+                    used_ids=probe_used,
+                )
+                if len(day_nodes) < CORRIDOR_STOPS_PER_DAY:
+                    break
+                feasible += 1
 
-        # Probe feasible days for this segment
-        feasible = 0
-        probe_used: set[str] = set()
-        probe_anchor = seg_in.starts_on
-        for day_i in range(min(MAX_AUTO_POPULATED_DAYS, span)):
-            probe_date = probe_anchor + timedelta(days=day_i)
-            probe_start = datetime(
-                probe_date.year,
-                probe_date.month,
-                probe_date.day,
-                9,
-                0,
-                0,
-                tzinfo=tz,
-            ).astimezone(timezone.utc)
-            day_nodes, probe_used = pack_day(
-                candidates=pool,
-                target_count=CORRIDOR_STOPS_PER_DAY,
-                day_start_utc=probe_start,
-                geo_region=seg_in.geo_region,
-                used_ids=probe_used,
-            )
-            if len(day_nodes) < CORRIDOR_STOPS_PER_DAY:
-                break
-            feasible += 1
+            day_indices = _select_populated_day_indices(span, min(feasible, global_budget))
 
-        day_indices = _select_populated_day_indices(span, feasible)
+            used_ids: set[str] = set()
+            for day_offset in day_indices:
+                day_date = seg_in.starts_on + timedelta(days=day_offset)
+                start_dt = datetime(
+                    day_date.year,
+                    day_date.month,
+                    day_date.day,
+                    9,
+                    0,
+                    0,
+                    tzinfo=tz,
+                ).astimezone(timezone.utc)
 
-        used_ids: set[str] = set()
-        for day_offset in day_indices:
-            day_date = seg_in.starts_on + timedelta(days=day_offset)
-            start_dt = datetime(
-                day_date.year,
-                day_date.month,
-                day_date.day,
-                9,
-                0,
-                0,
-                tzinfo=tz,
-            ).astimezone(timezone.utc)
+                day_nodes, used_ids = pack_day(
+                    candidates=pool,
+                    target_count=CORRIDOR_STOPS_PER_DAY,
+                    day_start_utc=start_dt,
+                    geo_region=seg_in.geo_region,
+                    used_ids=used_ids,
+                )
 
-            day_nodes, used_ids = pack_day(
-                candidates=pool,
-                target_count=CORRIDOR_STOPS_PER_DAY,
-                day_start_utc=start_dt,
-                geo_region=seg_in.geo_region,
-                used_ids=used_ids,
-            )
-
-            if len(day_nodes) < CORRIDOR_STOPS_PER_DAY:
-                break
-            all_nodes.extend(day_nodes)
+                if len(day_nodes) < CORRIDOR_STOPS_PER_DAY:
+                    break
+                all_nodes.extend(day_nodes)
+                global_budget -= 1
 
         stored_segments.append(
             TripSegment(
@@ -231,7 +237,12 @@ def build_corridor_nodes(
 
 
 def advertised_corridors(list_venues_fn) -> list[dict]:
-    """Corridors where every city can supply its advertised maximum."""
+    """Corridors where every city has at least one eligible venue.
+
+    SPEC-42: catalog capacity no longer hides a corridor.  A corridor is
+    advertised when each region has at least one eligible venue, not when
+    it can fill every configured date.
+    """
     result = []
     for cid, corridor in CORRIDORS.items():
         ok = True
@@ -239,8 +250,7 @@ def advertised_corridors(list_venues_fn) -> list[dict]:
             try:
                 rows = list_venues_fn(region_code)
                 pool = eligible_corridor_venues(rows)
-                required = corridor.max_days_for_region(region_code) * CORRIDOR_STOPS_PER_DAY
-                if len(pool) < required:
+                if not pool:
                     ok = False
                     break
             except Exception:

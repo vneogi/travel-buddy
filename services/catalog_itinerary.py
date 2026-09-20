@@ -615,20 +615,15 @@ def range_nodes_from_catalog(
 
     pool = _dedup_by_venue_id(eligible_corridor_venues(rows))
 
-    # Probe feasible content days: simulate day-by-day packing until
-    # we either exhaust the pool or hit MAX_AUTO_POPULATED_DAYS.
+    # Probe feasible content days against the actual trip dates so
+    # weekday-specific hours (e.g. closed-on-Tuesday) are evaluated
+    # correctly.
     from config.interests import MAX_AUTO_POPULATED_DAYS
 
     feasible = 0
     probe_used: set[str] = set()
-    # Use a fixed Monday anchor for feasibility probing (day-of-week
-    # does not change the count of packable days much, but we need a
-    # concrete date for structured-hours evaluation).
-    from datetime import date as _date_type
-
-    probe_anchor = _date_type(2026, 9, 14)  # Monday
     for day_i in range(min(MAX_AUTO_POPULATED_DAYS, num_days)):
-        probe_date = probe_anchor + timedelta(days=day_i)
+        probe_date = sd + timedelta(days=day_i)
         probe_start = datetime(
             probe_date.year,
             probe_date.month,

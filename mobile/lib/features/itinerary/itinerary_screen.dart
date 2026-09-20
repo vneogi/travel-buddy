@@ -679,14 +679,21 @@ class _DateScopedTimeline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // SPEC-42: spanAwareDayGroups exists but ItineraryState does not
+    // yet carry creationContext.  Wiring is a follow-up; for now,
+    // fall back to populated-days-only grouping.
     final groups = groupNodesByCalendarDate(nodes);
 
     // Build a flat list of view items: headers + cards.
     final items = <_TimelineItem>[];
     for (final group in groups) {
       items.add(_TimelineItem.header(group.date));
-      for (final node in group.nodes) {
-        items.add(_TimelineItem.card(node));
+      if (group.nodes.isEmpty) {
+        items.add(_TimelineItem.emptyDay());
+      } else {
+        for (final node in group.nodes) {
+          items.add(_TimelineItem.card(node));
+        }
       }
     }
 
@@ -694,6 +701,9 @@ class _DateScopedTimeline extends StatelessWidget {
         final item = items[i];
         if (item.isHeader) {
           return _DateHeader(date: item.date!);
+        }
+        if (item.isEmptyDay) {
+          return const _EmptyDayCard();
         }
         final node = item.node!;
         // nextNode: next card-type item in the flat list (skipping headers),
@@ -768,17 +778,42 @@ class _DateScopedTimeline extends StatelessWidget {
   }
 }
 
-/// A flat-list item: either a date header or a node card.
+/// A flat-list item: date header, node card, or empty-day marker.
 class _TimelineItem {
   final DateTime? date;
   final TripNode? node;
+  final bool isEmptyDay;
 
-  const _TimelineItem._({this.date, this.node});
+  const _TimelineItem._({this.date, this.node, this.isEmptyDay = false});
 
   factory _TimelineItem.header(DateTime date) => _TimelineItem._(date: date);
   factory _TimelineItem.card(TripNode node) => _TimelineItem._(node: node);
+  factory _TimelineItem.emptyDay() =>
+      const _TimelineItem._(isEmptyDay: true);
 
-  bool get isHeader => date != null;
+  bool get isHeader => date != null && !isEmptyDay;
+}
+
+/// SPEC-42: placeholder for an empty day in a sparse itinerary.
+class _EmptyDayCard extends StatelessWidget {
+  const _EmptyDayCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.base,
+        vertical: AppSpacing.sm,
+      ),
+      child: Text(
+        'Open day',
+        style: Theme.of(context)
+            .textTheme
+            .bodySmall
+            ?.copyWith(color: Colors.grey),
+      ),
+    );
+  }
 }
 
 /// Calendar-date section header.

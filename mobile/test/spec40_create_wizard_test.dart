@@ -40,6 +40,8 @@ const _options = CreateTripOptions(
   partyTypes: _partyTypes,
   interests: _interests,
   maxDaysByRegion: {'luang_prabang_laos': 5, 'dubai_uae': 4},
+  maxAutoPopulatedDays: 5,
+  tripSpanSanityDays: 90,
 );
 
 final _snapshot = HomeSnapshot(
@@ -531,13 +533,13 @@ void main() {
   });
 
   // -----------------------------------------------------------------------
-  // Destination gating: region without maxDays disabled
+  // SPEC-42: all supported regions are selectable (no maxDays gate)
   // -----------------------------------------------------------------------
   testWidgets(
-      'unavailable destination cannot be selected and cannot enable Next',
+      'all supported regions are selectable regardless of maxDays',
       (t) async {
     final snap = HomeSnapshot(
-      supportedRegions: ['luang_prabang_laos', 'unknown_region'],
+      supportedRegions: ['luang_prabang_laos', 'dubai_uae'],
       trips: [],
       createTripOptions: const CreateTripOptions(
         partyTypes: _partyTypes,
@@ -547,26 +549,27 @@ void main() {
     );
     await t.pumpWidget(_app(snapshot: snap));
     await t.pumpAndSettle();
-    expect(find.text('Unavailable'), findsOneWidget);
 
-    // Attempt to tap the unavailable region.
-    await t.tap(find.text('unknown_region'));
+    // Both regions are selectable -- no 'Unavailable' text
+    expect(find.text('Unavailable'), findsNothing);
+
+    // Tapping Dubai enables Next even without maxDays entry
+    await t.tap(find.text('Dubai'));
     await t.pump();
 
-    // Next must be disabled (no region with known maxDays selected).
     final btn = t.widget<ElevatedButton>(
         find.widgetWithText(ElevatedButton, 'Next'));
-    expect(btn.onPressed, isNull);
+    expect(btn.onPressed, isNotNull);
   });
 
   // -----------------------------------------------------------------------
-  // Production-path proof: over-max date range refused
+  // SPEC-42: 8-day range is accepted (within 90-day sanity bound)
   // -----------------------------------------------------------------------
-  testWidgets('injected over-max date range is refused', (t) async {
+  testWidgets('8-day date range is accepted (no catalog cap)', (t) async {
     await t.pumpWidget(_app(picker: _overMaxPicker));
     await t.pumpAndSettle();
 
-    // Step 1: select Dubai (max 4 days)
+    // Step 1: select Dubai
     await t.tap(find.text('Dubai'));
     await t.pump();
     await t.tap(find.widgetWithText(ElevatedButton, 'Next'));
@@ -576,21 +579,21 @@ void main() {
     await t.tap(find.widgetWithText(OutlinedButton, 'Select date range'));
     await t.pumpAndSettle();
 
-    // Snackbar with refusal message.
-    expect(find.textContaining('Maximum 4 days'), findsOneWidget);
-    // Range was NOT accepted -- still shows placeholder.
-    expect(find.text('Select date range'), findsOneWidget);
+    // SPEC-42: 8 days is within the 90-day sanity bound, so accepted
+    expect(find.textContaining('8 days'), findsOneWidget);
+    // No catalog-max refusal snackbar
+    expect(find.textContaining('Maximum'), findsNothing);
   });
 
   // -----------------------------------------------------------------------
-  // Production-path proof: destination change clears invalid range
+  // SPEC-42: destination change does NOT clear date range
   // -----------------------------------------------------------------------
-  testWidgets('changing destination clears range invalid for new max',
+  testWidgets('changing destination preserves existing date range',
       (t) async {
     await t.pumpWidget(_app(picker: _fiveDayPicker));
     await t.pumpAndSettle();
 
-    // Step 1: select Luang Prabang (max 5)
+    // Step 1: select Luang Prabang
     await t.tap(find.text('Luang Prabang'));
     await t.pump();
     await t.tap(find.widgetWithText(ElevatedButton, 'Next'));
@@ -605,14 +608,14 @@ void main() {
     await t.tap(find.byIcon(Icons.arrow_back));
     await t.pumpAndSettle();
 
-    // Switch to Dubai (max 4) -- 5-day range should be cleared
+    // Switch to Dubai -- range should be preserved (no catalog cap)
     await t.tap(find.text('Dubai'));
     await t.pump();
     await t.tap(find.widgetWithText(ElevatedButton, 'Next'));
     await t.pumpAndSettle();
 
-    // Dates step shows placeholder (range was cleared).
-    expect(find.text('Select date range'), findsOneWidget);
+    // SPEC-42: dates are preserved, not cleared
+    expect(find.text('5 days'), findsOneWidget);
   });
 
   // -----------------------------------------------------------------------

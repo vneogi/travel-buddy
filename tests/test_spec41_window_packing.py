@@ -689,7 +689,7 @@ class TestGoldenCases:
             lambda r: db_mod.db_service.list_venues_for_region(r),
             corridor,
         )
-        assert len(nodes) == 8 * CORRIDOR_STOPS_PER_DAY
+        assert len(nodes) <= 5 * CORRIDOR_STOPS_PER_DAY  # SPEC-42: 5-day global limit
 
     def test_golden_nodes_validated_against_hours(self):
         """Each golden node is FITS or UNKNOWN."""

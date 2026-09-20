@@ -33,6 +33,15 @@ from services.catalog_itinerary import (
     range_nodes_from_catalog,
 )
 from services.database_service import db_service
+from models.schemas import TripSegmentIn
+from config.corridors import require_corridor
+from services.corridor_itinerary import (
+    build_corridor_nodes,
+    validate_corridor_segments,
+    advertised_corridors,
+    InvalidCorridor,
+    CORRIDOR_STOPS_PER_DAY,
+)
 from tests.conftest import auth
 
 client = TestClient(app)
@@ -275,3 +284,302 @@ class TestOptionsDecoupled:
         # max_days_by_region still present as informational
         assert "max_days_by_region" in opts
         assert len(opts["max_days_by_region"]) > 0
+
+
+# ---------------------------------------------------------------------------
+# Proof 7: Weekday-specific hours sabotage (item 2 fix proof)
+# ---------------------------------------------------------------------------
+
+
+class TestWeekdayProbeUsesActualDates:
+    """The feasibility probe must use the actual trip dates so that
+    weekday-specific hours are evaluated correctly.
+
+    Under the old fixed-Monday probe (2026-09-14), a venue whose
+    structured_hours has all weekdays closed except Thursday would
+    report zero feasible days for a Monday-start probe, but should
+    report 1 feasible day when the trip actually starts on a Thursday.
+    """
+
+    def test_thursday_only_venue_packs_on_thursday(self):
+        """Sabotage: monkeypatch catalog to have a venue that only opens
+        Thursday. A probe starting on a Thursday must find it feasible."""
+
+        thursday_hours = {
+            "mon": [],
+            "tue": [],
+            "wed": [],
+            "thu": [["09:00", "18:00"]],
+            "fri": [],
+            "sat": [],
+            "sun": [],
+        }
+
+        original = db_service.list_venues_for_region
+
+        def patched(region):
+            rows = original(region)
+            if region == "luang_prabang_laos":
+                # Replace hours on all venues: only open Thursday
+                patched_rows = []
+                for r in rows:
+                    pr = dict(r)
+                    pr["opening_hours_structured"] = thursday_hours
+                    patched_rows.append(pr)
+                return patched_rows
+            return rows
+
+        db_service.list_venues_for_region = patched
+        try:
+            # 2026-10-01 is Thursday
+            sd = "2026-10-01"
+            ed = "2026-10-01"  # 1-day trip on Thursday
+            rows = db_service.list_venues_for_region("luang_prabang_laos")
+            nodes = range_nodes_from_catalog(
+                geo_region="luang_prabang_laos",
+                start_date_local=sd,
+                end_date_local=ed,
+                rows=rows,
+            )
+            # The probe uses the actual Thursday date, so it finds feasible
+            assert len(nodes) > 0, (
+                "Thursday-only venue must pack when trip is on Thursday "
+                "(old Monday probe would have returned zero)"
+            )
+        finally:
+            db_service.list_venues_for_region = original
+
+    def test_monday_closed_venue_empty_on_monday(self):
+        """Complementary: a venue open only Thursday yields zero nodes
+        when the trip starts on Monday."""
+
+        thursday_hours = {
+            "mon": [],
+            "tue": [],
+            "wed": [],
+            "thu": [["09:00", "18:00"]],
+            "fri": [],
+            "sat": [],
+            "sun": [],
+        }
+
+        original = db_service.list_venues_for_region
+
+        def patched(region):
+            rows = original(region)
+            if region == "luang_prabang_laos":
+                return [dict(r, opening_hours_structured=thursday_hours) for r in rows]
+            return rows
+
+        db_service.list_venues_for_region = patched
+        try:
+            # 2026-09-28 is Monday
+            rows = db_service.list_venues_for_region("luang_prabang_laos")
+            nodes = range_nodes_from_catalog(
+                geo_region="luang_prabang_laos",
+                start_date_local="2026-09-28",
+                end_date_local="2026-09-28",
+                rows=rows,
+            )
+            assert len(nodes) == 0, "Thursday-only venue must not pack on a Monday trip"
+        finally:
+            db_service.list_venues_for_region = original
+
+
+# ---------------------------------------------------------------------------
+# Proof 8: Large-gap corridor sabotage (item 4 fix proof)
+# ---------------------------------------------------------------------------
+
+
+class TestInclusiveCorridorSpan:
+    """The 90-day sanity bound applies to the inclusive span
+    (first segment start through last segment end), not just the
+    sum of segment durations."""
+
+    def test_large_gap_between_segments_rejected(self):
+        """Three 1-day segments with huge gaps totalling 91 inclusive days
+        must be rejected, even though sum of durations is only 3."""
+        sd = date.today() + timedelta(days=10)
+        # seg1: day 0, seg2: day 45, seg3: day 90  => inclusive span = 91
+        segments = [
+            TripSegmentIn(
+                geo_region="vientiane_laos",
+                starts_on=sd,
+                ends_on=sd,
+            ),
+            TripSegmentIn(
+                geo_region="vang_vieng_laos",
+                starts_on=sd + timedelta(days=45),
+                ends_on=sd + timedelta(days=45),
+            ),
+            TripSegmentIn(
+                geo_region="luang_prabang_laos",
+                starts_on=sd + timedelta(days=90),
+                ends_on=sd + timedelta(days=90),
+            ),
+        ]
+        corridor = require_corridor("laos_northbound_v1")
+        with pytest.raises(InvalidCorridor, match="[Ii]nclusive"):
+            validate_corridor_segments(segments, corridor)
+
+    def test_gap_within_90_days_accepted(self):
+        """Inclusive span of exactly 90 days with gaps is valid."""
+        sd = date.today() + timedelta(days=10)
+        # seg1: day 0, seg2: day 44, seg3: day 89  => inclusive span = 90
+        segments = [
+            TripSegmentIn(
+                geo_region="vientiane_laos",
+                starts_on=sd,
+                ends_on=sd,
+            ),
+            TripSegmentIn(
+                geo_region="vang_vieng_laos",
+                starts_on=sd + timedelta(days=44),
+                ends_on=sd + timedelta(days=44),
+            ),
+            TripSegmentIn(
+                geo_region="luang_prabang_laos",
+                starts_on=sd + timedelta(days=89),
+                ends_on=sd + timedelta(days=89),
+            ),
+        ]
+        corridor = require_corridor("laos_northbound_v1")
+        # Should not raise
+        validate_corridor_segments(segments, corridor)
+
+
+# ---------------------------------------------------------------------------
+# Proof 9: Empty corridor (item 5 fix proof)
+# ---------------------------------------------------------------------------
+
+
+class TestEmptyCorridorPermitted:
+    """A region with fewer venues than CORRIDOR_STOPS_PER_DAY must not
+    raise UnsupportedCorridor.  SPEC-42 permits zero populated days."""
+
+    def test_zero_venue_region_produces_empty_segment(self):
+        """Monkeypatch one region to return zero venues.
+        build_corridor_nodes must succeed with no nodes for that segment."""
+        corridor = require_corridor("laos_northbound_v1")
+        sd = date.today() + timedelta(days=10)
+        segments = [
+            TripSegmentIn(geo_region="vientiane_laos", starts_on=sd, ends_on=sd),
+            TripSegmentIn(
+                geo_region="vang_vieng_laos",
+                starts_on=sd + timedelta(days=2),
+                ends_on=sd + timedelta(days=2),
+            ),
+            TripSegmentIn(
+                geo_region="luang_prabang_laos",
+                starts_on=sd + timedelta(days=4),
+                ends_on=sd + timedelta(days=4),
+            ),
+        ]
+
+        def sparse_fn(region):
+            if region == "vang_vieng_laos":
+                return []  # zero venues
+            return db_service.list_venues_for_region(region)
+
+        # Must NOT raise
+        nodes, stored = build_corridor_nodes(segments, sparse_fn, corridor)
+        assert len(stored) == 3, "All 3 segments must be stored"
+        # Vang Vieng produced zero nodes
+        vv_nodes = [n for n in nodes if n.geo_region == "vang_vieng_laos"]
+        assert len(vv_nodes) == 0
+
+
+# ---------------------------------------------------------------------------
+# Proof 10: advertised_corridors does not check capacity (item 6 proof)
+# ---------------------------------------------------------------------------
+
+
+class TestAdvertisedCorridorsNoCapacityGate:
+    """A corridor must remain advertised even when a region cannot fill
+    every configured date -- only zero venues should hide it."""
+
+    def test_low_capacity_corridor_still_advertised(self):
+        """Patch one region to have exactly 1 venue (below CORRIDOR_STOPS_PER_DAY
+        but > 0). The corridor must still appear."""
+        original = db_service.list_venues_for_region
+
+        def sparse(region):
+            rows = original(region)
+            if region == "vang_vieng_laos":
+                # Return only 1 venue -- below CORRIDOR_STOPS_PER_DAY but > 0
+                return rows[:1] if rows else []
+            return rows
+
+        result = advertised_corridors(sparse)
+        corridor_ids = [c["corridor_id"] for c in result]
+        assert "laos_northbound_v1" in corridor_ids, (
+            "Corridor must be advertised even with low venue capacity"
+        )
+
+    def test_zero_venues_hides_corridor(self):
+        """Zero venues in a region must hide the corridor."""
+        original = db_service.list_venues_for_region
+
+        def empty(region):
+            if region == "vang_vieng_laos":
+                return []
+            return original(region)
+
+        result = advertised_corridors(empty)
+        corridor_ids = [c["corridor_id"] for c in result]
+        assert "laos_northbound_v1" not in corridor_ids, (
+            "Corridor must be hidden when a region has zero venues"
+        )
+
+
+# ---------------------------------------------------------------------------
+# Proof 11: Global 5-day budget across corridor (item 3 proof)
+# ---------------------------------------------------------------------------
+
+
+class TestGlobalCorridorBudget:
+    """The corridor must populate at most MAX_AUTO_POPULATED_DAYS globally,
+    not per segment."""
+
+    def test_corridor_total_populated_days_at_most_five(self):
+        """A corridor with 3 segments of 3 days each (9 total) must
+        produce at most 5 populated days globally."""
+        corridor = require_corridor("laos_northbound_v1")
+        sd = date.today() + timedelta(days=10)
+        segments = [
+            TripSegmentIn(
+                geo_region="vientiane_laos",
+                starts_on=sd,
+                ends_on=sd + timedelta(days=2),
+            ),
+            TripSegmentIn(
+                geo_region="vang_vieng_laos",
+                starts_on=sd + timedelta(days=4),
+                ends_on=sd + timedelta(days=6),
+            ),
+            TripSegmentIn(
+                geo_region="luang_prabang_laos",
+                starts_on=sd + timedelta(days=8),
+                ends_on=sd + timedelta(days=10),
+            ),
+        ]
+
+        nodes, _ = build_corridor_nodes(
+            segments,
+            db_service.list_venues_for_region,
+            corridor,
+        )
+
+        # Count unique populated dates
+        from datetime import datetime as dt
+        from zoneinfo import ZoneInfo
+
+        all_dates = set()
+        for n in nodes:
+            local = n.scheduled_start.astimezone(ZoneInfo("Asia/Vientiane"))
+            all_dates.add(local.date())
+
+        assert len(all_dates) <= MAX_AUTO_POPULATED_DAYS, (
+            f"Global budget: {len(all_dates)} populated days exceeds "
+            f"MAX_AUTO_POPULATED_DAYS={MAX_AUTO_POPULATED_DAYS}"
+        )

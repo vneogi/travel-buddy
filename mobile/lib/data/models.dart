@@ -722,11 +722,15 @@ class CreateTripOptions {
   final List<PartyOption> partyTypes;
   final List<InterestOption> interests;
   final Map<String, int> maxDaysByRegion;
+  final int maxAutoPopulatedDays;
+  final int tripSpanSanityDays;
 
   const CreateTripOptions({
     this.partyTypes = const [],
     this.interests = const [],
     this.maxDaysByRegion = const {},
+    this.maxAutoPopulatedDays = 5,
+    this.tripSpanSanityDays = 90,
   });
 
   factory CreateTripOptions.fromJson(Map<String, dynamic> j) {
@@ -740,6 +744,10 @@ class CreateTripOptions {
           .toList(),
       maxDaysByRegion: ((j['max_days_by_region'] as Map?) ?? const {})
           .map((k, v) => MapEntry(k as String, (v as num).toInt())),
+      maxAutoPopulatedDays:
+          (j['max_auto_populated_days'] as num?)?.toInt() ?? 5,
+      tripSpanSanityDays:
+          (j['trip_span_sanity_days'] as num?)?.toInt() ?? 90,
     );
   }
 }

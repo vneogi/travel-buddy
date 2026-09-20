@@ -145,3 +145,32 @@ List<CorridorCityGroup> groupNodesByCorridor({
   return result;
 }
 
+
+
+/// SPEC-42: Build day groups for the entire trip span, including empty days.
+///
+/// Walks every calendar date from [startLocal] to [endLocal] inclusive.
+/// Days with nodes get their nodes; days without get an empty group.
+/// This ensures the UI renders date headers for all dates in the span.
+List<ItineraryDayGroup> spanAwareDayGroups({
+  required List<TripNode> nodes,
+  required DateTime startLocal,
+  required DateTime endLocal,
+}) {
+  final populated = groupNodesByCalendarDate(nodes);
+  final byKey = <int, ItineraryDayGroup>{};
+  for (final g in populated) {
+    byKey[_dateKey(g.date)] = g;
+  }
+
+  final result = <ItineraryDayGroup>[];
+  var cursor = DateTime(startLocal.year, startLocal.month, startLocal.day);
+  final end = DateTime(endLocal.year, endLocal.month, endLocal.day);
+  while (!cursor.isAfter(end)) {
+    final key = _dateKey(cursor);
+    result.add(byKey[key] ??
+        ItineraryDayGroup(date: cursor, nodes: const []));
+    cursor = cursor.add(const Duration(days: 1));
+  }
+  return result;
+}
