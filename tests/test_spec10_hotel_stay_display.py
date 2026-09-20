@@ -4,8 +4,9 @@ Required proofs from the brief:
 - hotel 18:02 local 2 Oct check-in / 15:00 local 3 Oct check-out renders both times
 - add_booking with lat/lng persists; hotel-return uses them
 - add_booking without lat/lng still saves; hotel-return stays ineligible; itinerary not mutated
-- catalog name-match copies that venue only
-- booking local-time tests still pass (covered by existing test_spec10_booking_local_time.py)
+- catalog name-match copies that venue only; hotel-only, both-absent, region-reject
+- partial coords do not trigger catalog match
+- flight, train, and tour do not call catalog matching
 """
 
 from datetime import date, datetime, timedelta, timezone
@@ -102,9 +103,6 @@ class TestHotelDualTimestamps:
 
     def test_multi_night_hotel_covers_two_dates(self):
         """Check-in Oct 2 18:02 / checkout Oct 4 15:00 covers Oct 2 and Oct 3."""
-        # 18:02 VTN Oct 2 = 11:02 UTC Oct 2
-        # 15:00 VTN Oct 4 = 08:00 UTC Oct 4
-        # Duration = 44h58m = 2698 min
         hotel = TripNode(
             venue_name="Multi-night Hotel",
             scheduled_start=datetime(2026, 10, 2, 11, 2, tzinfo=timezone.utc),
@@ -292,9 +290,10 @@ class TestHotelWithoutCoords:
             n for n in resp.json()["updated_nodes"] if n.get("node_kind", "activity") != "booking"
         ]
 
-        # Field-level comparison for each non-hotel node
         pre_by_id = {n["node_id"]: n for n in pre_nodes}
         post_by_id = {n["node_id"]: n for n in post_nodes}
+        # pre_by_id must be non-empty (the reschedule created activities)
+        assert len(pre_by_id) > 0, "pre_by_id must be non-empty"
         assert set(pre_by_id.keys()) == set(post_by_id.keys()), (
             "Non-hotel node IDs must be identical"
         )
@@ -448,9 +447,118 @@ class TestCatalogAutoMatchIntegration:
                     },
                 },
             )
-            # catalog_coords_for_name must NOT have been called for a flight
             mock_fn.assert_not_called()
         assert resp.status_code == 200
         flight = next(n for n in resp.json()["updated_nodes"] if n.get("booking_type") == "flight")
         assert flight.get("lat") is None
         assert flight.get("lng") is None
+
+    def test_train_does_not_trigger_catalog_match(self, client):
+        """Catalog match must NOT run for trains."""
+        from tests.conftest import auth
+
+        created = client.post(
+            "/api/v1/trip/create",
+            headers=auth("train-cat-user"),
+            json=_vtn_trip_body(),
+        )
+        trip_id = created.json()["trip_id"]
+
+        with patch(
+            "services.catalog_name_match.catalog_coords_for_name",
+            return_value=(99.0, 99.0),
+        ) as mock_fn:
+            resp = client.post(
+                "/api/v1/trip/event",
+                headers=auth("train-cat-user"),
+                json={
+                    "trip_id": trip_id,
+                    "event_type": "add_booking",
+                    "message": "Train",
+                    "preferences": {
+                        "venue_name": "Vientiane Express",
+                        "booking_type": "train",
+                        "scheduled_start": "2026-10-03T08:00:00",
+                        "duration_minutes": 180,
+                        "geo_region": VTN,
+                    },
+                },
+            )
+            mock_fn.assert_not_called()
+        assert resp.status_code == 200
+
+    def test_tour_does_not_trigger_catalog_match(self, client):
+        """Catalog match must NOT run for tours."""
+        from tests.conftest import auth
+
+        created = client.post(
+            "/api/v1/trip/create",
+            headers=auth("tour-cat-user"),
+            json=_vtn_trip_body(),
+        )
+        trip_id = created.json()["trip_id"]
+
+        with patch(
+            "services.catalog_name_match.catalog_coords_for_name",
+            return_value=(99.0, 99.0),
+        ) as mock_fn:
+            resp = client.post(
+                "/api/v1/trip/event",
+                headers=auth("tour-cat-user"),
+                json={
+                    "trip_id": trip_id,
+                    "event_type": "add_booking",
+                    "message": "Tour",
+                    "preferences": {
+                        "venue_name": "Mekong Sunset Cruise",
+                        "booking_type": "tour",
+                        "scheduled_start": "2026-10-04T16:00:00",
+                        "duration_minutes": 120,
+                        "geo_region": VTN,
+                    },
+                },
+            )
+            mock_fn.assert_not_called()
+        assert resp.status_code == 200
+
+    def test_partial_coords_do_not_trigger_catalog_match(self, client):
+        """Hotel with lat but no lng must NOT trigger catalog match.
+
+        Catalog match only fires when BOTH lat and lng are absent.
+        Partial coords must not be overwritten.
+        """
+        from tests.conftest import auth
+
+        created = client.post(
+            "/api/v1/trip/create",
+            headers=auth("partial-coord-user"),
+            json=_vtn_trip_body(),
+        )
+        trip_id = created.json()["trip_id"]
+
+        with patch(
+            "services.catalog_name_match.catalog_coords_for_name",
+            return_value=(99.0, 99.0),
+        ) as mock_fn:
+            resp = client.post(
+                "/api/v1/trip/event",
+                headers=auth("partial-coord-user"),
+                json={
+                    "trip_id": trip_id,
+                    "event_type": "add_booking",
+                    "message": "Hotel",
+                    "preferences": {
+                        "venue_name": "Partial Hotel",
+                        "booking_type": "hotel",
+                        "scheduled_start": "2026-10-02T18:00:00",
+                        "duration_minutes": 600,
+                        "lat": 17.5,
+                        "geo_region": VTN,
+                    },
+                },
+            )
+            mock_fn.assert_not_called()
+        assert resp.status_code == 200
+        hotel = next(n for n in resp.json()["updated_nodes"] if n.get("booking_type") == "hotel")
+        # Original partial lat preserved, not overwritten by catalog (99.0)
+        assert hotel["lat"] == pytest.approx(17.5, abs=0.01)

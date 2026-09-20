@@ -1,4 +1,5 @@
-// SPEC-10 Flutter proofs: hotel dual timestamps, multi-date grouping.
+// SPEC-10 Flutter proofs: hotel dual timestamps, multi-date grouping,
+// timeline widget safety with repeated hotel nodes.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:travel_buddy/data/models.dart';
@@ -14,6 +15,8 @@ TripNode _node(
   String? geoRegion,
   String nodeKind = 'activity',
   String? bookingType,
+  double? lat,
+  double? lng,
 }) =>
     TripNode(
       nodeId: id,
@@ -26,6 +29,8 @@ TripNode _node(
       geoRegion: geoRegion,
       nodeKind: nodeKind,
       bookingType: bookingType,
+      lat: lat,
+      lng: lng,
     );
 
 void main() {
@@ -60,7 +65,6 @@ void main() {
 
       expect(find.text('Check-in'), findsOneWidget);
       expect(find.text('Check-out'), findsOneWidget);
-      // Both times must render
       expect(find.textContaining('18:02'), findsOneWidget);
       expect(find.textContaining('15:00'), findsOneWidget);
     });
@@ -95,12 +99,13 @@ void main() {
   });
 
   // -----------------------------------------------------------------------
-  // 2. Date-grouping proofs: multi-night hotel coverage
+  // 2. Hotel-aware date-grouping proofs
+  //    (uses groupNodesByCalendarDateWithHotelStays, NOT the foundational
+  //    groupNodesByCalendarDate whose contract is tested separately in
+  //    date_scope_test.dart)
   // -----------------------------------------------------------------------
-  group('Multi-date hotel grouping', () {
+  group('groupNodesByCalendarDateWithHotelStays', () {
     test('check-in Oct 2 / checkout Oct 4 appears on Oct 2 and Oct 3', () {
-      // 18:02 VTN Oct 2 = 11:02 UTC; checkout 15:00 VTN Oct 4 = 08:00 UTC Oct 4
-      // Duration = 44h58m = 2698 min
       final hotel = _node('h-multi',
           start: DateTime.utc(2026, 10, 2, 11, 2),
           duration: 2698,
@@ -109,9 +114,7 @@ void main() {
           nodeKind: 'booking',
           bookingType: 'hotel');
 
-      final groups = groupNodesByCalendarDate([hotel]);
-
-      // Must appear on Oct 2 and Oct 3
+      final groups = groupNodesByCalendarDateWithHotelStays([hotel]);
       expect(groups.length, 2);
       expect(groups[0].date, DateTime(2026, 10, 2));
       expect(groups[1].date, DateTime(2026, 10, 3));
@@ -126,7 +129,7 @@ void main() {
           nodeKind: 'booking',
           bookingType: 'hotel');
 
-      final groups = groupNodesByCalendarDate([hotel]);
+      final groups = groupNodesByCalendarDateWithHotelStays([hotel]);
       final dates = groups.map((g) => g.date).toList();
       expect(dates.contains(DateTime(2026, 10, 4)), isFalse);
     });
@@ -140,17 +143,17 @@ void main() {
           nodeKind: 'booking',
           bookingType: 'hotel');
 
-      final groups = groupNodesByCalendarDate([hotel]);
+      final groups = groupNodesByCalendarDateWithHotelStays([hotel]);
       for (final g in groups) {
         expect(g.nodes.first.nodeId, 'h-same-id');
       }
+      // Same object identity — not cloned
+      expect(identical(groups[0].nodes.first, groups[1].nodes.first), isTrue);
     });
 
     test('destination timezone conversion is used', () {
-      // 23:30 UTC Oct 2 = 06:30 VTN Oct 3 (next day local)
-      // checkout: 23:30 UTC + 720 min (12h) = 11:30 UTC Oct 3 = 18:30 VTN Oct 3
-      // So hotel local: check-in Oct 3, checkout Oct 3 -> covers only Oct 3 (same day)
-      // Actually checkout is same local day -> only 1 date
+      // 23:30 UTC Oct 2 = 06:30 VTN Oct 3
+      // +720 min = 18:30 VTN Oct 3 -> same local day, 1 group
       final hotel = _node('h-tz',
           start: DateTime.utc(2026, 10, 2, 23, 30),
           duration: 720,
@@ -159,8 +162,7 @@ void main() {
           nodeKind: 'booking',
           bookingType: 'hotel');
 
-      final groups = groupNodesByCalendarDate([hotel]);
-      // 23:30 UTC = 06:30 VTN Oct 3; +720min = 18:30 VTN Oct 3 -> same day
+      final groups = groupNodesByCalendarDateWithHotelStays([hotel]);
       expect(groups.length, 1);
       expect(groups[0].date, DateTime(2026, 10, 3));
     });
@@ -172,9 +174,8 @@ void main() {
           name: 'Morning Temple',
           geoRegion: 'vientiane_laos');
 
-      final groups = groupNodesByCalendarDate([activity]);
+      final groups = groupNodesByCalendarDateWithHotelStays([activity]);
       expect(groups.length, 1);
-      // Still grouped by its scheduledStart date
     });
 
     test('hotel mixed with activities groups correctly', () {
@@ -196,8 +197,8 @@ void main() {
           name: 'Next Day',
           geoRegion: 'vientiane_laos');
 
-      final groups = groupNodesByCalendarDate([act1, hotel, act2]);
-      // Oct 2: act1 + hotel; Oct 3: hotel + act2
+      final groups =
+          groupNodesByCalendarDateWithHotelStays([act1, hotel, act2]);
       expect(groups.length, 2);
       expect(groups[0].nodes.map((n) => n.nodeId).toList(),
           containsAll(['a1', 'h-mix']));
@@ -207,19 +208,141 @@ void main() {
   });
 
   // -----------------------------------------------------------------------
-  // 3. TripNode lat/lng round-trip
+  // 3. Timeline widget: two-night hotel renders on both dates without
+  //    duplicate GlobalKey exceptions.
   // -----------------------------------------------------------------------
-  group('TripNode lat/lng round-trip', () {
-    test('hotel with lat/lng round-trips through JSON', () {
-      final hotel = _node('h2',
-          start: DateTime.utc(2026, 10, 2, 11, 0),
-          duration: 900,
-          name: 'Settha Palace',
+  group('Timeline with repeated hotel', () {
+    testWidgets('two-night hotel renders twice, no duplicate GlobalKey',
+        (tester) async {
+      // Hotel: Oct 2 evening -> Oct 4 afternoon VTN (2 covered dates)
+      final hotel = _node('hotel-2night',
+          start: DateTime.utc(2026, 10, 2, 11, 2),
+          duration: 2698,
+          name: 'Two Night Hotel',
           geoRegion: 'vientiane_laos',
           nodeKind: 'booking',
           bookingType: 'hotel');
+      final act = _node('act-oct3',
+          start: DateTime.utc(2026, 10, 3, 2, 0),
+          duration: 90,
+          name: 'Temple Visit',
+          geoRegion: 'vientiane_laos');
 
-      // Manually construct with lat/lng
+      final groups =
+          groupNodesByCalendarDateWithHotelStays([hotel, act]);
+
+      // Build a simplified timeline mimicking itinerary_screen logic.
+      final items = <Map<String, dynamic>>[];
+      for (final group in groups) {
+        items.add({'type': 'header', 'date': group.date});
+        for (final node in group.nodes) {
+          items.add({'type': 'card', 'node': node});
+        }
+      }
+
+      // Build widgets with the same GlobalKey logic as itinerary_screen.
+      final nodeKeys = <String, GlobalKey>{};
+      final seenNodeIds = <String>{};
+      final widgets = <Widget>[];
+      for (var i = 0; i < items.length; i++) {
+        final item = items[i];
+        if (item['type'] == 'header') {
+          widgets.add(Text('Date: ${item['date']}',
+              key: ValueKey('header_$i')));
+          continue;
+        }
+        final TripNode node = item['node'];
+        final isFirst = seenNodeIds.add(node.nodeId);
+        final Key widgetKey;
+        if (isFirst) {
+          widgetKey =
+              nodeKeys.putIfAbsent(node.nodeId, () => GlobalKey());
+        } else {
+          widgetKey = ValueKey('${node.nodeId}_$i');
+        }
+
+        // Find nextNode skipping same node_id
+        TripNode? next;
+        for (var j = i + 1; j < items.length; j++) {
+          if (items[j]['type'] == 'card') {
+            final TripNode candidate = items[j]['node'];
+            if (candidate.nodeId != node.nodeId) {
+              next = candidate;
+              break;
+            }
+          }
+        }
+
+        widgets.add(KeyedSubtree(
+          key: widgetKey,
+          child: ActivityCard(
+            node: node,
+            nextNode: next,
+            isLoved: false,
+            isRecordingOutcome: false,
+          ),
+        ));
+      }
+
+      // Pump the widget tree — no duplicate GlobalKey exception expected.
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: Column(children: widgets),
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      // Hotel name renders twice (once per covered date).
+      expect(find.text('Two Night Hotel'), findsNWidgets(2));
+      // Activity renders once.
+      expect(find.text('Temple Visit'), findsOneWidget);
+      // Check-in / Check-out labels for each hotel presentation.
+      expect(find.text('Check-in'), findsNWidgets(2));
+      expect(find.text('Check-out'), findsNWidgets(2));
+    });
+
+    test('nextNode skips repeated hotel node_id', () {
+      final hotel = _node('h-skip',
+          start: DateTime.utc(2026, 10, 2, 11, 2),
+          duration: 2698,
+          name: 'Skip Hotel',
+          geoRegion: 'vientiane_laos',
+          nodeKind: 'booking',
+          bookingType: 'hotel');
+      final act = _node('a-after',
+          start: DateTime.utc(2026, 10, 3, 5, 0),
+          duration: 60,
+          name: 'After Activity',
+          geoRegion: 'vientiane_laos');
+
+      final groups =
+          groupNodesByCalendarDateWithHotelStays([hotel, act]);
+      // Flatten to card items only
+      final cards = <TripNode>[];
+      for (final g in groups) {
+        cards.addAll(g.nodes);
+      }
+      // Oct 2: hotel; Oct 3: hotel, activity
+      // From Oct 2 hotel, nextNode should skip Oct 3 hotel -> activity
+      TripNode? nextForFirst;
+      for (var j = 1; j < cards.length; j++) {
+        if (cards[j].nodeId != cards[0].nodeId) {
+          nextForFirst = cards[j];
+          break;
+        }
+      }
+      expect(nextForFirst, isNotNull);
+      expect(nextForFirst!.nodeId, 'a-after');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // 4. TripNode lat/lng round-trip
+  // -----------------------------------------------------------------------
+  group('TripNode lat/lng round-trip', () {
+    test('hotel with lat/lng round-trips through JSON', () {
       final withCoords = TripNode(
         nodeId: 'h2',
         venueName: 'Settha Palace',
