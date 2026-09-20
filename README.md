@@ -16,6 +16,8 @@ Oct 2 2026.
 | `docs/HOSTED_STATE.md` | Hosted migrations and credential-backed provider verification |
 | `docs/ENGINEERING_RULES.md` | Rules earned from real bugs. Read before contributing |
 | `docs/VISION.md` | Product strategy and the data moat thesis |
+| `docs/MARKET_STRATEGY.md` | Which traveller, which cities, Banana Pancake seeding order |
+| `docs/RELEASE_READINESS.md` | Owner field test vs first non-owner vs public store |
 | `docs/AWAITING_VERIFICATION.md` | Dated log of what is not yet verified on device |
 | `docs/specs/SPEC-37-phone-field-test-delivery.md` | Hosted, installable, phone-independent field-test gate |
 | `docs/specs/` | Numbered specifications, SPEC-01 onward |

@@ -65,8 +65,11 @@ October spine status: ALL 7 CORE ITEMS COMPLETE & HARDENED ON MAIN.
 
 Status tables: `docs/PROJECT_STATUS.md`. Device-only queue:
 `docs/AWAITING_VERIFICATION.md`. Hosted schema/provider ledger:
-`docs/HOSTED_STATE.md`. Next implementation contract:
-`docs/specs/SPEC-41-hours-aware-scheduling.md`.
+`docs/HOSTED_STATE.md`. Owner-to-store launch ledger:
+`docs/RELEASE_READINESS.md`. City sequence:
+`docs/MARKET_STRATEGY.md` (Sep 2026 Banana Pancake addendum). Next
+implementation contract after hotel-stay display:
+`docs/briefs/GENIE_SPEC_10_HOTEL_STAY_DISPLAY.md`.
 
 ## Third-party review -- already adjudicated
 

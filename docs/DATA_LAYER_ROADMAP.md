@@ -5,6 +5,7 @@
 > to become and in what order, not how the system works today.
 >
 > Current state and risks: `docs/PROJECT_STATUS.md`.
+> Owner-to-store launch ledger: `docs/RELEASE_READINESS.md`.
 
 ## Why this document exists
 

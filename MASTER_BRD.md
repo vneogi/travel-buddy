@@ -478,6 +478,7 @@ Laos field test, is in `docs/TESTING_GUIDE.md`.
 | What is unverified or broken | `docs/AWAITING_VERIFICATION.md` |
 | Why we are building it | `docs/VISION.md` |
 | Which traveller, which cities | `docs/MARKET_STRATEGY.md` |
+| Owner-to-store launch ledger | `docs/RELEASE_READINESS.md` |
 | Signal and data-model design | `docs/DATA_MODEL_BRD.md` |
 | Numbered specifications | `docs/specs/` |
 | Rules from past bugs | `docs/ENGINEERING_RULES.md` |

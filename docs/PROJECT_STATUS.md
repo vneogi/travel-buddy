@@ -6,6 +6,7 @@
 > For how the people and agents around the code work, see docs/WAYS_OF_WORKING.md.
 > Read that one before your first review or brief, not after.
 > For which traveller and which cities, see docs/MARKET_STRATEGY.md.
+> For the owner-to-store launch ledger, see docs/RELEASE_READINESS.md.
 > For measured per-city data coverage, see docs/CORRIDOR_COVERAGE.md.
 > For the schema and data-layer sequence, see docs/DATA_LAYER_ROADMAP.md.
 > For hosted migrations and credential-backed provider status, see

@@ -63,7 +63,10 @@ discarded by this. It remains the **pipeline and monetization corridor** — the
 cities the data layer must support and the traveller whose spend is worth
 monetizing — but it is under-evidenced (effective n<8) and carries no zero-CAC
 acquisition story of its own, so it sits *behind* the backpacker beachhead for
-seeding and is revisited after the field test. See the MARKET_STRATEGY addendum.
+seeding and is revisited after the field test. See the MARKET_STRATEGY
+addenda (Aug 2026: acquisition beachhead; Sep 2026: Banana Pancake town
+order after the Bangkok factory proof). Store and non-owner gates:
+`docs/RELEASE_READINESS.md`.
 
 ## 4. The moat: a governed decision flywheel, not a feature
 

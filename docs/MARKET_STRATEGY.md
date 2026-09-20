@@ -282,3 +282,63 @@ without density first.
 Bangkok is the one city on both paths, which is convenient rather than
 load-bearing. Laos (Oct 2) is unaffected either way -- still a field test of the
 engine, not a market entry.
+
+## Addendum, Sep 2026: Banana Pancake seeding order
+
+This addendum names the *backpacker towns that follow Laos* once the city
+factory exists. It does not overturn the September 2026 implementation gate
+above: Bangkok remains the first SPEC-20 ingest. Chiang Mai and Pai are the
+first backpacker extension *after* that proof, not a reason to skip it.
+
+Two pipelines still exist on purpose:
+
+| Pipeline | Traveller | Cities it optimises for | Job |
+|----------|-----------|-------------------------|-----|
+| Seeding | Solo or paired budget backpacker | Banana Pancake overland spine, below | Density, QR distribution, on-trip signal |
+| Monetization / data-layer pipeline | Indian outbound | Dubai, Bangkok, Singapore, Baku, Tbilisi, Almaty | What SPEC-13/20 must support; spend thesis after the field test |
+
+They overlap at Bangkok. Where they pull in different directions before
+density exists, seeding still wins -- same rule as the Aug 2026 addendum.
+Do not treat a hostel-town load as a Dubai/Singapore launch.
+
+### Hard constraint: adding a city is still a code change
+
+SPEC-13 and SPEC-20 are specified, not implemented. Hand-loading ten towns
+through Python exceptions is the anti-pattern those specs exist to end.
+Laos remains the only field graph until the factory exists.
+
+Coverage measurement is allowed now. Onboarding is not.
+
+Coverage numbers below are the Aug 2026 OSM "bridgeable" counts. Towns
+absent from `docs/CORRIDOR_COVERAGE.md` are unmeasured, not empty.
+
+### Order after the Bangkok factory proof
+
+| Step | Towns | Why this order | Bridgeable (if measured) |
+|------|-------|----------------|--------------------------|
+| Factory proof | Bangkok | Already the SPEC-20 acceptance city. Highest measured bridgeable count (1856). | 1856 / Wikidata 191 |
+| First backpacker extension | Chiang Mai, then Pai | Named in VISION section 3 and the Aug addendum. Links to Luang Prabang via Huay Xai / the Mekong. Pai after Chiang Mai has a spine. | Unmeasured |
+| Vietnam leg | Hanoi, then Hoi An / Da Nang, then Ho Chi Minh City | Second country, Latin script. Da Nang stands in for Hoi An until a Hoi An box is drawn. | Hanoi 148; Da Nang 81; HCMC 164 |
+| Cambodia loop close | Siem Reap, then Phnom Penh | Closes the classic loop. Siem Reap is one high-intent basecamp. | Unmeasured |
+
+### Explicitly deferred
+
+Southern Thai islands (Koh Tao, Koh Phangan, Koh Phi Phi, Phuket-as-island),
+Cambodian islands, and the Malay peninsula hopper (Penang, KL, Singapore,
+Bali/Lombok) are not seeding towns for this engine. KL and Singapore stay on
+the monetization pipeline. Hue, Ninh Binh, Da Lat, Mui Ne, and Ha Giang are
+Vietnam depth after Hanoi has signal.
+
+### Acquisition and distribution
+
+Hostel QR and Offline Vault remain the backpacker install wedge. A QR that
+installs software is a G1 event (`docs/RELEASE_READINESS.md`), not a Laos
+field-test shortcut.
+
+### Execution contracts
+
+- `docs/briefs/GENIE_BANANA_PANCAKE_COVERAGE.md` is READY now. Measure
+  Chiang Mai, Pai, Siem Reap, Phnom Penh, and Hoi An. Do not load a city.
+- `docs/briefs/GENIE_PHASE_A_CHIANG_MAI_PAI.md` is DRAFT / BLOCKED until
+  SPEC-13, SPEC-17, SPEC-20 (including the Bangkok acceptance case), ODbL
+  advice, and the applicable G1 gate are closed.
