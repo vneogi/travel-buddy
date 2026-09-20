@@ -13,6 +13,12 @@ from models.schemas import CurrentContext, TripNode
 from services.opening_hours import HoursResult as _HoursResult
 from services.opening_hours import hours_for_slot as _hours_for_slot
 from services.opening_hours import next_slot_start as _next_slot_start
+from services.day_slots import (
+    SLOT_ORDER as _SLOT_ORDER,
+    assign_slot as _assign_slot,
+    has_matching_slot as _has_matching_slot,
+    slot_from_time as _slot_from_time,
+)
 
 INFRASTRUCTURE_CATEGORIES = frozenset({"hospital", "pharmacy", "transport_hub"})
 TARGET_STOPS = 5
@@ -122,7 +128,9 @@ def duration_for(row: dict) -> int:
     return DEFAULT_DURATION_MINUTES
 
 
-def _make_node(row: dict, cursor: datetime, geo_region: str) -> TripNode:
+def _make_node(
+    row: dict, cursor: datetime, geo_region: str, slot_name: str | None = None
+) -> TripNode:
     """Build a TripNode from a venue dict, carrying structured hours."""
     duration = duration_for(row)
     hours = flatten_opening_hours(row.get("opening_hours"))
@@ -141,6 +149,7 @@ def _make_node(row: dict, cursor: datetime, geo_region: str) -> TripNode:
         names_local=row.get("names_local"),
         landmarks_local=row.get("landmarks_local"),
         nearest_landmark=row.get("nearest_landmark"),
+        slot_name=slot_name,
     )
 
 
@@ -179,6 +188,7 @@ def pack_day(
     interest_ids: Sequence[str] = (),
     bucket_diversity: bool = True,
     next_locked_booking: Optional[TripNode] = None,
+    remaining_slots: Optional[List[str]] = None,
 ) -> tuple[List[TripNode], set[str]]:
     """Fill one day with up to *target_count* venues using window packing.
 
@@ -223,6 +233,13 @@ def pack_day(
     nodes: List[TripNode] = []
     new_used: set[str] = set(used_ids)  # copy
     used_buckets: set[int] = set()
+    # SPEC-41: named slot tracking.
+    # When remaining_slots is None (default full day), slot names are a
+    # rendering label assigned by time-of-day -- no candidate filtering.
+    # When remaining_slots is explicitly passed (travel day), candidates
+    # are filtered by slot type and the number of stops is limited.
+    slot_constrained = remaining_slots is not None
+    active_slots: list[str] = list(remaining_slots) if slot_constrained else list(_SLOT_ORDER)
 
     # Previous-node tracking for walking transfer
     prev_node: Optional[TripNode] = None
@@ -284,6 +301,8 @@ def pack_day(
         return cand_end + timedelta(minutes=transfer) <= lock.scheduled_start
 
     for _stop in range(target_count):
+        if slot_constrained and not active_slots:  # SPEC-41: all travel-day slots consumed
+            break
         best_candidate = None
         best_start: Optional[datetime] = None
         best_rank = -1
@@ -295,6 +314,11 @@ def pack_day(
 
             # Geometry eligibility: candidate must have coordinates
             if not _has_venue_coords(venue):
+                continue
+
+            # SPEC-41 slot eligibility: skip if no matching slot available
+            # (only for constrained travel days).
+            if slot_constrained and not _has_matching_slot(venue, active_slots):
                 continue
 
             # Compute per-candidate earliest arrival from previous node
@@ -341,6 +365,8 @@ def pack_day(
                         continue
                     if not _has_venue_coords(venue):
                         continue
+                    if slot_constrained and not _has_matching_slot(venue, active_slots):
+                        continue
                     bidx = _bucket_index(venue)
                     if bidx in used_buckets:
                         continue
@@ -361,9 +387,20 @@ def pack_day(
 
             used_buckets.add(_bucket_index(best_candidate))
 
+        # SPEC-41: assign slot name.
+        # Constrained travel day: consume from active_slots (with filtering).
+        # Default full day: label by destination-local time (no filtering).
+        if slot_constrained:
+            try:
+                _slot_name, active_slots = _assign_slot(best_candidate, active_slots)
+            except ValueError:
+                break  # no slot available (shouldn't happen given has_matching_slot filter)
+        else:
+            _slot_name = _slot_from_time(best_start, geo_region)
+
         vk = _venue_key(best_candidate)
         new_used.add(vk)
-        node = _make_node(best_candidate, best_start, geo_region)
+        node = _make_node(best_candidate, best_start, geo_region, slot_name=_slot_name)
         nodes.append(node)
         prev_node = node
 

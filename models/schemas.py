@@ -88,6 +88,9 @@ class TripNode(BaseModel):
     confirmation_code: Optional[str] = None
     booking_notes: Optional[str] = None
     import_source: Optional[str] = None  # "manual" | "email" | "pdf" | "screenshot"
+    # SPEC-41: named day slot for flexible catalog-packed nodes.
+    # Locked bookings keep None (they render exact local times).
+    slot_name: Optional[str] = None
 
 
 class CurrentContext(BaseModel):

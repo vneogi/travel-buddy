@@ -153,9 +153,21 @@ class ActivityCard extends StatelessWidget {
                             fontSize: 10,
                           ),
                         ),
-                      ] else ...[
+                      ] else if (node.isLocked) ...[
+                        // Locked non-hotel booking: exact destination-local time.
                         Text(
                           _formatTime(node.scheduledStart),
+                          style: AppTypography.counter.copyWith(
+                            color: isActive ? AppColors.accent : AppColors.muted,
+                          ),
+                        ),
+                      ] else ...[
+                        // SPEC-41: flexible node — slot name if available,
+                        // otherwise fall back to exact time.
+                        Text(
+                          node.slotName != null
+                              ? _slotLabel(node.slotName!)
+                              : _formatTime(node.scheduledStart),
                           style: AppTypography.counter.copyWith(
                             color: isActive ? AppColors.accent : AppColors.muted,
                           ),
@@ -368,6 +380,22 @@ class ActivityCard extends StatelessWidget {
 
   String _formatTime(DateTime dt) =>
       formatDestinationTime(dt, node.geoRegion);
+
+  /// Human-readable label for a named day slot (SPEC-41).
+  String _slotLabel(String slotName) {
+    switch (slotName) {
+      case 'morning_tour':
+        return 'Morning';
+      case 'lunch':
+        return 'Lunch';
+      case 'afternoon_evening_tour':
+        return 'Afternoon';
+      case 'dinner':
+        return 'Dinner';
+      default:
+        return slotName;
+    }
+  }
 }
 
 class _VibeChip extends StatelessWidget {

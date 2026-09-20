@@ -52,6 +52,9 @@ class TripNode {
   final String? confirmationCode;
   final String? bookingNotes;
   final String? importSource;
+  // SPEC-41: named day slot for flexible catalog-packed nodes.
+  // Null for locked bookings (they display exact local times).
+  final String? slotName;
 
   const TripNode({
     required this.nodeId,
@@ -75,6 +78,7 @@ class TripNode {
     this.confirmationCode,
     this.bookingNotes,
     this.importSource,
+    this.slotName,
   });
 
   factory TripNode.fromJson(Map<String, dynamic> j) => TripNode(
@@ -99,6 +103,7 @@ class TripNode {
         confirmationCode: j['confirmation_code'] as String?,
         bookingNotes: j['booking_notes'] as String?,
         importSource: j['import_source'] as String?,
+        slotName: j['slot_name'] as String?,
       );
 
   Map<String, dynamic> toJson() => {
@@ -123,6 +128,7 @@ class TripNode {
         'confirmation_code': confirmationCode,
         'booking_notes': bookingNotes,
         'import_source': importSource,
+        'slot_name': slotName,
       };
 }
 
