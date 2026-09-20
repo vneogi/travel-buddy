@@ -21,6 +21,8 @@ def catalog_coords_for_name(
     venue catalog for the region.  Each dict must have 'name' (or
     'venue_name') plus 'lat' and 'lng'.  When None, uses
     db_service.list_venues_for_region.
+
+    Rejects rows whose geo_region differs from the requested region.
     """
     if catalog_fn is None:
         from services.db_provider import db_service
@@ -41,6 +43,10 @@ def catalog_coords_for_name(
         raw_name = v.get("name") or v.get("venue_name") or ""
         name = raw_name.strip().lower()
         if name == target:
+            # Reject if the row carries a different geo_region.
+            row_region = v.get("geo_region")
+            if row_region and row_region != geo_region:
+                continue
             lat = v.get("lat")
             lng = v.get("lng")
             if lat is not None and lng is not None:

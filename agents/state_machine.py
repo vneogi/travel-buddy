@@ -544,8 +544,10 @@ class TripStateMachine:
             bk_lng = prefs.get("lng")
             bk_region = prefs.get("geo_region") or trip_state.geo_region
             bk_name = prefs.get("venue_name") or prefs.get("title") or "Booking"
-            # SPEC-10: catalog name-match for missing coords
-            if (bk_lat is None or bk_lng is None) and bk_region:
+            # SPEC-10: catalog name-match for missing coords (hotels only,
+            # only when BOTH lat and lng are absent).
+            bk_type = prefs.get("booking_type", "flight")
+            if bk_type == "hotel" and bk_lat is None and bk_lng is None and bk_region:
                 from services.catalog_name_match import catalog_coords_for_name
 
                 cat_lat, cat_lng = catalog_coords_for_name(bk_name, bk_region)

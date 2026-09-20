@@ -17,37 +17,58 @@ class ItineraryDayGroup {
 /// node (= 09:00 ICT, same calendar day) is grouped correctly even when
 /// the device timezone is IST (+5:30, which would place it on the wrong
 /// calendar date).
-/// Preserves input order: nodes within a day keep the server-provided
-/// sequence, and groups appear in the order of their first node.
-/// The input list is never sorted or mutated.
+///
+/// SPEC-10: Hotel bookings span multiple destination-local dates
+/// [check-in date, checkout date).  The same TripNode object (same
+/// node_id) appears in every covered date group.  Flights, trains,
+/// tours, and ordinary activities remain on their single date.
+///
+/// Preserves input order within each day.  The input list is never
+/// sorted or mutated.
 List<ItineraryDayGroup> groupNodesByCalendarDate(List<TripNode> nodes) {
-  final result = <ItineraryDayGroup>[];
-  int? currentKey;
-  List<TripNode>? currentNodes;
+  final buckets = <int, List<TripNode>>{};
+  final keyOrder = <int>[];
 
   for (final node in nodes) {
-    final local = toDestinationLocal(node.scheduledStart, node.geoRegion);
-    final key = _dateKey(local);
-    if (key != currentKey) {
-      if (currentNodes != null) {
-        result.add(ItineraryDayGroup(
-          date: _dateFromKey(currentKey!),
-          nodes: List<TripNode>.unmodifiable(currentNodes),
-        ));
+    final dates = _coveredDateKeys(node);
+    for (final key in dates) {
+      if (!buckets.containsKey(key)) {
+        buckets[key] = [];
+        keyOrder.add(key);
       }
-      currentKey = key;
-      currentNodes = [node];
-    } else {
-      currentNodes!.add(node);
+      buckets[key]!.add(node);
     }
   }
-  if (currentNodes != null) {
-    result.add(ItineraryDayGroup(
-      date: _dateFromKey(currentKey!),
-      nodes: List<TripNode>.unmodifiable(currentNodes),
-    ));
+
+  return keyOrder.map((key) => ItineraryDayGroup(
+    date: _dateFromKey(key),
+    nodes: List<TripNode>.unmodifiable(buckets[key]!),
+  )).toList();
+}
+
+/// Return the date keys a node covers.
+///
+/// Hotels: [check-in local date, checkout local date) — one key per
+/// covered night.  Everything else: a single key for scheduledStart.
+List<int> _coveredDateKeys(TripNode node) {
+  final local = toDestinationLocal(node.scheduledStart, node.geoRegion);
+  final startKey = _dateKey(local);
+  if (node.nodeKind != 'booking' || node.bookingType != 'hotel') {
+    return [startKey];
   }
-  return result;
+  final checkoutUtc =
+      node.scheduledStart.add(Duration(minutes: node.durationMinutes));
+  final checkoutLocal = toDestinationLocal(checkoutUtc, node.geoRegion);
+  final endKey = _dateKey(checkoutLocal);
+  if (endKey <= startKey) return [startKey];
+  final keys = <int>[];
+  var cursor = _dateFromKey(startKey);
+  final endDate = _dateFromKey(endKey);
+  while (cursor.isBefore(endDate)) {
+    keys.add(_dateKey(cursor));
+    cursor = cursor.add(const Duration(days: 1));
+  }
+  return keys;
 }
 
 // ---- private helpers ----
