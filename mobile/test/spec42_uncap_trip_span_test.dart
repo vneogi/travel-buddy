@@ -4,6 +4,25 @@ import 'package:travel_buddy/data/models.dart';
 import 'package:travel_buddy/features/itinerary/date_scope.dart';
 import 'package:travel_buddy/features/itinerary/itinerary_notifier.dart';
 
+// Same helper used by date_scope_test.dart.
+TripNode _node(
+  String id, {
+  required DateTime start,
+  int duration = 90,
+  String? name,
+  String? geoRegion,
+}) =>
+    TripNode(
+      nodeId: id,
+      venueName: name ?? id,
+      scheduledStart: start,
+      durationMinutes: duration,
+      isLocked: false,
+      status: NodeStatus.pending,
+      vibeTags: const [],
+      geoRegion: geoRegion,
+    );
+
 void main() {
   // -----------------------------------------------------------------------
   // 1. CreateTripOptions: new fields parse and default
@@ -42,18 +61,13 @@ void main() {
       final day1 = DateTime(2026, 10, 1);
       final day10 = DateTime(2026, 10, 10);
 
-      // Only two nodes, on days 1 and 5
       final nodes = [
-        TripNode(
-          nodeId: 'n1', tripId: 't1', venueName: 'A',
-          scheduledStart: day1.add(const Duration(hours: 9)),
-          durationMinutes: 90, geoRegion: 'luang_prabang_laos',
-        ),
-        TripNode(
-          nodeId: 'n2', tripId: 't1', venueName: 'B',
-          scheduledStart: DateTime(2026, 10, 5, 9),
-          durationMinutes: 90, geoRegion: 'luang_prabang_laos',
-        ),
+        _node('n1',
+            start: day1.add(const Duration(hours: 9)),
+            geoRegion: 'luang_prabang_laos'),
+        _node('n2',
+            start: DateTime(2026, 10, 5, 9),
+            geoRegion: 'luang_prabang_laos'),
       ];
 
       final groups = spanAwareDayGroups(
@@ -67,11 +81,9 @@ void main() {
     test('empty dates have zero nodes', () {
       final groups = spanAwareDayGroups(
         nodes: [
-          TripNode(
-            nodeId: 'n1', tripId: 't1', venueName: 'A',
-            scheduledStart: DateTime(2026, 10, 1, 9),
-            durationMinutes: 90, geoRegion: 'luang_prabang_laos',
-          ),
+          _node('n1',
+              start: DateTime(2026, 10, 1, 9),
+              geoRegion: 'luang_prabang_laos'),
         ],
         startLocal: DateTime(2026, 10, 1),
         endLocal: DateTime(2026, 10, 3),
@@ -83,7 +95,6 @@ void main() {
     });
 
     test('fully empty valid trip renders its dates', () {
-      // Zero nodes, but a valid 5-day span
       final groups = spanAwareDayGroups(
         nodes: [],
         startLocal: DateTime(2026, 10, 1),
@@ -102,14 +113,11 @@ void main() {
   group('spanAwareCorridorGroups', () {
     test('corridor segments render every segment date including empty ones',
         () {
-      // Segment 1: Oct 1-3 (3 days), node only on Oct 1
-      // Segment 2: Oct 5-7 (3 days), no nodes at all
       final nodes = [
-        TripNode(
-          nodeId: 'n1', tripId: 't1', venueName: 'VTE Venue',
-          scheduledStart: DateTime(2026, 10, 1, 9),
-          durationMinutes: 90, geoRegion: 'vientiane_laos',
-        ),
+        _node('n1',
+            start: DateTime(2026, 10, 1, 9),
+            name: 'VTE Venue',
+            geoRegion: 'vientiane_laos'),
       ];
       final segments = [
         const TripSegment(
@@ -130,12 +138,10 @@ void main() {
       );
 
       expect(cityGroups.length, 2);
-      // Segment 1: 3 days, 1 populated + 2 empty
       expect(cityGroups[0].dayGroups.length, 3);
       expect(cityGroups[0].dayGroups[0].nodes.length, 1);
       expect(cityGroups[0].dayGroups[1].nodes.length, 0);
       expect(cityGroups[0].dayGroups[2].nodes.length, 0);
-      // Segment 2: 3 days, all empty
       expect(cityGroups[1].dayGroups.length, 3);
       for (final g in cityGroups[1].dayGroups) {
         expect(g.nodes, isEmpty);
@@ -194,7 +200,6 @@ void main() {
           endDateLocal: '2026-10-10',
         ),
       );
-      // Simulate cache round-trip
       final json = trip.toJson();
       final restored = TripState.fromJson(json);
       expect(restored.creationContext, isNotNull);
@@ -208,24 +213,16 @@ void main() {
   // -----------------------------------------------------------------------
   group('nextNode traversal', () {
     test('nextNode skips empty days to find actual next node', () {
-      // Simulate the _TimelineItem list building:
-      // Day 1: header, card(n1), Day 2: header, emptyDay, Day 3: header, card(n2)
-      // From n1, nextNode should find n2 by skipping headers and emptyDay.
       final day1 = DateTime(2026, 10, 1);
       final day3 = DateTime(2026, 10, 3);
 
-      final n1 = TripNode(
-        nodeId: 'n1', tripId: 't1', venueName: 'A',
-        scheduledStart: day1.add(const Duration(hours: 9)),
-        durationMinutes: 90, geoRegion: 'luang_prabang_laos',
-      );
-      final n2 = TripNode(
-        nodeId: 'n2', tripId: 't1', venueName: 'B',
-        scheduledStart: day3.add(const Duration(hours: 9)),
-        durationMinutes: 90, geoRegion: 'luang_prabang_laos',
-      );
+      final n1 = _node('n1',
+          start: day1.add(const Duration(hours: 9)),
+          geoRegion: 'luang_prabang_laos');
+      final n2 = _node('n2',
+          start: day3.add(const Duration(hours: 9)),
+          geoRegion: 'luang_prabang_laos');
 
-      // Build groups with 3-day span
       final groups = spanAwareDayGroups(
         nodes: [n1, n2],
         startLocal: day1,

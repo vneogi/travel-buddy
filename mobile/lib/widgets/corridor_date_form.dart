@@ -50,12 +50,10 @@ class CorridorDateFormState extends State<CorridorDateForm> {
   }
 
   String? _validate() {
-    var totalDays = 0;
     for (var i = 0; i < _ranges.length; i++) {
       final r = _ranges[i];
       final days = r.end.difference(r.start).inDays + 1;
       if (days < 1) return 'Each city needs at least 1 day.';
-      totalDays += days;
       if (i > 0) {
         final prev = _ranges[i - 1];
         if (!r.start.isAfter(prev.end)) {
