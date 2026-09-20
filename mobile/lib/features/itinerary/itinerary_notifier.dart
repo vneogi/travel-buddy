@@ -24,6 +24,8 @@ class ItineraryState {
   final Set<String> outcomeRecordingNodeIds;
   // SPEC-37: Structured schedule warnings from last event.
   final List<String> scheduleWarnings;
+  // SPEC-42: full trip span for empty-day rendering.
+  final CreationContext? creationContext;
 
   const ItineraryState({
     this.nodes = const [],
@@ -37,6 +39,7 @@ class ItineraryState {
     this.nodeOutcomes = const {},
     this.outcomeRecordingNodeIds = const {},
     this.scheduleWarnings = const [],
+    this.creationContext,
   });
 
   static const _keep = Object();
@@ -52,6 +55,7 @@ class ItineraryState {
     Map<String, NodeOutcome>? nodeOutcomes,
     Set<String>? outcomeRecordingNodeIds,
     List<String>? scheduleWarnings,
+    Object? creationContext = _keep,
   }) =>
       ItineraryState(
         nodes: nodes ?? this.nodes,
@@ -66,6 +70,9 @@ class ItineraryState {
         outcomeRecordingNodeIds:
             outcomeRecordingNodeIds ?? this.outcomeRecordingNodeIds,
         scheduleWarnings: scheduleWarnings ?? this.scheduleWarnings,
+        creationContext: identical(creationContext, _keep)
+            ? this.creationContext
+            : creationContext as CreationContext?,
       );
 }
 
@@ -103,6 +110,7 @@ class ItineraryController extends StateNotifier<ItineraryState> {
         lovedPlaceRefs: merged,
         nodeOutcomes: {...restoredOutcomes, ...priorOutcomes},
         outcomeRecordingNodeIds: priorRecording,
+        creationContext: trip.creationContext,
       );
       _preCachePlaces(trip.nodes);
       // SPEC-04: Persist to SQLite cache_trip for offline reads
@@ -135,6 +143,7 @@ class ItineraryController extends StateNotifier<ItineraryState> {
             lovedPlaceRefs: merged,
             nodeOutcomes: {...restoredOutcomes, ...priorOutcomes},
             outcomeRecordingNodeIds: priorRecording,
+            creationContext: cachedTrip.creationContext,
           );
           _preCachePlaces(cachedTrip.nodes);
           return;

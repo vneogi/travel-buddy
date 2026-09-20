@@ -49,13 +49,6 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
   // Step 4: Interests
   final Set<String> _selectedInterests = {};
 
-  /// Returns the server-advertised max days for [region], or null if the
-  /// region is not in the options map.  Never invents a fallback.
-  int? _maxDaysFor(String? region, CreateTripOptions? opts) {
-    if (region == null || opts == null) return null;
-    return opts.maxDaysByRegion[region]; // null when absent
-  }
-
   /// Calendar-day count: pure UTC arithmetic, no DST dependency.
   static int _calendarDays(DateTimeRange range) {
     final s = range.start;
@@ -78,8 +71,7 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
     switch (_step) {
       case 0:
         // Must have a region AND that region must have a known max
-        return _selectedRegion != null &&
-            _maxDaysFor(_selectedRegion, opts) != null;
+        return _selectedRegion != null;
       case 1:
         return _dateRange != null;
       case 2:
@@ -119,12 +111,8 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
   void _onDestinationChanged(String? region, CreateTripOptions? opts) {
     setState(() {
       _selectedRegion = region;
-      if (_dateRange != null && region != null) {
-        final max = _maxDaysFor(region, opts);
-        if (max == null || _calendarDays(_dateRange!) > max) {
-          _dateRange = null;
-        }
-      }
+      // SPEC-42: no catalog-derived date cap invalidation.
+      // Only sanity-bound check remains in the picker.
     });
   }
 
@@ -323,20 +311,12 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
       case 0:
         return _DestinationStep(
           regions: regions,
-          maxDaysByRegion: opts?.maxDaysByRegion ?? const {},
           selected: _selectedRegion,
           onChanged: (r) => _onDestinationChanged(r, opts),
         );
       case 1:
-        final maxDays = _maxDaysFor(_selectedRegion, opts);
-        if (maxDays == null) {
-          // Options disappeared during provider refresh or state change.
-          return const Center(
-            child: Text('Destination data unavailable. Please go back.'),
-          );
-        }
         return _DatesStep(
-          maxDays: maxDays,
+          sanityDays: opts?.tripSpanSanityDays ?? 90,
           dateRange: _dateRange,
           onChanged: (r) => setState(() => _dateRange = r),
           pickerBuilder: widget.datePickerBuilder,
@@ -372,6 +352,7 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
           selectedInterests: _selectedInterests,
           partyOptions: partyOptions,
           interestOptions: interestOptions,
+          maxAutoPopulatedDays: opts?.maxAutoPopulatedDays ?? 5,
         );
       default:
         return const SizedBox.shrink();
@@ -392,12 +373,10 @@ const _displayNames = {
 
 class _DestinationStep extends StatelessWidget {
   final List<String> regions;
-  final Map<String, int> maxDaysByRegion;
   final String? selected;
   final ValueChanged<String?> onChanged;
   const _DestinationStep({
     required this.regions,
-    required this.maxDaysByRegion,
     required this.selected,
     required this.onChanged,
   });
@@ -411,27 +390,20 @@ class _DestinationStep extends StatelessWidget {
             style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: AppSpacing.base),
         ...regions.map((r) {
-          final maxDays = maxDaysByRegion[r];
-          final available = maxDays != null;
           return Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.sm),
             child: RadioListTile<String>(
               title: Text(_displayNames[r] ?? r),
-              subtitle: available
-                  ? Text('Up to $maxDays days')
-                  : const Text('Unavailable'),
               value: r,
               groupValue: selected,
-              onChanged: available ? onChanged : null,
+              onChanged: onChanged,
               shape: RoundedRectangleBorder(
                 borderRadius:
                     BorderRadius.circular(AppSpacing.radiusCard),
               ),
               tileColor: selected == r
                   ? AppColors.primaryLight
-                  : available
-                      ? AppColors.card
-                      : Colors.grey.shade200,
+                  : AppColors.card,
             ),
           );
         }),
@@ -441,12 +413,12 @@ class _DestinationStep extends StatelessWidget {
 }
 
 class _DatesStep extends StatelessWidget {
-  final int maxDays;
+  final int sanityDays;
   final DateTimeRange? dateRange;
   final ValueChanged<DateTimeRange?> onChanged;
   final DateRangePickerBuilder? pickerBuilder;
   const _DatesStep({
-    required this.maxDays,
+    required this.sanityDays,
     required this.dateRange,
     required this.onChanged,
     this.pickerBuilder,
@@ -457,7 +429,7 @@ class _DatesStep extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Pick your dates (up to $maxDays days)',
+        Text('Pick your dates',
             style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: AppSpacing.base),
         SizedBox(
@@ -492,10 +464,10 @@ class _DatesStep extends StatelessWidget {
     );
     if (picked == null) return;
     final days = _CreateTripScreenState._calendarDays(picked);
-    if (days > maxDays) {
+    if (days > sanityDays) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Maximum $maxDays days for this destination')),
+          SnackBar(content: Text('Trip cannot exceed $sanityDays days')),
         );
       }
       return;
@@ -611,6 +583,7 @@ class _ReviewStep extends StatelessWidget {
   final Set<String> selectedInterests;
   final List<PartyOption> partyOptions;
   final List<InterestOption> interestOptions;
+  final int maxAutoPopulatedDays;
   const _ReviewStep({
     required this.region,
     required this.dateRange,
@@ -619,6 +592,7 @@ class _ReviewStep extends StatelessWidget {
     required this.selectedInterests,
     required this.partyOptions,
     required this.interestOptions,
+    this.maxAutoPopulatedDays = 5,
   });
 
   @override
@@ -646,6 +620,15 @@ class _ReviewStep extends StatelessWidget {
         _row('Party', '$partyLabel ($partySize)'),
         _row('Interests',
             interestLabels.isEmpty ? 'Balanced' : interestLabels.join(', ')),
+        if (dateRange != null) ...const [SizedBox(height: 8)],
+        if (dateRange != null)
+          Text(
+            'Up to $maxAutoPopulatedDays dates receive starter suggestions. '
+            'Remaining dates stay open for you to fill.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Colors.grey,
+                ),
+          ),
       ],
     );
   }

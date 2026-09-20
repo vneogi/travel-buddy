@@ -145,3 +145,87 @@ List<CorridorCityGroup> groupNodesByCorridor({
   return result;
 }
 
+
+
+/// SPEC-42: Build day groups for the entire trip span, including empty days.
+///
+/// Walks every calendar date from [startLocal] to [endLocal] inclusive.
+/// Days with nodes get their nodes; days without get an empty group.
+/// This ensures the UI renders date headers for all dates in the span.
+List<ItineraryDayGroup> spanAwareDayGroups({
+  required List<TripNode> nodes,
+  required DateTime startLocal,
+  required DateTime endLocal,
+}) {
+  final populated = groupNodesByCalendarDate(nodes);
+  final byKey = <int, ItineraryDayGroup>{};
+  for (final g in populated) {
+    byKey[_dateKey(g.date)] = g;
+  }
+
+  final result = <ItineraryDayGroup>[];
+  var cursor = DateTime(startLocal.year, startLocal.month, startLocal.day);
+  final end = DateTime(endLocal.year, endLocal.month, endLocal.day);
+  while (!cursor.isAfter(end)) {
+    final key = _dateKey(cursor);
+    result.add(byKey[key] ??
+        ItineraryDayGroup(date: cursor, nodes: const []));
+    cursor = cursor.add(const Duration(days: 1));
+  }
+  return result;
+}
+
+
+/// SPEC-42: Corridor variant -- build span-aware day groups for each segment
+/// using TripSegment.startsOn/endsOn, not creationContext.
+List<CorridorCityGroup> spanAwareCorridorGroups({
+  required List<TripNode> nodes,
+  required List<TripSegment> segments,
+}) {
+  final result = <CorridorCityGroup>[];
+  final usedNodeIndexes = <int>{};
+
+  for (final seg in segments) {
+    final segNodes = <TripNode>[];
+    for (var i = 0; i < nodes.length; i++) {
+      if (usedNodeIndexes.contains(i)) continue;
+      if (nodes[i].geoRegion == seg.geoRegion) {
+        segNodes.add(nodes[i]);
+        usedNodeIndexes.add(i);
+      }
+    }
+    // Parse segment dates to derive the full local span.
+    final sd = DateTime.parse(seg.startsOn);
+    final ed = DateTime.parse(seg.endsOn);
+    final dayGroups = spanAwareDayGroups(
+      nodes: segNodes,
+      startLocal: sd,
+      endLocal: ed,
+    );
+    final displayName = regionDisplayNames[seg.geoRegion] ?? seg.geoRegion;
+    result.add(CorridorCityGroup(
+      geoRegion: seg.geoRegion,
+      displayName: displayName,
+      dateRange: '${seg.startsOn} - ${seg.endsOn}',
+      dayGroups: dayGroups,
+    ));
+  }
+
+  // Other stops: nodes not matched to any segment
+  final remainingNodes = <TripNode>[];
+  for (var i = 0; i < nodes.length; i++) {
+    if (!usedNodeIndexes.contains(i)) {
+      remainingNodes.add(nodes[i]);
+    }
+  }
+  if (remainingNodes.isNotEmpty) {
+    result.add(CorridorCityGroup(
+      geoRegion: 'other',
+      displayName: 'Other stops',
+      dateRange: '',
+      dayGroups: groupNodesByCalendarDate(remainingNodes),
+    ));
+  }
+
+  return result;
+}

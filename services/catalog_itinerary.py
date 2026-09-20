@@ -560,6 +560,34 @@ def _valid_interest_profiles() -> list[tuple[str, ...]]:
     return profiles
 
 
+def _select_populated_day_indices(num_days: int, feasible: int) -> List[int]:
+    """Pick which day indices (0-based) to populate with content.
+
+    populated_count = min(MAX_AUTO_POPULATED_DAYS, num_days, feasible).
+    When populated_count >= 2, include the first and last day; spread
+    intermediate days as evenly as practical.  Deterministic.
+    """
+    from config.interests import MAX_AUTO_POPULATED_DAYS
+
+    populated = min(MAX_AUTO_POPULATED_DAYS, num_days, feasible)
+    if populated <= 0:
+        return []
+    if populated == 1:
+        return [0]
+    if populated >= num_days:
+        return list(range(num_days))
+
+    # First and last are fixed; distribute remaining evenly in between
+    indices = [0]
+    interior_count = populated - 2
+    if interior_count > 0:
+        gap = (num_days - 1) / (interior_count + 1)
+        for i in range(1, interior_count + 1):
+            indices.append(round(i * gap))
+    indices.append(num_days - 1)
+    return sorted(set(indices))
+
+
 def range_nodes_from_catalog(
     *,
     geo_region: str,
@@ -568,11 +596,12 @@ def range_nodes_from_catalog(
     rows: Sequence[dict],
     interest_ids: Sequence[str] = (),
 ) -> List[TripNode]:
-    """Build a deterministic multi-day itinerary for a date range.
+    """Build a deterministic sparse itinerary for a date range.
 
-    Exactly VENUES_PER_DAY venues per day, no repeats across the
-    entire trip.  Schedule from 09:00 in the region IANA timezone, stored
-    as UTC.  Uses the shared A3a window-packing planner.
+    Populates min(MAX_AUTO_POPULATED_DAYS, calendar_days, feasible_days)
+    starter days.  First and last day are included when at least two days
+    can be populated.  Empty days in the span are valid -- not an error.
+    Uses the shared A3a window-packing planner.
     """
     from datetime import date as date_type
     from zoneinfo import ZoneInfo
@@ -585,10 +614,44 @@ def range_nodes_from_catalog(
     num_days = (ed - sd).days + 1  # inclusive
 
     pool = _dedup_by_venue_id(eligible_corridor_venues(rows))
+
+    # Probe feasible content days against the actual trip dates so
+    # weekday-specific hours (e.g. closed-on-Tuesday) are evaluated
+    # correctly.
+    from config.interests import MAX_AUTO_POPULATED_DAYS
+
+    feasible = 0
+    probe_used: set[str] = set()
+    for day_i in range(min(MAX_AUTO_POPULATED_DAYS, num_days)):
+        probe_date = sd + timedelta(days=day_i)
+        probe_start = datetime(
+            probe_date.year,
+            probe_date.month,
+            probe_date.day,
+            9,
+            0,
+            0,
+            tzinfo=region_tz,
+        ).astimezone(timezone.utc)
+        day_nodes, probe_used = pack_day(
+            candidates=pool,
+            target_count=VENUES_PER_DAY,
+            day_start_utc=probe_start,
+            geo_region=geo_region,
+            used_ids=probe_used,
+            interest_ids=interest_ids,
+        )
+        if len(day_nodes) < VENUES_PER_DAY:
+            break
+        feasible += 1
+
+    indices = _select_populated_day_indices(num_days, feasible)
+
+    # Now pack only the selected days with real trip dates
     used_ids: set[str] = set()
     all_nodes: List[TripNode] = []
 
-    for day_offset in range(num_days):
+    for day_offset in indices:
         current_date = sd + timedelta(days=day_offset)
         day_start = datetime(
             current_date.year,
@@ -609,10 +672,7 @@ def range_nodes_from_catalog(
             interest_ids=interest_ids,
         )
         if len(day_nodes) < VENUES_PER_DAY:
-            raise InsufficientCatalog(
-                f"need {VENUES_PER_DAY} hours-eligible venues on {current_date}, "
-                f"have {len(day_nodes)}"
-            )
+            break
         all_nodes.extend(day_nodes)
 
     return all_nodes

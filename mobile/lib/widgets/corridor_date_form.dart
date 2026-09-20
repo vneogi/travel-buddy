@@ -50,19 +50,10 @@ class CorridorDateFormState extends State<CorridorDateForm> {
   }
 
   String? _validate() {
-    final maxTotal = widget.corridor.maxDays;
-    var totalDays = 0;
     for (var i = 0; i < _ranges.length; i++) {
       final r = _ranges[i];
       final days = r.end.difference(r.start).inDays + 1;
       if (days < 1) return 'Each city needs at least 1 day.';
-      final region = widget.corridor.geoRegions[i];
-      final maxPer = widget.corridor.maxDaysForRegion(region);
-      if (days > maxPer) {
-        final display = regionDisplayNames[region] ?? region;
-        return '$display exceeds $maxPer days.';
-      }
-      totalDays += days;
       if (i > 0) {
         final prev = _ranges[i - 1];
         if (!r.start.isAfter(prev.end)) {
@@ -70,8 +61,13 @@ class CorridorDateFormState extends State<CorridorDateForm> {
         }
       }
     }
-    if (totalDays > maxTotal) {
-      return 'Total $totalDays days exceeds the $maxTotal-day limit.';
+    // SPEC-42: 90-day sanity bound on inclusive corridor span
+    if (_ranges.isNotEmpty) {
+      final inclusive =
+          _ranges.last.end.difference(_ranges.first.start).inDays + 1;
+      if (inclusive > 90) {
+        return 'Corridor span exceeds the 90-day safety limit.';
+      }
     }
     return null;
   }
@@ -128,7 +124,7 @@ class CorridorDateFormState extends State<CorridorDateForm> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Pick dates for each city (${widget.corridor.maxDays} days total).',
+              'Pick dates for each city.',
               style: AppTypography.caption,
             ),
             const SizedBox(height: 16),
@@ -136,9 +132,6 @@ class CorridorDateFormState extends State<CorridorDateForm> {
               _CityDateRow(
                 region: widget.corridor.geoRegions[i],
                 range: _ranges[i],
-                maxDays: widget.corridor.maxDaysForRegion(
-                  widget.corridor.geoRegions[i],
-                ),
                 onTap: () => _pickRange(i),
               ),
               if (i < widget.corridor.geoRegions.length - 1)
@@ -176,13 +169,11 @@ class CorridorDateFormState extends State<CorridorDateForm> {
 class _CityDateRow extends StatelessWidget {
   final String region;
   final DateTimeRange range;
-  final int maxDays;
   final VoidCallback onTap;
 
   const _CityDateRow({
     required this.region,
     required this.range,
-    required this.maxDays,
     required this.onTap,
   });
 
@@ -207,7 +198,7 @@ class _CityDateRow extends StatelessWidget {
             Expanded(
               child: Text(
                 '${_label(range.start)} - ${_label(range.end)}  '
-                '($days d, max $maxDays)',
+                '($days d)',
                 style: AppTypography.bodyMedium,
               ),
             ),
