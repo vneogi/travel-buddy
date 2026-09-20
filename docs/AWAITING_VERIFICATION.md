@@ -114,7 +114,8 @@ Booking reflow / hotel coords (not this merge):
 - "cannot return to the hotel in time" on Champa Lao: add_booking sends
   no lat/lng; `violates_hotel_return` treats missing hotel coords as
   ineligible.
-- Destination list still shows Up to N days (SPEC-42).
+- Destination list still shows Up to N days (SPEC-42). Closed on main
+  `17e58ac`; owner Windows flutter test green on `adc99d2`. Add/Move remain.
 
 Configured-key suite still red at that finding. Follow-up
 `docs/briefs/GENIE_CONFIGURED_ENV_GUARDS.md` landed as `1757daf` on

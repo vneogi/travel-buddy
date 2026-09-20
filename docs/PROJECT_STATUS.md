@@ -113,7 +113,7 @@
 | PDF itinerary intake (SPEC-39) | DEFERRED | No implementation brief. PDF/OCR, Day Sheet, and print-pack work remain outside the current sequence |
 | Guided Create Trip foundation (SPEC-40) | DONE (PR #61, `ebdea52`) | Five-step destination/date-range/party/interests/review flow backed by deterministic multi-day catalog selection. Post-merge CI and owner Flutter tests passed. Hosted deploy and phone acceptance are not yet repeated for this SHA |
 | Hours-aware scheduling and staged ranking (SPEC-41) | PHASE A COMPLETE (`d1fde14`, `7f25042`) | Create, corridor, and swap refuse known-closed or walking-unreachable target slots; day packing uses per-pair deterministic walking time and later opening windows; swap search/apply share reachability; locked non-hotel anchors remain reachable; cached `max_days` is guaranteed across weekdays and valid interest profiles |
-| Flexible trip span and sparse day editing (SPEC-42) | SPECIFIED, LATER PHASE | Decouples trip duration from auto-fill capacity. Wider spans may contain at most five generated starter days plus first-class empty days with direct Add/Move actions. Its online commands must exist before SPEC-02 can queue them offline |
+| Flexible trip span and sparse day editing (SPEC-42) | PARTIAL (`adc99d2`, merged `17e58ac`) | Catalog-derived date caps removed. Create accepts spans up to the 90-day sanity bound; generation fills at most five starter days; empty dates render from creationContext / corridor segments. Owner Windows flutter analyze had no errors and full flutter test was green on `adc99d2`. Add activity and cross-day Move remain; those online commands must exist before SPEC-02 can queue them offline |
 | Security, privacy and data governance foundation (SPEC-43) | SPECIFIED; AFTER LAOS BUILD, BEFORE NON-OWNER DISTRIBUTION | Owns twelve verified gaps across anonymous authentication, RLS, LLM egress, rights/retention, offline encryption, sign-out, consent, cache isolation, signal authorization, logging, abuse limits, and release transport. The current owner-only exception expires before the first external tester or December launch |
 | Backend integrity and future-readiness foundation (SPEC-44) | SPECIFIED; PHASE A AFTER LAOS | Keeps the modular FastAPI/Postgres/pgvector architecture while adding atomic trip/party/graph writes, optimistic concurrency, idempotent commands, production-shaped persistence contracts, recommendation decision telemetry, embedding-space versioning, four explicit AI-memory planes, and the cross-spec city-factory gate. Phase A is a prerequisite for any offline mutation-command outbox; it does not authorize local reflow or learned ranking |
 
@@ -218,10 +218,12 @@ Seed-shaped cohorts.
 9. SPEC-25 grounded trip-scoped Ask -- **DONE on main** (`30a4270`, from
    `a586e78`). Laptop Flutter Ask envelope tests passed. Trip-optional Ask,
    model phrasing/budget/breaker UX remain.
-10. Owner Windows `pytest -q` on `3e5ec6d` is green. Hosted API/APK and
-    device Ask wait for an explicit deploy. Next Genie slice is
-    `docs/briefs/GENIE_SPEC_42_UNCAP_TRIP_SPAN.md` (catalog date caps).
-    Hotel stay display and named slots follow that sequence. SPEC-43/44
+10. SPEC-42 uncap / sparse-span foundation -- **PARTIAL on main**
+    (`adc99d2`, merge `17e58ac`). Catalog date caps are gone. Owner
+    Windows flutter analyze had no errors; full flutter test was green.
+    Add/Move remain later. Next Genie slice is
+    `docs/briefs/GENIE_SPEC_10_HOTEL_STAY_DISPLAY.md`. Named slots
+    follow. Hosted API/APK still wait for an explicit deploy. SPEC-43/44
     stay after the Laos build. No deploy or APK until then.
 11. SPEC-44 Phase A backend integrity -- **NEXT DATA FOUNDATION AFTER THE LAOS
    BUILD**. Make trip graph, party, and compatibility projection one
@@ -250,8 +252,8 @@ Seed-shaped cohorts.
 - Inspiration, similar-trip retrieval, and LLM itinerary generation remain
   after SPEC-41. An LLM may explain solver output; it does not schedule.
 - SPEC-39 PDF/OCR/Day Sheet remains deferred; Agoda paste does not reopen it.
-- SPEC-42 flexible span and sparse-day editing follows the reliability slices.
-  The SPEC-40 five-day cap remains unchanged in `ebdea52`. Only after its
+- SPEC-42 Add activity on empty days and cross-day Move. The uncap /
+  empty-date render foundation is on main (`17e58ac`). Only after those
   online actions and SPEC-44 Phase A exist may SPEC-02 queue typed commands
   offline; conflicts are not resolved locally.
 - Remaining signal/UI polish.
@@ -287,7 +289,7 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 
 | Issue | Severity | Detail |
 |-------|----------|--------|
-| Destination-specific date caps make real trips impossible to enter | High product friction | Sep 18 old APK showed "Up to 2 days" and rejected a longer destination stay. SPEC-42 removes catalog-derived user-facing limits, keeps trip span separate from at-most-five-day starter generation, and allows only a high API safety bound |
+| Destination-specific date caps make real trips impossible to enter | Closed on main (`17e58ac`) | Create no longer rejects a stay because the catalog fills fewer days. User-facing "Up to N days" copy is gone. Remaining bound is the 90-day sanity limit. Empty-day Add/Move is still later |
 | Activity cards have no place-detail response | Medium, retention surface | A card tap should open an offline detail sheet/page with grounded short description, attributed photo when available, and sourced/fresh insider tips. VISION defines the product direction; SPEC-17 governs claims and review extraction |
 | Generated schedules expose false precision and ignore remaining-day shape | Medium | Exact walking arithmetic can render 10:52, and earliest-fit packing can finish four stops by lunch or ignore a 15:00 arrival. SPEC-41 now requires named slots (morning, lunch, afternoon/evening, dinner), whole-day excursion occupancy, and travel-day remaining slots from bookings plus buffer |
 | Hotel stay can shift local date and collapse to one timestamp | Conversion on main (`933c705`); remainder is UI | Sep 19 Windows: naive 18:02 Vientiane hotel rendered 18:02 on 2 Oct, not 01:02 on 3 Oct. Checkout still hidden; add_booking still sends no coords |
@@ -308,7 +310,7 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 | SPEC-43 gap 10: errors and provider failures can retain sensitive values | High under debug/provider failure | Validation values, provider URLs, messages, and tracebacks can enter diagnostics. Centralize redaction, return stable public errors, protect debug with admin IAM, reject production debug, regionalize logs, and enforce retention |
 | SPEC-43 gap 11: general request and provider-spend abuse controls are absent | High when access expands | Reroute quota does not bound account creation, bodies, search, Ask, signals, webhooks, or downstream cost. Add gateway, account/IP/device-reputation, size, depth, concurrency, timeout, idempotency, anomaly, and spend controls |
 | SPEC-43 gap 12: release HTTPS and private mobile cache isolation are incomplete | High before release distribution | Release code does not reject HTTP; trip/place cache keys are not consistently identity-scoped; chat text enters route URLs. Enforce TLS at build/startup, identity-key caches, ownership checks, private navigation state, and authorized deep links |
-| Create conflates trip span with auto-fill capacity | Medium | SPEC-40 deliberately caps the foundation at five filled days. SPEC-42 later accepts wider spans, generates at most five starter days, and renders remaining dates as editable empty days |
+| Create conflates trip span with auto-fill capacity | Closed on main for span vs fill (`17e58ac`) | Wider spans are accepted; at most five starter days are generated; empty dates render. Editable Add/Move on those dates remains |
 | Range create persists trip and party in two writes | High before multi-device or non-owner scale | A failure between writes can leave an orphan trip. SPEC-44 Phase A makes trip, party, normalized graph, compatibility projection, and command record one transaction before normalized reads or multi-device use |
 | Trip graph dual-write is non-transactional and blob-authoritative | High before SPEC-16 read cutover | Supabase replaces nodes and edges through separate calls while `get_trip` still reads `state_json`, so partial row writes can remain hidden. SPEC-44 requires crash-injection rollback proof, shadow-read equality, and a rollback window before rows become authoritative |
 | Trip mutation is last-write-wins | High before account linking or multiple devices | Mutation carries no expected trip version, so concurrent devices can silently overwrite newer state. SPEC-44 adds monotonic versioning, typed conflict, refresh/retry, and durable command idempotency |

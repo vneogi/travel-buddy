@@ -12,7 +12,8 @@ A3b was reviewed at branch head `7f25042`. SPEC-10 paste is on main
 destination-local booking times, weather empty-key, and swap canned copy
 after honest refusal are on main (`933c705`). `pack_day` booking
 constraints stay deferred until `GENIE_SPEC_41_NAMED_SLOTS`. SPEC-25 trip-scoped grounded Ask is on main
-(`30a4270`); trip-optional Ask remains. After hosted/API/APK verification, SPEC-44
+(`30a4270`); trip-optional Ask remains. SPEC-42 uncap / empty-date
+render is PARTIAL on main (`17e58ac`); Add/Move remain. After hosted/API/APK verification, SPEC-44
 Phase A makes trip persistence transactional. SPEC-43 is then the release
 foundation before any non-owner tester or the planned December launch. The
 SPEC-13/17/20 city factory follows; Bangkok proves it without a hardcoded
@@ -129,8 +130,9 @@ not outrank the field-proven itinerary trust gaps for the owner's trip.
 The phone-independent delivery and airplane-mode gate passed. SPEC-38 passed
 on the owner's phone. Next tasks:
 
-1. SPEC-40 is done as `ebdea52`; do not reopen its current five-day foundation
-   while implementing later sparse-span work.
+1. SPEC-40 is done as `ebdea52`. SPEC-42 uncap is PARTIAL on main
+   (`17e58ac`): catalog caps are gone and empty dates render. Do not
+   reopen the five-day *starter* budget. Add/Move are a later slice.
 2. SPEC-41 Phase A is complete. A3a merged as `d1fde14`; A3b branch head
    `7f25042` replaces the 30-minute buffer and random/clock mock transit with
    deterministic walking time, city/day boundaries, apply-time retry,
@@ -145,12 +147,12 @@ on the owner's phone. Next tasks:
 5. Hotel wall-time conversion, weather empty-key, and swap canned copy
    after `no_candidates` are on main (`933c705`).
 6. Specified remainders are sequenced in
-   `docs/briefs/GENIE_REMAINDERS_SEQUENCE.md`. Next Genie slice is
-   `docs/briefs/GENIE_SPEC_42_UNCAP_TRIP_SPAN.md` only. Hotel stay display
-   and named slots wait. Hosted API/APK still wait for an explicit
-   deploy. Do not start security implementation, inspiration,
-   similar-trip generation, or broader consumer work until the phone
-   gate.
+   `docs/briefs/GENIE_REMAINDERS_SEQUENCE.md`. Slice 1 (uncap) is on
+   main (`17e58ac`). Next Genie slice is
+   `docs/briefs/GENIE_SPEC_10_HOTEL_STAY_DISPLAY.md` only. Named slots
+   wait. Hosted API/APK still wait for an explicit deploy. Do not start
+   security implementation, inspiration, similar-trip generation, or
+   broader consumer work until the phone gate.
 7. Implement SPEC-44 Phase A. Make trip graph, party, compatibility projection,
    and command record one transaction; add monotonic trip version,
    `expected_version`, typed conflict, idempotent command IDs, and production

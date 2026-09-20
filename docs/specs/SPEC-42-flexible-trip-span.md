@@ -1,10 +1,12 @@
 # SPEC-42: Flexible Trip Span and Sparse Day Editing
 
-> Status: SPECIFIED FOR A LATER PHASE. Not implemented.
+> Status: PARTIAL. Uncap and empty-date rendering merged as `17e58ac`
+> (branch head `adc99d2`). Add activity and cross-day Move are not
+> implemented.
 >
 > Depends on SPEC-31 date-scoped rendering, SPEC-40 guided creation, and
-> SPEC-41 feasibility-first scheduling. This spec changes neither the current
-> SPEC-40 PR nor its five-day catalog-capacity contract.
+> SPEC-41 feasibility-first scheduling. Starter generation is still at most
+> five days; that is fill capacity, not a user-facing trip-span cap.
 
 ## Goal
 
