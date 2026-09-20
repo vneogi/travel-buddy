@@ -327,18 +327,26 @@ class TestPackDay:
         """When starts tie, the first pass still surfaces distinct category buckets."""
         from services.catalog_itinerary import _bucket_index
 
+        # Slot-type filtering means food slots (lunch+dinner) always share bucket 1;
+        # two activity slots draw from distinct activity buckets.
+        # Add a dinner-food venue so all four slots can be filled.
         rows = [
             _make_venue_row("Temple A", structured=_make_hours({}), category="temple", dwell=60),
             _make_venue_row("Temple B", structured=_make_hours({}), category="temple", dwell=60),
             _make_venue_row("Cafe A", structured=_make_hours({}), category="cafe", dwell=60),
+            _make_venue_row(
+                "Dinner A", structured=_make_hours({}), category="restaurant", dwell=60
+            ),
             _make_venue_row("Market A", structured=_make_hours({}), category="market", dwell=60),
             _make_venue_row("Bar A", structured=_make_hours({}), category="bar", dwell=60),
         ]
         start = _ict_to_utc(2026, 9, 14, 9)
         nodes, _ = pack_day(rows, 4, start, GEO, set())
+        assert len(nodes) == 4, f"expected 4 nodes, got {len(nodes)}"
         row_by_name = {row["name"]: row for row in rows}
         bucket_indexes = {_bucket_index(row_by_name[n.venue_name]) for n in nodes}
-        assert len(bucket_indexes) == 4
+        # food bucket 1 + at least 2 distinct activity buckets => >= 3 distinct
+        assert len(bucket_indexes) >= 3
 
     def test_name_then_venue_id_is_final_tiebreak(self):
         """With equal start and equal score, name ties break only on venue_id."""
@@ -387,11 +395,13 @@ class TestPackDay:
             _make_venue_row("Mon Temple", structured=all_day, category="temple", dwell=60),
             _make_venue_row("Mon Cafe", structured=all_day, category="cafe", dwell=60),
             _make_venue_row("Mon Market", structured=all_day, category="market", dwell=60),
-            _make_venue_row("Mon Evening", structured=_evening_hours(), category="bar", dwell=60),
+            _make_venue_row(
+                "Mon Evening", structured=_evening_hours(), category="restaurant", dwell=60
+            ),
             _make_venue_row("Tue Temple", structured=tue_only, category="temple", dwell=60),
             _make_venue_row("Tue Cafe", structured=tue_only, category="cafe", dwell=60),
             _make_venue_row("Tue Market", structured=tue_only, category="market", dwell=60),
-            _make_venue_row("Tue Bar", structured=tue_only, category="bar", dwell=60),
+            _make_venue_row("Tue Bar", structured=tue_only, category="restaurant", dwell=60),
         ]
         nodes = range_nodes_from_catalog(
             geo_region=GEO,
@@ -610,7 +620,10 @@ class TestGoldenCases:
         rows = [
             _make_venue_row("Temple", structured=_make_hours({}), category="temple", dwell=60),
             _make_venue_row("Cafe", structured=_make_hours({}), category="cafe", dwell=60),
-            _make_venue_row("Spa", structured=_make_hours({}), category="massage_spa", dwell=60),
+            # Dinner venue fills the food dinner slot so all 4 slots can be packed.
+            _make_venue_row(
+                "Dinner Spot", structured=_make_hours({}), category="restaurant", dwell=60
+            ),
             night_market,
         ]
         nodes = range_nodes_from_catalog(
@@ -637,7 +650,10 @@ class TestGoldenCases:
             royal_palace,
             _make_venue_row("Cafe", structured=_make_hours({}), category="cafe", dwell=60),
             _make_venue_row("Market", structured=_make_hours({}), category="market", dwell=60),
-            _make_venue_row("Spa", structured=_make_hours({}), category="massage_spa", dwell=60),
+            # Dinner venue fills the food dinner slot so all 4 slots can be packed.
+            _make_venue_row(
+                "Dinner Spot", structured=_make_hours({}), category="restaurant", dwell=60
+            ),
         ]
         nodes = range_nodes_from_catalog(
             geo_region="luang_prabang_laos",
@@ -758,11 +774,13 @@ class TestSabotageProofs:
             _make_venue_row("Mon Temple", structured=all_day, category="temple", dwell=60),
             _make_venue_row("Mon Cafe", structured=all_day, category="cafe", dwell=60),
             _make_venue_row("Mon Market", structured=all_day, category="market", dwell=60),
-            _make_venue_row("Mon Evening", structured=_evening_hours(), category="bar", dwell=60),
+            _make_venue_row(
+                "Mon Evening", structured=_evening_hours(), category="restaurant", dwell=60
+            ),
             _make_venue_row("Tue Temple", structured=tue_only, category="temple", dwell=60),
             _make_venue_row("Tue Cafe", structured=tue_only, category="cafe", dwell=60),
             _make_venue_row("Tue Market", structured=tue_only, category="market", dwell=60),
-            _make_venue_row("Tue Bar", structured=tue_only, category="bar", dwell=60),
+            _make_venue_row("Tue Bar", structured=tue_only, category="restaurant", dwell=60),
         ]
 
         def _sabotaged_range_builder() -> list:

@@ -17,7 +17,6 @@ from services.day_slots import (
     SLOT_ORDER as _SLOT_ORDER,
     assign_slot as _assign_slot,
     has_matching_slot as _has_matching_slot,
-    slot_from_time as _slot_from_time,
 )
 
 INFRASTRUCTURE_CATEGORIES = frozenset({"hospital", "pharmacy", "transport_hub"})
@@ -233,13 +232,13 @@ def pack_day(
     nodes: List[TripNode] = []
     new_used: set[str] = set(used_ids)  # copy
     used_buckets: set[int] = set()
-    # SPEC-41: named slot tracking.
-    # When remaining_slots is None (default full day), slot names are a
-    # rendering label assigned by time-of-day -- no candidate filtering.
-    # When remaining_slots is explicitly passed (travel day), candidates
-    # are filtered by slot type and the number of stops is limited.
-    slot_constrained = remaining_slots is not None
-    active_slots: list[str] = list(remaining_slots) if slot_constrained else list(_SLOT_ORDER)
+    # SPEC-41: named slot tracking. Callers pass remaining_slots=list(SLOT_ORDER)
+    # for a plain in-city day, or a shorter list when a locked booking already
+    # occupies slots on that date (compute_remaining_slots gives the subset).
+    # Candidates are filtered by slot type; active_slots shrinks on each assign.
+    active_slots: list[str] = (
+        list(remaining_slots) if remaining_slots is not None else list(_SLOT_ORDER)
+    )
 
     # Previous-node tracking for walking transfer
     prev_node: Optional[TripNode] = None
@@ -301,7 +300,7 @@ def pack_day(
         return cand_end + timedelta(minutes=transfer) <= lock.scheduled_start
 
     for _stop in range(target_count):
-        if slot_constrained and not active_slots:  # SPEC-41: all travel-day slots consumed
+        if not active_slots:  # SPEC-41: all named slots consumed
             break
         best_candidate = None
         best_start: Optional[datetime] = None
@@ -316,9 +315,8 @@ def pack_day(
             if not _has_venue_coords(venue):
                 continue
 
-            # SPEC-41 slot eligibility: skip if no matching slot available
-            # (only for constrained travel days).
-            if slot_constrained and not _has_matching_slot(venue, active_slots):
+            # SPEC-41 slot eligibility: skip if no matching slot available.
+            if not _has_matching_slot(venue, active_slots):
                 continue
 
             # Compute per-candidate earliest arrival from previous node
@@ -365,7 +363,7 @@ def pack_day(
                         continue
                     if not _has_venue_coords(venue):
                         continue
-                    if slot_constrained and not _has_matching_slot(venue, active_slots):
+                    if not _has_matching_slot(venue, active_slots):
                         continue
                     bidx = _bucket_index(venue)
                     if bidx in used_buckets:
@@ -387,16 +385,12 @@ def pack_day(
 
             used_buckets.add(_bucket_index(best_candidate))
 
-        # SPEC-41: assign slot name.
-        # Constrained travel day: consume from active_slots (with filtering).
-        # Default full day: label by destination-local time (no filtering).
-        if slot_constrained:
-            try:
-                _slot_name, active_slots = _assign_slot(best_candidate, active_slots)
-            except ValueError:
-                break  # no slot available (shouldn't happen given has_matching_slot filter)
-        else:
-            _slot_name = _slot_from_time(best_start, geo_region)
+        # SPEC-41: consume the slot name from active_slots.
+        # has_matching_slot above guarantees a slot is available here.
+        try:
+            _slot_name, active_slots = _assign_slot(best_candidate, active_slots)
+        except ValueError:
+            break  # should not happen: has_matching_slot filter guarantees availability
 
         vk = _venue_key(best_candidate)
         new_used.add(vk)
@@ -423,6 +417,7 @@ def nodes_from_catalog(
         day_start_utc=start,
         geo_region=geo_region,
         used_ids=set(),
+        remaining_slots=list(_SLOT_ORDER),
     )
 
     if len(nodes) < MIN_STOPS:
@@ -677,6 +672,7 @@ def range_nodes_from_catalog(
             geo_region=geo_region,
             used_ids=probe_used,
             interest_ids=interest_ids,
+            remaining_slots=list(_SLOT_ORDER),
         )
         if len(day_nodes) < VENUES_PER_DAY:
             break
@@ -707,6 +703,7 @@ def range_nodes_from_catalog(
             geo_region=geo_region,
             used_ids=used_ids,
             interest_ids=interest_ids,
+            remaining_slots=list(_SLOT_ORDER),
         )
         if len(day_nodes) < VENUES_PER_DAY:
             break
@@ -824,6 +821,7 @@ def compute_max_days_for_region(list_venues_fn, geo_region: str) -> Optional[int
                     geo_region=geo_region,
                     used_ids=used_ids,
                     interest_ids=interest_ids,
+                    remaining_slots=list(_SLOT_ORDER),
                 )
                 if len(day_nodes) < VENUES_PER_DAY:
                     break

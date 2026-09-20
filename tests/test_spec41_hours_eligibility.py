@@ -135,6 +135,15 @@ class TestCreateHoursFiltering:
                 "Night Market", structured=_evening_hours(), category="market", dwell=60
             )
         )
+        # Two food venues so all 4 named slots can be filled.
+        rows.extend(
+            [
+                _make_venue_row("Food1", structured=_make_hours({}), category="cafe", dwell=60),
+                _make_venue_row(
+                    "Food2", structured=_make_hours({}), category="restaurant", dwell=60
+                ),
+            ]
+        )
         # Monday 09:00 ICT -> 02:00 UTC
         start = _ict_to_utc(2026, 9, 14, 9)
         nodes = nodes_from_catalog(geo_region=GEO, start=start, rows=rows)
@@ -147,6 +156,15 @@ class TestCreateHoursFiltering:
         rows.append(
             _make_venue_row("Closed Tue", structured=_closed_tuesday(), category="museum", dwell=60)
         )
+        # Two food venues so all 4 named slots can be filled.
+        rows.extend(
+            [
+                _make_venue_row("Food1", structured=_make_hours({}), category="cafe", dwell=60),
+                _make_venue_row(
+                    "Food2", structured=_make_hours({}), category="restaurant", dwell=60
+                ),
+            ]
+        )
         # Tuesday 09:00 ICT
         start = _ict_to_utc(2026, 9, 15, 9)
         nodes = nodes_from_catalog(geo_region=GEO, start=start, rows=rows)
@@ -158,6 +176,15 @@ class TestCreateHoursFiltering:
         narrow = {d: [["09:00", "10:00"], ["14:00", "15:00"]] for d in _ALL_DAYS}
         rows = _pool_of(5, structured=_make_hours({}), dwell=30)
         rows.append(_make_venue_row("Split Place", structured=narrow, category="museum", dwell=90))
+        # Two food venues so all 4 named slots can be filled.
+        rows.extend(
+            [
+                _make_venue_row("Food1", structured=_make_hours({}), category="cafe", dwell=60),
+                _make_venue_row(
+                    "Food2", structured=_make_hours({}), category="restaurant", dwell=60
+                ),
+            ]
+        )
         start = _ict_to_utc(2026, 9, 14, 9)
         assert hours_for_slot(narrow, start, 90, GEO) == HoursResult.CLOSED
         nodes = nodes_from_catalog(geo_region=GEO, start=start, rows=rows)
@@ -167,6 +194,15 @@ class TestCreateHoursFiltering:
         """A venue with null structured hours (UNKNOWN) is still eligible."""
         rows = _pool_of(4, structured=_make_hours({}), dwell=60)
         rows.append(_make_venue_row("Unknown Venue", structured=None, category="museum", dwell=60))
+        # Two food venues so all 4 named slots can be filled.
+        rows.extend(
+            [
+                _make_venue_row("Food1", structured=_make_hours({}), category="cafe", dwell=60),
+                _make_venue_row(
+                    "Food2", structured=_make_hours({}), category="restaurant", dwell=60
+                ),
+            ]
+        )
         start = _ict_to_utc(2026, 9, 14, 9)
         nodes = nodes_from_catalog(geo_region=GEO, start=start, rows=rows)
         names = [n.venue_name for n in nodes]
@@ -207,6 +243,15 @@ class TestCreateHoursFiltering:
         rows = _pool_of(5, structured=_make_hours({}), dwell=60)
         rows.append(
             _make_venue_row("Closed Tue", structured=closed_tue, category="museum", dwell=60)
+        )
+        # Two food venues so all 4 named slots can be filled.
+        rows.extend(
+            [
+                _make_venue_row("Food1", structured=_make_hours({}), category="cafe", dwell=60),
+                _make_venue_row(
+                    "Food2", structured=_make_hours({}), category="restaurant", dwell=60
+                ),
+            ]
         )
         nodes = nodes_from_catalog(geo_region=GEO, start=start_utc, rows=rows)
         assert "Closed Tue" not in [n.venue_name for n in nodes]
@@ -1069,6 +1114,13 @@ class TestTripNodeStructuredHours:
         """nodes_from_catalog copies opening_hours_structured onto TripNode."""
         hours = _make_hours({})
         rows = _pool_of(5, structured=hours, dwell=60)
+        # Two food venues so all 4 named slots can be filled.
+        rows.extend(
+            [
+                _make_venue_row("Food1", structured=hours, category="cafe", dwell=60),
+                _make_venue_row("Food2", structured=hours, category="restaurant", dwell=60),
+            ]
+        )
         start = _ict_to_utc(2026, 9, 14, 9)
         nodes = nodes_from_catalog(geo_region=GEO, start=start, rows=rows)
         assert len(nodes) >= 4
@@ -1087,7 +1139,17 @@ class TestSabotageProofs:
 
         Sabotage: returning the cursor instead of the later window would
         schedule it at a time it's CLOSED."""
-        rows = _pool_of(4, structured=_make_hours({}), dwell=60)
+        # One activity venue + Night Market + 2 food = exactly 4 slots fillable.
+        # This ensures Night Market wins the afternoon_evening_tour slot.
+        rows = _pool_of(1, structured=_make_hours({}), dwell=60)
+        rows.extend(
+            [
+                _make_venue_row("Food1", structured=_make_hours({}), category="cafe", dwell=60),
+                _make_venue_row(
+                    "Food2", structured=_make_hours({}), category="restaurant", dwell=60
+                ),
+            ]
+        )
         rows.append(
             _make_venue_row(
                 "Night Market", structured=_evening_hours(), category="market", dwell=60

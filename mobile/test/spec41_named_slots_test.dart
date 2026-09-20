@@ -71,9 +71,9 @@ void main() {
       );
 
       expect(find.text('Morning'), findsOneWidget);
-      // The slot label replaces the walking-derived time on flexible cards.
-      // We do not assert the absence of a time string because the time rail
-      // may still show in other parts of the card.
+      // start=2026-10-03T02:00Z -> Asia/Vientiane UTC+7 = 09:00.
+      // Slot label must replace the destination-local time on flexible nodes.
+      expect(find.text('09:00'), findsNothing);
     });
 
     testWidgets('flexible card shows slot label for dinner',
@@ -92,6 +92,8 @@ void main() {
       );
 
       expect(find.text('Dinner'), findsOneWidget);
+      // start=2026-10-03T12:00Z -> 19:00 ICT.
+      expect(find.text('19:00'), findsNothing);
     });
 
     testWidgets('flexible card shows slot label for lunch',
@@ -110,6 +112,8 @@ void main() {
       );
 
       expect(find.text('Lunch'), findsOneWidget);
+      // start=2026-10-03T05:00Z -> 12:00 ICT.
+      expect(find.text('12:00'), findsNothing);
     });
 
     testWidgets('flexible card shows slot label for afternoon',
@@ -128,6 +132,8 @@ void main() {
       );
 
       expect(find.text('Afternoon'), findsOneWidget);
+      // start=2026-10-03T07:00Z -> 14:00 ICT.
+      expect(find.text('14:00'), findsNothing);
     });
 
     testWidgets('locked hotel card shows Check-in and Check-out labels',

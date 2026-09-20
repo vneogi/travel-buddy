@@ -9,9 +9,8 @@ Proofs required by the brief:
   3. An early-evening arrival packs dinner only.
   4. A mid-afternoon arrival plus hotel check-in packs at most
      afternoon/evening plus dinner.
-  5. Swap never calls LLM (configured-env guard).
-  6. Insufficient remaining slots leave open time, no filler.
-  7. Existing SPEC-41 hours/reachability tests pass (run via pytest -q).
+  5. Insufficient remaining slots leave open time, no filler.
+  6. Existing SPEC-41 hours/reachability tests pass (run via pytest -q).
 
 All slot-name assertions operate on TripNode.slot_name returned by
 pack_day.  Flutter rendering is UNVERIFIED without the Flutter SDK.
@@ -200,6 +199,14 @@ class TestComputeRemainingSlots:
         # Departure at 12:00 is not < 12, so full day.
         result = compute_remaining_slots(12, "flight", has_hotel=False)
         assert result == list(SLOT_ORDER)
+
+    def test_hotel_checkout_morning_only(self):
+        """Hotel booking before noon: checkout-day, morning slot only."""
+        result = compute_remaining_slots(10, "hotel", has_hotel=True)
+        assert result == ["morning_tour"]
+        # Very early checkout also morning-only.
+        result2 = compute_remaining_slots(6, "hotel", has_hotel=True)
+        assert result2 == ["morning_tour"]
 
 
 # -----------------------------------------------------------------------
@@ -430,29 +437,7 @@ class TestMidAfternoonArrival:
 
 
 # -----------------------------------------------------------------------
-# Proof 5: swap guard (swap never invokes LLM)
-# -----------------------------------------------------------------------
-
-
-class TestSwapNeverCallsLLM:
-    """Existing configured-env guard: swap returns a deterministic response.
-
-    This test mirrors the assertion in test_spec41_configured_env_guards.py.
-    We just verify the slot changes in this module don't break the guard.
-    """
-
-    def test_swap_guard_module_importable(self):
-        """The configured-env guard module must import cleanly on this branch."""
-        from tests.test_spec41_configured_env_guards import (
-            TestSwapActivityNoLLM,
-        )  # noqa: F401
-
-        # If the import succeeded the guards are structurally intact.
-        assert True
-
-
-# -----------------------------------------------------------------------
-# Proof 6: empty remaining slots -> no filler
+# Proof 5: empty remaining slots -> no filler
 # -----------------------------------------------------------------------
 
 
@@ -493,7 +478,7 @@ class TestInsufficientRemainingSlots:
 
 
 # -----------------------------------------------------------------------
-# Proof 7: slot_name is None for locked booking nodes
+# Proof 6: slot_name is None for locked booking nodes
 # -----------------------------------------------------------------------
 
 

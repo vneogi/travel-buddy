@@ -30,6 +30,7 @@ from services.catalog_itinerary import (
     flatten_opening_hours,
     pack_day,
 )
+from services.day_slots import SLOT_ORDER as _SLOT_ORDER
 from services.opening_hours import HoursResult, hours_for_slot
 
 
@@ -192,6 +193,7 @@ def build_corridor_nodes(
                     day_start_utc=probe_start,
                     geo_region=seg_in.geo_region,
                     used_ids=probe_used,
+                    remaining_slots=list(_SLOT_ORDER),
                 )
                 if len(day_nodes) < CORRIDOR_STOPS_PER_DAY:
                     break
@@ -218,6 +220,7 @@ def build_corridor_nodes(
                     day_start_utc=start_dt,
                     geo_region=seg_in.geo_region,
                     used_ids=used_ids,
+                    remaining_slots=list(_SLOT_ORDER),
                 )
 
                 if len(day_nodes) < CORRIDOR_STOPS_PER_DAY:

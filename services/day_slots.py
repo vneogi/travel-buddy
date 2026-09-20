@@ -111,7 +111,7 @@ def assign_slot(
     ``"morning_tour"`` (the first consumed slot that is still present).
     """
     if is_whole_day_excursion(venue):
-        if not any(s in remaining_slots for s in _WHOLE_DAY_CONSUMED):
+        if not all(s in remaining_slots for s in _WHOLE_DAY_CONSUMED):
             raise ValueError("No whole-day slots available")
         slot = next(s for s in SLOT_ORDER if s in remaining_slots and s in _WHOLE_DAY_CONSUMED)
         new_remaining = [s for s in remaining_slots if s not in _WHOLE_DAY_CONSUMED]
@@ -137,7 +137,7 @@ def assign_slot(
 def compute_remaining_slots(
     booking_local_hour: int,
     booking_type: str | None,
-    has_hotel: bool,  # noqa: ARG001  -- reserved for future hotel-proximity logic
+    has_hotel: bool,
 ) -> List[str]:
     """Conservative remaining slots after a travel booking on the same local day.
 
@@ -148,17 +148,24 @@ def compute_remaining_slots(
     booking_type:
         ``"flight"``, ``"train"``, ``"hotel"``, ``"tour"``, or ``None``.
     has_hotel:
-        Whether the day also has a hotel check-in (reserved for future
-        hotel-proximity logic; currently does not change the slot set).
+        Whether the day has a hotel booking (True when ``booking_type == "hotel"``
+        or when a hotel check-in exists alongside a different primary booking).
+        A hotel booking before noon signals checkout-day: only the morning
+        activity slot remains available.
 
     Conservative defaults (HITL intent to restore extra slots is out of
     this slice):
 
+    - hotel checkout (has_hotel + hotel booking + hour < 12) -> morning only
     - arrival >= 17:00                      -> dinner only
     - arrival 14:00-16:59                   -> afternoon_evening_tour, dinner
     - morning departure flight/train < 12   -> lunch, afternoon_evening_tour, dinner
     - otherwise                             -> full SLOT_ORDER
     """
+    # Hotel checkout: booking IS a hotel that starts before noon -> morning only.
+    if has_hotel and booking_type == "hotel" and booking_local_hour < 12:
+        return ["morning_tour"]
+
     # Early-evening or late arrival: dinner only.
     if booking_local_hour >= 17:
         return ["dinner"]
