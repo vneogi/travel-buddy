@@ -129,7 +129,8 @@ def _pool_of(n, structured=None, category="temple", dwell=60):
 class TestCreateHoursFiltering:
     def test_night_market_not_placed_morning(self):
         """An evening-only venue must not appear when the cursor is at 09:00."""
-        rows = _pool_of(6, structured=_make_hours({}), category="temple", dwell=60)
+        # Smaller pool so select_day_venues includes the evening restaurant.
+        rows = _pool_of(2, structured=_make_hours({}), category="temple", dwell=60)
         rows.append(
             _make_venue_row(
                 "Night Market", structured=_evening_hours(), category="market", dwell=60
@@ -147,13 +148,8 @@ class TestCreateHoursFiltering:
         # Monday 09:00 ICT -> 02:00 UTC
         start = _ict_to_utc(2026, 9, 14, 9)
         nodes = nodes_from_catalog(geo_region=GEO, start=start, rows=rows)
-        # G0: with relaxed slot fallback, Night Market may fill a dinner/evening
-        # slot. The key property: it must NOT appear in a morning slot.
-        for n in nodes:
-            if n.venue_name == "Night Market":
-                assert n.slot_name != "morning_tour", (
-                    f"Night Market placed in morning_tour slot at {n.scheduled_start}"
-                )
+        names = [n.venue_name for n in nodes]
+        assert "Night Market" not in names
 
     def test_tuesday_closed_venue_not_placed_tuesday(self):
         """A venue closed on Tuesday must not appear on a Tuesday."""
@@ -1158,7 +1154,8 @@ class TestTripNodeStructuredHours:
         """nodes_from_catalog copies opening_hours_structured onto TripNode."""
         hours = _make_hours({})
         eve_hours = {d: [["09:00", "22:00"]] for d in _ALL_DAYS}
-        rows = _pool_of(5, structured=hours, dwell=60)
+        # Smaller pool so select_day_venues includes the evening restaurant.
+        rows = _pool_of(2, structured=hours, dwell=60)
         # Two food venues (one with evening hours for dinner slot).
         rows.extend(
             [
@@ -1171,6 +1168,235 @@ class TestTripNodeStructuredHours:
         assert len(nodes) >= 4
         for n in nodes:
             assert n.opening_hours_structured is not None
+
+
+# ---------------------------------------------------------------------------
+# Flight-buffer packing proof (Blocker 2)
+# ---------------------------------------------------------------------------
+
+
+class TestFlightBufferPacking:
+    """pack_day must respect the 150-minute flight cutoff."""
+
+    def test_morning_activity_blocked_by_1046_flight(self):
+        """A 10:46 flight with 150-min cutoff blocks any morning activity.
+
+        Flight at 10:46 ICT -> cutoff = 10:46 - 2:30 = 08:16 ICT.
+        A 60-min activity starting at 09:00 ICT ends at 10:00 -> 10:00 > 08:16 -> blocked.
+        """
+        from services.catalog_itinerary import pack_day
+
+        flight = TripNode(
+            venue_name="VTE-BKK Flight",
+            venue_id="flight-001",
+            scheduled_start=_ict_to_utc(2026, 9, 14, 10, 46),
+            duration_minutes=90,
+            is_locked=True,
+            node_kind="booking",
+            booking_type="flight",
+            geo_region=GEO,
+            lat=19.89,
+            lng=102.13,
+        )
+        pool = [
+            _make_venue_row(
+                "Morning Temple", structured=_make_hours({}), category="temple", dwell=60
+            ),
+            _make_venue_row("Cafe Early", structured=_make_hours({}), category="cafe", dwell=60),
+        ]
+        start = _ict_to_utc(2026, 9, 14, 9)
+        nodes, _ = pack_day(
+            pool,
+            4,
+            start,
+            GEO,
+            set(),
+            next_locked_booking=flight,
+        )
+        # Activity at 09:00 (60 min, ends 10:00) violates 08:16 cutoff -> empty.
+        assert nodes == [], (
+            f"expected 0 nodes before 10:46 flight, got {len(nodes)}: "
+            f"{[n.venue_name for n in nodes]}"
+        )
+
+    def test_short_activity_fits_before_late_flight(self):
+        """A 15:00 flight allows a morning + lunch before the cutoff."""
+        from services.catalog_itinerary import pack_day
+
+        flight = TripNode(
+            venue_name="Afternoon Flight",
+            venue_id="flight-002",
+            scheduled_start=_ict_to_utc(2026, 9, 14, 15, 0),
+            duration_minutes=90,
+            is_locked=True,
+            node_kind="booking",
+            booking_type="flight",
+            geo_region=GEO,
+            lat=19.89,
+            lng=102.13,
+        )
+        pool = [
+            _make_venue_row("Temple A", structured=_make_hours({}), category="temple", dwell=60),
+            _make_venue_row("Cafe B", structured=_make_hours({}), category="cafe", dwell=60),
+        ]
+        start = _ict_to_utc(2026, 9, 14, 9)
+        nodes, _ = pack_day(
+            pool,
+            4,
+            start,
+            GEO,
+            set(),
+            next_locked_booking=flight,
+        )
+        # Flight at 15:00, cutoff 12:30. Morning 09:00+60=10:00 < 12:30 OK.
+        # Lunch 11:00+60=12:00 < 12:30 OK.
+        assert len(nodes) == 2, f"expected 2 nodes, got {len(nodes)}"
+        slot_names = [n.slot_name for n in nodes]
+        assert "morning_tour" in slot_names
+        assert "lunch" in slot_names
+
+    def test_missing_coord_flight_still_enforces_buffer(self):
+        """Flight without coordinates still enforces 150-min buffer."""
+        from services.catalog_itinerary import pack_day
+
+        flight = TripNode(
+            venue_name="No-coord Flight",
+            venue_id="flight-003",
+            scheduled_start=_ict_to_utc(2026, 9, 14, 10, 46),
+            duration_minutes=90,
+            is_locked=True,
+            node_kind="booking",
+            booking_type="flight",
+            geo_region=GEO,
+            lat=None,
+            lng=None,
+        )
+        pool = [
+            _make_venue_row("Temple X", structured=_make_hours({}), category="temple", dwell=60),
+        ]
+        start = _ict_to_utc(2026, 9, 14, 9)
+        nodes, _ = pack_day(
+            pool,
+            4,
+            start,
+            GEO,
+            set(),
+            next_locked_booking=flight,
+        )
+        assert nodes == [], "missing-coord flight must still enforce 150-min buffer"
+
+
+# ---------------------------------------------------------------------------
+# Swap endpoint parity proofs (Blocker 4)
+# ---------------------------------------------------------------------------
+
+
+class TestSwapEndpointParity:
+    """swap_candidates endpoint must match confirm-path predicates."""
+
+    def test_unreachable_candidate_absent(self):
+        """A candidate 50km away (unreachable by walking) is excluded."""
+        far_v = _make_venue_rag("Far Temple", structured=_make_hours({}), dwell=60, geo=GEO)
+        far_v = far_v.model_copy(update={"lat": 20.5, "lng": 103.5})
+        h = auth("spec41-swap-parity-1")
+        trip_id, target = _seed_swap_trip([far_v], headers=h)
+        # The target is the first node. For _is_swap_reachable the check
+        # against prev-active and next-locked applies. If there is a
+        # second node close by, walking from far_v to that node fails.
+        trip_state = db_mod.db_service.get_trip(trip_id)
+        if len(trip_state.nodes) < 2:
+            pytest.skip("need at least 2 nodes for reachability check")
+        second = trip_state.nodes[1]
+        r = client.get(
+            f"/api/v1/trip/{trip_id}/swap_candidates/{second.node_id}",
+            headers=h,
+        )
+        assert r.status_code == 200
+        names = [v["name"] for v in r.json()["candidates"]]
+        assert "Far Temple" not in names, "unreachable candidate must be absent"
+
+    def test_flight_buffer_candidate_absent(self):
+        """A candidate near a locked flight is excluded by reachability."""
+        open_v = _make_venue_rag("Blocked By Flight", structured=_make_hours({}), dwell=60)
+        h = auth("spec41-swap-parity-2")
+        r = client.post(
+            "/api/v1/trip/create",
+            json={"geo_region": GEO, "start_date": "2026-09-14"},
+            headers=h,
+        )
+        assert r.status_code == 200, r.text
+        data = r.json()
+        trip_id = data["trip_id"]
+        target = data["nodes"][0]
+        # Add a locked flight immediately after the target node
+        from models.schemas import TripNode as _TN, NodeStatus as _NS
+
+        trip_state = db_mod.db_service.get_trip(trip_id)
+        flight_node = _TN(
+            venue_name="Soon Flight",
+            venue_id="flight-soon",
+            scheduled_start=target["scheduled_start"],
+            duration_minutes=90,
+            is_locked=True,
+            node_kind="booking",
+            booking_type="flight",
+            geo_region=GEO,
+            lat=19.89,
+            lng=102.13,
+            status=_NS.PENDING,
+        )
+        trip_state.nodes.append(flight_node)
+        db_mod.db_service.save_trip(trip_state)
+        db_mod.db_service.add_venue(open_v)
+        r2 = client.get(
+            f"/api/v1/trip/{trip_id}/swap_candidates/{target['node_id']}",
+            headers=h,
+        )
+        assert r2.status_code == 200
+        names = [v["name"] for v in r2.json()["candidates"]]
+        assert "Blocked By Flight" not in names
+
+    def test_hotel_return_missing_coords_excluded(self):
+        """A candidate with missing coordinates is excluded from swap list."""
+        from models.schemas import TripNode as _TN, NodeStatus as _NS
+
+        no_coord_v = _make_venue_rag("No Coord Venue", structured=_make_hours({}), dwell=60)
+        no_coord_v = no_coord_v.model_copy(update={"lat": None, "lng": None})
+        h = auth("spec41-swap-parity-3")
+        trip_id, target = _seed_swap_trip([no_coord_v], headers=h)
+        r = client.get(
+            f"/api/v1/trip/{trip_id}/swap_candidates/{target['node_id']}",
+            headers=h,
+        )
+        assert r.status_code == 200
+        names = [v["name"] for v in r.json()["candidates"]]
+        assert "No Coord Venue" not in names, "missing-coord candidate must be excluded"
+
+    def test_successful_confirm_preserves_slot_name(self):
+        """Swap confirm via event preserves the original slot_name."""
+        open_v = _make_venue_rag("SlotKeeper", structured=_make_hours({}), dwell=60)
+        h = auth("spec41-swap-parity-4")
+        trip_id, target = _seed_swap_trip([open_v], headers=h)
+        # Get pre-swap slot_name
+        before_trip = client.get(f"/api/v1/trip/{trip_id}", headers=h)
+        before = next(n for n in before_trip.json()["nodes"] if n["node_id"] == target["node_id"])
+        original_slot = before.get("slot_name")
+        # Swap
+        r = client.post(
+            "/api/v1/trip/event",
+            json={
+                "trip_id": trip_id,
+                "event_type": "swap_activity",
+                "message": "swap",
+                "target_node_id": target["node_id"],
+                "preferences": {"replacement_venue_id": open_v.venue_id},
+            },
+            headers=h,
+        )
+        assert r.status_code == 200
+        after = next(n for n in r.json()["updated_nodes"] if n["node_id"] == target["node_id"])
+        assert after["venue_name"] == "SlotKeeper"
+        assert after.get("slot_name") == original_slot
 
 
 # ---------------------------------------------------------------------------

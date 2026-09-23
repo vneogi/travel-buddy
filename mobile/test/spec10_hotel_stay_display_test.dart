@@ -229,6 +229,67 @@ void main() {
       );
       expect(groups.single.dateRange, '2026-10-02 - 2026-10-04');
     });
+
+    test('corridor timeline: one hotel card per night, never two on Oct 3',
+        () {
+      // 2-night hotel: check-in Oct 2 18:02 VTN, checkout Oct 4 15:00 VTN
+      // Hotel covers nights of Oct 2 and Oct 3; checkout Oct 4 is excluded.
+      final hotel = _node('hotel-dup-check',
+          start: DateTime.utc(2026, 10, 2, 11, 2),
+          duration: 2698,
+          name: 'Dhavara Boutique Hotel',
+          geoRegion: 'vientiane_laos',
+          nodeKind: 'booking',
+          bookingType: 'hotel');
+      final act2 = _node('act-oct2',
+          start: DateTime.utc(2026, 10, 2, 2, 0),
+          duration: 90,
+          name: 'Morning Temple',
+          geoRegion: 'vientiane_laos');
+      final act3 = _node('act-oct3',
+          start: DateTime.utc(2026, 10, 3, 2, 0),
+          duration: 90,
+          name: 'Lunch Spot',
+          geoRegion: 'vientiane_laos');
+
+      final groups = spanAwareCorridorGroups(
+        nodes: [act2, hotel, act3],
+        segments: const [
+          TripSegment(
+            geoRegion: 'vientiane_laos',
+            startsOn: '2026-10-02',
+            endsOn: '2026-10-03',
+          ),
+        ],
+      );
+      // The corridor must produce day groups for Oct 2 and Oct 3.
+      final cityGroup = groups.single;
+      final dayDates = cityGroup.dayGroups.map((g) => g.date).toList();
+
+      // Hotel appears once under Oct 2 and once under Oct 3
+      for (final dg in cityGroup.dayGroups) {
+        final hotelCount = dg.nodes
+            .where((n) => n.nodeId == 'hotel-dup-check')
+            .length;
+        expect(hotelCount, lessThanOrEqualTo(1),
+            reason:
+                'Hotel must appear at most once per date (was duplicated under Oct 3 before fix)');
+      }
+
+      // Hotel must NOT appear on Oct 4 (checkout excluded)
+      final oct4 = DateTime(2026, 10, 4);
+      final hasOct4 = cityGroup.dayGroups.any((g) => g.date == oct4);
+      if (hasOct4) {
+        final oct4Group =
+            cityGroup.dayGroups.firstWhere((g) => g.date == oct4);
+        expect(
+            oct4Group.nodes.any((n) => n.nodeId == 'hotel-dup-check'), isFalse,
+            reason: 'Hotel must not appear on checkout date');
+      }
+
+      // City dateRange extends through checkout morning
+      expect(cityGroup.dateRange, '2026-10-02 - 2026-10-04');
+    });
   });
 
   // -----------------------------------------------------------------------

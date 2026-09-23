@@ -421,12 +421,7 @@ class TestEarlyEveningArrival:
         assert nodes[0].venue_name == "Dinner Spot"
 
     def test_no_activity_generated_on_late_arrival(self):
-        """With relaxed slot fallback, an activity MAY fill a dinner slot.
-
-        G0 field-fix: relaxed fallback allows any venue in any timing-eligible
-        slot when the strict type (food for dinner) is unavailable. The slot
-        ORDER is the critical invariant; strict type matching is a preference.
-        """
+        """Activity venue must not be packed when only dinner slot remains."""
         remaining = compute_remaining_slots(19, None, has_hotel=False)
         pool = [
             _venue("Night Temple", category="temple", lat=19.89, lng=102.13),
@@ -440,10 +435,84 @@ class TestEarlyEveningArrival:
             used_ids=set(),
             remaining_slots=remaining,
         )
-        # Relaxed fallback fills the dinner slot with the activity venue.
-        assert len(nodes) <= 1, "at most one node from a single-venue pool"
-        if nodes:
-            assert nodes[0].slot_name == "dinner"
+        assert nodes == [], "activity venue must not be packed when only dinner slot remains"
+
+
+# -----------------------------------------------------------------------
+# Proof 3b: thin-catalog proofs (strict slot typing)
+# -----------------------------------------------------------------------
+
+
+class TestThinCatalogStrictTyping:
+    """Missing food produces no lunch/dinner rather than relabeling an activity."""
+
+    def test_activity_only_pool_skips_food_slots(self):
+        """A pool with only activity venues produces morning + afternoon, no lunch/dinner."""
+        pool = [
+            _venue("Temple A", category="temple", lat=19.89, lng=102.13),
+            _venue("Museum B", category="museum", lat=19.88, lng=102.12),
+            _venue("Market C", category="market", lat=19.90, lng=102.14),
+        ]
+        day_start = _day_start(2026, 10, 2)
+        nodes, _ = pack_day(
+            candidates=pool,
+            target_count=4,
+            day_start_utc=day_start,
+            geo_region=GEO,
+            used_ids=set(),
+        )
+        slot_names = {n.slot_name for n in nodes}
+        assert "lunch" not in slot_names, "activity must not fill lunch slot"
+        assert "dinner" not in slot_names, "activity must not fill dinner slot"
+        assert len(nodes) == 2, "only morning_tour + afternoon_evening_tour"
+
+    def test_food_only_pool_skips_activity_slots(self):
+        """A pool with only food venues produces lunch + dinner, no morning/afternoon."""
+        pool = [
+            _venue("Cafe A", category="cafe", lat=19.89, lng=102.13),
+            _venue(
+                "Restaurant B",
+                category="restaurant",
+                lat=19.88,
+                lng=102.12,
+                hours_start="09:00",
+                hours_end="22:00",
+            ),
+        ]
+        day_start = _day_start(2026, 10, 2)
+        nodes, _ = pack_day(
+            candidates=pool,
+            target_count=4,
+            day_start_utc=day_start,
+            geo_region=GEO,
+            used_ids=set(),
+        )
+        slot_names = {n.slot_name for n in nodes}
+        assert "morning_tour" not in slot_names, "food must not fill morning_tour slot"
+        assert "afternoon_evening_tour" not in slot_names, "food must not fill afternoon slot"
+        assert len(nodes) == 2, "only lunch + dinner"
+
+    def test_whole_day_excursion_never_in_dinner(self):
+        """A whole-day excursion only fills morning; never dinner or afternoon alone."""
+        pool = [
+            _venue(
+                "Island Trip",
+                category="experience",
+                lat=19.89,
+                lng=102.13,
+                vibe_tags=["island_hopping"],
+            ),
+        ]
+        day_start = _day_start(2026, 10, 2)
+        nodes, _ = pack_day(
+            candidates=pool,
+            target_count=4,
+            day_start_utc=day_start,
+            geo_region=GEO,
+            used_ids=set(),
+            remaining_slots=["dinner"],
+        )
+        assert nodes == [], "whole-day excursion must not fill dinner slot"
 
 
 # -----------------------------------------------------------------------

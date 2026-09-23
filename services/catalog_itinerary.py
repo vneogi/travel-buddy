@@ -108,14 +108,32 @@ def select_day_venues(rows: Sequence[dict]) -> List[dict]:
         if match is not None:
             _take(match)
 
+    # SPEC-41: strict slot typing needs at least 2 food venues (lunch + dinner).
+    # The bucket pass picks at most 1 from the food bucket. Force a second
+    # food venue even if it means exceeding TARGET_STOPS by one.
+    food_count = sum(1 for r in chosen if _is_food_category(r.get("category", "")))
+    if food_count < 2:
+        for row in pool:
+            if _is_food_category(row.get("category", "")):
+                _take(row)
+                food_count = sum(1 for r in chosen if _is_food_category(r.get("category", "")))
+                if food_count >= 2:
+                    break
+
     for row in pool:
-        if len(chosen) >= TARGET_STOPS:
+        if len(chosen) >= max(TARGET_STOPS, len(chosen)):
             break
         _take(row)
 
     if len(chosen) < MIN_STOPS:
         raise InsufficientCatalog(f"need at least {MIN_STOPS} eligible venues, have {len(chosen)}")
-    return chosen[:TARGET_STOPS]
+    return chosen
+
+
+def _is_food_category(category: str) -> bool:
+    from services.day_slots import _FOOD_CATEGORIES
+
+    return (category or "").lower() in _FOOD_CATEGORIES
 
 
 def duration_for(row: dict) -> int:
@@ -257,11 +275,28 @@ def pack_day(
         local_day = day_start_utc.astimezone(tz)
     else:
         local_day = day_start_utc
+    # Compute pool centroid for proximity-based tie-breaking.
+    # Venues closer to the centroid are preferred -- this prevents outlier
+    # venues (e.g. 17km-away Buddha Park) from winning the first slot
+    # and blocking walking transfers to subsequent slots.
+    _lats = [v["lat"] for v in candidates if _has_venue_coords(v)]
+    _lngs = [v["lng"] for v in candidates if _has_venue_coords(v)]
+    _clat = sum(_lats) / len(_lats) if _lats else 0.0
+    _clng = sum(_lngs) / len(_lngs) if _lngs else 0.0
+
+    def _dist_to_centroid(v: dict) -> float:
+        lat = v.get("lat")
+        lng = v.get("lng")
+        if lat is None or lng is None:
+            return 999.0
+        return abs(lat - _clat) + abs(lng - _clng)
+
     # Pre-score and sort candidates for deterministic tie-breaking.
     scored = sorted(
         candidates,
         key=lambda v: (
             -_interest_score(v, interest_ids),
+            _dist_to_centroid(v),
             (v.get("name") or "").lower(),
             str(v.get("venue_id") or ""),
         ),
@@ -298,7 +333,11 @@ def pack_day(
 
         Ignores the lock when it is a hotel (background anchor), belongs to a
         different geo_region, or falls on a different destination-local day.
+        For locked flights, uses the canonical ``violates_flight_cutoff``
+        (150-minute buffer) instead of plain walking-arrival.
         """
+        from services.booking_constraints import violates_flight_cutoff as _vfc
+
         if next_locked_booking is None:
             return True
         lock = next_locked_booking
@@ -321,7 +360,18 @@ def pack_day(
             slot_local_day = slot.date()
         if lock_local_day != slot_local_day:
             return True
-        # Relevant same-day, same-region, non-hotel lock: require coords.
+
+        # Flights: use the canonical 150-minute cutoff.
+        if getattr(lock, "booking_type", "") == "flight":
+            return not _vfc(
+                slot,
+                dwell,
+                lock,
+                activity_lat=venue.get("lat"),
+                activity_lng=venue.get("lng"),
+            )
+
+        # Non-flight, same-day lock: require coords + walking arrival.
         import math as _m
 
         if (
@@ -353,45 +403,41 @@ def pack_day(
         best_start: Optional[datetime] = None
         best_rank = -1
 
-        # Two-pass: strict slot-type match first, then relaxed (any venue).
-        # Strict prefers food for lunch/dinner, activity for morning/afternoon.
-        # Relaxed falls back to any venue when the pool lacks enough food.
-        for _strict in (True, False):
-            if best_candidate is not None:
-                break
-            for rank, venue in enumerate(scored):
-                vk = _venue_key(venue)
-                if vk in new_used:
-                    continue
+        for rank, venue in enumerate(scored):
+            vk = _venue_key(venue)
+            if vk in new_used:
+                continue
 
-                if not _has_venue_coords(venue):
-                    continue
+            if not _has_venue_coords(venue):
+                continue
 
-                if _strict and not _venue_fits_slot(venue, target_slot, active_slots):
-                    continue
+            # Strict slot-type match: food for lunch/dinner, activity for
+            # morning/afternoon.  No cross-type fallback.
+            if not _venue_fits_slot(venue, target_slot, active_slots):
+                continue
 
-                earliest = _candidate_earliest(venue)
-                if earliest is None:
-                    continue
+            earliest = _candidate_earliest(venue)
+            if earliest is None:
+                continue
 
-                earliest = max(earliest, _slot_floor_utc(target_slot, local_day, tz))
-                dwell = duration_for(venue)
-                structured = venue.get("opening_hours_structured")
-                slot = _next_slot_start(structured, earliest, dwell, geo_region, local_day)
-                if slot is None or not _slot_accepts_start(target_slot, slot, geo_region):
-                    continue
+            earliest = max(earliest, _slot_floor_utc(target_slot, local_day, tz))
+            dwell = duration_for(venue)
+            structured = venue.get("opening_hours_structured")
+            slot = _next_slot_start(structured, earliest, dwell, geo_region, local_day)
+            if slot is None or not _slot_accepts_start(target_slot, slot, geo_region):
+                continue
 
-                if not _fits_next_lock(venue, slot, dwell):
-                    continue
+            if not _fits_next_lock(venue, slot, dwell):
+                continue
 
-                if best_start is None or slot < best_start:
-                    best_candidate = venue
-                    best_start = slot
-                    best_rank = rank
-                elif slot == best_start and rank < best_rank:
-                    best_candidate = venue
-                    best_start = slot
-                    best_rank = rank
+            if best_start is None or slot < best_start:
+                best_candidate = venue
+                best_start = slot
+                best_rank = rank
+            elif slot == best_start and rank < best_rank:
+                best_candidate = venue
+                best_start = slot
+                best_rank = rank
 
         if best_candidate is None:
             continue  # honest short day: skip this slot
@@ -406,7 +452,7 @@ def pack_day(
                         continue
                     if not _has_venue_coords(venue):
                         continue
-                    if _strict and not _venue_fits_slot(venue, target_slot, active_slots):
+                    if not _venue_fits_slot(venue, target_slot, active_slots):
                         continue
                     bidx = _bucket_index(venue)
                     if bidx in used_buckets:
@@ -460,6 +506,10 @@ def nodes_from_catalog(
     if len(pool) < MIN_STOPS:
         raise InsufficientCatalog(f"need at least {MIN_STOPS} eligible venues, have {len(pool)}")
 
+    # Pass the full eligible pool to pack_day. Slot-driven iteration
+    # handles diversity (food for lunch/dinner, activity for morning/afternoon).
+    # A pre-selected subset (select_day_venues) could starve slots when
+    # outlier venues block walking transfers.
     nodes, _used = pack_day(
         candidates=pool,
         target_count=TARGET_STOPS,

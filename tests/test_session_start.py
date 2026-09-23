@@ -11,6 +11,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 import pytest
+from freezegun import freeze_time
 from fastapi.testclient import TestClient
 
 from main import app
@@ -43,15 +44,19 @@ def test_session_start_accepted():
     assert len(data["rejected"]) == 0
 
 
+@freeze_time("2026-09-15T12:00:00Z")
 def test_session_start_trip_day_from_captured_at():
     """trip_day is computed from captured_at relative to trip.created_at,
     NOT from datetime.now(). An old captured_at proves this.
 
     Sabotage proof S2: using datetime.now() instead of captured_at
     would produce today-relative days, not the asserted value of 3.
-    The dates (Sep 10 start, Sep 13 captured_at) are within the
-    30-day skew tolerance but far enough from now to prove the
-    computation uses captured_at, not wall-clock.
+
+    Frozen clock at Sep 15 2026 guarantees the trip (created Sep 10)
+    is always within the 30-day skew tolerance regardless of when
+    the test suite runs.  The captured_at (Sep 13) is intentionally
+    different from the frozen "now" to prove trip_day derives from
+    captured_at, not wall-clock.
     """
     trip_id = f"trip-session-{uuid.uuid4().hex[:8]}"
     trip_created = datetime(2026, 9, 10, 10, 0, tzinfo=timezone.utc)

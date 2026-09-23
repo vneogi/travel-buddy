@@ -639,21 +639,9 @@ async def swap_candidates(
     hours, unified reachability, flight buffer, hotel-return, same geo_region.
     Both in-memory and Supabase paths use the same filtering (R4).
     """
-    from services.booking_constraints import (
-        find_constraining_flight,
-        find_covering_hotel,
-        is_hotel_booking,
-        violates_flight_cutoff,
-        violates_hotel_return,
-    )
     from services.opening_hours import HoursResult, hours_for_slot
     from services.catalog_itinerary import duration_for as _dur_for
-    from agents.state_machine import (
-        _is_swap_reachable,
-        is_first_unlocked_activity,
-        is_last_unlocked_activity,
-    )
-    from models.schemas import NodeStatus
+    from agents.state_machine import _is_swap_reachable
 
     trip = db_service.get_trip(trip_id)
     if trip is None or trip.user_id != user_id:
