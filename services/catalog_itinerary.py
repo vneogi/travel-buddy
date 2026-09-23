@@ -15,8 +15,8 @@ from services.opening_hours import hours_for_slot as _hours_for_slot
 from services.opening_hours import next_slot_start as _next_slot_start
 from services.day_slots import (
     SLOT_ORDER as _SLOT_ORDER,
-    assign_slot as _assign_slot,
-    has_matching_slot as _has_matching_slot,
+    is_whole_day_excursion as _is_whole_day_excursion,
+    venue_fits_slot as _venue_fits_slot,
 )
 
 INFRASTRUCTURE_CATEGORIES = frozenset({"hospital", "pharmacy", "transport_hub"})
@@ -178,6 +178,44 @@ def _has_venue_coords(venue: dict) -> bool:
         return False
 
 
+def _slot_floor_utc(target_slot: str, local_day: datetime, tz) -> datetime:
+    """Earliest destination-local wall time allowed for a named slot."""
+    floors = {
+        "morning_tour": (0, 0),
+        "lunch": (11, 0),
+        "afternoon_evening_tour": (14, 0),
+        "dinner": (17, 0),
+    }
+    hour, minute = floors[target_slot]
+    local_floor = local_day.replace(hour=hour, minute=minute, second=0, microsecond=0)
+    return local_floor.astimezone(timezone.utc) if tz is not None else local_floor
+
+
+def _slot_accepts_start(target_slot: str, start_utc: datetime, geo_region: str) -> bool:
+    """True when *start_utc* belongs to the intended named slot band.
+
+    Product rules:
+    * morning_tour must start before 11:00 local
+    * lunch must start before 14:00 local
+    * afternoon_evening_tour starts at or after 14:00 local
+    * dinner starts at or after 17:00 local
+    """
+    from services.destination_tz import destination_tz as _dest_tz
+
+    tz = _dest_tz(geo_region)
+    local = start_utc.astimezone(tz) if tz is not None else start_utc
+    hhmm = (local.hour, local.minute)
+    if target_slot == "morning_tour":
+        return hhmm < (11, 0)
+    if target_slot == "lunch":
+        return (11, 0) <= hhmm < (14, 0)
+    if target_slot == "afternoon_evening_tour":
+        return hhmm >= (14, 0)
+    if target_slot == "dinner":
+        return hhmm >= (17, 0)
+    return False
+
+
 def pack_day(
     candidates: Sequence[dict],
     target_count: int,
@@ -299,61 +337,66 @@ def pack_day(
         transfer = _walking_minutes(venue["lat"], venue["lng"], lock.lat, lock.lng)
         return cand_end + timedelta(minutes=transfer) <= lock.scheduled_start
 
-    for _stop in range(target_count):
-        if not active_slots:  # SPEC-41: all named slots consumed
+    # G0 field-fix: iterate named slots in SLOT_ORDER so the scheduled_start
+    # sequence always follows morning -> lunch -> afternoon -> dinner.
+    # Each slot picks the best eligible candidate for that specific slot
+    # type (food for lunch/dinner, activity for morning/afternoon).
+    _WHOLE_DAY_CONSUMED_SET = frozenset({"morning_tour", "lunch", "afternoon_evening_tour"})
+
+    for target_slot in list(_SLOT_ORDER):
+        if target_slot not in active_slots:
+            continue
+        if len(nodes) >= target_count:
             break
+
         best_candidate = None
         best_start: Optional[datetime] = None
         best_rank = -1
 
-        for rank, venue in enumerate(scored):
-            vk = _venue_key(venue)
-            if vk in new_used:
-                continue
+        # Two-pass: strict slot-type match first, then relaxed (any venue).
+        # Strict prefers food for lunch/dinner, activity for morning/afternoon.
+        # Relaxed falls back to any venue when the pool lacks enough food.
+        for _strict in (True, False):
+            if best_candidate is not None:
+                break
+            for rank, venue in enumerate(scored):
+                vk = _venue_key(venue)
+                if vk in new_used:
+                    continue
 
-            # Geometry eligibility: candidate must have coordinates
-            if not _has_venue_coords(venue):
-                continue
+                if not _has_venue_coords(venue):
+                    continue
 
-            # SPEC-41 slot eligibility: skip if no matching slot available.
-            if not _has_matching_slot(venue, active_slots):
-                continue
+                if _strict and not _venue_fits_slot(venue, target_slot, active_slots):
+                    continue
 
-            # Compute per-candidate earliest arrival from previous node
-            earliest = _candidate_earliest(venue)
-            if earliest is None:
-                continue
+                earliest = _candidate_earliest(venue)
+                if earliest is None:
+                    continue
 
-            dwell = duration_for(venue)
-            structured = venue.get("opening_hours_structured")
-            slot = _next_slot_start(structured, earliest, dwell, geo_region, local_day)
-            if slot is None:
-                continue
+                earliest = max(earliest, _slot_floor_utc(target_slot, local_day, tz))
+                dwell = duration_for(venue)
+                structured = venue.get("opening_hours_structured")
+                slot = _next_slot_start(structured, earliest, dwell, geo_region, local_day)
+                if slot is None or not _slot_accepts_start(target_slot, slot, geo_region):
+                    continue
 
-            # Next-locked-booking check
-            if not _fits_next_lock(venue, slot, dwell):
-                continue
+                if not _fits_next_lock(venue, slot, dwell):
+                    continue
 
-            # Bucket diversity: in pass 1, prefer unfilled buckets
-            if bucket_diversity and len(nodes) < min(target_count, len(CATEGORY_BUCKETS)):
-                bidx = _bucket_index(venue)
-                if bidx in used_buckets:
-                    pass
-
-            if best_start is None or slot < best_start:
-                best_candidate = venue
-                best_start = slot
-                best_rank = rank
-            elif slot == best_start and rank < best_rank:
-                best_candidate = venue
-                best_start = slot
-                best_rank = rank
+                if best_start is None or slot < best_start:
+                    best_candidate = venue
+                    best_start = slot
+                    best_rank = rank
+                elif slot == best_start and rank < best_rank:
+                    best_candidate = venue
+                    best_start = slot
+                    best_rank = rank
 
         if best_candidate is None:
-            break
+            continue  # honest short day: skip this slot
 
-        # Apply bucket diversity: if a bucket-fresh candidate has the same
-        # earliest start, prefer it.
+        # Bucket diversity: prefer a bucket-fresh candidate at the same start.
         if bucket_diversity and len(nodes) < min(target_count, len(CATEGORY_BUCKETS)):
             best_bidx = _bucket_index(best_candidate)
             if best_bidx in used_buckets:
@@ -363,7 +406,7 @@ def pack_day(
                         continue
                     if not _has_venue_coords(venue):
                         continue
-                    if not _has_matching_slot(venue, active_slots):
+                    if _strict and not _venue_fits_slot(venue, target_slot, active_slots):
                         continue
                     bidx = _bucket_index(venue)
                     if bidx in used_buckets:
@@ -371,10 +414,15 @@ def pack_day(
                     earliest = _candidate_earliest(venue)
                     if earliest is None:
                         continue
+                    earliest = max(earliest, _slot_floor_utc(target_slot, local_day, tz))
                     dwell = duration_for(venue)
                     structured = venue.get("opening_hours_structured")
                     slot = _next_slot_start(structured, earliest, dwell, geo_region, local_day)
-                    if slot is not None and slot == best_start:
+                    if (
+                        slot is not None
+                        and _slot_accepts_start(target_slot, slot, geo_region)
+                        and slot == best_start
+                    ):
                         if not _fits_next_lock(venue, slot, dwell):
                             continue
                         best_candidate = venue
@@ -385,12 +433,13 @@ def pack_day(
 
             used_buckets.add(_bucket_index(best_candidate))
 
-        # SPEC-41: consume the slot name from active_slots.
-        # has_matching_slot above guarantees a slot is available here.
-        try:
-            _slot_name, active_slots = _assign_slot(best_candidate, active_slots)
-        except ValueError:
-            break  # should not happen: has_matching_slot filter guarantees availability
+        # Consume the slot(s).
+        if _is_whole_day_excursion(best_candidate):
+            _slot_name = target_slot
+            active_slots = [s for s in active_slots if s not in _WHOLE_DAY_CONSUMED_SET]
+        else:
+            _slot_name = target_slot
+            active_slots = [s for s in active_slots if s != target_slot]
 
         vk = _venue_key(best_candidate)
         new_used.add(vk)

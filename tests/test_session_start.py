@@ -49,12 +49,12 @@ def test_session_start_trip_day_from_captured_at():
 
     Sabotage proof S2: using datetime.now() instead of captured_at
     would produce today-relative days, not the asserted value of 3.
-    The dates (Aug 20 start, Aug 23 captured_at) are within the
+    The dates (Sep 10 start, Sep 13 captured_at) are within the
     30-day skew tolerance but far enough from now to prove the
     computation uses captured_at, not wall-clock.
     """
     trip_id = f"trip-session-{uuid.uuid4().hex[:8]}"
-    trip_created = datetime(2026, 8, 20, 10, 0, tzinfo=timezone.utc)
+    trip_created = datetime(2026, 9, 10, 10, 0, tzinfo=timezone.utc)
     trip = TripState(
         trip_id=trip_id,
         user_id="test-user-session-start",
@@ -63,8 +63,8 @@ def test_session_start_trip_day_from_captured_at():
     )
     db_service.save_trip(trip)
 
-    # captured_at is Aug 23 -> trip_day should be 3
-    captured_at = datetime(2026, 8, 23, 15, 0, tzinfo=timezone.utc)
+    # captured_at is Sep 13 -> trip_day should be 3
+    captured_at = datetime(2026, 9, 13, 15, 0, tzinfo=timezone.utc)
     signal_id = str(uuid.uuid4())
     payload = {
         "signals": [

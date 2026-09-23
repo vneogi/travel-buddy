@@ -553,6 +553,7 @@ class _CorridorTimelineState extends State<_CorridorTimeline> {
         isCorridor: true,
         globalNextNode: nextCityFirst,
         nodeKeys: _nodeKeys,
+        dayGroupsOverride: cityGroup.dayGroups,
       ),
     );
   }
@@ -667,6 +668,7 @@ class _DateScopedTimeline extends StatelessWidget {
   final bool isCorridor;
   final TripNode? globalNextNode;
   final Map<String, GlobalKey>? nodeKeys;
+  final List<ItineraryDayGroup>? dayGroupsOverride;
 
   const _DateScopedTimeline({
     required this.nodes,
@@ -682,6 +684,7 @@ class _DateScopedTimeline extends StatelessWidget {
     this.isCorridor = false,
     this.globalNextNode,
     this.nodeKeys,
+    this.dayGroupsOverride,
   });
 
   @override
@@ -689,7 +692,9 @@ class _DateScopedTimeline extends StatelessWidget {
     // SPEC-42: render every date in the trip span, including empty days.
     final List<ItineraryDayGroup> groups;
     final ctx = creationContext;
-    if (!isCorridor &&
+    if (dayGroupsOverride != null) {
+      groups = dayGroupsOverride!;
+    } else if (!isCorridor &&
         ctx != null &&
         ctx.startDateLocal != null &&
         ctx.endDateLocal != null) {

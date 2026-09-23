@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/services.dart';
+import 'dart:math' as math;
 import '../core/destination_tz.dart';
 import '../data/models.dart';
 import '../features/itinerary/current_window.dart';
@@ -23,6 +24,35 @@ IconData _bookingIcon(String? bookingType) {
     default:
       return Icons.bookmark_border;
   }
+}
+
+int _hotelNights(TripNode node) {
+  final checkIn = toDestinationLocal(node.scheduledStart, node.geoRegion);
+  final checkout = toDestinationLocal(
+    node.scheduledStart.add(Duration(minutes: node.durationMinutes)),
+    node.geoRegion,
+  );
+  final startDate = DateTime(checkIn.year, checkIn.month, checkIn.day);
+  final endDate = DateTime(checkout.year, checkout.month, checkout.day);
+  return math.max(1, endDate.difference(startDate).inDays);
+}
+
+String _dayMonth(DateTime dt) {
+  const months = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+  return '${dt.day} ${months[dt.month - 1]}';
+}
+
+String _hotelStaySummary(TripNode node) {
+  final nights = _hotelNights(node);
+  final checkout = toDestinationLocal(
+    node.scheduledStart.add(Duration(minutes: node.durationMinutes)),
+    node.geoRegion,
+  );
+  final noun = nights == 1 ? 'night' : 'nights';
+  return '$nights $noun · checkout ${_dayMonth(checkout)}';
 }
 
 /// Timeline activity card. Shows venue, time, vibe chips, transit.
@@ -325,6 +355,11 @@ class ActivityCard extends StatelessWidget {
                       if (node.microLocation != null) ...[
                         const SizedBox(height: AppSpacing.xs),
                         Text(node.microLocation!, style: AppTypography.caption),
+                      ],
+                      if (node.nodeKind == 'booking' &&
+                          node.bookingType == 'hotel') ...[
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(_hotelStaySummary(node), style: AppTypography.caption),
                       ],
                       if (node.bookingNotes != null &&
                           node.bookingNotes!.isNotEmpty) ...[

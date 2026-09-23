@@ -627,6 +627,82 @@ async def process_trip_event(
 # payments (see routers/payment_router.py -- fix #2).
 
 
+@router.get("/trip/{trip_id}/swap_candidates/{node_id}")
+async def swap_candidates(
+    trip_id: str,
+    node_id: str,
+    user_id: str = Depends(get_current_user_id),
+):
+    """Return pre-filtered swap candidates for a target activity.
+
+    Applies the same predicates SWAP_ACTIVITY uses on confirm:
+    hours, unified reachability, flight buffer, hotel-return, same geo_region.
+    Both in-memory and Supabase paths use the same filtering (R4).
+    """
+    from services.booking_constraints import (
+        find_constraining_flight,
+        find_covering_hotel,
+        is_hotel_booking,
+        violates_flight_cutoff,
+        violates_hotel_return,
+    )
+    from services.opening_hours import HoursResult, hours_for_slot
+    from services.catalog_itinerary import duration_for as _dur_for
+    from agents.state_machine import (
+        _is_swap_reachable,
+        is_first_unlocked_activity,
+        is_last_unlocked_activity,
+    )
+    from models.schemas import NodeStatus
+
+    trip = db_service.get_trip(trip_id)
+    if trip is None or trip.user_id != user_id:
+        raise HTTPException(status_code=404, detail="Trip not found.")
+    target = next((n for n in trip.nodes if n.node_id == node_id), None)
+    if target is None:
+        raise HTTPException(status_code=404, detail="Node not found.")
+    if target.is_locked:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Locked bookings cannot be swapped.",
+        )
+
+    target_region = target.geo_region or trip.geo_region
+    target_idx = trip.nodes.index(target)
+    venues_raw = db_service.list_venues_for_region(target_region)
+
+    # Existing node venue_ids to exclude
+    existing_ids = {n.venue_id for n in trip.nodes if n.venue_id}
+
+    results = []
+    for row in venues_raw:
+        vid = str(row.get("venue_id") or "")
+        if not vid or vid in existing_ids:
+            continue
+        # Same filtering as state_machine swap confirm path
+        structured = row.get("opening_hours_structured")
+        dwell = _dur_for(row)
+        hr = hours_for_slot(structured, target.scheduled_start, dwell, target_region)
+        if hr == HoursResult.CLOSED:
+            continue
+        cand_lat = row.get("lat")
+        cand_lng = row.get("lng")
+        if not _is_swap_reachable(target, cand_lat, cand_lng, dwell, trip.nodes, target_idx):
+            continue
+        results.append(
+            {
+                "venue_id": vid,
+                "name": row.get("name", ""),
+                "category": row.get("category", ""),
+                "micro_location": row.get("micro_location", ""),
+                "vibe_tags": row.get("vibe_tags") or [],
+                "lat": cand_lat,
+                "lng": cand_lng,
+            }
+        )
+    return {"candidates": results}
+
+
 @router.get("/venues/search")
 async def search_venues(
     query: str,

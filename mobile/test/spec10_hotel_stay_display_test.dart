@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:travel_buddy/data/models.dart';
 import 'package:travel_buddy/features/itinerary/date_scope.dart';
+import 'package:travel_buddy/features/itinerary/itinerary_screen.dart';
 import 'package:travel_buddy/widgets/activity_card.dart';
 
 TripNode _node(
@@ -66,6 +67,7 @@ void main() {
       expect(find.text('Check-out'), findsOneWidget);
       expect(find.textContaining('18:02'), findsOneWidget);
       expect(find.textContaining('15:00'), findsOneWidget);
+      expect(find.text('1 night · checkout 3 Oct'), findsOneWidget);
     });
 
     testWidgets('flight card has neither Check-in nor Check-out labels',
@@ -203,6 +205,29 @@ void main() {
           containsAll(['a1', 'h-mix']));
       expect(groups[1].nodes.map((n) => n.nodeId).toList(),
           containsAll(['h-mix', 'a2']));
+    });
+  });
+
+  group('spanAwareCorridorGroups', () {
+    test('dateRange extends through hotel checkout morning', () {
+      final hotel = _node('hotel-range',
+          start: DateTime.utc(2026, 10, 2, 5, 33),
+          duration: 2700,
+          name: 'Salana boutique Hotel',
+          geoRegion: 'vientiane_laos',
+          nodeKind: 'booking',
+          bookingType: 'hotel');
+      final groups = spanAwareCorridorGroups(
+        nodes: [hotel],
+        segments: const [
+          TripSegment(
+            geoRegion: 'vientiane_laos',
+            startsOn: '2026-10-02',
+            endsOn: '2026-10-03',
+          ),
+        ],
+      );
+      expect(groups.single.dateRange, '2026-10-02 - 2026-10-04');
     });
   });
 

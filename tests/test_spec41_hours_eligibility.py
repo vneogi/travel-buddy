@@ -140,15 +140,20 @@ class TestCreateHoursFiltering:
             [
                 _make_venue_row("Food1", structured=_make_hours({}), category="cafe", dwell=60),
                 _make_venue_row(
-                    "Food2", structured=_make_hours({}), category="restaurant", dwell=60
+                    "Food2", structured=_evening_hours(), category="restaurant", dwell=60
                 ),
             ]
         )
         # Monday 09:00 ICT -> 02:00 UTC
         start = _ict_to_utc(2026, 9, 14, 9)
         nodes = nodes_from_catalog(geo_region=GEO, start=start, rows=rows)
-        names = [n.venue_name for n in nodes]
-        assert "Night Market" not in names
+        # G0: with relaxed slot fallback, Night Market may fill a dinner/evening
+        # slot. The key property: it must NOT appear in a morning slot.
+        for n in nodes:
+            if n.venue_name == "Night Market":
+                assert n.slot_name != "morning_tour", (
+                    f"Night Market placed in morning_tour slot at {n.scheduled_start}"
+                )
 
     def test_tuesday_closed_venue_not_placed_tuesday(self):
         """A venue closed on Tuesday must not appear on a Tuesday."""
@@ -161,7 +166,7 @@ class TestCreateHoursFiltering:
             [
                 _make_venue_row("Food1", structured=_make_hours({}), category="cafe", dwell=60),
                 _make_venue_row(
-                    "Food2", structured=_make_hours({}), category="restaurant", dwell=60
+                    "Food2", structured=_evening_hours(), category="restaurant", dwell=60
                 ),
             ]
         )
@@ -181,7 +186,7 @@ class TestCreateHoursFiltering:
             [
                 _make_venue_row("Food1", structured=_make_hours({}), category="cafe", dwell=60),
                 _make_venue_row(
-                    "Food2", structured=_make_hours({}), category="restaurant", dwell=60
+                    "Food2", structured=_evening_hours(), category="restaurant", dwell=60
                 ),
             ]
         )
@@ -199,7 +204,7 @@ class TestCreateHoursFiltering:
             [
                 _make_venue_row("Food1", structured=_make_hours({}), category="cafe", dwell=60),
                 _make_venue_row(
-                    "Food2", structured=_make_hours({}), category="restaurant", dwell=60
+                    "Food2", structured=_evening_hours(), category="restaurant", dwell=60
                 ),
             ]
         )
@@ -249,7 +254,7 @@ class TestCreateHoursFiltering:
             [
                 _make_venue_row("Food1", structured=_make_hours({}), category="cafe", dwell=60),
                 _make_venue_row(
-                    "Food2", structured=_make_hours({}), category="restaurant", dwell=60
+                    "Food2", structured=_evening_hours(), category="restaurant", dwell=60
                 ),
             ]
         )
@@ -492,6 +497,45 @@ class TestSwapStateMachine:
         assert r2.status_code == 200
         node2 = next(n for n in r2.json()["updated_nodes"] if n["node_id"] == target["node_id"])
         assert node2["venue_name"] == "Quick Visit"
+
+    def test_swap_candidates_endpoint_hides_closed_venue(self):
+        """Sheet candidate list must exclude venues that swap confirm would refuse."""
+        closed_v = _make_venue_rag("Closed Candidate", structured=_evening_hours(), dwell=60)
+        open_v = _make_venue_rag("Open Candidate", structured=_make_hours({}), dwell=60)
+        h = auth("spec41-swap-candidates-1")
+        trip_id, target = _seed_swap_trip([closed_v, open_v], headers=h)
+        r = client.get(
+            f"/api/v1/trip/{trip_id}/swap_candidates/{target['node_id']}",
+            headers=h,
+        )
+        assert r.status_code == 200, r.text
+        names = [v["name"] for v in r.json()["candidates"]]
+        assert "Closed Candidate" not in names
+        assert "Open Candidate" in names
+
+    def test_swap_preserves_target_slot_name(self):
+        """Successful swap keeps the original slot_name on the replaced node."""
+        open_v = _make_venue_rag("Preserve Slot", structured=_make_hours({}), dwell=60)
+        h = auth("spec41-swap-slot-name")
+        trip_id, target = _seed_swap_trip([open_v], headers=h)
+        original_trip = client.get(f"/api/v1/trip/{trip_id}", headers=h)
+        assert original_trip.status_code == 200
+        before = next(n for n in original_trip.json()["nodes"] if n["node_id"] == target["node_id"])
+        r = client.post(
+            "/api/v1/trip/event",
+            json={
+                "trip_id": trip_id,
+                "event_type": "swap_activity",
+                "message": "swap",
+                "target_node_id": target["node_id"],
+                "preferences": {"replacement_venue_id": open_v.venue_id},
+            },
+            headers=h,
+        )
+        assert r.status_code == 200
+        after = next(n for n in r.json()["updated_nodes"] if n["node_id"] == target["node_id"])
+        assert after["venue_name"] == "Preserve Slot"
+        assert after.get("slot_name") == before.get("slot_name")
 
     def test_maps_validation_not_called_during_swap(self):
         """Swap must skip Maps validate_venues entirely."""
@@ -1113,12 +1157,13 @@ class TestTripNodeStructuredHours:
     def test_nodes_from_catalog_copies_structured(self):
         """nodes_from_catalog copies opening_hours_structured onto TripNode."""
         hours = _make_hours({})
+        eve_hours = {d: [["09:00", "22:00"]] for d in _ALL_DAYS}
         rows = _pool_of(5, structured=hours, dwell=60)
-        # Two food venues so all 4 named slots can be filled.
+        # Two food venues (one with evening hours for dinner slot).
         rows.extend(
             [
                 _make_venue_row("Food1", structured=hours, category="cafe", dwell=60),
-                _make_venue_row("Food2", structured=hours, category="restaurant", dwell=60),
+                _make_venue_row("Food2", structured=eve_hours, category="restaurant", dwell=60),
             ]
         )
         start = _ict_to_utc(2026, 9, 14, 9)
@@ -1146,7 +1191,7 @@ class TestSabotageProofs:
             [
                 _make_venue_row("Food1", structured=_make_hours({}), category="cafe", dwell=60),
                 _make_venue_row(
-                    "Food2", structured=_make_hours({}), category="restaurant", dwell=60
+                    "Food2", structured=_evening_hours(), category="restaurant", dwell=60
                 ),
             ]
         )

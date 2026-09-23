@@ -190,7 +190,10 @@ class TestPackDayWalking:
         a_end = nodes[0].scheduled_start + timedelta(minutes=nodes[0].duration_minutes)
         gap = (nodes[1].scheduled_start - a_end).total_seconds() / 60
         expected = walking_minutes(lat_a, lng_a, lat_b, lng_b)
-        assert gap == expected, f"Gap {gap} != walking_minutes {expected}"
+        # G0: with slot-driven packing, the gap includes both walking transfer
+        # and any slot-floor wait (e.g. lunch floor at 11:00 local). The key
+        # invariant: gap is never LESS than walking_minutes.
+        assert gap >= expected, f"Gap {gap} must be >= walking_minutes {expected}"
 
     def test_far_venue_unreachable_before_window_close(self):
         """A far second venue that can't walk from the first is absent."""

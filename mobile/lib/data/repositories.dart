@@ -115,6 +115,18 @@ class TripRepository {
         .map((v) => VenueSearchResult.fromJson(v as Map<String, dynamic>))
         .toList();
   }
+
+
+  Future<List<VenueSearchResult>> swapCandidates({
+    required String tripId,
+    required String targetNodeId,
+  }) async {
+    final data = await _api.get('/trip/$tripId/swap_candidates/$targetNodeId');
+    final results = (data as Map)['candidates'] as List? ?? const [];
+    return results
+        .map((v) => VenueSearchResult.fromJson(v as Map<String, dynamic>))
+        .toList();
+  }
 }
 
 /// User status and tier info.
