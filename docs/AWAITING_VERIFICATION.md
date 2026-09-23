@@ -15,6 +15,16 @@ other.
 Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 `#85` and so on; those numbers cannot be reconciled against `git log`.
 
+## Finding -- Sep 24 2026 -- G0 field-fix Flutter green on db754d9
+
+Owner Windows worktree `.worktrees/verify-g0-db754d9` at
+`db754d9` (later merge `2ab8d57`). `flutter analyze`: infos only
+(prefer_const_constructors class; no unused-import warning).
+`flutter test` on spec10, spec17, spec36: all passed.
+Full `flutter test`: all passed. Hosted Cloud Run and signed APK
+remain the previous G0 revision. Phone retest of slot order, swap
+sheet, and hotel cards is still owed after an explicit deploy.
+
 ## Finding -- Sep 20 2026 -- named slots Flutter green on f1feb17
 
 Owner Windows on `feat/spec41-named-slots` at `f1feb17`.

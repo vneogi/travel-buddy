@@ -84,7 +84,7 @@
 | Offline vault (SPEC-04) | CACHE FLOOR DONE; RESCUE REMOVED | PR #22 (`b7e10c3`) + PR #23 (`dab16c0`) shipped offline itinerary fallback and cached driver cards. Sep 5 owner decision retired the duplicate Hotel Rescue AppBar shortcut; driver-card action on hotel bookings remains. Offline maps are a post-Bangkok-factory measured prototype with an optional versioned artifact manifest, not a current vendor commitment |
 | Anonymous identity (SPEC-09) | DONE (client + server) | Client half landed PR #16 (`7173a3f`): UUID v4 in flutter_secure_storage, Anonymous header, TB_DEBUG_USER_ID removed. Server half already verified. Record any remaining Anonymous E2E gap explicitly; the laptop is available |
 | Itinerary normalisation (SPEC-16) | IMPLEMENTED | Decompose and compose land in services/itinerary_normaliser.py, dual-write in both backends, round-trip equality asserted, wire format unchanged. node_id is stable across reschedules via state_json and now comes from models/ids.py. SPEC-30 (`f8349a8`) writes `trip_edge.observed_duration_minutes` from consecutive arrivals |
-| Booking anchors (SPEC-10) | PARTIAL | Create/edit/delete on main (PR #20, PR #37). Provider-aware paste on main (`fc6926b`). Flight cutoff and hotel origin/return on main (`e7a0457`). Naive wall times are destination-local on main (`933c705`). Hotel stay display on main (`7b62818`). Named slots on create/corridor (`9173b23`). Create-then-book HITL reflow and server-side document consent remain |
+| Booking anchors (SPEC-10) | PARTIAL | Create/edit/delete on main (PR #20, PR #37). Provider-aware paste on main (`fc6926b`). Flight cutoff and hotel origin/return on main (`e7a0457`). Naive wall times are destination-local on main (`933c705`). Hotel stay display on main (`7b62818`). Named slots on create/corridor (`9173b23`). G0 field-fix on main (`2ab8d57`): slot-order packing, `GET /trip/{id}/swap_candidates/{node_id}`, one hotel card per night plus checkout copy. Create-then-book HITL reflow and server-side document consent remain |
 | Forced-choice preferences (SPEC-11) | SPECIFIED | Not implemented. Cold-start preference capture remains after field evidence; SPEC-40 interests are trip constraints, not a durable preference profile |
 | Show driver cards (SPEC-12) | DONE (October slice) | Full-screen offline card from SQLite cache_place, FactView assert/ask/refuse tiers, geoRegion-threaded native script, driver_card_shown/name_confirmed signals. Laos card render passed Sep 5. Native `geo:` remains first choice; Windows falls back to an OpenStreetMap HTTPS hand-off, with visible coordinates last. No Fair Fare until sourced |
 | Region and locale registry (SPEC-13) | SPECIFIED | Not implemented. Rising in priority: a city-onboarding pipeline needs it for bounding box, languages, currency and fare bands. Makes adding a city a row rather than a code change |
@@ -230,10 +230,15 @@ Seed-shaped cohorts.
     full flutter test was green.
 12. SPEC-41 named day slots -- **DONE on main** (`f1feb17`, merge
     `9173b23`). Flexible cards show Morning/Lunch/Afternoon/Dinner.
-    `pack_day` consumes those slots on create and corridor. Locked
-    hotel/flight times stay exact. Create-then-book HITL reflow remains.
-    Hosted API/APK still wait for an explicit deploy. SPEC-43/44 stay
-    after the Laos build. No deploy or APK until then.
+    Locked hotel/flight times stay exact.
+12a. G0 field-fix -- **DONE on main** (`db754d9`, merge `2ab8d57`).
+    `pack_day` iterates SLOT_ORDER; lunch/dinner stay food-typed;
+    swap sheet lists server-filtered candidates and preserves
+    `slot_name`; corridor hotel cards expand once with nights and
+    checkout copy. Owner Windows `flutter test` was green on
+    `db754d9` (2026-09-24). Hosted API/APK still wait for an explicit
+    deploy. G0 phone pass is not recorded. Create-then-book HITL
+    reflow remains. SPEC-43/44 stay after the Laos build.
 13. SPEC-44 Phase A backend integrity -- **NEXT DATA FOUNDATION AFTER THE LAOS
    BUILD**. Make trip graph, party, and compatibility projection one
    transaction; add expected-version conflicts and idempotent commands before
@@ -251,9 +256,10 @@ Seed-shaped cohorts.
 
 ### Deferred after the phone gate
 
-- Multi-night hotel stay presentation is on main (`7b62818`). Named-slot
-  packing is on main (`9173b23`). Remaining is create-then-book HITL
-  reflow, not a second stay UI.
+- Multi-night hotel stay presentation is on main (`7b62818`, field-fix
+  `2ab8d57`). Named-slot packing is on main (`9173b23`, field-fix
+  `2ab8d57`). Remaining is create-then-book HITL reflow, not a second
+  stay UI.
 - Corridor span vs the real Oct 2-9 PDF (closed for the corridor path: 8-day
   2/2/4 create is live). SPEC-40 owns single-city start/end dates.
 - Full SPEC-17 trust and verification, then SPEC-18/19/20. The bounded
@@ -302,8 +308,8 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 |-------|----------|--------|
 | Destination-specific date caps make real trips impossible to enter | Closed on main (`17e58ac`) | Create no longer rejects a stay because the catalog fills fewer days. User-facing "Up to N days" copy is gone. Remaining bound is the 90-day sanity limit. Empty-day Add/Move is still later |
 | Activity cards have no place-detail response | Medium, retention surface | A card tap should open an offline detail sheet/page with grounded short description, attributed photo when available, and sourced/fresh insider tips. VISION defines the product direction; SPEC-17 governs claims and review extraction |
-| Generated schedules expose false precision and ignore remaining-day shape | Closed on main (`9173b23`) | Flexible cards show named slots. Create/corridor pack morning/lunch/afternoon/dinner. Create-then-book HITL reflow remains; travel-day occupancy at create still has no bookings to consume |
-| Hotel stay can shift local date and collapse to one timestamp | Closed on main (`7b62818`) | Destination-local conversion was `933c705`. Dual Check-in/Check-out, multi-night coverage, and hotel coords landed with the stay-display merge |
+| Generated schedules expose false precision and ignore remaining-day shape | Closed on main (`9173b23`, field-fix `2ab8d57`) | Flexible cards show named slots. Create/corridor pack morning then lunch then afternoon then dinner. Create-then-book HITL reflow remains; travel-day occupancy at create still has no bookings to consume |
+| Hotel stay can shift local date and collapse to one timestamp | Closed on main (`7b62818`, field-fix `2ab8d57`) | Destination-local conversion was `933c705`. Dual Check-in/Check-out, one card per covered night, nights-plus-checkout copy, and hotel coords landed with stay-display plus the field-fix |
 | Real booking paste recall is not release-grade | Medium | Owner's Agoda email and flattened PDF text did not yield useful fields in the old APK. Keep paste best-effort; expand a consented redacted field corpus, then native share/PDF/OCR. A forwarding mailbox waits for SPEC-43 controls |
 | Advertised Laos `max_days` can exceed hours-packable capacity | Closed A3a (`d1fde14`) | Capacity now uses the same incremental `pack_day` planner across every start weekday and valid interest profile, with a bounded catalog fingerprint cache that invalidates on hours, dwell, identity, and ranking changes |
 | Known-closed or unreachable venues can be scheduled and offered by swap | Closed SPEC-41 Phase A (`377125e`, `d1fde14`, `7f25042`) | Create, corridor, swap search/apply, and affected-node validation share structured destination-local hours and deterministic walking eligibility; apply retries the next candidate; city/day boundaries and locked non-hotel anchors are preserved |

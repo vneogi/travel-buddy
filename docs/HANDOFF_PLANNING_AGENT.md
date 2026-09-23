@@ -11,8 +11,9 @@ A3b was reviewed at branch head `7f25042`. SPEC-10 paste is on main
 (`fc6926b`). Flight/hotel scheduler remainder is on main (`e7a0457`);
 destination-local booking times, weather empty-key, and swap canned copy
 after honest refusal are on main (`933c705`). SPEC-41 named day slots
-are on main (`f1feb17`, merge `9173b23`). Create-then-book HITL reflow
-remains. SPEC-25 trip-scoped grounded Ask is on main
+are on main (`f1feb17`, merge `9173b23`). G0 field-fix (slot-driven
+pack, swap candidates, hotel stay cards) is on main (`db754d9`,
+merge `2ab8d57`). Create-then-book HITL reflow remains. SPEC-25 trip-scoped grounded Ask is on main
 (`30a4270`); trip-optional Ask remains. SPEC-42 uncap / empty-date
 render is PARTIAL on main (`17e58ac`); Add/Move remain. SPEC-10 hotel
 stay display is on main (`1f251a3`, merge `7b62818`). Remainder
@@ -73,8 +74,9 @@ Status tables: `docs/PROJECT_STATUS.md`. Device-only queue:
 `docs/RELEASE_READINESS.md`. City sequence:
 `docs/MARKET_STRATEGY.md` (Sep 2026 Banana Pancake addendum). Next
 implementation contract after the remainder sequence: hosted API/APK
-wait for an explicit deploy. Do not start SPEC-42 Add/Move, SPEC-43,
-or SPEC-44 until that gate.
+refresh from `2ab8d57` waits for an explicit deploy. G0 is not passed
+until the owner phone retests the live trip. Do not start SPEC-42
+Add/Move, SPEC-43, or SPEC-44 until that gate.
 
 ## Third-party review -- already adjudicated
 
