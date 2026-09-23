@@ -711,20 +711,23 @@ class TestProximityRanking:
             "closer viewpoint must be first without interest"
         )
 
-    def test_ordering_is_deterministic(self):
-        """Same input always produces the same output order.
+    def test_ordering_is_deterministic_under_permutation(self):
+        """Reversed / permuted candidate order produces identical output.
 
-        Run pack_day twice with identical inputs and confirm the node
-        order is identical.
+        The pre-score sort in pack_day must dominate input order.
         """
-        pool = [
-            _venue("Alpha Temple", category="temple"),
-            _venue("Beta Cafe", category="cafe"),
-            _venue("Gamma Market", category="market"),
-            _venue("Delta View", category="viewpoint"),
-        ]
-        nodes_a = self._pack(pool)
-        nodes_b = self._pack(pool)
-        names_a = [n.venue_name for n in nodes_a]
-        names_b = [n.venue_name for n in nodes_b]
-        assert names_a == names_b, "ordering must be deterministic across identical runs"
+        a = _venue("Alpha Temple", category="temple")
+        b = _venue("Beta Cafe", category="cafe")
+        c = _venue("Gamma Market", category="market")
+        d = _venue("Delta View", category="viewpoint")
+
+        names_fwd = [n.venue_name for n in self._pack([a, b, c, d])]
+        names_rev = [n.venue_name for n in self._pack([d, c, b, a])]
+        names_alt = [n.venue_name for n in self._pack([c, a, d, b])]
+
+        assert names_fwd == names_rev, (
+            f"reversed input must produce same order: {names_fwd} vs {names_rev}"
+        )
+        assert names_fwd == names_alt, (
+            f"permuted input must produce same order: {names_fwd} vs {names_alt}"
+        )

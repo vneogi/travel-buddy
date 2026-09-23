@@ -1295,52 +1295,64 @@ class TestSwapEndpointParity:
     """swap_candidates endpoint must match confirm-path predicates."""
 
     def test_unreachable_candidate_absent(self):
-        """A candidate 50km away (unreachable by walking) is excluded.
+        """A candidate 50km away is excluded; a nearby one is kept.
 
-        The reachability check requires a locked constraint on the same
-        local day (prev-active or next-locked).  We inject a locked
-        flight AFTER the last activity so that the far candidate's
-        transfer time to the flight causes rejection.
+        Uses a locked tour (not a flight) so only the walking-transfer
+        check fires -- the 150-min flight cutoff is not involved.  The
+        gap between activity end and the locked tour is large enough for
+        a nearby candidate but far too short for a 50km walk.
         """
         from models.schemas import TripNode as _TN, NodeStatus as _NS
 
-        far_v = _make_venue_rag("Far Temple", structured=_make_hours({}), dwell=60, geo=GEO)
+        _extended_far = {d: [["06:00", "23:00"]] for d in _ALL_DAYS}
+        far_v = _make_venue_rag("Far Temple", structured=_extended_far, dwell=60, geo=GEO)
         far_v = far_v.model_copy(update={"lat": 20.5, "lng": 103.5})
+        # Extended hours so the venue is FITS at whatever slot the target occupies.
+        _extended = {d: [["06:00", "23:00"]] for d in _ALL_DAYS}
+        near_v = _make_venue_rag("Near Temple", structured=_extended, dwell=60, geo=GEO)
+        # near_v keeps default coords (19.89, 102.13) -- same as the tour
+
         h = auth("spec41-swap-parity-1")
-        trip_id, target = _seed_swap_trip([far_v], headers=h)
+        trip_id, target = _seed_swap_trip([far_v, near_v], headers=h)
         trip_state = db_mod.db_service.get_trip(trip_id)
-        # Always inject a locked flight after the last activity.
-        # The reachability check uses candidate -> next_lock walking
-        # time; a 50km-away candidate cannot walk back in time.
+
+        # Pick the last unlocked activity as the target.
         last_act = [
             n
             for n in trip_state.nodes
             if not n.is_locked and getattr(n, "node_kind", "activity") == "activity"
         ][-1]
-        flight_start = last_act.scheduled_start + timedelta(minutes=last_act.duration_minutes + 30)
-        flight = _TN(
-            venue_name="Constraining Flight",
-            venue_id="constraint-flight",
-            scheduled_start=flight_start,
-            duration_minutes=90,
+
+        # Inject a locked TOUR (not flight) 2 hours after the activity ends.
+        # Walking 50km takes ~600 min; 2 h gap rejects the far candidate
+        # but lets a nearby one through (~0 min walk).
+        tour_start = last_act.scheduled_start + timedelta(
+            minutes=last_act.duration_minutes + 120
+        )
+        tour = _TN(
+            venue_name="Guided Tour",
+            venue_id="guided-tour-lock",
+            scheduled_start=tour_start,
+            duration_minutes=120,
             is_locked=True,
             node_kind="booking",
-            booking_type="flight",
+            booking_type="tour",
             geo_region=GEO,
             lat=19.89,
             lng=102.13,
             status=_NS.PENDING,
         )
-        trip_state.nodes.append(flight)
+        trip_state.nodes.append(tour)
         db_mod.db_service.save_trip(trip_state)
-        # Target = last unlocked activity (directly before the flight).
+
         r = client.get(
             f"/api/v1/trip/{trip_id}/swap_candidates/{last_act.node_id}",
             headers=h,
         )
         assert r.status_code == 200
         names = [v["name"] for v in r.json()["candidates"]]
-        assert "Far Temple" not in names, "unreachable candidate must be absent"
+        assert "Far Temple" not in names, "unreachable far candidate must be absent"
+        assert "Near Temple" in names, "nearby candidate must be present"
 
     def test_flight_buffer_candidate_absent(self):
         """A candidate near a locked flight is excluded by reachability."""

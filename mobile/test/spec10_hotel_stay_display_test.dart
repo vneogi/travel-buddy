@@ -292,32 +292,24 @@ void main() {
       expect(cityGroup.dateRange, '2026-10-02 - 2026-10-04');
     });
 
-    test(
-        'dayGroupsOverride is required: flattened re-expansion would duplicate',
-        () {
-      // This test proves that _DateScopedTimeline MUST use dayGroupsOverride
-      // rather than calling groupNodesByCalendarDateWithHotelStays on the
-      // already-flattened nodes.  The corridor path in _buildCitySection
-      // flattens dayGroups via .expand((dg) => dg.nodes).toList() and passes
-      // the pre-grouped dayGroups as dayGroupsOverride.  If that override
-      // were removed, the fallback re-groups from flattened nodes -- which
-      // already contain the hotel duplicated across dates -- producing 2
-      // hotel cards on Oct 3.
-      final hotel = _node('hotel-proof',
+    test('resolveTimelineGroups with override: one hotel per date', () {
+      // Exercise the public helper that _DateScopedTimeline.build calls.
+      // With dayGroupsOverride the corridor pre-grouped data passes through.
+      final hotel = _node('hotel-resolve',
           start: DateTime.utc(2026, 10, 2, 11, 2),
           duration: 2698,
-          name: 'Proof Hotel',
+          name: 'Resolve Hotel',
           geoRegion: 'vientiane_laos',
           nodeKind: 'booking',
           bookingType: 'hotel');
-      final act = _node('act-proof',
+      final act = _node('act-resolve',
           start: DateTime.utc(2026, 10, 3, 2, 0),
           duration: 90,
           name: 'Activity',
           geoRegion: 'vientiane_laos');
 
-      // Step 1: Get the correct day groups via the corridor path.
-      final groups = spanAwareCorridorGroups(
+      // Get the corridor day groups (correct: 1 hotel per date).
+      final corridor = spanAwareCorridorGroups(
         nodes: [hotel, act],
         segments: const [
           TripSegment(
@@ -327,37 +319,39 @@ void main() {
           ),
         ],
       );
-      final dayGroups = groups.single.dayGroups;
-      // Correct: hotel appears once per date.
-      for (final dg in dayGroups) {
-        expect(dg.nodes.where((n) => n.nodeId == 'hotel-proof').length,
-            lessThanOrEqualTo(1));
-      }
-
-      // Step 2: Simulate the _buildCitySection flatten (line 544 of
-      // itinerary_screen.dart): nodes = dayGroups.expand(...).toList().
+      final dayGroups = corridor.single.dayGroups;
+      // Simulate the flatten that _buildCitySection does at line 544.
       final flattenedNodes =
           dayGroups.expand((dg) => dg.nodes).toList();
 
-      // Step 3: Re-group from flattened nodes (the fallback path if
-      // dayGroupsOverride were null).
-      final reGrouped =
-          groupNodesByCalendarDateWithHotelStays(flattenedNodes);
+      // WITH dayGroupsOverride (production path): hotel once per date.
+      final withOverride = resolveTimelineGroups(
+        nodes: flattenedNodes,
+        dayGroupsOverride: dayGroups,
+        isCorridor: true,
+      );
+      for (final g in withOverride) {
+        final count =
+            g.nodes.where((n) => n.nodeId == 'hotel-resolve').length;
+        expect(count, lessThanOrEqualTo(1),
+            reason: 'With override: max 1 hotel per date');
+      }
 
-      // The re-grouped result WOULD produce duplicates because the hotel
-      // node (already present twice in flattenedNodes) gets expanded again.
-      final oct3Regrouped = reGrouped
+      // WITHOUT dayGroupsOverride (would be the bug path): duplicates.
+      final withoutOverride = resolveTimelineGroups(
+        nodes: flattenedNodes,
+        isCorridor: true,
+      );
+      final oct3 = withoutOverride
           .where((g) => g.date == DateTime(2026, 10, 3))
           .toList();
-      expect(oct3Regrouped, isNotEmpty);
-      final hotelCountReGrouped = oct3Regrouped.first.nodes
-          .where((n) => n.nodeId == 'hotel-proof')
-          .length;
-      // This MUST be > 1, proving the bug exists without dayGroupsOverride.
-      expect(hotelCountReGrouped, greaterThan(1),
+      expect(oct3, isNotEmpty);
+      final hotelCountBug =
+          oct3.first.nodes.where((n) => n.nodeId == 'hotel-resolve').length;
+      expect(hotelCountBug, greaterThan(1),
           reason:
-              'Without dayGroupsOverride, re-grouping flattened hotel nodes '
-              'produces duplicates — this is the bug dayGroupsOverride prevents');
+              'Without override the helper re-expands flattened nodes, '
+              'duplicating the hotel -- this proves the override is required');
     });
   });
 

@@ -314,3 +314,39 @@ List<CorridorCityGroup> spanAwareCorridorGroups({
 
   return result;
 }
+
+/// SPEC-10: Resolve the day groups for the timeline widget.
+///
+/// This is the single source of truth for group resolution used by
+/// `_DateScopedTimeline.build`.  Extracting it as a pure public
+/// function allows testing without instantiating the widget.
+///
+/// Priority:
+/// 1. [dayGroupsOverride] -- corridor path passes pre-grouped data.
+/// 2. [spanAwareDayGroups] -- single-city trips with a known span.
+/// 3. [groupNodesByCalendarDateWithHotelStays] -- fallback.
+///
+/// Callers MUST pass [dayGroupsOverride] for corridor timelines because
+/// the [nodes] list has already been flattened from per-date groups and
+/// re-grouping would duplicate multi-night hotel nodes.
+List<ItineraryDayGroup> resolveTimelineGroups({
+  required List<TripNode> nodes,
+  List<ItineraryDayGroup>? dayGroupsOverride,
+  bool isCorridor = false,
+  DateTime? startDateLocal,
+  DateTime? endDateLocal,
+}) {
+  if (dayGroupsOverride != null) {
+    return dayGroupsOverride;
+  }
+  if (!isCorridor &&
+      startDateLocal != null &&
+      endDateLocal != null) {
+    return spanAwareDayGroups(
+      nodes: nodes,
+      startLocal: startDateLocal,
+      endLocal: endDateLocal,
+    );
+  }
+  return groupNodesByCalendarDateWithHotelStays(nodes);
+}
