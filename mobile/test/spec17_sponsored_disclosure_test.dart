@@ -173,11 +173,9 @@ void main() {
 
     testWidgets('boosted venue shows Sponsored label and explanation',
         (tester) async {
-      when(() => repo.searchVenues(
-            query: any(named: 'query'),
-            lat: any(named: 'lat'),
-            lng: any(named: 'lng'),
-            topK: any(named: 'topK'),
+      when(() => repo.swapCandidates(
+            tripId: any(named: 'tripId'),
+            targetNodeId: any(named: 'targetNodeId'),
           )).thenAnswer((_) async => [
             VenueSearchResult.fromJson(_boostedJson),
             VenueSearchResult.fromJson(_organicJson),
@@ -204,11 +202,9 @@ void main() {
 
     testWidgets('organic venue does NOT show Sponsored label',
         (tester) async {
-      when(() => repo.searchVenues(
-            query: any(named: 'query'),
-            lat: any(named: 'lat'),
-            lng: any(named: 'lng'),
-            topK: any(named: 'topK'),
+      when(() => repo.swapCandidates(
+            tripId: any(named: 'tripId'),
+            targetNodeId: any(named: 'targetNodeId'),
           )).thenAnswer((_) async => [
             VenueSearchResult.fromJson(_organicJson),
           ]);
@@ -226,15 +222,14 @@ void main() {
       );
     }, timeout: const Timeout(Duration(seconds: 20)));
 
-    testWidgets('current venue is excluded from its own swap options',
+    testWidgets('server-side filtering: current venue absent from swap list',
         (tester) async {
-      when(() => repo.searchVenues(
-            query: any(named: 'query'),
-            lat: any(named: 'lat'),
-            lng: any(named: 'lng'),
-            topK: any(named: 'topK'),
+      // Server omits the target node's venue from swap candidates.
+      // Stub returns only organic (no Luxury Lounge which is the current node).
+      when(() => repo.swapCandidates(
+            tripId: any(named: 'tripId'),
+            targetNodeId: any(named: 'targetNodeId'),
           )).thenAnswer((_) async => [
-            VenueSearchResult.fromJson(_boostedJson),
             VenueSearchResult.fromJson(_organicJson),
           ]);
 
@@ -244,16 +239,15 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
+      // Server excluded current venue; sheet shows only what server returned.
       expect(find.text('Luxury Lounge'), findsNothing);
       expect(find.text('Street Bites'), findsOneWidget);
     }, timeout: const Timeout(Duration(seconds: 20)));
 
     testWidgets('vibe chips filter the rendered alternatives', (tester) async {
-      when(() => repo.searchVenues(
-            query: any(named: 'query'),
-            lat: any(named: 'lat'),
-            lng: any(named: 'lng'),
-            topK: any(named: 'topK'),
+      when(() => repo.swapCandidates(
+            tripId: any(named: 'tripId'),
+            targetNodeId: any(named: 'targetNodeId'),
           )).thenAnswer((_) async => [
             VenueSearchResult.fromJson(_boostedJson),
             VenueSearchResult.fromJson(_organicJson),
@@ -281,11 +275,9 @@ void main() {
       // If someone removes the Sponsored label from SwapSheet while
       // keeping the data flag, this test fails -- that is the
       // sabotage proof from SPEC-17 decision 15.
-      when(() => repo.searchVenues(
-            query: any(named: 'query'),
-            lat: any(named: 'lat'),
-            lng: any(named: 'lng'),
-            topK: any(named: 'topK'),
+      when(() => repo.swapCandidates(
+            tripId: any(named: 'tripId'),
+            targetNodeId: any(named: 'targetNodeId'),
           )).thenAnswer((_) async => [
             VenueSearchResult.fromJson(_boostedJson),
           ]);
@@ -307,11 +299,9 @@ void main() {
 
     testWidgets('drives SwapSheet through the repository provider',
         (tester) async {
-      when(() => repo.searchVenues(
-            query: any(named: 'query'),
-            lat: any(named: 'lat'),
-            lng: any(named: 'lng'),
-            topK: any(named: 'topK'),
+      when(() => repo.swapCandidates(
+            tripId: any(named: 'tripId'),
+            targetNodeId: any(named: 'targetNodeId'),
           )).thenAnswer((_) async => [
             VenueSearchResult.fromJson(_boostedJson),
             VenueSearchResult.fromJson(_organicJson),
@@ -330,11 +320,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify the repository was called.
-      verify(() => repo.searchVenues(
-            query: any(named: 'query'),
-            lat: any(named: 'lat'),
-            lng: any(named: 'lng'),
-            topK: any(named: 'topK'),
+      verify(() => repo.swapCandidates(
+            tripId: any(named: 'tripId'),
+            targetNodeId: any(named: 'targetNodeId'),
           )).called(1);
 
       // Three venues rendered (sheet is short; use a tall surface so the

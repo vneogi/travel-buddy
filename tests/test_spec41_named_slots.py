@@ -244,6 +244,60 @@ class TestMixedWindowFillsAllSlots:
         # No duplicate slots
         assert len(slot_names) == len(set(slot_names)), "duplicate slot names"
 
+    def test_scheduled_starts_follow_named_slot_order(self):
+        """Flexible in-city day must schedule in morning, lunch, afternoon, dinner order."""
+        pool = [
+            _venue(
+                "Temple A",
+                category="temple",
+                lat=19.89,
+                lng=102.13,
+                hours_start="09:00",
+                hours_end="17:00",
+            ),
+            _venue(
+                "Cafe B",
+                category="cafe",
+                lat=19.88,
+                lng=102.12,
+                hours_start="09:00",
+                hours_end="17:00",
+            ),
+            _venue(
+                "Night Market",
+                category="market",
+                lat=19.90,
+                lng=102.14,
+                hours_start="17:00",
+                hours_end="22:00",
+            ),
+            _venue(
+                "Dinner C",
+                category="restaurant",
+                lat=19.87,
+                lng=102.11,
+                hours_start="17:00",
+                hours_end="22:00",
+            ),
+        ]
+        day_start = _day_start(2026, 10, 3)
+        nodes, _ = pack_day(
+            candidates=pool,
+            target_count=4,
+            day_start_utc=day_start,
+            geo_region=GEO,
+            used_ids=set(),
+            remaining_slots=list(SLOT_ORDER),
+        )
+        assert [n.slot_name for n in nodes] == [
+            "morning_tour",
+            "lunch",
+            "afternoon_evening_tour",
+            "dinner",
+        ]
+        starts = [n.scheduled_start for n in nodes]
+        assert starts == sorted(starts)
+
     def test_slot_names_match_category_type(self):
         """Activity venues must not receive food slots and vice versa."""
         pool = [
@@ -385,6 +439,83 @@ class TestEarlyEveningArrival:
 
 
 # -----------------------------------------------------------------------
+# Proof 3b: thin-catalog proofs (strict slot typing)
+# -----------------------------------------------------------------------
+
+
+class TestThinCatalogStrictTyping:
+    """Missing food produces no lunch/dinner rather than relabeling an activity."""
+
+    def test_activity_only_pool_skips_food_slots(self):
+        """A pool with only activity venues produces morning + afternoon, no lunch/dinner."""
+        pool = [
+            _venue("Temple A", category="temple", lat=19.89, lng=102.13),
+            _venue("Museum B", category="museum", lat=19.88, lng=102.12),
+            _venue("Market C", category="market", lat=19.90, lng=102.14),
+        ]
+        day_start = _day_start(2026, 10, 2)
+        nodes, _ = pack_day(
+            candidates=pool,
+            target_count=4,
+            day_start_utc=day_start,
+            geo_region=GEO,
+            used_ids=set(),
+        )
+        slot_names = {n.slot_name for n in nodes}
+        assert "lunch" not in slot_names, "activity must not fill lunch slot"
+        assert "dinner" not in slot_names, "activity must not fill dinner slot"
+        assert len(nodes) == 2, "only morning_tour + afternoon_evening_tour"
+
+    def test_food_only_pool_skips_activity_slots(self):
+        """A pool with only food venues produces lunch + dinner, no morning/afternoon."""
+        pool = [
+            _venue("Cafe A", category="cafe", lat=19.89, lng=102.13),
+            _venue(
+                "Restaurant B",
+                category="restaurant",
+                lat=19.88,
+                lng=102.12,
+                hours_start="09:00",
+                hours_end="22:00",
+            ),
+        ]
+        day_start = _day_start(2026, 10, 2)
+        nodes, _ = pack_day(
+            candidates=pool,
+            target_count=4,
+            day_start_utc=day_start,
+            geo_region=GEO,
+            used_ids=set(),
+        )
+        slot_names = {n.slot_name for n in nodes}
+        assert "morning_tour" not in slot_names, "food must not fill morning_tour slot"
+        assert "afternoon_evening_tour" not in slot_names, "food must not fill afternoon slot"
+        assert len(nodes) == 2, "only lunch + dinner"
+
+    def test_whole_day_excursion_never_in_dinner(self):
+        """A whole-day excursion only fills morning; never dinner or afternoon alone."""
+        pool = [
+            _venue(
+                "Island Trip",
+                category="experience",
+                lat=19.89,
+                lng=102.13,
+                vibe_tags=["island_hopping"],
+            ),
+        ]
+        day_start = _day_start(2026, 10, 2)
+        nodes, _ = pack_day(
+            candidates=pool,
+            target_count=4,
+            day_start_utc=day_start,
+            geo_region=GEO,
+            used_ids=set(),
+            remaining_slots=["dinner"],
+        )
+        assert nodes == [], "whole-day excursion must not fill dinner slot"
+
+
+# -----------------------------------------------------------------------
 # Proof 4: mid-afternoon arrival + hotel -> at most evening + dinner
 # -----------------------------------------------------------------------
 
@@ -496,3 +627,107 @@ class TestLockedBookingSlotName:
             booking_type="flight",
         )
         assert node.slot_name is None, "locked bookings must not carry a slot name"
+
+
+# -----------------------------------------------------------------------
+# Proof 7: Proximity-to-centroid tie-breaking
+# -----------------------------------------------------------------------
+
+
+class TestProximityRanking:
+    """Prove the centroid-based tie-breaker changes venue selection."""
+
+    # 09:00 ICT Sep 14 = 02:00 UTC
+    _DAY_START = datetime(2026, 9, 14, 2, 0, tzinfo=timezone.utc)
+
+    def _pack(self, candidates, interest_ids=()):
+        nodes, _ = pack_day(
+            candidates=candidates,
+            target_count=4,
+            day_start_utc=self._DAY_START,
+            geo_region=GEO,
+            used_ids=set(),
+            interest_ids=interest_ids,
+        )
+        return nodes
+
+    def test_cluster_venue_wins_over_outlier_on_tie(self):
+        """When interest scores tie (both 0), the venue closer to the
+        pool centroid wins the first activity slot.
+
+        Two temples compete for activity slots: one at the cluster centre,
+        one offset by ~0.07 deg.  The centroid is pulled toward the cluster
+        (cafe + restaurant also at 19.89).  Close Temple sorts first.
+        """
+        close = _venue("Close Temple", category="temple")
+        outlier = _venue("Outlier Temple", category="temple", lat=19.95, lng=102.20)
+        cafe = _venue("Cafe A", category="cafe")
+        food = _venue("Restaurant B", category="restaurant")
+
+        nodes = self._pack([outlier, close, cafe, food])
+        names = [n.venue_name for n in nodes]
+        assert "Close Temple" in names
+        assert "Outlier Temple" in names
+        assert names.index("Close Temple") < names.index("Outlier Temple"), (
+            "cluster venue must rank before outlier when interest scores tie"
+        )
+
+    def test_higher_interest_outranks_proximity(self):
+        """A high-interest venue beats a closer-to-centroid venue even when
+        the high-interest venue is farther from the centroid.
+
+        history_culture matches temple but not viewpoint.  Without the
+        interest, the close viewpoint wins the first activity slot;
+        with it, the moderate-distance temple wins instead.
+        """
+        from config.interests import get_interest
+
+        interest_id = "history_culture"
+        interest_def = get_interest(interest_id)
+        assert "temple" in interest_def.category_matches, (
+            "test assumes 'history_culture' matches 'temple'"
+        )
+
+        close_view = _venue("Close Viewpoint", category="viewpoint")
+        moderate_temple = _venue("Moderate Temple", category="temple", lat=19.94, lng=102.18)
+        cafe = _venue("Cafe One", category="cafe")
+        food = _venue("Cafe Two", category="restaurant")
+
+        with_interest = self._pack(
+            [close_view, moderate_temple, cafe, food],
+            interest_ids=[interest_id],
+        )
+        without_interest = self._pack([close_view, moderate_temple, cafe, food])
+
+        names_with = [n.venue_name for n in with_interest]
+        names_without = [n.venue_name for n in without_interest]
+
+        # With interest: temple (score 1) should be selected first.
+        assert names_with[0] == "Moderate Temple", (
+            "high-interest temple must be first with history_culture interest"
+        )
+        # Without interest: viewpoint (closer) should be first.
+        assert names_without[0] == "Close Viewpoint", (
+            "closer viewpoint must be first without interest"
+        )
+
+    def test_ordering_is_deterministic_under_permutation(self):
+        """Reversed / permuted candidate order produces identical output.
+
+        The pre-score sort in pack_day must dominate input order.
+        """
+        a = _venue("Alpha Temple", category="temple")
+        b = _venue("Beta Cafe", category="cafe")
+        c = _venue("Gamma Market", category="market")
+        d = _venue("Delta View", category="viewpoint")
+
+        names_fwd = [n.venue_name for n in self._pack([a, b, c, d])]
+        names_rev = [n.venue_name for n in self._pack([d, c, b, a])]
+        names_alt = [n.venue_name for n in self._pack([c, a, d, b])]
+
+        assert names_fwd == names_rev, (
+            f"reversed input must produce same order: {names_fwd} vs {names_rev}"
+        )
+        assert names_fwd == names_alt, (
+            f"permuted input must produce same order: {names_fwd} vs {names_alt}"
+        )

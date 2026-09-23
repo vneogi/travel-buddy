@@ -6,9 +6,6 @@ import '../../theme/colors.dart';
 import '../../theme/typography.dart';
 import '../../theme/spacing.dart';
 import '../../widgets/shimmer_card.dart';
-import 'swap_search_coords.dart';
-
-export 'swap_search_coords.dart';
 
 /// SPEC-07: Bottom sheet with RAG venue suggestions for swapping an activity.
 ///
@@ -53,40 +50,18 @@ class SwapSheetState extends ConsumerState<SwapSheet> {
 
   Future<void> _loadVenues() async {
     try {
-      final coords = _resolveCoords();
-      if (coords == null) {
-        setState(() {
-          _error = 'Could not determine your location for this trip.';
-          _loading = false;
-        });
-        return;
-      }
-      final results = await ref
-          .read(tripRepoProvider)
-          .searchVenues(
-            query: 'nearby activity',
-            lat: coords.lat,
-            lng: coords.lng,
+      final results = await ref.read(tripRepoProvider).swapCandidates(
+            tripId: widget.tripId,
+            targetNodeId: widget.targetNodeId,
           );
       if (!mounted) return;
-      final target = widget.tripState.nodes
-          .where((node) => node.nodeId == widget.targetNodeId)
-          .firstOrNull;
-      final alternatives = results
-          .where(
-            (venue) =>
-                venue.venueId != target?.venueId &&
-                venue.name.toLowerCase() !=
-                    target?.venueName.toLowerCase(),
-          )
-          .toList();
       setState(() {
-        _venues = alternatives;
+        _venues = results;
         _loading = false;
       });
       widget.offeredVenueIds
         ..clear()
-        ..addAll(alternatives.map((v) => v.venueId));
+        ..addAll(results.map((v) => v.venueId));
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -94,13 +69,6 @@ class SwapSheetState extends ConsumerState<SwapSheet> {
         _loading = false;
       });
     }
-  }
-
-  ({double lat, double lng})? _resolveCoords() {
-    final target = widget.tripState.nodes
-        .where((n) => n.nodeId == widget.targetNodeId)
-        .firstOrNull;
-    return resolveSwapSearchCoords(widget.tripState, targetNode: target);
   }
 
   @override

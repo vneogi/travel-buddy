@@ -134,6 +134,23 @@ def assign_slot(
     raise ValueError("No activity slot available")
 
 
+def venue_fits_slot(venue: dict, target_slot: str, remaining_slots: List[str]) -> bool:
+    """True if *venue* can fill the specific *target_slot*.
+
+    - Whole-day excursion: only when target is ``morning_tour`` and all
+      consumed slots (morning, lunch, afternoon) are still available.
+    - Food venue (cafe/restaurant/street_food): target must be a food slot.
+    - Activity venue: target must be an activity slot.
+    """
+    if is_whole_day_excursion(venue):
+        return target_slot == "morning_tour" and all(
+            s in remaining_slots for s in _WHOLE_DAY_CONSUMED
+        )
+    if is_food_venue(venue):
+        return target_slot in _FOOD_SLOTS
+    return target_slot in _ACTIVITY_SLOTS
+
+
 def compute_remaining_slots(
     booking_local_hour: int,
     booking_type: str | None,

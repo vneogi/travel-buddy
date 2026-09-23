@@ -190,7 +190,10 @@ class TestPackDayWalking:
         a_end = nodes[0].scheduled_start + timedelta(minutes=nodes[0].duration_minutes)
         gap = (nodes[1].scheduled_start - a_end).total_seconds() / 60
         expected = walking_minutes(lat_a, lng_a, lat_b, lng_b)
-        assert gap == expected, f"Gap {gap} != walking_minutes {expected}"
+        # G0: with slot-driven packing, the gap includes both walking transfer
+        # and any slot-floor wait (e.g. lunch floor at 11:00 local). The key
+        # invariant: gap is never LESS than walking_minutes.
+        assert gap >= expected, f"Gap {gap} must be >= walking_minutes {expected}"
 
     def test_far_venue_unreachable_before_window_close(self):
         """A far second venue that can't walk from the first is absent."""
@@ -426,14 +429,19 @@ class TestNextLockedBooking:
         assert len(nodes) == 1, "Different-day lock should be ignored"
 
     def test_missing_lock_coords_omit_candidate(self):
-        """Missing coordinates on same-day non-hotel lock means candidate ineligible."""
-        flight = TripNode(
-            venue_name="Flight",
+        """Missing coordinates on same-day non-hotel lock means candidate ineligible.
+
+        Flights use the 150-minute buffer (no coords needed). Non-flight
+        locks (tours, trains) require coords for walking-arrival checks;
+        missing coords means the candidate is ineligible.
+        """
+        tour_lock = TripNode(
+            venue_name="Locked Tour",
             scheduled_start=_ict_to_utc(2026, 9, 14, 14),
-            duration_minutes=180,
+            duration_minutes=120,
             is_locked=True,
             node_kind="booking",
-            booking_type="flight",
+            booking_type="tour",
             lat=None,
             lng=None,
             geo_region=GEO,
@@ -442,7 +450,7 @@ class TestNextLockedBooking:
             _make_venue_row("Venue", structured=_make_hours(), dwell=60, lat=19.89, lng=102.13),
         ]
         start = _ict_to_utc(2026, 9, 14, 9)
-        nodes, _ = pack_day(rows, 1, start, GEO, set(), next_locked_booking=flight)
+        nodes, _ = pack_day(rows, 1, start, GEO, set(), next_locked_booking=tour_lock)
         assert len(nodes) == 0
 
 

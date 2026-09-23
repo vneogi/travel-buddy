@@ -66,6 +66,7 @@ void main() {
       expect(find.text('Check-out'), findsOneWidget);
       expect(find.textContaining('18:02'), findsOneWidget);
       expect(find.textContaining('15:00'), findsOneWidget);
+      expect(find.text('1 night · checkout 3 Oct'), findsOneWidget);
     });
 
     testWidgets('flight card has neither Check-in nor Check-out labels',
@@ -203,6 +204,153 @@ void main() {
           containsAll(['a1', 'h-mix']));
       expect(groups[1].nodes.map((n) => n.nodeId).toList(),
           containsAll(['h-mix', 'a2']));
+    });
+  });
+
+  group('spanAwareCorridorGroups', () {
+    test('dateRange extends through hotel checkout morning', () {
+      final hotel = _node('hotel-range',
+          start: DateTime.utc(2026, 10, 2, 5, 33),
+          duration: 2700,
+          name: 'Salana boutique Hotel',
+          geoRegion: 'vientiane_laos',
+          nodeKind: 'booking',
+          bookingType: 'hotel');
+      final groups = spanAwareCorridorGroups(
+        nodes: [hotel],
+        segments: const [
+          TripSegment(
+            geoRegion: 'vientiane_laos',
+            startsOn: '2026-10-02',
+            endsOn: '2026-10-03',
+          ),
+        ],
+      );
+      expect(groups.single.dateRange, '2026-10-02 - 2026-10-04');
+    });
+
+    test('corridor timeline: one hotel card per night, never two on Oct 3',
+        () {
+      // 2-night hotel: check-in Oct 2 18:02 VTN, checkout Oct 4 15:00 VTN
+      // Hotel covers nights of Oct 2 and Oct 3; checkout Oct 4 is excluded.
+      final hotel = _node('hotel-dup-check',
+          start: DateTime.utc(2026, 10, 2, 11, 2),
+          duration: 2698,
+          name: 'Dhavara Boutique Hotel',
+          geoRegion: 'vientiane_laos',
+          nodeKind: 'booking',
+          bookingType: 'hotel');
+      final act2 = _node('act-oct2',
+          start: DateTime.utc(2026, 10, 2, 2, 0),
+          duration: 90,
+          name: 'Morning Temple',
+          geoRegion: 'vientiane_laos');
+      final act3 = _node('act-oct3',
+          start: DateTime.utc(2026, 10, 3, 2, 0),
+          duration: 90,
+          name: 'Lunch Spot',
+          geoRegion: 'vientiane_laos');
+
+      final groups = spanAwareCorridorGroups(
+        nodes: [act2, hotel, act3],
+        segments: const [
+          TripSegment(
+            geoRegion: 'vientiane_laos',
+            startsOn: '2026-10-02',
+            endsOn: '2026-10-03',
+          ),
+        ],
+      );
+      // The corridor must produce day groups for Oct 2 and Oct 3.
+      final cityGroup = groups.single;
+
+      // Assert exactly one hotel card under Oct 2 and exactly one under Oct 3.
+      final oct2Group =
+          cityGroup.dayGroups.firstWhere((g) => g.date == DateTime(2026, 10, 2));
+      final oct3Group =
+          cityGroup.dayGroups.firstWhere((g) => g.date == DateTime(2026, 10, 3));
+      expect(
+          oct2Group.nodes.where((n) => n.nodeId == 'hotel-dup-check').length, 1,
+          reason: 'Exactly one hotel card under Oct 2');
+      expect(
+          oct3Group.nodes.where((n) => n.nodeId == 'hotel-dup-check').length, 1,
+          reason: 'Exactly one hotel card under Oct 3');
+
+      // Hotel must NOT appear on Oct 4 (checkout excluded)
+      final oct4 = DateTime(2026, 10, 4);
+      final hasOct4 = cityGroup.dayGroups.any((g) => g.date == oct4);
+      if (hasOct4) {
+        final oct4Group =
+            cityGroup.dayGroups.firstWhere((g) => g.date == oct4);
+        expect(
+            oct4Group.nodes.any((n) => n.nodeId == 'hotel-dup-check'), isFalse,
+            reason: 'Hotel must not appear on checkout date');
+      }
+
+      // City dateRange extends through checkout morning
+      expect(cityGroup.dateRange, '2026-10-02 - 2026-10-04');
+    });
+
+    test('resolveTimelineGroups with override: one hotel per date', () {
+      // Exercise the public helper that _DateScopedTimeline.build calls.
+      // With dayGroupsOverride the corridor pre-grouped data passes through.
+      final hotel = _node('hotel-resolve',
+          start: DateTime.utc(2026, 10, 2, 11, 2),
+          duration: 2698,
+          name: 'Resolve Hotel',
+          geoRegion: 'vientiane_laos',
+          nodeKind: 'booking',
+          bookingType: 'hotel');
+      final act = _node('act-resolve',
+          start: DateTime.utc(2026, 10, 3, 2, 0),
+          duration: 90,
+          name: 'Activity',
+          geoRegion: 'vientiane_laos');
+
+      // Get the corridor day groups (correct: 1 hotel per date).
+      final corridor = spanAwareCorridorGroups(
+        nodes: [hotel, act],
+        segments: const [
+          TripSegment(
+            geoRegion: 'vientiane_laos',
+            startsOn: '2026-10-02',
+            endsOn: '2026-10-03',
+          ),
+        ],
+      );
+      final dayGroups = corridor.single.dayGroups;
+      // Simulate the flatten that _buildCitySection does at line 544.
+      final flattenedNodes =
+          dayGroups.expand((dg) => dg.nodes).toList();
+
+      // WITH dayGroupsOverride (production path): hotel once per date.
+      final withOverride = resolveTimelineGroups(
+        nodes: flattenedNodes,
+        dayGroupsOverride: dayGroups,
+        isCorridor: true,
+      );
+      for (final g in withOverride) {
+        final count =
+            g.nodes.where((n) => n.nodeId == 'hotel-resolve').length;
+        expect(count, lessThanOrEqualTo(1),
+            reason: 'With override: max 1 hotel per date');
+      }
+
+      // WITHOUT dayGroupsOverride (would be the bug path): duplicates.
+      final withoutOverride = resolveTimelineGroups(
+        nodes: flattenedNodes,
+        isCorridor: true,
+      );
+      final oct3 = withoutOverride
+          .where((g) => g.date == DateTime(2026, 10, 3))
+          .toList();
+      expect(oct3, isNotEmpty);
+      final hotelCountBug =
+          oct3.first.nodes.where((n) => n.nodeId == 'hotel-resolve').length;
+      expect(hotelCountBug, greaterThan(1),
+          reason:
+              'Without override the helper re-expands flattened nodes, '
+              'duplicating the hotel -- this proves the override is required');
     });
   });
 

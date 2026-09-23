@@ -117,6 +117,27 @@ int _dateKey(DateTime dt) => dt.year * 10000 + dt.month * 100 + dt.day;
 DateTime _dateFromKey(int key) =>
     DateTime(key ~/ 10000, (key ~/ 100) % 100, key % 100);
 
+
+String _effectiveSegmentEndDate(String endsOn, List<TripNode> segNodes, String geoRegion) {
+  var best = DateTime.parse(endsOn);
+  for (final node in segNodes) {
+    if (node.nodeKind == 'booking' && node.bookingType == 'hotel') {
+      final checkout = toDestinationLocal(
+        node.scheduledStart.add(Duration(minutes: node.durationMinutes)),
+        geoRegion,
+      );
+      final checkoutDate = DateTime(checkout.year, checkout.month, checkout.day);
+      if (checkoutDate.isAfter(best)) {
+        best = checkoutDate;
+      }
+    }
+  }
+  final mm = best.month.toString().padLeft(2, '0');
+  final dd = best.day.toString().padLeft(2, '0');
+  return '${best.year}-$mm-$dd';
+}
+
+
 /// SPEC-36: A city section in a corridor itinerary.
 class CorridorCityGroup {
   final String geoRegion;
@@ -183,7 +204,7 @@ List<CorridorCityGroup> groupNodesByCorridor({
     result.add(CorridorCityGroup(
       geoRegion: seg.geoRegion,
       displayName: displayName,
-      dateRange: '${seg.startsOn} - ${seg.endsOn}',
+      dateRange: '${seg.startsOn} - ${_effectiveSegmentEndDate(seg.endsOn, segNodes, seg.geoRegion)}',
       dayGroups: dayGroups,
     ));
   }
@@ -270,7 +291,7 @@ List<CorridorCityGroup> spanAwareCorridorGroups({
     result.add(CorridorCityGroup(
       geoRegion: seg.geoRegion,
       displayName: displayName,
-      dateRange: '${seg.startsOn} - ${seg.endsOn}',
+      dateRange: '${seg.startsOn} - ${_effectiveSegmentEndDate(seg.endsOn, segNodes, seg.geoRegion)}',
       dayGroups: dayGroups,
     ));
   }
@@ -292,4 +313,40 @@ List<CorridorCityGroup> spanAwareCorridorGroups({
   }
 
   return result;
+}
+
+/// SPEC-10: Resolve the day groups for the timeline widget.
+///
+/// This is the single source of truth for group resolution used by
+/// `_DateScopedTimeline.build`.  Extracting it as a pure public
+/// function allows testing without instantiating the widget.
+///
+/// Priority:
+/// 1. [dayGroupsOverride] -- corridor path passes pre-grouped data.
+/// 2. [spanAwareDayGroups] -- single-city trips with a known span.
+/// 3. [groupNodesByCalendarDateWithHotelStays] -- fallback.
+///
+/// Callers MUST pass [dayGroupsOverride] for corridor timelines because
+/// the [nodes] list has already been flattened from per-date groups and
+/// re-grouping would duplicate multi-night hotel nodes.
+List<ItineraryDayGroup> resolveTimelineGroups({
+  required List<TripNode> nodes,
+  List<ItineraryDayGroup>? dayGroupsOverride,
+  bool isCorridor = false,
+  DateTime? startDateLocal,
+  DateTime? endDateLocal,
+}) {
+  if (dayGroupsOverride != null) {
+    return dayGroupsOverride;
+  }
+  if (!isCorridor &&
+      startDateLocal != null &&
+      endDateLocal != null) {
+    return spanAwareDayGroups(
+      nodes: nodes,
+      startLocal: startDateLocal,
+      endLocal: endDateLocal,
+    );
+  }
+  return groupNodesByCalendarDateWithHotelStays(nodes);
 }

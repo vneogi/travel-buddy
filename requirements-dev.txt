@@ -27,6 +27,7 @@ langgraph>=0.2.0
 # 8.4.0, and restored in 8.4.1. Pin to the first release that has it back.
 pytest>=8.4.1
 pytest-asyncio>=0.24.0
+freezegun>=1.2.0
 
 # NOTE: pytest-asyncio is listed but should NOT be needed if all tests
 # use sync TestClient. It's pinned because --strict-markers will error

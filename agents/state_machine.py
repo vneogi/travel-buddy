@@ -780,9 +780,12 @@ class TripStateMachine:
             ):
                 return []  # advance to next candidate
 
-            nodes[target_idx] = self._node_from_venue(
+            replacement = self._node_from_venue(
                 venue, target_node.scheduled_start, cand_dwell, target_node.node_id
             )
+            # G0: preserve the named slot from the target node.
+            replacement.slot_name = target_node.slot_name
+            nodes[target_idx] = replacement
             return nodes
 
         if event_type == EventType.ADD_ACTIVITY.value:

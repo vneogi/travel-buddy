@@ -279,7 +279,7 @@ class TestPackDay:
         """Equal-start candidates ordered by name then venue_id."""
         rows = [
             _make_venue_row("Zebra", structured=_make_hours({}), category="temple", dwell=60),
-            _make_venue_row("Alpha", structured=_make_hours({}), category="cafe", dwell=60),
+            _make_venue_row("Alpha", structured=_make_hours({}), category="museum", dwell=60),
         ]
         start = _ict_to_utc(2026, 9, 14, 9)
         nodes, _ = pack_day(rows, 2, start, GEO, set())
@@ -335,7 +335,13 @@ class TestPackDay:
             _make_venue_row("Temple B", structured=_make_hours({}), category="temple", dwell=60),
             _make_venue_row("Cafe A", structured=_make_hours({}), category="cafe", dwell=60),
             _make_venue_row(
-                "Dinner A", structured=_make_hours({}), category="restaurant", dwell=60
+                "Dinner A",
+                structured={
+                    d: [["09:00", "22:00"]]
+                    for d in ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
+                },
+                category="restaurant",
+                dwell=60,
             ),
             _make_venue_row("Market A", structured=_make_hours({}), category="market", dwell=60),
             _make_venue_row("Bar A", structured=_make_hours({}), category="bar", dwell=60),
@@ -401,7 +407,12 @@ class TestPackDay:
             _make_venue_row("Tue Temple", structured=tue_only, category="temple", dwell=60),
             _make_venue_row("Tue Cafe", structured=tue_only, category="cafe", dwell=60),
             _make_venue_row("Tue Market", structured=tue_only, category="market", dwell=60),
-            _make_venue_row("Tue Bar", structured=tue_only, category="restaurant", dwell=60),
+            _make_venue_row(
+                "Tue Bar",
+                structured=_make_hours({"mon": [], "tue": [["17:00", "22:00"]]}),
+                category="restaurant",
+                dwell=60,
+            ),
         ]
         nodes = range_nodes_from_catalog(
             geo_region=GEO,
@@ -622,7 +633,7 @@ class TestGoldenCases:
             _make_venue_row("Cafe", structured=_make_hours({}), category="cafe", dwell=60),
             # Dinner venue fills the food dinner slot so all 4 slots can be packed.
             _make_venue_row(
-                "Dinner Spot", structured=_make_hours({}), category="restaurant", dwell=60
+                "Dinner Spot", structured=_evening_hours(), category="restaurant", dwell=60
             ),
             night_market,
         ]
@@ -652,7 +663,7 @@ class TestGoldenCases:
             _make_venue_row("Market", structured=_make_hours({}), category="market", dwell=60),
             # Dinner venue fills the food dinner slot so all 4 slots can be packed.
             _make_venue_row(
-                "Dinner Spot", structured=_make_hours({}), category="restaurant", dwell=60
+                "Dinner Spot", structured=_evening_hours(), category="restaurant", dwell=60
             ),
         ]
         nodes = range_nodes_from_catalog(

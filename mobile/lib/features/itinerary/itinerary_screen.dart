@@ -553,6 +553,7 @@ class _CorridorTimelineState extends State<_CorridorTimeline> {
         isCorridor: true,
         globalNextNode: nextCityFirst,
         nodeKeys: _nodeKeys,
+        dayGroupsOverride: cityGroup.dayGroups,
       ),
     );
   }
@@ -667,6 +668,7 @@ class _DateScopedTimeline extends StatelessWidget {
   final bool isCorridor;
   final TripNode? globalNextNode;
   final Map<String, GlobalKey>? nodeKeys;
+  final List<ItineraryDayGroup>? dayGroupsOverride;
 
   const _DateScopedTimeline({
     required this.nodes,
@@ -682,25 +684,24 @@ class _DateScopedTimeline extends StatelessWidget {
     this.isCorridor = false,
     this.globalNextNode,
     this.nodeKeys,
+    this.dayGroupsOverride,
   });
 
   @override
   Widget build(BuildContext context) {
     // SPEC-42: render every date in the trip span, including empty days.
-    final List<ItineraryDayGroup> groups;
     final ctx = creationContext;
-    if (!isCorridor &&
-        ctx != null &&
-        ctx.startDateLocal != null &&
-        ctx.endDateLocal != null) {
-      groups = spanAwareDayGroups(
-        nodes: nodes,
-        startLocal: DateTime.parse(ctx.startDateLocal!),
-        endLocal: DateTime.parse(ctx.endDateLocal!),
-      );
-    } else {
-      groups = groupNodesByCalendarDateWithHotelStays(nodes);
-    }
+    final groups = resolveTimelineGroups(
+      nodes: nodes,
+      dayGroupsOverride: dayGroupsOverride,
+      isCorridor: isCorridor,
+      startDateLocal: ctx?.startDateLocal != null
+          ? DateTime.parse(ctx!.startDateLocal!)
+          : null,
+      endDateLocal: ctx?.endDateLocal != null
+          ? DateTime.parse(ctx!.endDateLocal!)
+          : null,
+    );
 
     // Build a flat list of view items: headers + cards.
     final items = <_TimelineItem>[];
