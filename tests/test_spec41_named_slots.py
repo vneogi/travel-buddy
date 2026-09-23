@@ -627,3 +627,104 @@ class TestLockedBookingSlotName:
             booking_type="flight",
         )
         assert node.slot_name is None, "locked bookings must not carry a slot name"
+
+
+# -----------------------------------------------------------------------
+# Proof 7: Proximity-to-centroid tie-breaking
+# -----------------------------------------------------------------------
+
+
+class TestProximityRanking:
+    """Prove the centroid-based tie-breaker changes venue selection."""
+
+    # 09:00 ICT Sep 14 = 02:00 UTC
+    _DAY_START = datetime(2026, 9, 14, 2, 0, tzinfo=timezone.utc)
+
+    def _pack(self, candidates, interest_ids=()):
+        nodes, _ = pack_day(
+            candidates=candidates,
+            target_count=4,
+            day_start_utc=self._DAY_START,
+            geo_region=GEO,
+            used_ids=set(),
+            interest_ids=interest_ids,
+        )
+        return nodes
+
+    def test_cluster_venue_wins_over_outlier_on_tie(self):
+        """When interest scores tie (both 0), the venue closer to the
+        pool centroid wins the first activity slot.
+
+        Two temples compete for activity slots: one at the cluster centre,
+        one offset by ~0.07 deg.  The centroid is pulled toward the cluster
+        (cafe + restaurant also at 19.89).  Close Temple sorts first.
+        """
+        close = _venue("Close Temple", category="temple")
+        outlier = _venue("Outlier Temple", category="temple", lat=19.95, lng=102.20)
+        cafe = _venue("Cafe A", category="cafe")
+        food = _venue("Restaurant B", category="restaurant")
+
+        nodes = self._pack([outlier, close, cafe, food])
+        names = [n.venue_name for n in nodes]
+        assert "Close Temple" in names
+        assert "Outlier Temple" in names
+        assert names.index("Close Temple") < names.index("Outlier Temple"), (
+            "cluster venue must rank before outlier when interest scores tie"
+        )
+
+    def test_higher_interest_outranks_proximity(self):
+        """A high-interest venue beats a closer-to-centroid venue even when
+        the high-interest venue is farther from the centroid.
+
+        history_culture matches temple but not viewpoint.  Without the
+        interest, the close viewpoint wins the first activity slot;
+        with it, the moderate-distance temple wins instead.
+        """
+        from config.interests import get_interest
+
+        interest_id = "history_culture"
+        interest_def = get_interest(interest_id)
+        assert "temple" in interest_def.category_matches, (
+            "test assumes 'history_culture' matches 'temple'"
+        )
+
+        close_view = _venue("Close Viewpoint", category="viewpoint")
+        moderate_temple = _venue("Moderate Temple", category="temple", lat=19.94, lng=102.18)
+        cafe = _venue("Cafe One", category="cafe")
+        food = _venue("Cafe Two", category="restaurant")
+
+        with_interest = self._pack(
+            [close_view, moderate_temple, cafe, food],
+            interest_ids=[interest_id],
+        )
+        without_interest = self._pack([close_view, moderate_temple, cafe, food])
+
+        names_with = [n.venue_name for n in with_interest]
+        names_without = [n.venue_name for n in without_interest]
+
+        # With interest: temple (score 1) should be selected first.
+        assert names_with[0] == "Moderate Temple", (
+            "high-interest temple must be first with history_culture interest"
+        )
+        # Without interest: viewpoint (closer) should be first.
+        assert names_without[0] == "Close Viewpoint", (
+            "closer viewpoint must be first without interest"
+        )
+
+    def test_ordering_is_deterministic(self):
+        """Same input always produces the same output order.
+
+        Run pack_day twice with identical inputs and confirm the node
+        order is identical.
+        """
+        pool = [
+            _venue("Alpha Temple", category="temple"),
+            _venue("Beta Cafe", category="cafe"),
+            _venue("Gamma Market", category="market"),
+            _venue("Delta View", category="viewpoint"),
+        ]
+        nodes_a = self._pack(pool)
+        nodes_b = self._pack(pool)
+        names_a = [n.venue_name for n in nodes_a]
+        names_b = [n.venue_name for n in nodes_b]
+        assert names_a == names_b, "ordering must be deterministic across identical runs"

@@ -15,6 +15,7 @@ from services.opening_hours import hours_for_slot as _hours_for_slot
 from services.opening_hours import next_slot_start as _next_slot_start
 from services.day_slots import (
     SLOT_ORDER as _SLOT_ORDER,
+    is_food_venue as _is_food_venue,
     is_whole_day_excursion as _is_whole_day_excursion,
     venue_fits_slot as _venue_fits_slot,
 )
@@ -111,29 +112,23 @@ def select_day_venues(rows: Sequence[dict]) -> List[dict]:
     # SPEC-41: strict slot typing needs at least 2 food venues (lunch + dinner).
     # The bucket pass picks at most 1 from the food bucket. Force a second
     # food venue even if it means exceeding TARGET_STOPS by one.
-    food_count = sum(1 for r in chosen if _is_food_category(r.get("category", "")))
+    food_count = sum(1 for r in chosen if _is_food_venue(r))
     if food_count < 2:
         for row in pool:
-            if _is_food_category(row.get("category", "")):
+            if _is_food_venue(row):
                 _take(row)
-                food_count = sum(1 for r in chosen if _is_food_category(r.get("category", "")))
+                food_count = sum(1 for r in chosen if _is_food_venue(r))
                 if food_count >= 2:
                     break
 
     for row in pool:
-        if len(chosen) >= max(TARGET_STOPS, len(chosen)):
+        if len(chosen) >= TARGET_STOPS:
             break
         _take(row)
 
     if len(chosen) < MIN_STOPS:
         raise InsufficientCatalog(f"need at least {MIN_STOPS} eligible venues, have {len(chosen)}")
     return chosen
-
-
-def _is_food_category(category: str) -> bool:
-    from services.day_slots import _FOOD_CATEGORIES
-
-    return (category or "").lower() in _FOOD_CATEGORIES
 
 
 def duration_for(row: dict) -> int:

@@ -1295,20 +1295,47 @@ class TestSwapEndpointParity:
     """swap_candidates endpoint must match confirm-path predicates."""
 
     def test_unreachable_candidate_absent(self):
-        """A candidate 50km away (unreachable by walking) is excluded."""
+        """A candidate 50km away (unreachable by walking) is excluded.
+
+        The reachability check requires a locked constraint on the same
+        local day (prev-active or next-locked).  We inject a locked
+        flight AFTER the last activity so that the far candidate's
+        transfer time to the flight causes rejection.
+        """
+        from models.schemas import TripNode as _TN, NodeStatus as _NS
+
         far_v = _make_venue_rag("Far Temple", structured=_make_hours({}), dwell=60, geo=GEO)
         far_v = far_v.model_copy(update={"lat": 20.5, "lng": 103.5})
         h = auth("spec41-swap-parity-1")
         trip_id, target = _seed_swap_trip([far_v], headers=h)
-        # The target is the first node. For _is_swap_reachable the check
-        # against prev-active and next-locked applies. If there is a
-        # second node close by, walking from far_v to that node fails.
         trip_state = db_mod.db_service.get_trip(trip_id)
-        if len(trip_state.nodes) < 2:
-            pytest.skip("need at least 2 nodes for reachability check")
-        second = trip_state.nodes[1]
+        # Always inject a locked flight after the last activity.
+        # The reachability check uses candidate -> next_lock walking
+        # time; a 50km-away candidate cannot walk back in time.
+        last_act = [
+            n
+            for n in trip_state.nodes
+            if not n.is_locked and getattr(n, "node_kind", "activity") == "activity"
+        ][-1]
+        flight_start = last_act.scheduled_start + timedelta(minutes=last_act.duration_minutes + 30)
+        flight = _TN(
+            venue_name="Constraining Flight",
+            venue_id="constraint-flight",
+            scheduled_start=flight_start,
+            duration_minutes=90,
+            is_locked=True,
+            node_kind="booking",
+            booking_type="flight",
+            geo_region=GEO,
+            lat=19.89,
+            lng=102.13,
+            status=_NS.PENDING,
+        )
+        trip_state.nodes.append(flight)
+        db_mod.db_service.save_trip(trip_state)
+        # Target = last unlocked activity (directly before the flight).
         r = client.get(
-            f"/api/v1/trip/{trip_id}/swap_candidates/{second.node_id}",
+            f"/api/v1/trip/{trip_id}/swap_candidates/{last_act.node_id}",
             headers=h,
         )
         assert r.status_code == 200
@@ -1356,21 +1383,133 @@ class TestSwapEndpointParity:
         names = [v["name"] for v in r2.json()["candidates"]]
         assert "Blocked By Flight" not in names
 
-    def test_hotel_return_missing_coords_excluded(self):
-        """A candidate with missing coordinates is excluded from swap list."""
+    def test_hotel_return_wall_candidate_absent(self):
+        """A far-away candidate that violates the hotel return wall is excluded.
+
+        Setup:
+        - A covering hotel on Sep 14 with finite coords.
+        - Target is the *last* unlocked activity that local day.
+        - Candidate is 20km from the hotel: activity_end + walk > 21:00 local.
+        """
         from models.schemas import TripNode as _TN, NodeStatus as _NS
 
-        no_coord_v = _make_venue_rag("No Coord Venue", structured=_make_hours({}), dwell=60)
-        no_coord_v = no_coord_v.model_copy(update={"lat": None, "lng": None})
-        h = auth("spec41-swap-parity-3")
-        trip_id, target = _seed_swap_trip([no_coord_v], headers=h)
+        # Far venue with finite coords (20km from hotel -> ~240 min walk).
+        # The return wall is 21:00 ICT (14:00 UTC).  Target scheduled at
+        # 12:00 UTC (19:00 ICT) + 60 min dwell = 13:00 UTC (20:00 ICT).
+        # Walking 240 min puts arrival at ~04:00 UTC next day, well past wall.
+        far_hotel_v = _make_venue_rag(
+            "Far From Hotel", structured=_make_hours({}), dwell=60, geo=GEO
+        )
+        far_hotel_v = far_hotel_v.model_copy(update={"lat": 20.1, "lng": 102.5})
+
+        h = auth("spec41-swap-parity-hotel-1")
+        r_create = client.post(
+            "/api/v1/trip/create",
+            json={"geo_region": GEO, "start_date": "2026-09-14"},
+            headers=h,
+        )
+        assert r_create.status_code == 200, r_create.text
+        data = r_create.json()
+        trip_id = data["trip_id"]
+
+        trip_state = db_mod.db_service.get_trip(trip_id)
+        # Keep only the LAST activity as the target; remove all others
+        # so it becomes is_last_unlocked_activity.
+        activities = [
+            n
+            for n in trip_state.nodes
+            if not n.is_locked and getattr(n, "node_kind", "activity") == "activity"
+        ]
+        assert activities, "trip must have activities"
+        last_act = activities[-1]
+
+        # Inject a covering hotel (check-in Sep 14, checkout Sep 15)
+        hotel = _TN(
+            venue_name="LP City Hotel",
+            venue_id="lp-city-hotel",
+            # Check-in 11:00 UTC = 18:00 ICT Sep 14
+            scheduled_start=datetime(2026, 9, 14, 11, 0, tzinfo=timezone.utc),
+            duration_minutes=1260,  # 21 hours -> checkout 15:00 ICT Sep 15
+            is_locked=True,
+            node_kind="booking",
+            booking_type="hotel",
+            geo_region=GEO,
+            lat=19.89,
+            lng=102.13,
+            status=_NS.PENDING,
+        )
+        trip_state.nodes.append(hotel)
+        db_mod.db_service.save_trip(trip_state)
+        db_mod.db_service.add_venue(far_hotel_v)
+
         r = client.get(
-            f"/api/v1/trip/{trip_id}/swap_candidates/{target['node_id']}",
+            f"/api/v1/trip/{trip_id}/swap_candidates/{last_act.node_id}",
             headers=h,
         )
         assert r.status_code == 200
         names = [v["name"] for v in r.json()["candidates"]]
-        assert "No Coord Venue" not in names, "missing-coord candidate must be excluded"
+        assert "Far From Hotel" not in names, (
+            "candidate that violates hotel return wall must be absent"
+        )
+
+    def test_hotel_return_missing_hotel_coords_excluded(self):
+        """A candidate with finite coords is excluded when covering hotel has no coords.
+
+        The hotel-return predicate treats missing hotel coords as ineligible
+        (violates_hotel_return returns True).  The candidate itself has valid
+        coordinates -- so the rejection comes from the hotel-return check, not
+        the generic missing-candidate-coord guard.
+        """
+        from models.schemas import TripNode as _TN, NodeStatus as _NS
+
+        # Candidate has finite coords, close enough to pass walking checks.
+        ok_v = _make_venue_rag("Coord OK Venue", structured=_make_hours({}), dwell=60, geo=GEO)
+        h = auth("spec41-swap-parity-hotel-2")
+        r_create = client.post(
+            "/api/v1/trip/create",
+            json={"geo_region": GEO, "start_date": "2026-09-14"},
+            headers=h,
+        )
+        assert r_create.status_code == 200, r_create.text
+        data = r_create.json()
+        trip_id = data["trip_id"]
+
+        trip_state = db_mod.db_service.get_trip(trip_id)
+        activities = [
+            n
+            for n in trip_state.nodes
+            if not n.is_locked and getattr(n, "node_kind", "activity") == "activity"
+        ]
+        assert activities, "trip must have activities"
+        last_act = activities[-1]
+
+        # Inject a hotel with NO coordinates
+        hotel_no_coords = _TN(
+            venue_name="No Coord Hotel",
+            venue_id="no-coord-hotel",
+            scheduled_start=datetime(2026, 9, 14, 11, 0, tzinfo=timezone.utc),
+            duration_minutes=1260,
+            is_locked=True,
+            node_kind="booking",
+            booking_type="hotel",
+            geo_region=GEO,
+            lat=None,
+            lng=None,
+            status=_NS.PENDING,
+        )
+        trip_state.nodes.append(hotel_no_coords)
+        db_mod.db_service.save_trip(trip_state)
+        db_mod.db_service.add_venue(ok_v)
+
+        r = client.get(
+            f"/api/v1/trip/{trip_id}/swap_candidates/{last_act.node_id}",
+            headers=h,
+        )
+        assert r.status_code == 200
+        names = [v["name"] for v in r.json()["candidates"]]
+        assert "Coord OK Venue" not in names, (
+            "candidate must be excluded when covering hotel has missing coords"
+        )
 
     def test_successful_confirm_preserves_slot_name(self):
         """Swap confirm via event preserves the original slot_name."""
