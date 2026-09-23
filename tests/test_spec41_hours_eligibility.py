@@ -1326,9 +1326,7 @@ class TestSwapEndpointParity:
         # Inject a locked TOUR (not flight) 2 hours after the activity ends.
         # Walking 50km takes ~600 min; 2 h gap rejects the far candidate
         # but lets a nearby one through (~0 min walk).
-        tour_start = last_act.scheduled_start + timedelta(
-            minutes=last_act.duration_minutes + 120
-        )
+        tour_start = last_act.scheduled_start + timedelta(minutes=last_act.duration_minutes + 120)
         tour = _TN(
             venue_name="Guided Tour",
             venue_id="guided-tour-lock",

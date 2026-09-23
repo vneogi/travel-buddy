@@ -353,14 +353,12 @@ void main() {
 
   // -- Proof 20: later-city swap search uses tapped node coordinates ----------
 
-  testWidgets('P20: later-city SwapSheet search uses tapped node coordinates',
+  testWidgets('P20: later-city SwapSheet calls swapCandidates with tapped node ID',
       (tester) async {
     final repo = _MockTripRepository();
-    when(() => repo.searchVenues(
-          query: any(named: 'query'),
-          lat: any(named: 'lat'),
-          lng: any(named: 'lng'),
-          topK: any(named: 'topK'),
+    when(() => repo.swapCandidates(
+          tripId: any(named: 'tripId'),
+          targetNodeId: any(named: 'targetNodeId'),
         )).thenAnswer((_) async => [
           const VenueSearchResult(
             venueId: 'alt-1',
@@ -434,17 +432,13 @@ void main() {
     await tester.tap(find.byTooltip('Swap this activity').last);
     await tester.pumpAndSettle();
 
-    verify(() => repo.searchVenues(
-          query: 'nearby activity',
-          lat: 19.8856,
-          lng: 102.1347,
-          topK: 8,
+    verify(() => repo.swapCandidates(
+          tripId: 'trip-1',
+          targetNodeId: 'lp-1',
         )).called(1);
-    verifyNever(() => repo.searchVenues(
-          query: 'nearby activity',
-          lat: 17.9757,
-          lng: 102.6331,
-          topK: any(named: 'topK'),
+    verifyNever(() => repo.swapCandidates(
+          tripId: any(named: 'tripId'),
+          targetNodeId: 'vte-1',
         ));
   }, timeout: const Timeout(Duration(seconds: 20)));
 
@@ -526,14 +520,12 @@ void main() {
     expect(json.containsKey('ends_on'), isTrue);
   });
 
-  testWidgets('S9: later-city swap must not use first-node coordinates',
+  testWidgets('S9: later-city swap must not target first-node ID',
       (tester) async {
     final repo = _MockTripRepository();
-    when(() => repo.searchVenues(
-          query: any(named: 'query'),
-          lat: any(named: 'lat'),
-          lng: any(named: 'lng'),
-          topK: any(named: 'topK'),
+    when(() => repo.swapCandidates(
+          tripId: any(named: 'tripId'),
+          targetNodeId: any(named: 'targetNodeId'),
         )).thenAnswer((_) async => const []);
 
     final trip = TripState(
@@ -596,11 +588,9 @@ void main() {
     await tester.tap(find.byTooltip('Swap this activity').last);
     await tester.pumpAndSettle();
 
-    verifyNever(() => repo.searchVenues(
-          query: 'nearby activity',
-          lat: 17.9757,
-          lng: 102.6331,
-          topK: any(named: 'topK'),
+    verifyNever(() => repo.swapCandidates(
+          tripId: any(named: 'tripId'),
+          targetNodeId: 'vte-1',
         ));
   }, timeout: const Timeout(Duration(seconds: 20)));
 
