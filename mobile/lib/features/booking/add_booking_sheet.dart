@@ -39,6 +39,7 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
   bool _saving = false;
   String? _saveError;
   String? _parsedGeoRegion;
+  String? _selectedGeoRegion;  // G0-B2: corridor city control
   ParsedBooking? _lastParsed;
 
   bool get _isEditMode => widget.editNode != null;
@@ -67,6 +68,7 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
         );
       }
       _importSource = edit.importSource ?? 'manual';
+      _selectedGeoRegion = edit.geoRegion;
     } else {
       _bookingType = widget.initialBookingType;
       _durationMinutes = _defaultDurations[_bookingType] ?? 180;
@@ -126,6 +128,7 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
           _checkoutDate = parsed.checkoutDate;
         }
         _parsedGeoRegion = parsed.geoRegion;
+        _selectedGeoRegion = parsed.geoRegion ?? _selectedGeoRegion;
         _importSource = 'email';
       } else {
         // Zero-useful-field or junk re-parse: reset to manual.
@@ -261,7 +264,11 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
         'scheduled_start': _scheduledStart.toIso8601String(),
         'duration_minutes': _durationMinutes,
         'booking_type': _bookingType,
-        if (_parsedGeoRegion != null) 'geo_region': _parsedGeoRegion,
+        // G0-B2: always send geo_region (city control wins over paste).
+        if (_selectedGeoRegion != null)
+          'geo_region': _selectedGeoRegion
+        else if (_parsedGeoRegion != null)
+          'geo_region': _parsedGeoRegion,
         // SPEC-10: send lat/lng when available (edit node or catalog match).
         if (_resolvedLat != null) 'lat': _resolvedLat,
         if (_resolvedLng != null) 'lng': _resolvedLng,
@@ -413,6 +420,36 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
               }).toList(),
             ),
             const SizedBox(height: AppSpacing.base),
+            // G0-B2: city control for corridor trips (segments.length > 1).
+            Consumer(
+              builder: (context, ref, _) {
+                final segs = ref.watch(
+                  itineraryControllerProvider(widget.tripId)
+                      .select((s) => s?.segments ?? const <TripSegment>[]),
+                );
+                if (segs.length <= 1) return const SizedBox.shrink();
+                final items = segs
+                    .map(
+                      (s) => DropdownMenuItem<String>(
+                        value: s.geoRegion,
+                        child: Text(
+                          _geoRegionDisplayName(s.geoRegion),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    )
+                    .toList();
+                return DropdownButtonFormField<String>(
+                  key: const Key('booking_city_control'),
+                  value: _selectedGeoRegion,
+                  hint: const Text('City'),
+                  decoration: const InputDecoration(labelText: 'City'),
+                  items: items,
+                  onChanged: (v) => setState(() => _selectedGeoRegion = v),
+                );
+              },
+            ),
+            const SizedBox(height: AppSpacing.sm),
             TextField(
               controller: _titleController,
               decoration: const InputDecoration(labelText: 'Title / Venue'),
@@ -511,6 +548,21 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
         ),
       ),
     );
+  }
+
+  /// Convert a geo_region code to a human-readable city name.
+  static String _geoRegionDisplayName(String code) {
+    const names = <String, String>{
+      'vientiane_laos': 'Vientiane',
+      'vang_vieng_laos': 'Vang Vieng',
+      'luang_prabang_laos': 'Luang Prabang',
+      'dubai_uae': 'Dubai',
+    };
+    if (names.containsKey(code)) return names[code]!;
+    return code
+        .split('_')
+        .map((w) => w.isEmpty ? w : '\${w[0].toUpperCase()}\${w.substring(1)}')
+        .join(' ');
   }
 
   String _formatDate(DateTime dt) =>

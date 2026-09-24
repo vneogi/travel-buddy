@@ -93,6 +93,7 @@ def reschedule_and_validate(
 
     warnings: List[str] = []
     has_hard_conflict = False
+    _hotel_no_coords_warned: set[str] = set()  # G0-B3: dedup hotel-location warnings
 
     # Snapshot original start times to detect shifted nodes.
     original_starts = {n.node_id: n.scheduled_start for n in nodes}
@@ -178,28 +179,48 @@ def reschedule_and_validate(
                         has_hard_conflict = True
                         warnings.append(f"'{node.venue_name}' conflicts with a scheduled flight.")
 
-            # SPEC-10: hotel evening-return wall -- only the LAST unlocked
-            # activity of each region/local day.
+            # SPEC-10 / G0-B3: hotel evening-return wall -- only the LAST
+            # unlocked activity of each region/local day.
+            # Split: missing hotel coords -> one hotel-location warning (not
+            # per-activity); present coords -> per-activity return check.
             if _is_activity:
                 geo = getattr(node, "geo_region", None)
-                if geo and _has_coords(node):
+                if geo:
                     _nld2 = _local_date_of(_ensure_aware(node.scheduled_start), geo)
                     if is_last_unlocked_activity(node, nodes, geo, _nld2):
                         hotel = find_covering_hotel(nodes, geo, _nld2)
                         if hotel is not None:
-                            if violates_hotel_return(
-                                node.scheduled_start,
-                                node.duration_minutes,
-                                hotel,
-                                geo,
-                                _nld2,
-                                activity_lat=node.lat,
-                                activity_lng=node.lng,
-                            ):
-                                has_hard_conflict = True
-                                warnings.append(
-                                    f"'{node.venue_name}' cannot return to the hotel in time."
-                                )
+                            import math as _math
+
+                            _hotel_has_coords = (
+                                hotel.lat is not None
+                                and hotel.lng is not None
+                                and _math.isfinite(hotel.lat)
+                                and _math.isfinite(hotel.lng)
+                            )
+                            if not _hotel_has_coords:
+                                # G0-B3: hotel has no map data -- emit at most
+                                # one booking-quality warning naming the hotel.
+                                if hotel.node_id not in _hotel_no_coords_warned:
+                                    _hotel_no_coords_warned.add(hotel.node_id)
+                                    warnings.append(
+                                        f"'{hotel.venue_name}' has no map location"
+                                        " so evening return was not checked."
+                                    )
+                            elif _has_coords(node):
+                                if violates_hotel_return(
+                                    node.scheduled_start,
+                                    node.duration_minutes,
+                                    hotel,
+                                    geo,
+                                    _nld2,
+                                    activity_lat=node.lat,
+                                    activity_lng=node.lng,
+                                ):
+                                    has_hard_conflict = True
+                                    warnings.append(
+                                        f"'{node.venue_name}' cannot return to the hotel in time."
+                                    )
 
         # Hours check: mutated node, shifted downstream, or unscoped.
         # Booking nodes (flights, hotels, trains, tours) are locked calendar

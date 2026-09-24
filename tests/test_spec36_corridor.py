@@ -67,7 +67,7 @@ class TestCorridorCreate:
         data = _create()
         assert data["status"] == "created"
         assert "trip_id" in data
-        assert len(data["nodes"]) <= 20  # SPEC-42: 5-day global starter limit
+        assert len(data["nodes"]) <= 8 * 4  # G0-B1: 8 requested days x 4 stops max
         trip = client.get(f"/api/v1/trip/{data['trip_id']}", headers=HEADERS).json()
         assert trip["corridor_id"] == "laos_northbound_v1"
         assert len(trip["segments"]) == 3
@@ -102,9 +102,10 @@ class TestCorridorCreate:
             dt = datetime.fromisoformat(n["scheduled_start"])
             local = dt.astimezone(TZ)
             by_date.setdefault(local.date(), []).append(local)
-        assert len(by_date) <= 5  # SPEC-42: 5-day global starter limit
+        assert len(by_date) <= 8  # G0-B1: 8-day corridor (2+2+4 segments)
         for d, times in by_date.items():
-            assert len(times) == CORRIDOR_STOPS_PER_DAY
+            # G0-B1: honest short days allowed when hours/catalog prevent a full slot.
+            assert 0 < len(times) <= CORRIDOR_STOPS_PER_DAY
             assert times[0].hour == 9 and times[0].minute == 0
 
     def test_intraday_gap_uses_walking_transfer(self):

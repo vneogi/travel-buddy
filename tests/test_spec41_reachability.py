@@ -290,8 +290,8 @@ class TestPackDayWalking:
                 dt = datetime.fromisoformat(n["scheduled_start"]).astimezone(ICT)
                 all_dates.add(dt.date())
 
-        assert len(all_dates) <= 5, (
-            f"SPEC-42: expected at most 5 populated dates, got {len(all_dates)}"
+        assert len(all_dates) <= 8, (
+            f"G0-B1: expected at most 8 populated dates (2+2+4 segments), got {len(all_dates)}"
         )
         assert len(data["nodes"]) > 0, "corridor produced zero nodes"
 
@@ -303,8 +303,8 @@ class TestPackDayWalking:
                 if n.get("node_kind", "activity") == "activity"
                 and datetime.fromisoformat(n["scheduled_start"]).astimezone(ICT).date() == d
             ]
-            assert len(day_nodes) == CORRIDOR_STOPS_PER_DAY, (
-                f"{d}: {len(day_nodes)} stops, expected {CORRIDOR_STOPS_PER_DAY}"
+            assert 0 < len(day_nodes) <= CORRIDOR_STOPS_PER_DAY, (
+                f"{d}: {len(day_nodes)} stops, expected 1-{CORRIDOR_STOPS_PER_DAY} (honest short days allowed)"
             )
 
 

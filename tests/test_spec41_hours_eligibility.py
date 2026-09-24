@@ -1316,12 +1316,22 @@ class TestSwapEndpointParity:
         trip_id, target = _seed_swap_trip([far_v, near_v], headers=h)
         trip_state = db_mod.db_service.get_trip(trip_id)
 
-        # Pick the last unlocked activity as the target.
-        last_act = [
+        # Pick the last activity-slot (morning/afternoon) unlocked node.
+        # The absolute last node is often dinner (food slot); near_v and far_v
+        # are temples (activity category) which do not fit a food slot after
+        # G0-B4 slot filtering.  Use an activity slot so slot and reachability
+        # checks are independent.
+        _act_slots = {"morning_tour", "afternoon_evening_tour"}
+        _act_candidates = [
             n
             for n in trip_state.nodes
-            if not n.is_locked and getattr(n, "node_kind", "activity") == "activity"
-        ][-1]
+            if not n.is_locked
+            and getattr(n, "node_kind", "activity") == "activity"
+            and getattr(n, "slot_name", "") in _act_slots
+        ]
+        if not _act_candidates:
+            pytest.skip("No activity-slot node in seeded trip -- catalog too small")
+        last_act = _act_candidates[-1]
 
         # Inject a locked TOUR (not flight) 2 hours after the activity ends.
         # Walking 50km takes ~600 min; 2 h gap rejects the far candidate

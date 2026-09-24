@@ -81,6 +81,33 @@ def eligible_corridor_venues(rows) -> list:
     return [r for r in eligible_venues(rows) if r.get("venue_id")]
 
 
+def is_swap_eligible_venue(row: dict, target_slot_name: str | None = None) -> bool:
+    """Shared predicate for swap candidate list and SWAP_ACTIVITY confirm.
+
+    Applies:
+    - INFRASTRUCTURE_CATEGORIES exclusion (hospital, pharmacy, transport_hub).
+    - venue_fits_slot when target_slot_name is set (lunch/dinner => food;
+      morning/afternoon => activity; whole-day excursion rules apply).
+
+    Does NOT apply hours or reachability checks (those are separate).
+    Used by both GET /swap_candidates and the confirm path so predicates
+    stay identical (R4).
+    """
+    category = (row.get("category") or "experience").lower()
+    if category in INFRASTRUCTURE_CATEGORIES:
+        return False
+    if target_slot_name:
+        from services.day_slots import venue_fits_slot as _fits
+
+        # remaining_slots is irrelevant for a fixed target_slot check;
+        # pass all slots so whole-day excursion gate is the only constraint.
+        from services.day_slots import SLOT_ORDER as _SO
+
+        if not _fits(row, target_slot_name, list(_SO)):
+            return False
+    return True
+
+
 def select_day_venues(rows: Sequence[dict]) -> List[dict]:
     pool = eligible_corridor_venues(rows)
     if len(pool) < MIN_STOPS:

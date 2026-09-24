@@ -248,6 +248,66 @@ def _is_swap_reachable(
     return True
 
 
+def _geo_region_for_booking(
+    preferred_region: str | None,
+    scheduled_start,
+    trip_state,
+) -> str | None:
+    """Derive the booking geo_region for corridor trips.
+
+    Resolution order:
+    1. Explicit prefs geo_region, validated against trip.segments when
+       the trip is a corridor trip (has segments).
+    2. Derive from scheduled_start date vs segment spans.
+    3. Nearest segment when the date falls in a gap.
+    4. Return None on a segmented trip if still unresolved; caller refuses.
+
+    For single-city trips (no segments) returns preferred_region unchanged
+    (may be None; caller falls back to trip.geo_region).
+    """
+    segments = getattr(trip_state, "segments", None) or []
+
+    # Single-city trip: caller falls back to trip.geo_region.
+    if not segments:
+        return preferred_region  # may be None; caller resolves normally
+
+    valid_regions = {s.geo_region for s in segments}
+
+    # Explicit preference validated against segment list.
+    if preferred_region and preferred_region in valid_regions:
+        return preferred_region
+
+    # Explicit preference that is NOT a corridor city: refuse.
+    if preferred_region and preferred_region not in valid_regions:
+        return None
+
+    # No explicit preference: derive from scheduled_start date vs spans.
+    if scheduled_start is not None:
+        try:
+            from datetime import date as _date
+
+            st = getattr(scheduled_start, "date", None)
+            st_date = st() if callable(st) else scheduled_start
+            if hasattr(st_date, "year"):
+                for seg in segments:
+                    if seg.starts_on <= st_date <= seg.ends_on:
+                        return seg.geo_region
+
+                # Date outside all spans: nearest segment.
+                def _dist(seg):
+                    if st_date < seg.starts_on:
+                        return (seg.starts_on - st_date).days
+                    if st_date > seg.ends_on:
+                        return (st_date - seg.ends_on).days
+                    return 0
+
+                return min(segments, key=_dist).geo_region
+        except Exception:
+            pass
+
+    return None
+
+
 class TripStateMachine:
     """State machine for trip management."""
 
@@ -393,6 +453,17 @@ class TripStateMachine:
             ):
                 state["no_candidates"] = True
                 return state
+            # G0-B4: shared eligibility check (infrastructure + slot-typed).
+            _target_slot_confirm = getattr(target_node, "slot_name", None) if target_node else None
+            _repl_row = {
+                "category": getattr(replacement, "category", None),
+                "vibe_tags": getattr(replacement, "vibe_tags", None) or [],
+            }
+            from services.catalog_itinerary import is_swap_eligible_venue
+
+            if not is_swap_eligible_venue(_repl_row, _target_slot_confirm):
+                state["no_candidates"] = True
+                return state
             # SPEC-41 A2: refuse CLOSED for the target slot
             structured = getattr(replacement, "opening_hours_structured", None)
             if target_node is not None:
@@ -459,6 +530,9 @@ class TripStateMachine:
             and venues
         ):
             eligible = []
+            _target_slot_search = getattr(target_node, "slot_name", None)
+            from services.catalog_itinerary import is_swap_eligible_venue as _is_swap_elig
+
             for v in venues:
                 hydrated = db_service.get_venue_by_id(v.venue.venue_id)
                 if hydrated is None:
@@ -468,6 +542,13 @@ class TripStateMachine:
                     similarity_score=v.similarity_score,
                     final_score=v.final_score,
                 )
+                # G0-B4: shared eligibility check (infrastructure + slot-typed).
+                _h_row = {
+                    "category": getattr(v.venue, "category", None),
+                    "vibe_tags": getattr(v.venue, "vibe_tags", None) or [],
+                }
+                if not _is_swap_elig(_h_row, _target_slot_search):
+                    continue
                 structured = getattr(v.venue, "opening_hours_structured", None)
                 cand_dwell = _duration_for(
                     {"typical_dwell_minutes": getattr(v.venue, "typical_dwell_minutes", None)}
@@ -534,7 +615,27 @@ class TripStateMachine:
         if event_type == EventType.ADD_BOOKING.value:
             prefs = state.get("preferences") or {}
             raw_start = prefs.get("scheduled_start") or state.get("message")
-            booking_region = prefs.get("geo_region") or trip_state.geo_region
+            # SPEC G0-B2: resolve geo_region from segments for corridor trips.
+            # For single-city trips, fall back to trip.geo_region as before.
+            _pref_region = prefs.get("geo_region")
+            _raw_start_for_region = raw_start
+            try:
+                _probe_dt = _parse_wall_time(
+                    _raw_start_for_region, _pref_region or trip_state.geo_region
+                )
+            except (ValueError, TypeError):
+                _probe_dt = None
+            bk_region = _geo_region_for_booking(_pref_region, _probe_dt, trip_state)
+            if bk_region is None and (getattr(trip_state, "segments", None) or []):
+                # Cannot derive city for a corridor trip: refuse.
+                state["schedule_warnings"] = [
+                    "Could not determine which city this booking belongs to. "
+                    "Please specify the city (geo_region) for this booking."
+                ]
+                return state
+            if bk_region is None:
+                bk_region = trip_state.geo_region
+            booking_region = bk_region
             try:
                 start_dt = _parse_wall_time(raw_start, booking_region)
             except (ValueError, TypeError):
@@ -542,7 +643,6 @@ class TripStateMachine:
 
             bk_lat = prefs.get("lat")
             bk_lng = prefs.get("lng")
-            bk_region = prefs.get("geo_region") or trip_state.geo_region
             bk_name = prefs.get("venue_name") or prefs.get("title") or "Booking"
             # SPEC-10: catalog name-match for missing coords (hotels only,
             # only when BOTH lat and lng are absent).
@@ -618,14 +718,18 @@ class TripStateMachine:
             if "lng" in prefs:
                 node.lng = prefs["lng"]
             if "geo_region" in prefs:
-                node.geo_region = prefs["geo_region"]
+                # SPEC G0-B2: validate geo_region against corridor segments.
+                _new_region = prefs["geo_region"]
+                _validated = _geo_region_for_booking(_new_region, None, trip_state)
+                if _validated is None and (getattr(trip_state, "segments", None) or []):
+                    # Invalid city for this corridor: refuse silently (keep old).
+                    pass
+                else:
+                    node.geo_region = _new_region
             if "scheduled_start" in prefs:
                 raw = prefs["scheduled_start"]
-                edit_region = (
-                    prefs.get("geo_region")
-                    or getattr(node, "geo_region", None)
-                    or trip_state.geo_region
-                )
+                # Use the node's geo_region (already validated/updated above).
+                edit_region = getattr(node, "geo_region", None) or trip_state.geo_region
                 try:
                     new_start = _parse_wall_time(raw, edit_region)
                     if new_start != node.scheduled_start:
