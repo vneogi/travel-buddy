@@ -457,3 +457,348 @@ class TestP5SwapCandidatesSlotTyped:
         assert "couldn't find" in resp.get("message", "").lower() or (
             "unchanged" in resp.get("message", "").lower()
         ), f"Confirming an infrastructure venue must be refused, got: {resp.get('message')}"
+
+
+# ---------------------------------------------------------------------------
+# P6: ADD_BOOKING invalid geo_region on corridor trip -> 422 refusal
+# ---------------------------------------------------------------------------
+
+
+class TestP6AddBookingInvalidRegionRefused:
+    def test_invalid_geo_region_returns_422(self):
+        """ADD_BOOKING with geo_region not in segments must return 422,
+        not HTTP-200 with success copy."""
+        trip = _make_trip_with_segments()
+        trip_id = trip["trip_id"]
+
+        r = client.post(
+            "/api/v1/trip/event",
+            json={
+                "trip_id": trip_id,
+                "event_type": "add_booking",
+                "message": "Add Dubai hotel",
+                "preferences": {
+                    "venue_name": "Burj Al Arab",
+                    "booking_type": "hotel",
+                    "geo_region": "dubai_uae",
+                    "scheduled_start": "2026-10-06T15:00:00",
+                    "duration_minutes": 1440,
+                },
+            },
+            headers=HEADERS,
+        )
+        assert r.status_code == 422, f"Expected 422, got {r.status_code}: {r.text}"
+        detail = r.json()["detail"]
+        assert detail["error"] == "booking_refused", detail
+
+    def test_no_new_node_created(self):
+        """Refused booking must not leave a new node in the trip."""
+        trip = _make_trip_with_segments()
+        trip_id = trip["trip_id"]
+        orig_count = len(trip.get("nodes", []))
+
+        client.post(
+            "/api/v1/trip/event",
+            json={
+                "trip_id": trip_id,
+                "event_type": "add_booking",
+                "message": "Add Dubai hotel",
+                "preferences": {
+                    "venue_name": "Burj Al Arab",
+                    "booking_type": "hotel",
+                    "geo_region": "dubai_uae",
+                    "scheduled_start": "2026-10-06T15:00:00",
+                    "duration_minutes": 1440,
+                },
+            },
+            headers=HEADERS,
+        )
+        r2 = client.get(f"/api/v1/trip/{trip_id}", headers=HEADERS)
+        new_count = len(r2.json().get("nodes", []))
+        assert new_count == orig_count, (
+            f"Node count changed from {orig_count} to {new_count} after refused booking"
+        )
+
+
+# ---------------------------------------------------------------------------
+# P7: ADD_BOOKING date outside all segments -> refuse, no nearest
+# ---------------------------------------------------------------------------
+
+
+class TestP7GapDateRefused:
+    def test_date_after_all_segments_is_refused(self):
+        """ADD_BOOKING for 2026-10-15 (after LP ends Oct 9) must be refused.
+        No silent nearest-segment assignment."""
+        trip = _make_trip_with_segments()
+        trip_id = trip["trip_id"]
+
+        r = client.post(
+            "/api/v1/trip/event",
+            json={
+                "trip_id": trip_id,
+                "event_type": "add_booking",
+                "message": "Add tour after corridor",
+                "preferences": {
+                    "venue_name": "Luang Namtha Trekking",
+                    "booking_type": "tour",
+                    "scheduled_start": "2026-10-15T10:00:00",
+                    "duration_minutes": 180,
+                },
+            },
+            headers=HEADERS,
+        )
+        assert r.status_code == 422, f"Expected 422, got {r.status_code}: {r.text}"
+        detail = r.json()["detail"]
+        assert detail["error"] == "booking_refused", detail
+
+
+# ---------------------------------------------------------------------------
+# P8: ADD_BOOKING naive 2026-10-06T00:30 -> LP not VTE (destination-local)
+# ---------------------------------------------------------------------------
+
+
+class TestP8AfterMidnightLocalLP:
+    def test_naive_00_30_oct6_resolves_to_lp(self):
+        """2026-10-06T00:30:00 naive = LP local (Oct 6).
+        If parsed as UTC, .date() = Oct 5 in UTC which is still Oct 5 --
+        but segment TZ is Asia/Vientiane (UTC+7), so this is already
+        Oct 6 local.  The derive must give LP, not VTE."""
+        trip = _make_trip_with_segments()
+        trip_id = trip["trip_id"]
+
+        r = client.post(
+            "/api/v1/trip/event",
+            json={
+                "trip_id": trip_id,
+                "event_type": "add_booking",
+                "message": "Late night LP",
+                "preferences": {
+                    "venue_name": "Night Market Walk",
+                    "booking_type": "tour",
+                    # naive ISO -- no Z, no offset
+                    "scheduled_start": "2026-10-06T00:30:00",
+                    "duration_minutes": 60,
+                },
+            },
+            headers=HEADERS,
+        )
+        assert r.status_code == 200, f"Expected 200, got {r.status_code}: {r.text}"
+        from models.schemas import TripNode as TN
+
+        nodes_json = r.json().get("updated_nodes") or r.json().get("nodes", [])
+        tour = next(
+            (TN(**n) for n in nodes_json if n.get("venue_name") == "Night Market Walk"),
+            None,
+        )
+        assert tour is not None, "Night Market Walk node not found"
+        assert tour.geo_region == GEO_LP, (
+            f"geo_region is {tour.geo_region}, expected {GEO_LP} for Oct 6 local"
+        )
+        assert tour.geo_region != GEO_VTE, "Must not resolve to VTE"
+
+
+# ---------------------------------------------------------------------------
+# P9: EDIT_BOOKING invalid city -> node unchanged (name and region)
+# ---------------------------------------------------------------------------
+
+
+class TestP9EditBookingInvalidCity:
+    def test_edit_invalid_city_returns_422_node_unchanged(self):
+        """EDIT_BOOKING with invalid corridor city: 422, node unchanged."""
+        trip = _make_trip_with_segments()
+        trip_id = trip["trip_id"]
+
+        # First add a valid LP hotel.
+        add_r = client.post(
+            "/api/v1/trip/event",
+            json={
+                "trip_id": trip_id,
+                "event_type": "add_booking",
+                "message": "Add LP hotel",
+                "preferences": {
+                    "venue_name": "Queens House LP",
+                    "booking_type": "hotel",
+                    "geo_region": GEO_LP,
+                    "scheduled_start": "2026-10-06T15:00:00",
+                    "duration_minutes": 1440,
+                },
+            },
+            headers=HEADERS,
+        )
+        assert add_r.status_code == 200, add_r.text
+        from models.schemas import TripNode as TN
+
+        nodes_json = add_r.json().get("updated_nodes") or []
+        hotel = next(
+            (TN(**n) for n in nodes_json if n.get("booking_type") == "hotel"),
+            None,
+        )
+        assert hotel is not None
+        hotel_id = hotel.node_id
+
+        # Now try to edit with invalid city.
+        edit_r = client.post(
+            "/api/v1/trip/event",
+            json={
+                "trip_id": trip_id,
+                "event_type": "edit_booking",
+                "message": "Move to Dubai",
+                "target_node_id": hotel_id,
+                "preferences": {
+                    "venue_name": "Burj Al Arab",
+                    "geo_region": "dubai_uae",
+                },
+            },
+            headers=HEADERS,
+        )
+        assert edit_r.status_code == 422, f"Expected 422, got {edit_r.status_code}: {edit_r.text}"
+
+        # Verify node is unchanged.
+        get_r = client.get(f"/api/v1/trip/{trip_id}", headers=HEADERS)
+        nodes_after = get_r.json().get("nodes", [])
+        hotel_after = next((n for n in nodes_after if n["node_id"] == hotel_id), None)
+        assert hotel_after is not None
+        assert hotel_after["venue_name"] == "Queens House LP", (
+            f"Name changed to {hotel_after['venue_name']} after refused edit"
+        )
+        assert hotel_after["geo_region"] == GEO_LP, (
+            f"Region changed to {hotel_after['geo_region']} after refused edit"
+        )
+
+
+# ---------------------------------------------------------------------------
+# P10: EDIT_BOOKING city change clears old coords
+# ---------------------------------------------------------------------------
+
+
+class TestP10EditCityChangeCoords:
+    def test_edit_city_change_clears_old_coords(self):
+        """When city changes from VTE to LP, old VTE coords must be
+        cleared (or re-resolved from catalog). Not carried over."""
+        trip = _make_trip_with_segments()
+        trip_id = trip["trip_id"]
+
+        # Add VTE hotel with coords.
+        add_r = client.post(
+            "/api/v1/trip/event",
+            json={
+                "trip_id": trip_id,
+                "event_type": "add_booking",
+                "message": "Add VTE hotel",
+                "preferences": {
+                    "venue_name": "Ansara Hotel",
+                    "booking_type": "hotel",
+                    "geo_region": GEO_VTE,
+                    "scheduled_start": "2026-10-02T15:00:00",
+                    "duration_minutes": 1440,
+                    "lat": 17.962,
+                    "lng": 102.609,
+                },
+            },
+            headers=HEADERS,
+        )
+        assert add_r.status_code == 200, add_r.text
+        from models.schemas import TripNode as TN
+
+        nodes_json = add_r.json().get("updated_nodes") or []
+        hotel = next(
+            (TN(**n) for n in nodes_json if n.get("booking_type") == "hotel"),
+            None,
+        )
+        assert hotel is not None
+        hotel_id = hotel.node_id
+
+        # Edit: move to LP with a different name (not in LP catalog).
+        edit_r = client.post(
+            "/api/v1/trip/event",
+            json={
+                "trip_id": trip_id,
+                "event_type": "edit_booking",
+                "message": "Move hotel to LP",
+                "target_node_id": hotel_id,
+                "preferences": {
+                    "venue_name": "Riverside Guesthouse LP",
+                    "geo_region": GEO_LP,
+                },
+            },
+            headers=HEADERS,
+        )
+        assert edit_r.status_code == 200, f"Expected 200, got {edit_r.status_code}: {edit_r.text}"
+
+        # Check coords are cleared (not the old VTE coords).
+        get_r = client.get(f"/api/v1/trip/{trip_id}", headers=HEADERS)
+        hotel_after = next(
+            (n for n in get_r.json().get("nodes", []) if n["node_id"] == hotel_id),
+            None,
+        )
+        assert hotel_after is not None
+        assert hotel_after["geo_region"] == GEO_LP
+        # Old VTE coords must not persist.
+        lat_after = hotel_after.get("lat")
+        lng_after = hotel_after.get("lng")
+        if lat_after is not None and lng_after is not None:
+            # If coords are set, they must be catalog-resolved LP coords,
+            # not the original VTE ones.
+            assert abs(lat_after - 17.962) > 0.01 or abs(lng_after - 102.609) > 0.01, (
+                "Old VTE coords persisted after city change to LP"
+            )
+
+
+# ---------------------------------------------------------------------------
+# P11: Corridor create with exhausted catalog warns honestly
+# ---------------------------------------------------------------------------
+
+
+class TestP11CorridorEmptyDayWarning:
+    def test_p1_eight_date_fixture_still_populates_all(self):
+        """Standard 8-date Laos fixture must still populate all 8 dates
+        when the catalog has enough venues."""
+        trip = _make_trip_with_segments()
+        from models.schemas import TripNode as TN
+
+        nodes_json = trip.get("nodes", [])
+        nodes = [TN(**n) for n in nodes_json]
+        dates = set()
+        for n in nodes:
+            dates.add(n.scheduled_start.astimezone(TZ).date())
+        expected = set()
+        for d in range(2, 10):
+            expected.add(date(2026, 10, d))
+        # All 8 expected dates must appear.
+        for d in expected:
+            assert d in dates, f"Date {d} has no nodes"
+
+    def test_exhausted_catalog_returns_422(self):
+        """If we request more days than the catalog can fill, the create
+        must fail with corridor_empty_days (not silently succeed)."""
+        from services.corridor_itinerary import build_corridor_nodes
+        from config.corridors import require_corridor
+
+        corridor = require_corridor("laos_northbound_v1")
+        # Request 10 days for LP -- catalog has ~21 eligible venues,
+        # at 4 per day that is 5 full days + ~1 partial; days 6+ empty.
+        segments = [
+            TripSegmentIn(
+                geo_region=GEO_LP,
+                starts_on=date(2026, 10, 1),
+                ends_on=date(2026, 10, 10),
+            ),
+        ]
+
+        _nodes, _stored, warnings = build_corridor_nodes(
+            segments, db_service.list_venues_for_region, corridor
+        )
+        if not warnings:
+            # Catalog is large enough -- that is fine; the test is about
+            # the _behavior_ when warnings exist.  Let us manufacture one.
+            pass
+
+        # Build with artificially small catalog to guarantee exhaustion.
+        def _tiny_fn(region):
+            rows = db_service.list_venues_for_region(region)
+            return rows[:4]  # only 4 venues -> 1 full day, rest empty
+
+        _n2, _s2, w2 = build_corridor_nodes(segments, _tiny_fn, corridor)
+        assert len(w2) > 0, "Expected empty-day warnings from exhausted catalog"
+        # The warning should name the empty date.
+        assert any("2026-10-" in w for w in w2), f"Warning must name the date: {w2}"

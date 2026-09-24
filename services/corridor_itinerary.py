@@ -148,20 +148,21 @@ def build_corridor_nodes(
     segments: List[TripSegmentIn],
     list_venues_fn,
     corridor: Corridor,
-) -> tuple[List[TripNode], List[TripSegment]]:
+) -> tuple[List[TripNode], List[TripSegment], list[str]]:
     """Build all nodes for a corridor trip.
 
-    Returns (nodes, stored_segments).  Field-fix G0-B1: pack every
-    requested calendar day in every corridor segment.  The global
-    MAX_AUTO_POPULATED_DAYS budget applies only to single-city range
-    creates (nodes_from_catalog / SPEC-40/42), not here.
+    Returns (nodes, stored_segments, warnings).  G0-B1: pack every
+    requested calendar day.  G0-B10: if a requested day packs zero
+    unique venues (earlier days in that city consumed the catalog),
+    the warning list names the empty dates.  Caller decides whether
+    to reject the create or surface the warning.
 
-    Honest short days are allowed when hours or catalog prevent a full
-    slot set.  Silently skipping a requested calendar date is not.
-    No venue_id is duplicated across days within the same city.
+    Honest short days (1-3 slots) are allowed.  Empty calendar days
+    that follow populated days in the same city are the defect.
     """
     all_nodes: list[TripNode] = []
     stored_segments: list[TripSegment] = []
+    empty_day_warnings: list[str] = []
 
     for seg_in in segments:
         region = require_region(seg_in.geo_region)
@@ -171,10 +172,9 @@ def build_corridor_nodes(
 
         span = (seg_in.ends_on - seg_in.starts_on).days + 1
         used_ids: set[str] = set()
+        city_had_nodes = False  # track whether any day in this city packed
 
         for day_offset in range(span):
-            if not pool:
-                break
             day_date = seg_in.starts_on + timedelta(days=day_offset)
             start_dt = datetime(
                 day_date.year,
@@ -194,10 +194,17 @@ def build_corridor_nodes(
                 used_ids=used_ids,
                 remaining_slots=list(_SLOT_ORDER),
             )
-            # Honest short day: append whatever packed (may be fewer than
-            # CORRIDOR_STOPS_PER_DAY when hours/catalog are limiting).
-            # Only skip the day entirely if nothing packed at all.
-            all_nodes.extend(day_nodes)
+            if day_nodes:
+                all_nodes.extend(day_nodes)
+                city_had_nodes = True
+            elif city_had_nodes:
+                # B10: earlier days packed but this one is empty -- catalog
+                # exhausted.  Record warning; do not silently succeed.
+                empty_day_warnings.append(
+                    f"{day_date.isoformat()} in "
+                    f"{seg_in.geo_region} has no available venues "
+                    f"(catalog exhausted after earlier days)."
+                )
 
         stored_segments.append(
             TripSegment(
@@ -207,7 +214,7 @@ def build_corridor_nodes(
             )
         )
 
-    return all_nodes, stored_segments
+    return all_nodes, stored_segments, empty_day_warnings
 
 
 def advertised_corridors(list_venues_fn) -> list[dict]:

@@ -482,7 +482,7 @@ class TestEmptyCorridorPermitted:
             return db_service.list_venues_for_region(region)
 
         # Must NOT raise
-        nodes, stored = build_corridor_nodes(segments, sparse_fn, corridor)
+        nodes, stored, _warnings = build_corridor_nodes(segments, sparse_fn, corridor)
         assert len(stored) == 3, "All 3 segments must be stored"
         # Vang Vieng produced zero nodes
         vv_nodes = [n for n in nodes if n.geo_region == "vang_vieng_laos"]
@@ -566,7 +566,7 @@ class TestGlobalCorridorBudget:
             ),
         ]
 
-        nodes, _ = build_corridor_nodes(
+        nodes, _, _warnings = build_corridor_nodes(
             segments,
             db_service.list_venues_for_region,
             corridor,
@@ -611,7 +611,7 @@ class TestGlobalCorridorBudget:
             ),
         ]
 
-        nodes, _ = build_corridor_nodes(
+        nodes, _, _warnings = build_corridor_nodes(
             segments,
             db_service.list_venues_for_region,
             corridor,

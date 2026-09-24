@@ -40,6 +40,7 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
   String? _saveError;
   String? _parsedGeoRegion;
   String? _selectedGeoRegion;  // G0-B2: corridor city control
+  bool _userOverrodeCity = false;  // true once traveller manually picks
   ParsedBooking? _lastParsed;
 
   bool get _isEditMode => widget.editNode != null;
@@ -69,6 +70,7 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
       }
       _importSource = edit.importSource ?? 'manual';
       _selectedGeoRegion = edit.geoRegion;
+      _userOverrodeCity = true;  // editing: respect existing city
     } else {
       _bookingType = widget.initialBookingType;
       _durationMinutes = _defaultDurations[_bookingType] ?? 180;
@@ -77,6 +79,12 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
           const Duration(hours: 24),
         );
       }
+    }
+    // B2: set city default from date after first frame (ref not yet ready).
+    if (!_isEditMode) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _recomputeCityDefault();
+      });
     }
   }
 
@@ -164,6 +172,7 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
         time.minute,
       );
     });
+    _recomputeCityDefault();
   }
 
   Future<void> _pickCheckinDate() async {
@@ -195,6 +204,7 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
         _checkoutDate = _scheduledStart.add(const Duration(hours: 24));
       }
     });
+    _recomputeCityDefault();
   }
 
   Future<void> _pickCheckoutDate() async {
@@ -266,9 +276,9 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
         'booking_type': _bookingType,
         // G0-B2: always send geo_region (city control wins over paste).
         if (_selectedGeoRegion != null)
-          'geo_region': _selectedGeoRegion
+          'geo_region': _selectedGeoRegion!
         else if (_parsedGeoRegion != null)
-          'geo_region': _parsedGeoRegion,
+          'geo_region': _parsedGeoRegion!,
         // SPEC-10: send lat/lng when available (edit node or catalog match).
         if (_resolvedLat != null) 'lat': _resolvedLat,
         if (_resolvedLng != null) 'lng': _resolvedLng,
@@ -445,7 +455,10 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
                   hint: const Text('City'),
                   decoration: const InputDecoration(labelText: 'City'),
                   items: items,
-                  onChanged: (v) => setState(() => _selectedGeoRegion = v),
+                  onChanged: (v) => setState(() {
+                    _selectedGeoRegion = v;
+                    _userOverrodeCity = true;
+                  }),
                 );
               },
             ),
@@ -550,6 +563,32 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
     );
   }
 
+  /// B2: derive default city from date vs segments.
+  String? _defaultCityForDate(DateTime dt, List<TripSegment> segs) {
+    for (final s in segs) {
+      // segments store starts_on/ends_on as date-only (yyyy-mm-dd).
+      final d = DateTime(dt.year, dt.month, dt.day);
+      final start = DateTime(s.startsOn.year, s.startsOn.month, s.startsOn.day);
+      final end = DateTime(s.endsOn.year, s.endsOn.month, s.endsOn.day);
+      if (!d.isBefore(start) && !d.isAfter(end)) return s.geoRegion;
+    }
+    return null;  // gap or outside all segments -- no default
+  }
+
+  /// B2: recompute city default when date changes (unless user overrode).
+  void _recomputeCityDefault() {
+    if (_userOverrodeCity) return;
+    final segs = ref.read(
+      itineraryControllerProvider(widget.tripId)
+          .select((s) => s?.segments ?? const <TripSegment>[]),
+    );
+    if (segs.length <= 1) return;
+    final city = _defaultCityForDate(_scheduledStart, segs);
+    if (city != null && city != _selectedGeoRegion) {
+      setState(() => _selectedGeoRegion = city);
+    }
+  }
+
   /// Convert a geo_region code to a human-readable city name.
   static String _geoRegionDisplayName(String code) {
     const names = <String, String>{
@@ -561,7 +600,7 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
     if (names.containsKey(code)) return names[code]!;
     return code
         .split('_')
-        .map((w) => w.isEmpty ? w : '\${w[0].toUpperCase()}\${w.substring(1)}')
+        .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
         .join(' ');
   }
 

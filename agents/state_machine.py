@@ -250,20 +250,26 @@ def _is_swap_reachable(
 
 def _geo_region_for_booking(
     preferred_region: str | None,
-    scheduled_start,
+    raw_scheduled_start: str | None,
     trip_state,
 ) -> str | None:
     """Derive the booking geo_region for corridor trips.
 
     Resolution order:
-    1. Explicit prefs geo_region, validated against trip.segments when
-       the trip is a corridor trip (has segments).
-    2. Derive from scheduled_start date vs segment spans.
-    3. Nearest segment when the date falls in a gap.
-    4. Return None on a segmented trip if still unresolved; caller refuses.
+    1. Explicit prefs geo_region, validated against trip.segments.
+    2. Derive from *destination-local* date of scheduled_start vs
+       each segment's [starts_on, ends_on].  Each segment is checked
+       using its own timezone so that e.g. 2026-10-06T00:30 local LP
+       resolves to LP (Oct 6) not VTE.
+    3. If no segment owns the date: refuse (return None).  No silent
+       nearest-segment assignment -- brief says "refuse without
+       explicit traveller confirmation".
 
-    For single-city trips (no segments) returns preferred_region unchanged
-    (may be None; caller falls back to trip.geo_region).
+    For single-city trips (no segments) returns preferred_region
+    unchanged (may be None; caller falls back to trip.geo_region).
+
+    *raw_scheduled_start* is the original ISO string from preferences
+    (not the UTC datetime) so we can re-parse per-segment TZ.
     """
     segments = getattr(trip_state, "segments", None) or []
 
@@ -282,29 +288,26 @@ def _geo_region_for_booking(
         return None
 
     # No explicit preference: derive from scheduled_start date vs spans.
-    if scheduled_start is not None:
+    # B5: use each segment's destination-local calendar date, not UTC .date().
+    if raw_scheduled_start is not None:
         try:
-            from datetime import date as _date
+            from services.destination_tz import parse_destination_wall_time
 
-            st = getattr(scheduled_start, "date", None)
-            st_date = st() if callable(st) else scheduled_start
-            if hasattr(st_date, "year"):
-                for seg in segments:
-                    if seg.starts_on <= st_date <= seg.ends_on:
-                        return seg.geo_region
+            for seg in segments:
+                try:
+                    utc_dt = parse_destination_wall_time(raw_scheduled_start, seg.geo_region)
+                except (ValueError, TypeError):
+                    continue
+                from services.destination_tz import to_destination_local
 
-                # Date outside all spans: nearest segment.
-                def _dist(seg):
-                    if st_date < seg.starts_on:
-                        return (seg.starts_on - st_date).days
-                    if st_date > seg.ends_on:
-                        return (st_date - seg.ends_on).days
-                    return 0
-
-                return min(segments, key=_dist).geo_region
+                local_dt = to_destination_local(utc_dt, seg.geo_region)
+                local_date = local_dt.date()
+                if seg.starts_on <= local_date <= seg.ends_on:
+                    return seg.geo_region
         except Exception:
             pass
 
+    # B4: date outside all spans or no date: refuse, don't pick nearest.
     return None
 
 
@@ -382,6 +385,8 @@ class TripStateMachine:
             "venues_found": state["venues_found"],
             "schedule_warnings": state.get("schedule_warnings") or [],
         }
+        if state.get("booking_refused"):
+            result["booking_refused"] = True
         if "ask_response" in state:
             result["ask_response"] = state["ask_response"]
         return result
@@ -616,18 +621,13 @@ class TripStateMachine:
             prefs = state.get("preferences") or {}
             raw_start = prefs.get("scheduled_start") or state.get("message")
             # SPEC G0-B2: resolve geo_region from segments for corridor trips.
-            # For single-city trips, fall back to trip.geo_region as before.
             _pref_region = prefs.get("geo_region")
-            _raw_start_for_region = raw_start
-            try:
-                _probe_dt = _parse_wall_time(
-                    _raw_start_for_region, _pref_region or trip_state.geo_region
-                )
-            except (ValueError, TypeError):
-                _probe_dt = None
-            bk_region = _geo_region_for_booking(_pref_region, _probe_dt, trip_state)
+            # B5: pass raw ISO string so _geo_region_for_booking can re-parse
+            # per-segment TZ.  Do NOT pre-parse to UTC here.
+            bk_region = _geo_region_for_booking(_pref_region, raw_start, trip_state)
             if bk_region is None and (getattr(trip_state, "segments", None) or []):
-                # Cannot derive city for a corridor trip: refuse.
+                # B3: honest refusal -- set flag so router returns non-success.
+                state["booking_refused"] = True
                 state["schedule_warnings"] = [
                     "Could not determine which city this booking belongs to. "
                     "Please specify the city (geo_region) for this booking."
@@ -685,6 +685,7 @@ class TripStateMachine:
             return state
 
         # SPEC-10: Edit an existing booking (patch supplied fields only)
+        # B6: validate first -- refuse with no mutation on invalid city/time.
         if event_type == EventType.EDIT_BOOKING.value:
             target_id = state.get("target_node_id")
             prefs = state.get("preferences") or {}
@@ -694,7 +695,34 @@ class TripStateMachine:
             )
             if node is None:
                 return state
-            # Patch only supplied fields; preserve node_id, lock, omitted
+
+            # --- Phase 1: validate before mutating anything ---
+            _has_segments = bool(getattr(trip_state, "segments", None) or [])
+            new_region = node.geo_region  # default: keep current
+            if "geo_region" in prefs:
+                _validated = _geo_region_for_booking(prefs["geo_region"], None, trip_state)
+                if _validated is None and _has_segments:
+                    # B6: invalid city -> refuse, no mutation at all.
+                    state["booking_refused"] = True
+                    state["schedule_warnings"] = [
+                        f"'{prefs['geo_region']}' is not a city on this corridor trip."
+                    ]
+                    return state
+                new_region = _validated or prefs["geo_region"]
+
+            new_start = node.scheduled_start
+            if "scheduled_start" in prefs:
+                _edit_tz_region = new_region or trip_state.geo_region
+                try:
+                    new_start = _parse_wall_time(prefs["scheduled_start"], _edit_tz_region)
+                except (ValueError, TypeError):
+                    state["booking_refused"] = True
+                    state["schedule_warnings"] = ["Could not parse the booking time."]
+                    return state
+
+            # --- Phase 2: all validated, now apply atomically ---
+            schedule_changed = False
+            _original_name = node.venue_name
             if "venue_name" in prefs:
                 node.venue_name = prefs["venue_name"]
             if "booking_type" in prefs:
@@ -705,7 +733,6 @@ class TripStateMachine:
                 node.booking_notes = prefs["booking_notes"]
             if "import_source" in prefs:
                 node.import_source = prefs["import_source"]
-            schedule_changed = False
             if "duration_minutes" in prefs:
                 new_duration = int(prefs["duration_minutes"])
                 if new_duration != node.duration_minutes:
@@ -713,30 +740,38 @@ class TripStateMachine:
                     schedule_changed = True
             if "micro_location" in prefs:
                 node.micro_location = prefs["micro_location"]
-            if "lat" in prefs:
-                node.lat = prefs["lat"]
-            if "lng" in prefs:
-                node.lng = prefs["lng"]
+
+            # B7: coords handling -- clear when city or title changes
+            # unless exact catalog match resolves in the new region.
+            _city_changed = "geo_region" in prefs and new_region != node.geo_region
+            _title_changed = "venue_name" in prefs and prefs["venue_name"] != _original_name
+            if _city_changed or _title_changed:
+                # Clear old-city coords.
+                node.lat = None
+                node.lng = None
+                # Attempt exact catalog re-resolve for hotels only.
+                _bk_type = prefs.get("booking_type", node.booking_type)
+                _bk_name = prefs.get("venue_name", node.venue_name)
+                if _bk_type == "hotel" and new_region:
+                    from services.catalog_name_match import catalog_coords_for_name
+
+                    _cat_lat, _cat_lng = catalog_coords_for_name(_bk_name, new_region)
+                    if _cat_lat is not None and _cat_lng is not None:
+                        node.lat = _cat_lat
+                        node.lng = _cat_lng
+            else:
+                # No city/title change: apply explicit coords from prefs.
+                if "lat" in prefs:
+                    node.lat = prefs["lat"]
+                if "lng" in prefs:
+                    node.lng = prefs["lng"]
+
             if "geo_region" in prefs:
-                # SPEC G0-B2: validate geo_region against corridor segments.
-                _new_region = prefs["geo_region"]
-                _validated = _geo_region_for_booking(_new_region, None, trip_state)
-                if _validated is None and (getattr(trip_state, "segments", None) or []):
-                    # Invalid city for this corridor: refuse silently (keep old).
-                    pass
-                else:
-                    node.geo_region = _new_region
-            if "scheduled_start" in prefs:
-                raw = prefs["scheduled_start"]
-                # Use the node's geo_region (already validated/updated above).
-                edit_region = getattr(node, "geo_region", None) or trip_state.geo_region
-                try:
-                    new_start = _parse_wall_time(raw, edit_region)
-                    if new_start != node.scheduled_start:
-                        node.scheduled_start = new_start
-                        schedule_changed = True
-                except (ValueError, TypeError):
-                    pass
+                node.geo_region = new_region
+            if new_start != node.scheduled_start:
+                node.scheduled_start = new_start
+                schedule_changed = True
+
             # node_kind and is_locked are NEVER changed by edit
             assert node.node_kind == "booking"
             assert node.is_locked is True
@@ -977,10 +1012,17 @@ class TripStateMachine:
             return state
 
         if state["event_type"] == EventType.ADD_BOOKING.value:
+            if state.get("booking_refused"):
+                # B3: honest refusal -- use the schedule_warnings message.
+                state["response"] = state.get("schedule_warnings", ["Booking refused."])[0]
+                return state
             state["response"] = "Booking saved as a locked itinerary anchor."
             return state
 
         if state["event_type"] == EventType.EDIT_BOOKING.value:
+            if state.get("booking_refused"):
+                state["response"] = state.get("schedule_warnings", ["Edit refused."])[0]
+                return state
             state["response"] = "Booking updated."
             return state
 

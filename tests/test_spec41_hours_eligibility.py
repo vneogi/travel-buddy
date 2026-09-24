@@ -280,7 +280,7 @@ class TestCreateHoursFiltering:
                 ends_on=date(2026, 10, 9),
             ),
         ]
-        nodes, _segs = build_corridor_nodes(
+        nodes, _segs, _warnings = build_corridor_nodes(
             segments,
             lambda r: db_mod.db_service.list_venues_for_region(r),
             corridor,

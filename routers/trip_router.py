@@ -244,7 +244,7 @@ async def _create_corridor_trip(request: CreateTripRequest, user_id: str):
         )
 
     try:
-        nodes, stored_segments = build_corridor_nodes(
+        nodes, stored_segments, corridor_warnings = build_corridor_nodes(
             segments, db_service.list_venues_for_region, corridor
         )
     except UnsupportedCorridor as e:
@@ -255,6 +255,19 @@ async def _create_corridor_trip(request: CreateTripRequest, user_id: str):
                 "message": str(e),
                 "field": "segments",
                 "supported_corridors": list(CORRIDORS.keys()),
+            },
+        )
+
+    # B10: if any requested day packed zero venues, fail honestly.
+    if corridor_warnings:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "error": "corridor_empty_days",
+                "message": (
+                    "Some requested dates have no available venues: " + "; ".join(corridor_warnings)
+                ),
+                "empty_dates": corridor_warnings,
             },
         )
 
@@ -586,6 +599,17 @@ async def process_trip_event(
         user_id=user_id,
         is_anonymous=is_anonymous,
     )
+
+    # B3: booking refused -- return 422 with the refusal message.
+    if result.get("booking_refused"):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "error": "booking_refused",
+                "message": result.get("response", "Booking refused."),
+                "schedule_warnings": result.get("schedule_warnings") or [],
+            },
+        )
 
     # Bug #2: ASK_INFO does not save_trip or bump updated_at
     is_ask = request.event_type == EventType.ASK_INFO

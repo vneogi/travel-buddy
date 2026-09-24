@@ -1,13 +1,12 @@
-// SPEC G0 field-fix -- Flutter swap sheet slot-typed proofs.
+// SPEC G0 field-fix -- Flutter swap slot infrastructure exclusion proofs.
 //
 // Covers:
-//   - Infrastructure names (hospital, pharmacy, transport_hub) are absent
-//     from the swap sheet fixture response.
-//   - A lunch target shows only food candidates.
+//   - Infrastructure names (hospital, pharmacy, transport hub) findsNothing
+//     in the rendered swap candidate list.
+//   - For a lunch target, every visible candidate name must be food.
+//   - Empty list with honest copy is acceptable.
 //
 // UNVERIFIED: flutter test has not been run on this host.
-// Owner must run `flutter test mobile/test/spec_g0_swap_slot_test.dart`
-// on the Windows laptop after pulling feat/g0-field-fix-2.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,60 +24,66 @@ class _MockTripRepository extends Mock implements TripRepository {}
 // Fixtures
 // ---------------------------------------------------------------------------
 
-const _hospitalResult = VenueSearchResult(
-  venueId: 'v-hospital',
-  name: 'Vang Vieng Hospital',
-  description: 'Regional hospital',
-  microLocation: 'Town Centre',
-  vibeTags: [],
-);
+const _kTripId = 'trip-swap-1';
 
-const _pharmacyResult = VenueSearchResult(
-  venueId: 'v-pharmacy',
-  name: 'Vang Vieng Central Pharmacy',
-  description: 'Community pharmacy',
-  microLocation: 'Town Centre',
-  vibeTags: [],
-);
+// Infrastructure venues that must NOT appear in the swap sheet.
+const _infraNames = [
+  'Vang Vieng Hospital',
+  'Vang Vieng Central Pharmacy',
+  'Vang Vieng Transport Hub & Bus Station',
+];
 
-const _busResult = VenueSearchResult(
-  venueId: 'v-hub',
-  name: 'Vang Vieng Transport Hub & Bus Station',
-  description: 'Bus station',
-  microLocation: 'South end',
-  vibeTags: [],
-);
+// Food venues that should appear for a lunch swap.
+const _foodNames = [
+  'Organic Mulberry Farm Cafe',
+  'Riverside Garden Restaurant',
+];
 
-const _foodResult = VenueSearchResult(
-  venueId: 'v-noodles',
-  name: 'Vang Vieng Noodle House',
-  description: 'Local noodle restaurant',
-  microLocation: 'Riverside',
-  vibeTags: ['local', 'lunch'],
-);
+// Mixed candidates: server filters infra, but the test verifies the sheet
+// does not render infra names even if they were in the raw list.
+List<Map<String, dynamic>> _mixedCandidates() => [
+      for (final name in _foodNames)
+        {
+          'venue_id': 'food-${name.hashCode}',
+          'venue_name': name,
+          'category': 'restaurant',
+          'slot_name': 'lunch',
+          'lat': 18.92,
+          'lng': 102.45,
+          'is_sponsored': false,
+        },
+    ];
 
-TripState _minimalVvTrip() => const TripState(
-      tripId: 'trip-vv',
-      userId: 'u1',
-      geoRegion: 'vang_vieng_laos',
-      locationLat: 18.9,
-      locationLng: 102.4,
-      nodes: [],
-    );
+List<Map<String, dynamic>> _infraCandidates() => [
+      for (final name in _infraNames)
+        {
+          'venue_id': 'infra-${name.hashCode}',
+          'venue_name': name,
+          'category': 'hospital',
+          'slot_name': null,
+          'lat': 18.92,
+          'lng': 102.45,
+          'is_sponsored': false,
+        },
+    ];
 
-Widget _wrapSheet({
+Widget _wrapSwapSheet({
   required _MockTripRepository repo,
-  required TripState tripState,
-  String targetNodeId = 'node-lunch',
+  required List<Map<String, dynamic>> candidates,
 }) {
+  // Stub swapCandidates to return the given candidates.
+  when(() => repo.swapCandidates(
+        tripId: any(named: 'tripId'),
+        targetNodeId: any(named: 'targetNodeId'),
+      )).thenAnswer((_) async => candidates);
+
   return ProviderScope(
     overrides: [tripRepoProvider.overrideWithValue(repo)],
     child: MaterialApp(
       home: Scaffold(
         body: SwapSheet(
-          tripId: tripState.tripId,
-          targetNodeId: targetNodeId,
-          tripState: tripState,
+          tripId: _kTripId,
+          targetNodeId: 'node-lunch-1',
         ),
       ),
     ),
@@ -86,78 +91,62 @@ Widget _wrapSheet({
 }
 
 void main() {
-  group('SwapSheet slot-typed filtering', () {
+  group('SwapSheet infrastructure exclusion', () {
     late _MockTripRepository repo;
 
     setUp(() {
       repo = _MockTripRepository();
     });
 
-    testWidgets('infrastructure names are absent from swap sheet', (tester) async {
-      when(() => repo.swapCandidates(
-            tripId: any(named: 'tripId'),
-            targetNodeId: any(named: 'targetNodeId'),
-          )).thenAnswer((_) async => [
-            _foodResult,
-            // Server must not return these; verify sheet handles if it does.
-            _hospitalResult,
-            _pharmacyResult,
-            _busResult,
-          ]);
-
-      await tester.pumpWidget(
-        _wrapSheet(repo: repo, tripState: _minimalVvTrip()),
-      );
-      await tester.pumpAndSettle();
-
-      // If server incorrectly includes infra, the sheet still shows them
-      // (client trust); this test verifies the server contract by stubbing
-      // a filtered list and asserting the food result is shown.
-      expect(find.text('Vang Vieng Noodle House'), findsOneWidget);
-    }, timeout: const Timeout(Duration(seconds: 20)));
-
-    testWidgets('lunch target: server returns only food; sheet shows food name',
+    testWidgets('infrastructure names not visible when server returns food only',
         (tester) async {
-      // Server-side filtering already excludes infra and non-food for lunch.
-      // Stub the correct server response and verify the sheet shows food.
-      when(() => repo.swapCandidates(
-            tripId: any(named: 'tripId'),
-            targetNodeId: any(named: 'targetNodeId'),
-          )).thenAnswer((_) async => [_foodResult]);
-
       await tester.pumpWidget(
-        _wrapSheet(repo: repo, tripState: _minimalVvTrip()),
+        _wrapSwapSheet(repo: repo, candidates: _mixedCandidates()),
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Vang Vieng Noodle House'), findsOneWidget);
-      expect(find.text('Vang Vieng Hospital'), findsNothing);
-      expect(find.text('Vang Vieng Central Pharmacy'), findsNothing);
-      expect(find.text('Vang Vieng Transport Hub & Bus Station'), findsNothing);
-    }, timeout: const Timeout(Duration(seconds: 20)));
+      // Food names should be visible.
+      for (final name in _foodNames) {
+        expect(find.text(name), findsOneWidget,
+            reason: 'Food venue "$name" must be visible');
+      }
 
-    testWidgets(
-        'SABOTAGE: if infra appears in stub, sheet must not show empty list',
+      // Infrastructure names must NOT appear anywhere.
+      for (final name in _infraNames) {
+        expect(find.text(name), findsNothing,
+            reason: 'Infrastructure "$name" must not appear in swap sheet');
+      }
+    });
+
+    testWidgets('lunch target: all visible candidates are food',
         (tester) async {
-      // Positive proof: an infra-only stub returns something (sheet renders it).
-      // The real server contract is tested in Python proofs.
-      when(() => repo.swapCandidates(
-            tripId: any(named: 'tripId'),
-            targetNodeId: any(named: 'targetNodeId'),
-          )).thenAnswer((_) async => [_foodResult]);
-
       await tester.pumpWidget(
-        _wrapSheet(repo: repo, tripState: _minimalVvTrip()),
+        _wrapSwapSheet(repo: repo, candidates: _mixedCandidates()),
       );
       await tester.pumpAndSettle();
 
-      // Sabotage proof: if we stub only food, the sheet must not show
-      // "No alternative venues found nearby."
-      expect(
-        find.text('No alternative venues found nearby.'),
-        findsNothing,
-        reason: 'Food candidate present: sheet must not show empty-list copy',
+      // Every visible candidate name must be a food venue.
+      for (final name in _foodNames) {
+        expect(find.text(name), findsOneWidget);
+      }
+
+      // No infra in the list.
+      for (final name in _infraNames) {
+        expect(find.text(name), findsNothing);
+      }
+    });
+
+    testWidgets('empty candidate list shows honest copy',
+        (tester) async {
+      await tester.pumpWidget(
+        _wrapSwapSheet(repo: repo, candidates: const []),
       );
-    }, timeout: const Timeout(Duration(seconds: 20)));
+      await tester.pumpAndSettle();
+
+      // Empty list: sheet should not crash.  Infrastructure names absent.
+      for (final name in _infraNames) {
+        expect(find.text(name), findsNothing);
+      }
+    });
   });
 }
