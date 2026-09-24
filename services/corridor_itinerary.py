@@ -172,7 +172,7 @@ def build_corridor_nodes(
 
         span = (seg_in.ends_on - seg_in.starts_on).days + 1
         used_ids: set[str] = set()
-        city_had_nodes = False  # track whether any day in this city packed
+        pool_was_nonempty = bool(pool)  # C6: track if city had venues at all
 
         for day_offset in range(span):
             day_date = seg_in.starts_on + timedelta(days=day_offset)
@@ -196,14 +196,13 @@ def build_corridor_nodes(
             )
             if day_nodes:
                 all_nodes.extend(day_nodes)
-                city_had_nodes = True
-            elif city_had_nodes:
-                # B10: earlier days packed but this one is empty -- catalog
-                # exhausted.  Record warning; do not silently succeed.
+            elif pool_was_nonempty:
+                # C6: pool had venues but this day packed zero (hours/exhaust).
+                # Warn on any zero-node day, not just after a populated day.
                 empty_day_warnings.append(
                     f"{day_date.isoformat()} in "
                     f"{seg_in.geo_region} has no available venues "
-                    f"(catalog exhausted after earlier days)."
+                    f"(catalog exhausted or hours prevent packing)."
                 )
 
         stored_segments.append(

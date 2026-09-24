@@ -750,55 +750,76 @@ class TestP10EditCityChangeCoords:
 
 
 class TestP11CorridorEmptyDayWarning:
-    def test_p1_eight_date_fixture_still_populates_all(self):
-        """Standard 8-date Laos fixture must still populate all 8 dates
-        when the catalog has enough venues."""
+    def test_p1_eight_date_fixture_still_200_all_populated(self):
+        """Standard 8-date Laos fixture must still 200 with all 8 dates
+        when the catalog has enough venues (HTTP proof)."""
         trip = _make_trip_with_segments()
+        assert "nodes" in trip, f"Create response missing nodes: {trip.keys()}"
         from models.schemas import TripNode as TN
 
-        nodes_json = trip.get("nodes", [])
-        nodes = [TN(**n) for n in nodes_json]
+        nodes = [TN(**n) for n in trip.get("nodes", [])]
         dates = set()
         for n in nodes:
             dates.add(n.scheduled_start.astimezone(TZ).date())
-        expected = set()
-        for d in range(2, 10):
-            expected.add(date(2026, 10, d))
-        # All 8 expected dates must appear.
+        expected = {date(2026, 10, d) for d in range(2, 10)}
         for d in expected:
             assert d in dates, f"Date {d} has no nodes"
 
-    def test_exhausted_catalog_returns_422(self):
-        """If we request more days than the catalog can fill, the create
-        must fail with corridor_empty_days (not silently succeed)."""
+    def test_exhausted_catalog_422_via_http(self, monkeypatch):
+        """POST /trip/create with a tiny catalog that yields empty days
+        must return 422 corridor_empty_days (HTTP proof)."""
+        from services import db_provider
+
+        _orig_fn = db_provider.db_service.list_venues_for_region
+
+        def _tiny_fn(region):
+            rows = _orig_fn(region)
+            if region == GEO_LP:
+                return rows[:4]  # only 4 LP venues -> 1 full day, rest empty
+            return rows
+
+        monkeypatch.setattr(db_provider.db_service, "list_venues_for_region", _tiny_fn)
+
+        body = {
+            "segments": [
+                {"geo_region": GEO_VTE, "starts_on": "2026-10-02", "ends_on": "2026-10-03"},
+                {"geo_region": GEO_VV, "starts_on": "2026-10-04", "ends_on": "2026-10-05"},
+                # LP gets 6 days but only 4 venues -> days 2-6 empty.
+                {"geo_region": GEO_LP, "starts_on": "2026-10-06", "ends_on": "2026-10-11"},
+            ],
+        }
+        r = client.post("/api/v1/trip/create", json=body, headers=HEADERS)
+        assert r.status_code == 422, f"Expected 422, got {r.status_code}: {r.text}"
+        detail = r.json()["detail"]
+        assert detail["error"] == "corridor_empty_days", detail
+        assert any("2026-10-" in w for w in detail.get("empty_dates", [])), (
+            f"Warning must name the date: {detail}"
+        )
+
+    def test_build_warns_first_day_empty_when_pool_nonempty(self):
+        """First day of a city packing zero unique venues (all used_ids)
+        when pool was non-empty must warn -- not just later days."""
         from services.corridor_itinerary import build_corridor_nodes
         from config.corridors import require_corridor
 
         corridor = require_corridor("laos_northbound_v1")
-        # Request 10 days for LP -- catalog has ~21 eligible venues,
-        # at 4 per day that is 5 full days + ~1 partial; days 6+ empty.
+
+        def _one_venue_fn(region):
+            """Return exactly one venue so day 1 packs it, day 2 is empty."""
+            rows = db_service.list_venues_for_region(region)
+            return rows[:1] if rows else []
+
         segments = [
             TripSegmentIn(
                 geo_region=GEO_LP,
-                starts_on=date(2026, 10, 1),
-                ends_on=date(2026, 10, 10),
+                starts_on=date(2026, 10, 6),
+                ends_on=date(2026, 10, 7),  # 2 days, 1 venue -> day 2 empty
             ),
         ]
-
-        _nodes, _stored, warnings = build_corridor_nodes(
-            segments, db_service.list_venues_for_region, corridor
+        nodes, _stored, warnings = build_corridor_nodes(segments, _one_venue_fn, corridor)
+        # Day 1 packs the one venue; day 2 has pool_was_nonempty but
+        # all used_ids exhausted -> should warn.
+        assert len(warnings) > 0, (
+            f"Expected empty-day warning for day 2 with exhausted catalog. "
+            f"Got {len(nodes)} nodes, warnings={warnings}"
         )
-        if not warnings:
-            # Catalog is large enough -- that is fine; the test is about
-            # the _behavior_ when warnings exist.  Let us manufacture one.
-            pass
-
-        # Build with artificially small catalog to guarantee exhaustion.
-        def _tiny_fn(region):
-            rows = db_service.list_venues_for_region(region)
-            return rows[:4]  # only 4 venues -> 1 full day, rest empty
-
-        _n2, _s2, w2 = build_corridor_nodes(segments, _tiny_fn, corridor)
-        assert len(w2) > 0, "Expected empty-day warnings from exhausted catalog"
-        # The warning should name the empty date.
-        assert any("2026-10-" in w for w in w2), f"Warning must name the date: {w2}"

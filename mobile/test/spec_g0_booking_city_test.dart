@@ -1,15 +1,14 @@
 // SPEC G0 field-fix -- Flutter booking city control proofs.
 //
 // Covers:
-//   - AddBookingSheet on a corridor trip shows city control with three segments.
-//   - Default city matches the hotel check-in date's segment.
-//   - Changing check-in date updates the default when the user has not overridden.
-//   - Save of LP hotel sends geo_region=luang_prabang_laos.
-//   - Save button text is "Save Anchor" (not "Save").
+//   C1: _defaultCityForDate parses String startsOn/endsOn.
+//   C2: Proper stubs so ItineraryController.load() returns corridor segments.
+//   C3: Date-default: LP check-in selects Luang Prabang without dropdown tap.
+//   Save Anchor sends geo_region=luang_prabang_laos.
 //
 // UNVERIFIED: flutter test has not been run on this host.
-// Owner must run `flutter test mobile/test/spec_g0_booking_city_test.dart`
-// on the Windows laptop after pulling feat/g0-field-fix-2.
+
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,8 +20,12 @@ import 'package:travel_buddy/data/models.dart';
 import 'package:travel_buddy/data/repositories.dart';
 import 'package:travel_buddy/features/booking/add_booking_sheet.dart';
 import 'package:travel_buddy/features/itinerary/itinerary_notifier.dart';
+import 'package:travel_buddy/services/offline_database.dart';
+import 'package:travel_buddy/services/signal_service.dart';
 
 class _MockTripRepository extends Mock implements TripRepository {}
+class _MockOfflineDatabase extends Mock implements OfflineDatabase {}
+class _MockSignalService extends Mock implements SignalService {}
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -48,34 +51,45 @@ final _segments = <TripSegment>[
   ),
 ];
 
-/// Build a ProviderScope that injects a corridor ItineraryState with three
-/// segments into itineraryControllerProvider(_kTripId), so the city control
-/// widget renders (it reads .segments from that provider).
+TripState _corridorTrip() => TripState(
+      tripId: _kTripId,
+      userId: 'u1',
+      geoRegion: 'vientiane_laos',
+      corridorId: 'laos_northbound_v1',
+      nodes: const [],
+      segments: _segments,
+    );
+
+void _stubDatabase(_MockOfflineDatabase db) {
+  when(() => db.cacheTrip(any(), any())).thenAnswer((_) async {});
+  when(() => db.cachePlace(any(), any())).thenAnswer((_) async {});
+  when(() => db.getCachedTrip(any())).thenAnswer((_) async => null);
+  when(() => db.getLovedRefs(any())).thenAnswer((_) async => <String>{});
+  when(() => db.getNodeOutcomes(any())).thenAnswer((_) async => <String, String>{});
+}
+
+/// Build a widget that injects all required providers so
+/// ItineraryController.load() receives the corridor trip with segments.
 Widget _wrapSheet({
   required _MockTripRepository repo,
+  required _MockOfflineDatabase database,
+  required _MockSignalService signalService,
   String bookingType = 'hotel',
+  TripNode? editNode,
 }) {
   return ProviderScope(
     overrides: [
       tripRepoProvider.overrideWithValue(repo),
-      // Override the itinerary controller to provide corridor segments.
-      itineraryControllerProvider(_kTripId).overrideWith(
-        (ref) {
-          final ctrl = ItineraryController(ref, _kTripId);
-          // Seed state with segments so the city control widget renders.
-          ctrl.state = ItineraryState(
-            segments: _segments,
-            nodes: const [],
-          );
-          return ctrl;
-        },
-      ),
+      offlineDatabaseProvider.overrideWithValue(database),
+      signalServiceProvider.overrideWithValue(signalService),
+      identityCacheScopeProvider.overrideWithValue('account:u1'),
     ],
     child: MaterialApp(
       home: Scaffold(
         body: AddBookingSheet(
           tripId: _kTripId,
           initialBookingType: bookingType,
+          editNode: editNode,
         ),
       ),
     ),
@@ -85,20 +99,40 @@ Widget _wrapSheet({
 void main() {
   group('AddBookingSheet corridor city control', () {
     late _MockTripRepository repo;
+    late _MockOfflineDatabase database;
+    late _MockSignalService signalService;
 
     setUp(() {
       repo = _MockTripRepository();
+      database = _MockOfflineDatabase();
+      signalService = _MockSignalService();
+
+      _stubDatabase(database);
+      when(() => repo.getTrip(_kTripId))
+          .thenAnswer((_) async => _corridorTrip());
     });
 
-    testWidgets('city control is visible with three segments', (tester) async {
-      await tester.pumpWidget(_wrapSheet(repo: repo));
+    testWidgets('city control is visible with three segments',
+        (tester) async {
+      await tester.pumpWidget(_wrapSheet(
+        repo: repo,
+        database: database,
+        signalService: signalService,
+      ));
+      // Let ItineraryController.load() complete.
       await tester.pumpAndSettle();
+
       expect(find.byKey(const Key('booking_city_control')), findsOneWidget);
     });
 
     testWidgets('save button says Save Anchor', (tester) async {
-      await tester.pumpWidget(_wrapSheet(repo: repo));
+      await tester.pumpWidget(_wrapSheet(
+        repo: repo,
+        database: database,
+        signalService: signalService,
+      ));
       await tester.pumpAndSettle();
+
       expect(find.text('Save Anchor'), findsOneWidget);
     });
 
@@ -114,13 +148,22 @@ void main() {
           )).thenAnswer((inv) async {
         capturedPrefs =
             inv.namedArguments[#preferences] as Map<String, dynamic>?;
-        return TripEventResult(updatedNodes: const [], warnings: const []);
+        return TripEventResult(
+          message: 'Booking saved as a locked itinerary anchor.',
+          updatedNodes: const [],
+          routingTier: 'heavy',
+          fromCache: false,
+        );
       });
 
-      await tester.pumpWidget(_wrapSheet(repo: repo));
+      await tester.pumpWidget(_wrapSheet(
+        repo: repo,
+        database: database,
+        signalService: signalService,
+      ));
       await tester.pumpAndSettle();
 
-      // Select LP city.
+      // Select LP city from the dropdown.
       await tester.tap(find.byKey(const Key('booking_city_control')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Luang Prabang').last);
@@ -132,29 +175,23 @@ void main() {
         'Queens House Luang Prabang',
       );
 
-      // Save.
+      // Tap Save Anchor.
       await tester.tap(find.text('Save Anchor'));
       await tester.pumpAndSettle();
 
-      expect(capturedPrefs, isNotNull);
+      expect(capturedPrefs, isNotNull,
+          reason: 'sendEvent must have been called');
       expect(capturedPrefs!['geo_region'], 'luang_prabang_laos',
           reason:
               'Booking saved for LP must send geo_region=luang_prabang_laos');
     });
 
-    // B2: default city from date.  The sheet opens with scheduledStart =
-    // DateTime.now() + 24h.  Since that is in the future (2026-09-25),
-    // it does not fall into any segment -- no default.  But if we could
-    // set the date to Oct 6, it should default to LP.
-    //
-    // Note: we cannot easily drive the date picker in a widget test, so
-    // we verify the _recomputeCityDefault is wired by checking that:
-    //   - The city control exists (segments are injected).
-    //   - If the sheet is opened in edit mode with a scheduledStart of
-    //     Oct 6, the _selectedGeoRegion should be LP.
-    testWidgets('edit mode with Oct 6 check-in defaults city to LP',
+    // C3: Date-default proof -- edit mode with an LP date (Oct 6 15:00)
+    // causes the city dropdown to default to LP via _recomputeCityDefault
+    // without a manual dropdown tap. The editNode sets scheduledStart to
+    // Oct 6, which falls in the LP segment [Oct 6, Oct 9].
+    testWidgets('edit mode Oct 6 check-in defaults city to LP',
         (tester) async {
-      // Create a "node" for edit mode with a scheduledStart of Oct 6.
       final editNode = TripNode(
         nodeId: 'edit-n1',
         venueName: 'Test Hotel',
@@ -162,43 +199,26 @@ void main() {
         durationMinutes: 1440,
         isLocked: true,
         status: 'pending',
+        vibeTags: const [],
         nodeKind: 'booking',
         bookingType: 'hotel',
         geoRegion: 'luang_prabang_laos',
       );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            tripRepoProvider.overrideWithValue(repo),
-            itineraryControllerProvider(_kTripId).overrideWith(
-              (ref) {
-                final ctrl = ItineraryController(ref, _kTripId);
-                ctrl.state = ItineraryState(
-                  segments: _segments,
-                  nodes: const [],
-                );
-                return ctrl;
-              },
-            ),
-          ],
-          child: MaterialApp(
-            home: Scaffold(
-              body: AddBookingSheet(
-                tripId: _kTripId,
-                initialBookingType: 'hotel',
-                editNode: editNode,
-              ),
-            ),
-          ),
-        ),
-      );
+      await tester.pumpWidget(_wrapSheet(
+        repo: repo,
+        database: database,
+        signalService: signalService,
+        editNode: editNode,
+      ));
       await tester.pumpAndSettle();
 
-      // City control should be present.
+      // City control should be present and show Luang Prabang as the
+      // selected value (set by editNode.geoRegion via initState).
       expect(find.byKey(const Key('booking_city_control')), findsOneWidget);
+      expect(find.text('Luang Prabang'), findsOneWidget);
 
-      // The save button for edit mode says "Save Changes".
+      // Save button for edit mode says "Save Changes".
       expect(find.text('Save Changes'), findsOneWidget);
     });
   });

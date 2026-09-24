@@ -767,6 +767,8 @@ class TripStateMachine:
                     node.lng = prefs["lng"]
 
             if "geo_region" in prefs:
+                if new_region != node.geo_region:
+                    schedule_changed = True  # C5: city change needs reschedule
                 node.geo_region = new_region
             if new_start != node.scheduled_start:
                 node.scheduled_start = new_start

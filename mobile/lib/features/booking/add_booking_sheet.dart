@@ -565,14 +565,14 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
 
   /// B2: derive default city from date vs segments.
   String? _defaultCityForDate(DateTime dt, List<TripSegment> segs) {
+    final d = DateTime(dt.year, dt.month, dt.day);
     for (final s in segs) {
-      // segments store starts_on/ends_on as date-only (yyyy-mm-dd).
-      final d = DateTime(dt.year, dt.month, dt.day);
-      final start = DateTime(s.startsOn.year, s.startsOn.month, s.startsOn.day);
-      final end = DateTime(s.endsOn.year, s.endsOn.month, s.endsOn.day);
+      // startsOn / endsOn are yyyy-mm-dd strings -- parse them.
+      final start = DateTime.parse(s.startsOn);
+      final end = DateTime.parse(s.endsOn);
       if (!d.isBefore(start) && !d.isAfter(end)) return s.geoRegion;
     }
-    return null;  // gap or outside all segments -- no default
+    return null; // gap or outside all segments -- no default
   }
 
   /// B2: recompute city default when date changes (unless user overrode).
