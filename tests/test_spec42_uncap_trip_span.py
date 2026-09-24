@@ -482,7 +482,7 @@ class TestEmptyCorridorPermitted:
             return db_service.list_venues_for_region(region)
 
         # Must NOT raise
-        nodes, stored = build_corridor_nodes(segments, sparse_fn, corridor)
+        nodes, stored, _warnings = build_corridor_nodes(segments, sparse_fn, corridor)
         assert len(stored) == 3, "All 3 segments must be stored"
         # Vang Vieng produced zero nodes
         vv_nodes = [n for n in nodes if n.geo_region == "vang_vieng_laos"]
@@ -538,48 +538,112 @@ class TestAdvertisedCorridorsNoCapacityGate:
 
 
 class TestGlobalCorridorBudget:
-    """The corridor must populate at most MAX_AUTO_POPULATED_DAYS globally,
-    not per segment."""
+    """G0-B1: Corridor packs every requested calendar day.
+    MAX_AUTO_POPULATED_DAYS does not apply to corridor create.
+    Single-city range create still honours the 5-day budget."""
 
-    def test_corridor_total_populated_days_at_most_five(self):
-        """A corridor with 3 segments of 3 days each (9 total) must
-        produce at most 5 populated days globally."""
+    def test_corridor_packs_all_requested_days(self):
+        """VTE 2d + VV 2d + LP 3d = 7 calendar days.
+        Each day must have at least one node when the catalog supports it.
+        LP has 21 eligible venues; 3 days x 4 stops is well within range."""
         corridor = require_corridor("laos_northbound_v1")
         sd = date.today() + timedelta(days=10)
         segments = [
             TripSegmentIn(
                 geo_region="vientiane_laos",
                 starts_on=sd,
-                ends_on=sd + timedelta(days=2),
+                ends_on=sd + timedelta(days=1),
             ),
             TripSegmentIn(
                 geo_region="vang_vieng_laos",
-                starts_on=sd + timedelta(days=4),
-                ends_on=sd + timedelta(days=6),
+                starts_on=sd + timedelta(days=3),
+                ends_on=sd + timedelta(days=4),
             ),
             TripSegmentIn(
                 geo_region="luang_prabang_laos",
-                starts_on=sd + timedelta(days=8),
-                ends_on=sd + timedelta(days=10),
+                starts_on=sd + timedelta(days=6),
+                ends_on=sd + timedelta(days=8),
             ),
         ]
 
-        nodes, _ = build_corridor_nodes(
+        nodes, _, _warnings = build_corridor_nodes(
             segments,
             db_service.list_venues_for_region,
             corridor,
         )
 
-        # Count unique populated dates
-        from datetime import datetime as dt
         from zoneinfo import ZoneInfo
 
-        all_dates = set()
+        all_dates: set = set()
         for n in nodes:
             local = n.scheduled_start.astimezone(ZoneInfo("Asia/Vientiane"))
-            all_dates.add(local.date())
+            all_dates.add((n.geo_region, local.date()))
 
-        assert len(all_dates) <= MAX_AUTO_POPULATED_DAYS, (
-            f"Global budget: {len(all_dates)} populated days exceeds "
-            f"MAX_AUTO_POPULATED_DAYS={MAX_AUTO_POPULATED_DAYS}"
+        # Every segment day must be populated when catalog allows.
+        for seg in segments:
+            span = (seg.ends_on - seg.starts_on).days + 1
+            for d_off in range(span):
+                d = seg.starts_on + timedelta(days=d_off)
+                assert (seg.geo_region, d) in all_dates, (
+                    f"Corridor day {d} in {seg.geo_region} was not populated"
+                )
+
+    def test_corridor_lp_four_days_all_populated(self):
+        """G0 field contract: LP 4-day segment must populate all 4 days
+        when catalog has 21 eligible venues (4 days x 4 stops = 16 unique)."""
+        corridor = require_corridor("laos_northbound_v1")
+        sd = date.today() + timedelta(days=10)
+        segments = [
+            TripSegmentIn(
+                geo_region="vientiane_laos",
+                starts_on=sd,
+                ends_on=sd + timedelta(days=1),
+            ),
+            TripSegmentIn(
+                geo_region="vang_vieng_laos",
+                starts_on=sd + timedelta(days=3),
+                ends_on=sd + timedelta(days=4),
+            ),
+            TripSegmentIn(
+                geo_region="luang_prabang_laos",
+                starts_on=sd + timedelta(days=6),
+                ends_on=sd + timedelta(days=9),  # 4 days
+            ),
+        ]
+
+        nodes, _, _warnings = build_corridor_nodes(
+            segments,
+            db_service.list_venues_for_region,
+            corridor,
         )
+
+        from zoneinfo import ZoneInfo
+
+        lp_dates: set = set()
+        for n in nodes:
+            if n.geo_region == "luang_prabang_laos":
+                local = n.scheduled_start.astimezone(ZoneInfo("Asia/Vientiane"))
+                lp_dates.add(local.date())
+
+        lp_seg = segments[2]
+        for d_off in range(4):
+            d = lp_seg.starts_on + timedelta(days=d_off)
+            assert d in lp_dates, f"LP day {d} was empty (corridor did not pack it)"
+
+    def test_single_city_range_still_caps_at_five(self):
+        """MAX_AUTO_POPULATED_DAYS=5 still applies to single-city range create."""
+        geo = "vang_vieng_laos"
+        catalog_max = compute_max_days_for_region(db_service.list_venues_for_region, geo)
+        assert catalog_max is not None, f"Need at least some catalog for {geo}"
+
+        sd = date.today() + timedelta(days=10)
+        body = {
+            "geo_region": geo,
+            "start_date": sd.isoformat(),
+            "end_date": (sd + timedelta(days=9)).isoformat(),
+        }
+        r = client.post("/api/v1/trip/create", json=body, headers=HEADERS)
+        assert r.status_code == 200
+        nodes = r.json()["nodes"]
+        populated_dates = _node_dates_from_json(nodes, geo)
+        assert len(populated_dates) <= MAX_AUTO_POPULATED_DAYS

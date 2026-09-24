@@ -9,17 +9,43 @@ import '../../theme/typography.dart';
 import 'booking_parser.dart';
 import '../driver_card/driver_card_helpers.dart';
 
+/// Parse a yyyy-mm-dd string as a local-midnight DateTime.
+/// Do NOT use DateTime.parse -- it returns UTC for date-only strings,
+/// which breaks when the device TZ is east of UTC.
+DateTime _ymd(String raw) {
+  final p = raw.split('-');
+  return DateTime(int.parse(p[0]), int.parse(p[1]), int.parse(p[2]));
+}
+
+/// Derive the default corridor city for a given date vs trip segments.
+///
+/// Exported as a top-level function so widget tests can unit-test it
+/// without driving the full sheet.  Both [dt] and segment boundaries
+/// are compared as local calendar dates (year/month/day only).
+String? defaultCityForDate(DateTime dt, List<TripSegment> segs) {
+  final d = DateTime(dt.year, dt.month, dt.day);
+  for (final s in segs) {
+    final start = _ymd(s.startsOn);
+    final end = _ymd(s.endsOn);
+    if (!d.isBefore(start) && !d.isAfter(end)) return s.geoRegion;
+  }
+  return null; // gap or outside all segments -- no default
+}
+
 /// Modal bottom sheet for adding a booking anchor (SPEC-10).
 class AddBookingSheet extends ConsumerStatefulWidget {
   final String tripId;
   final String initialBookingType;
   final TripNode? editNode;
+  final DateTime? initialScheduledDate;
 
+  /// [initialScheduledDate] overrides the default (now + 24h) for testing.
   const AddBookingSheet({
     super.key,
     required this.tripId,
     this.initialBookingType = 'flight',
     this.editNode,
+    this.initialScheduledDate,
   });
 
   @override
@@ -32,13 +58,15 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
   final _codeController = TextEditingController();
   final _notesController = TextEditingController();
   final _pasteController = TextEditingController();
-  DateTime _scheduledStart = DateTime.now().add(const Duration(hours: 24));
+  late DateTime _scheduledStart;
   int _durationMinutes = 180;
   DateTime? _checkoutDate;
   String _importSource = 'manual';
   bool _saving = false;
   String? _saveError;
   String? _parsedGeoRegion;
+  String? _selectedGeoRegion;  // G0-B2: corridor city control
+  bool _userOverrodeCity = false;  // true once traveller manually picks
   ParsedBooking? _lastParsed;
 
   bool get _isEditMode => widget.editNode != null;
@@ -51,6 +79,8 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
   @override
   void initState() {
     super.initState();
+    _scheduledStart =
+        widget.initialScheduledDate ?? DateTime.now().add(const Duration(hours: 24));
     final edit = widget.editNode;
     if (edit != null) {
       _bookingType = edit.bookingType ?? 'flight';
@@ -67,6 +97,8 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
         );
       }
       _importSource = edit.importSource ?? 'manual';
+      _selectedGeoRegion = edit.geoRegion;
+      _userOverrodeCity = true;  // editing: respect existing city
     } else {
       _bookingType = widget.initialBookingType;
       _durationMinutes = _defaultDurations[_bookingType] ?? 180;
@@ -75,6 +107,12 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
           const Duration(hours: 24),
         );
       }
+    }
+    // B2: set city default from date after first frame (ref not yet ready).
+    if (!_isEditMode) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _recomputeCityDefault();
+      });
     }
   }
 
@@ -126,6 +164,7 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
           _checkoutDate = parsed.checkoutDate;
         }
         _parsedGeoRegion = parsed.geoRegion;
+        _selectedGeoRegion = parsed.geoRegion ?? _selectedGeoRegion;
         _importSource = 'email';
       } else {
         // Zero-useful-field or junk re-parse: reset to manual.
@@ -161,6 +200,7 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
         time.minute,
       );
     });
+    _recomputeCityDefault();
   }
 
   Future<void> _pickCheckinDate() async {
@@ -192,6 +232,7 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
         _checkoutDate = _scheduledStart.add(const Duration(hours: 24));
       }
     });
+    _recomputeCityDefault();
   }
 
   Future<void> _pickCheckoutDate() async {
@@ -261,7 +302,11 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
         'scheduled_start': _scheduledStart.toIso8601String(),
         'duration_minutes': _durationMinutes,
         'booking_type': _bookingType,
-        if (_parsedGeoRegion != null) 'geo_region': _parsedGeoRegion,
+        // G0-B2: always send geo_region (city control wins over paste).
+        if (_selectedGeoRegion != null)
+          'geo_region': _selectedGeoRegion!
+        else if (_parsedGeoRegion != null)
+          'geo_region': _parsedGeoRegion!,
         // SPEC-10: send lat/lng when available (edit node or catalog match).
         if (_resolvedLat != null) 'lat': _resolvedLat,
         if (_resolvedLng != null) 'lng': _resolvedLng,
@@ -373,6 +418,21 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
 
   @override
   Widget build(BuildContext context) {
+    // F1: Recompute city default when segments arrive asynchronously.
+    // ref.listen fires after build, avoiding setState-during-build.
+    ref.listen<List<TripSegment>>(
+      itineraryControllerProvider(widget.tripId)
+          .select((s) => s.segments),
+      (prev, next) {
+        if (_userOverrodeCity) return;
+        if ((prev?.length ?? 0) <= 1 && next.length > 1) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            _recomputeCityDefault();
+          });
+        }
+      },
+    );
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -413,6 +473,39 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
               }).toList(),
             ),
             const SizedBox(height: AppSpacing.base),
+            // G0-B2: city control for corridor trips (segments.length > 1).
+            Consumer(
+              builder: (context, ref, _) {
+                final segs = ref.watch(
+                  itineraryControllerProvider(widget.tripId)
+                      .select((s) => s.segments),
+                );
+                if (segs.length <= 1) return const SizedBox.shrink();
+                final items = segs
+                    .map(
+                      (s) => DropdownMenuItem<String>(
+                        value: s.geoRegion,
+                        child: Text(
+                          _geoRegionDisplayName(s.geoRegion),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    )
+                    .toList();
+                return DropdownButtonFormField<String>(
+                  key: const Key('booking_city_control'),
+                  value: _selectedGeoRegion,
+                  hint: const Text('City'),
+                  decoration: const InputDecoration(labelText: 'City'),
+                  items: items,
+                  onChanged: (v) => setState(() {
+                    _selectedGeoRegion = v;
+                    _userOverrodeCity = true;
+                  }),
+                );
+              },
+            ),
+            const SizedBox(height: AppSpacing.sm),
             TextField(
               controller: _titleController,
               decoration: const InputDecoration(labelText: 'Title / Venue'),
@@ -511,6 +604,40 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
         ),
       ),
     );
+  }
+
+  /// B2: derive default city from date vs segments.
+  /// Delegates to the top-level [defaultCityForDate] so tests can call it.
+  String? _defaultCityForDate(DateTime dt, List<TripSegment> segs) =>
+      defaultCityForDate(dt, segs);
+
+  /// B2: recompute city default when date changes (unless user overrode).
+  void _recomputeCityDefault() {
+    if (_userOverrodeCity) return;
+    final segs = ref.read(
+      itineraryControllerProvider(widget.tripId)
+          .select((s) => s.segments),
+    );
+    if (segs.length <= 1) return;
+    final city = _defaultCityForDate(_scheduledStart, segs);
+    if (city != null && city != _selectedGeoRegion) {
+      setState(() => _selectedGeoRegion = city);
+    }
+  }
+
+  /// Convert a geo_region code to a human-readable city name.
+  static String _geoRegionDisplayName(String code) {
+    const names = <String, String>{
+      'vientiane_laos': 'Vientiane',
+      'vang_vieng_laos': 'Vang Vieng',
+      'luang_prabang_laos': 'Luang Prabang',
+      'dubai_uae': 'Dubai',
+    };
+    if (names.containsKey(code)) return names[code]!;
+    return code
+        .split('_')
+        .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
+        .join(' ');
   }
 
   String _formatDate(DateTime dt) =>

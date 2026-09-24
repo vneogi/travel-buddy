@@ -244,7 +244,7 @@ async def _create_corridor_trip(request: CreateTripRequest, user_id: str):
         )
 
     try:
-        nodes, stored_segments = build_corridor_nodes(
+        nodes, stored_segments, corridor_warnings = build_corridor_nodes(
             segments, db_service.list_venues_for_region, corridor
         )
     except UnsupportedCorridor as e:
@@ -255,6 +255,19 @@ async def _create_corridor_trip(request: CreateTripRequest, user_id: str):
                 "message": str(e),
                 "field": "segments",
                 "supported_corridors": list(CORRIDORS.keys()),
+            },
+        )
+
+    # B10: if any requested day packed zero venues, fail honestly.
+    if corridor_warnings:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "error": "corridor_empty_days",
+                "message": (
+                    "Some requested dates have no available venues: " + "; ".join(corridor_warnings)
+                ),
+                "empty_dates": corridor_warnings,
             },
         )
 
@@ -587,6 +600,17 @@ async def process_trip_event(
         is_anonymous=is_anonymous,
     )
 
+    # B3: booking refused -- return 422 with the refusal message.
+    if result.get("booking_refused"):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "error": "booking_refused",
+                "message": result.get("response", "Booking refused."),
+                "schedule_warnings": result.get("schedule_warnings") or [],
+            },
+        )
+
     # Bug #2: ASK_INFO does not save_trip or bump updated_at
     is_ask = request.event_type == EventType.ASK_INFO
     updated_trip = result["updated_trip_state"]
@@ -640,7 +664,7 @@ async def swap_candidates(
     Both in-memory and Supabase paths use the same filtering (R4).
     """
     from services.opening_hours import HoursResult, hours_for_slot
-    from services.catalog_itinerary import duration_for as _dur_for
+    from services.catalog_itinerary import duration_for as _dur_for, is_swap_eligible_venue
     from agents.state_machine import _is_swap_reachable
 
     trip = db_service.get_trip(trip_id)
@@ -663,9 +687,13 @@ async def swap_candidates(
     existing_ids = {n.venue_id for n in trip.nodes if n.venue_id}
 
     results = []
+    target_slot = getattr(target, "slot_name", None)
     for row in venues_raw:
         vid = str(row.get("venue_id") or "")
         if not vid or vid in existing_ids:
+            continue
+        # G0-B4: shared eligibility: excludes infrastructure + slot-typed filter.
+        if not is_swap_eligible_venue(row, target_slot):
             continue
         # Same filtering as state_machine swap confirm path
         structured = row.get("opening_hours_structured")
@@ -686,6 +714,7 @@ async def swap_candidates(
                 "vibe_tags": row.get("vibe_tags") or [],
                 "lat": cand_lat,
                 "lng": cand_lng,
+                "slot_name": target_slot,
             }
         )
     return {"candidates": results}

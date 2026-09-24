@@ -711,12 +711,12 @@ class TestGoldenCases:
                 ends_on=date(2026, 10, 9),
             ),
         ]
-        nodes, _segs = build_corridor_nodes(
+        nodes, _segs, _warnings = build_corridor_nodes(
             segments,
             lambda r: db_mod.db_service.list_venues_for_region(r),
             corridor,
         )
-        assert len(nodes) <= 5 * CORRIDOR_STOPS_PER_DAY  # SPEC-42: 5-day global limit
+        assert len(nodes) <= 8 * CORRIDOR_STOPS_PER_DAY  # G0-B1: 8 days (2+2+4) max
 
     def test_golden_nodes_validated_against_hours(self):
         """Each golden node is FITS or UNKNOWN."""
