@@ -38,11 +38,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             padding: const EdgeInsets.all(AppSpacing.lg),
             children: [
               const SizedBox(height: AppSpacing.lg),
-              Text('Good morning', style: AppTypography.caption),
+              Text(_timeGreeting(), style: AppTypography.caption),
               const SizedBox(height: AppSpacing.xs),
               Text('Where to next?', style: AppTypography.display),
               const SizedBox(height: AppSpacing.xl),
+              // SPEC-45 item 1: featured trip appears above Create.
+              if (snapshot.featuredTrip != null) ...[
+                _FeaturedTripCard(
+                  key: const Key('featured_trip_card'),
+                  featured: snapshot.featuredTrip!,
+                  fromCache: snapshot.fromCache,
+                  cachedAt: snapshot.cachedAt,
+                ),
+                const SizedBox(height: AppSpacing.lg),
+              ],
               _CreateTripCard(
+                key: const Key('create_trip_card'),
                 creating: _creating,
                 onTap: () => _createTrip(snapshot),
               ),
@@ -52,14 +63,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   creating: _creating,
                   corridors: snapshot.supportedCorridors,
                   onTap: () => _showCorridorDateForm(snapshot),
-                ),
-              ],
-              if (snapshot.featuredTrip != null) ...[
-                const SizedBox(height: AppSpacing.lg),
-                _FeaturedTripCard(
-                  featured: snapshot.featuredTrip!,
-                  fromCache: snapshot.fromCache,
-                  cachedAt: snapshot.cachedAt,
                 ),
               ],
               const SizedBox(height: AppSpacing.lg),
@@ -147,10 +150,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 }
 
 
+/// SPEC-45 item 1: device-local time-of-day greeting.
+String _timeGreeting() {
+  final hour = DateTime.now().hour;
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
 class _CreateTripCard extends StatelessWidget {
   final VoidCallback? onTap;
   final bool creating;
-  const _CreateTripCard({required this.onTap, required this.creating});
+  const _CreateTripCard({super.key, required this.onTap, required this.creating});
 
   @override
   Widget build(BuildContext context) {
@@ -203,6 +214,7 @@ class _FeaturedTripCard extends StatelessWidget {
   final bool fromCache;
   final DateTime? cachedAt;
   const _FeaturedTripCard({
+    super.key,
     required this.featured,
     required this.fromCache,
     this.cachedAt,
@@ -352,7 +364,7 @@ class _OfflineHomeNotice extends StatelessWidget {
         color: AppColors.primaryLight,
         child: Text(
           'Showing saved trips while offline'
-          '${age == null ? '.' : ' \u00b7 Cached $age'}',
+          '${age == null ? '.' : ' \u00b7 Last saved $age'}',
         ),
       );
   }

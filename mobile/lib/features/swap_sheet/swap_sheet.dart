@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers.dart';
 import '../../data/models.dart';
+import '../itinerary/micro_location_label.dart';
 import '../../theme/colors.dart';
 import '../../theme/typography.dart';
 import '../../theme/spacing.dart';
@@ -213,10 +214,11 @@ class SwapSheetState extends ConsumerState<SwapSheet> {
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  v.microLocation,
-                  style: AppTypography.caption.copyWith(color: AppColors.muted),
-                ),
+                if (friendlyMicroLocation(v.microLocation) != null)
+                  Text(
+                    friendlyMicroLocation(v.microLocation)!,
+                    style: AppTypography.caption.copyWith(color: AppColors.muted),
+                  ),
                 // SPEC-17 decision 15: explain ranking influence.
                 if (v.sponsoredBoostApplied)
                   Padding(

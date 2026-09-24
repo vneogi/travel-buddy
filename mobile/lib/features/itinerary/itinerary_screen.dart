@@ -17,6 +17,7 @@ import 'current_window.dart';
 import 'date_scope.dart';
 import '../../widgets/city_section.dart';
 import 'itinerary_notifier.dart';
+import '../activity_detail/activity_detail_screen.dart';
 import 'replacement_ref.dart';
 import '../alerts/alerts_notifier.dart';
 import '../../widgets/alert_card.dart';
@@ -275,11 +276,7 @@ class ItineraryScreen extends ConsumerWidget {
           const SizedBox(width: AppSpacing.base),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push('/trip/$tripId/chat'),
-        backgroundColor: AppColors.primary,
-        child: const Icon(Icons.chat_bubble_outline, color: Colors.white),
-      ),
+      // SPEC-45 item 5: FAB removed; keep AskEntryBar as composer.
       bottomNavigationBar: AskEntryBar(
         enabled: !state.processing,
         onSubmit: (question) => context.push(
@@ -504,7 +501,8 @@ class _CorridorTimelineState extends State<_CorridorTimeline> {
       segments: widget.segments,
     );
     return SingleChildScrollView(
-      padding: const EdgeInsets.only(bottom: 120),
+      // SPEC-45 item 5: bottom padding >= composer height + safe area.
+      padding: const EdgeInsets.only(bottom: 140),
       child: Column(
         children: List.generate(
           cityGroups.length,
@@ -789,6 +787,23 @@ class _DateScopedTimeline extends StatelessWidget {
               onTapRecordOutcome:
                   state.processing ? null : () => onOutcome(node),
               onTapLoved: () => onLoved(node),
+              onTapDetails: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => ActivityDetailScreen(
+                      node: node,
+                      onSwap: state.processing ? null : () {
+                        Navigator.of(context).pop();
+                        onSwap(node);
+                      },
+                      onCancel: state.processing ? null : () {
+                        Navigator.of(context).pop();
+                        onCancel(node);
+                      },
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         );
@@ -972,11 +987,20 @@ class _ScheduleWarningsBanner extends StatelessWidget {
             children: [
               Text('Schedule Issues', style: AppTypography.h2),
               const SizedBox(height: AppSpacing.base),
+              // SPEC-45 item 7: each row shows the warning text with
+              // an icon. No node_id in the warning model to parse.
               for (final w in warnings) ...[
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('\u2022 ', style: TextStyle(fontSize: 14)),
+                    const Padding(
+                      padding: EdgeInsets.only(top: 2, right: 8),
+                      child: Icon(
+                        Icons.warning_amber_rounded,
+                        size: 16,
+                        color: AppColors.accent,
+                      ),
+                    ),
                     Expanded(
                       child: Text(w, style: AppTypography.body),
                     ),
