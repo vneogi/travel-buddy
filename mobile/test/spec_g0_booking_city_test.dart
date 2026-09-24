@@ -292,8 +292,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Tap Save Anchor.
-      await tester.tap(find.text('Save Anchor'));
+      // Scroll Save Anchor into the viewport, then tap.
+      final saveButton = find.widgetWithText(FilledButton, 'Save Anchor');
+      await tester.ensureVisible(saveButton);
+      await tester.pumpAndSettle();
+      await tester.tap(saveButton);
       await tester.pumpAndSettle();
 
       // Verify applyEvent was called with geo_region = LP.
@@ -330,8 +333,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Tap Save Anchor.
-      await tester.tap(find.text('Save Anchor'));
+      // Scroll Save Anchor into the viewport, then tap.
+      final saveButton = find.widgetWithText(FilledButton, 'Save Anchor');
+      await tester.ensureVisible(saveButton);
+      await tester.pumpAndSettle();
+      await tester.tap(saveButton);
       await tester.pumpAndSettle();
 
       expect(controller.lastPreferences, isNotNull,

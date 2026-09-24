@@ -422,7 +422,7 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
     // ref.listen fires after build, avoiding setState-during-build.
     ref.listen<List<TripSegment>>(
       itineraryControllerProvider(widget.tripId)
-          .select((s) => s?.segments ?? const <TripSegment>[]),
+          .select((s) => s.segments),
       (prev, next) {
         if (_userOverrodeCity) return;
         if ((prev?.length ?? 0) <= 1 && next.length > 1) {
@@ -478,7 +478,7 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
               builder: (context, ref, _) {
                 final segs = ref.watch(
                   itineraryControllerProvider(widget.tripId)
-                      .select((s) => s?.segments ?? const <TripSegment>[]),
+                      .select((s) => s.segments),
                 );
                 if (segs.length <= 1) return const SizedBox.shrink();
                 final items = segs
@@ -616,7 +616,7 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
     if (_userOverrodeCity) return;
     final segs = ref.read(
       itineraryControllerProvider(widget.tripId)
-          .select((s) => s?.segments ?? const <TripSegment>[]),
+          .select((s) => s.segments),
     );
     if (segs.length <= 1) return;
     final city = _defaultCityForDate(_scheduledStart, segs);
