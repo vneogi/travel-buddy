@@ -1,8 +1,8 @@
-// SPEC G0 field-fix -- Flutter swap slot infrastructure exclusion proofs.
+// SPEC G0 field-fix -- Flutter swap slot proofs.
 //
-// Covers:
-//   C4: Mixed stub (food + infra). Infra names findsNothing.
-//        Every visible candidate name is food. Empty list honest copy.
+// D4: Mixed stub (food + hospital).  Hospital IS visible -- documents
+//     that the sheet trusts swapCandidates.  Infrastructure exclusion
+//     is proven by Python P5 (server-side filter).
 //
 // UNVERIFIED: flutter test has not been run on this host.
 
@@ -29,62 +29,25 @@ TripState _minimalTrip() => const TripState(
       nodes: [],
     );
 
-// Food venues that should appear.
-const _foodVenues = [
-  VenueSearchResult(
-    venueId: 'food-1',
-    name: 'Organic Mulberry Farm Cafe',
-    description: 'Farm-to-table organic cafe',
-    microLocation: 'riverside',
-    vibeTags: ['authentic'],
-    isSponsored: false,
-  ),
-  VenueSearchResult(
-    venueId: 'food-2',
-    name: 'Riverside Garden Restaurant',
-    description: 'Riverside dining',
-    microLocation: 'riverside',
-    vibeTags: ['authentic'],
-    isSponsored: false,
-  ),
-];
+// Food venue.
+const _food = VenueSearchResult(
+  venueId: 'food-1',
+  name: 'Organic Mulberry Farm Cafe',
+  description: 'Farm-to-table organic cafe',
+  microLocation: 'riverside',
+  vibeTags: ['authentic'],
+  isSponsored: false,
+);
 
-// Infrastructure venues that must NOT appear.
-const _infraVenues = [
-  VenueSearchResult(
-    venueId: 'infra-1',
-    name: 'Vang Vieng Hospital',
-    description: 'Hospital',
-    microLocation: 'centre',
-    vibeTags: [],
-    isSponsored: false,
-  ),
-  VenueSearchResult(
-    venueId: 'infra-2',
-    name: 'Vang Vieng Central Pharmacy',
-    description: 'Pharmacy',
-    microLocation: 'centre',
-    vibeTags: [],
-    isSponsored: false,
-  ),
-  VenueSearchResult(
-    venueId: 'infra-3',
-    name: 'Vang Vieng Transport Hub & Bus Station',
-    description: 'Transport hub',
-    microLocation: 'centre',
-    vibeTags: [],
-    isSponsored: false,
-  ),
-];
-
-// C4: mixed list -- server filters infra but the test proves the sheet
-// renders only food names when the server sends food-only candidates.
-final _mixedServerFiltered = [..._foodVenues];
-
-// If the server hypothetically returned infra, the sheet still trusts
-// it and renders them. The proof is that the server never returns infra
-// (tested by Python P5). This Flutter proof checks the sheet renders
-// what the server sends and does not render names that are absent.
+// Infrastructure venue -- the sheet renders whatever the server sends.
+const _hospital = VenueSearchResult(
+  venueId: 'infra-1',
+  name: 'Vang Vieng Hospital',
+  description: 'Hospital',
+  microLocation: 'centre',
+  vibeTags: [],
+  isSponsored: false,
+);
 
 Widget _wrapSwapSheet({
   required _MockTripRepository repo,
@@ -105,34 +68,28 @@ Widget _wrapSwapSheet({
 }
 
 void main() {
-  group('SwapSheet infrastructure exclusion', () {
+  group('SwapSheet trust contract', () {
     late _MockTripRepository repo;
 
     setUp(() {
       repo = _MockTripRepository();
     });
 
-    testWidgets(
-        'food names visible, infra names absent (server returns food only)',
+    testWidgets('mixed list: food AND hospital both visible (sheet trusts server)',
         (tester) async {
       when(() => repo.swapCandidates(
             tripId: any(named: 'tripId'),
             targetNodeId: any(named: 'targetNodeId'),
-          )).thenAnswer((_) async => _mixedServerFiltered);
+          )).thenAnswer((_) async => [_food, _hospital]);
 
       await tester.pumpWidget(
         _wrapSwapSheet(repo: repo, tripState: _minimalTrip()),
       );
       await tester.pumpAndSettle();
 
-      // Food names must be visible.
+      // Both names rendered -- sheet does not client-side filter.
       expect(find.text('Organic Mulberry Farm Cafe'), findsOneWidget);
-      expect(find.text('Riverside Garden Restaurant'), findsOneWidget);
-
-      // Infrastructure names must NOT appear (server did not send them).
-      expect(find.text('Vang Vieng Hospital'), findsNothing);
-      expect(find.text('Vang Vieng Central Pharmacy'), findsNothing);
-      expect(find.text('Vang Vieng Transport Hub & Bus Station'), findsNothing);
+      expect(find.text('Vang Vieng Hospital'), findsOneWidget);
     });
 
     testWidgets('empty candidate list shows honest copy', (tester) async {
@@ -146,14 +103,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Empty list: honest copy from swap_sheet.dart.
       expect(
         find.text('No alternative venues found nearby.'),
         findsOneWidget,
       );
-
-      // Infrastructure names still absent.
-      expect(find.text('Vang Vieng Hospital'), findsNothing);
     });
   });
 }

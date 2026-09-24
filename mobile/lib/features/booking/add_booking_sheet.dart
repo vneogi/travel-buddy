@@ -9,6 +9,29 @@ import '../../theme/typography.dart';
 import 'booking_parser.dart';
 import '../driver_card/driver_card_helpers.dart';
 
+/// Parse a yyyy-mm-dd string as a local-midnight DateTime.
+/// Do NOT use DateTime.parse -- it returns UTC for date-only strings,
+/// which breaks when the device TZ is east of UTC.
+DateTime _ymd(String raw) {
+  final p = raw.split('-');
+  return DateTime(int.parse(p[0]), int.parse(p[1]), int.parse(p[2]));
+}
+
+/// Derive the default corridor city for a given date vs trip segments.
+///
+/// Exported as a top-level function so widget tests can unit-test it
+/// without driving the full sheet.  Both [dt] and segment boundaries
+/// are compared as local calendar dates (year/month/day only).
+String? defaultCityForDate(DateTime dt, List<TripSegment> segs) {
+  final d = DateTime(dt.year, dt.month, dt.day);
+  for (final s in segs) {
+    final start = _ymd(s.startsOn);
+    final end = _ymd(s.endsOn);
+    if (!d.isBefore(start) && !d.isAfter(end)) return s.geoRegion;
+  }
+  return null; // gap or outside all segments -- no default
+}
+
 /// Modal bottom sheet for adding a booking anchor (SPEC-10).
 class AddBookingSheet extends ConsumerStatefulWidget {
   final String tripId;
@@ -564,16 +587,9 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
   }
 
   /// B2: derive default city from date vs segments.
-  String? _defaultCityForDate(DateTime dt, List<TripSegment> segs) {
-    final d = DateTime(dt.year, dt.month, dt.day);
-    for (final s in segs) {
-      // startsOn / endsOn are yyyy-mm-dd strings -- parse them.
-      final start = DateTime.parse(s.startsOn);
-      final end = DateTime.parse(s.endsOn);
-      if (!d.isBefore(start) && !d.isAfter(end)) return s.geoRegion;
-    }
-    return null; // gap or outside all segments -- no default
-  }
+  /// Delegates to the top-level [defaultCityForDate] so tests can call it.
+  String? _defaultCityForDate(DateTime dt, List<TripSegment> segs) =>
+      defaultCityForDate(dt, segs);
 
   /// B2: recompute city default when date changes (unless user overrode).
   void _recomputeCityDefault() {
