@@ -319,7 +319,7 @@ class ItineraryScreen extends ConsumerWidget {
                     warnings: state.scheduleWarnings,
                     nodes: state.nodes,
                     onFocusNode: (nodeId) => context.go(
-                      '/trip/$tripId?focus=$nodeId',
+                      '/trip/$tripId?focus=${Uri.encodeQueryComponent(nodeId)}',
                     ),
                     onDismiss: () => ref
                         .read(itineraryControllerProvider(tripId).notifier)
@@ -793,11 +793,13 @@ class _DateScopedTimeline extends StatelessWidget {
                   && node.nodeKind == 'booking'
                   && node.bookingType == 'hotel',
               onTapEditBooking:
-                  (!state.processing && node.nodeKind == 'booking' && isFirstOccurrence)
+                  (!state.processing && node.nodeKind == 'booking'
+                      && !(node.bookingType == 'hotel' && !isFirstOccurrence))
                       ? () => onEditBooking(node)
                       : null,
               onTapDeleteBooking:
-                  (!state.processing && node.nodeKind == 'booking' && isFirstOccurrence)
+                  (!state.processing && node.nodeKind == 'booking'
+                      && !(node.bookingType == 'hotel' && !isFirstOccurrence))
                       ? () => onDeleteBooking(node)
                       : null,
               onTapRecordOutcome:

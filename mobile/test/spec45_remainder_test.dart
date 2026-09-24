@@ -179,10 +179,11 @@ void main() {
   // R6: Continuation semantics narrowed to hotel bookings
   // -------------------------------------------------------------------------
   group('R6: Continuation narrowed to hotel', () {
-    testWidgets('repeated non-hotel booking is NOT labelled Continued stay',
-        (tester) async {
-      // A flight node -- even if displayed a second time, should not be
-      // labelled "Continued stay" because continuation is hotel-only.
+    testWidgets('flight with isContinuation:true does NOT show Continued stay '
+        '(card-level hotel gate)', (tester) async {
+      // Even if isContinuation is forced true for a non-hotel (should not
+      // happen in production, but this is the defense gate), the card
+      // must NOT render "Continued stay" because only hotels have stays.
       final flightNode = TripNode(
         nodeId: 'flight-1',
         venueName: 'Lao Airlines VTE-LPQ',
@@ -196,7 +197,38 @@ void main() {
         geoRegion: 'vientiane_laos',
       );
 
-      // Production path for non-hotel: isContinuation is false.
+      await tester.pumpWidget(_wrap(ActivityCard(
+        node: flightNode,
+        isContinuation: true,
+        onTapEditBooking: () {},
+        onTapDeleteBooking: () {},
+      )));
+      await tester.pumpAndSettle();
+
+      // Card-level hotel gate: flight must not show Continued stay even
+      // when isContinuation is true.
+      expect(find.text('Continued stay'), findsNothing);
+    });
+
+    testWidgets('repeated non-hotel (timeline path): Edit/Delete present',
+        (tester) async {
+      // Production timeline: isContinuation is false for non-hotel bookings
+      // because the call site gates on bookingType=='hotel'.
+      // Edit/Delete callbacks are present because the gate also checks
+      // !(hotel && !firstOccurrence), which is false for flights.
+      final flightNode = TripNode(
+        nodeId: 'flight-1',
+        venueName: 'Lao Airlines VTE-LPQ',
+        scheduledStart: DateTime.utc(2026, 10, 3, 1, 0),
+        durationMinutes: 70,
+        isLocked: true,
+        status: NodeStatus.pending,
+        vibeTags: const [],
+        nodeKind: 'booking',
+        bookingType: 'flight',
+        geoRegion: 'vientiane_laos',
+      );
+
       await tester.pumpWidget(_wrap(ActivityCard(
         node: flightNode,
         isContinuation: false,
@@ -219,6 +251,8 @@ void main() {
       )));
       await tester.pumpAndSettle();
 
+      // isContinuation true + bookingType hotel => Continued stay shown,
+      // Edit/Delete hidden (isContinuation gate).
       expect(find.text('Edit'), findsNothing);
       expect(find.text('Delete'), findsNothing);
       expect(find.text('Continued stay'), findsOneWidget);

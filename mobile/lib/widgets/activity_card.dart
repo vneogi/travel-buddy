@@ -356,7 +356,7 @@ class ActivityCard extends StatelessWidget {
                                 ],
                               ),
                             ),
-                          ] else ...[
+                          ] else if (node.bookingType == 'hotel') ...[
                             Padding(
                               padding: const EdgeInsets.only(top: AppSpacing.xs),
                               child: Text(

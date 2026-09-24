@@ -27,8 +27,9 @@ import 'package:travel_buddy/features/itinerary/itinerary_notifier.dart';
 import 'package:travel_buddy/features/itinerary/itinerary_screen.dart';
 import 'package:travel_buddy/offline/offline_database.dart';
 import 'package:travel_buddy/services/signal_service.dart';
+import 'package:travel_buddy/features/activity_detail/activity_detail_screen.dart';
 import 'package:travel_buddy/widgets/activity_card.dart';
-import 'package:travel_buddy/widgets/ask_entry_bar.dart';
+import 'package:travel_buddy/features/chat/ask_entry_bar.dart';
 
 class _MockTripRepository extends Mock implements TripRepository {}
 
@@ -272,6 +273,37 @@ void main() {
         // Tap the card body (GestureDetector -> details).
         await tester.tap(lastCard);
         await tester.pumpAndSettle();
+
+        // Production details screen opened with the venue title.
+        expect(find.byType(ActivityDetailScreen), findsOneWidget);
+        expect(find.text('Night Market Dinner'), findsWidgets);
+
+        // Go back so we can inspect the scroll padding.
+        await tester.pageBack();
+        await tester.pumpAndSettle();
+
+        // Inspect production corridor SingleChildScrollView padding.
+        // The corridor _CorridorTimeline is the scroll owner and must
+        // apply kItineraryBottomInset exactly once.
+        final scrollViews = find.byType(SingleChildScrollView);
+        expect(scrollViews, findsWidgets);
+        // Find the one with kItineraryBottomInset bottom padding.
+        bool foundInsetOnce = false;
+        for (final element in scrollViews.evaluate()) {
+          final widget = element.widget as SingleChildScrollView;
+          final padding = widget.padding;
+          if (padding != null &&
+              padding.resolve(TextDirection.ltr).bottom ==
+                  kItineraryBottomInset) {
+            // Must appear exactly once.
+            expect(foundInsetOnce, isFalse,
+                reason: 'kItineraryBottomInset applied more than once');
+            foundInsetOnce = true;
+          }
+        }
+        expect(foundInsetOnce, isTrue,
+            reason: 'kItineraryBottomInset not found on any '
+                'SingleChildScrollView');
 
         // No flutter overflow exception.
         expect(tester.takeException(), isNull);
