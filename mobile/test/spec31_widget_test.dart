@@ -238,11 +238,14 @@ void main() {
       // Both cards present
       expect(find.byType(ActivityCard), findsNWidgets(2));
 
-      // Tap the heart on the first card
-      final heartButtons = find.byIcon(Icons.favorite_border);
-      expect(heartButtons, findsWidgets);
-      await tester.tap(heartButtons.first);
-      await tester.pump();
+      // SPEC-45: love is now in the overflow menu.
+      // Open the More menu on the first card and tap "Love this place".
+      final moreButtons = find.byTooltip('More actions');
+      expect(moreButtons, findsWidgets);
+      await tester.tap(moreButtons.first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Love this place'));
+      await tester.pumpAndSettle();
 
       // Verify that the signal service was called for the first node
       final signalService = harness.container.read(signalServiceProvider);
@@ -509,7 +512,12 @@ void main() {
       addTearDown(harness.dispose);
       await harness.pump(tester);
 
-      expect(find.byIcon(Icons.directions_car_outlined), findsOneWidget);
+      // SPEC-45: driver card is now in the overflow menu.
+      final moreButton = find.byTooltip('More actions');
+      expect(moreButton, findsOneWidget);
+      await tester.tap(moreButton);
+      await tester.pumpAndSettle();
+      expect(find.text('Driver card'), findsOneWidget);
     }, timeout: const Timeout(Duration(seconds: 20)));
   });
 }

@@ -267,7 +267,7 @@ class _FeaturedTripCard extends StatelessWidget {
                 const Spacer(),
                 if (fromCache && cachedAt != null)
                   Text(
-                    'Cached ${_cacheAge(cachedAt!)}',
+                    'Last saved ${_cacheAge(cachedAt!)}',
                     style: AppTypography.caption
                         .copyWith(color: AppColors.muted, fontSize: 11),
                   ),

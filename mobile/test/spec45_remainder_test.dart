@@ -164,7 +164,7 @@ void main() {
   // -------------------------------------------------------------------------
   // R5 partial: no FAB (checked via absence of FloatingActionButton)
   // -------------------------------------------------------------------------
-  group('R5: Bottom inset contract', () {
+  group('R5: No fabricated claims', () {
     testWidgets('no INR, no walking minutes on card (preserved)', (tester) async {
       await tester.pumpWidget(_wrap(ActivityCard(node: _activityNode())));
       await tester.pumpAndSettle();
@@ -172,6 +172,56 @@ void main() {
       expect(find.textContaining('INR'), findsNothing);
       expect(find.textContaining('\u20B9'), findsNothing);
       expect(find.textContaining('min walk'), findsNothing);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // R6: Continuation semantics narrowed to hotel bookings
+  // -------------------------------------------------------------------------
+  group('R6: Continuation narrowed to hotel', () {
+    testWidgets('repeated non-hotel booking is NOT labelled Continued stay',
+        (tester) async {
+      // A flight node -- even if displayed a second time, should not be
+      // labelled "Continued stay" because continuation is hotel-only.
+      final flightNode = TripNode(
+        nodeId: 'flight-1',
+        venueName: 'Lao Airlines VTE-LPQ',
+        scheduledStart: DateTime.utc(2026, 10, 3, 1, 0),
+        durationMinutes: 70,
+        isLocked: true,
+        status: NodeStatus.pending,
+        vibeTags: const [],
+        nodeKind: 'booking',
+        bookingType: 'flight',
+        geoRegion: 'vientiane_laos',
+      );
+
+      // Production path for non-hotel: isContinuation is false.
+      await tester.pumpWidget(_wrap(ActivityCard(
+        node: flightNode,
+        isContinuation: false,
+        onTapEditBooking: () {},
+        onTapDeleteBooking: () {},
+      )));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Edit'), findsOneWidget);
+      expect(find.text('Delete'), findsOneWidget);
+      expect(find.text('Continued stay'), findsNothing);
+    });
+
+    testWidgets('repeated hotel IS labelled Continued stay', (tester) async {
+      await tester.pumpWidget(_wrap(ActivityCard(
+        node: _hotelNode(),
+        isContinuation: true,
+        onTapEditBooking: () {},
+        onTapDeleteBooking: () {},
+      )));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Edit'), findsNothing);
+      expect(find.text('Delete'), findsNothing);
+      expect(find.text('Continued stay'), findsOneWidget);
     });
   });
 }

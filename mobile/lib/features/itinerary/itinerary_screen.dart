@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/providers.dart';
 import '../../core/destination_tz.dart';
+import 'warning_helpers.dart';
 import '../../data/models.dart';
 import '../../theme/colors.dart';
 import '../../theme/typography.dart';
@@ -788,7 +789,9 @@ class _DateScopedTimeline extends StatelessWidget {
               ),
               onTapSwap: state.processing ? null : () => onSwap(node),
               onTapCancel: state.processing ? null : () => onCancel(node),
-              isContinuation: !isFirstOccurrence,
+              isContinuation: !isFirstOccurrence
+                  && node.nodeKind == 'booking'
+                  && node.bookingType == 'hotel',
               onTapEditBooking:
                   (!state.processing && node.nodeKind == 'booking' && isFirstOccurrence)
                       ? () => onEditBooking(node)
@@ -823,11 +826,10 @@ class _DateScopedTimeline extends StatelessWidget {
       });
     final content = Column(children: children);
     if (isCorridor) {
+      // Corridor: _CorridorTimeline is the scroll owner and applies
+      // kItineraryBottomInset. Do not duplicate the bottom inset here.
       return Padding(
-        padding: const EdgeInsets.only(
-          top: AppSpacing.base,
-          bottom: kItineraryBottomInset,
-        ),
+        padding: const EdgeInsets.only(top: AppSpacing.base),
         child: content,
       );
     }
@@ -1011,12 +1013,16 @@ class _ScheduleWarningsBanner extends StatelessWidget {
               Text('Schedule Issues', style: AppTypography.h2),
               const SizedBox(height: AppSpacing.base),
               for (final w in warnings) ...[
-                _WarningRow(
+                WarningRow(
                   warning: w,
                   nodes: nodes,
                   onFocusNode: (nodeId) {
                     Navigator.of(sheetContext).pop();
                     onFocusNode?.call(nodeId);
+                  },
+                  onDismiss: () {
+                    Navigator.of(sheetContext).pop();
+                    onDismiss?.call();
                   },
                 ),
                 const SizedBox(height: AppSpacing.sm),
@@ -1029,99 +1035,7 @@ class _ScheduleWarningsBanner extends StatelessWidget {
   }
 }
 
-/// Extract a single-quoted venue name from a warning string.
-/// e.g. "'Joma Bakery' is closed..." -> "Joma Bakery"
-String? _extractQuotedVenue(String warning) {
-  // Matches 'Venue Name' at the start of the string.
-  final match = RegExp(r"^'([^']+)'").firstMatch(warning);
-  return match?.group(1);
-}
-
-/// Match a quoted venue name to a TripNode by exact venueName.
-TripNode? _matchWarningToNode(String warning, List<TripNode> nodes) {
-  final venue = _extractQuotedVenue(warning);
-  if (venue == null) return null;
-  for (final node in nodes) {
-    if (node.venueName == venue) return node;
-  }
-  return null;
-}
-
-class _WarningRow extends StatelessWidget {
-  final String warning;
-  final List<TripNode> nodes;
-  final void Function(String nodeId)? onFocusNode;
-
-  const _WarningRow({
-    required this.warning,
-    required this.nodes,
-    this.onFocusNode,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final matchedNode = _matchWarningToNode(warning, nodes);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(top: 2, right: 8),
-          child: Icon(
-            Icons.warning_amber_rounded,
-            size: 16,
-            color: AppColors.accent,
-          ),
-        ),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (matchedNode != null) ...[
-                Text(
-                  matchedNode.venueName,
-                  style: AppTypography.body.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Text(
-                  _warningLocalDate(matchedNode),
-                  style: AppTypography.caption.copyWith(
-                    color: AppColors.muted,
-                  ),
-                ),
-              ],
-              Text(warning, style: AppTypography.body),
-            ],
-          ),
-        ),
-        // Action: Open stop (focus) or Dismiss.
-        SizedBox(
-          height: 44,
-          child: matchedNode != null && onFocusNode != null
-              ? TextButton(
-                  onPressed: () => onFocusNode!(matchedNode.nodeId),
-                  child: const Text('Open stop'),
-                )
-              : TextButton(
-                  // Unmatched: honest Dismiss. Does nothing extra.
-                  onPressed: () {},
-                  child: const Text('Dismiss'),
-                ),
-        ),
-      ],
-    );
-  }
-
-  String _warningLocalDate(TripNode node) {
-    final local = toDestinationLocal(node.scheduledStart, node.geoRegion);
-    const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-    ];
-    return '${weekdays[local.weekday - 1]}, ${local.day} ${months[local.month - 1]}';
-  }
-}
+// Warning row widget and helpers are in warning_helpers.dart.
 
 class _HeadsUpBanner extends StatelessWidget {
   final String text;
