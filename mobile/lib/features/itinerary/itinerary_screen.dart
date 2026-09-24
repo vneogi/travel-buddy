@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/providers.dart';
+import '../../core/destination_tz.dart';
 import '../../data/models.dart';
 import '../../theme/colors.dart';
 import '../../theme/typography.dart';
@@ -23,6 +24,13 @@ import '../alerts/alerts_notifier.dart';
 import '../../widgets/alert_card.dart';
 import '../../widgets/departure_banner.dart';
 import '../notifications/departure_notifier.dart';
+
+/// Bottom padding for the itinerary list to clear the AskEntryBar composer
+/// plus the system safe area. One value for both corridor and single-city
+/// timelines.  Accounts for TextField height (~48) + vertical padding
+/// (xs + sm = ~12) + SafeArea bottom (~34 on typical phone) + margin.
+const kItineraryBottomInset = 120.0;
+
 
 Map<String, dynamic> preferencesForConfirmedSwap(
   TripNode original,
@@ -308,6 +316,10 @@ class ItineraryScreen extends ConsumerWidget {
                 if (state.scheduleWarnings.isNotEmpty)
                   _ScheduleWarningsBanner(
                     warnings: state.scheduleWarnings,
+                    nodes: state.nodes,
+                    onFocusNode: (nodeId) => context.go(
+                      '/trip/$tripId?focus=$nodeId',
+                    ),
                     onDismiss: () => ref
                         .read(itineraryControllerProvider(tripId).notifier)
                         .clearScheduleWarnings(),
@@ -502,7 +514,7 @@ class _CorridorTimelineState extends State<_CorridorTimeline> {
     );
     return SingleChildScrollView(
       // SPEC-45 item 5: bottom padding >= composer height + safe area.
-      padding: const EdgeInsets.only(bottom: 140),
+      padding: const EdgeInsets.only(bottom: kItineraryBottomInset),
       child: Column(
         children: List.generate(
           cityGroups.length,
@@ -776,12 +788,13 @@ class _DateScopedTimeline extends StatelessWidget {
               ),
               onTapSwap: state.processing ? null : () => onSwap(node),
               onTapCancel: state.processing ? null : () => onCancel(node),
+              isContinuation: !isFirstOccurrence,
               onTapEditBooking:
-                  (!state.processing && node.nodeKind == 'booking')
+                  (!state.processing && node.nodeKind == 'booking' && isFirstOccurrence)
                       ? () => onEditBooking(node)
                       : null,
               onTapDeleteBooking:
-                  (!state.processing && node.nodeKind == 'booking')
+                  (!state.processing && node.nodeKind == 'booking' && isFirstOccurrence)
                       ? () => onDeleteBooking(node)
                       : null,
               onTapRecordOutcome:
@@ -813,7 +826,7 @@ class _DateScopedTimeline extends StatelessWidget {
       return Padding(
         padding: const EdgeInsets.only(
           top: AppSpacing.base,
-          bottom: 100,
+          bottom: kItineraryBottomInset,
         ),
         child: content,
       );
@@ -821,7 +834,7 @@ class _DateScopedTimeline extends StatelessWidget {
     return SingleChildScrollView(
       padding: const EdgeInsets.only(
         top: AppSpacing.base,
-        bottom: 100,
+        bottom: kItineraryBottomInset,
       ),
       child: content,
     );
@@ -919,10 +932,21 @@ class _DateHeader extends StatelessWidget {
 
 /// SPEC-37: Compact schedule warnings.  Shows "N schedule issues - Review"
 /// and opens a bottom sheet with the full list on tap.
+///
+/// SPEC-45 R2: warnings that quote a venue name ('Joma Bakery' is closed...)
+/// are matched to state.nodes so the row can show venue, local date, and
+/// an Open stop action that reuses SPEC-38 focus.
 class _ScheduleWarningsBanner extends StatelessWidget {
   final List<String> warnings;
+  final List<TripNode> nodes;
+  final void Function(String nodeId)? onFocusNode;
   final VoidCallback? onDismiss;
-  const _ScheduleWarningsBanner({required this.warnings, this.onDismiss});
+  const _ScheduleWarningsBanner({
+    required this.warnings,
+    this.nodes = const [],
+    this.onFocusNode,
+    this.onDismiss,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -955,11 +979,10 @@ class _ScheduleWarningsBanner extends StatelessWidget {
             const Icon(Icons.chevron_right, size: 18, color: AppColors.accent),
             if (onDismiss != null)
               IconButton(
-                icon: const Icon(Icons.close, size: 16),
+                icon: const Icon(Icons.close, size: 18),
                 onPressed: onDismiss,
-                visualDensity: VisualDensity.compact,
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
               ),
           ],
         ),
@@ -979,7 +1002,7 @@ class _ScheduleWarningsBanner extends StatelessWidget {
         maxChildSize: 0.8,
         minChildSize: 0.2,
         expand: false,
-        builder: (_, scrollController) => Padding(
+        builder: (sheetContext, scrollController) => Padding(
           padding: const EdgeInsets.all(AppSpacing.lg),
           child: ListView(
             controller: scrollController,
@@ -987,24 +1010,14 @@ class _ScheduleWarningsBanner extends StatelessWidget {
             children: [
               Text('Schedule Issues', style: AppTypography.h2),
               const SizedBox(height: AppSpacing.base),
-              // SPEC-45 item 7: each row shows the warning text with
-              // an icon. No node_id in the warning model to parse.
               for (final w in warnings) ...[
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.only(top: 2, right: 8),
-                      child: Icon(
-                        Icons.warning_amber_rounded,
-                        size: 16,
-                        color: AppColors.accent,
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(w, style: AppTypography.body),
-                    ),
-                  ],
+                _WarningRow(
+                  warning: w,
+                  nodes: nodes,
+                  onFocusNode: (nodeId) {
+                    Navigator.of(sheetContext).pop();
+                    onFocusNode?.call(nodeId);
+                  },
                 ),
                 const SizedBox(height: AppSpacing.sm),
               ],
@@ -1013,6 +1026,100 @@ class _ScheduleWarningsBanner extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Extract a single-quoted venue name from a warning string.
+/// e.g. "'Joma Bakery' is closed..." -> "Joma Bakery"
+String? _extractQuotedVenue(String warning) {
+  // Matches 'Venue Name' at the start of the string.
+  final match = RegExp(r"^'([^']+)'").firstMatch(warning);
+  return match?.group(1);
+}
+
+/// Match a quoted venue name to a TripNode by exact venueName.
+TripNode? _matchWarningToNode(String warning, List<TripNode> nodes) {
+  final venue = _extractQuotedVenue(warning);
+  if (venue == null) return null;
+  for (final node in nodes) {
+    if (node.venueName == venue) return node;
+  }
+  return null;
+}
+
+class _WarningRow extends StatelessWidget {
+  final String warning;
+  final List<TripNode> nodes;
+  final void Function(String nodeId)? onFocusNode;
+
+  const _WarningRow({
+    required this.warning,
+    required this.nodes,
+    this.onFocusNode,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final matchedNode = _matchWarningToNode(warning, nodes);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(top: 2, right: 8),
+          child: Icon(
+            Icons.warning_amber_rounded,
+            size: 16,
+            color: AppColors.accent,
+          ),
+        ),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (matchedNode != null) ...[
+                Text(
+                  matchedNode.venueName,
+                  style: AppTypography.body.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  _warningLocalDate(matchedNode),
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.muted,
+                  ),
+                ),
+              ],
+              Text(warning, style: AppTypography.body),
+            ],
+          ),
+        ),
+        // Action: Open stop (focus) or Dismiss.
+        SizedBox(
+          height: 44,
+          child: matchedNode != null && onFocusNode != null
+              ? TextButton(
+                  onPressed: () => onFocusNode!(matchedNode.nodeId),
+                  child: const Text('Open stop'),
+                )
+              : TextButton(
+                  // Unmatched: honest Dismiss. Does nothing extra.
+                  onPressed: () {},
+                  child: const Text('Dismiss'),
+                ),
+        ),
+      ],
+    );
+  }
+
+  String _warningLocalDate(TripNode node) {
+    final local = toDestinationLocal(node.scheduledStart, node.geoRegion);
+    const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    return '${weekdays[local.weekday - 1]}, ${local.day} ${months[local.month - 1]}';
   }
 }
 

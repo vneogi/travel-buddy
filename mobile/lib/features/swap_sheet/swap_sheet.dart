@@ -40,6 +40,7 @@ class SwapSheet extends ConsumerStatefulWidget {
 class SwapSheetState extends ConsumerState<SwapSheet> {
   List<VenueSearchResult>? _venues;
   final Set<String> _selectedVibes = {};
+  VenueSearchResult? _selectedVenue;
   String? _error;
   bool _loading = true;
 
@@ -106,6 +107,13 @@ class SwapSheetState extends ConsumerState<SwapSheet> {
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
                     child: const Text('Cancel'),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  FilledButton(
+                    onPressed: _selectedVenue == null
+                        ? null
+                        : () => Navigator.of(context).pop(_selectedVenue),
+                    child: const Text('Confirm swap'),
                   ),
                 ],
               ),
@@ -256,8 +264,13 @@ class SwapSheetState extends ConsumerState<SwapSheet> {
                   ),
               ],
             ),
-            trailing: const Icon(Icons.swap_horiz, color: AppColors.primary),
-            onTap: () => Navigator.of(context).pop(v),
+            trailing: _selectedVenue?.venueId == v.venueId
+                ? const Icon(Icons.check_circle, color: AppColors.primary,
+                    semanticLabel: 'Selected')
+                : const Icon(Icons.radio_button_unchecked,
+                    color: AppColors.muted),
+            onTap: () => setState(() => _selectedVenue = v),
+            selected: _selectedVenue?.venueId == v.venueId,
           ),
         );
       },

@@ -97,6 +97,7 @@ class ActivityCard extends StatelessWidget {
   final bool isLoved; // filled heart once the user has loved this venue
   final NodeOutcome? recordedOutcome;
   final bool isRecordingOutcome;
+  final bool isContinuation; // true for repeated hotel coverage dates
   final DateTime? now; // injectable for tests
 
   const ActivityCard({
@@ -113,6 +114,7 @@ class ActivityCard extends StatelessWidget {
     this.onTapEditBooking,
     this.onTapDeleteBooking,
     this.onTapDetails,
+    this.isContinuation = false,
     this.now,
   });
 
@@ -227,6 +229,27 @@ class ActivityCard extends StatelessWidget {
                               softWrap: false,
                               overflow: TextOverflow.clip,
                             ),
+                          // SPEC-45 R3: visible NOW badge for current stop.
+                          if (isActive)
+                            Container(
+                              margin: const EdgeInsets.only(top: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.accent,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                'NOW',
+                                style: AppTypography.caption.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ),
                         ],
                       ],
                     ),
@@ -309,29 +332,42 @@ class ActivityCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                          Padding(
-                            padding: const EdgeInsets.only(top: AppSpacing.xs),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (onTapEditBooking != null)
-                                  TextButton.icon(
-                                    onPressed: onTapEditBooking,
-                                    icon: const Icon(Icons.edit, size: 16),
-                                    label: const Text('Edit'),
-                                  ),
-                                if (onTapDeleteBooking != null)
-                                  TextButton.icon(
-                                    onPressed: onTapDeleteBooking,
-                                    icon: const Icon(Icons.delete_outline, size: 16),
-                                    label: const Text('Delete'),
-                                    style: TextButton.styleFrom(
-                                      foregroundColor: AppColors.danger,
+                          if (!isContinuation) ...[
+                            Padding(
+                              padding: const EdgeInsets.only(top: AppSpacing.xs),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (onTapEditBooking != null)
+                                    TextButton.icon(
+                                      onPressed: onTapEditBooking,
+                                      icon: const Icon(Icons.edit, size: 16),
+                                      label: const Text('Edit'),
                                     ),
-                                  ),
-                              ],
+                                  if (onTapDeleteBooking != null)
+                                    TextButton.icon(
+                                      onPressed: onTapDeleteBooking,
+                                      icon: const Icon(Icons.delete_outline, size: 16),
+                                      label: const Text('Delete'),
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: AppColors.danger,
+                                      ),
+                                    ),
+                                ],
+                              ),
                             ),
-                          ),
+                          ] else ...[
+                            Padding(
+                              padding: const EdgeInsets.only(top: AppSpacing.xs),
+                              child: Text(
+                                'Continued stay',
+                                style: AppTypography.caption.copyWith(
+                                  color: AppColors.muted,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                         // SPEC-45 item 4: friendly micro_location (never snake_case)
                         if (friendlyLocation != null) ...[
