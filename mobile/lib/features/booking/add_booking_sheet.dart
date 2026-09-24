@@ -37,12 +37,15 @@ class AddBookingSheet extends ConsumerStatefulWidget {
   final String tripId;
   final String initialBookingType;
   final TripNode? editNode;
+  final DateTime? initialScheduledDate;
 
+  /// [initialScheduledDate] overrides the default (now + 24h) for testing.
   const AddBookingSheet({
     super.key,
     required this.tripId,
     this.initialBookingType = 'flight',
     this.editNode,
+    this.initialScheduledDate,
   });
 
   @override
@@ -55,7 +58,7 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
   final _codeController = TextEditingController();
   final _notesController = TextEditingController();
   final _pasteController = TextEditingController();
-  DateTime _scheduledStart = DateTime.now().add(const Duration(hours: 24));
+  late DateTime _scheduledStart;
   int _durationMinutes = 180;
   DateTime? _checkoutDate;
   String _importSource = 'manual';
@@ -76,6 +79,8 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
   @override
   void initState() {
     super.initState();
+    _scheduledStart =
+        widget.initialScheduledDate ?? DateTime.now().add(const Duration(hours: 24));
     final edit = widget.editNode;
     if (edit != null) {
       _bookingType = edit.bookingType ?? 'flight';
@@ -413,6 +418,21 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
 
   @override
   Widget build(BuildContext context) {
+    // F1: Recompute city default when segments arrive asynchronously.
+    // ref.listen fires after build, avoiding setState-during-build.
+    ref.listen<List<TripSegment>>(
+      itineraryControllerProvider(widget.tripId)
+          .select((s) => s?.segments ?? const <TripSegment>[]),
+      (prev, next) {
+        if (_userOverrodeCity) return;
+        if ((prev?.length ?? 0) <= 1 && next.length > 1) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            _recomputeCityDefault();
+          });
+        }
+      },
+    );
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,

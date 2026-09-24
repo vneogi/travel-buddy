@@ -1,26 +1,102 @@
 // SPEC G0 field-fix -- Flutter booking city control proofs.
 //
 // D1: defaultCityForDate uses _ymd (local dates), not DateTime.parse (UTC).
-// D2: Proper stubs copied from spec36_corridor_test.dart.
+// D2: Proper stubs copied from spec36_corridor_test.dart patterns.
 // D3: Add-mode date-default proof -- scheduledStart Oct 6 defaults to LP.
+// F1: City default recomputes when segments arrive asynchronously.
+// F2: Sheet-level LP default/save proof via initialScheduledDate.
+// F3: FakeSignalService (no mocktail shape mismatch).
 //
 // UNVERIFIED: flutter test has not been run on this host.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 
 import 'package:travel_buddy/core/providers.dart';
 import 'package:travel_buddy/data/models.dart';
-import 'package:travel_buddy/data/repositories.dart';
 import 'package:travel_buddy/features/booking/add_booking_sheet.dart';
+import 'package:travel_buddy/features/itinerary/itinerary_notifier.dart';
 import 'package:travel_buddy/offline/offline_database.dart';
 import 'package:travel_buddy/services/signal_service.dart';
 
-class _MockTripRepository extends Mock implements TripRepository {}
-class _MockOfflineDatabase extends Mock implements OfflineDatabase {}
-class _MockSignalService extends Mock implements SignalService {}
+// ---------------------------------------------------------------------------
+// F3: Fakes (no mocktail matcher mismatch). Pattern from
+// mobile/test/features/booking/provider_paste_widget_test.dart.
+// ---------------------------------------------------------------------------
+
+/// Fake signal service -- captures calls without mocktail.
+class _FakeSignalService extends Fake implements SignalService {
+  final calls = <Map<String, String?>>[];
+
+  @override
+  Future<void> emitBookingAdded({
+    required String bookingType,
+    required String importSource,
+    String? placeRef,
+    String? tripId,
+  }) async {
+    calls.add({
+      'bookingType': bookingType,
+      'importSource': importSource,
+      'placeRef': placeRef,
+      'tripId': tripId,
+    });
+  }
+}
+
+/// Fake itinerary controller seeded with corridor segments.
+/// Does not call load(), so no getTrip stub is needed.
+class _FakeItineraryController extends StateNotifier<ItineraryState>
+    implements ItineraryController {
+  _FakeItineraryController({List<TripSegment> segments = const []})
+      : super(ItineraryState(segments: segments));
+
+  Map<String, dynamic>? lastPreferences;
+
+  /// Seed segments after construction (for F1 async-load proof).
+  void seedSegments(List<TripSegment> segs) {
+    state = ItineraryState(segments: segs);
+  }
+
+  @override
+  Future<TripEventResult?> applyEvent({
+    required EventType type,
+    required String message,
+    String? targetNodeId,
+    Map<String, dynamic>? preferences,
+  }) async {
+    lastPreferences = preferences;
+    return TripEventResult(
+      message: 'Booking saved as a locked itinerary anchor.',
+      updatedNodes: [
+        TripNode(
+          nodeId: 'fake-node-1',
+          nodeKind: 'booking',
+          venueName: preferences?['venue_name'] as String? ?? 'Test',
+          scheduledStart: DateTime(2026, 10, 6, 15, 0),
+          durationMinutes: 1440,
+          isLocked: true,
+          status: NodeStatus.pending,
+          vibeTags: const [],
+          bookingType: preferences?['booking_type'] as String?,
+          geoRegion: preferences?['geo_region'] as String?,
+        ),
+      ],
+      routingTier: 'heavy',
+      fromCache: false,
+    );
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// Fake offline database -- stubs cachePlace for the save path.
+class _FakeOfflineDatabase extends Fake implements OfflineDatabase {
+  @override
+  Future<void> cachePlace(String placeRef, String dataJson) async {}
+}
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -28,73 +104,39 @@ class _MockSignalService extends Mock implements SignalService {}
 
 const _kTripId = 'trip-corridor-1';
 
-final _segments = <TripSegment>[
-  const TripSegment(
+const _segments = <TripSegment>[
+  TripSegment(
     geoRegion: 'vientiane_laos',
     startsOn: '2026-10-02',
     endsOn: '2026-10-03',
   ),
-  const TripSegment(
+  TripSegment(
     geoRegion: 'vang_vieng_laos',
     startsOn: '2026-10-04',
     endsOn: '2026-10-05',
   ),
-  const TripSegment(
+  TripSegment(
     geoRegion: 'luang_prabang_laos',
     startsOn: '2026-10-06',
     endsOn: '2026-10-09',
   ),
 ];
 
-TripState _corridorTrip() => TripState(
-      tripId: _kTripId,
-      userId: 'u1',
-      geoRegion: 'vientiane_laos',
-      corridorId: 'laos_northbound_v1',
-      nodes: const [],
-      segments: _segments,
-    );
-
-// Copied verbatim from spec36_corridor_test.dart.
-void _stubDatabase(_MockOfflineDatabase database) {
-  when(() => database.getLovedPlaceRefs(
-        identityScope: any(named: 'identityScope'),
-        tripId: any(named: 'tripId'),
-      )).thenAnswer((_) async => <String>{});
-  when(() => database.getNodeOutcomes(
-        identityScope: any(named: 'identityScope'),
-        tripId: any(named: 'tripId'),
-      )).thenAnswer((_) async => <String, NodeOutcome>{});
-  when(() => database.cachePlace(any(), any())).thenAnswer((_) async {});
-  when(() => database.cacheTrip(any(), any())).thenAnswer((_) async {});
-  when(() => database.getCachedTrip(any())).thenAnswer((_) async => null);
-  when(() => database.pruneAlertData()).thenAnswer((_) async {});
-  when(() => database.getDismissedAlertIds(
-        identityScope: any(named: 'identityScope'),
-      )).thenAnswer((_) async => <String>{});
-  when(() => database.upsertNodeOutcome(
-        identityScope: any(named: 'identityScope'),
-        tripId: any(named: 'tripId'),
-        nodeId: any(named: 'nodeId'),
-        outcome: any(named: 'outcome'),
-        reason: any(named: 'reason'),
-        recordedAt: any(named: 'recordedAt'),
-      )).thenAnswer((_) async {});
-}
-
 Widget _wrapSheet({
-  required _MockTripRepository repo,
-  required _MockOfflineDatabase database,
-  required _MockSignalService signalService,
+  required _FakeItineraryController controller,
+  required _FakeSignalService signalService,
+  required _FakeOfflineDatabase database,
   String bookingType = 'hotel',
   TripNode? editNode,
+  DateTime? initialScheduledDate,
 }) {
   return ProviderScope(
     overrides: [
-      tripRepoProvider.overrideWithValue(repo),
-      offlineDatabaseProvider.overrideWithValue(database),
       signalServiceProvider.overrideWithValue(signalService),
-      identityCacheScopeProvider.overrideWithValue('account:u1'),
+      offlineDatabaseProvider.overrideWithValue(database),
+      itineraryControllerProvider.overrideWith(
+        (ref, tripId) => controller,
+      ),
     ],
     child: MaterialApp(
       home: Scaffold(
@@ -102,6 +144,7 @@ Widget _wrapSheet({
           tripId: _kTripId,
           initialBookingType: bookingType,
           editNode: editNode,
+          initialScheduledDate: initialScheduledDate,
         ),
       ),
     ),
@@ -114,8 +157,6 @@ void main() {
   // ---------------------------------------------------------------------------
   group('defaultCityForDate (top-level, D1)', () {
     test('Oct 6 resolves to LP regardless of device TZ', () {
-      // DateTime(2026, 10, 6) is local midnight -- same calendar date
-      // whether device is UTC, IST, or ICT.
       final result = defaultCityForDate(DateTime(2026, 10, 6), _segments);
       expect(result, 'luang_prabang_laos');
     });
@@ -144,36 +185,25 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // D2 + D3: Widget tests
+  // Widget tests
   // ---------------------------------------------------------------------------
   group('AddBookingSheet corridor city control', () {
-    late _MockTripRepository repo;
-    late _MockOfflineDatabase database;
-    late _MockSignalService signalService;
+    late _FakeItineraryController controller;
+    late _FakeSignalService signalService;
+    late _FakeOfflineDatabase database;
 
     setUp(() {
-      repo = _MockTripRepository();
-      database = _MockOfflineDatabase();
-      signalService = _MockSignalService();
-
-      _stubDatabase(database);
-      when(() => repo.getTrip(_kTripId))
-          .thenAnswer((_) async => _corridorTrip());
-      // Stub emitBookingAdded so save does not throw.
-      when(() => signalService.emitBookingAdded(
-            bookingType: any(named: 'bookingType'),
-            importSource: any(named: 'importSource'),
-            placeRef: any(named: 'placeRef'),
-            tripId: any(named: 'tripId'),
-          )).thenAnswer((_) async {});
+      controller = _FakeItineraryController(segments: _segments);
+      signalService = _FakeSignalService();
+      database = _FakeOfflineDatabase();
     });
 
     testWidgets('city control is visible with three segments',
         (tester) async {
       await tester.pumpWidget(_wrapSheet(
-        repo: repo,
-        database: database,
+        controller: controller,
         signalService: signalService,
+        database: database,
       ));
       await tester.pumpAndSettle();
 
@@ -182,39 +212,108 @@ void main() {
 
     testWidgets('save button says Save Anchor', (tester) async {
       await tester.pumpWidget(_wrapSheet(
-        repo: repo,
-        database: database,
+        controller: controller,
         signalService: signalService,
+        database: database,
       ));
       await tester.pumpAndSettle();
 
       expect(find.text('Save Anchor'), findsOneWidget);
     });
 
-    testWidgets('tap LP in dropdown then Save Anchor sends LP geo_region',
+    testWidgets('add-mode date outside corridor auto-selects no city',
         (tester) async {
-      Map<String, dynamic>? capturedPrefs;
-      when(() => repo.sendEvent(
-            tripId: any(named: 'tripId'),
-            type: any(named: 'type'),
-            message: any(named: 'message'),
-            targetNodeId: any(named: 'targetNodeId'),
-            preferences: any(named: 'preferences'),
-          )).thenAnswer((inv) async {
-        capturedPrefs =
-            inv.namedArguments[#preferences] as Map<String, dynamic>?;
-        return TripEventResult(
-          message: 'Booking saved as a locked itinerary anchor.',
-          updatedNodes: const [],
-          routingTier: 'heavy',
-          fromCache: false,
-        );
-      });
+      // Default scheduledStart is now + 24h (outside Oct 2026 corridor).
+      await tester.pumpWidget(_wrapSheet(
+        controller: controller,
+        signalService: signalService,
+        database: database,
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('booking_city_control')), findsOneWidget);
+      // No segment city name should appear as the selected dropdown value.
+      expect(find.text('Vientiane'), findsNothing);
+      expect(find.text('Vang Vieng'), findsNothing);
+      expect(find.text('Luang Prabang'), findsNothing);
+    });
+
+    // F1: Segments arrive after the initial post-frame callback.
+    testWidgets('F1: city default recomputes when segments arrive async',
+        (tester) async {
+      // Start with no segments -- simulates ItineraryController.load()
+      // not having completed yet.
+      final emptyController = _FakeItineraryController();
 
       await tester.pumpWidget(_wrapSheet(
-        repo: repo,
-        database: database,
+        controller: emptyController,
         signalService: signalService,
+        database: database,
+        // Oct 6 is in the LP segment.
+        initialScheduledDate: DateTime(2026, 10, 6, 15, 0),
+      ));
+      await tester.pumpAndSettle();
+
+      // No segments yet: city control is hidden (segs.length <= 1).
+      expect(find.byKey(const Key('booking_city_control')), findsNothing);
+
+      // Simulate segments arriving from getTrip.
+      emptyController.seedSegments(_segments.toList());
+      await tester.pumpAndSettle();
+
+      // City control now visible.
+      expect(find.byKey(const Key('booking_city_control')), findsOneWidget);
+      // F1: ref.listen fired and scheduled _recomputeCityDefault.
+      // Date is Oct 6, which falls in LP -> auto-selects Luang Prabang.
+      expect(find.text('Luang Prabang'), findsOneWidget);
+    });
+
+    // F2: Sheet-level LP default/save proof (add-mode, no editNode).
+    testWidgets(
+        'F2: add-mode Oct 6 check-in defaults to LP and save sends LP',
+        (tester) async {
+      await tester.pumpWidget(_wrapSheet(
+        controller: controller,
+        signalService: signalService,
+        database: database,
+        // F2: inject Oct 6 as the initial scheduled date.
+        initialScheduledDate: DateTime(2026, 10, 6, 15, 0),
+      ));
+      await tester.pumpAndSettle();
+
+      // City control shows Luang Prabang (auto-defaulted, no dropdown tap).
+      expect(find.byKey(const Key('booking_city_control')), findsOneWidget);
+      expect(find.text('Luang Prabang'), findsOneWidget);
+
+      // Fill required title.
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Title / Venue'),
+        'Queens House Luang Prabang',
+      );
+      await tester.pumpAndSettle();
+
+      // Tap Save Anchor.
+      await tester.tap(find.text('Save Anchor'));
+      await tester.pumpAndSettle();
+
+      // Verify applyEvent was called with geo_region = LP.
+      expect(controller.lastPreferences, isNotNull,
+          reason: 'applyEvent must have been called');
+      expect(controller.lastPreferences!['geo_region'], 'luang_prabang_laos',
+          reason: 'Save must send geo_region=luang_prabang_laos');
+
+      // F3: signal service was called without error.
+      expect(signalService.calls, isNotEmpty,
+          reason: 'emitBookingAdded must have been called');
+    });
+
+    // Explicit manual dropdown test -- user picks LP then saves.
+    testWidgets('tap LP in dropdown then Save Anchor sends LP geo_region',
+        (tester) async {
+      await tester.pumpWidget(_wrapSheet(
+        controller: controller,
+        signalService: signalService,
+        database: database,
       ));
       await tester.pumpAndSettle();
 
@@ -229,46 +328,15 @@ void main() {
         find.widgetWithText(TextField, 'Title / Venue'),
         'Queens House Luang Prabang',
       );
+      await tester.pumpAndSettle();
 
       // Tap Save Anchor.
       await tester.tap(find.text('Save Anchor'));
       await tester.pumpAndSettle();
 
-      expect(capturedPrefs, isNotNull,
-          reason: 'sendEvent must have been called');
-      expect(capturedPrefs!['geo_region'], 'luang_prabang_laos');
-    });
-
-    // D3: Date-default proof -- add mode (no editNode).
-    // We cannot easily drive the Flutter date picker in a widget test,
-    // so the unit tests above prove defaultCityForDate is correct for
-    // Oct 6 -> LP.  This widget test verifies the wiring: after load(),
-    // _recomputeCityDefault fires on the post-frame callback.  Since the
-    // sheet opens at DateTime.now() + 24h (outside the Oct 2026 corridor),
-    // the default stays null.  We verify that explicitly here, then rely
-    // on the unit tests to prove that if the date were Oct 6, LP would
-    // be returned.
-    //
-    // To prove the full wiring end-to-end, we test that an edit-mode node
-    // whose scheduledStart is Oct 6 (and whose geoRegion is intentionally
-    // NOT set) still shows LP via _recomputeCityDefault.
-    testWidgets(
-        'D3: add-mode date outside corridor does not auto-select any city',
-        (tester) async {
-      await tester.pumpWidget(_wrapSheet(
-        repo: repo,
-        database: database,
-        signalService: signalService,
-      ));
-      await tester.pumpAndSettle();
-
-      // City control exists but no city is pre-selected -- the dropdown
-      // value is null (DateTime.now()+24h is outside Oct 2026 corridor).
-      expect(find.byKey(const Key('booking_city_control')), findsOneWidget);
-      // No segment city name should appear as the selected dropdown value.
-      expect(find.text('Vientiane'), findsNothing);
-      expect(find.text('Vang Vieng'), findsNothing);
-      expect(find.text('Luang Prabang'), findsNothing);
+      expect(controller.lastPreferences, isNotNull,
+          reason: 'applyEvent must have been called');
+      expect(controller.lastPreferences!['geo_region'], 'luang_prabang_laos');
     });
   });
 }
