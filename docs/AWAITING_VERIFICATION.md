@@ -15,6 +15,18 @@ other.
 Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 `#85` and so on; those numbers cannot be reconciled against `git log`.
 
+## Finding -- Sep 25 2026 -- G0 field-fix-2 merged; laptop Flutter verified
+
+Merged `feat/g0-field-fix-2` to `main` as `b8cf305` (feature head
+`1b6fce3`). Owner Windows laptop on `1b6fce3`: `flutter analyze`
+infos only (the three `invalid_null_aware_operator` warnings from
+`6b3c840` are gone); targeted G0 files and full `flutter test`
+passed. Do not call G0 passed. Hosted Cloud Run and signed APK are
+still the previous revision until an explicit deploy. Phone matrix
+needs a fresh Laos 2+2+4 trip after that APK: eight days, booking
+city ownership, typed swap, honest missing-coord hotel warning,
+offline restart.
+
 ## Finding -- Sep 24 2026 -- G0 field-fix Flutter green on db754d9
 
 Owner Windows worktree `.worktrees/verify-g0-db754d9` at

@@ -140,56 +140,60 @@ not outrank the field-proven itinerary trust gaps for the owner's trip.
 The phone-independent delivery and airplane-mode gate passed. SPEC-38 passed
 on the owner's phone. Next tasks:
 
-1. SPEC-40 is done as `ebdea52`. SPEC-42 uncap is PARTIAL on main
+1. G0 field-fix-2 is on main as `b8cf305`. Laptop Flutter verified.
+   Next: deploy hosted API, signed owner-only APK, fresh Laos 2+2+4
+   phone matrix. Do not call G0 passed from unit tests.
+2. SPEC-40 is done as `ebdea52`. SPEC-42 uncap is PARTIAL on main
    (`17e58ac`): catalog caps are gone and empty dates render. Do not
    reopen the five-day *starter* budget. Add/Move are a later slice.
-2. SPEC-41 Phase A is complete. A3a merged as `d1fde14`; A3b branch head
+3. SPEC-41 Phase A is complete. A3a merged as `d1fde14`; A3b branch head
    `7f25042` replaces the 30-minute buffer and random/clock mock transit with
    deterministic walking time, city/day boundaries, apply-time retry,
    previous-node reachability, and next locked-anchor constraints.
-3. SPEC-10 provider-aware paste is on main (`fc6926b`). Flight/hotel
+4. SPEC-10 provider-aware paste is on main (`fc6926b`). Flight/hotel
    scheduler remainder is on main (`e7a0457`). Do not reopen Agoda adapters
    unless a new redacted fixture fails. Keep SPEC-10 PARTIAL until
    create-then-book HITL reflow exists.
-4. SPEC-25 trip-scoped grounded Ask is on main (`30a4270`). Laptop Flutter
+5. SPEC-25 trip-scoped grounded Ask is on main (`30a4270`). Laptop Flutter
    Ask envelope tests passed. Owner Windows `pytest -q` on `3e5ec6d` is
    green (details in AWAITING_VERIFICATION). Trip-optional Ask remains.
-5. Hotel wall-time conversion, weather empty-key, and swap canned copy
+6. Hotel wall-time conversion, weather empty-key, and swap canned copy
    after `no_candidates` are on main (`933c705`).
-6. Specified remainders are sequenced in
+7. Specified remainders are sequenced in
    `docs/briefs/GENIE_REMAINDERS_SEQUENCE.md`. Slice 1 (uncap) is on
    main (`17e58ac`). Slice 2 (hotel stay display) is on main
    (`1f251a3`, merge `7b62818`). Slice 3 (named slots) is on main
-   (`f1feb17`, merge `9173b23`). Create-then-book HITL reflow remains.
-   Hosted API/APK still wait for an explicit deploy. Do not start
-   security implementation, inspiration, similar-trip generation, or
-   broader consumer work until the phone gate.
-7. Implement SPEC-44 Phase A. Make trip graph, party, compatibility projection,
+   (`f1feb17`, merge `9173b23`). G0 field-fix-2 is on main (`b8cf305`).
+   Create-then-book HITL reflow remains. Hosted API/APK wait on an
+   explicit deploy of `b8cf305`. Do not start security implementation,
+   inspiration, similar-trip generation, or broader consumer work until
+   that phone gate.
+8. Implement SPEC-44 Phase A. Make trip graph, party, compatibility projection,
    and command record one transaction; add monotonic trip version,
    `expected_version`, typed conflict, idempotent command IDs, and production
    PostgreSQL contract tests. Do this before SPEC-16 row-authoritative reads,
    multi-device mutation, or a second real city.
-8. Implement SPEC-43 in bounded phases. It owns twelve verified gaps:
+9. Implement SPEC-43 in bounded phases. It owns twelve verified gaps:
    server-issued anonymous auth, complete RLS, redacted LLM egress, data rights
    and retention, encrypted offline data, real sign-out, purpose consent,
    private cache isolation, signal ownership/poisoning controls, redacted
    diagnostics, abuse/spend limits, and release HTTPS/cache isolation.
-9. Do not distribute an APK to another person, enable production LLM processing
+10. Do not distribute an APK to another person, enable production LLM processing
    of personal trip data, or claim residency/compliance before SPEC-43's
    applicable gates pass.
-10. After SPEC-43, implement the SPEC-13 region/country registry, minimum
+11. After SPEC-43, implement the SPEC-13 region/country registry, minimum
    SPEC-17 claim store, and SPEC-20 versioned city pack. Bangkok is the
    acceptance case. Do not add Thailand, Vietnam, Cambodia, or Philippines data
    through another Python/Dart/loader exception.
-11. Add SPEC-44 recommendation-decision capture only for consented subjects.
+12. Add SPEC-44 recommendation-decision capture only for consented subjects.
     Record feasible exposure, exclusions, score components, displayed order,
     sponsorship, and policy/catalog/taxonomy versions. Learned influence stays
     zero until held-out evidence and rollback gates pass.
-12. Only after SPEC-44 Phase A and the matching online SPEC-42 action exist,
+13. Only after SPEC-44 Phase A and the matching online SPEC-42 action exist,
     consider SPEC-02's separate SQLite mutation-command outbox. Queue typed
     confirmed commands with `command_id` and `expected_version`; never perform
     local reflow or silently resolve a conflict.
-13. Only after Bangkok proves the SPEC-20 city factory, prototype SPEC-04's
+14. Only after Bangkok proves the SPEC-20 city factory, prototype SPEC-04's
     optional versioned offline map artifact on representative devices. PMTiles,
     MapLibre, and Cloudflare R2 are candidates, not commitments; measured size,
     cold start, rendering, memory, battery, update, and offline behavior decide.
