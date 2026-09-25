@@ -19,6 +19,8 @@ CREATE TABLE IF NOT EXISTS trip_command (
 CREATE INDEX IF NOT EXISTS idx_trip_command_trip ON trip_command(trip_id);
 
 ALTER TABLE trip_command ENABLE ROW LEVEL SECURITY;
+-- No policy needed: service_role (the only grantee) bypasses RLS.
+-- All mutations go through the SECURITY DEFINER RPC which runs as owner.
 REVOKE ALL ON trip_command FROM PUBLIC, anon, authenticated;
 GRANT SELECT ON trip_command TO service_role;
 

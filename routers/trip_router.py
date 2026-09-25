@@ -110,6 +110,20 @@ def _get_trip_command(**kwargs):
         ) from exc
 
 
+def _create_response_from_command(command) -> dict:
+    """Reconstruct the create-trip response dict from a replayed command."""
+    trip = command.trip_state
+    return {
+        "trip_id": trip.trip_id,
+        "version": trip.version,
+        "status": "created",
+        "message": f"Itinerary created with {len(trip.nodes)} activities",
+        "nodes": [n.model_dump(mode="json") for n in trip.nodes],
+        "locked_count": sum(1 for n in trip.nodes if n.is_locked),
+        "party": command.party.model_dump(mode="json") if command.party else None,
+    }
+
+
 def _event_response_from_command(command) -> TripEventResponse:
     response_data = command.response_data or {
         "status": "processed",
@@ -177,7 +191,7 @@ async def create_trip(
             command_payload=_request_command_payload(request),
         )
         if prior is not None:
-            return prior.trip_state
+            return _create_response_from_command(prior)
 
     # SPEC-36: Corridor mode vs single-city mode
     if request.segments is not None:

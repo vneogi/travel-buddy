@@ -483,3 +483,171 @@ def test_opt_in_postgres_rpc_replay_and_conflict(real_supabase_env):
             command_payload={"mood": "busy"},
             expected_version=1,
         )
+
+
+# --- Regression tests added during SPEC-44 Phase A review ---
+
+
+def test_create_replay_returns_dict_not_trip_state(client, monkeypatch):
+    """D4: Create replay must return the same dict shape as the first create,
+    not a bare TripState."""
+    user_id = "create-replay-spec44-user"
+    db_service.get_or_create_user(user_id)
+
+    first = client.post(
+        "/api/v1/trip/create",
+        headers={"X-Debug-User-Id": user_id},
+        json={
+            "city": "luang_prabang_laos",
+            "start_date": "2026-10-02",
+            "end_date": "2026-10-03",
+            "initial_mood": "exploratory",
+            "command_id": "create-replay-shape",
+        },
+    )
+    assert first.status_code == 200
+    first_body = first.json()
+    # Verify first response has the create-response shape
+    assert "status" in first_body and first_body["status"] == "created"
+    assert "locked_count" in first_body
+    assert "party" in first_body
+    assert "version" in first_body
+
+    replay = client.post(
+        "/api/v1/trip/create",
+        headers={"X-Debug-User-Id": user_id},
+        json={
+            "city": "luang_prabang_laos",
+            "start_date": "2026-10-02",
+            "end_date": "2026-10-03",
+            "initial_mood": "exploratory",
+            "command_id": "create-replay-shape",
+        },
+    )
+    assert replay.status_code == 200
+    replay_body = replay.json()
+    # The replay must have the same dict keys and values
+    assert replay_body["status"] == "created"
+    assert replay_body["trip_id"] == first_body["trip_id"]
+    assert replay_body["version"] == first_body["version"]
+    assert replay_body["locked_count"] == first_body["locked_count"]
+    assert replay_body["nodes"] == first_body["nodes"]
+    assert replay_body.get("party") == first_body.get("party")
+
+
+def test_http_create_command_records_and_replays_idempotently(client, monkeypatch):
+    """D5: A create-trip through the HTTP endpoint must persist a trip_command
+    so that the early-exit replay returns the stored outcome, not re-executing
+    the catalog pipeline."""
+    user_id = "create-idem-spec44-user"
+    db_service.get_or_create_user(user_id)
+
+    body = {
+        "city": "luang_prabang_laos",
+        "start_date": "2026-10-02",
+        "end_date": "2026-10-03",
+        "initial_mood": "exploratory",
+        "command_id": "create-idem-once",
+    }
+    first = client.post(
+        "/api/v1/trip/create",
+        headers={"X-Debug-User-Id": user_id},
+        json=body,
+    )
+    assert first.status_code == 200
+    trip_id = first.json()["trip_id"]
+
+    # Verify graph, party, and command were persisted atomically
+    assert db_service.get_trip(trip_id) is not None
+    assert len(db_service.get_trip_nodes(trip_id)) > 0
+    assert db_service.get_trip_party(trip_id) is not None
+    # Exactly one command recorded for this create
+    command_key = (user_id, "create-idem-once")
+    assert command_key in db_service._trip_commands
+    stored = db_service._trip_commands[command_key]
+    assert stored["command_type"] == "create_trip"
+    assert stored["outcome"]["trip_state"]["trip_id"] == trip_id
+
+
+def test_get_trip_command_skips_state_machine_on_mutation_replay(client, monkeypatch):
+    """The early _get_trip_command check on process_trip_event must prevent
+    a second state-machine invocation when a structural command is replayed."""
+    user_id = "early-replay-spec44-user"
+    db_service.get_or_create_user(user_id)
+    trip = _trip(user_id)
+    db_service.save_trip(trip)
+
+    calls = 0
+
+    async def counting_process_event(**kwargs):
+        nonlocal calls
+        calls += 1
+        return {
+            "updated_trip_state": kwargs["trip_state"],
+            "response": "State-machine ran",
+            "routing_tier_used": "heavy",
+            "from_cache": False,
+            "schedule_warnings": [],
+        }
+
+    monkeypatch.setattr(
+        trip_router_module.state_machine,
+        "process_event",
+        counting_process_event,
+    )
+
+    body = {
+        "trip_id": trip.trip_id,
+        "event_type": EventType.CHANGE_MOOD.value,
+        "message": "Make it calmer",
+        "command_id": "skip-sm-once",
+        "expected_version": 1,
+    }
+    first = client.post(
+        "/api/v1/trip/event",
+        headers={"X-Debug-User-Id": user_id},
+        json=body,
+    )
+    assert first.status_code == 200
+    assert calls == 1
+
+    replay = client.post(
+        "/api/v1/trip/event",
+        headers={"X-Debug-User-Id": user_id},
+        json=body,
+    )
+    assert replay.status_code == 200
+    # State machine must NOT run again for the replay
+    assert calls == 1, f"state machine ran {calls} times; expected 1"
+    assert replay.json() == first.json()
+
+
+def test_create_command_payload_mismatch_409(client, monkeypatch):
+    """Reusing a create command_id with a different payload must return 409."""
+    user_id = "create-mismatch-spec44-user"
+    db_service.get_or_create_user(user_id)
+
+    first = client.post(
+        "/api/v1/trip/create",
+        headers={"X-Debug-User-Id": user_id},
+        json={
+            "city": "luang_prabang_laos",
+            "start_date": "2026-10-02",
+            "end_date": "2026-10-03",
+            "command_id": "create-mismatch",
+        },
+    )
+    assert first.status_code == 200
+
+    second = client.post(
+        "/api/v1/trip/create",
+        headers={"X-Debug-User-Id": user_id},
+        json={
+            "city": "luang_prabang_laos",
+            "start_date": "2026-10-02",
+            "end_date": "2026-10-04",  # different end_date
+            "command_id": "create-mismatch",
+        },
+    )
+    assert second.status_code == 409
+    assert second.json()["detail"]["error"] == "command_payload_mismatch"
