@@ -21,7 +21,7 @@ import json
 import logging
 import uuid
 from datetime import date, datetime, timedelta, timezone
-from typing import Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 import httpx
 
@@ -34,6 +34,12 @@ from models.schemas import (
     UserTier,
     VenueRAG,
     VenueSearchResult,
+)
+from services.trip_persistence import (
+    CommandPayloadMismatch,
+    TripCommandResult,
+    TripVersionConflict,
+    command_payload_hash,
 )
 
 
@@ -289,6 +295,58 @@ class SupabaseService:
         self.save_trip_nodes(trip_state.trip_id, nodes)
         self.save_trip_edges(trip_state.trip_id, edges)
         return trip_state.trip_id
+
+    def commit_trip_command(
+        self,
+        trip_state: TripState,
+        command_id: str,
+        command_type: str,
+        command_payload: dict,
+        expected_version: Optional[int] = None,
+        party: Optional[TripPartyIn] = None,
+        failure_injector: Optional[Callable[[str], None]] = None,
+    ) -> TripCommandResult:
+        """Persist a trip command through the atomic PostgreSQL RPC."""
+        if failure_injector is not None:
+            raise ValueError("failure_injector is supported only by the in-memory adapter")
+
+        from services.itinerary_normaliser import decompose_trip
+
+        state_json = trip_state.model_dump(mode="json")
+        nodes, edges = decompose_trip(state_json)
+        result = self.client.rpc(
+            "commit_trip_command",
+            {
+                "p_trip_id": trip_state.trip_id,
+                "p_user_id": trip_state.user_id,
+                "p_command_id": command_id,
+                "p_command_type": command_type,
+                "p_payload_hash": command_payload_hash(command_payload),
+                "p_expected_version": expected_version,
+                "p_state_json": state_json,
+                "p_nodes": nodes,
+                "p_edges": edges,
+                "p_party": party.model_dump(mode="json") if party else None,
+            },
+        ).execute()
+        data = result.data
+        if isinstance(data, list):
+            data = data[0] if data else {}
+        data = data or {}
+        rpc_status = data.get("status")
+        if rpc_status == TripVersionConflict.code:
+            raise TripVersionConflict(data.get("message", "trip version conflict"))
+        if rpc_status == CommandPayloadMismatch.code:
+            raise CommandPayloadMismatch(data.get("message", "command payload mismatch"))
+        if rpc_status not in {"committed", "replayed"}:
+            raise RuntimeError(f"unexpected commit_trip_command response: {data!r}")
+
+        party_data = data.get("party")
+        return TripCommandResult(
+            trip_state=TripState(**data["trip_state"]),
+            party=TripParty(**party_data) if party_data else None,
+            replayed=rpc_status == "replayed",
+        )
 
     def get_trip(self, trip_id: str) -> Optional[TripState]:
         """Retrieve a trip state by ID."""

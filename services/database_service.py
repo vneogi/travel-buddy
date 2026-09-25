@@ -5,8 +5,10 @@ All data is stored in Python dicts for MVP testing without external deps.
 In production, swap with actual Supabase client calls.
 """
 
+from copy import deepcopy
 from datetime import datetime, date, timezone
-from typing import Dict, List, Optional
+from threading import RLock
+from typing import Callable, Dict, List, Optional
 import uuid
 
 from config.settings import settings
@@ -21,6 +23,12 @@ from models.schemas import (
     VenueSearchResult,
 )
 from services.embedding_service import embedding_service
+from services.trip_persistence import (
+    CommandPayloadMismatch,
+    TripCommandResult,
+    TripVersionConflict,
+    command_payload_hash,
+)
 
 
 class DatabaseService:
@@ -36,6 +44,8 @@ class DatabaseService:
         self._parties: Dict[str, dict] = {}  # keyed by trip_id (SPEC-03)
         self._trip_nodes: Dict[str, list] = {}  # SPEC-16: trip_id -> node rows
         self._trip_edges: Dict[str, list] = {}  # SPEC-16: trip_id -> edge rows
+        self._trip_commands: Dict[tuple[str, str], dict] = {}
+        self._trip_command_lock = RLock()
         self._valid_signal_types = set(
             SIGNAL_TYPES
         )  # from models.signal_types (single source of truth)
@@ -155,6 +165,137 @@ class DatabaseService:
         self._trip_nodes[trip_state.trip_id] = nodes
         self._trip_edges[trip_state.trip_id] = edges
         return trip_state.trip_id
+
+    def commit_trip_command(
+        self,
+        trip_state: TripState,
+        command_id: str,
+        command_type: str,
+        command_payload: dict,
+        expected_version: Optional[int] = None,
+        party: Optional[TripPartyIn] = None,
+        failure_injector: Optional[Callable[[str], None]] = None,
+    ) -> TripCommandResult:
+        """Copy-on-write trip unit of work with durable command semantics."""
+        with self._trip_command_lock:
+            return self._commit_trip_command_locked(
+                trip_state=trip_state,
+                command_id=command_id,
+                command_type=command_type,
+                command_payload=command_payload,
+                expected_version=expected_version,
+                party=party,
+                failure_injector=failure_injector,
+            )
+
+    def _commit_trip_command_locked(
+        self,
+        trip_state: TripState,
+        command_id: str,
+        command_type: str,
+        command_payload: dict,
+        expected_version: Optional[int] = None,
+        party: Optional[TripPartyIn] = None,
+        failure_injector: Optional[Callable[[str], None]] = None,
+    ) -> TripCommandResult:
+        payload_hash = command_payload_hash(command_payload)
+        command_key = (trip_state.user_id, command_id)
+        prior = self._trip_commands.get(command_key)
+        if prior is not None:
+            if (
+                prior["command_type"] != command_type
+                or prior["payload_hash"] != payload_hash
+            ):
+                raise CommandPayloadMismatch(
+                    f"command_id {command_id} was already used with another payload"
+                )
+            outcome = prior["outcome"]
+            stored_party = outcome.get("party")
+            return TripCommandResult(
+                trip_state=TripState(**deepcopy(outcome["trip_state"])),
+                party=TripParty(**deepcopy(stored_party)) if stored_party else None,
+                replayed=True,
+            )
+
+        trips = deepcopy(self._trips)
+        nodes_by_trip = deepcopy(self._trip_nodes)
+        edges_by_trip = deepcopy(self._trip_edges)
+        parties = deepcopy(self._parties)
+        commands = deepcopy(self._trip_commands)
+
+        existing = trips.get(trip_state.trip_id)
+        if existing is None:
+            if expected_version is not None:
+                raise TripVersionConflict("trip does not exist at the expected version")
+            next_version = 1
+        else:
+            compare_version = (
+                expected_version
+                if expected_version is not None
+                else trip_state.version
+            )
+            stored_version = int(existing.get("version", 1))
+            if stored_version != compare_version:
+                raise TripVersionConflict(
+                    f"expected trip version {compare_version}, found {stored_version}"
+                )
+            next_version = stored_version + 1
+
+        committed_trip = trip_state.model_copy(deep=True)
+        committed_trip.version = next_version
+        trip_dict = committed_trip.model_dump(mode="json")
+        trips[committed_trip.trip_id] = trip_dict
+        if failure_injector:
+            failure_injector("state_json")
+
+        from services.itinerary_normaliser import decompose_trip
+
+        new_nodes, new_edges = decompose_trip(trip_dict)
+        new_edges = self._preserve_observed_edge_durations(
+            edges_by_trip.get(committed_trip.trip_id, []), new_edges
+        )
+        nodes_by_trip[committed_trip.trip_id] = new_nodes
+        if failure_injector:
+            failure_injector("trip_node")
+        edges_by_trip[committed_trip.trip_id] = new_edges
+        if failure_injector:
+            failure_injector("trip_edge")
+
+        stored_party = None
+        if party is not None:
+            stored_party = TripParty(
+                trip_id=committed_trip.trip_id,
+                party_type=party.party_type,
+                size=party.size,
+                members=party.members,
+                notes=party.notes,
+            )
+            parties[committed_trip.trip_id] = stored_party.model_dump(mode="json")
+            if failure_injector:
+                failure_injector("trip_party")
+
+        outcome = {
+            "trip_state": trip_dict,
+            "party": stored_party.model_dump(mode="json") if stored_party else None,
+        }
+        commands[command_key] = {
+            "command_type": command_type,
+            "payload_hash": payload_hash,
+            "outcome": outcome,
+        }
+        if failure_injector:
+            failure_injector("trip_command")
+
+        self._trips = trips
+        self._trip_nodes = nodes_by_trip
+        self._trip_edges = edges_by_trip
+        self._parties = parties
+        self._trip_commands = commands
+        return TripCommandResult(
+            trip_state=committed_trip,
+            party=stored_party,
+            replayed=False,
+        )
 
     def get_trip(self, trip_id: str) -> Optional[TripState]:
         """Retrieve a trip state by ID."""

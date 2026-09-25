@@ -156,6 +156,7 @@ class TripState(BaseModel):
 
     trip_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: str
+    version: int = Field(default=1, ge=1)
     geo_region: str = "dubai_uae"  # Per-trip geo-fence; unlocks multi-city
     current_context: CurrentContext = CurrentContext()
     execution_control: ExecutionControl = ExecutionControl()
@@ -238,6 +239,8 @@ class TripEventRequest(BaseModel):
     message: str
     target_node_id: Optional[str] = None
     preferences: Optional[dict] = None
+    command_id: Optional[str] = None
+    expected_version: Optional[int] = Field(default=None, ge=1)
 
 
 class PlanChangeProposal(BaseModel):
@@ -284,6 +287,7 @@ class TripEventResponse(BaseModel):
     """Response after processing a trip event."""
 
     trip_id: str
+    version: int = 1
     status: str
     message: str
     updated_nodes: List[TripNode] = []
@@ -326,6 +330,8 @@ class CreateTripRequest(BaseModel):
     preferences: Optional[CreatePreferences] = None
     initial_mood: Optional[str] = "exploratory"
     party: Optional[TripPartyIn] = None  # SPEC-03: defaults to solo if absent
+    command_id: Optional[str] = None
+    expected_version: Optional[int] = Field(default=None, ge=1)
 
 
 class UserTier(BaseModel):

@@ -13,6 +13,7 @@ authenticated user_id is the source of truth and trip ownership is enforced.
 
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from config.disclaimers import FOOD_DISCLAIMER
@@ -57,11 +58,29 @@ from services.corridor_itinerary import (
 )
 from config.corridors import CORRIDORS, require_corridor
 from services.db_provider import db_service
+from services.trip_persistence import CommandPayloadMismatch, TripVersionConflict
 from services.cache_service import cache_service
 from agents.state_machine import state_machine
 from security import get_current_user_id, resolve_identity, ResolvedIdentity, require_trip_owner
 
 router = APIRouter(prefix="/api/v1", tags=["trip"])
+
+
+def _request_command_payload(request) -> dict:
+    return request.model_dump(
+        mode="json",
+        exclude={"user_id", "command_id"},
+    )
+
+
+def _commit_trip_command(**kwargs):
+    try:
+        return db_service.commit_trip_command(**kwargs)
+    except (TripVersionConflict, CommandPayloadMismatch) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"error": exc.code, "message": str(exc)},
+        ) from exc
 
 
 # ==============================================================================
@@ -178,19 +197,26 @@ async def create_trip(
         nodes=nodes,
         schedule_basis="region_local_v1",
     )
-    db_service.save_trip(trip)
-
-    # SPEC-03: persist party (defaults to solo if absent)
     party_in = request.party or TripPartyIn(party_type="solo", size=1)
-    party = db_service.save_trip_party(trip.trip_id, party_in)
+    committed = _commit_trip_command(
+        trip_state=trip,
+        command_id=request.command_id or str(uuid.uuid4()),
+        command_type="create_trip",
+        command_payload=_request_command_payload(request),
+        expected_version=None,
+        party=party_in,
+    )
+    trip = committed.trip_state
+    party = committed.party
 
     return {
         "trip_id": trip.trip_id,
+        "version": trip.version,
         "status": "created",
-        "message": f"Itinerary created with {len(nodes)} activities",
-        "nodes": [n.model_dump(mode="json") for n in nodes],
-        "locked_count": sum(1 for n in nodes if n.is_locked),
-        "party": party.model_dump(mode="json"),
+        "message": f"Itinerary created with {len(trip.nodes)} activities",
+        "nodes": [n.model_dump(mode="json") for n in trip.nodes],
+        "locked_count": sum(1 for n in trip.nodes if n.is_locked),
+        "party": party.model_dump(mode="json") if party else None,
     }
 
 
@@ -283,18 +309,26 @@ async def _create_corridor_trip(request: CreateTripRequest, user_id: str):
         corridor_id=corridor.corridor_id,
         segments=stored_segments,
     )
-    db_service.save_trip(trip)
-
     party_in = request.party or TripPartyIn(party_type="solo", size=1)
-    party = db_service.save_trip_party(trip.trip_id, party_in)
+    committed = _commit_trip_command(
+        trip_state=trip,
+        command_id=request.command_id or str(uuid.uuid4()),
+        command_type="create_trip",
+        command_payload=_request_command_payload(request),
+        expected_version=None,
+        party=party_in,
+    )
+    trip = committed.trip_state
+    party = committed.party
 
     return {
         "trip_id": trip.trip_id,
+        "version": trip.version,
         "status": "created",
-        "message": f"Corridor itinerary created with {len(nodes)} activities",
-        "nodes": [n.model_dump(mode="json") for n in nodes],
-        "locked_count": sum(1 for n in nodes if n.is_locked),
-        "party": party.model_dump(mode="json"),
+        "message": f"Corridor itinerary created with {len(trip.nodes)} activities",
+        "nodes": [n.model_dump(mode="json") for n in trip.nodes],
+        "locked_count": sum(1 for n in trip.nodes if n.is_locked),
+        "party": party.model_dump(mode="json") if party else None,
     }
 
 
@@ -454,6 +488,7 @@ async def process_trip_event(
 
     # --- Ownership: authorize before doing any work or consuming quota ---
     trip = require_trip_owner(db_service.get_trip(request.trip_id), user_id)
+    loaded_version = trip.version
 
     # --- SPEC-10: Booking mutations (no quota, no LLM) ---
     booking_mutation_events = {EventType.EDIT_BOOKING, EventType.DELETE_BOOKING}
@@ -616,7 +651,18 @@ async def process_trip_event(
     updated_trip = result["updated_trip_state"]
     if not is_ask:
         updated_trip.updated_at = datetime.now(tz=timezone.utc)
-        db_service.save_trip(updated_trip)
+        committed = _commit_trip_command(
+            trip_state=updated_trip,
+            command_id=request.command_id or str(uuid.uuid4()),
+            command_type=request.event_type.value,
+            command_payload=_request_command_payload(request),
+            expected_version=(
+                request.expected_version
+                if request.expected_version is not None
+                else loaded_version
+            ),
+        )
+        updated_trip = committed.trip_state
 
     db_service.log_event(
         user_id=user_id,
@@ -630,6 +676,7 @@ async def process_trip_event(
 
     return TripEventResponse(
         trip_id=request.trip_id,
+        version=trip.version if is_ask else updated_trip.version,
         status="processed",
         message=result["response"],
         updated_nodes=[] if is_ask else updated_trip.nodes,
@@ -956,17 +1003,24 @@ async def _create_range_trip(request: CreateTripRequest, user_id: str):
         schedule_basis="region_local_v1",
         creation_context=creation_ctx,
     )
-    db_service.save_trip(trip)
-
-    # SPEC-03: persist party
     party_in = request.party or TripPartyIn(party_type="solo", size=1)
-    party = db_service.save_trip_party(trip.trip_id, party_in)
+    committed = _commit_trip_command(
+        trip_state=trip,
+        command_id=request.command_id or str(uuid.uuid4()),
+        command_type="create_trip",
+        command_payload=_request_command_payload(request),
+        expected_version=None,
+        party=party_in,
+    )
+    trip = committed.trip_state
+    party = committed.party
 
     return {
         "trip_id": trip.trip_id,
+        "version": trip.version,
         "status": "created",
-        "message": f"Itinerary created with {len(nodes)} activities over {num_days} days",
-        "nodes": [n.model_dump(mode="json") for n in nodes],
-        "locked_count": sum(1 for n in nodes if n.is_locked),
-        "party": party.model_dump(mode="json"),
+        "message": f"Itinerary created with {len(trip.nodes)} activities over {num_days} days",
+        "nodes": [n.model_dump(mode="json") for n in trip.nodes],
+        "locked_count": sum(1 for n in trip.nodes if n.is_locked),
+        "party": party.model_dump(mode="json") if party else None,
     }
