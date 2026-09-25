@@ -7,7 +7,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:travel_buddy/data/models.dart';
 import 'package:travel_buddy/widgets/activity_card.dart';
-import 'package:travel_buddy/features/itinerary/micro_location_label.dart';
 
 // ---------------------------------------------------------------------------
 // Fixtures

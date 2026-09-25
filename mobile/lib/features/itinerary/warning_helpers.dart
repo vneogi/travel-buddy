@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import '../../core/destination_tz.dart';
 import '../../data/models.dart';
 import '../../theme/colors.dart';
-import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 
 /// Extract a single-quoted venue name from the start of a warning string.

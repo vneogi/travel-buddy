@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:travel_buddy/core/providers.dart';
 import 'package:travel_buddy/data/models.dart';
 import 'package:travel_buddy/features/home/home_controller.dart';
 import 'package:travel_buddy/features/home/home_screen.dart';

@@ -79,7 +79,7 @@ String _hotelStaySummary(TripNode node) {
     node.geoRegion,
   );
   final noun = nights == 1 ? 'night' : 'nights';
-  return '$nights $noun -- checkout ${_dayMonth(checkout)}';
+  return '$nights $noun \u00b7 checkout ${_dayMonth(checkout)}';
 }
 
 /// Timeline activity card. Shows venue, time, vibe chips, transit.
@@ -213,44 +213,48 @@ class ActivityCard extends StatelessWidget {
                             ),
                             style: AppTypography.label.copyWith(fontSize: 11),
                           ),
-                        ] else ...[
+                        // SPEC-41: locked non-hotel shows exact time (no slot).
+                        ] else if (node.isLocked ||
+                            node.slotName == null) ...[
                           Text(
                             _formatTime(node.scheduledStart),
                             style: AppTypography.label,
                           ),
-                          if (node.slotName != null)
-                            Text(
-                              _slotLabel(node.slotName!),
-                              style: AppTypography.caption.copyWith(
-                                color: AppColors.muted,
-                                fontSize: 11,
-                              ),
-                              // Slot label must not wrap.
-                              softWrap: false,
-                              overflow: TextOverflow.clip,
+                        // SPEC-41: unlocked flexible node shows slot label only.
+                        ] else ...[
+                          Text(
+                            _slotLabel(node.slotName!),
+                            style: AppTypography.caption.copyWith(
+                              color: AppColors.muted,
+                              fontSize: 11,
                             ),
-                          // SPEC-45 R3: visible NOW badge for current stop.
-                          if (isActive)
-                            Container(
-                              margin: const EdgeInsets.only(top: 4),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.accent,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                'NOW',
-                                style: AppTypography.caption.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 10,
-                                ),
-                              ),
-                            ),
+                            // Slot label must not wrap.
+                            softWrap: false,
+                            overflow: TextOverflow.clip,
+                          ),
                         ],
+                        // SPEC-45 R3: visible NOW badge for current stop.
+                        // Applies to all card types including hotels.
+                        if (isActive)
+                          Container(
+                            margin: const EdgeInsets.only(top: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.accent,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              'NOW',
+                              style: AppTypography.caption.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ),
