@@ -1451,8 +1451,13 @@ void main() {
       ),
     );
 
-    expect(find.byTooltip('Cancel this activity'), findsOneWidget);
-    await tester.tap(find.byTooltip('Cancel this activity'));
+    // SPEC-45: cancel is now in the overflow menu as 'Skip / Cancel'.
+    final moreButton = find.byTooltip('More actions');
+    expect(moreButton, findsOneWidget);
+    await tester.tap(moreButton);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Skip / Cancel'));
+    await tester.pumpAndSettle();
     expect(cancels, 1);
 
     final locked = TripNode(
@@ -1476,7 +1481,15 @@ void main() {
         ),
       ),
     );
-    expect(find.byTooltip('Cancel this activity'), findsNothing);
+    // SPEC-45: locked cards show overflow but Skip / Cancel is absent.
+    final lockedMore = find.byTooltip('More actions');
+    expect(lockedMore, findsOneWidget);
+    await tester.tap(lockedMore);
+    await tester.pumpAndSettle();
+    expect(find.text('Skip / Cancel'), findsNothing);
+    // Dismiss the menu.
+    await tester.tapAt(Offset.zero);
+    await tester.pumpAndSettle();
     expect(cancels, 1);
   });
 
@@ -1507,7 +1520,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Cancel this activity'));
+    // SPEC-45: open overflow menu, then tap Skip / Cancel.
+    await tester.tap(find.byTooltip('More actions'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Skip / Cancel'));
     await tester.pumpAndSettle();
     expect(find.text('Cancel this activity?'), findsOneWidget);
     verifyNever(
@@ -1547,7 +1563,9 @@ void main() {
         fromCache: false,
       ),
     );
-    await tester.tap(find.byTooltip('Cancel this activity'));
+    await tester.tap(find.byTooltip('More actions'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Skip / Cancel'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Cancel activity'));
     await tester.pumpAndSettle();

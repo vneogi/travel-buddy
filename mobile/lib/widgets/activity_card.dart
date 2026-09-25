@@ -5,6 +5,7 @@ import 'dart:math' as math;
 import '../core/destination_tz.dart';
 import '../data/models.dart';
 import '../features/itinerary/current_window.dart';
+import '../features/itinerary/micro_location_label.dart';
 import '../offline/offline_database.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
@@ -26,6 +27,22 @@ IconData _bookingIcon(String? bookingType) {
   }
 }
 
+/// Title-case booking type label for the badge.
+String _bookingLabel(String? bookingType) {
+  switch (bookingType) {
+    case 'flight':
+      return 'Flight';
+    case 'hotel':
+      return 'Hotel';
+    case 'train':
+      return 'Train';
+    case 'tour':
+      return 'Tour';
+    default:
+      return 'Booking';
+  }
+}
+
 int _hotelNights(TripNode node) {
   final checkIn = toDestinationLocal(node.scheduledStart, node.geoRegion);
   final checkout = toDestinationLocal(
@@ -37,12 +54,22 @@ int _hotelNights(TripNode node) {
   return math.max(1, endDate.difference(startDate).inDays);
 }
 
-String _dayMonth(DateTime dt) {
-  const months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-  ];
-  return '${dt.day} ${months[dt.month - 1]}';
+const _weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const _months = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
+
+String _dayMonth(DateTime dt) => '${dt.day} ${_months[dt.month - 1]}';
+
+/// Format as "Fri 2 Oct, 12:00" in destination-local.
+String _dateTime(DateTime utc, String? geoRegion) {
+  final local = toDestinationLocal(utc, geoRegion);
+  final wd = _weekdays[local.weekday - 1];
+  final dm = '${local.day} ${_months[local.month - 1]}';
+  final hm = '${local.hour.toString().padLeft(2, "0")}:'
+      '${local.minute.toString().padLeft(2, "0")}';
+  return '$wd $dm, $hm';
 }
 
 String _hotelStaySummary(TripNode node) {
@@ -52,7 +79,7 @@ String _hotelStaySummary(TripNode node) {
     node.geoRegion,
   );
   final noun = nights == 1 ? 'night' : 'nights';
-  return '$nights $noun · checkout ${_dayMonth(checkout)}';
+  return '$nights $noun \u00b7 checkout ${_dayMonth(checkout)}';
 }
 
 /// Timeline activity card. Shows venue, time, vibe chips, transit.
@@ -66,11 +93,12 @@ class ActivityCard extends StatelessWidget {
   final VoidCallback? onTapRecordOutcome;
   final VoidCallback? onTapEditBooking;
   final VoidCallback? onTapDeleteBooking;
-  final bool isThinking; // show shimmer for heavy model calls
+  final VoidCallback? onTapDetails;
   final bool isLoved; // filled heart once the user has loved this venue
   final NodeOutcome? recordedOutcome;
   final bool isRecordingOutcome;
-  final DateTime? now;
+  final bool isContinuation; // true for repeated hotel coverage dates
+  final DateTime? now; // injectable for tests
 
   const ActivityCard({
     super.key,
@@ -80,12 +108,13 @@ class ActivityCard extends StatelessWidget {
     this.onTapCancel,
     this.onTapLoved,
     this.onTapRecordOutcome,
-    this.isThinking = false,
     this.isLoved = false,
     this.recordedOutcome,
     this.isRecordingOutcome = false,
     this.onTapEditBooking,
     this.onTapDeleteBooking,
+    this.onTapDetails,
+    this.isContinuation = false,
     this.now,
   });
 
@@ -97,6 +126,7 @@ class ActivityCard extends StatelessWidget {
     final isSkipped = node.status == NodeStatus.skipped;
     final canRecordOutcome =
         nodeCanRecordOutcome(node, currentTime, recordedOutcome);
+    final friendlyLocation = friendlyMicroLocation(node.microLocation);
 
     return Dismissible(
       key: ValueKey(node.nodeId),
@@ -117,298 +147,372 @@ class ActivityCard extends StatelessWidget {
         color: AppColors.primary.withValues(alpha: 0.1),
         child: const Icon(Icons.swap_horiz, color: AppColors.primary),
       ),
-      child: Container(
-        margin: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.base,
-          vertical: AppSpacing.xs,
-        ),
-        decoration: BoxDecoration(
-          color: AppColors.card,
-          borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
-          border: isActive
-              ? Border(left: BorderSide(color: AppColors.accent, width: 4))
-              : node.isLocked
-                  ? Border.all(color: AppColors.accent.withValues(alpha: 0.3))
-                  : null,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Opacity(
-          opacity: isCompleted || isSkipped ? 0.5 : 1.0,
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.base),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Time rail
-                SizedBox(
-                  width: 68,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // SPEC-10: labelled dual timestamps for hotels
-                      if (node.nodeKind == 'booking' &&
-                          node.bookingType == 'hotel') ...[
-                        Text(
-                          'Check-in',
-                          style: AppTypography.caption.copyWith(
-                            color: AppColors.muted,
-                            fontSize: 9,
-                          ),
-                        ),
-                        Text(
-                          _formatTime(node.scheduledStart),
-                          style: AppTypography.counter.copyWith(
-                            color: isActive ? AppColors.accent : AppColors.muted,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Check-out',
-                          style: AppTypography.caption.copyWith(
-                            color: AppColors.muted,
-                            fontSize: 9,
-                          ),
-                        ),
-                        Text(
-                          _formatTime(node.scheduledStart
-                              .add(Duration(minutes: node.durationMinutes))),
-                          style: AppTypography.caption.copyWith(
-                            color: AppColors.muted,
-                            fontSize: 10,
-                          ),
-                        ),
-                      ] else if (node.isLocked) ...[
-                        // Locked non-hotel booking: exact destination-local time.
-                        Text(
-                          _formatTime(node.scheduledStart),
-                          style: AppTypography.counter.copyWith(
-                            color: isActive ? AppColors.accent : AppColors.muted,
-                          ),
-                        ),
-                      ] else ...[
-                        // SPEC-41: flexible node — slot name if available,
-                        // otherwise fall back to exact time.
-                        Text(
-                          node.slotName != null
-                              ? _slotLabel(node.slotName!)
-                              : _formatTime(node.scheduledStart),
-                          style: AppTypography.counter.copyWith(
-                            color: isActive ? AppColors.accent : AppColors.muted,
-                          ),
-                        ),
-                      ],
-                      if (isActive)
-                        Container(
-                          margin: const EdgeInsets.only(top: AppSpacing.xs),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.accent,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            'NOW',
+      child: GestureDetector(
+        onTap: onTapDetails,
+        child: Container(
+          margin: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.base,
+            vertical: AppSpacing.xs,
+          ),
+          decoration: BoxDecoration(
+            color: AppColors.card,
+            borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+            border: isActive
+                ? Border(left: BorderSide(color: AppColors.accent, width: 4))
+                : node.isLocked
+                    ? Border.all(color: AppColors.accent.withValues(alpha: 0.3))
+                    : null,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Opacity(
+            opacity: isCompleted || isSkipped ? 0.5 : 1.0,
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.base),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Time rail
+                  SizedBox(
+                    width: 68,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // SPEC-45 item 6: hotels show destination-local date+time
+                        if (node.nodeKind == 'booking' &&
+                            node.bookingType == 'hotel') ...[
+                          Text(
+                            'Check-in',
                             style: AppTypography.caption.copyWith(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                // Content
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              node.venueName,
-                              style: isSkipped
-                                  ? AppTypography.h2.copyWith(
-                                      decoration: TextDecoration.lineThrough)
-                                  : AppTypography.h2,
-                            ),
-                          ),
-                          if (node.isLocked)
-                            Icon(Icons.lock, size: 16, color: AppColors.accent),
-                          // SPEC-10: booking type icon
-                          if (node.nodeKind == 'booking')
-                            Padding(
-                              padding: const EdgeInsets.only(left: 4),
-                              child: Icon(
-                                _bookingIcon(node.bookingType),
-                                size: 16,
-                                color: AppColors.accent,
-                              ),
-                            ),
-                          // Visible swap affordance — swipe still works, but the
-                          // gesture alone was undiscoverable.
-                          if (onTapSwap != null && !node.isLocked && !isCompleted && !isSkipped)
-                            IconButton(
-                              icon: const Icon(Icons.swap_horiz, size: 20),
-                              color: AppColors.primary,
-                              tooltip: 'Swap this activity',
-                              visualDensity: VisualDensity.compact,
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                              onPressed: () {
-                                HapticFeedback.lightImpact();
-                                onTapSwap!.call();
-                              },
-                            ),
-                          if (onTapCancel != null &&
-                              !node.isLocked &&
-                              !isCompleted &&
-                              !isSkipped)
-                            IconButton(
-                              icon: const Icon(Icons.cancel_outlined, size: 20),
                               color: AppColors.muted,
-                              tooltip: 'Cancel this activity',
-                              visualDensity: VisualDensity.compact,
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(
-                                minWidth: 36,
-                                minHeight: 36,
-                              ),
-                              onPressed: () {
-                                HapticFeedback.lightImpact();
-                                onTapCancel!.call();
-                              },
+                              fontSize: 9,
                             ),
-                          if (onTapLoved != null && !isCompleted && !isSkipped)
-                            IconButton(
-                              icon: Icon(
-                                isLoved ? Icons.favorite : Icons.favorite_border,
-                                size: 20,
-                              ),
-                              color: isLoved ? AppColors.danger : AppColors.muted,
-                              tooltip: isLoved ? 'Loved' : 'Love this place',
-                              visualDensity: VisualDensity.compact,
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                              onPressed: () {
-                                HapticFeedback.lightImpact();
-                                onTapLoved!.call();
-                              },
-                            ),
-                          // SPEC-12: Driver card button
-        IconButton(
-          icon: const Icon(Icons.directions_car_outlined, size: 20),
-          tooltip: 'Show driver card',
-          onPressed: () {
-            final tripId = GoRouterState.of(context).pathParameters['tripId'] ?? '';
-            context.push('/trip/$tripId/card/${node.venueId ?? node.venueName}');
-          },
-        ),
-                        ],
-                      ),
-                      // SPEC-10: booking badge
-                      if (node.nodeKind == 'booking') ...[
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            '[BOOKING: ${node.bookingType?.toUpperCase() ?? "OTHER"}]',
+                          ),
+                          Text(
+                            _dateTime(node.scheduledStart, node.geoRegion),
+                            style: AppTypography.label.copyWith(fontSize: 11),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Check-out',
                             style: AppTypography.caption.copyWith(
+                              color: AppColors.muted,
+                              fontSize: 9,
+                            ),
+                          ),
+                          Text(
+                            _dateTime(
+                              node.scheduledStart
+                                  .add(Duration(minutes: node.durationMinutes)),
+                              node.geoRegion,
+                            ),
+                            style: AppTypography.label.copyWith(fontSize: 11),
+                          ),
+                        // SPEC-41: locked non-hotel shows exact time (no slot).
+                        ] else if (node.isLocked ||
+                            node.slotName == null) ...[
+                          Text(
+                            _formatTime(node.scheduledStart),
+                            style: AppTypography.label,
+                          ),
+                        // SPEC-41: unlocked flexible node shows slot label only.
+                        ] else ...[
+                          Text(
+                            _slotLabel(node.slotName!),
+                            style: AppTypography.caption.copyWith(
+                              color: AppColors.muted,
+                              fontSize: 11,
+                            ),
+                            // Slot label must not wrap.
+                            softWrap: false,
+                            overflow: TextOverflow.clip,
+                          ),
+                        ],
+                        // SPEC-45 R3: visible NOW badge for current stop.
+                        // Applies to all card types including hotels.
+                        if (isActive)
+                          Container(
+                            margin: const EdgeInsets.only(top: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
                               color: AppColors.accent,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              'NOW',
+                              style: AppTypography.caption.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.base),
+                  // Content
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Title row: venue name + lock + booking icon + swap + overflow
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                node.venueName,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: isSkipped
+                                    ? AppTypography.h2.copyWith(
+                                        decoration: TextDecoration.lineThrough)
+                                    : AppTypography.h2,
+                              ),
+                            ),
+                            if (node.isLocked)
+                              Icon(Icons.lock, size: 16, color: AppColors.accent),
+                            // SPEC-10: booking type icon
+                            if (node.nodeKind == 'booking')
+                              Padding(
+                                padding: const EdgeInsets.only(left: 4),
+                                child: Icon(
+                                  _bookingIcon(node.bookingType),
+                                  size: 16,
+                                  color: AppColors.accent,
+                                ),
+                              ),
+                            // SPEC-45 item 3: one inline Swap (44dp target)
+                            if (onTapSwap != null &&
+                                !node.isLocked &&
+                                !isCompleted &&
+                                !isSkipped)
+                              SizedBox(
+                                width: 44,
+                                height: 44,
+                                child: IconButton(
+                                  icon: const Icon(Icons.swap_horiz, size: 20),
+                                  color: AppColors.primary,
+                                  tooltip: 'Swap this activity',
+                                  padding: EdgeInsets.zero,
+                                  onPressed: () {
+                                    HapticFeedback.lightImpact();
+                                    onTapSwap!.call();
+                                  },
+                                ),
+                              ),
+                            // SPEC-45 item 3: overflow for remaining actions
+                            _buildOverflowMenu(context, isCompleted, isSkipped),
+                          ],
+                        ),
+                        // SPEC-45 item 4: booking badge (title case, no debug chrome)
+                        if (node.nodeKind == 'booking') ...[
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.accent.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                _bookingLabel(node.bookingType),
+                                style: AppTypography.caption.copyWith(
+                                  color: AppColors.accent,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                          if (!isContinuation) ...[
+                            Padding(
+                              padding: const EdgeInsets.only(top: AppSpacing.xs),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (onTapEditBooking != null)
+                                    TextButton.icon(
+                                      onPressed: onTapEditBooking,
+                                      icon: const Icon(Icons.edit, size: 16),
+                                      label: const Text('Edit'),
+                                    ),
+                                  if (onTapDeleteBooking != null)
+                                    TextButton.icon(
+                                      onPressed: onTapDeleteBooking,
+                                      icon: const Icon(Icons.delete_outline, size: 16),
+                                      label: const Text('Delete'),
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: AppColors.danger,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ] else if (node.bookingType == 'hotel') ...[
+                            Padding(
+                              padding: const EdgeInsets.only(top: AppSpacing.xs),
+                              child: Text(
+                                'Continued stay',
+                                style: AppTypography.caption.copyWith(
+                                  color: AppColors.muted,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                        // SPEC-45 item 4: friendly micro_location (never snake_case)
+                        if (friendlyLocation != null) ...[
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(friendlyLocation, style: AppTypography.caption),
+                        ],
+                        if (node.nodeKind == 'booking' &&
+                            node.bookingType == 'hotel') ...[
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(_hotelStaySummary(node), style: AppTypography.caption),
+                        ],
+                        if (node.bookingNotes != null &&
+                            node.bookingNotes!.isNotEmpty) ...[
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(node.bookingNotes!, style: AppTypography.caption),
+                        ],
+                        // SPEC-45 item 3: max 2 vibe chips on card; rest on details.
+                        if (node.vibeTags.isNotEmpty) ...[
+                          const SizedBox(height: AppSpacing.sm),
+                          Wrap(
+                            spacing: AppSpacing.xs,
+                            runSpacing: AppSpacing.xs,
+                            children: [
+                              ...node.vibeTags.take(2).map((tag) => _VibeChip(tag)),
+                              if (node.vibeTags.length > 2)
+                                _VibeChip('+${node.vibeTags.length - 2}'),
+                            ],
+                          ),
+                        ],
+                        if (recordedOutcome != null) ...[
+                          const SizedBox(height: AppSpacing.sm),
+                          Text(
+                            recordedOutcome!.wasVisited
+                                ? 'Visited'
+                                : 'Skipped: ${skipReasonLabels[recordedOutcome!.reason] ?? recordedOutcome!.reason}',
+                            style: AppTypography.caption.copyWith(
+                              color: AppColors.ink,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(top: AppSpacing.xs),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (onTapEditBooking != null)
-                                TextButton.icon(
-                                  onPressed: onTapEditBooking,
-                                  icon: const Icon(Icons.edit, size: 16),
-                                  label: const Text('Edit'),
-                                ),
-                              if (onTapDeleteBooking != null)
-                                TextButton.icon(
-                                  onPressed: onTapDeleteBooking,
-                                  icon: const Icon(Icons.delete_outline, size: 16),
-                                  label: const Text('Delete'),
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: AppColors.danger,
-                                  ),
-                                ),
-                            ],
+                        ] else if (canRecordOutcome &&
+                            onTapRecordOutcome != null) ...[
+                          const SizedBox(height: AppSpacing.sm),
+                          OutlinedButton(
+                            onPressed: isRecordingOutcome
+                                ? null
+                                : () {
+                                    HapticFeedback.lightImpact();
+                                    onTapRecordOutcome!.call();
+                                  },
+                            child: Text(
+                              isRecordingOutcome
+                                  ? 'Saving outcome...'
+                                  : 'Did this happen?',
+                            ),
                           ),
-                        ),
+                        ],
                       ],
-                      if (node.microLocation != null) ...[
-                        const SizedBox(height: AppSpacing.xs),
-                        Text(node.microLocation!, style: AppTypography.caption),
-                      ],
-                      if (node.nodeKind == 'booking' &&
-                          node.bookingType == 'hotel') ...[
-                        const SizedBox(height: AppSpacing.xs),
-                        Text(_hotelStaySummary(node), style: AppTypography.caption),
-                      ],
-                      if (node.bookingNotes != null &&
-                          node.bookingNotes!.isNotEmpty) ...[
-                        const SizedBox(height: AppSpacing.xs),
-                        Text(node.bookingNotes!, style: AppTypography.caption),
-                      ],
-                      if (node.vibeTags.isNotEmpty) ...[
-                        const SizedBox(height: AppSpacing.sm),
-                        Wrap(
-                          spacing: AppSpacing.xs,
-                          runSpacing: AppSpacing.xs,
-                          children: node.vibeTags.map((tag) => _VibeChip(tag)).toList(),
-                        ),
-                      ],
-                      if (recordedOutcome != null) ...[
-                        const SizedBox(height: AppSpacing.sm),
-                        Text(
-                          recordedOutcome!.wasVisited
-                              ? 'Visited'
-                              : 'Skipped: ${skipReasonLabels[recordedOutcome!.reason] ?? recordedOutcome!.reason}',
-                          style: AppTypography.caption.copyWith(
-                            color: AppColors.ink,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ] else if (canRecordOutcome &&
-                          onTapRecordOutcome != null) ...[
-                        const SizedBox(height: AppSpacing.sm),
-                        OutlinedButton(
-                          onPressed: isRecordingOutcome
-                              ? null
-                              : () {
-                                  HapticFeedback.lightImpact();
-                                  onTapRecordOutcome!.call();
-                                },
-                          child: Text(
-                            isRecordingOutcome
-                                ? 'Saving outcome…'
-                                : 'Did this happen?',
-                          ),
-                        ),
-                      ],
-                    ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  /// SPEC-45 item 3: overflow menu for skip/cancel, love, driver card.
+  Widget _buildOverflowMenu(
+    BuildContext context,
+    bool isCompleted,
+    bool isSkipped,
+  ) {
+    final items = <PopupMenuEntry<String>>[];
+
+    if (onTapCancel != null && !node.isLocked && !isCompleted && !isSkipped) {
+      items.add(const PopupMenuItem(
+        value: 'cancel',
+        child: ListTile(
+          leading: Icon(Icons.cancel_outlined, size: 20),
+          title: Text('Skip / Cancel'),
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+        ),
+      ));
+    }
+
+    if (onTapLoved != null && !isCompleted && !isSkipped) {
+      items.add(PopupMenuItem(
+        value: 'love',
+        child: ListTile(
+          leading: Icon(
+            isLoved ? Icons.favorite : Icons.favorite_border,
+            size: 20,
+            color: isLoved ? AppColors.danger : null,
+          ),
+          title: Text(isLoved ? 'Loved' : 'Love this place'),
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+        ),
+      ));
+    }
+
+    // Driver card -- always available
+    items.add(const PopupMenuItem(
+      value: 'driver',
+      child: ListTile(
+        leading: Icon(Icons.directions_car_outlined, size: 20),
+        title: Text('Driver card'),
+        dense: true,
+        contentPadding: EdgeInsets.zero,
+      ),
+    ));
+
+    if (items.isEmpty) return const SizedBox.shrink();
+
+    return SizedBox(
+      width: 44,
+      height: 44,
+      child: PopupMenuButton<String>(
+        icon: const Icon(Icons.more_vert, size: 20),
+        tooltip: 'More actions',
+        padding: EdgeInsets.zero,
+        onSelected: (value) {
+          HapticFeedback.lightImpact();
+          switch (value) {
+            case 'cancel':
+              onTapCancel?.call();
+            case 'love':
+              onTapLoved?.call();
+            case 'driver':
+              final tripId =
+                  GoRouterState.of(context).pathParameters['tripId'] ?? '';
+              context.push(
+                '/trip/$tripId/card/${node.venueId ?? node.venueName}',
+              );
+          }
+        },
+        itemBuilder: (_) => items,
       ),
     );
   }

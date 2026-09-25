@@ -438,7 +438,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Night Market'), findsOneWidget);
-      expect(find.text('Cached 2h ago'), findsOneWidget);
+      expect(find.text('Last saved 2h ago'), findsOneWidget);
       expect(
         find.textContaining('Showing saved trips while offline'),
         findsOneWidget,

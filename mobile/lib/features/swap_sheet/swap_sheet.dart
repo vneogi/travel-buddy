@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers.dart';
 import '../../data/models.dart';
+import '../itinerary/micro_location_label.dart';
 import '../../theme/colors.dart';
 import '../../theme/typography.dart';
 import '../../theme/spacing.dart';
@@ -39,6 +40,7 @@ class SwapSheet extends ConsumerStatefulWidget {
 class SwapSheetState extends ConsumerState<SwapSheet> {
   List<VenueSearchResult>? _venues;
   final Set<String> _selectedVibes = {};
+  VenueSearchResult? _selectedVenue;
   String? _error;
   bool _loading = true;
 
@@ -105,6 +107,13 @@ class SwapSheetState extends ConsumerState<SwapSheet> {
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
                     child: const Text('Cancel'),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  FilledButton(
+                    onPressed: _selectedVenue == null
+                        ? null
+                        : () => Navigator.of(context).pop(_selectedVenue),
+                    child: const Text('Confirm swap'),
                   ),
                 ],
               ),
@@ -213,10 +222,11 @@ class SwapSheetState extends ConsumerState<SwapSheet> {
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  v.microLocation,
-                  style: AppTypography.caption.copyWith(color: AppColors.muted),
-                ),
+                if (friendlyMicroLocation(v.microLocation) != null)
+                  Text(
+                    friendlyMicroLocation(v.microLocation)!,
+                    style: AppTypography.caption.copyWith(color: AppColors.muted),
+                  ),
                 // SPEC-17 decision 15: explain ranking influence.
                 if (v.sponsoredBoostApplied)
                   Padding(
@@ -254,8 +264,13 @@ class SwapSheetState extends ConsumerState<SwapSheet> {
                   ),
               ],
             ),
-            trailing: const Icon(Icons.swap_horiz, color: AppColors.primary),
-            onTap: () => Navigator.of(context).pop(v),
+            trailing: _selectedVenue?.venueId == v.venueId
+                ? const Icon(Icons.check_circle, color: AppColors.primary,
+                    semanticLabel: 'Selected')
+                : const Icon(Icons.radio_button_unchecked,
+                    color: AppColors.muted),
+            onTap: () => setState(() => _selectedVenue = v),
+            selected: _selectedVenue?.venueId == v.venueId,
           ),
         );
       },

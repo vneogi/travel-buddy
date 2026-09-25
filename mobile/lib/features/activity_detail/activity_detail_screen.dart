@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../data/models.dart';
+import '../../features/itinerary/micro_location_label.dart';
 import '../../theme/colors.dart';
 import '../../theme/typography.dart';
 import '../../theme/spacing.dart';
@@ -18,6 +19,7 @@ class ActivityDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final friendlyLocation = friendlyMicroLocation(node.microLocation);
     return Scaffold(
       appBar: AppBar(title: Text(node.venueName, style: AppTypography.h2)),
       body: Padding(
@@ -36,12 +38,14 @@ class ActivityDetailScreen extends StatelessWidget {
               child: const Icon(Icons.place, size: 48, color: AppColors.primary),
             ),
             const SizedBox(height: AppSpacing.lg),
-            if (node.microLocation != null)
-              Text(node.microLocation!, style: AppTypography.caption),
+            // SPEC-45 item 4: friendly micro_location only
+            if (friendlyLocation != null)
+              Text(friendlyLocation, style: AppTypography.caption),
             const SizedBox(height: AppSpacing.sm),
             if (node.openingHours != null)
               Text('Hours: ${node.openingHours}', style: AppTypography.body),
             const SizedBox(height: AppSpacing.base),
+            // All vibe tags on details (card shows max 2).
             Wrap(
               spacing: AppSpacing.sm,
               children: node.vibeTags.map((t) => Chip(label: Text(t))).toList(),
