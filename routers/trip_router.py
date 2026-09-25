@@ -110,16 +110,21 @@ def _get_trip_command(**kwargs):
         ) from exc
 
 
-def _create_response_from_command(command) -> dict:
-    """Reconstruct the create-trip response dict from a replayed command."""
+def _build_create_response(command) -> dict:
+    """Build or replay a create-trip response from a committed command.
+
+    Both the initial response and any idempotent replay call this,
+    ensuring the JSON is identical for the same command_id.
+    """
     trip = command.trip_state
+    meta = command.response_data or {}
     return {
         "trip_id": trip.trip_id,
         "version": trip.version,
         "status": "created",
-        "message": f"Itinerary created with {len(trip.nodes)} activities",
+        "message": meta.get("message", f"Itinerary created with {len(trip.nodes)} activities"),
         "nodes": [n.model_dump(mode="json") for n in trip.nodes],
-        "locked_count": sum(1 for n in trip.nodes if n.is_locked),
+        "locked_count": meta.get("locked_count", sum(1 for n in trip.nodes if n.is_locked)),
         "party": command.party.model_dump(mode="json") if command.party else None,
     }
 
@@ -191,7 +196,7 @@ async def create_trip(
             command_payload=_request_command_payload(request),
         )
         if prior is not None:
-            return _create_response_from_command(prior)
+            return _build_create_response(prior)
 
     # SPEC-36: Corridor mode vs single-city mode
     if request.segments is not None:
@@ -268,19 +273,12 @@ async def create_trip(
         command_payload=_request_command_payload(request),
         expected_version=None,
         party=party_in,
+        response_data={
+            "message": f"Itinerary created with {len(nodes)} activities",
+            "locked_count": sum(1 for n in nodes if n.is_locked),
+        },
     )
-    trip = committed.trip_state
-    party = committed.party
-
-    return {
-        "trip_id": trip.trip_id,
-        "version": trip.version,
-        "status": "created",
-        "message": f"Itinerary created with {len(trip.nodes)} activities",
-        "nodes": [n.model_dump(mode="json") for n in trip.nodes],
-        "locked_count": sum(1 for n in trip.nodes if n.is_locked),
-        "party": party.model_dump(mode="json") if party else None,
-    }
+    return _build_create_response(committed)
 
 
 async def _create_corridor_trip(request: CreateTripRequest, user_id: str):
@@ -380,19 +378,12 @@ async def _create_corridor_trip(request: CreateTripRequest, user_id: str):
         command_payload=_request_command_payload(request),
         expected_version=None,
         party=party_in,
+        response_data={
+            "message": f"Corridor itinerary created with {len(nodes)} activities",
+            "locked_count": sum(1 for n in nodes if n.is_locked),
+        },
     )
-    trip = committed.trip_state
-    party = committed.party
-
-    return {
-        "trip_id": trip.trip_id,
-        "version": trip.version,
-        "status": "created",
-        "message": f"Corridor itinerary created with {len(trip.nodes)} activities",
-        "nodes": [n.model_dump(mode="json") for n in trip.nodes],
-        "locked_count": sum(1 for n in trip.nodes if n.is_locked),
-        "party": party.model_dump(mode="json") if party else None,
-    }
+    return _build_create_response(committed)
 
 
 def _summarize_trip(trip: TripState) -> TripSummary:
@@ -1104,16 +1095,9 @@ async def _create_range_trip(request: CreateTripRequest, user_id: str):
         command_payload=_request_command_payload(request),
         expected_version=None,
         party=party_in,
+        response_data={
+            "message": f"Itinerary created with {len(nodes)} activities over {num_days} days",
+            "locked_count": sum(1 for n in nodes if n.is_locked),
+        },
     )
-    trip = committed.trip_state
-    party = committed.party
-
-    return {
-        "trip_id": trip.trip_id,
-        "version": trip.version,
-        "status": "created",
-        "message": f"Itinerary created with {len(trip.nodes)} activities over {num_days} days",
-        "nodes": [n.model_dump(mode="json") for n in trip.nodes],
-        "locked_count": sum(1 for n in trip.nodes if n.is_locked),
-        "party": party.model_dump(mode="json") if party else None,
-    }
+    return _build_create_response(committed)

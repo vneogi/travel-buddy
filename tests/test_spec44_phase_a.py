@@ -485,61 +485,82 @@ def test_opt_in_postgres_rpc_replay_and_conflict(real_supabase_env):
         )
 
 
-# --- Regression tests added during SPEC-44 Phase A review ---
+# --- Regression tests (SPEC-44 Phase A review) ---
 
 
-def test_create_replay_returns_dict_not_trip_state(client, monkeypatch):
-    """D4: Create replay must return the same dict shape as the first create,
-    not a bare TripState."""
-    user_id = "create-replay-spec44-user"
+def test_create_city_replay_json_equals_first_response(client):
+    """Single-city create: replay JSON must exactly equal the first response,
+    including message, nodes, locked_count, party, and version."""
+    user_id = "city-replay-spec44"
     db_service.get_or_create_user(user_id)
+    body = {
+        "city": "luang_prabang_laos",
+        "start_date": "2026-10-02",
+        "end_date": "2026-10-03",
+        "initial_mood": "exploratory",
+        "command_id": "city-replay-exact",
+    }
 
-    first = client.post(
-        "/api/v1/trip/create",
-        headers={"X-Debug-User-Id": user_id},
-        json={
-            "city": "luang_prabang_laos",
-            "start_date": "2026-10-02",
-            "end_date": "2026-10-03",
-            "initial_mood": "exploratory",
-            "command_id": "create-replay-shape",
-        },
-    )
+    first = client.post("/api/v1/trip/create", headers={"X-Debug-User-Id": user_id}, json=body)
     assert first.status_code == 200
-    first_body = first.json()
-    # Verify first response has the create-response shape
-    assert "status" in first_body and first_body["status"] == "created"
-    assert "locked_count" in first_body
-    assert "party" in first_body
-    assert "version" in first_body
 
-    replay = client.post(
-        "/api/v1/trip/create",
-        headers={"X-Debug-User-Id": user_id},
-        json={
-            "city": "luang_prabang_laos",
-            "start_date": "2026-10-02",
-            "end_date": "2026-10-03",
-            "initial_mood": "exploratory",
-            "command_id": "create-replay-shape",
-        },
-    )
+    replay = client.post("/api/v1/trip/create", headers={"X-Debug-User-Id": user_id}, json=body)
     assert replay.status_code == 200
-    replay_body = replay.json()
-    # The replay must have the same dict keys and values
-    assert replay_body["status"] == "created"
-    assert replay_body["trip_id"] == first_body["trip_id"]
-    assert replay_body["version"] == first_body["version"]
-    assert replay_body["locked_count"] == first_body["locked_count"]
-    assert replay_body["nodes"] == first_body["nodes"]
-    assert replay_body.get("party") == first_body.get("party")
+    assert replay.json() == first.json()
 
 
-def test_http_create_command_records_and_replays_idempotently(client, monkeypatch):
-    """D5: A create-trip through the HTTP endpoint must persist a trip_command
-    so that the early-exit replay returns the stored outcome, not re-executing
-    the catalog pipeline."""
-    user_id = "create-idem-spec44-user"
+def test_create_range_replay_json_equals_first_response(client):
+    """Range create: replay must reproduce the 'over N days' message."""
+    user_id = "range-replay-spec44"
+    db_service.get_or_create_user(user_id)
+    body = {
+        "city": "luang_prabang_laos",
+        "start_date": "2026-10-02",
+        "end_date": "2026-10-05",
+        "initial_mood": "exploratory",
+        "command_id": "range-replay-exact",
+    }
+
+    first = client.post("/api/v1/trip/create", headers={"X-Debug-User-Id": user_id}, json=body)
+    assert first.status_code == 200
+    assert "over" in first.json()["message"], "range create must mention day span"
+
+    replay = client.post("/api/v1/trip/create", headers={"X-Debug-User-Id": user_id}, json=body)
+    assert replay.status_code == 200
+    assert replay.json() == first.json()
+
+
+def test_create_corridor_replay_json_equals_first_response(client):
+    """Corridor create: replay must reproduce 'Corridor itinerary created'."""
+    user_id = "corridor-replay-spec44"
+    db_service.get_or_create_user(user_id)
+    body = {
+        "segments": [
+            {"geo_region": "vientiane_laos", "starts_on": "2026-10-02", "ends_on": "2026-10-03"},
+            {"geo_region": "vang_vieng_laos", "starts_on": "2026-10-04", "ends_on": "2026-10-05"},
+            {
+                "geo_region": "luang_prabang_laos",
+                "starts_on": "2026-10-06",
+                "ends_on": "2026-10-09",
+            },
+        ],
+        "command_id": "corridor-replay-exact",
+    }
+
+    first = client.post("/api/v1/trip/create", headers={"X-Debug-User-Id": user_id}, json=body)
+    assert first.status_code == 200
+    assert "Corridor" in first.json()["message"]
+
+    replay = client.post("/api/v1/trip/create", headers={"X-Debug-User-Id": user_id}, json=body)
+    assert replay.status_code == 200
+    assert replay.json() == first.json()
+
+
+def test_http_create_persists_trip_party_graph_and_command_atomically(client):
+    """A successful create via the HTTP endpoint must persist trip state,
+    party, normalized graph, and command record.  This is atomic-persistence
+    coverage, not HTTP-rollback proof (no failure injection)."""
+    user_id = "create-atomic-spec44"
     db_service.get_or_create_user(user_id)
 
     body = {
@@ -547,22 +568,16 @@ def test_http_create_command_records_and_replays_idempotently(client, monkeypatc
         "start_date": "2026-10-02",
         "end_date": "2026-10-03",
         "initial_mood": "exploratory",
-        "command_id": "create-idem-once",
+        "command_id": "create-atomic-once",
     }
-    first = client.post(
-        "/api/v1/trip/create",
-        headers={"X-Debug-User-Id": user_id},
-        json=body,
-    )
-    assert first.status_code == 200
-    trip_id = first.json()["trip_id"]
+    resp = client.post("/api/v1/trip/create", headers={"X-Debug-User-Id": user_id}, json=body)
+    assert resp.status_code == 200
+    trip_id = resp.json()["trip_id"]
 
-    # Verify graph, party, and command were persisted atomically
     assert db_service.get_trip(trip_id) is not None
     assert len(db_service.get_trip_nodes(trip_id)) > 0
     assert db_service.get_trip_party(trip_id) is not None
-    # Exactly one command recorded for this create
-    command_key = (user_id, "create-idem-once")
+    command_key = (user_id, "create-atomic-once")
     assert command_key in db_service._trip_commands
     stored = db_service._trip_commands[command_key]
     assert stored["command_type"] == "create_trip"
@@ -617,12 +632,11 @@ def test_get_trip_command_skips_state_machine_on_mutation_replay(client, monkeyp
         json=body,
     )
     assert replay.status_code == 200
-    # State machine must NOT run again for the replay
     assert calls == 1, f"state machine ran {calls} times; expected 1"
     assert replay.json() == first.json()
 
 
-def test_create_command_payload_mismatch_409(client, monkeypatch):
+def test_create_command_payload_mismatch_409(client):
     """Reusing a create command_id with a different payload must return 409."""
     user_id = "create-mismatch-spec44-user"
     db_service.get_or_create_user(user_id)
