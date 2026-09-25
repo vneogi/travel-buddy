@@ -37,6 +37,7 @@ from models.schemas import (
 )
 from services.trip_persistence import (
     CommandPayloadMismatch,
+    RerouteLimitReached,
     TripCommandResult,
     TripVersionConflict,
     command_payload_hash,
@@ -304,6 +305,8 @@ class SupabaseService:
         command_payload: dict,
         expected_version: Optional[int] = None,
         party: Optional[TripPartyIn] = None,
+        response_data: Optional[dict] = None,
+        consume_reroute: bool = False,
         failure_injector: Optional[Callable[[str], None]] = None,
     ) -> TripCommandResult:
         """Persist a trip command through the atomic PostgreSQL RPC."""
@@ -327,6 +330,8 @@ class SupabaseService:
                 "p_nodes": nodes,
                 "p_edges": edges,
                 "p_party": party.model_dump(mode="json") if party else None,
+                "p_response_data": response_data,
+                "p_consume_reroute": consume_reroute,
             },
         ).execute()
         data = result.data
@@ -338,6 +343,8 @@ class SupabaseService:
             raise TripVersionConflict(data.get("message", "trip version conflict"))
         if rpc_status == CommandPayloadMismatch.code:
             raise CommandPayloadMismatch(data.get("message", "command payload mismatch"))
+        if rpc_status == RerouteLimitReached.code:
+            raise RerouteLimitReached(data.get("message", "daily reroute limit reached"))
         if rpc_status not in {"committed", "replayed"}:
             raise RuntimeError(f"unexpected commit_trip_command response: {data!r}")
 
@@ -345,7 +352,42 @@ class SupabaseService:
         return TripCommandResult(
             trip_state=TripState(**data["trip_state"]),
             party=TripParty(**party_data) if party_data else None,
+            response_data=data.get("response_data"),
             replayed=rpc_status == "replayed",
+        )
+
+    def get_trip_command(
+        self,
+        user_id: str,
+        command_id: str,
+        command_type: str,
+        command_payload: dict,
+    ) -> Optional[TripCommandResult]:
+        """Read and validate an existing command before repeating side effects."""
+        result = (
+            self.client.table("trip_command")
+            .select("command_type,payload_hash,outcome")
+            .eq("user_id", user_id)
+            .eq("command_id", command_id)
+            .limit(1)
+            .execute()
+        )
+        if not result.data:
+            return None
+        prior = result.data[0]
+        if prior["command_type"] != command_type or prior["payload_hash"] != command_payload_hash(
+            command_payload
+        ):
+            raise CommandPayloadMismatch(
+                f"command_id {command_id} was already used with another payload"
+            )
+        outcome = prior["outcome"]
+        party_data = outcome.get("party")
+        return TripCommandResult(
+            trip_state=TripState(**outcome["trip_state"]),
+            party=TripParty(**party_data) if party_data else None,
+            response_data=outcome.get("response_data"),
+            replayed=True,
         )
 
     def get_trip(self, trip_id: str) -> Optional[TripState]:

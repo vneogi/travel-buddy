@@ -1,5 +1,6 @@
 """Bounded SPEC-44 Phase A1-A3 integrity proofs."""
 
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 import importlib
 import os
@@ -102,6 +103,42 @@ def test_same_version_allows_one_success_then_one_conflict():
     assert db.get_trip(created.trip_id).nodes[0].venue_name == "First writer"
 
 
+def test_concurrent_same_version_commits_one_effect_and_one_quota():
+    db = DatabaseService()
+    created = _commit(db, _trip()).trip_state
+    db.get_or_create_user(created.user_id)
+
+    def write(command_id: str, venue_name: str):
+        changed = created.model_copy(deep=True)
+        changed.nodes[0].venue_name = venue_name
+        return db.commit_trip_command(
+            trip_state=changed,
+            command_id=command_id,
+            command_type="change_mood",
+            command_payload={"venue_name": venue_name},
+            expected_version=1,
+            consume_reroute=True,
+        )
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        futures = [
+            pool.submit(write, "concurrent-a", "Concurrent A"),
+            pool.submit(write, "concurrent-b", "Concurrent B"),
+        ]
+    successes = []
+    conflicts = []
+    for future in futures:
+        try:
+            successes.append(future.result())
+        except TripVersionConflict as exc:
+            conflicts.append(exc)
+
+    assert len(successes) == 1
+    assert len(conflicts) == 1
+    assert db.get_or_create_user(created.user_id).daily_reroute_count == 1
+    assert db.get_trip(created.trip_id).version == 2
+
+
 def test_idempotent_replay_returns_first_result_without_second_effect():
     db = DatabaseService()
     first = _commit(db, _trip())
@@ -111,6 +148,61 @@ def test_idempotent_replay_returns_first_result_without_second_effect():
     assert replay.trip_state.model_dump() == first.trip_state.model_dump()
     assert len(db._trip_commands) == 1
     assert db.get_trip(first.trip_state.trip_id).version == 1
+
+
+def test_concurrent_same_command_returns_first_outcome_and_consumes_one_quota():
+    db = DatabaseService()
+    created = _commit(db, _trip()).trip_state
+    db.get_or_create_user(created.user_id)
+
+    def retry(label: str):
+        changed = created.model_copy(deep=True)
+        changed.nodes[0].venue_name = label
+        return db.commit_trip_command(
+            trip_state=changed,
+            command_id="same-concurrent-command",
+            command_type="change_mood",
+            command_payload={"mood": "calm"},
+            expected_version=1,
+            response_data={"status": "processed", "message": label},
+            consume_reroute=True,
+        )
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(retry, ["Outcome A", "Outcome B"]))
+
+    assert sorted(result.replayed for result in results) == [False, True]
+    assert results[0].trip_state.model_dump() == results[1].trip_state.model_dump()
+    assert results[0].response_data == results[1].response_data
+    assert db.get_or_create_user(created.user_id).daily_reroute_count == 1
+    assert db.get_trip(created.trip_id).version == 2
+
+
+def test_failed_atomic_command_does_not_consume_reroute():
+    db = DatabaseService()
+    trip = _trip()
+    db.get_or_create_user(trip.user_id)
+    db.save_trip(trip)
+
+    def fail_after_nodes(step: str) -> None:
+        if step == "trip_node":
+            raise RuntimeError("injected failure")
+
+    with pytest.raises(RuntimeError, match="injected failure"):
+        _commit(
+            db,
+            trip,
+            command_id="quota-rollback",
+            command_type="reroute",
+            command_payload={"reason": "rain"},
+            expected_version=1,
+            party=None,
+            consume_reroute=True,
+            failure_injector=fail_after_nodes,
+        )
+
+    assert db.get_or_create_user(trip.user_id).daily_reroute_count == 0
+    assert db.get_trip(trip.trip_id).version == 1
 
 
 def test_command_payload_mismatch_is_typed():
@@ -275,10 +367,59 @@ def test_http_payload_mismatch_uses_typed_409(client, monkeypatch):
     assert response.json()["detail"]["error"] == "command_payload_mismatch"
 
 
+def test_http_replay_returns_same_outcome_without_second_quota_or_state_machine(
+    client,
+    monkeypatch,
+):
+    user_id = "replay-spec44-user"
+    db_service.get_or_create_user(user_id)
+    trip = _trip(user_id)
+    db_service.save_trip(trip)
+    calls = 0
+
+    async def fake_process_event(**kwargs):
+        nonlocal calls
+        calls += 1
+        return {
+            "updated_trip_state": kwargs["trip_state"],
+            "response": "One durable outcome",
+            "routing_tier_used": "heavy",
+            "from_cache": False,
+            "schedule_warnings": ["Keep the first warning"],
+        }
+
+    monkeypatch.setattr(
+        "routers.trip_router.state_machine.process_event",
+        fake_process_event,
+    )
+    body = {
+        "trip_id": trip.trip_id,
+        "event_type": EventType.CHANGE_MOOD.value,
+        "message": "Make it calmer",
+        "command_id": "replay-once",
+        "expected_version": 1,
+    }
+    first = client.post(
+        "/api/v1/trip/event",
+        headers={"X-Debug-User-Id": user_id},
+        json=body,
+    )
+    replay = client.post(
+        "/api/v1/trip/event",
+        headers={"X-Debug-User-Id": user_id},
+        json=body,
+    )
+
+    assert first.status_code == 200
+    assert replay.status_code == 200
+    assert replay.json() == first.json()
+    assert calls == 1
+    assert db_service.get_or_create_user(user_id).daily_reroute_count == 1
+
+
 def test_migration_has_transaction_and_privilege_guards():
     sql = (
-        Path(__file__).parents[1]
-        / "supabase/migrations/0025_trip_command_integrity.sql"
+        Path(__file__).parents[1] / "supabase/migrations/0025_trip_command_integrity.sql"
     ).read_text()
     required = [
         "ADD COLUMN IF NOT EXISTS version",
@@ -287,6 +428,8 @@ def test_migration_has_transaction_and_privilege_guards():
         "SET search_path = public, pg_temp",
         "pg_advisory_xact_lock",
         "FOR UPDATE",
+        "p_consume_reroute",
+        "v_reroute_count := consume_reroute",
         "observed_duration_minutes",
         "REVOKE ALL ON FUNCTION",
         "FROM PUBLIC, anon, authenticated",

@@ -19,6 +19,8 @@ CREATE TABLE IF NOT EXISTS trip_command (
 CREATE INDEX IF NOT EXISTS idx_trip_command_trip ON trip_command(trip_id);
 
 ALTER TABLE trip_command ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON trip_command FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON trip_command TO service_role;
 
 CREATE OR REPLACE FUNCTION commit_trip_command(
     p_trip_id UUID,
@@ -30,7 +32,9 @@ CREATE OR REPLACE FUNCTION commit_trip_command(
     p_state_json JSONB,
     p_nodes JSONB,
     p_edges JSONB,
-    p_party JSONB DEFAULT NULL
+    p_party JSONB DEFAULT NULL,
+    p_response_data JSONB DEFAULT NULL,
+    p_consume_reroute BOOLEAN DEFAULT FALSE
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -46,7 +50,10 @@ DECLARE
     v_party_id UUID;
     v_party JSONB;
     v_outcome JSONB;
+    v_response_data JSONB := p_response_data;
     v_observed JSONB := '{}'::JSONB;
+    v_reroute_count INTEGER;
+    v_reroutes_remaining INTEGER;
     v_role TEXT;
 BEGIN
     v_role := COALESCE(
@@ -58,10 +65,13 @@ BEGIN
             USING ERRCODE = '42501';
     END IF;
     IF p_state_json IS NULL
+       OR octet_length(p_state_json::TEXT) > 2097152
        OR jsonb_typeof(p_nodes) IS DISTINCT FROM 'array'
        OR jsonb_typeof(p_edges) IS DISTINCT FROM 'array'
        OR jsonb_array_length(p_nodes) > 500
        OR jsonb_array_length(p_edges) > 500
+       OR octet_length(COALESCE(p_party, '{}'::JSONB)::TEXT) > 65536
+       OR octet_length(COALESCE(p_response_data, '{}'::JSONB)::TEXT) > 262144
        OR char_length(p_command_id) NOT BETWEEN 1 AND 128
        OR char_length(p_command_type) NOT BETWEEN 1 AND 64
        OR p_payload_hash !~ '^[0-9a-f]{64}$'
@@ -123,6 +133,25 @@ BEGIN
             );
         END IF;
         v_next_version := v_current_version + 1;
+        IF p_consume_reroute THEN
+            v_reroute_count := consume_reroute(p_user_id);
+            IF v_reroute_count IS NULL THEN
+                RETURN jsonb_build_object(
+                    'status', 'daily_reroute_limit_reached',
+                    'message', 'daily reroute limit reached'
+                );
+            END IF;
+            SELECT max_daily_reroutes - v_reroute_count
+              INTO v_reroutes_remaining
+              FROM user_tiers
+             WHERE user_id = p_user_id;
+            v_response_data := jsonb_set(
+                COALESCE(v_response_data, '{}'::JSONB),
+                '{reroutes_remaining}',
+                to_jsonb(v_reroutes_remaining),
+                true
+            );
+        END IF;
         v_state := jsonb_set(p_state_json, '{version}', to_jsonb(v_next_version), true);
         UPDATE trip_states
            SET state_json = v_state,
@@ -213,7 +242,8 @@ BEGIN
 
     v_outcome := jsonb_build_object(
         'trip_state', v_state,
-        'party', v_party
+        'party', v_party,
+        'response_data', v_response_data
     );
     INSERT INTO trip_command (
         command_id, user_id, trip_id, command_type, payload_hash, outcome
@@ -226,13 +256,13 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION commit_trip_command(
-    UUID, UUID, TEXT, TEXT, TEXT, INTEGER, JSONB, JSONB, JSONB, JSONB
+    UUID, UUID, TEXT, TEXT, TEXT, INTEGER, JSONB, JSONB, JSONB, JSONB, JSONB, BOOLEAN
 ) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION commit_trip_command(
-    UUID, UUID, TEXT, TEXT, TEXT, INTEGER, JSONB, JSONB, JSONB, JSONB
+    UUID, UUID, TEXT, TEXT, TEXT, INTEGER, JSONB, JSONB, JSONB, JSONB, JSONB, BOOLEAN
 ) TO service_role;
 
 -- Manual rollback:
--- DROP FUNCTION IF EXISTS commit_trip_command(UUID, UUID, TEXT, TEXT, TEXT, INTEGER, JSONB, JSONB, JSONB, JSONB);
+-- DROP FUNCTION IF EXISTS commit_trip_command(UUID, UUID, TEXT, TEXT, TEXT, INTEGER, JSONB, JSONB, JSONB, JSONB, JSONB, BOOLEAN);
 -- DROP TABLE IF EXISTS trip_command;
 -- ALTER TABLE trip_states DROP COLUMN IF EXISTS version;

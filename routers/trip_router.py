@@ -58,7 +58,11 @@ from services.corridor_itinerary import (
 )
 from config.corridors import CORRIDORS, require_corridor
 from services.db_provider import db_service
-from services.trip_persistence import CommandPayloadMismatch, TripVersionConflict
+from services.trip_persistence import (
+    CommandPayloadMismatch,
+    RerouteLimitReached,
+    TripVersionConflict,
+)
 from services.cache_service import cache_service
 from agents.state_machine import state_machine
 from security import get_current_user_id, resolve_identity, ResolvedIdentity, require_trip_owner
@@ -76,11 +80,47 @@ def _request_command_payload(request) -> dict:
 def _commit_trip_command(**kwargs):
     try:
         return db_service.commit_trip_command(**kwargs)
+    except RerouteLimitReached as exc:
+        _, _, max_reroutes = db_service.check_reroute_allowed(kwargs["trip_state"].user_id)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "error": exc.code,
+                "message": (
+                    f"You've used all {max_reroutes} daily reroutes. "
+                    "Upgrade to Pro for 50 reroutes/day, or wait until tomorrow."
+                ),
+                "resets_at": "midnight_local",
+            },
+        ) from exc
     except (TripVersionConflict, CommandPayloadMismatch) as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail={"error": exc.code, "message": str(exc)},
         ) from exc
+
+
+def _get_trip_command(**kwargs):
+    try:
+        return db_service.get_trip_command(**kwargs)
+    except CommandPayloadMismatch as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"error": exc.code, "message": str(exc)},
+        ) from exc
+
+
+def _event_response_from_command(command) -> TripEventResponse:
+    response_data = command.response_data or {
+        "status": "processed",
+        "message": "Command already processed.",
+    }
+    return TripEventResponse(
+        trip_id=command.trip_state.trip_id,
+        version=command.trip_state.version,
+        updated_nodes=command.trip_state.nodes,
+        **response_data,
+    )
 
 
 # ==============================================================================
@@ -129,6 +169,15 @@ async def create_trip(
     """Create a catalog-backed itinerary for a city or corridor."""
     user_id = identity.user_id
     db_service.get_or_create_user(user_id, identity.identity_kind)
+    if request.command_id:
+        prior = _get_trip_command(
+            user_id=user_id,
+            command_id=request.command_id,
+            command_type="create_trip",
+            command_payload=_request_command_payload(request),
+        )
+        if prior is not None:
+            return prior.trip_state
 
     # SPEC-36: Corridor mode vs single-city mode
     if request.segments is not None:
@@ -489,6 +538,16 @@ async def process_trip_event(
     # --- Ownership: authorize before doing any work or consuming quota ---
     trip = require_trip_owner(db_service.get_trip(request.trip_id), user_id)
     loaded_version = trip.version
+    is_ask = request.event_type == EventType.ASK_INFO
+    if request.command_id and not is_ask:
+        prior = _get_trip_command(
+            user_id=user_id,
+            command_id=request.command_id,
+            command_type=request.event_type.value,
+            command_payload=_request_command_payload(request),
+        )
+        if prior is not None:
+            return _event_response_from_command(prior)
 
     # --- SPEC-10: Booking mutations (no quota, no LLM) ---
     booking_mutation_events = {EventType.EDIT_BOOKING, EventType.DELETE_BOOKING}
@@ -607,11 +666,11 @@ async def process_trip_event(
                     },
                 )
 
-        # Atomic reserve -- closes the check-then-increment race. Structural
-        # events are always HEAVY and never served from cache, so reserving
-        # up front never over-charges a cache hit.
-        if db_service.consume_reroute(user_id) is None:
-            _, _, max_reroutes = db_service.check_reroute_allowed(user_id)
+        # Fail fast before expensive work. The actual quota reservation is part
+        # of commit_trip_command, so replays and losing concurrent writes never
+        # consume a second reroute.
+        allowed, _, max_reroutes = db_service.check_reroute_allowed(user_id)
+        if not allowed:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail={
@@ -647,22 +706,44 @@ async def process_trip_event(
         )
 
     # Bug #2: ASK_INFO does not save_trip or bump updated_at
-    is_ask = request.event_type == EventType.ASK_INFO
     updated_trip = result["updated_trip_state"]
+    _, remaining, _ = db_service.check_reroute_allowed(user_id)
     if not is_ask:
         updated_trip.updated_at = datetime.now(tz=timezone.utc)
+        response_data = TripEventResponse(
+            trip_id=request.trip_id,
+            version=loaded_version + 1,
+            status="processed",
+            message=result["response"],
+            routing_tier_used=result["routing_tier_used"],
+            from_cache=result["from_cache"],
+            reroutes_remaining=remaining,
+            food_disclaimer=FOOD_DISCLAIMER,
+            schedule_warnings=result.get("schedule_warnings") or [],
+            ask_response=result.get("ask_response"),
+        ).model_dump(
+            mode="json",
+            exclude={"trip_id", "version", "updated_nodes"},
+        )
         committed = _commit_trip_command(
             trip_state=updated_trip,
             command_id=request.command_id or str(uuid.uuid4()),
             command_type=request.event_type.value,
             command_payload=_request_command_payload(request),
             expected_version=(
-                request.expected_version
-                if request.expected_version is not None
-                else loaded_version
+                request.expected_version if request.expected_version is not None else loaded_version
             ),
+            response_data=response_data,
+            consume_reroute=request.event_type in structural_events,
         )
+        if committed.replayed:
+            return _event_response_from_command(committed)
         updated_trip = committed.trip_state
+        if committed.response_data is not None:
+            remaining = committed.response_data.get(
+                "reroutes_remaining",
+                remaining,
+            )
 
     db_service.log_event(
         user_id=user_id,
@@ -671,8 +752,6 @@ async def process_trip_event(
         routing_tier=result["routing_tier_used"],
         from_cache=result["from_cache"],
     )
-
-    _, remaining, _ = db_service.check_reroute_allowed(user_id)
 
     return TripEventResponse(
         trip_id=request.trip_id,

@@ -239,7 +239,7 @@ class TripEventRequest(BaseModel):
     message: str
     target_node_id: Optional[str] = None
     preferences: Optional[dict] = None
-    command_id: Optional[str] = None
+    command_id: Optional[str] = Field(default=None, min_length=1, max_length=128)
     expected_version: Optional[int] = Field(default=None, ge=1)
 
 
@@ -330,8 +330,7 @@ class CreateTripRequest(BaseModel):
     preferences: Optional[CreatePreferences] = None
     initial_mood: Optional[str] = "exploratory"
     party: Optional[TripPartyIn] = None  # SPEC-03: defaults to solo if absent
-    command_id: Optional[str] = None
-    expected_version: Optional[int] = Field(default=None, ge=1)
+    command_id: Optional[str] = Field(default=None, min_length=1, max_length=128)
 
 
 class UserTier(BaseModel):

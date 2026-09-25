@@ -25,6 +25,7 @@ from models.schemas import (
 from services.embedding_service import embedding_service
 from services.trip_persistence import (
     CommandPayloadMismatch,
+    RerouteLimitReached,
     TripCommandResult,
     TripVersionConflict,
     command_payload_hash,
@@ -174,6 +175,8 @@ class DatabaseService:
         command_payload: dict,
         expected_version: Optional[int] = None,
         party: Optional[TripPartyIn] = None,
+        response_data: Optional[dict] = None,
+        consume_reroute: bool = False,
         failure_injector: Optional[Callable[[str], None]] = None,
     ) -> TripCommandResult:
         """Copy-on-write trip unit of work with durable command semantics."""
@@ -185,7 +188,35 @@ class DatabaseService:
                 command_payload=command_payload,
                 expected_version=expected_version,
                 party=party,
+                response_data=response_data,
+                consume_reroute=consume_reroute,
                 failure_injector=failure_injector,
+            )
+
+    def get_trip_command(
+        self,
+        user_id: str,
+        command_id: str,
+        command_type: str,
+        command_payload: dict,
+    ) -> Optional[TripCommandResult]:
+        """Return a prior command before expensive or quota-bearing work."""
+        with self._trip_command_lock:
+            prior = self._trip_commands.get((user_id, command_id))
+            if prior is None:
+                return None
+            payload_hash = command_payload_hash(command_payload)
+            if prior["command_type"] != command_type or prior["payload_hash"] != payload_hash:
+                raise CommandPayloadMismatch(
+                    f"command_id {command_id} was already used with another payload"
+                )
+            outcome = prior["outcome"]
+            stored_party = outcome.get("party")
+            return TripCommandResult(
+                trip_state=TripState(**deepcopy(outcome["trip_state"])),
+                party=TripParty(**deepcopy(stored_party)) if stored_party else None,
+                response_data=deepcopy(outcome.get("response_data")),
+                replayed=True,
             )
 
     def _commit_trip_command_locked(
@@ -196,16 +227,15 @@ class DatabaseService:
         command_payload: dict,
         expected_version: Optional[int] = None,
         party: Optional[TripPartyIn] = None,
+        response_data: Optional[dict] = None,
+        consume_reroute: bool = False,
         failure_injector: Optional[Callable[[str], None]] = None,
     ) -> TripCommandResult:
         payload_hash = command_payload_hash(command_payload)
         command_key = (trip_state.user_id, command_id)
         prior = self._trip_commands.get(command_key)
         if prior is not None:
-            if (
-                prior["command_type"] != command_type
-                or prior["payload_hash"] != payload_hash
-            ):
+            if prior["command_type"] != command_type or prior["payload_hash"] != payload_hash:
                 raise CommandPayloadMismatch(
                     f"command_id {command_id} was already used with another payload"
                 )
@@ -214,6 +244,7 @@ class DatabaseService:
             return TripCommandResult(
                 trip_state=TripState(**deepcopy(outcome["trip_state"])),
                 party=TripParty(**deepcopy(stored_party)) if stored_party else None,
+                response_data=deepcopy(outcome.get("response_data")),
                 replayed=True,
             )
 
@@ -222,6 +253,7 @@ class DatabaseService:
         edges_by_trip = deepcopy(self._trip_edges)
         parties = deepcopy(self._parties)
         commands = deepcopy(self._trip_commands)
+        users = deepcopy(self._users)
 
         existing = trips.get(trip_state.trip_id)
         if existing is None:
@@ -230,9 +262,7 @@ class DatabaseService:
             next_version = 1
         else:
             compare_version = (
-                expected_version
-                if expected_version is not None
-                else trip_state.version
+                expected_version if expected_version is not None else trip_state.version
             )
             stored_version = int(existing.get("version", 1))
             if stored_version != compare_version:
@@ -240,6 +270,17 @@ class DatabaseService:
                     f"expected trip version {compare_version}, found {stored_version}"
                 )
             next_version = stored_version + 1
+
+        committed_response = deepcopy(response_data)
+        if consume_reroute:
+            user = users[trip_state.user_id]
+            if user["daily_reroute_count"] >= user["max_daily_reroutes"]:
+                raise RerouteLimitReached("daily reroute limit reached")
+            user["daily_reroute_count"] += 1
+            if committed_response is not None:
+                committed_response["reroutes_remaining"] = (
+                    user["max_daily_reroutes"] - user["daily_reroute_count"]
+                )
 
         committed_trip = trip_state.model_copy(deep=True)
         committed_trip.version = next_version
@@ -277,6 +318,7 @@ class DatabaseService:
         outcome = {
             "trip_state": trip_dict,
             "party": stored_party.model_dump(mode="json") if stored_party else None,
+            "response_data": committed_response,
         }
         commands[command_key] = {
             "command_type": command_type,
@@ -291,9 +333,11 @@ class DatabaseService:
         self._trip_edges = edges_by_trip
         self._parties = parties
         self._trip_commands = commands
+        self._users = users
         return TripCommandResult(
             trip_state=committed_trip,
             party=stored_party,
+            response_data=deepcopy(committed_response),
             replayed=False,
         )
 

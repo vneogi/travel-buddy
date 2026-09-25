@@ -28,10 +28,17 @@ class CommandPayloadMismatch(TripPersistenceError):
     code = "command_payload_mismatch"
 
 
+class RerouteLimitReached(TripPersistenceError):
+    """A structural command could not reserve quota in its transaction."""
+
+    code = "daily_reroute_limit_reached"
+
+
 @dataclass(frozen=True)
 class TripCommandResult:
     trip_state: TripState
     party: Optional[TripParty] = None
+    response_data: Optional[dict[str, Any]] = None
     replayed: bool = False
 
 
@@ -47,6 +54,16 @@ def command_payload_hash(payload: dict[str, Any]) -> str:
 
 
 class TripPersistence(Protocol):
+    def get_trip_command(
+        self,
+        user_id: str,
+        command_id: str,
+        command_type: str,
+        command_payload: dict[str, Any],
+    ) -> Optional[TripCommandResult]:
+        """Return a matching prior command or reject command ID reuse."""
+        ...
+
     def commit_trip_command(
         self,
         trip_state: TripState,
@@ -55,6 +72,8 @@ class TripPersistence(Protocol):
         command_payload: dict[str, Any],
         expected_version: Optional[int] = None,
         party: Optional[TripPartyIn] = None,
+        response_data: Optional[dict[str, Any]] = None,
+        consume_reroute: bool = False,
         failure_injector: Optional[Callable[[str], None]] = None,
     ) -> TripCommandResult:
         """Atomically persist a create or mutation and its command outcome."""
