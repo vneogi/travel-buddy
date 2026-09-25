@@ -16,9 +16,10 @@ from models.schemas import (
     TripPartyIn,
     TripState,
 )
-from routers import trip_router
 from services.database_service import DatabaseService, db_service
 from services.trip_persistence import CommandPayloadMismatch, TripVersionConflict
+
+trip_router_module = importlib.import_module("routers.trip_router")
 
 
 def _trip(user_id: str = "00000000-0000-0000-0000-000000000044") -> TripState:
@@ -273,7 +274,7 @@ def test_ask_info_does_not_bump_or_record_command(client, monkeypatch):
         }
 
     monkeypatch.setattr(
-        trip_router.state_machine,
+        trip_router_module.state_machine,
         "process_event",
         fake_process_event,
     )
@@ -310,7 +311,7 @@ def test_http_version_conflict_uses_typed_409(client, monkeypatch):
         }
 
     monkeypatch.setattr(
-        trip_router.state_machine,
+        trip_router_module.state_machine,
         "process_event",
         fake_process_event,
     )
@@ -352,7 +353,7 @@ def test_http_payload_mismatch_uses_typed_409(client, monkeypatch):
         }
 
     monkeypatch.setattr(
-        trip_router.state_machine,
+        trip_router_module.state_machine,
         "process_event",
         fake_process_event,
     )
@@ -393,7 +394,7 @@ def test_http_replay_returns_same_outcome_without_second_quota_or_state_machine(
         }
 
     monkeypatch.setattr(
-        trip_router.state_machine,
+        trip_router_module.state_machine,
         "process_event",
         fake_process_event,
     )
