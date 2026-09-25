@@ -17,6 +17,72 @@ jobs:
       - run: pip install -r requirements.txt -r requirements-dev.txt
       - run: pytest tests/
 
+  # =========================================================================
+  # SPEC-44 A6: PostgreSQL transaction proofs
+  # =========================================================================
+  postgres-proof:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: spec44_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TB_SPEC44_PG_DSN: "host=localhost port=5432 dbname=spec44_test user=postgres password=postgres"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python deps
+        run: |
+          pip install -r requirements.txt -r requirements-dev.txt
+          pip install psycopg2-binary
+
+      - name: Enable PostGIS extension
+        run: |
+          PGPASSWORD=postgres psql -h localhost -U postgres -d spec44_test \
+            -c "CREATE EXTENSION IF NOT EXISTS postgis;"
+
+      - name: Bootstrap roles and auth schema
+        run: |
+          PGPASSWORD=postgres psql -h localhost -U postgres -d spec44_test \
+            -f tests/pg_bootstrap.sql
+
+      - name: Apply migrations 0001-0025
+        run: |
+          for f in supabase/migrations/*.sql; do
+            echo "--- Applying $f ---"
+            PGPASSWORD=postgres psql -h localhost -U postgres -d spec44_test \
+              -v ON_ERROR_STOP=1 -f "$f"
+          done
+
+      - name: Run SPEC-44 PostgreSQL proofs
+        run: |
+          pytest tests/test_spec44_pg_transaction.py -v --tb=short \
+            -p no:randomly --strict-markers
+
+      - name: Verify proofs did not skip
+        run: |
+          # Re-run with --co (collect-only) and verify all were selected.
+          count=$(pytest tests/test_spec44_pg_transaction.py --co -q 2>&1 | tail -1)
+          echo "Collection: $count"
+          # If any test was skipped, the line would say "X deselected".
+          if echo "$count" | grep -q "deselected"; then
+            echo "ERROR: some proofs were deselected/skipped" && exit 1
+          fi
+
   flutter:
     runs-on: ubuntu-latest
     defaults:
