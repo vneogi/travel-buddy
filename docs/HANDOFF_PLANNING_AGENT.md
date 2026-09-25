@@ -140,9 +140,12 @@ not outrank the field-proven itinerary trust gaps for the owner's trip.
 The phone-independent delivery and airplane-mode gate passed. SPEC-38 passed
 on the owner's phone. Next tasks:
 
-1. G0 field-fix-2 is on main as `b8cf305`. Laptop Flutter verified.
-   Next: deploy hosted API, signed owner-only APK, fresh Laos 2+2+4
-   phone matrix. Do not call G0 passed from unit tests.
+1. G0 field-fix-2 is on main as `b8cf305`. SPEC-45 Phase A is on
+   main as `7939565` (laptop Flutter `61b07d0`, owner Windows 3.44.8).
+   Cloud Run was already updated for G0. Next: signed APK from this
+   merge, then phone G0 matrix plus SPEC-45 chrome. Do not call G0 or
+   SPEC-45 phone-passed from laptop tests. SPEC-45 is Flutter-only; no
+   extra Cloud Run deploy is required for this slice.
 2. SPEC-40 is done as `ebdea52`. SPEC-42 uncap is PARTIAL on main
    (`17e58ac`): catalog caps are gone and empty dates render. Do not
    reopen the five-day *starter* budget. Add/Move are a later slice.
@@ -164,10 +167,10 @@ on the owner's phone. Next tasks:
    main (`17e58ac`). Slice 2 (hotel stay display) is on main
    (`1f251a3`, merge `7b62818`). Slice 3 (named slots) is on main
    (`f1feb17`, merge `9173b23`). G0 field-fix-2 is on main (`b8cf305`).
-   Create-then-book HITL reflow remains. Hosted API/APK wait on an
-   explicit deploy of `b8cf305`. Do not start security implementation,
-   inspiration, similar-trip generation, or broader consumer work until
-   that phone gate.
+   SPEC-45 Phase A is on main (`7939565`). Create-then-book HITL
+   reflow remains. Do not start security implementation, inspiration,
+   similar-trip generation, or broader consumer work until the phone
+   gate on the new APK.
 8. Implement SPEC-44 Phase A. Make trip graph, party, compatibility projection,
    and command record one transaction; add monotonic trip version,
    `expected_version`, typed conflict, idempotent command IDs, and production

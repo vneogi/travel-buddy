@@ -15,6 +15,29 @@ other.
 Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 `#85` and so on; those numbers cannot be reconciled against `git log`.
 
+## Finding -- Sep 25 2026 -- SPEC-45 Phase A laptop Flutter verified
+
+Merged `feat/spec45-phase-a-friction` to `main` as `7939565`
+(feature head `61b07d0`). Owner Windows Flutter 3.44.8 / Dart 3.12.2
+at `61b07d0`:
+
+- `flutter analyze --no-fatal-infos`: informational lints only
+  (106 issues). Unused-import warnings from `2fdc278` are gone.
+- `test/spec10_hotel_stay_display_test.dart` and
+  `test/spec41_named_slots_test.dart` ended `All tests passed!`
+  (the remainder-4 regressions).
+- Full `flutter test` ended `All tests passed!`. Logged
+  SyncEngine / persist-loved / closed-database lines match prior
+  intentional failure-path tests and did not fail the suite.
+
+Do not call SPEC-45 phone-passed. Rebuild a signed APK from this
+merge against the existing Cloud Run URL. G0 phone matrix is still
+open on the previous APK (`770bd299...fdd6`) until that rebuild or
+a dedicated G0 retest.
+
+Untracked Windows files (`mobile/pubspec.lock`, generated l10n,
+`.worktrees/`) were present and were not part of this merge.
+
 ## Finding -- Sep 25 2026 -- G0 field-fix-2 merged; laptop Flutter verified
 
 Merged `feat/g0-field-fix-2` to `main` as `b8cf305` (feature head

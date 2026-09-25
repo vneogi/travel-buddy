@@ -138,9 +138,10 @@ see docs/HOSTED_STATE.md for the credential-safe checks.
 Success for the phone gate was an installable build using a stable hosted
 HTTPS API, with the Laos corridor and pre-cached driver cards working after
 the laptop and USB are disconnected. That gate passed on 2026-09-13. Travel
-is still Oct 2-9. Remaining work: deploy `b8cf305` (G0 field-fix-2,
-laptop Flutter verified Sep 25), signed owner-only APK, fresh Laos
-2+2+4 phone matrix. PDF intake remains deferred.
+is still Oct 2-9. G0 field-fix-2 is on `main` (`b8cf305`). SPEC-45
+Phase A is on `main` (`7939565`, laptop Flutter `61b07d0`). Rebuild
+the signed APK from this merge, then phone-check G0 plus SPEC-45
+chrome on the Laos corridor. PDF intake remains deferred.
 
 1. Device day -- **CLOSED** 2026-08-17. Brief: docs/briefs/DEVICE_DAY.md.
    Dubai raw dump 6bfa1c6; migrations 0011-0018 applied; Laos reloaded;
