@@ -20,6 +20,8 @@ Oct 2 2026.
 | `docs/RELEASE_READINESS.md` | Owner field test vs first non-owner vs public store |
 | `docs/AWAITING_VERIFICATION.md` | Dated log of what is not yet verified on device |
 | `docs/specs/SPEC-37-phone-field-test-delivery.md` | Hosted, installable, phone-independent field-test gate |
+| `docs/DATA_LAYER_ROADMAP.md` | Schema and data-layer sequence |
+| `docs/DATA_FLYWHEEL_OPERATING_MODEL.md` | How consented trip evidence becomes reviewed claims |
 | `docs/specs/` | Numbered specifications, SPEC-01 onward |
 
 ## Architecture

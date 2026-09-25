@@ -1,14 +1,17 @@
 # SPEC-44: Backend Integrity and Future-Readiness Foundation
 
-> Status: SPECIFIED. Not implemented.
+> Status: PHASE A IN REVIEW. Application code is on
+> `feat/spec44-phase-a-integrity` at `ed548b8` (draft PR #67). In-memory
+> and HTTP proofs exist. Ephemeral PostgreSQL transaction proof for
+> migration `0025_trip_command_integrity.sql` is the remaining Phase A
+> gate. Hosted 0025 is not applied.
 >
-> Sequence: SPEC-41 A3b is complete at reviewed branch head `7f25042`. SPEC-10
-> paste and flight/hotel scheduler are on main. Finish SPEC-25 grounded
-> trip-scoped Ask after laptop tests, then hosted API / signed APK
-> verification. Then implement this spec's integrity phase before normalized
-> itinerary reads, multiple devices, or a second real city. SPEC-43 remains
-> the release gate before any non-owner distribution or production LLM
-> processing of personal trip data.
+> Sequence: SPEC-45 Phase A is on main (`7939565`). SPEC-41 A3b, SPEC-10
+> paste/scheduler, and SPEC-25 grounded trip-scoped Ask are on main.
+> Close SPEC-44 Phase A (including CI Postgres proof) before normalized
+> itinerary reads, multiple devices, or a second real city. SPEC-43
+> remains the release gate before any non-owner distribution or
+> production LLM processing of personal trip data.
 >
 > This is an umbrella architecture contract. It does not replace SPEC-13
 > (region registry), SPEC-16 (normalized itinerary), SPEC-17 (claims),

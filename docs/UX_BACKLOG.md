@@ -135,28 +135,24 @@ grid) is close to ours but more complete. Fold in when the designer engages.
 **UX polish does not capture moat data.** The spine work above is shipped. The
 remaining product order is:
 
-1. SPEC-40 is merged as `ebdea52`.
-2. SPEC-41 removes known-closed and unreachable recommendations before adding
-   richer recommendation-reason UI.
-3. SPEC-10 hardens Agoda and Booking.com paste as honest partial extraction.
-4. SPEC-25 grounds the existing trip Chat before adding a broader assistant.
-5. Re-run the hosted API, signed APK, and owner-device Laos gates.
-6. SPEC-44 Phase A makes trip/party/graph writes transactional and adds
-   concurrency/idempotency before normalized reads, multiple devices, or a
-   second real city. This is backend integrity, not a new screen.
-7. SPEC-43 closes all twelve security/privacy gaps before another person uses
-   the app or production LLM processing handles personal trip data.
-8. SPEC-13, minimum SPEC-17 claims, and SPEC-20 make Bangkok a versioned city
-   pack rather than another Python/Dart exception.
-9. Only after Bangkok proves that factory, prototype SPEC-04 offline map
-   artifacts on representative devices. PMTiles/MapLibre and the object store
-   remain candidates until size, cold-start, frame, memory, battery, update,
-   and airplane-mode evidence exists.
-10. Only after SPEC-44 Phase A and the matching online command exist, consider
-    a separate SQLite mutation-command outbox. It queues typed confirmed
-    actions and surfaces conflicts; it does not perform local reflow.
-11. Only then resume map-first polish, multi-night hotel UI, inspiration,
-    learned ranking, and broader consumer work.
+1. SPEC-40, SPEC-41 Phase A, SPEC-10 paste/scheduler, SPEC-25
+   grounded trip-scoped Ask, G0 field-fix-2, and SPEC-45 Phase A are
+   on `main`.
+2. Phone-retest G0 plus SPEC-45 chrome on a signed APK from current
+   `main`.
+3. Finish SPEC-44 Phase A (PR #67) including CI PostgreSQL proofs of
+   migration 0025. Do not apply 0025 to hosted until then.
+4. SPEC-43 closes all twelve security/privacy gaps before another
+   person uses the app or production LLM processing handles personal
+   trip data.
+5. SPEC-13, minimum SPEC-17 claims, and SPEC-20 make Bangkok a
+   versioned city pack rather than another Python/Dart exception.
+6. Only after Bangkok proves that factory, prototype SPEC-04 offline
+   map artifacts on representative devices.
+7. Only after SPEC-44 Phase A and the matching online command exist,
+   consider a separate SQLite mutation-command outbox.
+8. Only then resume map-first polish, multi-night hotel UI,
+   inspiration, learned ranking, and broader consumer work.
 
 Full Vault and the map-first shell remain post-reliability unless field evidence
 changes the order.

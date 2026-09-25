@@ -10,9 +10,14 @@ successful test of a named variable.
 
 ## Current verified state
 
-Last verified: 2026-09-14 owner Android SPEC-38 pass against Cloud Run
-`travel-buddy-00004-62g` (main `fefc4ec`). Hosted Supabase schema last verified
-2026-09-06.
+Last verified: 2026-09-25 owner reported Cloud Run updated for the G0
+field-fix-2 merge (`b8cf305`). SPEC-45 Phase A is on `main` (`7939565`)
+and has not been redeployed as a separate observed revision.
+Hosted Supabase schema last verified 2026-09-06 through migration 0024.
+Migration `0025_trip_command_integrity.sql` exists on PR #67 and is
+**not applied** on hosted. SPEC-38 phone pass remains 2026-09-14
+against `travel-buddy-00004-62g` (`fefc4ec`). G0 and SPEC-45 phone
+matrices are still open.
 
 ### Hosted Supabase
 
@@ -26,6 +31,7 @@ Last verified: 2026-09-14 owner Android SPEC-38 pass against Cloud Run
 | 0022 | Applied | `trip_node.names_local` present on 2026-09-06 |
 | 0023 | Applied | Live `hybrid_venue_search` has seventh argument `filter_geo_region text` on 2026-09-06 |
 | 0024 | Applied | `signal_type.session_start` present on 2026-09-06 |
+| 0025 | Not applied | `trip_states.version`, `trip_command`, and `commit_trip_command` RPC live only on draft PR #67. Do not apply until ephemeral PostgreSQL proofs pass |
 
 The project applies SQL manually and does not have a trustworthy migration
 history table. "Applied" above means the expected live schema sentinel was
@@ -50,11 +56,14 @@ It does not prove they are configured on a hosted backend deployment.
 
 Cloud Run service `travel-buddy` in project `ultra-solution-499410-e9`,
 region `asia-south1`. Owner deployed from local `main` at `fefc4ec` on
-2026-09-14.
+2026-09-14. Owner reported a further deploy on 2026-09-25 for G0
+field-fix-2 (`b8cf305`); this repo did not observe the new revision
+id. SPEC-45 Phase A (`7939565`) is on `main` and has not been recorded
+as a separate hosted revision.
 
 | Field | Value |
 |---|---|
-| Revision | `travel-buddy-00004-62g` (100 percent traffic) |
+| Revision | Last keyboard-observed: `travel-buddy-00004-62g` (2026-09-14). Owner reported an unobserved revision on 2026-09-25 for G0. |
 | URL | `https://travel-buddy-196190001420.asia-south1.run.app` |
 | Health | HTTP 200 `GET /api/v1/health` (`status=healthy`, `venues_loaded=74`) |
 | Flags on the deploy command | `TB_DEBUG=false`, `TB_ALLOW_ANONYMOUS=true` |

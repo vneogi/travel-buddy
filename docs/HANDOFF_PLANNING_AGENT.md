@@ -5,24 +5,19 @@ Those two files are the contract. This file is only the baton: what is true
 now, what the previous planning agent already adjudicated, and what the
 next agent must not reopen in the first week.
 
-Read this file and the two contracts above. SPEC-36 through SPEC-38 and
-SPEC-40 are done. SPEC-41 Phase A is complete: A3a merged as `d1fde14` and
-A3b was reviewed at branch head `7f25042`. SPEC-10 paste is on main
-(`fc6926b`). Flight/hotel scheduler remainder is on main (`e7a0457`);
-destination-local booking times, weather empty-key, and swap canned copy
-after honest refusal are on main (`933c705`). SPEC-41 named day slots
-are on main (`f1feb17`, merge `9173b23`). G0 field-fix (slot-driven
-pack, swap candidates, hotel stay cards) is on main (`db754d9`,
-merge `2ab8d57`). Create-then-book HITL reflow remains. SPEC-25 trip-scoped grounded Ask is on main
-(`30a4270`); trip-optional Ask remains. SPEC-42 uncap / empty-date
-render is PARTIAL on main (`17e58ac`); Add/Move remain. SPEC-10 hotel
-stay display is on main (`1f251a3`, merge `7b62818`). Remainder
-sequence slices 1-3 are on main. Hosted API/APK still wait for an
-explicit deploy. After hosted/API/APK verification, SPEC-44
-Phase A makes trip persistence transactional. SPEC-43 is then the release
-foundation before any non-owner tester or the planned December launch. The
-SPEC-13/17/20 city factory follows; Bangkok proves it without a hardcoded
-exception.
+Read this file and the two contracts above. SPEC-36 through SPEC-38,
+SPEC-40, SPEC-41 Phase A, G0 field-fix-2, SPEC-25 grounded trip-scoped
+Ask, and SPEC-45 Phase A are on `main` (`551bc96`). SPEC-42 uncap /
+empty-date render is PARTIAL; Add/Move remain. Create-then-book HITL
+reflow remains. Trip-optional Ask remains.
+
+SPEC-44 Phase A application code is in draft PR #67
+(`feat/spec44-phase-a-integrity` at `ed548b8`). Planning reviews;
+Genie implements. Do not merge #67 or apply hosted migration 0025
+until ephemeral PostgreSQL transaction proofs pass. SPEC-43 is then
+the release foundation before any non-owner tester or the planned
+December launch. The SPEC-13/17/20 city factory follows; Bangkok
+proves it without a hardcoded exception.
 
 ## Who does what (unchanged)
 
@@ -73,10 +68,12 @@ Status tables: `docs/PROJECT_STATUS.md`. Device-only queue:
 `docs/HOSTED_STATE.md`. Owner-to-store launch ledger:
 `docs/RELEASE_READINESS.md`. City sequence:
 `docs/MARKET_STRATEGY.md` (Sep 2026 Banana Pancake addendum). Next
-implementation contract after the remainder sequence: hosted API/APK
-refresh from `2ab8d57` waits for an explicit deploy. G0 is not passed
-until the owner phone retests the live trip. Do not start SPEC-42
-Add/Move, SPEC-43, or SPEC-44 until that gate.
+implementation: finish SPEC-44 Phase A PostgreSQL proofs on PR #67.
+G0 is not passed until the owner phone retests the live trip on an
+APK built from current `main` (include SPEC-45 chrome). Do not start
+SPEC-42 Add/Move or SPEC-43 until SPEC-44 Phase A is closed or
+explicitly re-sequenced. Do not treat in-memory pytest as PostgreSQL
+transaction proof.
 
 ## Third-party review -- already adjudicated
 
@@ -171,11 +168,11 @@ on the owner's phone. Next tasks:
    reflow remains. Do not start security implementation, inspiration,
    similar-trip generation, or broader consumer work until the phone
    gate on the new APK.
-8. Implement SPEC-44 Phase A. Make trip graph, party, compatibility projection,
-   and command record one transaction; add monotonic trip version,
-   `expected_version`, typed conflict, idempotent command IDs, and production
-   PostgreSQL contract tests. Do this before SPEC-16 row-authoritative reads,
-   multi-device mutation, or a second real city.
+8. Finish SPEC-44 Phase A on draft PR #67 (`ed548b8`): ephemeral
+   PostgreSQL proofs of migration 0025, then merge. Do not apply 0025
+   to hosted until those proofs pass. Do this before SPEC-16
+   row-authoritative reads, multi-device mutation, or a second real
+   city.
 9. Implement SPEC-43 in bounded phases. It owns twelve verified gaps:
    server-issued anonymous auth, complete RLS, redacted LLM egress, data rights
    and retention, encrypted offline data, real sign-out, purpose consent,

@@ -38,6 +38,17 @@ a dedicated G0 retest.
 Untracked Windows files (`mobile/pubspec.lock`, generated l10n,
 `.worktrees/`) were present and were not part of this merge.
 
+## Finding -- Sep 26 2026 -- living docs track SPEC-45/46/47; SPEC-44 in review
+
+`docs/specs/SPEC-45-on-trip-visible-surface.md`,
+`SPEC-46-what-now-foreground-context.md`,
+`SPEC-47-data-operations-workbench.md`, and
+`docs/DATA_FLYWHEEL_OPERATING_MODEL.md` are now tracked so
+`test_docs_hygiene` SPEC-reference resolution matches the living
+docs. SPEC-45 Phase A remains implemented on `main` (`7939565`);
+phone APK retest is still open. SPEC-44 Phase A is draft PR #67
+(`ed548b8`); hosted migration 0025 is not applied.
+
 ## Finding -- Sep 25 2026 -- G0 field-fix-2 merged; laptop Flutter verified
 
 Merged `feat/g0-field-fix-2` to `main` as `b8cf305` (feature head
