@@ -489,20 +489,22 @@ def test_opt_in_postgres_rpc_replay_and_conflict(real_supabase_env):
 
 
 def test_create_city_replay_json_equals_first_response(client):
-    """Single-city create: replay JSON must exactly equal the first response,
-    including message, nodes, locked_count, party, and version."""
+    """Single-city create (geo_region + start_date, no end_date, no segments):
+    replay JSON must exactly equal the first response."""
     user_id = "city-replay-spec44"
     db_service.get_or_create_user(user_id)
     body = {
-        "city": "luang_prabang_laos",
+        "geo_region": "luang_prabang_laos",
         "start_date": "2026-10-02",
-        "end_date": "2026-10-03",
         "initial_mood": "exploratory",
         "command_id": "city-replay-exact",
     }
 
     first = client.post("/api/v1/trip/create", headers={"X-Debug-User-Id": user_id}, json=body)
     assert first.status_code == 200
+    msg = first.json()["message"]
+    assert "over" not in msg, f"city path must not mention day span: {msg}"
+    assert "Corridor" not in msg, f"city path must not mention corridor: {msg}"
 
     replay = client.post("/api/v1/trip/create", headers={"X-Debug-User-Id": user_id}, json=body)
     assert replay.status_code == 200
