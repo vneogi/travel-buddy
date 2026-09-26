@@ -268,7 +268,7 @@ class TestAtomicCreate:
 
         import psycopg2
 
-        with pytest.raises(psycopg2.errors.DataException):
+        with pytest.raises(psycopg2.errors.InvalidParameterValue):
             _call_commit(conn, trip_id, user_id, command_id="x" * 200)  # exceeds 128-char CHECK
         # Connection is in error state after exception; reset it.
         conn.rollback()
