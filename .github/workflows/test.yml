@@ -76,8 +76,19 @@ jobs:
 
       - name: Run SPEC-44 PostgreSQL proofs
         run: |
-          pytest tests/test_spec44_pg_transaction.py -v --tb=short \
-            --strict-markers
+          set -o pipefail
+          pytest tests/test_spec44_pg_transaction.py -v --tb=long \
+            --strict-markers --junitxml=postgres-proof.xml \
+            2>&1 | tee postgres-proof.txt
+
+      - name: Upload postgres-proof log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: postgres-proof-output
+          path: |
+            postgres-proof.txt
+            postgres-proof.xml
 
       - name: Verify zero skipped proofs
         run: |
