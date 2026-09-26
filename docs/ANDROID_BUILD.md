@@ -3,6 +3,11 @@
 Build an installable Android APK that points at the hosted Cloud Run backend.
 No emulator, no `flutter run`, no laptop required after install.
 
+For the final 1 October owner field artifact, use this guide together with
+`docs/briefs/PRE_LAOS_FINAL_RUNBOOK.md`. That runbook fixes the order:
+SPEC-44 proof/merge, hosted 0025, Cloud Run deploy, test-trip purge, Windows
+gates, app-data clear, signed build, install, and online/offline phone matrix.
+
 The Android platform under `mobile/android/` is committed. Do not run
 `flutter create` in CI. Do not regenerate the platform unless Flutter's
 Android template must be refreshed, and then commit the result.
@@ -111,6 +116,19 @@ adb install build\app\outputs\flutter-apk\app-release.apk
 
 Then disconnect USB, close any `adb reverse` or local tunnel, and launch from
 the phone home screen. Profile > API Host must show the Cloud Run hostname.
+
+For a deliberately clean owner field session, stop the old app and clear its
+SQLite caches, outbox, secure-storage identity, and prior state before the
+final install:
+
+```powershell
+adb shell am force-stop com.vneogi.travelbuddy
+adb shell pm clear com.vneogi.travelbuddy
+adb install -r build\app\outputs\flutter-apk\app-release.apk
+```
+
+This creates a fresh anonymous device identity on next launch. Run the hosted
+trip purge first and do not reopen the old APK between purge and clear.
 
 ## What to record in the PR (no secrets)
 

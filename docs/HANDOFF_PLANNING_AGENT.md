@@ -12,9 +12,11 @@ empty-date render is PARTIAL; Add/Move remain. Create-then-book HITL
 reflow remains. Trip-optional Ask remains.
 
 SPEC-44 Phase A application code is in draft PR #67
-(`feat/spec44-phase-a-integrity` at `ed548b8`). Planning reviews;
-Genie implements. Do not merge #67 or apply hosted migration 0025
-until ephemeral PostgreSQL transaction proofs pass. SPEC-43 is then
+(`feat/spec44-phase-a-integrity` at `bf13cba`). Planning reviews;
+Genie implements. The ephemeral PostgreSQL job applies migrations
+0001-0025 but still fails inside the proof step. Do not merge #67 or
+apply hosted migration 0025 until that job passes with no skipped
+proofs. SPEC-43 is then
 the release foundation before any non-owner tester or the planned
 December launch. The SPEC-13/17/20 city factory follows; Bangkok
 proves it without a hardcoded exception.
@@ -31,7 +33,9 @@ proves it without a hardcoded exception.
 
 ## Where we are
 
-Forcing function: Laos field test, 2 October.
+Forcing function: owner flies Thursday night, 1 October; Laos field test
+starts 2 October. Final sequence and clean-slate SQL:
+`docs/briefs/PRE_LAOS_FINAL_RUNBOOK.md`.
 
 Done on the October spine:
 
@@ -69,6 +73,8 @@ Status tables: `docs/PROJECT_STATUS.md`. Device-only queue:
 `docs/RELEASE_READINESS.md`. City sequence:
 `docs/MARKET_STRATEGY.md` (Sep 2026 Banana Pancake addendum). Next
 implementation: finish SPEC-44 Phase A PostgreSQL proofs on PR #67.
+After green proof: merge, apply hosted 0025 once, verify its RPC, deploy
+Cloud Run, purge old owner test trips, then build one signed APK.
 G0 is not passed until the owner phone retests the live trip on an
 APK built from current `main` (include SPEC-45 chrome). Do not start
 SPEC-42 Add/Move or SPEC-43 until SPEC-44 Phase A is closed or
@@ -168,11 +174,10 @@ on the owner's phone. Next tasks:
    reflow remains. Do not start security implementation, inspiration,
    similar-trip generation, or broader consumer work until the phone
    gate on the new APK.
-8. Finish SPEC-44 Phase A on draft PR #67 (`ed548b8`): ephemeral
-   PostgreSQL proofs of migration 0025, then merge. Do not apply 0025
-   to hosted until those proofs pass. Do this before SPEC-16
-   row-authoritative reads, multi-device mutation, or a second real
-   city.
+8. Finish SPEC-44 Phase A on draft PR #67 (`bf13cba`): fix the first
+   observed PostgreSQL proof traceback, then merge only when the job
+   passes with no skipped proofs. Apply 0025 once, verify its RPC, and
+   deploy Cloud Run before the final APK. Do not widen this to A4/A5.
 9. Implement SPEC-43 in bounded phases. It owns twelve verified gaps:
    server-issued anonymous auth, complete RLS, redacted LLM egress, data rights
    and retention, encrypted offline data, real sign-out, purpose consent,

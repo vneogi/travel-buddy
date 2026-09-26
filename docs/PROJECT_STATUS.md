@@ -116,7 +116,7 @@
 | Hours-aware scheduling and staged ranking (SPEC-41) | PHASE A COMPLETE (`d1fde14`, `7f25042`) | Create, corridor, and swap refuse known-closed or walking-unreachable target slots; day packing uses per-pair deterministic walking time and later opening windows; swap search/apply share reachability; locked non-hotel anchors remain reachable; cached `max_days` is guaranteed across weekdays and valid interest profiles |
 | Flexible trip span and sparse day editing (SPEC-42) | PARTIAL (`adc99d2`, merged `17e58ac`) | Catalog-derived date caps removed. Create accepts spans up to the 90-day sanity bound; generation fills at most five starter days; empty dates render from creationContext / corridor segments. Owner Windows flutter analyze had no errors and full flutter test was green on `adc99d2`. Add activity and cross-day Move remain; those online commands must exist before SPEC-02 can queue them offline |
 | Security, privacy and data governance foundation (SPEC-43) | SPECIFIED; AFTER LAOS BUILD, BEFORE NON-OWNER DISTRIBUTION | Owns twelve verified gaps across anonymous authentication, RLS, LLM egress, rights/retention, offline encryption, sign-out, consent, cache isolation, signal authorization, logging, abuse limits, and release transport. The current owner-only exception expires before the first external tester or December launch |
-| Backend integrity and future-readiness foundation (SPEC-44) | PHASE A IN REVIEW (PR #67, `ed548b8`) | Atomic trip/party/graph writes, optimistic version, durable command_id replay, and typed conflicts are on the branch. In-memory/HTTP proofs exist. CI ephemeral PostgreSQL proof of migration 0025 is outstanding. Hosted 0025 is not applied. A4/A5, Flutter command queue, and SPEC-43 are out of this slice |
+| Backend integrity and future-readiness foundation (SPEC-44) | PHASE A IN REVIEW (draft PR #67, `bf13cba`) | Atomic trip/party/graph writes, optimistic version, durable command_id replay, and typed conflicts are on the branch. The ephemeral PostgreSQL job now applies migrations 0001-0025 but still fails inside the proof step. Hosted 0025 is not applied. Do not merge or apply it until that job is green with no skipped proofs |
 | On-trip visible surface (SPEC-45) | PHASE A ON MAIN (`7939565`, laptop Flutter `61b07d0`) | Card IA, one Ask control, honest hotel dates/warnings, tappable details. Phone APK retest of this chrome is open. Does not own SPEC-43, money storage, GPS, map tiles, or Add/Move. Contract: `docs/specs/SPEC-45-on-trip-visible-surface.md` |
 | What Now foreground context (SPEC-46) | SPECIFIED; PHASED | Phase A uses trip stop/city plus explicit time, energy and walking context with deterministic reason codes. Phase B is one-shot foreground GPS only after SPEC-43. Contract: `docs/specs/SPEC-46-what-now-foreground-context.md` |
 | Data operations workbench (SPEC-47) | SPECIFIED; AFTER SPEC-43 + SPEC-17 | Protected internal observation review, conflicts, freshness, and versioned release manifests. Contribution prompts stay off until this exists. Operating model: `docs/DATA_FLYWHEEL_OPERATING_MODEL.md` |
@@ -126,6 +126,21 @@ written. SPEC-11, SPEC-13, SPEC-14 and SPEC-15 each claimed a number, and the
 numbers were taken by other work while they sat unimplemented.
 
 ## What is Next (Priority Order)
+
+### Final pre-Laos freeze (departure Thursday night, Oct 1)
+
+The only active implementation is SPEC-44 Phase A on draft PR #67. After its
+real PostgreSQL proof job passes: merge, apply hosted migration 0025 once,
+verify the RPC sentinel, deploy Cloud Run from that `main`, purge old owner
+test trips, and build one signed APK. Then run the G0 plus SPEC-45 online and
+airplane-mode phone matrix. The day-by-day commands, clean-slate SQL, and stop
+conditions are in `docs/briefs/PRE_LAOS_FINAL_RUNBOOK.md`.
+
+No other feature starts before departure. SPEC-42 Add/Move, SPEC-46, PDF
+intake, another city, refactors, and cosmetic backlog are frozen. A Wednesday
+change must close a phone blocker and must be followed by a rebuilt, hashed
+APK and the affected regression matrix. Thursday daytime is artifact freeze,
+real-trip preload, offline reopen, and rollback preservation.
 
 ### October path (forcing function: Laos field test, Oct 2)
 
@@ -143,10 +158,12 @@ HTTPS API, with the Laos corridor and pre-cached driver cards working after
 the laptop and USB are disconnected. That gate passed on 2026-09-13. Travel
 is still Oct 2-9. G0 field-fix-2 is on `main` (`b8cf305`). SPEC-45
 Phase A is on `main` (`7939565`, laptop Flutter `61b07d0`). SPEC-44
-Phase A is in draft PR #67 (`ed548b8`); do not merge or apply
-migration 0025 until ephemeral PostgreSQL proofs pass. Rebuild the
-signed APK from current `main`, then phone-check G0 plus SPEC-45
-chrome. After SPEC-44 Phase A closes, SPEC-43 is the non-owner
+Phase A is in draft PR #67 (`bf13cba`); the PostgreSQL job applies
+the migrations but its proof step is red. Do not merge or apply
+migration 0025 until that step passes with no skips. Rebuild the
+signed APK only after the final merged `main`, hosted migration, and
+Cloud Run deploy, then phone-check G0 plus SPEC-45 chrome. After
+SPEC-44 Phase A closes, SPEC-43 is the non-owner
 release gate. PDF intake remains deferred.
 
 1. Device day -- **CLOSED** 2026-08-17. Brief: docs/briefs/DEVICE_DAY.md.
@@ -247,10 +264,9 @@ Seed-shaped cohorts.
     `db754d9` (2026-09-24). Hosted API/APK still wait for an explicit
     deploy. G0 phone pass is not recorded. Create-then-book HITL
     reflow remains. SPEC-43/44 stay after the Laos build.
-13. SPEC-44 Phase A backend integrity -- **NEXT DATA FOUNDATION AFTER THE LAOS
-   BUILD**. Make trip graph, party, and compatibility projection one
-   transaction; add expected-version conflicts and idempotent commands before
-   normalized-row reads, multi-device use, or a second real city.
+13. SPEC-44 Phase A backend integrity -- **ACTIVE, DRAFT PR #67**. Finish the
+    real PostgreSQL proofs, merge, apply hosted 0025 once, verify, and deploy
+    before the final APK. No A4/A5 expansion in this slice.
 14. SPEC-43 security, privacy, and data governance -- **NEXT RELEASE
    FOUNDATION AFTER THE LAOS BUILD**. Complete all twelve gaps before any
    non-owner APK, production LLM processing of personal trip data, or the

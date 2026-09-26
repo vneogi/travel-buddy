@@ -14,8 +14,10 @@ Last verified: 2026-09-25 owner reported Cloud Run updated for the G0
 field-fix-2 merge (`b8cf305`). SPEC-45 Phase A is on `main` (`7939565`)
 and has not been redeployed as a separate observed revision.
 Hosted Supabase schema last verified 2026-09-06 through migration 0024.
-Migration `0025_trip_command_integrity.sql` exists on PR #67 and is
-**not applied** on hosted. SPEC-38 phone pass remains 2026-09-14
+Migration `0025_trip_command_integrity.sql` exists on draft PR #67
+(`bf13cba`) and is **not applied** on hosted. Its CI database reaches
+the proof step after applying migrations 0001-0025, but that proof step
+is still red. SPEC-38 phone pass remains 2026-09-14
 against `travel-buddy-00004-62g` (`fefc4ec`). G0 and SPEC-45 phone
 matrices are still open.
 
@@ -31,7 +33,7 @@ matrices are still open.
 | 0022 | Applied | `trip_node.names_local` present on 2026-09-06 |
 | 0023 | Applied | Live `hybrid_venue_search` has seventh argument `filter_geo_region text` on 2026-09-06 |
 | 0024 | Applied | `signal_type.session_start` present on 2026-09-06 |
-| 0025 | Not applied | `trip_states.version`, `trip_command`, and `commit_trip_command` RPC live only on draft PR #67. Do not apply until ephemeral PostgreSQL proofs pass |
+| 0025 | Not applied | `trip_states.version`, `trip_command`, and `commit_trip_command` RPC live only on draft PR #67 (`bf13cba`). Do not apply until the ephemeral PostgreSQL proof step passes with no skips |
 
 The project applies SQL manually and does not have a trustworthy migration
 history table. "Applied" above means the expected live schema sentinel was
@@ -86,6 +88,15 @@ LLM call. LLM provider readiness remains unverified even if the startup
 boolean was true. The grounded trip-scoped remainder in SPEC-25 requires both
 provider reachability and retrieval-backed output; provider switching remains
 later work.
+
+### Final owner-field-test deployment order
+
+After PR #67 is green and merged: apply migration 0025 once, run its schema
+and service-role RPC sentinels, deploy Cloud Run from that exact `main`, and
+record the revision. Only then purge old owner test trips and build the final
+signed APK. The transaction-safe cleanup SQL and phone-data reset are in
+`docs/briefs/PRE_LAOS_FINAL_RUNBOOK.md`. The purge preserves users, venues,
+dishes, taxonomies, and reference data.
 
 SPEC-36 remains on main (PR #55). SPEC-38 phone pass is recorded in
 `docs/AWAITING_VERIFICATION.md`. Laptop `.env` is still not the hosted

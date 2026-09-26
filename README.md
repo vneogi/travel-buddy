@@ -14,6 +14,7 @@ Oct 2 2026.
 |-----------|-----|
 | `docs/PROJECT_STATUS.md` | What is built, what is next, known risks |
 | `docs/HOSTED_STATE.md` | Hosted migrations and credential-backed provider verification |
+| `docs/briefs/PRE_LAOS_FINAL_RUNBOOK.md` | Final pre-departure sequence, clean-slate SQL, Windows build, and phone gate |
 | `docs/ENGINEERING_RULES.md` | Rules earned from real bugs. Read before contributing |
 | `docs/VISION.md` | Product strategy and the data moat thesis |
 | `docs/MARKET_STRATEGY.md` | Which traveller, which cities, Banana Pancake seeding order |

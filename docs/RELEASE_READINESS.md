@@ -16,6 +16,11 @@
 > Play listing, and not world-ready. SPEC-43's owner-only exception expires
 > at the first non-owner tester or the public-launch gate, whichever comes
 > first.
+>
+> Final owner gate before the 1 October departure:
+> `docs/briefs/PRE_LAOS_FINAL_RUNBOOK.md`. The current signed APK is rollback
+> evidence, not the final artifact for G0; G0 still needs one build from the
+> final merged `main` plus the current hosted migration/deploy sequence.
 
 ## The three gates
 
@@ -24,7 +29,7 @@ feels.
 
 | Gate | Who may use it | What closes it |
 |------|----------------|----------------|
-| G0 Owner field test | The owner, on a signed APK against hosted Cloud Run | Laos reliability slices, hosted/API/APK acceptance, airplane-mode itinerary. SPEC-37 and SPEC-38 already closed the phone-independent floor. Remaining Laos-facing slices still land here. |
+| G0 Owner field test | The owner, on a signed APK against hosted Cloud Run | SPEC-37 and SPEC-38 closed the phone-independent floor. Close current G0 with SPEC-44 PostgreSQL proof and hosted rollout, a clean trip slate, one final signed/hash-recorded APK, and the G0 plus SPEC-45 online/offline phone matrix |
 | G1 First non-owner | One other person, sideloaded or Test Track, still not a store listing | Every applicable SPEC-43 gap for that distribution. No production LLM processing of personal trip data until the redacting egress and provider/region/retention contract pass. No hostel QR, no cohort, no learned ranking. |
 | G2 Public store | Anyone who can find the listing | G1 plus store, legal, support, and ops rows below. Play is the first store; App Store is a later platform, not a parallel launch. |
 

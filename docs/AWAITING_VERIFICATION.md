@@ -49,6 +49,21 @@ docs. SPEC-45 Phase A remains implemented on `main` (`7939565`);
 phone APK retest is still open. SPEC-44 Phase A is draft PR #67
 (`ed548b8`); hosted migration 0025 is not applied.
 
+## Finding -- Sep 26 2026 -- SPEC-44 PostgreSQL job reaches proofs but remains red
+
+Draft PR #67 head `bf13cba` installs PostGIS and pgvector, bootstraps the
+Supabase-compatible roles, and applies migrations 0001-0025 in its ephemeral
+PostgreSQL job. The job still exits inside the transaction-proof pytest step;
+the no-skip verification therefore does not run. Source inspection and local
+skips do not close this gate. Read the first CI traceback before another
+remainder. Hosted migration 0025 remains unapplied and PR #67 must remain
+unmerged until the proof step passes with no skipped proofs.
+
+The owner flies Thursday night, 1 October. The final sequence, hosted trip
+clean-slate SQL, Windows checkout/build commands, phone-data clear, and
+online/offline matrix now live in
+`docs/briefs/PRE_LAOS_FINAL_RUNBOOK.md`. No phone result is recorded yet.
+
 ## Finding -- Sep 25 2026 -- G0 field-fix-2 merged; laptop Flutter verified
 
 Merged `feat/g0-field-fix-2` to `main` as `b8cf305` (feature head
