@@ -223,14 +223,10 @@ def _call_commit(
             consume_reroute,
         ),
     )
-    raw = cur.fetchone()[0]
+    result = cur.fetchone()[0]
     conn.commit()
     cur.close()
-    # register_default_jsonb should decode JSONB to dict, but some
-    # psycopg2 builds return a str.  Defensive fallback.
-    if isinstance(raw, str):
-        return json.loads(raw)
-    return raw
+    return result
 
 
 def _count_rows(conn, table: str, trip_id: str) -> int:

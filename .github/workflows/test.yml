@@ -81,20 +81,6 @@ jobs:
             --strict-markers --junitxml=postgres-proof.xml \
             2>&1 | tee postgres-proof.txt
 
-      - name: Print proof output on failure
-        if: failure()
-        run: |
-          if [ -f postgres-proof.txt ]; then
-            # Extract first FAILED or ERROR block for the annotation
-            first_err=$(sed -n '/FAILED\|ERROR\|Error\|Traceback/,/^$/p' postgres-proof.txt | head -30 | tr '
-' '|')
-            echo "::error::${first_err}"
-            echo "---"
-            tail -100 postgres-proof.txt
-          else
-            echo "::error::postgres-proof.txt not found"
-          fi
-
       - name: Upload postgres-proof log
         if: always()
         uses: actions/upload-artifact@v4
