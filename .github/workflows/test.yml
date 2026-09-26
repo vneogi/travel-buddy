@@ -81,6 +81,12 @@ jobs:
             --strict-markers --junitxml=postgres-proof.xml \
             2>&1 | tee postgres-proof.txt
 
+      - name: Print proof output on failure
+        if: failure()
+        run: |
+          echo "=== LAST 100 LINES OF postgres-proof.txt ==="
+          tail -100 postgres-proof.txt 2>/dev/null || echo "postgres-proof.txt not found"
+
       - name: Upload postgres-proof log
         if: always()
         uses: actions/upload-artifact@v4
