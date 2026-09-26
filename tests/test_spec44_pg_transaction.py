@@ -29,23 +29,24 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-def _pg_connect(dsn: str | None = None, autocommit: bool = True):
-    """Return a fresh psycopg2 connection configured for service_role."""
+def _pg_connect(dsn: str | None = None):
+    """Return a fresh psycopg2 connection (autocommit OFF).
+
+    Each caller is responsible for commit/rollback.  The JWT claim
+    is set per-call inside _call_commit so it lives in the same
+    transaction as the RPC.
+    """
     import psycopg2
 
     conn = psycopg2.connect(dsn or PG_DSN)
-    conn.autocommit = autocommit
-    cur = conn.cursor()
-    # Satisfy the commit_trip_command JWT role check.
-    cur.execute("SET LOCAL request.jwt.claim.role = 'service_role'")
-    cur.close()
+    conn.autocommit = False
     return conn
 
 
 def _service_role_cursor(conn):
     """Return a cursor with service_role session variable set."""
     cur = conn.cursor()
-    cur.execute("SET LOCAL request.jwt.claim.role = 'service_role'")
+    cur.execute("SELECT set_config('request.jwt.claim.role', 'service_role', true)")
     return cur
 
 
@@ -62,11 +63,12 @@ def _ensure_user(conn, user_id: str) -> None:
     cur.execute(
         dedent("""\
             INSERT INTO user_tiers (user_id, identity_kind, max_daily_reroutes)
-            VALUES (%s, 'debug', 10)
+            VALUES (%s, 'unknown', 10)
             ON CONFLICT (user_id) DO NOTHING
         """),
         (user_id,),
     )
+    conn.commit()
     cur.close()
 
 
@@ -189,6 +191,7 @@ def _call_commit(
         ),
     )
     result = cur.fetchone()[0]
+    conn.commit()
     cur.close()
     return result
 
@@ -197,6 +200,7 @@ def _count_rows(conn, table: str, trip_id: str) -> int:
     cur = conn.cursor()
     cur.execute(f"SELECT count(*) FROM {table} WHERE trip_id = %s::UUID", (trip_id,))  # noqa: S608
     n = cur.fetchone()[0]
+    conn.commit()
     cur.close()
     return n
 
@@ -490,6 +494,7 @@ class TestGraphMutation:
         """),
             (trip_id,),
         )
+        conn.commit()
         cur.close()
 
         # Mutation replaces the graph.
@@ -526,8 +531,7 @@ class TestPrivilege:
         service_role JWT claim."""
         import psycopg2
 
-        conn = psycopg2.connect(PG_DSN)
-        conn.autocommit = True
+        conn = _pg_connect()
         trip_id = str(uuid.uuid4())
         user_id = str(uuid.uuid4())
         _ensure_user(conn, user_id)
