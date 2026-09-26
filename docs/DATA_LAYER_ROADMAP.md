@@ -366,24 +366,22 @@ for the owner's itinerary reliability work.
 
 The immediate sequence is now:
 
-1. SPEC-40 is merged as `ebdea52`;
-2. SPEC-41 Phase A hard feasibility is complete at reviewed branch head
-   `7f25042`, using structured hours, region timezones, deterministic walking,
-   city/day boundaries, and locked-anchor reachability;
-3. SPEC-10 paste and flight/hotel scheduler are on main; finish SPEC-25
-   grounded trip-scoped Ask after laptop tests;
-4. re-run hosted API, signed APK, and owner-device acceptance for the Laos
-   build;
-5. implement SPEC-44 Phase A transactional trip integrity, expected-version
-   concurrency, idempotent commands, and production persistence contracts;
-6. implement SPEC-43 before any non-owner tester or production LLM processing
-   of personal trip data;
-7. implement SPEC-13, the minimum SPEC-17 claim store, and SPEC-20 before
-   Bangkok; a second city must be one versioned pack, not another code path;
-8. collect SPEC-44 recommendation decisions only for consented subjects, while
-   learned influence remains zero;
-9. defer learned personalization until exposure, held-out evaluation, slice,
-   rollback, and minimum-evidence gates pass.
+1. G0 field-fix-2 and SPEC-45 Phase A are on `main` (`b8cf305`,
+   `7939565`). Phone APK retest of both remains open.
+2. SPEC-41 Phase A, SPEC-10 paste/scheduler, and SPEC-25 grounded
+   trip-scoped Ask are on main.
+3. Finish SPEC-44 Phase A on draft PR #67: ephemeral PostgreSQL
+   proofs of migration `0025_trip_command_integrity.sql`. Do not
+   apply 0025 to hosted until those proofs pass.
+4. implement SPEC-43 before any non-owner tester or production LLM
+   processing of personal trip data;
+5. implement SPEC-13, the minimum SPEC-17 claim store, and SPEC-20
+   before Bangkok; a second city must be one versioned pack, not
+   another code path;
+6. collect SPEC-44 recommendation decisions only for consented
+   subjects, while learned influence remains zero;
+7. defer learned personalization until exposure, held-out
+   evaluation, slice, rollback, and minimum-evidence gates pass.
 
 The offline mutation-command outbox is not an earlier shortcut. It may follow
 SPEC-44 Phase A and the corresponding online command, using the existing

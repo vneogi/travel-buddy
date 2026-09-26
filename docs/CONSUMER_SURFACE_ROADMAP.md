@@ -70,6 +70,9 @@ months. The engineering does not get harder with time; the data does.
 | SPEC-27 | Push transport, deletion and export, minimum supported client | SPEC-22, SPEC-24 |
 | SPEC-43 | Security/privacy release foundation: auth, RLS, AI egress, rights, encrypted local data, consent, isolation, logging, abuse and HTTPS | SPEC-01/02/04/05/07/24/25/27 plus the completed Laos build |
 | SPEC-44 | Backend integrity and scale seams: atomic trip graph/party writes, concurrency, idempotency, decision telemetry, embedding spaces, AI-memory boundaries, and city-factory sequencing | Laos reliability tranche; SPEC-43 gates non-owner collection and AI use; SPEC-13/17/20 own city implementation |
+| SPEC-45 | On-trip visible surface: card IA, one Ask control, honest labels/dates/warnings | SPEC-22, SPEC-26, SPEC-25, SPEC-12, SPEC-38; after G0 reliability |
+| SPEC-46 | What Now: deterministic foreground context and explainable feasible candidates; optional one-shot location later | SPEC-34, SPEC-41, SPEC-25, SPEC-45; GPS phase also requires SPEC-43 |
+| SPEC-47 | Internal data-operations workbench for observations, claims, conflicts, freshness and route coverage | SPEC-43, SPEC-17, then SPEC-13/20 for pack expansion |
 
 `docs/UX_BACKLOG.md` remains the list of screens we want to build. This roadmap
 is about what has to exist beneath them, and SPEC-22 constrains how any of it is
@@ -99,14 +102,13 @@ The immediate order after the field-test gate:
 3. SPEC-38 passed 2026-09-14 (Cloud Run `travel-buddy-00004-62g` plus signed
    APK, owner phone);
 4. SPEC-40 guided Create Trip merged as `ebdea52`;
-5. SPEC-41 makes structured hours, reachability, locks, and day boundaries hard
-   constraints before deterministic ranking;
-6. SPEC-10 adds Agoda/provider-aware paste with honest partial extraction;
-7. SPEC-25 grounds the existing trip-scoped composer in catalog and trip facts;
-8. re-verify the hosted API and APK for those slices;
-9. implement SPEC-44 Phase A transactional writes, expected-version conflicts,
-   idempotent commands, and production persistence contracts before
-   normalized-row reads, multi-device mutation, or a second city;
+5. SPEC-41 Phase A (hours, walking reachability, locks) is on main;
+6. SPEC-10 provider-aware paste and flight/hotel scheduler are on main;
+7. SPEC-25 grounds the existing trip-scoped composer (trip-optional Ask remains);
+8. SPEC-45 Phase A visible itinerary chrome is on main (`7939565`);
+   phone APK retest is open;
+9. finish SPEC-44 Phase A (PR #67) including CI PostgreSQL proofs of
+   migration 0025; do not apply 0025 to hosted yet;
 10. implement SPEC-43 before any non-owner distribution, production LLM
    processing of personal trip data, or the planned December launch;
 11. implement SPEC-13, minimum SPEC-17 claims, and SPEC-20; Bangkok must

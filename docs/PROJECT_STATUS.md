@@ -116,7 +116,10 @@
 | Hours-aware scheduling and staged ranking (SPEC-41) | PHASE A COMPLETE (`d1fde14`, `7f25042`) | Create, corridor, and swap refuse known-closed or walking-unreachable target slots; day packing uses per-pair deterministic walking time and later opening windows; swap search/apply share reachability; locked non-hotel anchors remain reachable; cached `max_days` is guaranteed across weekdays and valid interest profiles |
 | Flexible trip span and sparse day editing (SPEC-42) | PARTIAL (`adc99d2`, merged `17e58ac`) | Catalog-derived date caps removed. Create accepts spans up to the 90-day sanity bound; generation fills at most five starter days; empty dates render from creationContext / corridor segments. Owner Windows flutter analyze had no errors and full flutter test was green on `adc99d2`. Add activity and cross-day Move remain; those online commands must exist before SPEC-02 can queue them offline |
 | Security, privacy and data governance foundation (SPEC-43) | SPECIFIED; AFTER LAOS BUILD, BEFORE NON-OWNER DISTRIBUTION | Owns twelve verified gaps across anonymous authentication, RLS, LLM egress, rights/retention, offline encryption, sign-out, consent, cache isolation, signal authorization, logging, abuse limits, and release transport. The current owner-only exception expires before the first external tester or December launch |
-| Backend integrity and future-readiness foundation (SPEC-44) | SPECIFIED; PHASE A AFTER LAOS | Keeps the modular FastAPI/Postgres/pgvector architecture while adding atomic trip/party/graph writes, optimistic concurrency, idempotent commands, production-shaped persistence contracts, recommendation decision telemetry, embedding-space versioning, four explicit AI-memory planes, and the cross-spec city-factory gate. Phase A is a prerequisite for any offline mutation-command outbox; it does not authorize local reflow or learned ranking |
+| Backend integrity and future-readiness foundation (SPEC-44) | PHASE A IN REVIEW (PR #67, `ed548b8`) | Atomic trip/party/graph writes, optimistic version, durable command_id replay, and typed conflicts are on the branch. In-memory/HTTP proofs exist. CI ephemeral PostgreSQL proof of migration 0025 is outstanding. Hosted 0025 is not applied. A4/A5, Flutter command queue, and SPEC-43 are out of this slice |
+| On-trip visible surface (SPEC-45) | PHASE A ON MAIN (`7939565`, laptop Flutter `61b07d0`) | Card IA, one Ask control, honest hotel dates/warnings, tappable details. Phone APK retest of this chrome is open. Does not own SPEC-43, money storage, GPS, map tiles, or Add/Move. Contract: `docs/specs/SPEC-45-on-trip-visible-surface.md` |
+| What Now foreground context (SPEC-46) | SPECIFIED; PHASED | Phase A uses trip stop/city plus explicit time, energy and walking context with deterministic reason codes. Phase B is one-shot foreground GPS only after SPEC-43. Contract: `docs/specs/SPEC-46-what-now-foreground-context.md` |
+| Data operations workbench (SPEC-47) | SPECIFIED; AFTER SPEC-43 + SPEC-17 | Protected internal observation review, conflicts, freshness, and versioned release manifests. Contribution prompts stay off until this exists. Operating model: `docs/DATA_FLYWHEEL_OPERATING_MODEL.md` |
 
 Migration numbers are assigned when a spec is implemented, not when it is
 written. SPEC-11, SPEC-13, SPEC-14 and SPEC-15 each claimed a number, and the
@@ -139,9 +142,12 @@ Success for the phone gate was an installable build using a stable hosted
 HTTPS API, with the Laos corridor and pre-cached driver cards working after
 the laptop and USB are disconnected. That gate passed on 2026-09-13. Travel
 is still Oct 2-9. G0 field-fix-2 is on `main` (`b8cf305`). SPEC-45
-Phase A is on `main` (`7939565`, laptop Flutter `61b07d0`). Rebuild
-the signed APK from this merge, then phone-check G0 plus SPEC-45
-chrome on the Laos corridor. PDF intake remains deferred.
+Phase A is on `main` (`7939565`, laptop Flutter `61b07d0`). SPEC-44
+Phase A is in draft PR #67 (`ed548b8`); do not merge or apply
+migration 0025 until ephemeral PostgreSQL proofs pass. Rebuild the
+signed APK from current `main`, then phone-check G0 plus SPEC-45
+chrome. After SPEC-44 Phase A closes, SPEC-43 is the non-owner
+release gate. PDF intake remains deferred.
 
 1. Device day -- **CLOSED** 2026-08-17. Brief: docs/briefs/DEVICE_DAY.md.
    Dubai raw dump 6bfa1c6; migrations 0011-0018 applied; Laos reloaded;
