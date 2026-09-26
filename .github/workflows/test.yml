@@ -74,9 +74,6 @@ jobs:
               -v ON_ERROR_STOP=1 -f "$f"
           done
 
-      - name: Diagnostic -- verify RPC callable
-        run: python3 tests/pg_diagnostic.py
-
       - name: Run SPEC-44 PostgreSQL proofs
         run: |
           set -o pipefail
