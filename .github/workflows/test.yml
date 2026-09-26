@@ -84,8 +84,16 @@ jobs:
       - name: Print proof output on failure
         if: failure()
         run: |
-          echo "=== LAST 100 LINES OF postgres-proof.txt ==="
-          tail -100 postgres-proof.txt 2>/dev/null || echo "postgres-proof.txt not found"
+          if [ -f postgres-proof.txt ]; then
+            # Extract first FAILED or ERROR block for the annotation
+            first_err=$(sed -n '/FAILED\|ERROR\|Error\|Traceback/,/^$/p' postgres-proof.txt | head -30 | tr '
+' '|')
+            echo "::error::${first_err}"
+            echo "---"
+            tail -100 postgres-proof.txt
+          else
+            echo "::error::postgres-proof.txt not found"
+          fi
 
       - name: Upload postgres-proof log
         if: always()
