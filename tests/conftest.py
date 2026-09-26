@@ -120,5 +120,9 @@ def _reset_state():
     yield
     db_service._users.clear()
     db_service._trips.clear()
+    db_service._trip_nodes.clear()
+    db_service._trip_edges.clear()
+    db_service._parties.clear()
+    db_service._trip_commands.clear()
     db_service._event_log.clear()
     cache_service.clear_all()

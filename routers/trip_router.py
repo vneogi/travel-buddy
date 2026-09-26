@@ -13,6 +13,7 @@ authenticated user_id is the source of truth and trip ownership is enforced.
 
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from config.disclaimers import FOOD_DISCLAIMER
@@ -57,11 +58,88 @@ from services.corridor_itinerary import (
 )
 from config.corridors import CORRIDORS, require_corridor
 from services.db_provider import db_service
+from services.trip_persistence import (
+    CommandPayloadMismatch,
+    RerouteLimitReached,
+    TripVersionConflict,
+)
 from services.cache_service import cache_service
 from agents.state_machine import state_machine
 from security import get_current_user_id, resolve_identity, ResolvedIdentity, require_trip_owner
 
 router = APIRouter(prefix="/api/v1", tags=["trip"])
+
+
+def _request_command_payload(request) -> dict:
+    return request.model_dump(
+        mode="json",
+        exclude={"user_id", "command_id"},
+    )
+
+
+def _commit_trip_command(**kwargs):
+    try:
+        return db_service.commit_trip_command(**kwargs)
+    except RerouteLimitReached as exc:
+        _, _, max_reroutes = db_service.check_reroute_allowed(kwargs["trip_state"].user_id)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "error": exc.code,
+                "message": (
+                    f"You've used all {max_reroutes} daily reroutes. "
+                    "Upgrade to Pro for 50 reroutes/day, or wait until tomorrow."
+                ),
+                "resets_at": "midnight_local",
+            },
+        ) from exc
+    except (TripVersionConflict, CommandPayloadMismatch) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"error": exc.code, "message": str(exc)},
+        ) from exc
+
+
+def _get_trip_command(**kwargs):
+    try:
+        return db_service.get_trip_command(**kwargs)
+    except CommandPayloadMismatch as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"error": exc.code, "message": str(exc)},
+        ) from exc
+
+
+def _build_create_response(command) -> dict:
+    """Build or replay a create-trip response from a committed command.
+
+    Both the initial response and any idempotent replay call this,
+    ensuring the JSON is identical for the same command_id.
+    """
+    trip = command.trip_state
+    meta = command.response_data or {}
+    return {
+        "trip_id": trip.trip_id,
+        "version": trip.version,
+        "status": "created",
+        "message": meta.get("message", f"Itinerary created with {len(trip.nodes)} activities"),
+        "nodes": [n.model_dump(mode="json") for n in trip.nodes],
+        "locked_count": meta.get("locked_count", sum(1 for n in trip.nodes if n.is_locked)),
+        "party": command.party.model_dump(mode="json") if command.party else None,
+    }
+
+
+def _event_response_from_command(command) -> TripEventResponse:
+    response_data = command.response_data or {
+        "status": "processed",
+        "message": "Command already processed.",
+    }
+    return TripEventResponse(
+        trip_id=command.trip_state.trip_id,
+        version=command.trip_state.version,
+        updated_nodes=command.trip_state.nodes,
+        **response_data,
+    )
 
 
 # ==============================================================================
@@ -110,6 +188,15 @@ async def create_trip(
     """Create a catalog-backed itinerary for a city or corridor."""
     user_id = identity.user_id
     db_service.get_or_create_user(user_id, identity.identity_kind)
+    if request.command_id:
+        prior = _get_trip_command(
+            user_id=user_id,
+            command_id=request.command_id,
+            command_type="create_trip",
+            command_payload=_request_command_payload(request),
+        )
+        if prior is not None:
+            return _build_create_response(prior)
 
     # SPEC-36: Corridor mode vs single-city mode
     if request.segments is not None:
@@ -178,20 +265,20 @@ async def create_trip(
         nodes=nodes,
         schedule_basis="region_local_v1",
     )
-    db_service.save_trip(trip)
-
-    # SPEC-03: persist party (defaults to solo if absent)
     party_in = request.party or TripPartyIn(party_type="solo", size=1)
-    party = db_service.save_trip_party(trip.trip_id, party_in)
-
-    return {
-        "trip_id": trip.trip_id,
-        "status": "created",
-        "message": f"Itinerary created with {len(nodes)} activities",
-        "nodes": [n.model_dump(mode="json") for n in nodes],
-        "locked_count": sum(1 for n in nodes if n.is_locked),
-        "party": party.model_dump(mode="json"),
-    }
+    committed = _commit_trip_command(
+        trip_state=trip,
+        command_id=request.command_id or str(uuid.uuid4()),
+        command_type="create_trip",
+        command_payload=_request_command_payload(request),
+        expected_version=None,
+        party=party_in,
+        response_data={
+            "message": f"Itinerary created with {len(nodes)} activities",
+            "locked_count": sum(1 for n in nodes if n.is_locked),
+        },
+    )
+    return _build_create_response(committed)
 
 
 async def _create_corridor_trip(request: CreateTripRequest, user_id: str):
@@ -283,19 +370,20 @@ async def _create_corridor_trip(request: CreateTripRequest, user_id: str):
         corridor_id=corridor.corridor_id,
         segments=stored_segments,
     )
-    db_service.save_trip(trip)
-
     party_in = request.party or TripPartyIn(party_type="solo", size=1)
-    party = db_service.save_trip_party(trip.trip_id, party_in)
-
-    return {
-        "trip_id": trip.trip_id,
-        "status": "created",
-        "message": f"Corridor itinerary created with {len(nodes)} activities",
-        "nodes": [n.model_dump(mode="json") for n in nodes],
-        "locked_count": sum(1 for n in nodes if n.is_locked),
-        "party": party.model_dump(mode="json"),
-    }
+    committed = _commit_trip_command(
+        trip_state=trip,
+        command_id=request.command_id or str(uuid.uuid4()),
+        command_type="create_trip",
+        command_payload=_request_command_payload(request),
+        expected_version=None,
+        party=party_in,
+        response_data={
+            "message": f"Corridor itinerary created with {len(nodes)} activities",
+            "locked_count": sum(1 for n in nodes if n.is_locked),
+        },
+    )
+    return _build_create_response(committed)
 
 
 def _summarize_trip(trip: TripState) -> TripSummary:
@@ -454,6 +542,17 @@ async def process_trip_event(
 
     # --- Ownership: authorize before doing any work or consuming quota ---
     trip = require_trip_owner(db_service.get_trip(request.trip_id), user_id)
+    loaded_version = trip.version
+    is_ask = request.event_type == EventType.ASK_INFO
+    if request.command_id and not is_ask:
+        prior = _get_trip_command(
+            user_id=user_id,
+            command_id=request.command_id,
+            command_type=request.event_type.value,
+            command_payload=_request_command_payload(request),
+        )
+        if prior is not None:
+            return _event_response_from_command(prior)
 
     # --- SPEC-10: Booking mutations (no quota, no LLM) ---
     booking_mutation_events = {EventType.EDIT_BOOKING, EventType.DELETE_BOOKING}
@@ -572,11 +671,11 @@ async def process_trip_event(
                     },
                 )
 
-        # Atomic reserve -- closes the check-then-increment race. Structural
-        # events are always HEAVY and never served from cache, so reserving
-        # up front never over-charges a cache hit.
-        if db_service.consume_reroute(user_id) is None:
-            _, _, max_reroutes = db_service.check_reroute_allowed(user_id)
+        # Fail fast before expensive work. The actual quota reservation is part
+        # of commit_trip_command, so replays and losing concurrent writes never
+        # consume a second reroute.
+        allowed, _, max_reroutes = db_service.check_reroute_allowed(user_id)
+        if not allowed:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail={
@@ -612,11 +711,44 @@ async def process_trip_event(
         )
 
     # Bug #2: ASK_INFO does not save_trip or bump updated_at
-    is_ask = request.event_type == EventType.ASK_INFO
     updated_trip = result["updated_trip_state"]
+    _, remaining, _ = db_service.check_reroute_allowed(user_id)
     if not is_ask:
         updated_trip.updated_at = datetime.now(tz=timezone.utc)
-        db_service.save_trip(updated_trip)
+        response_data = TripEventResponse(
+            trip_id=request.trip_id,
+            version=loaded_version + 1,
+            status="processed",
+            message=result["response"],
+            routing_tier_used=result["routing_tier_used"],
+            from_cache=result["from_cache"],
+            reroutes_remaining=remaining,
+            food_disclaimer=FOOD_DISCLAIMER,
+            schedule_warnings=result.get("schedule_warnings") or [],
+            ask_response=result.get("ask_response"),
+        ).model_dump(
+            mode="json",
+            exclude={"trip_id", "version", "updated_nodes"},
+        )
+        committed = _commit_trip_command(
+            trip_state=updated_trip,
+            command_id=request.command_id or str(uuid.uuid4()),
+            command_type=request.event_type.value,
+            command_payload=_request_command_payload(request),
+            expected_version=(
+                request.expected_version if request.expected_version is not None else loaded_version
+            ),
+            response_data=response_data,
+            consume_reroute=request.event_type in structural_events,
+        )
+        if committed.replayed:
+            return _event_response_from_command(committed)
+        updated_trip = committed.trip_state
+        if committed.response_data is not None:
+            remaining = committed.response_data.get(
+                "reroutes_remaining",
+                remaining,
+            )
 
     db_service.log_event(
         user_id=user_id,
@@ -626,10 +758,9 @@ async def process_trip_event(
         from_cache=result["from_cache"],
     )
 
-    _, remaining, _ = db_service.check_reroute_allowed(user_id)
-
     return TripEventResponse(
         trip_id=request.trip_id,
+        version=trip.version if is_ask else updated_trip.version,
         status="processed",
         message=result["response"],
         updated_nodes=[] if is_ask else updated_trip.nodes,
@@ -956,17 +1087,17 @@ async def _create_range_trip(request: CreateTripRequest, user_id: str):
         schedule_basis="region_local_v1",
         creation_context=creation_ctx,
     )
-    db_service.save_trip(trip)
-
-    # SPEC-03: persist party
     party_in = request.party or TripPartyIn(party_type="solo", size=1)
-    party = db_service.save_trip_party(trip.trip_id, party_in)
-
-    return {
-        "trip_id": trip.trip_id,
-        "status": "created",
-        "message": f"Itinerary created with {len(nodes)} activities over {num_days} days",
-        "nodes": [n.model_dump(mode="json") for n in nodes],
-        "locked_count": sum(1 for n in nodes if n.is_locked),
-        "party": party.model_dump(mode="json"),
-    }
+    committed = _commit_trip_command(
+        trip_state=trip,
+        command_id=request.command_id or str(uuid.uuid4()),
+        command_type="create_trip",
+        command_payload=_request_command_payload(request),
+        expected_version=None,
+        party=party_in,
+        response_data={
+            "message": f"Itinerary created with {len(nodes)} activities over {num_days} days",
+            "locked_count": sum(1 for n in nodes if n.is_locked),
+        },
+    )
+    return _build_create_response(committed)

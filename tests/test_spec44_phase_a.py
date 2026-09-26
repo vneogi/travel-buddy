@@ -1,0 +1,669 @@
+"""Bounded SPEC-44 Phase A1-A3 integrity proofs."""
+
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timezone
+import importlib
+import os
+from pathlib import Path
+import uuid
+
+import pytest
+
+from models.schemas import (
+    EventType,
+    PartyMemberIn,
+    TripNode,
+    TripPartyIn,
+    TripState,
+)
+from services.database_service import DatabaseService, db_service
+from services.trip_persistence import CommandPayloadMismatch, TripVersionConflict
+
+trip_router_module = importlib.import_module("routers.trip_router")
+
+
+def _trip(user_id: str = "00000000-0000-0000-0000-000000000044") -> TripState:
+    return TripState(
+        user_id=user_id,
+        nodes=[
+            TripNode(
+                node_id="spec44a1",
+                venue_name="Atomic stop",
+                scheduled_start=datetime(2026, 10, 1, 9, tzinfo=timezone.utc),
+            ),
+            TripNode(
+                node_id="spec44a2",
+                venue_name="Second stop",
+                scheduled_start=datetime(2026, 10, 1, 11, tzinfo=timezone.utc),
+            ),
+        ],
+    )
+
+
+def _commit(db: DatabaseService, trip: TripState, **overrides):
+    kwargs = {
+        "trip_state": trip,
+        "command_id": "cmd-1",
+        "command_type": "create_trip",
+        "command_payload": {"kind": "create", "days": 1},
+        "party": TripPartyIn(
+            party_type="couple",
+            size=2,
+            members=[PartyMemberIn(role="self", age_band="adult")],
+        ),
+    }
+    kwargs.update(overrides)
+    return db.commit_trip_command(**kwargs)
+
+
+def test_in_memory_atomic_rollback_injection_leaves_no_residue():
+    db = DatabaseService()
+
+    def fail_after_nodes(step: str) -> None:
+        if step == "trip_node":
+            raise RuntimeError("injected failure")
+
+    with pytest.raises(RuntimeError, match="injected failure"):
+        _commit(db, _trip(), failure_injector=fail_after_nodes)
+
+    assert db._trips == {}
+    assert db._trip_nodes == {}
+    assert db._trip_edges == {}
+    assert db._parties == {}
+    assert db._trip_commands == {}
+
+
+def test_same_version_allows_one_success_then_one_conflict():
+    db = DatabaseService()
+    created = _commit(db, _trip()).trip_state
+    first = created.model_copy(deep=True)
+    second = created.model_copy(deep=True)
+    first.nodes[0].venue_name = "First writer"
+    second.nodes[0].venue_name = "Second writer"
+
+    result = _commit(
+        db,
+        first,
+        command_id="cmd-first",
+        command_type="swap_activity",
+        command_payload={"replacement": "first"},
+        expected_version=1,
+        party=None,
+    )
+    assert result.trip_state.version == 2
+
+    with pytest.raises(TripVersionConflict):
+        _commit(
+            db,
+            second,
+            command_id="cmd-second",
+            command_type="swap_activity",
+            command_payload={"replacement": "second"},
+            expected_version=1,
+            party=None,
+        )
+    assert db.get_trip(created.trip_id).nodes[0].venue_name == "First writer"
+
+
+def test_concurrent_same_version_commits_one_effect_and_one_quota():
+    db = DatabaseService()
+    created = _commit(db, _trip()).trip_state
+    db.get_or_create_user(created.user_id)
+
+    def write(command_id: str, venue_name: str):
+        changed = created.model_copy(deep=True)
+        changed.nodes[0].venue_name = venue_name
+        return db.commit_trip_command(
+            trip_state=changed,
+            command_id=command_id,
+            command_type="change_mood",
+            command_payload={"venue_name": venue_name},
+            expected_version=1,
+            consume_reroute=True,
+        )
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        futures = [
+            pool.submit(write, "concurrent-a", "Concurrent A"),
+            pool.submit(write, "concurrent-b", "Concurrent B"),
+        ]
+    successes = []
+    conflicts = []
+    for future in futures:
+        try:
+            successes.append(future.result())
+        except TripVersionConflict as exc:
+            conflicts.append(exc)
+
+    assert len(successes) == 1
+    assert len(conflicts) == 1
+    assert db.get_or_create_user(created.user_id).daily_reroute_count == 1
+    assert db.get_trip(created.trip_id).version == 2
+
+
+def test_idempotent_replay_returns_first_result_without_second_effect():
+    db = DatabaseService()
+    first = _commit(db, _trip())
+    replay = _commit(db, _trip())
+
+    assert replay.replayed is True
+    assert replay.trip_state.model_dump() == first.trip_state.model_dump()
+    assert len(db._trip_commands) == 1
+    assert db.get_trip(first.trip_state.trip_id).version == 1
+
+
+def test_concurrent_same_command_returns_first_outcome_and_consumes_one_quota():
+    db = DatabaseService()
+    created = _commit(db, _trip()).trip_state
+    db.get_or_create_user(created.user_id)
+
+    def retry(label: str):
+        changed = created.model_copy(deep=True)
+        changed.nodes[0].venue_name = label
+        return db.commit_trip_command(
+            trip_state=changed,
+            command_id="same-concurrent-command",
+            command_type="change_mood",
+            command_payload={"mood": "calm"},
+            expected_version=1,
+            response_data={"status": "processed", "message": label},
+            consume_reroute=True,
+        )
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(retry, ["Outcome A", "Outcome B"]))
+
+    assert sorted(result.replayed for result in results) == [False, True]
+    assert results[0].trip_state.model_dump() == results[1].trip_state.model_dump()
+    assert results[0].response_data == results[1].response_data
+    assert db.get_or_create_user(created.user_id).daily_reroute_count == 1
+    assert db.get_trip(created.trip_id).version == 2
+
+
+def test_failed_atomic_command_does_not_consume_reroute():
+    db = DatabaseService()
+    trip = _trip()
+    db.get_or_create_user(trip.user_id)
+    db.save_trip(trip)
+
+    def fail_after_nodes(step: str) -> None:
+        if step == "trip_node":
+            raise RuntimeError("injected failure")
+
+    with pytest.raises(RuntimeError, match="injected failure"):
+        _commit(
+            db,
+            trip,
+            command_id="quota-rollback",
+            command_type="reroute",
+            command_payload={"reason": "rain"},
+            expected_version=1,
+            party=None,
+            consume_reroute=True,
+            failure_injector=fail_after_nodes,
+        )
+
+    assert db.get_or_create_user(trip.user_id).daily_reroute_count == 0
+    assert db.get_trip(trip.trip_id).version == 1
+
+
+def test_command_payload_mismatch_is_typed():
+    db = DatabaseService()
+    trip = _trip()
+    _commit(db, trip)
+    with pytest.raises(CommandPayloadMismatch):
+        _commit(db, trip, command_payload={"kind": "different"})
+
+
+def test_create_party_graph_and_command_share_one_uow():
+    db = DatabaseService()
+    result = _commit(db, _trip())
+    trip_id = result.trip_state.trip_id
+
+    assert result.trip_state.version == 1
+    assert db.get_trip(trip_id) is not None
+    assert len(db.get_trip_nodes(trip_id)) == 2
+    assert len(db.get_trip_edges(trip_id)) == 1
+    assert db.get_trip_party(trip_id).party_type == "couple"
+    assert len(db._trip_commands) == 1
+
+
+def test_observed_edge_duration_survives_mutation():
+    db = DatabaseService()
+    created = _commit(db, _trip()).trip_state
+    edge = db.get_trip_edges(created.trip_id)[0]
+    edge["observed_duration_minutes"] = 17
+    changed = created.model_copy(deep=True)
+    changed.nodes[0].venue_name = "Renamed only"
+
+    _commit(
+        db,
+        changed,
+        command_id="cmd-mutate",
+        command_type="change_mood",
+        command_payload={"mood": "calm"},
+        expected_version=1,
+        party=None,
+    )
+    assert db.get_trip_edges(created.trip_id)[0]["observed_duration_minutes"] == 17
+
+
+def test_old_state_blob_defaults_to_version_one():
+    db = DatabaseService()
+    trip = _trip()
+    old_blob = trip.model_dump(mode="json")
+    old_blob.pop("version")
+    db._trips[trip.trip_id] = old_blob
+    assert db.get_trip(trip.trip_id).version == 1
+
+
+def test_ask_info_does_not_bump_or_record_command(client, monkeypatch):
+    user_id = "ask-spec44-user"
+    db_service.get_or_create_user(user_id)
+    trip = _trip(user_id)
+    db_service.save_trip(trip)
+
+    async def fake_process_event(**kwargs):
+        return {
+            "updated_trip_state": kwargs["trip_state"],
+            "response": "Grounded answer",
+            "routing_tier_used": "light",
+            "from_cache": False,
+            "schedule_warnings": [],
+            "ask_response": None,
+        }
+
+    monkeypatch.setattr(
+        trip_router_module.state_machine,
+        "process_event",
+        fake_process_event,
+    )
+    response = client.post(
+        "/api/v1/trip/event",
+        headers={"X-Debug-User-Id": user_id},
+        json={
+            "trip_id": trip.trip_id,
+            "event_type": EventType.ASK_INFO.value,
+            "message": "What is next?",
+            "command_id": "ask-command-must-not-persist",
+            "expected_version": 1,
+        },
+    )
+    assert response.status_code == 200
+    assert response.json()["version"] == 1
+    assert db_service.get_trip(trip.trip_id).version == 1
+    assert db_service._trip_commands == {}
+
+
+def test_http_version_conflict_uses_typed_409(client, monkeypatch):
+    user_id = "conflict-spec44-user"
+    db_service.get_or_create_user(user_id)
+    trip = _trip(user_id)
+    db_service.save_trip(trip)
+
+    async def fake_process_event(**kwargs):
+        return {
+            "updated_trip_state": kwargs["trip_state"],
+            "response": "Changed",
+            "routing_tier_used": "light",
+            "from_cache": False,
+            "schedule_warnings": [],
+        }
+
+    monkeypatch.setattr(
+        trip_router_module.state_machine,
+        "process_event",
+        fake_process_event,
+    )
+    response = client.post(
+        "/api/v1/trip/event",
+        headers={"X-Debug-User-Id": user_id},
+        json={
+            "trip_id": trip.trip_id,
+            "event_type": EventType.ADD_BOOKING.value,
+            "message": "Add it",
+            "command_id": "stale-command",
+            "expected_version": 2,
+        },
+    )
+    assert response.status_code == 409
+    assert response.json()["detail"]["error"] == "trip_version_conflict"
+
+
+def test_http_payload_mismatch_uses_typed_409(client, monkeypatch):
+    user_id = "mismatch-spec44-user"
+    db_service.get_or_create_user(user_id)
+    trip = _trip(user_id)
+    db_service.save_trip(trip)
+    db_service.commit_trip_command(
+        trip_state=trip,
+        command_id="reused-command",
+        command_type=EventType.ADD_BOOKING.value,
+        command_payload={"original": True},
+        expected_version=1,
+    )
+
+    async def fake_process_event(**kwargs):
+        return {
+            "updated_trip_state": kwargs["trip_state"],
+            "response": "Changed",
+            "routing_tier_used": "light",
+            "from_cache": False,
+            "schedule_warnings": [],
+        }
+
+    monkeypatch.setattr(
+        trip_router_module.state_machine,
+        "process_event",
+        fake_process_event,
+    )
+    response = client.post(
+        "/api/v1/trip/event",
+        headers={"X-Debug-User-Id": user_id},
+        json={
+            "trip_id": trip.trip_id,
+            "event_type": EventType.ADD_BOOKING.value,
+            "message": "Different payload",
+            "command_id": "reused-command",
+            "expected_version": 2,
+        },
+    )
+    assert response.status_code == 409
+    assert response.json()["detail"]["error"] == "command_payload_mismatch"
+
+
+def test_http_replay_returns_same_outcome_without_second_quota_or_state_machine(
+    client,
+    monkeypatch,
+):
+    user_id = "replay-spec44-user"
+    db_service.get_or_create_user(user_id)
+    trip = _trip(user_id)
+    db_service.save_trip(trip)
+    calls = 0
+
+    async def fake_process_event(**kwargs):
+        nonlocal calls
+        calls += 1
+        return {
+            "updated_trip_state": kwargs["trip_state"],
+            "response": "One durable outcome",
+            "routing_tier_used": "heavy",
+            "from_cache": False,
+            "schedule_warnings": ["Keep the first warning"],
+        }
+
+    monkeypatch.setattr(
+        trip_router_module.state_machine,
+        "process_event",
+        fake_process_event,
+    )
+    body = {
+        "trip_id": trip.trip_id,
+        "event_type": EventType.CHANGE_MOOD.value,
+        "message": "Make it calmer",
+        "command_id": "replay-once",
+        "expected_version": 1,
+    }
+    first = client.post(
+        "/api/v1/trip/event",
+        headers={"X-Debug-User-Id": user_id},
+        json=body,
+    )
+    replay = client.post(
+        "/api/v1/trip/event",
+        headers={"X-Debug-User-Id": user_id},
+        json=body,
+    )
+
+    assert first.status_code == 200
+    assert replay.status_code == 200
+    assert replay.json() == first.json()
+    assert calls == 1
+    assert db_service.get_or_create_user(user_id).daily_reroute_count == 1
+
+
+def test_migration_has_transaction_and_privilege_guards():
+    sql = (
+        Path(__file__).parents[1] / "supabase/migrations/0025_trip_command_integrity.sql"
+    ).read_text()
+    required = [
+        "ADD COLUMN IF NOT EXISTS version",
+        "CREATE TABLE IF NOT EXISTS trip_command",
+        "SECURITY DEFINER",
+        "SET search_path = public, pg_temp",
+        "pg_advisory_xact_lock",
+        "FOR UPDATE",
+        "p_consume_reroute",
+        "v_reroute_count := consume_reroute",
+        "observed_duration_minutes",
+        "REVOKE ALL ON FUNCTION",
+        "FROM PUBLIC, anon, authenticated",
+        "TO service_role",
+    ]
+    for guard in required:
+        assert guard in sql
+    assert "EXECUTE " not in sql.upper().replace("GRANT EXECUTE", "")
+
+
+@pytest.mark.skipif(
+    os.environ.get("TB_RUN_SPEC44_POSTGRES") != "1",
+    reason="set TB_RUN_SPEC44_POSTGRES=1 after applying migration 0025",
+)
+def test_opt_in_postgres_rpc_replay_and_conflict(real_supabase_env):
+    """Production-shaped RPC check; intentionally opt-in and non-transaction-proof."""
+    pytest.importorskip("supabase")
+    import services.supabase_service as service_module
+
+    importlib.reload(service_module)
+    db = service_module.get_supabase_service()
+    assert db is not None
+
+    user_id = str(uuid.uuid4())
+    db.get_or_create_user(user_id)
+    trip = _trip(user_id)
+    created = _commit(db, trip)
+    replay = _commit(db, trip)
+    assert replay.replayed is True
+    assert replay.trip_state.model_dump() == created.trip_state.model_dump()
+
+    stale = created.trip_state.model_copy(deep=True)
+    db.commit_trip_command(
+        trip_state=stale,
+        command_id="postgres-winner",
+        command_type="change_mood",
+        command_payload={"mood": "calm"},
+        expected_version=1,
+    )
+    with pytest.raises(TripVersionConflict):
+        db.commit_trip_command(
+            trip_state=stale,
+            command_id="postgres-loser",
+            command_type="change_mood",
+            command_payload={"mood": "busy"},
+            expected_version=1,
+        )
+
+
+# --- Regression tests (SPEC-44 Phase A review) ---
+
+
+def test_create_city_replay_json_equals_first_response(client):
+    """Single-city create (geo_region + start_date, no end_date, no segments):
+    replay JSON must exactly equal the first response."""
+    user_id = "city-replay-spec44"
+    db_service.get_or_create_user(user_id)
+    body = {
+        "geo_region": "luang_prabang_laos",
+        "start_date": "2026-10-02",
+        "initial_mood": "exploratory",
+        "command_id": "city-replay-exact",
+    }
+
+    first = client.post("/api/v1/trip/create", headers={"X-Debug-User-Id": user_id}, json=body)
+    assert first.status_code == 200
+    msg = first.json()["message"]
+    assert "over" not in msg, f"city path must not mention day span: {msg}"
+    assert "Corridor" not in msg, f"city path must not mention corridor: {msg}"
+
+    replay = client.post("/api/v1/trip/create", headers={"X-Debug-User-Id": user_id}, json=body)
+    assert replay.status_code == 200
+    assert replay.json() == first.json()
+
+
+def test_create_range_replay_json_equals_first_response(client):
+    """Range create: replay must reproduce the 'over N days' message."""
+    user_id = "range-replay-spec44"
+    db_service.get_or_create_user(user_id)
+    body = {
+        "city": "luang_prabang_laos",
+        "start_date": "2026-10-02",
+        "end_date": "2026-10-05",
+        "initial_mood": "exploratory",
+        "command_id": "range-replay-exact",
+    }
+
+    first = client.post("/api/v1/trip/create", headers={"X-Debug-User-Id": user_id}, json=body)
+    assert first.status_code == 200
+    assert "over" in first.json()["message"], "range create must mention day span"
+
+    replay = client.post("/api/v1/trip/create", headers={"X-Debug-User-Id": user_id}, json=body)
+    assert replay.status_code == 200
+    assert replay.json() == first.json()
+
+
+def test_create_corridor_replay_json_equals_first_response(client):
+    """Corridor create: replay must reproduce 'Corridor itinerary created'."""
+    user_id = "corridor-replay-spec44"
+    db_service.get_or_create_user(user_id)
+    body = {
+        "segments": [
+            {"geo_region": "vientiane_laos", "starts_on": "2026-10-02", "ends_on": "2026-10-03"},
+            {"geo_region": "vang_vieng_laos", "starts_on": "2026-10-04", "ends_on": "2026-10-05"},
+            {
+                "geo_region": "luang_prabang_laos",
+                "starts_on": "2026-10-06",
+                "ends_on": "2026-10-09",
+            },
+        ],
+        "command_id": "corridor-replay-exact",
+    }
+
+    first = client.post("/api/v1/trip/create", headers={"X-Debug-User-Id": user_id}, json=body)
+    assert first.status_code == 200
+    assert "Corridor" in first.json()["message"]
+
+    replay = client.post("/api/v1/trip/create", headers={"X-Debug-User-Id": user_id}, json=body)
+    assert replay.status_code == 200
+    assert replay.json() == first.json()
+
+
+def test_http_create_persists_trip_party_graph_and_command_atomically(client):
+    """A successful create via the HTTP endpoint must persist trip state,
+    party, normalized graph, and command record.  This is atomic-persistence
+    coverage, not HTTP-rollback proof (no failure injection)."""
+    user_id = "create-atomic-spec44"
+    db_service.get_or_create_user(user_id)
+
+    body = {
+        "city": "luang_prabang_laos",
+        "start_date": "2026-10-02",
+        "end_date": "2026-10-03",
+        "initial_mood": "exploratory",
+        "command_id": "create-atomic-once",
+    }
+    resp = client.post("/api/v1/trip/create", headers={"X-Debug-User-Id": user_id}, json=body)
+    assert resp.status_code == 200
+    trip_id = resp.json()["trip_id"]
+
+    assert db_service.get_trip(trip_id) is not None
+    assert len(db_service.get_trip_nodes(trip_id)) > 0
+    assert db_service.get_trip_party(trip_id) is not None
+    command_key = (user_id, "create-atomic-once")
+    assert command_key in db_service._trip_commands
+    stored = db_service._trip_commands[command_key]
+    assert stored["command_type"] == "create_trip"
+    assert stored["outcome"]["trip_state"]["trip_id"] == trip_id
+
+
+def test_get_trip_command_skips_state_machine_on_mutation_replay(client, monkeypatch):
+    """The early _get_trip_command check on process_trip_event must prevent
+    a second state-machine invocation when a structural command is replayed."""
+    user_id = "early-replay-spec44-user"
+    db_service.get_or_create_user(user_id)
+    trip = _trip(user_id)
+    db_service.save_trip(trip)
+
+    calls = 0
+
+    async def counting_process_event(**kwargs):
+        nonlocal calls
+        calls += 1
+        return {
+            "updated_trip_state": kwargs["trip_state"],
+            "response": "State-machine ran",
+            "routing_tier_used": "heavy",
+            "from_cache": False,
+            "schedule_warnings": [],
+        }
+
+    monkeypatch.setattr(
+        trip_router_module.state_machine,
+        "process_event",
+        counting_process_event,
+    )
+
+    body = {
+        "trip_id": trip.trip_id,
+        "event_type": EventType.CHANGE_MOOD.value,
+        "message": "Make it calmer",
+        "command_id": "skip-sm-once",
+        "expected_version": 1,
+    }
+    first = client.post(
+        "/api/v1/trip/event",
+        headers={"X-Debug-User-Id": user_id},
+        json=body,
+    )
+    assert first.status_code == 200
+    assert calls == 1
+
+    replay = client.post(
+        "/api/v1/trip/event",
+        headers={"X-Debug-User-Id": user_id},
+        json=body,
+    )
+    assert replay.status_code == 200
+    assert calls == 1, f"state machine ran {calls} times; expected 1"
+    assert replay.json() == first.json()
+
+
+def test_create_command_payload_mismatch_409(client):
+    """Reusing a create command_id with a different payload must return 409."""
+    user_id = "create-mismatch-spec44-user"
+    db_service.get_or_create_user(user_id)
+
+    first = client.post(
+        "/api/v1/trip/create",
+        headers={"X-Debug-User-Id": user_id},
+        json={
+            "city": "luang_prabang_laos",
+            "start_date": "2026-10-02",
+            "end_date": "2026-10-03",
+            "command_id": "create-mismatch",
+        },
+    )
+    assert first.status_code == 200
+
+    second = client.post(
+        "/api/v1/trip/create",
+        headers={"X-Debug-User-Id": user_id},
+        json={
+            "city": "luang_prabang_laos",
+            "start_date": "2026-10-02",
+            "end_date": "2026-10-04",  # different end_date
+            "command_id": "create-mismatch",
+        },
+    )
+    assert second.status_code == 409
+    assert second.json()["detail"]["error"] == "command_payload_mismatch"
