@@ -17,6 +17,104 @@ jobs:
       - run: pip install -r requirements.txt -r requirements-dev.txt
       - run: pytest tests/
 
+  # =========================================================================
+  # SPEC-44 A6: PostgreSQL transaction proofs
+  # =========================================================================
+  postgres-proof:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_DB: spec44_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TB_SPEC44_PG_DSN: "host=localhost port=5432 dbname=spec44_test user=postgres password=postgres"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python deps
+        run: |
+          pip install -r requirements.txt -r requirements-dev.txt
+          pip install psycopg2-binary
+
+      - name: Install pgvector into service container
+        run: |
+          container_id=$(docker ps -q --filter "ancestor=postgis/postgis:16-3.4")
+          docker exec "$container_id" sh -c \
+            "apt-get update -qq && apt-get install -y -qq postgresql-16-pgvector >/dev/null 2>&1"
+
+      - name: Enable required extensions
+        run: |
+          PGPASSWORD=postgres psql -h localhost -U postgres -d spec44_test -c \
+            "CREATE EXTENSION IF NOT EXISTS vector; CREATE EXTENSION IF NOT EXISTS postgis;"
+
+      - name: Bootstrap roles and auth schema
+        run: |
+          PGPASSWORD=postgres psql -h localhost -U postgres -d spec44_test \
+            -f tests/pg_bootstrap.sql
+
+      - name: Apply migrations 0001-0025
+        run: |
+          for f in supabase/migrations/*.sql; do
+            echo "--- Applying $f ---"
+            PGPASSWORD=postgres psql -h localhost -U postgres -d spec44_test \
+              -v ON_ERROR_STOP=1 -f "$f"
+          done
+
+      - name: Run SPEC-44 PostgreSQL proofs
+        run: |
+          set -o pipefail
+          pytest tests/test_spec44_pg_transaction.py -v --tb=long \
+            --strict-markers --junitxml=postgres-proof.xml \
+            2>&1 | tee postgres-proof.txt
+
+      - name: Print proof output on failure
+        if: failure()
+        run: |
+          if [ -f postgres-proof.txt ]; then
+            # Extract first FAILED or ERROR block for the annotation
+            first_err=$(sed -n '/FAILED\|ERROR\|Error\|Traceback/,/^$/p' postgres-proof.txt | head -30 | tr '
+' '|')
+            echo "::error::${first_err}"
+            echo "---"
+            tail -100 postgres-proof.txt
+          else
+            echo "::error::postgres-proof.txt not found"
+          fi
+
+      - name: Upload postgres-proof log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: postgres-proof-output
+          path: |
+            postgres-proof.txt
+            postgres-proof.xml
+
+      - name: Verify zero skipped proofs
+        run: |
+          # Parse the pytest run step's JUnit XML for skipped count.
+          # Simpler: re-run with -v and assert no "SKIPPED" lines.
+          output=$(pytest tests/test_spec44_pg_transaction.py -v --tb=short 2>&1)
+          echo "$output"
+          skipped=$(echo "$output" | grep -c "SKIPPED" || true)
+          if [ "$skipped" -gt 0 ]; then
+            echo "ERROR: $skipped proof(s) were skipped" && exit 1
+          fi
+
   flutter:
     runs-on: ubuntu-latest
     defaults:
