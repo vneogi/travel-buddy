@@ -77,7 +77,7 @@ jobs:
       - name: Run SPEC-44 PostgreSQL proofs
         run: |
           pytest tests/test_spec44_pg_transaction.py -v --tb=short \
-            -p no:randomly --strict-markers
+            --strict-markers
 
       - name: Verify zero skipped proofs
         run: |

@@ -185,11 +185,14 @@ BEGIN
         n.node_id, p_trip_id, n.day_index, n.seq, n.node_type, n.venue_ref,
         n.title, n.scheduled_start, n.scheduled_end, n.duration_minutes,
         n.is_locked, n.status, n.geo_region, n.micro_location, n.lat, n.lng,
-        COALESCE(
-            (SELECT array_agg(t.val) FROM jsonb_array_elements_text(n.vibe_tags) AS t(val)),
-            ARRAY[]::TEXT[]
-        ), n.opening_hours,
-        n.node_kind, n.booking_type, n.confirmation_code, n.booking_notes,
+        CASE WHEN jsonb_typeof(n.vibe_tags) = 'array'
+             THEN COALESCE(
+                 (SELECT array_agg(t.val) FROM jsonb_array_elements_text(n.vibe_tags) AS t(val)),
+                 ARRAY[]::TEXT[]
+             )
+             ELSE ARRAY[]::TEXT[]
+        END, n.opening_hours,
+        COALESCE(n.node_kind, 'activity'), n.booking_type, n.confirmation_code, n.booking_notes,
         n.import_source, n.names_local, n.landmarks_local, n.nearest_landmark
     FROM jsonb_to_recordset(p_nodes) AS n(
         node_id TEXT, trip_id UUID, day_index INTEGER, seq INTEGER, node_type TEXT,

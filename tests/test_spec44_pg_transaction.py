@@ -37,9 +37,13 @@ def _pg_connect(dsn: str | None = None):
     transaction as the RPC.
     """
     import psycopg2
+    import psycopg2.extras
 
     conn = psycopg2.connect(dsn or PG_DSN)
     conn.autocommit = False
+    # Register the jsonb adapter so SELECT commit_trip_command(...)
+    # returns a Python dict, not a JSON string.
+    psycopg2.extras.register_default_jsonb(conn)
     return conn
 
 
