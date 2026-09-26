@@ -102,6 +102,7 @@ def _state_json(trip_id: str, user_id: str) -> dict:
 
 
 def _nodes_json(trip_id: str) -> list[dict]:
+    """Match the shape decompose_trip always sends."""
     return [
         {
             "node_id": f"n-{trip_id[:8]}-1",
@@ -115,6 +116,8 @@ def _nodes_json(trip_id: str) -> list[dict]:
             "is_locked": False,
             "status": "planned",
             "geo_region": "luang_prabang_laos",
+            "node_kind": "activity",
+            "vibe_tags": [],
         },
         {
             "node_id": f"n-{trip_id[:8]}-2",
@@ -128,6 +131,8 @@ def _nodes_json(trip_id: str) -> list[dict]:
             "is_locked": False,
             "status": "planned",
             "geo_region": "luang_prabang_laos",
+            "node_kind": "activity",
+            "vibe_tags": ["culture"],
         },
     ]
 

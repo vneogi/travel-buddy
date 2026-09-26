@@ -185,7 +185,10 @@ BEGIN
         n.node_id, p_trip_id, n.day_index, n.seq, n.node_type, n.venue_ref,
         n.title, n.scheduled_start, n.scheduled_end, n.duration_minutes,
         n.is_locked, n.status, n.geo_region, n.micro_location, n.lat, n.lng,
-        COALESCE(n.vibe_tags, ARRAY[]::TEXT[]), n.opening_hours,
+        COALESCE(
+            (SELECT array_agg(t.val) FROM jsonb_array_elements_text(n.vibe_tags) AS t(val)),
+            ARRAY[]::TEXT[]
+        ), n.opening_hours,
         n.node_kind, n.booking_type, n.confirmation_code, n.booking_notes,
         n.import_source, n.names_local, n.landmarks_local, n.nearest_landmark
     FROM jsonb_to_recordset(p_nodes) AS n(
@@ -193,7 +196,7 @@ BEGIN
         venue_ref UUID, title TEXT, scheduled_start TIMESTAMPTZ,
         scheduled_end TIMESTAMPTZ, duration_minutes INTEGER, is_locked BOOLEAN,
         status TEXT, geo_region TEXT, micro_location TEXT, lat DOUBLE PRECISION,
-        lng DOUBLE PRECISION, vibe_tags TEXT[], opening_hours TEXT, node_kind TEXT,
+        lng DOUBLE PRECISION, vibe_tags JSONB, opening_hours TEXT, node_kind TEXT,
         booking_type TEXT, confirmation_code TEXT, booking_notes TEXT,
         import_source TEXT, names_local JSONB, landmarks_local JSONB,
         nearest_landmark TEXT
