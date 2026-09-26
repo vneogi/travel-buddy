@@ -75,40 +75,7 @@ jobs:
           done
 
       - name: Diagnostic -- verify RPC callable
-        run: |
-          python3 -c "
-          import psycopg2, psycopg2.extras, json, os
-          dsn = os.environ['TB_SPEC44_PG_DSN']
-          conn = psycopg2.connect(dsn)
-          conn.autocommit = False
-          psycopg2.extras.register_default_jsonb(conn)
-          cur = conn.cursor()
-          # set both JWT GUCs
-          cur.execute("SELECT set_config('request.jwt.claims', '{\"role\":\"service_role\"}', true)")
-          try:
-              cur.execute("SELECT set_config('request.jwt.claim.role', 'service_role', true)")
-          except Exception as e:
-              print(f'4-part GUC failed: {e}')
-              conn.rollback()
-              cur = conn.cursor()
-              cur.execute("SELECT set_config('request.jwt.claims', '{\"role\":\"service_role\"}', true)")
-          # try a simple call
-          cur.execute("SELECT current_setting('request.jwt.claim.role', true)")
-          print(f'jwt.claim.role = {cur.fetchone()[0]!r}')
-          cur.execute("SELECT current_setting('request.jwt.claims', true)")
-          print(f'jwt.claims = {cur.fetchone()[0]!r}')
-          # try the COALESCE logic
-          cur.execute("""
-              SELECT COALESCE(
-                  NULLIF(current_setting('request.jwt.claim.role', true), ''),
-                  NULLIF(current_setting('request.jwt.claims', true), '')::JSONB->>'role'
-              )
-          """)
-          print(f'resolved role = {cur.fetchone()[0]!r}')
-          conn.commit()
-          conn.close()
-          print('Diagnostic OK')
-          "
+        run: python3 tests/pg_diagnostic.py
 
       - name: Run SPEC-44 PostgreSQL proofs
         run: |
