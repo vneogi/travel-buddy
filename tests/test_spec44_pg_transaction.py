@@ -48,18 +48,33 @@ def _pg_connect(dsn: str | None = None):
 
 
 def _service_role_cursor(conn):
-    """Return a cursor with both JWT GUC variables set.
+    """Return a cursor with JWT GUC variables for service_role.
 
-    Sets both GUC paths that commit_trip_command checks via COALESCE:
-      1. request.jwt.claim.role  (Supabase PostgREST style)
+    commit_trip_command checks via COALESCE:
+      1. request.jwt.claim.role  (Supabase PostgREST 4-part GUC)
       2. request.jwt.claims      (JSON object with "role" key)
+    Vanilla PostgreSQL may reject the 4-part GUC name, so we set
+    the 2-part request.jwt.claims first (guaranteed to work) and
+    only attempt the 4-part name if the connection stays healthy.
     """
     cur = conn.cursor()
-    cur.execute("SELECT set_config('request.jwt.claim.role', 'service_role', true)")
+    # 2-part GUC -- works on vanilla PostgreSQL.
     cur.execute(
         "SELECT set_config('request.jwt.claims', %s, true)",
         ('{"role":"service_role"}',),
     )
+    # 4-part GUC -- Supabase sets this via PostgREST; vanilla PG may
+    # reject the dotted name.  Swallow the error so the txn survives.
+    try:
+        cur.execute("SELECT set_config('request.jwt.claim.role', 'service_role', true)")
+    except Exception:
+        conn.rollback()
+        # Re-set the 2-part GUC that the rollback discarded.
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT set_config('request.jwt.claims', %s, true)",
+            ('{"role":"service_role"}',),
+        )
     return cur
 
 
