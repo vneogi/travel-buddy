@@ -48,9 +48,18 @@ def _pg_connect(dsn: str | None = None):
 
 
 def _service_role_cursor(conn):
-    """Return a cursor with service_role session variable set."""
+    """Return a cursor with both JWT GUC variables set.
+
+    Sets both GUC paths that commit_trip_command checks via COALESCE:
+      1. request.jwt.claim.role  (Supabase PostgREST style)
+      2. request.jwt.claims      (JSON object with "role" key)
+    """
     cur = conn.cursor()
     cur.execute("SELECT set_config('request.jwt.claim.role', 'service_role', true)")
+    cur.execute(
+        "SELECT set_config('request.jwt.claims', %s, true)",
+        ('{"role":"service_role"}',),
+    )
     return cur
 
 
