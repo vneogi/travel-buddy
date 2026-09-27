@@ -329,6 +329,46 @@ Guardrails:
 
 Submission count is diagnostic, not a north-star metric.
 
+## Post-Laos implementation sequence
+
+This is the durable sequence for the moat work. A context handoff may refine a
+bounded phase, but must not silently omit or reorder these gates.
+
+0. **Close field evidence.** Record Laos observations and product failures in
+   `AWAITING_VERIFICATION.md`; turn accepted findings into the appropriate spec
+   or risk. Do not treat one owner trip as a validated flywheel.
+1. **Close the small on-trip trust remainders.** Durable Ask history,
+   catalog-backed place prompts, weather-day detail, and the hotel/flight type
+   display defect come before broadening the product. They improve the evidence
+   surface without enabling collection from other people.
+2. **Implement SPEC-43's applicable G1 gates.** Server-issued identity,
+   ownership, consent purpose/version, withdrawal and deletion, private cache
+   isolation, safe diagnostics, abuse controls, and release transport are
+   prerequisites for a non-owner cohort.
+3. **Implement the trusted data contracts.** Build the minimum SPEC-17
+   attribute/claim registry, the append-only observation lifecycle above, and
+   SPEC-44 recommendation-decision capture. SPEC-13 supplies region/locale
+   identity. Keep learned influence at zero.
+4. **Build the minimum SPEC-47 review queue.** A protected reviewer can
+   triage, clarify, reject, dispute, append/supersede a claim, inspect history,
+   and measure stale/thin coverage. No direct table editing and no model
+   adjudication.
+5. **Run one narrow, consented Laos-corridor pilot.** Enable a small approved
+   question catalogue only after the prerequisites below pass. Measure report
+   quality, correction time, review cost, withdrawal, and whether a later
+   decision improved.
+6. **Productize versioned expansion.** SPEC-20 turns reviewed catalog and
+   resolved claims into a repeatable city/route pack. Bangkok is the acceptance
+   case; Chiang Mai and Pai follow only after Bangkok proves there is no
+   city-specific code exception.
+7. **Allow learned influence only with evidence.** Use consented aggregates
+   only after sample-size, held-out evaluation, inspectability, rollback, and
+   deletion behavior are demonstrated. Acceptance alone is insufficient.
+
+SPEC-42 Add/Move, SPEC-46, PDF intake, inspiration, and a full offline-map
+artifact are separate product slices. They must not displace steps 2-6 merely
+because they are easier to demo.
+
 ## Pilot
 
 Prerequisites:

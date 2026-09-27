@@ -150,7 +150,14 @@ reported Force-sync drain. Thursday freeze: keep this APK/revision,
 preload the real travel trip, then one airplane reopen. Do not start
 SPEC-42 Add/Move, SPEC-46, another city, or polish this week. After
 return: recorded Ask history, place prompts, and weather-day drill-down;
-then SPEC-43 before any non-owner APK. PDF intake remains deferred.
+fix the hotel-as-Flight display defect; then SPEC-43 before any non-owner APK.
+The accepted post-Laos moat sequence is not an optional backlog: trusted
+SPEC-13/17 observation and claim contracts -> SPEC-44 decision capture ->
+minimum SPEC-47 review queue -> narrow consented Laos evidence pilot ->
+SPEC-20 versioned packs with Bangkok as the factory acceptance case. Learned
+influence remains zero until held-out and rollback gates pass. The canonical
+detail is `docs/DATA_FLYWHEEL_OPERATING_MODEL.md`; the restart sequence is in
+`docs/HANDOFF_PLANNING_AGENT.md`. PDF intake remains deferred.
 
 1. Device day -- **CLOSED** 2026-08-17. Brief: docs/briefs/DEVICE_DAY.md.
    Dubai raw dump 6bfa1c6; migrations 0011-0018 applied; Laos reloaded;

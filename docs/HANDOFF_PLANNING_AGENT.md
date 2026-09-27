@@ -66,10 +66,12 @@ Status tables: `docs/PROJECT_STATUS.md`. Device-only queue:
 `docs/AWAITING_VERIFICATION.md`. Hosted schema/provider ledger:
 `docs/HOSTED_STATE.md`. Owner-to-store launch ledger:
 `docs/RELEASE_READINESS.md`. City sequence:
-`docs/MARKET_STRATEGY.md` (Sep 2026 Banana Pancake addendum). Next
-implementation after Thursday freeze: recorded SPEC-25 history/prompts
-and SPEC-29 weather-day drill-down, then SPEC-43. Do not start
-SPEC-42 Add/Move this week. Do not treat in-memory pytest as PostgreSQL
+`docs/MARKET_STRATEGY.md` (Sep 2026 Banana Pancake addendum). The governed
+moat and post-Laos data sequence are owned by
+`docs/DATA_FLYWHEEL_OPERATING_MODEL.md`; the internal review product is
+SPEC-47. Next implementation after Thursday freeze: recorded SPEC-25
+history/prompts and SPEC-29 weather-day drill-down, then SPEC-43. Do not
+start SPEC-42 Add/Move this week. Do not treat in-memory pytest as PostgreSQL
 transaction proof.
 
 ## Third-party review -- already adjudicated
@@ -129,6 +131,40 @@ has no owner. SPEC-24 vs accumulating device UUIDs is already a Medium row in
 PROJECT_STATUS. It remains required before non-owner distribution, but it does
 not outrank the field-proven itinerary trust gaps for the owner's trip.
 
+## Durable post-Laos plan -- do not lose at handoff
+
+The 24 Sep moat review is accepted, not pending advice. Its canonical record is
+`docs/DATA_FLYWHEEL_OPERATING_MODEL.md`. It keeps Flutter, Riverpod, SQLite,
+FastAPI, Supabase/Postgres, and pgvector; Postgres remains the fact store.
+The moat is attributable, fresh, validated evidence about feasible recovery
+decisions and later outcomes, not submission count.
+
+Resume in this order:
+
+1. Record Laos field evidence. Do not generalize from one owner trip.
+2. Close the small recorded trust defects: durable Ask history,
+   catalog-backed place prompts, weather-day drill-down/external attribution,
+   and the hotel rendered as Flight.
+3. Implement SPEC-43 G1 before any non-owner APK, hostel QR, production LLM
+   on personal trips, or contribution collection.
+4. Implement SPEC-13 identity plus the minimum SPEC-17 claim/attribute
+   registry, append-only observation lifecycle, and SPEC-44 decision capture.
+   Keep learned influence at zero.
+5. Build the minimum protected SPEC-47 review queue before contribution
+   prompts turn on.
+6. Run one narrow, consented Laos-corridor evidence pilot. Measure
+   corroboration, disputes, correction time, review cost, withdrawal/deletion,
+   and accept-to-visit/outcome -- not raw submissions.
+7. Implement SPEC-20 versioned city/route packs. Bangkok proves the factory;
+   Chiang Mai and Pai follow only after that proof.
+8. Permit learned ranking influence only after held-out evidence, sample-size
+   gates, inspectability, rollback, consent, and deletion are demonstrated.
+
+SPEC-42 Add/Move, SPEC-46, PDF, inspiration, another city, gamification,
+microservices, a graph database, and another vector database are not substitutes
+for steps 3-7. The detailed gates and data-plane separation live in the
+operating model; do not reconstruct them from chat.
+
 ## First job
 
 The phone-independent delivery and airplane-mode gate passed. SPEC-38 passed
@@ -178,13 +214,16 @@ on the owner's phone. Next tasks:
    of personal trip data, or claim residency/compliance before SPEC-43's
    applicable gates pass.
 11. After SPEC-43, implement the SPEC-13 region/country registry, minimum
-   SPEC-17 claim store, and SPEC-20 versioned city pack. Bangkok is the
-   acceptance case. Do not add Thailand, Vietnam, Cambodia, or Philippines data
-   through another Python/Dart/loader exception.
-12. Add SPEC-44 recommendation-decision capture only for consented subjects.
+   SPEC-17 claim/attribute registry and append-only observation lifecycle.
+   Add SPEC-44 recommendation-decision capture only for consented subjects.
     Record feasible exposure, exclusions, score components, displayed order,
     sponsorship, and policy/catalog/taxonomy versions. Learned influence stays
     zero until held-out evidence and rollback gates pass.
+12. Build the minimum SPEC-47 protected review queue before contribution
+   prompts turn on. Run the narrow Laos evidence pilot before SPEC-20 expands
+   the versioned pack model. Bangkok is the city-factory acceptance case; do
+   not add Thailand, Vietnam, Cambodia, or Philippines through another
+   Python/Dart/loader exception.
 13. Only after SPEC-44 Phase A and the matching online SPEC-42 action exist,
     consider SPEC-02's separate SQLite mutation-command outbox. Queue typed
     confirmed commands with `command_id` and `expected_version`; never perform
@@ -194,7 +233,7 @@ on the owner's phone. Next tasks:
     MapLibre, and Cloudflare R2 are candidates, not commitments; measured size,
     cold start, rendering, memory, battery, update, and offline behavior decide.
 
-Migrations through 0024 and the Maps/OpenWeather local provider credentials are
+Migrations through 0025 and the Maps/OpenWeather local provider credentials are
 already verified; do not ask for them again unless a new migration or
 credential rotation occurs. See `docs/HOSTED_STATE.md`. Local provider success
 does not establish hosted deployment configuration.
@@ -212,6 +251,9 @@ claim needs checking, verify that claim; do not re-read every migration.
 - Never quote pytest counts into living docs (R16).
 - Never state Flutter or live SQL results you did not watch.
 - After merge, read `origin/main`, not the working copy.
+- At handoff or likely context compaction, run the continuity checkpoint in
+  `docs/WAYS_OF_WORKING.md`: route decisions, update Now / Next / Later, commit
+  and push docs, and state whether they reached `main`.
 
 ## What not to "simplify"
 
