@@ -3,6 +3,9 @@
 *Purpose: define the extensible data model that captures on-trip signals, ingests third-party
 metrics, and layers LLM-derived insight — the proprietary asset that compounds monthly.*
 
+> Resume and document owners: `docs/DOCUMENT_MAP.md`. This BRD yields to later
+> specs as noted below.
+>
 > September 2026 amendment: SPEC-43 is authoritative for identity, consent,
 > retention, deletion, poisoning controls, child data, and the prohibition on
 > behavioral sale/sharing. SPEC-44 is authoritative for recommendation exposure,

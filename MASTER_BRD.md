@@ -1,4 +1,5 @@
 > Product vision and strategy live in [docs/VISION.md](docs/VISION.md).
+> Resume and document owners: [docs/DOCUMENT_MAP.md](docs/DOCUMENT_MAP.md).
 > This document is the technical specification.
 
 # TRAVEL BUDDY -- MASTER BRD AND TECHNICAL SPECIFICATION

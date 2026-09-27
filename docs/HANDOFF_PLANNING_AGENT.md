@@ -1,9 +1,9 @@
 # Planning-agent handoff
 
-Read this after `docs/WAYS_OF_WORKING.md` and `docs/ENGINEERING_RULES.md`.
-Those two files are the contract. This file is only the baton: what is true
-now, what the previous planning agent already adjudicated, and what the
-next agent must not reopen in the first week.
+Start at `docs/DOCUMENT_MAP.md`. Then read `docs/WAYS_OF_WORKING.md` and
+`docs/ENGINEERING_RULES.md`. Those two files are the contract. This file is
+only the baton: what is true now, what the previous planning agent already
+adjudicated, and what the next agent must not reopen in the first week.
 
 Read this file and the two contracts above. SPEC-36 through SPEC-38,
 SPEC-40, SPEC-41 Phase A, G0 field-fix-2, SPEC-25 grounded trip-scoped
@@ -252,8 +252,9 @@ claim needs checking, verify that claim; do not re-read every migration.
 - Never state Flutter or live SQL results you did not watch.
 - After merge, read `origin/main`, not the working copy.
 - At handoff or likely context compaction, run the continuity checkpoint in
-  `docs/WAYS_OF_WORKING.md`: route decisions, update Now / Next / Later, commit
-  and push docs, and state whether they reached `main`.
+  `docs/WAYS_OF_WORKING.md`: start from `DOCUMENT_MAP.md`, route decisions,
+  update Now / Next / Later, commit and push docs, and state whether they
+  reached `main`.
 
 ## What not to "simplify"
 

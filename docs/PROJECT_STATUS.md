@@ -1,6 +1,8 @@
 # Travel Buddy -- Project Status
 
-> Current state of the codebase. For commit history use `git log`.
+> Current state of the codebase. For which document owns which question,
+> and how to resume after a pause, see docs/DOCUMENT_MAP.md.
+> For commit history use `git log`.
 > For the device-verification queue see docs/AWAITING_VERIFICATION.md.
 > For engineering rules see docs/ENGINEERING_RULES.md.
 > For how the people and agents around the code work, see docs/WAYS_OF_WORKING.md.

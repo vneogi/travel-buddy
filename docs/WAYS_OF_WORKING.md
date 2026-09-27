@@ -70,7 +70,9 @@ The routing is fixed:
 
 | Kind of thing | Where it goes |
 |---|---|
+| Index of owners and how to resume | `DOCUMENT_MAP.md` |
 | A product or design decision | a spec under `docs/specs/` |
+| Thesis, market, launch, evidence loop, consumer vs server | the owner named in `DOCUMENT_MAP.md` |
 | A finding, gap or risk | the risk table in `PROJECT_STATUS.md` |
 | A lesson learned from a defect | a numbered rule in `ENGINEERING_RULES.md` |
 | A dated observation, or something only a device can settle | `AWAITING_VERIFICATION.md` |
@@ -215,7 +217,9 @@ will not be recoverable.
 Context-window loss is expected. Recovery must not depend on remembering the
 previous chat or rereading every transcript.
 
-The minimum restart path is:
+The minimum restart path is `docs/DOCUMENT_MAP.md`. That file names every
+canonical owner so a brainstorming memo cannot hide from the next session.
+Then:
 
 1. read this file and `ENGINEERING_RULES.md`;
 2. read `HANDOFF_PLANNING_AGENT.md` for Now / Next / Later and explicit
@@ -229,6 +233,7 @@ Before a planned handoff, likely context compaction, or end of a decision-heavy
 session, the planning agent must perform a continuity checkpoint:
 
 - route every accepted, rejected, or pending decision as section 3 requires;
+- update `DOCUMENT_MAP.md` Pause state and any new canonical owner;
 - update the handoff's Now / Next / Later sequence and "do not reopen" list;
 - name the canonical owner for every post-current-phase item;
 - record application, hosted, device, and docs evidence only in their proper
