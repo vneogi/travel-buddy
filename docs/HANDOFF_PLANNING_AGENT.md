@@ -159,6 +159,10 @@ Resume in this order:
    Chiang Mai and Pai follow only after that proof.
 8. Permit learned ranking influence only after held-out evidence, sample-size
    gates, inspectability, rollback, consent, and deletion are demonstrated.
+9. First engagement capability after those gates: SPEC-46 What Now, including
+   Rescue and Hungry now. Second: Travelogue / Route Passport (VISION
+   section 14). Transfer/arrival cards are SPEC-45 remainders. Revisit after
+   Laos field evidence; do not start during freeze.
 
 SPEC-42 Add/Move, SPEC-46, PDF, inspiration, another city, gamification,
 microservices, a graph database, and another vector database are not substitutes

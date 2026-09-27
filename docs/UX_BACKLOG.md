@@ -161,6 +161,22 @@ If it's full Vault vs the October spine (identity, card, anchors), **the
 spine wins.** Behavioral signals that are already registered still beat
 polish.
 
+### P2 -- Engagement after Laos (accepted 27 Sep 2026)
+
+Not a redesign. SPEC-45 Phase A already landed the itinerary chrome.
+Explore after field evidence. Owners:
+
+- What Now, Rescue, Hungry now, temporary situation chips: SPEC-46
+- Transfer/arrival card, place-detail beyond placeholder: SPEC-45
+- Contextual one-tap questions, trust copy, no gamification:
+  DATA_FLYWHEEL_OPERATING_MODEL.md and SPEC-47
+- Travelogue and Route Passport: VISION section 14
+- Hostel arrival pack: SPEC-04 / SPEC-45 after SPEC-43 G1
+
+Still rejected: social feed, DMs, people nearby, points, background GPS,
+generic review forms, auto-replan from warnings, dietary badges,
+unsourced hidden-gem labels.
+
 ## 3. Provenance
 Kept from the source doc: Vault concept, native-script address card, climate-comfort delta,
 split-group visualization, map-first IA. Its architecture section was written without knowledge of

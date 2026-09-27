@@ -271,6 +271,13 @@ export, never the point. We are a utility with a memory, not a network.
 **Timing:** post-Laos. It renders captured data, so as long as SPEC-01/02 capture signals during the
 field trip, it can be built afterward — designed against *real* trip data.
 
+**Route Passport (accepted 27 Sep 2026, same timing):** a visual of segments actually
+travelled (Banana Trail cities ticked from outcomes, local script, one highlight,
+driver-card used). It is the Travelogue's corridor view, not a game. No points,
+streaks, leaderboards, top-traveller badges, or rewards for submitting reports.
+`DATA_FLYWHEEL_OPERATING_MODEL.md` still forbids gamification until abuse and
+quality evidence exist.
+
 ## 15. Distribution: the tourism-board option (Phase 3+)
 
 Competitor signal (Explurger's "NiVU", 2026): QR codes at heritage sites via an Indian state tourism

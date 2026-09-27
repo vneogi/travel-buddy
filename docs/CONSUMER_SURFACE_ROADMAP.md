@@ -117,6 +117,11 @@ The immediate order after the field-test gate:
     learned ranking remains disabled until held-out and rollback gates pass;
 13. only then consider inspiration, model-generated itineraries, or a broader
     tester cohort.
+14. After G1 plus observation/claim contracts, the first traveller-facing
+    engagement capability is SPEC-46 What Now (Rescue and Hungry now included).
+    The second is Travelogue / Route Passport (VISION section 14). Transfer
+    and arrival cards stay SPEC-45 remainders. Revisit after Laos; do not
+    start during freeze.
 
 SPEC-39 PDF/itinerary import, SPEC-11 forced-choice capture, and similar-trip
 generation stay deferred. Provider-aware confirmation text is SPEC-10, not

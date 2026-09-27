@@ -166,6 +166,7 @@ One small, skippable question after a relevant action, not a survey:
 - after arrival: entrance/open status;
 - after a route edge: transport mode or approximate observed duration;
 - after replacement outcome: whether it solved the stated problem;
+- after a driver-card view: whether the driver understood the place;
 - at a stale, high-value claim: a SPEC-17 verification question.
 
 Question selection uses:
@@ -204,6 +205,12 @@ After submission:
 Contributor status is private. No public profile, leaderboard, streak, or
 points in the pilot. Rewards, if any, follow validated evidence, not taps
 (SPEC-17).
+
+Place UI may show plain-language info status after SPEC-17 exists:
+verified, field-confirmed, traveller-reported, being checked, may be
+outdated, unknown. No fake numeric confidence. Travelogue and Route
+Passport (VISION section 14) are the reciprocity surface; they are not
+this model's implementation. Contribution prompts stay off until SPEC-47.
 
 ## Provenance and freshness
 

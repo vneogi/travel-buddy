@@ -37,7 +37,8 @@ traffic, crowds, price, weather, or a reason.
 7. Phase B foreground location starts only after its SPEC-43 controls pass.
 
 The capability is designed now but does not jump reliability or release
-safety.
+safety. A 27 Sep 2026 engagement review accepted Rescue, Hungry now, and
+situation chips as this spec; implement after Laos field evidence.
 
 ## Product shape
 
@@ -211,6 +212,49 @@ traveller profile.
 An accepted/rejected recommendation may emit the existing closed signals.
 Raw device location never accompanies those signals.
 
+Situation chips are presets of that same temporary context, not a new
+engine. Accepted 27 Sep 2026; implement after Laos, not during freeze:
+
+- I'm tired -> energy=low, walking=short
+- I'm hungry -> intent=food (see Hungry now)
+- It started raining -> intent=indoors when hours/indoor data exist; else
+  name unknown rather than invent weather-safe
+- I have less time -> smallest remaining window
+- I want something local / quiet / ready to go out / need cash / get to
+  hotel / meet people as catalog intents only
+- Need cash and get to hotel use existing venue types (ATM/bank if
+  present; hotel driver card). Do not invent a cash network.
+- Meet people means social venues and longer-dwell evenings, never a
+  live people map, DMs, or "travellers nearby"
+
+A mode expires with the decision or the trip day. "I'm tired now" must
+not become a durable low-energy personality.
+
+## Rescue Mode
+
+What Now is proactive. Rescue is the same candidate contract entered from
+a broken plan. Triggers: schedule-issue row, weather alert, skip/miss,
+explicit I'm too tired, a locked booking that is no longer reachable,
+offline/low-connectivity (cached browse only; no silent replan), or a
+cancelled transfer/hotel the traveller recorded.
+
+Copy names the protected lock and the failed slot. Direction chips map to
+temporary context (low effort, indoor, food first, keep next booking).
+The engine still returns a short feasible set. Warnings never auto-mutate.
+SPEC-45 owns the warning row; this spec owns the recovery sheet.
+
+## Hungry now
+
+Food is a What Now intent, not a new dietary engine. Meal type
+(breakfast/lunch/dinner/snack or quick/local/sit-down/coffee), time,
+walking, and a volunteered budget band when the traveller types one.
+Price appears only when sourced (SPEC-23). SPEC-14 stays retired: no
+suitable-for badges. Ingredient facts plus a food disclaimer at the
+recommendation, not inferred safety.
+
+Loved/disliked dish, wait, skip, and "good for a quick stop" are
+observation or outcome rows after the meal, skippable, not a review form.
+
 ## Offline
 
 Cached venue/details may support browsing from a selected trip stop. Offline:
@@ -256,6 +300,15 @@ Phase B:
 - Phase B cannot ship externally until its SPEC-43 location proofs pass.
 - Denying location does not reduce the product to an empty screen.
 
+## Transparent trip memory (later)
+
+After SPEC-43 and enough trip-local outcomes, the product may ask to confirm
+a temporary observation ("you skipped two crowded stops; prefer quieter
+for the rest of this trip?"). Explicit yes/no. Edit / forget / why am I
+seeing this. Scope is this trip until identity merge exists. Do not store
+an opaque AI memory blob. Explicit prefs, behavioral features, catalog
+claims, and conversation stay separate (SPEC-44).
+
 ## Non-goals
 
 - Background GPS, geofencing, live people map, location history
@@ -265,3 +318,8 @@ Phase B:
 - Full map shell or offline tiles
 - Persisting mood/energy as a durable personality
 - New city support
+- Public social feed, comments, DMs, people nearby
+- Points, streaks, leaderboards
+- Dietary suitability badges
+- Auto-mutating the itinerary from a warning
+- Hidden-gem labels without SPEC-17 evidence
