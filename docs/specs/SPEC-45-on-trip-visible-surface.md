@@ -257,6 +257,23 @@ that post nothing or that invent a local replan.
 Copy previous day is rejected until a server command exists:
 duplication vs hours, unique venue_id, and locked anchors.
 
+### 13. Transfer and arrival cards (accepted remainder)
+
+SPEC-45 Phase A may show an honest "transfer needed" row. After Laos,
+replace that with a first-class transfer/arrival card between city
+segments: leave-from, unknown transport, cash reminder, hotel driver
+card, light evening options. Do not invent vehicle, time, fare, or
+duration. Arrival mode ("get to hotel, check in, eat nearby, keep
+tonight easy") is the same card after a recorded inter-city move.
+Hostel arrival pack (offline hotel card, tomorrow, local names) is G1
+distribution, after SPEC-43, not a freeze item. Map tiles stay deferred.
+
+### 14. Warnings open recovery, they do not replan
+
+A schedule-issue row already names and opens the stop. After SPEC-46
+exists, the next control is Rescue (What Now with a broken-plan
+preset). Until then, do not add a fake Fix it button.
+
 ## Red flags (shouted)
 
 1. **Review build order vs G1.** Putting account lifecycle at step 6

@@ -23,15 +23,18 @@ documents disagree, follow Precedence below and name the conflict in
 
 ## Pause state on 27 Sep 2026
 
-- Application `main`: `9a7b9d9` (SPEC-44 Phase A).
-- Docs branch: `docs/pre-laos-final-state` (this map and living-doc updates).
-  Not on GitHub `main` until that branch is merged.
+- Application freeze SHA: `9a7b9d9` (SPEC-44 Phase A). Living docs plus CI
+  clock fix: GitHub `main` `9a9fe84`.
 - Hosted: migrations through 0025; Cloud Run `travel-buddy-00012-8wv`.
 - Freeze APK SHA256 `bd935bf2...`. Thursday 1 Oct: preload the real trip,
   airplane reopen. Do not start SPEC-42 Add/Move, SPEC-46, a new city, PDF,
   or polish this week.
 - After return: Ask history, place prompts, weather-day detail, hotel-as-Flight,
   then the post-Laos sequence in `HANDOFF_PLANNING_AGENT.md`.
+- 27 Sep engagement review is accepted, not pending: What Now/Rescue/Hungry
+  now in SPEC-46; transfer/arrival cards in SPEC-45; Travelogue/Passport in
+  VISION section 14; contribution/trust copy in the flywheel model. Explore
+  after Laos. Do not start during freeze.
 
 Refresh this section at the next continuity checkpoint. Do not let it become
 a second PROJECT_STATUS.
