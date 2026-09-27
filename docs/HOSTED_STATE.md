@@ -10,14 +10,14 @@ successful test of a named variable.
 
 ## Current verified state
 
-Last verified: 2026-09-25 owner reported Cloud Run updated for the G0
-field-fix-2 merge (`b8cf305`). SPEC-45 Phase A is on `main` (`7939565`)
-and has not been redeployed as a separate observed revision.
-Hosted Supabase schema last verified 2026-09-06 through migration 0024.
-Migration `0025_trip_command_integrity.sql` exists on PR #67 and is
-**not applied** on hosted. SPEC-38 phone pass remains 2026-09-14
-against `travel-buddy-00004-62g` (`fefc4ec`). G0 and SPEC-45 phone
-matrices are still open.
+Last verified: 2026-09-27. SPEC-44 Phase A is on `main` (`9a7b9d9`,
+PR #67). Hosted migration 0025 sentinels and bounded-input RPC guard
+passed. Cloud Run `travel-buddy-00012-8wv` serves untagged traffic.
+Owner signed APK SHA256
+`bd935bf2654b17be17f27acedc5ad449e8ce5f67d390a4b35e4e4d68c1df0e2b`.
+SPEC-38 phone pass remains 2026-09-14 against `00004-62g`. G0 plus
+SPEC-45 chrome were retested on this APK; dated evidence is in
+`docs/AWAITING_VERIFICATION.md`.
 
 ### Hosted Supabase
 
@@ -31,7 +31,7 @@ matrices are still open.
 | 0022 | Applied | `trip_node.names_local` present on 2026-09-06 |
 | 0023 | Applied | Live `hybrid_venue_search` has seventh argument `filter_geo_region text` on 2026-09-06 |
 | 0024 | Applied | `signal_type.session_start` present on 2026-09-06 |
-| 0025 | Not applied | `trip_states.version`, `trip_command`, and `commit_trip_command` RPC live only on draft PR #67. Do not apply until ephemeral PostgreSQL proofs pass |
+| 0025 | Applied | Owner SQL Editor 2026-09-27: `trip_states.version`, `trip_command`, and `commit_trip_command` present; bounded-input call raised `22023` |
 
 The project applies SQL manually and does not have a trustworthy migration
 history table. "Applied" above means the expected live schema sentinel was
@@ -55,18 +55,17 @@ It does not prove they are configured on a hosted backend deployment.
 ### Hosted application deployment
 
 Cloud Run service `travel-buddy` in project `ultra-solution-499410-e9`,
-region `asia-south1`. Owner deployed from local `main` at `fefc4ec` on
-2026-09-14. Owner reported a further deploy on 2026-09-25 for G0
-field-fix-2 (`b8cf305`); this repo did not observe the new revision
-id. SPEC-45 Phase A (`7939565`) is on `main` and has not been recorded
-as a separate hosted revision.
+region `asia-south1`. Owner deployed from Windows `main` at `9a7b9d9`
+on 2026-09-26 UTC (27 Sep local). Traffic was then moved to LATEST.
+Existing env names were preserved (no `--set-env-vars`). The
+`g0fix0924` tag remains on `travel-buddy-00009-qek` at 0% for rollback.
 
 | Field | Value |
 |---|---|
-| Revision | Last keyboard-observed: `travel-buddy-00004-62g` (2026-09-14). Owner reported an unobserved revision on 2026-09-25 for G0. |
+| Revision | `travel-buddy-00012-8wv` (100% LATEST). Tag `g0fix0924` still names `00009-qek` at 0%. |
 | URL | `https://travel-buddy-196190001420.asia-south1.run.app` |
-| Health | HTTP 200 `GET /api/v1/health` (`status=healthy`, `venues_loaded=74`) |
-| Flags on the deploy command | `TB_DEBUG=false`, `TB_ALLOW_ANONYMOUS=true` |
+| Health | HTTP 200 `GET /api/v1/health` (`status=healthy`, `venues_loaded=74`) on 2026-09-27. Health does not encode git SHA. |
+| Flags | Last recorded names: `TB_DEBUG`, `TB_ALLOW_ANONYMOUS`, `TB_SUPABASE_URL`, `TB_SUPABASE_KEY`, `TB_GOOGLE_MAPS_API_KEY`, `TB_OPENWEATHER_API_KEY`. Values are not recorded. |
 
 Release posture: this is an owner-only field-test service, not a beta or public
 launch. SPEC-43 records twelve security/privacy gaps that must close after the
@@ -184,7 +183,9 @@ WITH expected(migration, kind, object_name) AS (
     ('0021', 'column', 'trip_node.node_kind'),
     ('0021', 'signal', 'booking_added'),
     ('0022', 'column', 'trip_node.names_local'),
-    ('0024', 'signal', 'session_start')
+    ('0024', 'signal', 'session_start'),
+    ('0025', 'column', 'trip_states.version'),
+    ('0025', 'table',  'trip_command')
 ),
 objects AS (
   SELECT 'table' AS kind, c.relname AS object_name
@@ -211,8 +212,9 @@ SELECT p.proname AS function_name,
 FROM pg_proc p
 JOIN pg_namespace n ON n.oid = p.pronamespace
 WHERE n.nspname = 'public'
-  AND p.proname = 'hybrid_venue_search';
+  AND p.proname IN ('hybrid_venue_search', 'commit_trip_command');
 ```
 
 Every sentinel row must be true. Migration 0023 is present only when the
-function arguments include `filter_geo_region text`.
+function arguments include `filter_geo_region text`. Migration 0025 is
+present when `commit_trip_command` exists.

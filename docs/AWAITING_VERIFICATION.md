@@ -15,6 +15,51 @@ other.
 Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 `#85` and so on; those numbers cannot be reconciled against `git log`.
 
+## Finding -- Sep 27 2026 -- SPEC-44 field APK and owner phone evidence
+
+Owner Windows checkout was `9a7b9d9` (PR #67). Hosted migration 0025
+sentinels passed and its bounded-input RPC guard returned PostgreSQL `22023`.
+Cloud Run revision `travel-buddy-00012-8wv` served all untagged traffic at
+`https://travel-buddy-196190001420.asia-south1.run.app`; the old
+`g0fix0924` tag remained on `00009-qek` at zero percent for rollback.
+
+The signed release APK SHA256 was
+`bd935bf2654b17be17f27acedc5ad449e8ce5f67d390a4b35e4e4d68c1df0e2b`.
+The owner cleared package data before installing it. Laptop backend tests
+passed after excluding two known local-time/worktree failures; Flutter
+analysis exited successfully with informational findings and the full Flutter
+suite ended successfully.
+
+Owner phone screenshots show a fresh Oct 2-9 Laos corridor with Vientiane,
+Vang Vieng, and Luang Prabang sections; date headers; typed meal slots; place
+details; confirm-before-mutate swap candidates; schedule-issue details; one
+Ask composer; a driver card; booking cards; and a saved itinerary after
+airplane mode. Sync Status while offline showed pending work, no permanent
+failures, and the expected network error. Owner later reported Force sync
+drained after reconnect (Pending to empty, no permanent failures). No drain
+screenshot was captured.
+
+The weather card named OpenWeather and showed a current source age. This is
+evidence that the hosted OpenWeather forecast path returned provider data:
+an absent key returns an empty unconfigured state and provider failure returns
+503 or an unexpired cache. The screenshot is not a raw-provider audit.
+
+Record, do not fix in the departure freeze:
+
+- Ask conversations need durable, trip-scoped history and a visible way to
+  reopen prior threads. A traveller may need an answer hours later at the
+  venue. Current Flutter messages exist only in the open Chat screen.
+- Place details should offer a small set of useful, catalog-backed question
+  prompts. Prompt answers should be deterministic or cached when the catalog
+  already answers them; only a genuinely new follow-up may reach a model after
+  the SPEC-25 and SPEC-43 gates.
+- Weather alerts need a drill-down showing the forecast trend across the
+  relevant day/window, plus a clearly attributed external forecast link.
+  This should reuse fetched forecast blocks and must not invoke an LLM.
+  Structural itinerary changes remain explicit user-confirmed actions.
+- A hotel stay saved from Add Booking was observed with a Flight chip
+  (Salana Boutique Hotel). Treat as a niggle unless it blocks travel.
+
 ## Finding -- Sep 25 2026 -- SPEC-45 Phase A laptop Flutter verified
 
 Merged `feat/spec45-phase-a-friction` to `main` as `7939565`
@@ -30,15 +75,14 @@ at `61b07d0`:
   SyncEngine / persist-loved / closed-database lines match prior
   intentional failure-path tests and did not fail the suite.
 
-Do not call SPEC-45 phone-passed. Rebuild a signed APK from this
-merge against the existing Cloud Run URL. G0 phone matrix is still
-open on the previous APK (`770bd299...fdd6`) until that rebuild or
-a dedicated G0 retest.
+Do not call SPEC-45 phone-passed from this laptop run. Phone chrome
+evidence later landed 2026-09-27 on APK `bd935bf2...` (see finding
+above).
 
 Untracked Windows files (`mobile/pubspec.lock`, generated l10n,
 `.worktrees/`) were present and were not part of this merge.
 
-## Finding -- Sep 26 2026 -- living docs track SPEC-45/46/47; SPEC-44 in review
+## Finding -- Sep 26 2026 -- living docs track SPEC-45/46/47
 
 `docs/specs/SPEC-45-on-trip-visible-surface.md`,
 `SPEC-46-what-now-foreground-context.md`,
@@ -46,8 +90,9 @@ Untracked Windows files (`mobile/pubspec.lock`, generated l10n,
 `docs/DATA_FLYWHEEL_OPERATING_MODEL.md` are now tracked so
 `test_docs_hygiene` SPEC-reference resolution matches the living
 docs. SPEC-45 Phase A remains implemented on `main` (`7939565`);
-phone APK retest is still open. SPEC-44 Phase A is draft PR #67
-(`ed548b8`); hosted migration 0025 is not applied.
+phone APK retest later landed on 2026-09-27 (see finding above).
+SPEC-44 Phase A later merged as PR #67 (`9a7b9d9`); hosted 0025 is
+applied.
 
 ## Finding -- Sep 25 2026 -- G0 field-fix-2 merged; laptop Flutter verified
 

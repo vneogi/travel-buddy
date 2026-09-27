@@ -12,6 +12,7 @@ Oct 2 2026.
 
 | Read this | For |
 |-----------|-----|
+| `docs/DOCUMENT_MAP.md` | How to resume; which document owns which question |
 | `docs/PROJECT_STATUS.md` | What is built, what is next, known risks |
 | `docs/HOSTED_STATE.md` | Hosted migrations and credential-backed provider verification |
 | `docs/ENGINEERING_RULES.md` | Rules earned from real bugs. Read before contributing |

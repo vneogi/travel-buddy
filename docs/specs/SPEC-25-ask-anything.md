@@ -18,6 +18,16 @@
 > after intent classification rather than sharing structural mutation. Bounded
 > conversation context, explicit preferences, behavioral features, and catalog
 > claims are separate memory planes. No generic traveler-memory blob is created.
+>
+> 27 Sep 2026 field addendum: one entry point is not the same as one
+> disposable conversation. The current Flutter screen keeps `_messages` only
+> in memory. A traveller who leaves Chat cannot reliably reopen an answer at
+> the venue hours later. The remainder therefore includes durable,
+> trip-scoped threads and a history affordance. Place details may also show a
+> small set of catalog-backed suggested questions. These suggestions must use
+> deterministic retrieval or cache when facts already exist; rendering or
+> reopening them never invokes a model. A free-text follow-up uses the normal
+> cache, budget, grounding, and SPEC-43 egress gates.
 
 ## Goal
 
@@ -119,6 +129,29 @@ question. A light model may classify an ambiguous intent or phrase retrieved
 facts. The expensive route remains limited to a separately specified discovery
 capability.
 
+### Durable threads and suggested questions
+
+Ask history is a traveller aid, not a raw analytics log:
+
+- persist the user question, rendered response envelope, source references,
+  created time, and trip/place context under the owning identity;
+- list recent trip threads and reopen a thread without rerunning retrieval or
+  generation;
+- keep multiple questions in one thread so a later follow-up has explicit,
+  bounded context;
+- include history in SPEC-27 export, deletion, retention, and offline-clear
+  behavior; never put booking references or unrestricted itinerary JSON into
+  the thread record;
+- cache the rendered grounded answer needed for offline revisit, while live
+  follow-up refuses immediately when disconnected.
+
+Place-detail prompts are authored intents, not open-ended generated copy.
+Examples include saved hours, known dishes, address/landmark, and what follows
+this stop. Show a prompt only when its required catalog fields exist. Tapping a
+prompt records `ask_info`, resolves from deterministic retrieval or an existing
+cache entry, and opens or continues the place thread. It does not consume a
+model budget merely because it is displayed or tapped.
+
 ### Interim trust contract
 
 Until the full SPEC-17 claim registry lands, trip-scoped Ask may return curated
@@ -139,6 +172,10 @@ not the long-term contract.
 - [ ] Offline mode answers from cache or refuses immediately; it never queues
 - [ ] Hosted smoke proves key presence and one grounded answer or honest refusal
 - [ ] The deterministic canned fingerprint is not accepted as grounded success
+- [ ] A prior trip thread can be reopened without another model call
+- [ ] Thread deletion, export, retention, and offline clear follow SPEC-27
+- [ ] Suggested place questions render only for available catalog facts
+- [ ] Tapping a deterministic suggestion invokes no model
 
 ## Why this is not just a text field
 

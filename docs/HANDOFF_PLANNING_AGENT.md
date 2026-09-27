@@ -1,23 +1,22 @@
 # Planning-agent handoff
 
-Read this after `docs/WAYS_OF_WORKING.md` and `docs/ENGINEERING_RULES.md`.
-Those two files are the contract. This file is only the baton: what is true
-now, what the previous planning agent already adjudicated, and what the
-next agent must not reopen in the first week.
+Start at `docs/DOCUMENT_MAP.md`. Then read `docs/WAYS_OF_WORKING.md` and
+`docs/ENGINEERING_RULES.md`. Those two files are the contract. This file is
+only the baton: what is true now, what the previous planning agent already
+adjudicated, and what the next agent must not reopen in the first week.
 
 Read this file and the two contracts above. SPEC-36 through SPEC-38,
 SPEC-40, SPEC-41 Phase A, G0 field-fix-2, SPEC-25 grounded trip-scoped
-Ask, and SPEC-45 Phase A are on `main` (`551bc96`). SPEC-42 uncap /
-empty-date render is PARTIAL; Add/Move remain. Create-then-book HITL
-reflow remains. Trip-optional Ask remains.
+Ask, SPEC-45 Phase A, and SPEC-44 Phase A are on `main` (`9a7b9d9`).
+Hosted 0025 is applied. Cloud Run `travel-buddy-00012-8wv` is the live
+untagged revision. SPEC-42 uncap / empty-date render is PARTIAL;
+Add/Move remain. Create-then-book HITL reflow remains. Trip-optional
+Ask remains.
 
-SPEC-44 Phase A application code is in draft PR #67
-(`feat/spec44-phase-a-integrity` at `ed548b8`). Planning reviews;
-Genie implements. Do not merge #67 or apply hosted migration 0025
-until ephemeral PostgreSQL transaction proofs pass. SPEC-43 is then
-the release foundation before any non-owner tester or the planned
-December launch. The SPEC-13/17/20 city factory follows; Bangkok
-proves it without a hardcoded exception.
+SPEC-44 Phase A application code merged as PR #67 (`9a7b9d9`). Planning
+reviews; Genie implements. SPEC-43 is the release foundation before any
+non-owner tester or the planned December launch. The SPEC-13/17/20 city
+factory follows; Bangkok proves it without a hardcoded exception.
 
 ## Who does what (unchanged)
 
@@ -67,12 +66,12 @@ Status tables: `docs/PROJECT_STATUS.md`. Device-only queue:
 `docs/AWAITING_VERIFICATION.md`. Hosted schema/provider ledger:
 `docs/HOSTED_STATE.md`. Owner-to-store launch ledger:
 `docs/RELEASE_READINESS.md`. City sequence:
-`docs/MARKET_STRATEGY.md` (Sep 2026 Banana Pancake addendum). Next
-implementation: finish SPEC-44 Phase A PostgreSQL proofs on PR #67.
-G0 is not passed until the owner phone retests the live trip on an
-APK built from current `main` (include SPEC-45 chrome). Do not start
-SPEC-42 Add/Move or SPEC-43 until SPEC-44 Phase A is closed or
-explicitly re-sequenced. Do not treat in-memory pytest as PostgreSQL
+`docs/MARKET_STRATEGY.md` (Sep 2026 Banana Pancake addendum). The governed
+moat and post-Laos data sequence are owned by
+`docs/DATA_FLYWHEEL_OPERATING_MODEL.md`; the internal review product is
+SPEC-47. Next implementation after Thursday freeze: recorded SPEC-25
+history/prompts and SPEC-29 weather-day drill-down, then SPEC-43. Do not
+start SPEC-42 Add/Move this week. Do not treat in-memory pytest as PostgreSQL
 transaction proof.
 
 ## Third-party review -- already adjudicated
@@ -132,17 +131,53 @@ has no owner. SPEC-24 vs accumulating device UUIDs is already a Medium row in
 PROJECT_STATUS. It remains required before non-owner distribution, but it does
 not outrank the field-proven itinerary trust gaps for the owner's trip.
 
+## Durable post-Laos plan -- do not lose at handoff
+
+The 24 Sep moat review is accepted, not pending advice. Its canonical record is
+`docs/DATA_FLYWHEEL_OPERATING_MODEL.md`. It keeps Flutter, Riverpod, SQLite,
+FastAPI, Supabase/Postgres, and pgvector; Postgres remains the fact store.
+The moat is attributable, fresh, validated evidence about feasible recovery
+decisions and later outcomes, not submission count.
+
+Resume in this order:
+
+1. Record Laos field evidence. Do not generalize from one owner trip.
+2. Close the small recorded trust defects: durable Ask history,
+   catalog-backed place prompts, weather-day drill-down/external attribution,
+   and the hotel rendered as Flight.
+3. Implement SPEC-43 G1 before any non-owner APK, hostel QR, production LLM
+   on personal trips, or contribution collection.
+4. Implement SPEC-13 identity plus the minimum SPEC-17 claim/attribute
+   registry, append-only observation lifecycle, and SPEC-44 decision capture.
+   Keep learned influence at zero.
+5. Build the minimum protected SPEC-47 review queue before contribution
+   prompts turn on.
+6. Run one narrow, consented Laos-corridor evidence pilot. Measure
+   corroboration, disputes, correction time, review cost, withdrawal/deletion,
+   and accept-to-visit/outcome -- not raw submissions.
+7. Implement SPEC-20 versioned city/route packs. Bangkok proves the factory;
+   Chiang Mai and Pai follow only after that proof.
+8. Permit learned ranking influence only after held-out evidence, sample-size
+   gates, inspectability, rollback, consent, and deletion are demonstrated.
+
+SPEC-42 Add/Move, SPEC-46, PDF, inspiration, another city, gamification,
+microservices, a graph database, and another vector database are not substitutes
+for steps 3-7. The detailed gates and data-plane separation live in the
+operating model; do not reconstruct them from chat.
+
 ## First job
 
 The phone-independent delivery and airplane-mode gate passed. SPEC-38 passed
 on the owner's phone. Next tasks:
 
-1. G0 field-fix-2 is on main as `b8cf305`. SPEC-45 Phase A is on
-   main as `7939565` (laptop Flutter `61b07d0`, owner Windows 3.44.8).
-   Cloud Run was already updated for G0. Next: signed APK from this
-   merge, then phone G0 matrix plus SPEC-45 chrome. Do not call G0 or
-   SPEC-45 phone-passed from laptop tests. SPEC-45 is Flutter-only; no
-   extra Cloud Run deploy is required for this slice.
+1. SPEC-44 Phase A is on main (`9a7b9d9`). Hosted 0025 applied.
+   Cloud Run `00012-8wv` serves 100% untagged traffic. Owner APK
+   SHA256 `bd935bf2654b17be17f27acedc5ad449e8ce5f67d390a4b35e4e4d68c1df0e2b`
+   (`pm clear` then install). Phone evidence 2026-09-27: Oct 2-9
+   corridor, SPEC-45 chrome, OpenWeather rain card, offline itinerary,
+   owner-reported Force-sync drain. Thursday: freeze this pair, preload
+   the real travel trip, airplane reopen. Do not rebuild unless a
+   blocker appears.
 2. SPEC-40 is done as `ebdea52`. SPEC-42 uncap is PARTIAL on main
    (`17e58ac`): catalog caps are gone and empty dates render. Do not
    reopen the five-day *starter* budget. Add/Move are a later slice.
@@ -165,14 +200,11 @@ on the owner's phone. Next tasks:
    (`1f251a3`, merge `7b62818`). Slice 3 (named slots) is on main
    (`f1feb17`, merge `9173b23`). G0 field-fix-2 is on main (`b8cf305`).
    SPEC-45 Phase A is on main (`7939565`). Create-then-book HITL
-   reflow remains. Do not start security implementation, inspiration,
-   similar-trip generation, or broader consumer work until the phone
-   gate on the new APK.
-8. Finish SPEC-44 Phase A on draft PR #67 (`ed548b8`): ephemeral
-   PostgreSQL proofs of migration 0025, then merge. Do not apply 0025
-   to hosted until those proofs pass. Do this before SPEC-16
-   row-authoritative reads, multi-device mutation, or a second real
-   city.
+   reflow remains. Do not start inspiration, similar-trip generation,
+   or broader consumer work during the departure freeze.
+8. SPEC-44 Phase A is closed on main (`9a7b9d9`). Hosted 0025 is
+   applied. Remainders A4/A5 and Flutter command queue wait until after
+   the Laos trip unless a blocker requires them.
 9. Implement SPEC-43 in bounded phases. It owns twelve verified gaps:
    server-issued anonymous auth, complete RLS, redacted LLM egress, data rights
    and retention, encrypted offline data, real sign-out, purpose consent,
@@ -182,13 +214,16 @@ on the owner's phone. Next tasks:
    of personal trip data, or claim residency/compliance before SPEC-43's
    applicable gates pass.
 11. After SPEC-43, implement the SPEC-13 region/country registry, minimum
-   SPEC-17 claim store, and SPEC-20 versioned city pack. Bangkok is the
-   acceptance case. Do not add Thailand, Vietnam, Cambodia, or Philippines data
-   through another Python/Dart/loader exception.
-12. Add SPEC-44 recommendation-decision capture only for consented subjects.
+   SPEC-17 claim/attribute registry and append-only observation lifecycle.
+   Add SPEC-44 recommendation-decision capture only for consented subjects.
     Record feasible exposure, exclusions, score components, displayed order,
     sponsorship, and policy/catalog/taxonomy versions. Learned influence stays
     zero until held-out evidence and rollback gates pass.
+12. Build the minimum SPEC-47 protected review queue before contribution
+   prompts turn on. Run the narrow Laos evidence pilot before SPEC-20 expands
+   the versioned pack model. Bangkok is the city-factory acceptance case; do
+   not add Thailand, Vietnam, Cambodia, or Philippines through another
+   Python/Dart/loader exception.
 13. Only after SPEC-44 Phase A and the matching online SPEC-42 action exist,
     consider SPEC-02's separate SQLite mutation-command outbox. Queue typed
     confirmed commands with `command_id` and `expected_version`; never perform
@@ -198,7 +233,7 @@ on the owner's phone. Next tasks:
     MapLibre, and Cloudflare R2 are candidates, not commitments; measured size,
     cold start, rendering, memory, battery, update, and offline behavior decide.
 
-Migrations through 0024 and the Maps/OpenWeather local provider credentials are
+Migrations through 0025 and the Maps/OpenWeather local provider credentials are
 already verified; do not ask for them again unless a new migration or
 credential rotation occurs. See `docs/HOSTED_STATE.md`. Local provider success
 does not establish hosted deployment configuration.
@@ -216,6 +251,10 @@ claim needs checking, verify that claim; do not re-read every migration.
 - Never quote pytest counts into living docs (R16).
 - Never state Flutter or live SQL results you did not watch.
 - After merge, read `origin/main`, not the working copy.
+- At handoff or likely context compaction, run the continuity checkpoint in
+  `docs/WAYS_OF_WORKING.md`: start from `DOCUMENT_MAP.md`, route decisions,
+  update Now / Next / Later, commit and push docs, and state whether they
+  reached `main`.
 
 ## What not to "simplify"
 

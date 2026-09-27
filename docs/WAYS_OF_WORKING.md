@@ -70,7 +70,9 @@ The routing is fixed:
 
 | Kind of thing | Where it goes |
 |---|---|
+| Index of owners and how to resume | `DOCUMENT_MAP.md` |
 | A product or design decision | a spec under `docs/specs/` |
+| Thesis, market, launch, evidence loop, consumer vs server | the owner named in `DOCUMENT_MAP.md` |
 | A finding, gap or risk | the risk table in `PROJECT_STATUS.md` |
 | A lesson learned from a defect | a numbered rule in `ENGINEERING_RULES.md` |
 | A dated observation, or something only a device can settle | `AWAITING_VERIFICATION.md` |
@@ -82,6 +84,18 @@ two documents held the device-day task order, they drifted and began
 contradicting each other within days. And dated observations belong only in
 `AWAITING_VERIFICATION.md`, so the other documents can be read as current
 without checking when each sentence was written.
+
+A review or recommendation received in chat must end in one of three durable
+states before the session moves on:
+
+1. accepted and routed to its owning document;
+2. rejected with the reason recorded in the owning decision document; or
+3. pending, named as such in `PROJECT_STATUS.md` with the decision still needed.
+
+Copying a recommendation into the handoff is not enough. The handoff points to
+the owner; it does not become a second owner. A canvas, transcript, agent
+summary, or brief may explain a decision, but none is the canonical record of
+product state.
 
 ## 4. Reviewing the execution agent
 
@@ -197,3 +211,40 @@ with a real traveller. A guard that cannot fail, a column with no writer, and a
 document that contradicts itself are all the same problem in different clothes,
 which is that something looked done and was not. On October 2 the difference
 will not be recoverable.
+
+## 10. Context continuity
+
+Context-window loss is expected. Recovery must not depend on remembering the
+previous chat or rereading every transcript.
+
+The minimum restart path is `docs/DOCUMENT_MAP.md`. That file names every
+canonical owner so a brainstorming memo cannot hide from the next session.
+Then:
+
+1. read this file and `ENGINEERING_RULES.md`;
+2. read `HANDOFF_PLANNING_AGENT.md` for Now / Next / Later and explicit
+   non-goals;
+3. read `PROJECT_STATUS.md` for component state and risks;
+4. read only the canonical documents linked for the active phase;
+5. compare the handoff's application commit and docs commit with `origin`
+   before changing anything.
+
+Before a planned handoff, likely context compaction, or end of a decision-heavy
+session, the planning agent must perform a continuity checkpoint:
+
+- route every accepted, rejected, or pending decision as section 3 requires;
+- update `DOCUMENT_MAP.md` Pause state and any new canonical owner;
+- update the handoff's Now / Next / Later sequence and "do not reopen" list;
+- name the canonical owner for every post-current-phase item;
+- record application, hosted, device, and docs evidence only in their proper
+  ledgers;
+- commit and push the documentation branch, then report whether it is actually
+  on `main`;
+- read the committed diff, not the working copy, before declaring the
+  checkpoint complete.
+
+The handoff should stay short enough to bootstrap a new agent. Detailed product
+logic belongs in specs and operating models. In particular, the governed data
+flywheel is owned by `DATA_FLYWHEEL_OPERATING_MODEL.md`, and its internal
+review product is owned by SPEC-47. The handoff must preserve their place in
+the sequence, not duplicate their full designs.

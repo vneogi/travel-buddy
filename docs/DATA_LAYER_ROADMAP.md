@@ -366,13 +366,13 @@ for the owner's itinerary reliability work.
 
 The immediate sequence is now:
 
-1. G0 field-fix-2 and SPEC-45 Phase A are on `main` (`b8cf305`,
-   `7939565`). Phone APK retest of both remains open.
+1. G0 field-fix-2, SPEC-45 Phase A, and SPEC-44 Phase A are on `main`
+   (`b8cf305`, `7939565`, `9a7b9d9`). Hosted 0025 is applied. Phone
+   APK evidence is recorded 2026-09-27.
 2. SPEC-41 Phase A, SPEC-10 paste/scheduler, and SPEC-25 grounded
    trip-scoped Ask are on main.
-3. Finish SPEC-44 Phase A on draft PR #67: ephemeral PostgreSQL
-   proofs of migration `0025_trip_command_integrity.sql`. Do not
-   apply 0025 to hosted until those proofs pass.
+3. SPEC-44 A4/A5 and Flutter command queue remain after the Laos trip
+   unless a blocker requires them.
 4. implement SPEC-43 before any non-owner tester or production LLM
    processing of personal trip data;
 5. implement SPEC-13, the minimum SPEC-17 claim store, and SPEC-20

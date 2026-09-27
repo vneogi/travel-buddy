@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 from fastapi.testclient import TestClient
+from freezegun import freeze_time
 
 from main import app
 from models.schemas import TripNode, TripState
@@ -66,8 +67,14 @@ def _edge_between(trip_id: str, from_venue: str, to_venue: str) -> dict:
     )
 
 
+@freeze_time("2026-08-25T13:00:00Z")
 class TestObservedDuration:
-    """Integration tests for observed_duration_minutes derivation."""
+    """Integration tests for observed_duration_minutes derivation.
+
+    Clock is frozen on 25 Aug 2026 13:00Z so the hardcoded same-day
+    captured_at values stay inside the 30-day ingest window. Without
+    this, the tests start failing once wall-clock passes 24 Sep 2026.
+    """
 
     def test_consecutive_pair_writes_duration(self):
         """Two confirmed arrivals write their span on the connecting edge."""

@@ -41,7 +41,22 @@ $REGION = "asia-south1"
 `gcloud run deploy --source .` builds the container image and deploys in one
 step; no separate Artifact Registry repository is required.
 
-From the repository root on reviewed `main`:
+From the repository root on reviewed `main`.
+
+`--set-env-vars` replaces the entire environment-variable map on the new
+revision. Do not use it on an existing field-test service. `--set-secrets`
+does the same for Secret Manager bindings.
+
+List names only before deploy:
+
+```powershell
+gcloud run services describe travel-buddy `
+  --region $REGION `
+  --format="value(spec.template.spec.containers[0].env.name)"
+```
+
+Deploy source only so the new revision copies the previous env vars and
+secret bindings:
 
 ```powershell
 $SERVICE = "travel-buddy"
@@ -54,8 +69,15 @@ gcloud run deploy $SERVICE `
   --port 8080 `
   --memory 512Mi `
   --min-instances 0 `
-  --max-instances 3 `
-  --set-env-vars "TB_DEBUG=false,TB_ALLOW_ANONYMOUS=true"
+  --max-instances 3
+```
+
+If `TB_DEBUG` or `TB_ALLOW_ANONYMOUS` is missing, merge them with
+`--update-env-vars "TB_DEBUG=false,TB_ALLOW_ANONYMOUS=true"`. Then route
+traffic if LATEST is not already 100 percent:
+
+```powershell
+gcloud run services update-traffic $SERVICE --region $REGION --to-latest
 ```
 
 ## 4. Set secrets in the Cloud Run console
@@ -75,7 +97,9 @@ Set these environment variables (values from your secrets, never in this repo):
 
 Leave `TB_SUPABASE_JWT_SECRET` unset for anonymous field testing.
 
-`TB_DEBUG` and `TB_ALLOW_ANONYMOUS` were set in the deploy command above.
+`TB_DEBUG` and `TB_ALLOW_ANONYMOUS` must already be on the live service
+(`false` / `true`). Confirm them in the revision Variables panel after
+deploy. Use `--update-env-vars` only if a name is missing.
 This configuration is owner-only. It must not be used for a friend, family
 member, beta cohort, or public launch. SPEC-43 replaces the self-issued
 anonymous credential, audits RLS/grants, and adds gateway abuse controls before
@@ -127,8 +151,7 @@ gcloud run deploy $SERVICE \
   --port 8080 \
   --memory 512Mi \
   --min-instances 0 \
-  --max-instances 3 \
-  --set-env-vars "TB_DEBUG=false,TB_ALLOW_ANONYMOUS=true"
+  --max-instances 3
 ```
 
 ## Security reminders
