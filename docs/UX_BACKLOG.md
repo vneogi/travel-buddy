@@ -136,22 +136,22 @@ grid) is close to ours but more complete. Fold in when the designer engages.
 remaining product order is:
 
 1. SPEC-40, SPEC-41 Phase A, SPEC-10 paste/scheduler, SPEC-25
-   grounded trip-scoped Ask, G0 field-fix-2, and SPEC-45 Phase A are
-   on `main`.
-2. Phone-retest G0 plus SPEC-45 chrome on a signed APK from current
-   `main`.
-3. Finish SPEC-44 Phase A (PR #67) including CI PostgreSQL proofs of
-   migration 0025. Do not apply 0025 to hosted until then.
-4. SPEC-43 closes all twelve security/privacy gaps before another
-   person uses the app or production LLM processing handles personal
-   trip data.
-5. SPEC-13, minimum SPEC-17 claims, and SPEC-20 make Bangkok a
+   grounded trip-scoped Ask, G0 field-fix-2, SPEC-45 Phase A, and
+   SPEC-44 Phase A are on `main` (`9a7b9d9`).
+2. Owner phone retest of G0 plus SPEC-45 chrome is recorded
+   2026-09-27. Thursday freeze uses APK `bd935bf2...` and Cloud Run
+   `00012-8wv`.
+3. After return: Ask thread history, catalog place prompts, and
+   weather-day drill-down (recorded in SPEC-25 / SPEC-29). Then SPEC-43
+   closes all twelve security/privacy gaps before another person uses
+   the app or production LLM processing handles personal trip data.
+4. SPEC-13, minimum SPEC-17 claims, and SPEC-20 make Bangkok a
    versioned city pack rather than another Python/Dart exception.
-6. Only after Bangkok proves that factory, prototype SPEC-04 offline
+5. Only after Bangkok proves that factory, prototype SPEC-04 offline
    map artifacts on representative devices.
-7. Only after SPEC-44 Phase A and the matching online command exist,
+6. Only after SPEC-44 Phase A and the matching online command exist,
    consider a separate SQLite mutation-command outbox.
-8. Only then resume map-first polish, multi-night hotel UI,
+7. Only then resume map-first polish, multi-night hotel UI,
    inspiration, learned ranking, and broader consumer work.
 
 Full Vault and the map-first shell remain post-reliability unless field evidence

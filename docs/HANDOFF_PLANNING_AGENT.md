@@ -7,17 +7,16 @@ next agent must not reopen in the first week.
 
 Read this file and the two contracts above. SPEC-36 through SPEC-38,
 SPEC-40, SPEC-41 Phase A, G0 field-fix-2, SPEC-25 grounded trip-scoped
-Ask, and SPEC-45 Phase A are on `main` (`551bc96`). SPEC-42 uncap /
-empty-date render is PARTIAL; Add/Move remain. Create-then-book HITL
-reflow remains. Trip-optional Ask remains.
+Ask, SPEC-45 Phase A, and SPEC-44 Phase A are on `main` (`9a7b9d9`).
+Hosted 0025 is applied. Cloud Run `travel-buddy-00012-8wv` is the live
+untagged revision. SPEC-42 uncap / empty-date render is PARTIAL;
+Add/Move remain. Create-then-book HITL reflow remains. Trip-optional
+Ask remains.
 
-SPEC-44 Phase A application code is in draft PR #67
-(`feat/spec44-phase-a-integrity` at `ed548b8`). Planning reviews;
-Genie implements. Do not merge #67 or apply hosted migration 0025
-until ephemeral PostgreSQL transaction proofs pass. SPEC-43 is then
-the release foundation before any non-owner tester or the planned
-December launch. The SPEC-13/17/20 city factory follows; Bangkok
-proves it without a hardcoded exception.
+SPEC-44 Phase A application code merged as PR #67 (`9a7b9d9`). Planning
+reviews; Genie implements. SPEC-43 is the release foundation before any
+non-owner tester or the planned December launch. The SPEC-13/17/20 city
+factory follows; Bangkok proves it without a hardcoded exception.
 
 ## Who does what (unchanged)
 
@@ -68,11 +67,9 @@ Status tables: `docs/PROJECT_STATUS.md`. Device-only queue:
 `docs/HOSTED_STATE.md`. Owner-to-store launch ledger:
 `docs/RELEASE_READINESS.md`. City sequence:
 `docs/MARKET_STRATEGY.md` (Sep 2026 Banana Pancake addendum). Next
-implementation: finish SPEC-44 Phase A PostgreSQL proofs on PR #67.
-G0 is not passed until the owner phone retests the live trip on an
-APK built from current `main` (include SPEC-45 chrome). Do not start
-SPEC-42 Add/Move or SPEC-43 until SPEC-44 Phase A is closed or
-explicitly re-sequenced. Do not treat in-memory pytest as PostgreSQL
+implementation after Thursday freeze: recorded SPEC-25 history/prompts
+and SPEC-29 weather-day drill-down, then SPEC-43. Do not start
+SPEC-42 Add/Move this week. Do not treat in-memory pytest as PostgreSQL
 transaction proof.
 
 ## Third-party review -- already adjudicated
@@ -137,12 +134,14 @@ not outrank the field-proven itinerary trust gaps for the owner's trip.
 The phone-independent delivery and airplane-mode gate passed. SPEC-38 passed
 on the owner's phone. Next tasks:
 
-1. G0 field-fix-2 is on main as `b8cf305`. SPEC-45 Phase A is on
-   main as `7939565` (laptop Flutter `61b07d0`, owner Windows 3.44.8).
-   Cloud Run was already updated for G0. Next: signed APK from this
-   merge, then phone G0 matrix plus SPEC-45 chrome. Do not call G0 or
-   SPEC-45 phone-passed from laptop tests. SPEC-45 is Flutter-only; no
-   extra Cloud Run deploy is required for this slice.
+1. SPEC-44 Phase A is on main (`9a7b9d9`). Hosted 0025 applied.
+   Cloud Run `00012-8wv` serves 100% untagged traffic. Owner APK
+   SHA256 `bd935bf2654b17be17f27acedc5ad449e8ce5f67d390a4b35e4e4d68c1df0e2b`
+   (`pm clear` then install). Phone evidence 2026-09-27: Oct 2-9
+   corridor, SPEC-45 chrome, OpenWeather rain card, offline itinerary,
+   owner-reported Force-sync drain. Thursday: freeze this pair, preload
+   the real travel trip, airplane reopen. Do not rebuild unless a
+   blocker appears.
 2. SPEC-40 is done as `ebdea52`. SPEC-42 uncap is PARTIAL on main
    (`17e58ac`): catalog caps are gone and empty dates render. Do not
    reopen the five-day *starter* budget. Add/Move are a later slice.
@@ -165,14 +164,11 @@ on the owner's phone. Next tasks:
    (`1f251a3`, merge `7b62818`). Slice 3 (named slots) is on main
    (`f1feb17`, merge `9173b23`). G0 field-fix-2 is on main (`b8cf305`).
    SPEC-45 Phase A is on main (`7939565`). Create-then-book HITL
-   reflow remains. Do not start security implementation, inspiration,
-   similar-trip generation, or broader consumer work until the phone
-   gate on the new APK.
-8. Finish SPEC-44 Phase A on draft PR #67 (`ed548b8`): ephemeral
-   PostgreSQL proofs of migration 0025, then merge. Do not apply 0025
-   to hosted until those proofs pass. Do this before SPEC-16
-   row-authoritative reads, multi-device mutation, or a second real
-   city.
+   reflow remains. Do not start inspiration, similar-trip generation,
+   or broader consumer work during the departure freeze.
+8. SPEC-44 Phase A is closed on main (`9a7b9d9`). Hosted 0025 is
+   applied. Remainders A4/A5 and Flutter command queue wait until after
+   the Laos trip unless a blocker requires them.
 9. Implement SPEC-43 in bounded phases. It owns twelve verified gaps:
    server-issued anonymous auth, complete RLS, redacted LLM egress, data rights
    and retention, encrypted offline data, real sign-out, purpose consent,

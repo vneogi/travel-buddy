@@ -114,13 +114,15 @@ the phone home screen. Profile > API Host must show the Cloud Run hostname.
 
 ## What to record in the PR (no secrets)
 
-Field APK used 2026-09-14 (owner did not paste certutil hash):
+Field APK used 2026-09-27 (owner Windows, `main` `9a7b9d9`):
 
 | Field | Value |
 |---|---|
-| Source commit SHA | `fefc4ec` |
+| Source commit SHA | `9a7b9d928d3c280a28b1c0d7feb2c36a6ef88e7a` |
 | Platform | Android |
 | Artifact | Signed release APK |
 | Hosted API hostname | `travel-buddy-196190001420.asia-south1.run.app` |
+| Cloud Run revision | `travel-buddy-00012-8wv` |
 | Build command | `flutter build apk --release --dart-define=TB_API_BASE_URL=https://travel-buddy-196190001420.asia-south1.run.app` |
-| APK SHA-256 | (not recorded) |
+| APK SHA-256 | `bd935bf2654b17be17f27acedc5ad449e8ce5f67d390a4b35e4e4d68c1df0e2b` |
+| Device | `49261FDKD001JM` (`pm clear` then `adb install -r`) |

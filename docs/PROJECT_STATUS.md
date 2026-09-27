@@ -38,9 +38,10 @@
   Hearts persist across process death (verified Aug 30 on Windows).
   `session_start` emits from the app lifecycle (SPEC-30, `f8349a8`).
   Sync Status now awaits `syncOnce()` before reading counts.
-- Migrations 0001 to 0024 are applied on the hosted database. Migrations
+- Migrations 0001 to 0025 are applied on the hosted database. Migrations
   0011-0018 were verified on device day 2026-08-17; 0019-0024 were verified
-  from live schema sentinels on 2026-09-06. Migration 0023 includes the live
+  from live schema sentinels on 2026-09-06; 0025 was verified in the SQL
+  Editor on 2026-09-27. Migration 0023 includes the live
   `filter_geo_region` RPC argument. 0015/0017 CHECKs remain NOT VALID until a
   deliberate VALIDATE after distinct-value review. See docs/HOSTED_STATE.md.
 - Every file under data/ is ASCII-escaped, and a guard enforces it. Use
@@ -66,6 +67,7 @@
 | Migration 0017 venues_rag price_band | APPLIED (device day 2026-08-17) | NOT VALID CHECK; VALIDATE deferred until distinct-value read |
 | Migration 0018 anonymous identity | APPLIED (device day 2026-08-17) | identity_kind on user_tiers |
 | Migrations 0019-0024 | APPLIED (verified 2026-09-06) | Signal rows for 0019/0020/0021/0024, trip_node columns for 0021/0022, and the 0023 seven-argument hybrid search RPC were observed live. Canonical evidence: docs/HOSTED_STATE.md |
+| Migration 0025 | APPLIED (2026-09-27) | `trip_states.version`, `trip_command`, `commit_trip_command`. Bounded-input RPC raised `22023`. See docs/HOSTED_STATE.md |
 | Venue loader | REPAIRED, CARRIES EVERY FIELD | Pure ASCII, vocabulary restored, geo_region inferred from the file wrapper. Payload built once in build_venue_record; insert and update derive from it so they cannot drift apart |
 | Loader payload guard | DONE | A test asserts build_venue_record's key set equals VENUES_RAG_WRITE_COLUMNS, and build_dish_record does the same for venue_dish against VENUE_DISH_WRITE_COLUMNS. The earlier guards watched the declaration only, which is how four fields were dropped while the suite stayed green |
 | External-id writer | DONE | upsert_venues writes venue_external_id for every venue carrying a verified name reference, and the test drives upsert_venues rather than the helper, which is the distinction that let the first attempt land as dead code |
@@ -99,11 +101,11 @@
 | Money as a dimension (SPEC-23) | SPECIFIED | Not implemented. The engineering contract under VISION section 20, and roadmap concern 7. A band and an amount are different things and both are needed; no amount is storable without its currency; a band is meaningless until anchored to a region, which is what makes price tolerance portable between cities; transport cost belongs on trip_edge; budget is revealed from rejections rather than asked for, with a volunteered hard cap honoured exactly; amounts are SPEC-17 claims on a weeks-scale horizon and degrade to a band when stale. Depends on SPEC-13, SPEC-16 and SPEC-17 |
 
 | Identity lifecycle (SPEC-24) | SPECIFIED | Not implemented, and the design is deliberately settled ahead of the build. Sign-in itself is nearly free because Supabase Auth owns the provider flow and security.py already verifies the token; the work is what happens to the anonymous history. Owns credential aliases, the anonymous-to-account merge, multi-device, and sign-out. Merge direction is fixed one way, which extends the upgrade-on-sight rule already live on identity_kind. Union rather than dedupe; tier and quota both resolve to the maximum, since taking the minimum makes sign-in a way to refill the daily reroute allowance |
-| Ask Anything surface (SPEC-25) | PARTIAL (trip-scoped on main) | Grounded trip-scoped Ask on main (`30a4270`). Owner Windows Flutter envelope tests passed. Trip-optional Ask, budgets, full SPEC-17 envelopes, discovery, and hosted/device Ask remain |
+| Ask Anything surface (SPEC-25) | PARTIAL (trip-scoped on main) | Grounded trip-scoped Ask on main (`30a4270`). 27 Sep phone Ask returned `curated_catalog` dish facts. Durable thread history and catalog-backed place prompts are recorded remainders. Trip-optional Ask, budgets, and hosted LLM remain |
 | Home surface (SPEC-26) | IMPLEMENTED (snapshot) | GET /trips now returns featured_trip: active trip (or earliest upcoming) with actionable stop (no state_json, no full nodes). Dart HomeSnapshot parses and caches it. Home renders Now/Up next card above trip list. Offline cache renders same card with cache age. Full SPEC-22 migration remains |
 | App lifecycle and data rights (SPEC-27) | SPECIFIED | Not implemented. Owns push transport for candidates produced by capabilities such as SPEC-35, with tokens that survive the SPEC-24 merge and delivery through the SPEC-22 interruption budget enforced server-side. Also owns deletion/export under DPDP and GDPR and a minimum supported client that blocks writes but never reads |
 | Trip inspiration (SPEC-28) | DECIDED, NOT SCHEDULED | Opt-in, delayed, region-level public trip snapshots as inspiration. No live people/location, DMs or comments in v1. Requires identity, deletion/export and moderation gates |
-| Context alerts (SPEC-29) | DONE (phase 1) | PR #25 squash-merged as `aedbc03`. OpenWeather evidence is matched to upcoming nodes, cached by identity and shown with provenance. Alerts never mutate or consume reroute quota. SPEC-35 owns proactive in-app candidates; SPEC-27 owns watcher/push delivery |
+| Context alerts (SPEC-29) | DONE (phase 1) | PR #25 squash-merged as `aedbc03`. 27 Sep phone card named OpenWeather with a current source age on hosted Cloud Run. Forecast-day drill-down and an attributed external forecast link are recorded remainders. Alerts never mutate or consume reroute quota |
 | Retention instrumentation (SPEC-30) | DONE | PR #32 (`f8349a8`) added `session_start` and the `trip_edge` observed-duration writer. PR #34 (`83c825f`) added durable node outcomes, active/past confirmation UI, outcome-aware targeting, and explicit cancel confirmation. Flutter CI and owner Windows full suite green |
 | Date-scoped itinerary (SPEC-31) | DONE | Grouping under date headers is on main (PR #36, Windows Sep 4 6A). Test 6C is canceled; the dedicated rescue shortcut and selection helpers are removed. Date grouping and the hotel booking's driver-card action remain |
 | Real Laos trip creation (SPEC-32) | VERIFIED (one-city slice) | Sep 5 Windows run created a real catalog-backed Luang Prabang itinerary with no Dubai fallback. Multi-city Laos corridors remain outside this slice |
@@ -116,8 +118,8 @@
 | Hours-aware scheduling and staged ranking (SPEC-41) | PHASE A COMPLETE (`d1fde14`, `7f25042`) | Create, corridor, and swap refuse known-closed or walking-unreachable target slots; day packing uses per-pair deterministic walking time and later opening windows; swap search/apply share reachability; locked non-hotel anchors remain reachable; cached `max_days` is guaranteed across weekdays and valid interest profiles |
 | Flexible trip span and sparse day editing (SPEC-42) | PARTIAL (`adc99d2`, merged `17e58ac`) | Catalog-derived date caps removed. Create accepts spans up to the 90-day sanity bound; generation fills at most five starter days; empty dates render from creationContext / corridor segments. Owner Windows flutter analyze had no errors and full flutter test was green on `adc99d2`. Add activity and cross-day Move remain; those online commands must exist before SPEC-02 can queue them offline |
 | Security, privacy and data governance foundation (SPEC-43) | SPECIFIED; AFTER LAOS BUILD, BEFORE NON-OWNER DISTRIBUTION | Owns twelve verified gaps across anonymous authentication, RLS, LLM egress, rights/retention, offline encryption, sign-out, consent, cache isolation, signal authorization, logging, abuse limits, and release transport. The current owner-only exception expires before the first external tester or December launch |
-| Backend integrity and future-readiness foundation (SPEC-44) | PHASE A IN REVIEW (PR #67, `ed548b8`) | Atomic trip/party/graph writes, optimistic version, durable command_id replay, and typed conflicts are on the branch. In-memory/HTTP proofs exist. CI ephemeral PostgreSQL proof of migration 0025 is outstanding. Hosted 0025 is not applied. A4/A5, Flutter command queue, and SPEC-43 are out of this slice |
-| On-trip visible surface (SPEC-45) | PHASE A ON MAIN (`7939565`, laptop Flutter `61b07d0`) | Card IA, one Ask control, honest hotel dates/warnings, tappable details. Phone APK retest of this chrome is open. Does not own SPEC-43, money storage, GPS, map tiles, or Add/Move. Contract: `docs/specs/SPEC-45-on-trip-visible-surface.md` |
+| Backend integrity and future-readiness foundation (SPEC-44) | PHASE A ON MAIN (PR #67, `9a7b9d9`) | Atomic trip/party/graph writes, optimistic version, durable command_id replay, typed conflicts, and hosted 0025. A4/A5, Flutter command queue, and SPEC-43 remain out of this slice |
+| On-trip visible surface (SPEC-45) | PHASE A ON MAIN (`7939565`); PHONE EVIDENCE 2026-09-27 | Card IA, one Ask control, tappable details, and schedule-issue copy observed on APK `bd935bf2...` against Cloud Run `00012-8wv`. Map tiles, Add/Move, GPS, and SPEC-43 account chrome remain |
 | What Now foreground context (SPEC-46) | SPECIFIED; PHASED | Phase A uses trip stop/city plus explicit time, energy and walking context with deterministic reason codes. Phase B is one-shot foreground GPS only after SPEC-43. Contract: `docs/specs/SPEC-46-what-now-foreground-context.md` |
 | Data operations workbench (SPEC-47) | SPECIFIED; AFTER SPEC-43 + SPEC-17 | Protected internal observation review, conflicts, freshness, and versioned release manifests. Contribution prompts stay off until this exists. Operating model: `docs/DATA_FLYWHEEL_OPERATING_MODEL.md` |
 
@@ -131,7 +133,7 @@ numbers were taken by other work while they sat unimplemented.
 
 Interim R5 relocate of VALID_DISH_CONTAINS landed in PR #15 (d061222). Device
 day is closed and the Windows laptop ran the product matrix on Aug 27-28.
-All repository migrations through 0024 are verified on hosted Supabase; do not
+All repository migrations through 0025 are verified on hosted Supabase; do not
 reopen or reapply them without a new migration. Remaining device work must be
 named explicitly: Profile/Skip exact errors and any unrecorded Anonymous E2E.
 Durable hearts passed on Windows Aug 30. Google Maps Distance Matrix and
@@ -141,13 +143,14 @@ see docs/HOSTED_STATE.md for the credential-safe checks.
 Success for the phone gate was an installable build using a stable hosted
 HTTPS API, with the Laos corridor and pre-cached driver cards working after
 the laptop and USB are disconnected. That gate passed on 2026-09-13. Travel
-is still Oct 2-9. G0 field-fix-2 is on `main` (`b8cf305`). SPEC-45
-Phase A is on `main` (`7939565`, laptop Flutter `61b07d0`). SPEC-44
-Phase A is in draft PR #67 (`ed548b8`); do not merge or apply
-migration 0025 until ephemeral PostgreSQL proofs pass. Rebuild the
-signed APK from current `main`, then phone-check G0 plus SPEC-45
-chrome. After SPEC-44 Phase A closes, SPEC-43 is the non-owner
-release gate. PDF intake remains deferred.
+is still Oct 2-9. SPEC-44 Phase A is on `main` (`9a7b9d9`). Hosted 0025
+and Cloud Run `00012-8wv` are live. The owner phone matrix on APK
+`bd935bf2...` covered G0 plus SPEC-45 chrome, offline cache, and a
+reported Force-sync drain. Thursday freeze: keep this APK/revision,
+preload the real travel trip, then one airplane reopen. Do not start
+SPEC-42 Add/Move, SPEC-46, another city, or polish this week. After
+return: recorded Ask history, place prompts, and weather-day drill-down;
+then SPEC-43 before any non-owner APK. PDF intake remains deferred.
 
 1. Device day -- **CLOSED** 2026-08-17. Brief: docs/briefs/DEVICE_DAY.md.
    Dubai raw dump 6bfa1c6; migrations 0011-0018 applied; Laos reloaded;
@@ -244,13 +247,10 @@ Seed-shaped cohorts.
     swap sheet lists server-filtered candidates and preserves
     `slot_name`; corridor hotel cards expand once with nights and
     checkout copy. Owner Windows `flutter test` was green on
-    `db754d9` (2026-09-24). Hosted API/APK still wait for an explicit
-    deploy. G0 phone pass is not recorded. Create-then-book HITL
-    reflow remains. SPEC-43/44 stay after the Laos build.
-13. SPEC-44 Phase A backend integrity -- **NEXT DATA FOUNDATION AFTER THE LAOS
-   BUILD**. Make trip graph, party, and compatibility projection one
-   transaction; add expected-version conflicts and idempotent commands before
-   normalized-row reads, multi-device use, or a second real city.
+    `db754d9` (2026-09-24). Create-then-book HITL reflow remains.
+13. SPEC-44 Phase A backend integrity -- **DONE on main** (PR #67,
+    `9a7b9d9`). Hosted 0025 applied 2026-09-27. Cloud Run `00012-8wv`.
+    A4/A5, Flutter command queue, and SPEC-43 remain.
 14. SPEC-43 security, privacy, and data governance -- **NEXT RELEASE
    FOUNDATION AFTER THE LAOS BUILD**. Complete all twelve gaps before any
    non-owner APK, production LLM processing of personal trip data, or the
@@ -289,9 +289,9 @@ Seed-shaped cohorts.
 - SPEC-24 identity lifecycle and SPEC-27 data rights are implementation
   dependencies inside the SPEC-43 release foundation, not work that may slip
   past the first non-owner build.
-- SPEC-44 Phase A is an integrity dependency for safe normalized reads and
-  multi-device mutation. Its model, vector, graph, and service extractions are
-  deliberately deferred until measured evidence.
+- SPEC-44 Phase A is on main (`9a7b9d9`) with hosted 0025. Remainders
+  are A4/A5 and the Flutter command queue. Model, vector, graph, and
+  service extractions stay deferred until measured evidence.
 - Thailand, Vietnam, Cambodia, and Philippines packs wait for SPEC-13/17/20
   under SPEC-44's city-platform contract. Bangkok is the acceptance case, not a
   temporary registry and loader exception.

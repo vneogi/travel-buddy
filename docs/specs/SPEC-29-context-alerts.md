@@ -70,6 +70,30 @@ the same shape for departure and meal candidates.
 - auto_applied is always false.
 - A user must confirm any structural event.
 
+## Field Follow-up: Forecast Trend and External Detail
+
+Owner phone evidence on 27 Sep 2026 showed a live OpenWeather rain card but
+also exposed the next decision need: a probability attached to one stop is not
+enough to decide whether to wait, swap, or rework the afternoon.
+
+This follow-up is recorded, not implemented:
+
+- Tapping weather detail shows the already-fetched forecast blocks across the
+  relevant local day or validity window: local time, rain probability,
+  condition, temperature/feels-like, and wind when supplied.
+- The drill-down names the city, provider, fetched time, forecast validity,
+  and stale/offline state. It must distinguish fetch time from forecast time.
+- A clearly attributed `View external forecast` action opens a provider or
+  platform forecast using city or coordinates. It does not pass trip, party,
+  booking, or identity data in the URL.
+- The trend and link invoke no LLM and do not consume Ask or reroute budget.
+  They reuse the provider response/cache already used for alert evaluation.
+- `Review alternatives` may open candidate review, but no itinerary mutation
+  occurs until the traveller explicitly confirms it.
+- Alerts should name weather-sensitive stops. Transport and lodging must not
+  be described as outdoor plans merely because they occupy the same forecast
+  window; sensitivity needs an explicit catalog/type rule or honest unknown.
+
 ## Phases
 
 1. Phase 1 (this PR): Refresh on itinerary load, app resume, manual refresh.

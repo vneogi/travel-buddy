@@ -106,9 +106,8 @@ The immediate order after the field-test gate:
 6. SPEC-10 provider-aware paste and flight/hotel scheduler are on main;
 7. SPEC-25 grounds the existing trip-scoped composer (trip-optional Ask remains);
 8. SPEC-45 Phase A visible itinerary chrome is on main (`7939565`);
-   phone APK retest is open;
-9. finish SPEC-44 Phase A (PR #67) including CI PostgreSQL proofs of
-   migration 0025; do not apply 0025 to hosted yet;
+   owner phone evidence 2026-09-27;
+9. SPEC-44 Phase A is on main (PR #67, `9a7b9d9`); hosted 0025 applied;
 10. implement SPEC-43 before any non-owner distribution, production LLM
    processing of personal trip data, or the planned December launch;
 11. implement SPEC-13, minimum SPEC-17 claims, and SPEC-20; Bangkok must

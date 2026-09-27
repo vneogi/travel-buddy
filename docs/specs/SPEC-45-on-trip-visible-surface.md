@@ -1,9 +1,11 @@
 # SPEC-45: On-Trip Visible Surface
 
 > Status: PHASE A IMPLEMENTED on main (`7939565`, laptop Flutter
-> `61b07d0`). Phone APK retest of this chrome is still open. Remainder
-> of this spec (map tiles, Add/Move, GPS, SPEC-43 account chrome) is
-> not this merge.
+> `61b07d0`). Owner phone evidence 2026-09-27 on APK `bd935bf2...`
+> against Cloud Run `00012-8wv` showed tappable cards, one Ask composer,
+> schedule-issue details, and neighbourhood labels. Remainder of this
+> spec (map tiles, Add/Move, GPS, SPEC-43 account chrome) is not this
+> merge.
 >
 > Recorded 24 Sep 2026 from an external UX/product review of `d9f89ba`
 > plus owner Android screenshots the same day. This spec owns **visible
