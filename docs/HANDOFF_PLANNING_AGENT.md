@@ -186,11 +186,10 @@ separation live in the operating model; do not reconstruct them from chat.
 Application freeze SHA remains `9a7b9d9`. Hosted 0025 applied. Cloud Run
 `00012-8wv`. Owner APK SHA256 `bd935bf2...`.
 
-Genie next: `docs/briefs/GENIE_SPEC_45_FIELD_TRUST_HYGIENE.md` from
-clean `origin/main`, branch `feat/spec45-field-trust-hygiene`. Cap
-alerts, today-only outcomes with booking-kind copy, hide dead Review,
-explain empty swaps. Do not start Ask, What Now, Add/Move, SPEC-43,
-catalog patches, or APK.
+Genie next: remainder
+`docs/briefs/GENIE_SPEC_45_FIELD_TRUST_HYGIENE_REMAINDER.md` on existing
+`feat/spec45-field-trust-hygiene` (`397846d`). Do not merge that PR.
+Do not start Ask, What Now, Add/Move, SPEC-43, catalog patches, or APK.
 
 Historical context (do not treat as current work):
 
