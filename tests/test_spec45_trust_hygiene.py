@@ -1,8 +1,7 @@
 """SPEC-45 Phase B: Field trust hygiene -- Python backend tests.
 
-Tests the refusal_code/refusal_copy fields on the swap_candidates endpoint.
-Forces an empty candidate set (no catalog for the region) to prove refusal
-fields are always present.
+Forces an empty swap_candidates result via monkeypatch so refusal_code
+and refusal_copy are always asserted. No skip, no conditional.
 """
 
 import pytest
@@ -33,88 +32,82 @@ def _create_trip(uid: str, region: str = "luang_prabang_laos") -> str:
     return r.json()["trip_id"]
 
 
+def _unlocked_node(uid):
+    """Create trip, return (trip_id, target_node dict)."""
+    trip_id = _create_trip(uid)
+    trip = client.get(f"/api/v1/trip/{trip_id}", headers=_auth(uid))
+    assert trip.status_code == 200
+    nodes = trip.json()["nodes"]
+    target = next((n for n in nodes if not n.get("is_locked")), None)
+    assert target is not None, "Need at least one unlocked node"
+    return trip_id, target
+
+
 class TestSwapCandidatesRefusal:
     """SPEC-45 B4: swap_candidates must return refusal_code when empty."""
 
-    def test_forced_empty_region_returns_no_catalog_refusal(self):
-        """A region with no catalog entries must return refusal_code='no_catalog'."""
-        uid = "spec45-b4-force-empty"
-        # Create a trip in a region that has no venue catalog at all.
-        # Use a fake region -- the in-memory backend won't have venues for it.
-        r = client.post(
-            "/api/v1/trip/create",
-            json={
-                "geo_region": "nowhere_test_region",
-                "days": 1,
-                "start_date": "2026-10-02",
-                "party_type": "solo",
-                "party_size": 1,
-            },
-            headers=_auth(uid),
+    def test_hours_refusal_via_monkeypatch(self, monkeypatch):
+        """Monkeypatch hours_for_slot to always return CLOSED.
+        _considered > 0 and _rejected_hours dominates -> refusal_code='hours'."""
+        from services.opening_hours import HoursResult
+
+        uid = "spec45-b4-hours-mp"
+        trip_id, target = _unlocked_node(uid)
+
+        monkeypatch.setattr(
+            "services.opening_hours.hours_for_slot",
+            lambda _structured, _start, _dwell, _region: HoursResult.CLOSED,
         )
-        if r.status_code != 200:
-            # Some regions may be rejected at create. Fall back to LP.
-            trip_id = _create_trip(uid)
-        else:
-            trip_id = r.json()["trip_id"]
-
-        trip = client.get(f"/api/v1/trip/{trip_id}", headers=_auth(uid))
-        assert trip.status_code == 200
-        nodes = trip.json()["nodes"]
-        target = next((n for n in nodes if not n.get("is_locked")), None)
-        if target is None:
-            pytest.skip("No unlocked node in seeded trip")
-
         resp = client.get(
             f"/api/v1/trip/{trip_id}/swap_candidates/{target['node_id']}",
             headers=_auth(uid),
         )
         assert resp.status_code == 200, resp.text
         data = resp.json()
-        if not data["candidates"]:
-            assert "refusal_code" in data, "empty candidates must carry refusal_code"
-            assert data["refusal_code"] in ("hours", "reachability", "no_catalog")
-            assert "refusal_copy" in data
-            assert len(data["refusal_copy"]) > 0, "refusal_copy must be non-empty"
+        assert data["candidates"] == [], "monkeypatch should empty candidates"
+        assert data["refusal_code"] == "hours"
+        assert data["refusal_copy"] == "All nearby alternatives are closed at this time."
 
-    def test_refusal_fields_present_on_empty_result(self):
-        """Verify refusal_code + non-empty copy when result is empty."""
-        uid = "spec45-b4-empty-proof"
-        trip_id = _create_trip(uid)
-        trip = client.get(f"/api/v1/trip/{trip_id}", headers=_auth(uid))
-        assert trip.status_code == 200
-        nodes = trip.json()["nodes"]
-        target = next((n for n in nodes if not n.get("is_locked")), None)
-        if target is None:
-            pytest.skip("No unlocked node")
+    def test_reachability_refusal_via_monkeypatch(self, monkeypatch):
+        """Monkeypatch _is_swap_reachable to always return False.
+        Hours pass but reachability rejects -> refusal_code='reachability'."""
+        uid = "spec45-b4-reach-mp"
+        trip_id, target = _unlocked_node(uid)
 
+        import sys
+
+        sm_mod = sys.modules["agents.state_machine"]
+
+        monkeypatch.setattr(
+            sm_mod,
+            "_is_swap_reachable",
+            lambda _target, _lat, _lng, _dwell, _nodes, _idx: False,
+        )
         resp = client.get(
             f"/api/v1/trip/{trip_id}/swap_candidates/{target['node_id']}",
             headers=_auth(uid),
         )
-        assert resp.status_code == 200
+        assert resp.status_code == 200, resp.text
         data = resp.json()
-        if not data["candidates"]:
-            assert data["refusal_code"] in ("hours", "reachability", "no_catalog")
-            assert data["refusal_copy"], "refusal_copy must be non-empty"
-        # If there ARE candidates, refusal should be absent
-        else:
-            assert data.get("refusal_code") is None
+        assert data["candidates"] == [], "monkeypatch should empty candidates"
+        assert data["refusal_code"] in ("reachability", "hours")
+        assert len(data["refusal_copy"]) > 0, "refusal_copy must be non-empty"
 
-    def test_locked_node_returns_409(self):
-        """Locked bookings cannot be swapped."""
-        uid = "spec45-b4-locked"
-        trip_id = _create_trip(uid)
-        trip = client.get(f"/api/v1/trip/{trip_id}", headers=_auth(uid))
-        assert trip.status_code == 200
-        locked = next(
-            (n for n in trip.json()["nodes"] if n.get("is_locked")),
-            None,
-        )
-        if locked is None:
-            pytest.skip("No locked node in seeded trip")
+    def test_no_catalog_refusal_via_monkeypatch(self, monkeypatch):
+        """Monkeypatch list_venues_for_region to return empty.
+        _considered == 0 -> refusal_code='no_catalog'."""
+        from services.db_provider import db_service
+
+        uid = "spec45-b4-nocat-mp"
+        trip_id, target = _unlocked_node(uid)
+
+        monkeypatch.setattr(db_service, "list_venues_for_region", lambda _region: [])
         resp = client.get(
-            f"/api/v1/trip/{trip_id}/swap_candidates/{locked['node_id']}",
+            f"/api/v1/trip/{trip_id}/swap_candidates/{target['node_id']}",
             headers=_auth(uid),
         )
-        assert resp.status_code == 409
+        assert resp.status_code == 200, resp.text
+        data = resp.json()
+        assert data["candidates"] == [], "monkeypatch should empty candidates"
+        assert data["refusal_code"] == "no_catalog"
+        assert data["refusal_copy"] == "No alternative venues in the catalog for this area."

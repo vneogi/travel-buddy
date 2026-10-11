@@ -223,11 +223,12 @@ class ItineraryScreen extends ConsumerWidget {
   Future<void> _showOutcomePicker(
     BuildContext context,
     WidgetRef ref,
-    TripNode node,
-  ) async {
+    TripNode node, {
+    bool isLastHotelNight = false,
+  }) async {
     final decision = await showModalBottomSheet<_OutcomeDecision>(
       context: context,
-      builder: (_) => _OutcomeSheet(node: node),
+      builder: (_) => _OutcomeSheet(node: node, isLastHotelNight: isLastHotelNight),
     );
     if (decision == null || !context.mounted) return;
 
@@ -360,8 +361,8 @@ class ItineraryScreen extends ConsumerWidget {
                               focusNodeId: focusNodeId,
                               onSwap: (node) => _swap(context, ref, node),
                               onCancel: (node) => _cancel(context, ref, node),
-                              onOutcome: (node) =>
-                                  _showOutcomePicker(context, ref, node),
+                              onOutcome: (node, {isLastHotelNight = false}) =>
+                                  _showOutcomePicker(context, ref, node, isLastHotelNight: isLastHotelNight),
                               onLoved: (node) {
                                 final placeRef =
                                     node.venueId ?? node.venueName;
@@ -400,8 +401,8 @@ class ItineraryScreen extends ConsumerWidget {
                               focusNodeId: focusNodeId,
                               onSwap: (node) => _swap(context, ref, node),
                               onCancel: (node) => _cancel(context, ref, node),
-                              onOutcome: (node) =>
-                                  _showOutcomePicker(context, ref, node),
+                              onOutcome: (node, {isLastHotelNight = false}) =>
+                                  _showOutcomePicker(context, ref, node, isLastHotelNight: isLastHotelNight),
                               onLoved: (node) {
                                 final placeRef =
                                     node.venueId ?? node.venueName;
@@ -445,7 +446,7 @@ class _CorridorTimeline extends StatefulWidget {
   final String? focusNodeId;
   final void Function(TripNode) onSwap;
   final void Function(TripNode) onCancel;
-  final void Function(TripNode) onOutcome;
+  final void Function(TripNode, {bool isLastHotelNight}) onOutcome;
   final void Function(TripNode) onLoved;
   final void Function(TripNode) onEditBooking;
   final void Function(TripNode) onDeleteBooking;
@@ -586,7 +587,7 @@ class _FocusedDateScopedTimeline extends StatefulWidget {
   final String? focusNodeId;
   final void Function(TripNode) onSwap;
   final void Function(TripNode) onCancel;
-  final void Function(TripNode) onOutcome;
+  final void Function(TripNode, {bool isLastHotelNight}) onOutcome;
   final void Function(TripNode) onLoved;
   final void Function(TripNode) onEditBooking;
   final void Function(TripNode) onDeleteBooking;
@@ -680,7 +681,7 @@ class _DateScopedTimeline extends StatelessWidget {
   final CreationContext? creationContext;
   final void Function(TripNode) onSwap;
   final void Function(TripNode) onCancel;
-  final void Function(TripNode) onOutcome;
+  final void Function(TripNode, {bool isLastHotelNight}) onOutcome;
   final void Function(TripNode) onLoved;
   final void Function(TripNode) onEditBooking;
   final void Function(TripNode) onDeleteBooking;
@@ -737,8 +738,12 @@ class _DateScopedTimeline extends StatelessWidget {
     }
 
     final seenNodeIds = <String>{};
+    // SPEC-45 R2: determine destination-local "today" for outcome restriction.
+    final _now = DateTime.now().toUtc();
+    DateTime? _currentHeaderDate;
     final children = List<Widget>.generate(items.length, (i) {
         final item = items[i];
+        if (item.isHeader) _currentHeaderDate = item.date;
         if (item.isHeader) {
           return _DateHeader(date: item.date!);
         }
@@ -773,6 +778,12 @@ class _DateScopedTimeline extends StatelessWidget {
         } else {
           widgetKey = ValueKey('${node.nodeId}_$i');
         }
+        final _isLastHotelNight = !isFirstOccurrence
+            && node.nodeKind == 'booking'
+            && node.bookingType == 'hotel'
+            && !items.skip(i + 1).any((later) =>
+                !later.isHeader && !later.isEmptyDay
+                && later.node!.nodeId == node.nodeId);
         return KeyedSubtree(
           key: widgetKey,
           child: AnimatedSwitcher(
@@ -801,10 +812,14 @@ class _DateScopedTimeline extends StatelessWidget {
               isContinuation: !isFirstOccurrence
                   && node.nodeKind == 'booking'
                   && node.bookingType == 'hotel',
-              isLastHotelNight: !isFirstOccurrence
-                  && node.nodeKind == 'booking'
-                  && node.bookingType == 'hotel'
-                  && (next == null || next.nodeId != node.nodeId),
+              isLastHotelNight: _isLastHotelNight,
+              restrictOutcomeToToday: _currentHeaderDate != null && (() {
+                final nowLocal = toDestinationLocal(_now, node.geoRegion);
+                final hdr = _currentHeaderDate!;
+                return hdr.year == nowLocal.year
+                    && hdr.month == nowLocal.month
+                    && hdr.day == nowLocal.day;
+              })(),
               onTapEditBooking:
                   (!state.processing && node.nodeKind == 'booking'
                       && !(node.bookingType == 'hotel' && !isFirstOccurrence))
@@ -816,7 +831,7 @@ class _DateScopedTimeline extends StatelessWidget {
                       ? () => onDeleteBooking(node)
                       : null,
               onTapRecordOutcome:
-                  state.processing ? null : () => onOutcome(node),
+                  state.processing ? null : () => onOutcome(node, isLastHotelNight: _isLastHotelNight),
               onTapLoved: () => onLoved(node),
               onTapDetails: () {
                 Navigator.of(context).push(
@@ -1113,12 +1128,13 @@ enum _OutcomeDecision { visited, skipped }
 
 class _OutcomeSheet extends StatelessWidget {
   final TripNode node;
-  const _OutcomeSheet({required this.node});
+  final bool isLastHotelNight;
+  const _OutcomeSheet({required this.node, this.isLastHotelNight = false});
 
   @override
   Widget build(BuildContext context) {
     // SPEC-45 B2: kind-specific title and confirm copy.
-    final title = outcomePromptText(node);
+    final title = outcomePromptText(node, isLastHotelNight: isLastHotelNight);
     final confirmText = _confirmLabel(node);
     return SafeArea(
       child: Column(

@@ -151,7 +151,7 @@ void main() {
       );
       // Day-section: YES (past + pending)
       expect(nodeCanRecordOutcome(node, now, null), isTrue);
-      // Today surface: NO (yesterday)
+      // Today surface: NO (yesterday in destination-local time)
       expect(nodeShouldShowTodayOutcome(node, now, null), isFalse);
     });
 
@@ -175,7 +175,7 @@ void main() {
       expect(nodeShouldShowTodayOutcome(node, now, null), isFalse);
     });
 
-    // R17: fold today-check back into nodeCanRecordOutcome → yesterday test goes red.
+    // R17: fold today-check back into nodeCanRecordOutcome -> yesterday test goes red.
     test('R17 sabotage: nodeCanRecordOutcome must not have today check', () {
       final now = DateTime.utc(2026, 10, 2, 16);
       final yesterday = _node(id: 'n1', start: DateTime.utc(2026, 10, 1, 9));
@@ -238,6 +238,12 @@ void main() {
     test('regular activity uses "Did you visit?"', () {
       final node = _node(id: 'a1');
       expect(outcomePromptText(node), 'Did you visit?');
+    });
+
+    test('one-night hotel stay is Checked in (first occurrence, no continuation)', () {
+      final node = _node(id: 'h3', kind: 'booking', bookingType: 'hotel');
+      // First occurrence -> isLastHotelNight=false
+      expect(outcomePromptText(node, isLastHotelNight: false), 'Checked in?');
     });
   });
 
