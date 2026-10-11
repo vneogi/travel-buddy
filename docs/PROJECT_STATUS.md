@@ -121,7 +121,7 @@
 | Flexible trip span and sparse day editing (SPEC-42) | PARTIAL (`adc99d2`, merged `17e58ac`) | Catalog-derived date caps removed; generation fills at most five starter days and empty dates render. Oct 11 field evidence validates Add and Move. Sequence: thin grounded Ask-to-Add, then polished Move; trip-private uncatalogued nodes require confirmation and cannot enter the shared catalog without review |
 | Security, privacy and data governance foundation (SPEC-43) | SPECIFIED; AFTER LAOS BUILD, BEFORE NON-OWNER DISTRIBUTION | Owns twelve verified gaps across anonymous authentication, RLS, LLM egress, rights/retention, offline encryption, sign-out, consent, cache isolation, signal authorization, logging, abuse limits, and release transport. The current owner-only exception expires before the first external tester or December launch |
 | Backend integrity and future-readiness foundation (SPEC-44) | PHASE A ON MAIN (PR #67, `9a7b9d9`) | Atomic trip/party/graph writes, optimistic version, durable command_id replay, typed conflicts, and hosted 0025. A4/A5, Flutter command queue, and SPEC-43 remain out of this slice |
-| On-trip visible surface (SPEC-45) | PHASE A ON MAIN (`7939565`); PHONE EVIDENCE 2026-09-27 | Card IA, one Ask control, tappable details, and schedule-issue copy observed on APK `bd935bf2...` against Cloud Run `00012-8wv`. Remainders: operational place detail, honest transfer/arrival card, warning-to-Rescue once SPEC-46 exists. Map tiles, Add/Move, GPS, and SPEC-43 account chrome remain |
+| On-trip visible surface (SPEC-45) | PHASE A ON MAIN (`7939565`); PHASE B BRIEF READY | Phase A chrome on APK `bd935bf2...`. Phase B is field trust hygiene: cap alerts, today-only kind-specific outcomes, hide dead Review, explain empty swaps. Brief: `docs/briefs/GENIE_SPEC_45_FIELD_TRUST_HYGIENE.md`. Operational place detail, transfer cards, and Rescue wait |
 | What Now foreground context (SPEC-46) | SPECIFIED; P1 STRUCTURED ASK MODE | Phase A: trip stop/city, time/energy/walking, deterministic reasons. Rescue and Hungry now are structured result modes of persistent SPEC-25 Ask, not a separate assistant. Situation chips are temporary. Phase B GPS only after SPEC-43 |
 | Data operations workbench (SPEC-47) | SPECIFIED; AFTER SPEC-43 + SPEC-17 | Protected internal observation review, conflicts, freshness, and versioned release manifests. Contribution prompts stay off until this exists. Operating model: `docs/DATA_FLYWHEEL_OPERATING_MODEL.md` |
 
@@ -152,8 +152,10 @@ confirmed Add or Move.
 
 Current order:
 
-1. P0 trust hygiene: cap advisories, retire old-day prompts, use booking-kind
-   outcome copy, hide dead Review actions, and explain no-candidate swaps.
+1. P0 trust hygiene -- Genie brief
+   `docs/briefs/GENIE_SPEC_45_FIELD_TRUST_HYGIENE.md`: cap advisories,
+   retire old-day prompts, use booking-kind outcome copy, hide dead Review
+   actions, and explain no-candidate swaps.
 2. P1 broad grounded Ask with persistent trip thread, explicit context changes,
    authoritative sources/refusals, and practical trip intents.
 3. Structured What Now/Rescue plus thin Ask-to-Add; then the polished Move

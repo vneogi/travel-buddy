@@ -182,34 +182,35 @@ separation live in the operating model; do not reconstruct them from chat.
 
 ## First job
 
-The phone-independent delivery and airplane-mode gate passed. SPEC-38 passed
-on the owner's phone. Next tasks:
+`origin/main` includes the 11 Oct field strategy reset (`bf31814`).
+Application freeze SHA remains `9a7b9d9`. Hosted 0025 applied. Cloud Run
+`00012-8wv`. Owner APK SHA256 `bd935bf2...`.
 
-1. SPEC-44 Phase A is on main (`9a7b9d9`). Hosted 0025 applied.
-   Cloud Run `00012-8wv` serves 100% untagged traffic. Owner APK
-   SHA256 `bd935bf2654b17be17f27acedc5ad449e8ce5f67d390a4b35e4e4d68c1df0e2b`
-   (`pm clear` then install). Phone evidence 2026-09-27: Oct 2-9
-   corridor, SPEC-45 chrome, OpenWeather rain card, offline itinerary,
-   owner-reported Force-sync drain. Thursday: freeze this pair, preload
-   the real travel trip, airplane reopen. Do not rebuild unless a
-   blocker appears.
-2. SPEC-40 is done as `ebdea52`. SPEC-42 uncap is PARTIAL on main
+Genie next: `docs/briefs/GENIE_SPEC_45_FIELD_TRUST_HYGIENE.md` from
+clean `origin/main`, branch `feat/spec45-field-trust-hygiene`. Cap
+alerts, today-only outcomes with booking-kind copy, hide dead Review,
+explain empty swaps. Do not start Ask, What Now, Add/Move, SPEC-43,
+catalog patches, or APK.
+
+Historical context (do not treat as current work):
+
+- SPEC-40 is done as `ebdea52`. SPEC-42 uncap is PARTIAL on main
    (`17e58ac`): catalog caps are gone and empty dates render. Do not
    reopen the five-day *starter* budget. Add/Move are a later slice.
-3. SPEC-41 Phase A is complete. A3a merged as `d1fde14`; A3b branch head
+- SPEC-41 Phase A is complete. A3a merged as `d1fde14`; A3b branch head
    `7f25042` replaces the 30-minute buffer and random/clock mock transit with
    deterministic walking time, city/day boundaries, apply-time retry,
    previous-node reachability, and next locked-anchor constraints.
-4. SPEC-10 provider-aware paste is on main (`fc6926b`). Flight/hotel
+- SPEC-10 provider-aware paste is on main (`fc6926b`). Flight/hotel
    scheduler remainder is on main (`e7a0457`). Do not reopen Agoda adapters
    unless a new redacted fixture fails. Keep SPEC-10 PARTIAL until
    create-then-book HITL reflow exists.
-5. SPEC-25 trip-scoped grounded Ask is on main (`30a4270`). Laptop Flutter
+- SPEC-25 trip-scoped grounded Ask is on main (`30a4270`). Laptop Flutter
    Ask envelope tests passed. Owner Windows `pytest -q` on `3e5ec6d` is
    green (details in AWAITING_VERIFICATION). Trip-optional Ask remains.
-6. Hotel wall-time conversion, weather empty-key, and swap canned copy
+- Hotel wall-time conversion, weather empty-key, and swap canned copy
    after `no_candidates` are on main (`933c705`).
-7. Specified remainders are sequenced in
+- Specified remainders are sequenced in
    `docs/briefs/GENIE_REMAINDERS_SEQUENCE.md`. Slice 1 (uncap) is on
    main (`17e58ac`). Slice 2 (hotel stay display) is on main
    (`1f251a3`, merge `7b62818`). Slice 3 (named slots) is on main
@@ -217,33 +218,33 @@ on the owner's phone. Next tasks:
    SPEC-45 Phase A is on main (`7939565`). Create-then-book HITL
    reflow remains. Do not start inspiration, similar-trip generation,
    or broader consumer work during the departure freeze.
-8. SPEC-44 Phase A is closed on main (`9a7b9d9`). Hosted 0025 is
+- SPEC-44 Phase A is closed on main (`9a7b9d9`). Hosted 0025 is
    applied. Remainders A4/A5 and Flutter command queue wait until after
    the Laos trip unless a blocker requires them.
-9. Implement SPEC-43 in bounded phases. It owns twelve verified gaps:
+- Implement SPEC-43 in bounded phases. It owns twelve verified gaps:
    server-issued anonymous auth, complete RLS, redacted LLM egress, data rights
    and retention, encrypted offline data, real sign-out, purpose consent,
    private cache isolation, signal ownership/poisoning controls, redacted
    diagnostics, abuse/spend limits, and release HTTPS/cache isolation.
-10. Do not distribute an APK to another person, enable production LLM processing
+- Do not distribute an APK to another person, enable production LLM processing
    of personal trip data, or claim residency/compliance before SPEC-43's
    applicable gates pass.
-11. After SPEC-43, implement the SPEC-13 region/country registry, minimum
+- After SPEC-43, implement the SPEC-13 region/country registry, minimum
    SPEC-17 claim/attribute registry and append-only observation lifecycle.
    Add SPEC-44 recommendation-decision capture only for consented subjects.
     Record feasible exposure, exclusions, score components, displayed order,
     sponsorship, and policy/catalog/taxonomy versions. Learned influence stays
     zero until held-out evidence and rollback gates pass.
-12. Build the minimum SPEC-47 protected review queue before contribution
+- Build the minimum SPEC-47 protected review queue before contribution
    prompts turn on. Run the narrow Laos evidence pilot before SPEC-20 expands
    the versioned pack model. Bangkok is the city-factory acceptance case; do
    not add Thailand, Vietnam, Cambodia, or Philippines through another
    Python/Dart/loader exception.
-13. Only after SPEC-44 Phase A and the matching online SPEC-42 action exist,
+- Only after SPEC-44 Phase A and the matching online SPEC-42 action exist,
     consider SPEC-02's separate SQLite mutation-command outbox. Queue typed
     confirmed commands with `command_id` and `expected_version`; never perform
     local reflow or silently resolve a conflict.
-14. Only after Bangkok proves the SPEC-20 city factory, prototype SPEC-04's
+- Only after Bangkok proves the SPEC-20 city factory, prototype SPEC-04's
     optional versioned offline map artifact on representative devices. PMTiles,
     MapLibre, and Cloudflare R2 are candidates, not commitments; measured size,
     cold start, rendering, memory, battery, update, and offline behavior decide.

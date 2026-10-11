@@ -15,8 +15,9 @@
 >
 > 11 Oct 2026 field amendment: the first owner trip exposed more than 20
 > notifications, stale schedule reviews, generic outcomes, dead actions, and
-> insufficient operational card detail. The next visible-surface slice is
-> hygiene and current/next execution, not more chrome.
+> insufficient operational card detail. Phase B is trust hygiene on the
+> current surface. Brief: `docs/briefs/GENIE_SPEC_45_FIELD_TRUST_HYGIENE.md`.
+> Broad Ask, What Now, Add/Move, and operational place-detail remain later.
 >
 > Depends on SPEC-22 (render/trust treatments), SPEC-17 (claims),
 > SPEC-26 (home snapshot), SPEC-25 (Ask), SPEC-12 (driver card),
@@ -292,6 +293,22 @@ distribution, after SPEC-43, not a freeze item. Map tiles stay deferred.
 A schedule-issue row already names and opens the stop. After SPEC-46
 exists, the next control is Rescue (What Now with a broken-plan
 preset). Until then, do not add a fake Fix it button.
+
+### 15. Phase B -- field trust hygiene (next build)
+
+Owner Laos evidence, not a visual redesign:
+
+1. Cap the Today advisory stack to two cards plus `N more`. Coalesce
+   duplicates. Schedule warnings on Today are destination-local-today
+   only.
+2. Outcome prompts on Today are today or current-window only. Past-day
+   prompts stay on that day section. Copy is booking-kind specific
+   (SPEC-30 signals unchanged).
+3. `Review alternatives` renders only when SwapSheet would open for an
+   unlocked node. Locked bookings keep View stop.
+4. Empty swap keeps the itinerary unchanged and names the constraint
+   (hours, reachability, locked neighbour, or no catalog alternative).
+5. No silent reflow. No Rescue button until SPEC-46.
 
 ## Red flags (shouted)
 

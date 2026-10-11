@@ -57,6 +57,11 @@ observed_duration writer being deferred a fourth time behind a bigger spec.
    affordance that emits them, and the honesty that the current itinerary gives a
    traveller no way to say a stop happened. One control per active or past node --
    happened, or skipped with the closed node_skipped reason picker -- closes it.
+   11 Oct 2026 field amendment: the Today surface prompts only today's
+   destination-local date (or the current window). Past-day prompts remain on
+   that day section, not as a first-open flood. Visible copy is kind-specific
+   (arrived / checked in / checked out / tour / visit). Signal names do not
+   change.
 
 5. **observed_duration_minutes is derived from that confirmation, on sync,
    server-side.** When a node is confirmed visited, observed duration is the span

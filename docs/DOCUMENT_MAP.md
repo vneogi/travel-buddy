@@ -24,7 +24,8 @@ documents disagree, follow Precedence below and name the conflict in
 ## Continuity state on 11 Oct 2026
 
 - Application field APK remained based on `9a7b9d9` (SPEC-44 Phase A).
-  Current docs baseline before this reset: GitHub `main` `281fc96`.
+  GitHub `main` after the field-strategy reset: `bf31814`.
+  Next Genie job: `docs/briefs/GENIE_SPEC_45_FIELD_TRUST_HYGIENE.md`.
 - Hosted: migrations through 0025; Cloud Run `travel-buddy-00012-8wv`.
 - Owner Laos field use is complete. The dated 26 observations and cross-trip
   review of 65 Laos plus 73 China Gemini turns are in
@@ -95,9 +96,10 @@ which specs belong together so a new session does not reopen the wrong era.
 SPEC-16, SPEC-22, SPEC-30, SPEC-31, SPEC-32, SPEC-35 through SPEC-38,
 SPEC-40, SPEC-41 Phase A, SPEC-45 Phase A, SPEC-44 Phase A.
 
-**Specified remainders on that spine.** SPEC-10 HITL reflow; SPEC-25 durable
-Ask history, place prompts, trip-optional Ask; SPEC-29 weather-day detail;
-SPEC-42 Add/Move; SPEC-44 A4/A5 and Flutter command queue.
+**Specified remainders on that spine.** SPEC-45 Phase B field trust
+hygiene (next Genie brief); SPEC-25 durable/broad trip Ask; SPEC-46 as
+structured Ask modes; SPEC-42 Add/Move; SPEC-10 HITL reflow; SPEC-29
+weather-day detail; SPEC-44 A4/A5 and Flutter command queue.
 
 **Release and non-owner gates.** SPEC-43, then SPEC-09 remainder / SPEC-24 /
 SPEC-27 as called by SPEC-43 and RELEASE_READINESS.
@@ -110,7 +112,7 @@ the flywheel model's evidence gates pass.
 
 **Specified, not this season unless the owner changes the sequence.** SPEC-11,
 SPEC-15, SPEC-18, SPEC-19, SPEC-21, SPEC-23, SPEC-26 remainder, SPEC-28,
-SPEC-34, SPEC-39, SPEC-46. PDF (SPEC-39) and inspiration (SPEC-28) stay
+SPEC-34, SPEC-39. PDF (SPEC-39) and inspiration (SPEC-28) stay
 deferred. SPEC-14 dietary claims are retired.
 
 **Declined or shrunk in the owner documents, not in chat.** Full Offline Vault

@@ -94,6 +94,12 @@ This follow-up is recorded, not implemented:
   be described as outdoor plans merely because they occupy the same forecast
   window; sensitivity needs an explicit catalog/type rule or honest unknown.
 
+11 Oct 2026 field amendment: do not stack every valid alert on itinerary
+open. Today shows at most two coalesced, currently valid cards, then `N
+more`. Review alternatives is omitted when the affected node is locked or
+the client cannot open SwapSheet. Weather-day drill-down remains later;
+hygiene is `docs/briefs/GENIE_SPEC_45_FIELD_TRUST_HYGIENE.md`.
+
 ## Phases
 
 1. Phase 1 (this PR): Refresh on itinerary load, app resume, manual refresh.
