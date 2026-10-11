@@ -359,7 +359,7 @@ void main() {
     when(() => repo.swapCandidates(
           tripId: any(named: 'tripId'),
           targetNodeId: any(named: 'targetNodeId'),
-        )).thenAnswer((_) async => [
+        )).thenAnswer((_) async => SwapCandidatesResult(candidates: [
           const VenueSearchResult(
             venueId: 'alt-1',
             name: 'Waterfront Cafe',
@@ -367,7 +367,7 @@ void main() {
             microLocation: 'Old Quarter',
             vibeTags: ['cafe'],
           ),
-        ]);
+        ]));
 
     final trip = TripState(
       tripId: 'trip-1',
@@ -526,7 +526,7 @@ void main() {
     when(() => repo.swapCandidates(
           tripId: any(named: 'tripId'),
           targetNodeId: any(named: 'targetNodeId'),
-        )).thenAnswer((_) async => const []);
+        )).thenAnswer((_) async => const SwapCandidatesResult(candidates: []));
 
     final trip = TripState(
       tripId: 'trip-1',

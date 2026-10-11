@@ -801,6 +801,10 @@ class _DateScopedTimeline extends StatelessWidget {
               isContinuation: !isFirstOccurrence
                   && node.nodeKind == 'booking'
                   && node.bookingType == 'hotel',
+              isLastHotelNight: !isFirstOccurrence
+                  && node.nodeKind == 'booking'
+                  && node.bookingType == 'hotel'
+                  && (next == null || next.nodeId != node.nodeId),
               onTapEditBooking:
                   (!state.processing && node.nodeKind == 'booking'
                       && !(node.bookingType == 'hotel' && !isFirstOccurrence))

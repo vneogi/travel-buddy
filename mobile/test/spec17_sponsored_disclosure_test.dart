@@ -176,10 +176,10 @@ void main() {
       when(() => repo.swapCandidates(
             tripId: any(named: 'tripId'),
             targetNodeId: any(named: 'targetNodeId'),
-          )).thenAnswer((_) async => [
+          )).thenAnswer((_) async => SwapCandidatesResult(candidates: [
             VenueSearchResult.fromJson(_boostedJson),
             VenueSearchResult.fromJson(_organicJson),
-          ]);
+          ]));
 
       await tester.pumpWidget(_wrapSheet(
         repo: repo,
@@ -205,9 +205,9 @@ void main() {
       when(() => repo.swapCandidates(
             tripId: any(named: 'tripId'),
             targetNodeId: any(named: 'targetNodeId'),
-          )).thenAnswer((_) async => [
+          )).thenAnswer((_) async => SwapCandidatesResult(candidates: [
             VenueSearchResult.fromJson(_organicJson),
-          ]);
+          ]));
 
       await tester.pumpWidget(_wrapSheet(
         repo: repo,
@@ -229,9 +229,9 @@ void main() {
       when(() => repo.swapCandidates(
             tripId: any(named: 'tripId'),
             targetNodeId: any(named: 'targetNodeId'),
-          )).thenAnswer((_) async => [
+          )).thenAnswer((_) async => SwapCandidatesResult(candidates: [
             VenueSearchResult.fromJson(_organicJson),
-          ]);
+          ]));
 
       await tester.pumpWidget(_wrapSheet(
         repo: repo,
@@ -248,10 +248,10 @@ void main() {
       when(() => repo.swapCandidates(
             tripId: any(named: 'tripId'),
             targetNodeId: any(named: 'targetNodeId'),
-          )).thenAnswer((_) async => [
+          )).thenAnswer((_) async => SwapCandidatesResult(candidates: [
             VenueSearchResult.fromJson(_boostedJson),
             VenueSearchResult.fromJson(_organicJson),
-          ]);
+          ]));
 
       await tester.pumpWidget(_wrapSheet(
         repo: repo,
@@ -278,9 +278,9 @@ void main() {
       when(() => repo.swapCandidates(
             tripId: any(named: 'tripId'),
             targetNodeId: any(named: 'targetNodeId'),
-          )).thenAnswer((_) async => [
+          )).thenAnswer((_) async => SwapCandidatesResult(candidates: [
             VenueSearchResult.fromJson(_boostedJson),
-          ]);
+          ]));
 
       await tester.pumpWidget(_wrapSheet(
         repo: repo,
@@ -302,11 +302,11 @@ void main() {
       when(() => repo.swapCandidates(
             tripId: any(named: 'tripId'),
             targetNodeId: any(named: 'targetNodeId'),
-          )).thenAnswer((_) async => [
+          )).thenAnswer((_) async => SwapCandidatesResult(candidates: [
             VenueSearchResult.fromJson(_boostedJson),
             VenueSearchResult.fromJson(_organicJson),
             VenueSearchResult.fromJson(_sponsoredNoBoostJson),
-          ]);
+          ]));
 
       tester.view.physicalSize = const Size(800, 2000);
       tester.view.devicePixelRatio = 1.0;

@@ -21,11 +21,11 @@ class _FakeTripRepo implements TripRepository {
   _FakeTripRepo({required this.swapResults});
 
   @override
-  Future<List<VenueSearchResult>> swapCandidates({
+  Future<SwapCandidatesResult> swapCandidates({
     required String tripId,
     required String targetNodeId,
   }) async =>
-      swapResults;
+      SwapCandidatesResult(candidates: swapResults);
 
   @override
   noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

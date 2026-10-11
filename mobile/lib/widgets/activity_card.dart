@@ -98,6 +98,7 @@ class ActivityCard extends StatelessWidget {
   final NodeOutcome? recordedOutcome;
   final bool isRecordingOutcome;
   final bool isContinuation; // true for repeated hotel coverage dates
+  final bool isLastHotelNight; // true for checkout-day hotel coverage
   final DateTime? now; // injectable for tests
 
   const ActivityCard({
@@ -115,6 +116,7 @@ class ActivityCard extends StatelessWidget {
     this.onTapDeleteBooking,
     this.onTapDetails,
     this.isContinuation = false,
+    this.isLastHotelNight = false,
     this.now,
   });
 
@@ -425,7 +427,7 @@ class ActivityCard extends StatelessWidget {
                             child: Text(
                               isRecordingOutcome
                                   ? 'Saving outcome...'
-                                  : outcomePromptText(node),
+                                  : outcomePromptText(node, isLastHotelNight: isLastHotelNight),
                             ),
                           ),
                         ],

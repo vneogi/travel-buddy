@@ -5,7 +5,6 @@
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:travel_buddy/core/destination_tz.dart';
 import 'package:travel_buddy/data/context_alert.dart';
 import 'package:travel_buddy/data/models.dart';
 import 'package:travel_buddy/data/repositories.dart';
@@ -76,17 +75,21 @@ TripNode _node({
 }
 
 // ---------------------------------------------------------------
-// 1. Cap the advisory flood
-// ---------------------------------------------------------------
-
 void main() {
+  // =============================================================
+  // 1. Cap the advisory flood
+  // =============================================================
+
   group('Alert cap (defect 1)', () {
     test('12 unexpired alerts -> 2 cards + N more alerts', () {
-      final alerts = List.generate(12, (i) => _alert(id: 'a$i'));
+      final alerts = List.generate(
+        12,
+        (i) => _alert(id: 'a$i', type: 'type_$i'),
+      );
       final coalesced = coalesceAlerts(alerts);
       final result = cappedAlerts(coalesced);
       expect(result.visible.length, 2);
-      expect(result.overflowCount, greaterThan(0));
+      expect(result.overflowCount, 10);
     });
 
     test('coalesced duplicate rain alerts for the same day count as one', () {
@@ -119,26 +122,26 @@ void main() {
     });
 
     // R17: force visible to return the unfiltered list; the cap test goes red.
-    test('R17 sabotage: cappedAlerts enforces maxVisibleAlerts', () {
-      expect(maxVisibleAlerts, 2, reason: 'guard constant');
+    test('R17 sabotage: cappedAlerts enforces the cap on 5 distinct types', () {
       final alerts = List.generate(5, (i) => _alert(
         id: 'r$i',
-        type: 'type_$i', // different types so they don't coalesce
+        type: 'type_$i',
       ));
       final coalesced = coalesceAlerts(alerts);
-      expect(coalesced.length, 5);
+      expect(coalesced.length, 5, reason: 'all distinct types survive coalesce');
       final result = cappedAlerts(coalesced);
+      // This assertion would fail if cappedAlerts returned all 5.
       expect(result.visible.length, 2);
       expect(result.overflowCount, 3);
     });
   });
 
-  // ---------------------------------------------------------------
-  // 2. Outcome prompts: today-only + kind-specific
-  // ---------------------------------------------------------------
+  // =============================================================
+  // 2. Outcome prompts: split predicates + kind-specific
+  // =============================================================
 
   group('Outcome prompts (defect 2)', () {
-    test('yesterday activity absent from today outcome prompt', () {
+    test('yesterday activity: false for Today, true for day-section', () {
       // Oct 2, 16:00 UTC = Oct 2, 23:00 ICT
       final now = DateTime.utc(2026, 10, 2, 16);
       // Node scheduled Oct 1, 09:00 UTC = Oct 1, 16:00 ICT (yesterday)
@@ -146,55 +149,81 @@ void main() {
         id: 'n1',
         start: DateTime.utc(2026, 10, 1, 9),
       );
-      expect(nodeCanRecordOutcome(node, now, null), isFalse);
+      // Day-section: YES (past + pending)
+      expect(nodeCanRecordOutcome(node, now, null), isTrue);
+      // Today surface: NO (yesterday)
+      expect(nodeShouldShowTodayOutcome(node, now, null), isFalse);
     });
 
-    test('today activity shows outcome prompt', () {
-      // Oct 2, 16:00 UTC = Oct 2, 23:00 ICT
+    test('today activity shows on both surfaces', () {
       final now = DateTime.utc(2026, 10, 2, 16);
-      // Node scheduled Oct 2, 9:00 UTC = Oct 2, 16:00 ICT (today)
       final node = _node(
         id: 'n1',
         start: DateTime.utc(2026, 10, 2, 9),
       );
       expect(nodeCanRecordOutcome(node, now, null), isTrue);
+      expect(nodeShouldShowTodayOutcome(node, now, null), isTrue);
     });
 
-    test('flight uses "Arrived in [city]?"', () {
+    test('future activity: false on both', () {
+      final now = DateTime.utc(2026, 10, 2, 8);
+      final node = _node(
+        id: 'n1',
+        start: DateTime.utc(2026, 10, 2, 9),
+      );
+      expect(nodeCanRecordOutcome(node, now, null), isFalse);
+      expect(nodeShouldShowTodayOutcome(node, now, null), isFalse);
+    });
+
+    // R17: fold today-check back into nodeCanRecordOutcome → yesterday test goes red.
+    test('R17 sabotage: nodeCanRecordOutcome must not have today check', () {
+      final now = DateTime.utc(2026, 10, 2, 16);
+      final yesterday = _node(id: 'n1', start: DateTime.utc(2026, 10, 1, 9));
+      // If someone adds a today-check to nodeCanRecordOutcome,
+      // this assertion fails.
+      expect(nodeCanRecordOutcome(yesterday, now, null), isTrue);
+    });
+
+    test('flight uses region display name, not venueName', () {
       final node = _node(
         id: 'f1',
-        name: 'Luang Prabang',
+        name: 'Thai Airways',  // should NOT appear
         kind: 'booking',
         bookingType: 'flight',
+        geoRegion: 'luang_prabang_laos',
       );
       expect(outcomePromptText(node), 'Arrived in Luang Prabang?');
     });
 
-    test('flight with empty name uses "Arrived?"', () {
+    test('flight with unknown region uses "Arrived?"', () {
       final node = _node(
         id: 'f2',
-        name: '',
+        name: 'Some Airline',
         kind: 'booking',
         bookingType: 'flight',
+        geoRegion: 'unknown_place',
+      );
+      expect(outcomePromptText(node), 'Arrived?');
+    });
+
+    test('flight with null geoRegion uses "Arrived?"', () {
+      final node = _node(
+        id: 'f3',
+        name: 'Thai Airways',
+        kind: 'booking',
+        bookingType: 'flight',
+        geoRegion: null,
       );
       expect(outcomePromptText(node), 'Arrived?');
     });
 
     test('hotel uses "Checked in?"', () {
-      final node = _node(
-        id: 'h1',
-        kind: 'booking',
-        bookingType: 'hotel',
-      );
+      final node = _node(id: 'h1', kind: 'booking', bookingType: 'hotel');
       expect(outcomePromptText(node), 'Checked in?');
     });
 
     test('hotel last night uses "Checked out?"', () {
-      final node = _node(
-        id: 'h2',
-        kind: 'booking',
-        bookingType: 'hotel',
-      );
+      final node = _node(id: 'h2', kind: 'booking', bookingType: 'hotel');
       expect(
         outcomePromptText(node, isLastHotelNight: true),
         'Checked out?',
@@ -202,11 +231,7 @@ void main() {
     });
 
     test('tour uses "Did the tour happen?"', () {
-      final node = _node(
-        id: 't1',
-        kind: 'booking',
-        bookingType: 'tour',
-      );
+      final node = _node(id: 't1', kind: 'booking', bookingType: 'tour');
       expect(outcomePromptText(node), 'Did the tour happen?');
     });
 
@@ -216,20 +241,12 @@ void main() {
     });
   });
 
-  // ---------------------------------------------------------------
-  // 3. Dead Review actions hidden for locked nodes
-  // ---------------------------------------------------------------
-
-  // (Widget test would need full Riverpod + AlertCard -- covered by
-  // the ItineraryAlertsSection logic that checks isLocked. Unit test
-  // below verifies the predicate.)
-
-  // ---------------------------------------------------------------
+  // =============================================================
   // 4. Empty swap explains the constraint
-  // ---------------------------------------------------------------
+  // =============================================================
 
   group('SwapCandidatesResult (defect 4)', () {
-    test('refusal code and copy are parsed from API response', () {
+    test('refusal code and copy parsed', () {
       final result = SwapCandidatesResult(
         candidates: const [],
         refusalCode: 'hours',
@@ -240,23 +257,19 @@ void main() {
     });
 
     test('no refusal when candidates exist', () {
-      final result = SwapCandidatesResult(
-        candidates: const [],
-      );
+      final result = SwapCandidatesResult(candidates: const []);
       expect(result.refusalCode, isNull);
       expect(result.refusalCopy, isNull);
     });
   });
 
-  // ---------------------------------------------------------------
+  // =============================================================
   // 5. Stale schedule reviews leave Today
-  // ---------------------------------------------------------------
+  // =============================================================
 
   group('Schedule warning filter (defect 5)', () {
     test('banner hidden when all warnings match yesterday', () {
-      // now = Oct 2, 10:00 UTC = Oct 2, 17:00 ICT
       final now = DateTime.utc(2026, 10, 2, 10);
-      // node scheduled Oct 1, 09:00 UTC = Oct 1, 16:00 ICT
       final node = _node(
         id: 'n1',
         name: 'Joma Bakery',
