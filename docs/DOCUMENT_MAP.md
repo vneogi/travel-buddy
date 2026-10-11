@@ -1,7 +1,7 @@
 # Document map -- how to resume
 
 > This file is the index, not a second status report.
-> Recorded 27 Sep 2026 so a pause, a new agent, or a compacted context
+> Recorded 11 Oct 2026 so a pause, a new agent, or a compacted context
 > does not require rereading chat, canvases, or every brainstorming memo.
 
 Chat, transcripts, Cursor canvases, and agent summaries are working memory.
@@ -21,20 +21,20 @@ Do not start with a full-repo archaeology, a canvas, or a transcript. If two
 documents disagree, follow Precedence below and name the conflict in
 `PROJECT_STATUS.md` until the owning document is updated.
 
-## Pause state on 27 Sep 2026
+## Continuity state on 11 Oct 2026
 
-- Application freeze SHA: `9a7b9d9` (SPEC-44 Phase A). Living docs plus CI
-  clock fix: GitHub `main` `9a9fe84`.
+- Application field APK remained based on `9a7b9d9` (SPEC-44 Phase A).
+  Current docs baseline before this reset: GitHub `main` `281fc96`.
 - Hosted: migrations through 0025; Cloud Run `travel-buddy-00012-8wv`.
-- Freeze APK SHA256 `bd935bf2...`. Thursday 1 Oct: preload the real trip,
-  airplane reopen. Do not start SPEC-42 Add/Move, SPEC-46, a new city, PDF,
-  or polish this week.
-- After return: Ask history, place prompts, weather-day detail, hotel-as-Flight,
-  then the post-Laos sequence in `HANDOFF_PLANNING_AGENT.md`.
-- 27 Sep engagement review is accepted, not pending: What Now/Rescue/Hungry
-  now in SPEC-46; transfer/arrival cards in SPEC-45; Travelogue/Passport in
-  VISION section 14; contribution/trust copy in the flywheel model. Explore
-  after Laos. Do not start during freeze.
+- Owner Laos field use is complete. The dated 26 observations and cross-trip
+  review of 65 Laos plus 73 China Gemini turns are in
+  `AWAITING_VERIFICATION.md`.
+- Accepted reset: sparse trip spine plus one broad, persistent, grounded
+  trip-scoped Ask surface. What Now/Rescue/Hungry are structured Ask modes.
+  Confirmed Add follows; polished Move follows Add. No silent auto-reflow.
+- P0 is trust hygiene. SPEC-43 still gates all non-owner distribution.
+  Travelogue/Passport, maps/offline tiles, social, gamification, PDF,
+  cross-trip memory, OTA promotion, and another city are deferred.
 
 Refresh this section at the next continuity checkpoint. Do not let it become
 a second PROJECT_STATUS.

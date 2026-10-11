@@ -10,11 +10,20 @@
 >
 > Laos in Oct 2026 is unaffected. It is a field test of the engine, not a
 > market entry. Nothing here moves that date or expands that scope.
+>
+> 11 Oct 2026 amendment: the product user is the **independent trip captain**,
+> whether solo, paired, or coordinating a family. Backpackers remain the
+> acquisition beachhead because corridor distribution and rapid replanning are
+> unusually dense; they are not the ceiling of the product. Cross-trip
+> Laos/China evidence showed the same orchestration job with different party,
+> payment, transport, and attraction needs. The Indian-outbound corridor
+> remains the pipeline and monetization hypothesis, not a field-validated ICP.
 
 ## The decision
 
-Optimise for the **Indian outbound traveller**, and expand along the corridor
-that traveller actually flies.
+Build for the **independent trip captain**. Seed through the Southeast Asian
+backpacker corridor, then test monetization and broader party coordination with
+the **Indian outbound traveller** along the corridor that traveller flies.
 
 ## Why this is a focusing decision rather than a market grab
 

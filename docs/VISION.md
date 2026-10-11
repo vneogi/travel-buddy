@@ -3,7 +3,9 @@
 
 ## 1. The one-line thesis
 
-**Travel Buddy is the AI companion that works *while you're on the trip* — the friend on the ground who keeps your day feasible when reality changes, especially off the beaten path and offline.**
+**Travel Buddy is the grounded trip companion for the independent trip captain:
+one persistent place to decide and execute what to do next when reality
+changes, especially off the beaten path and offline.**
 
 Not another pre-trip planner. The in-the-moment layer remains under-served.
 
@@ -18,23 +20,31 @@ A foundation model will draft a Dubai itinerary for free.
 
 **The under-served moment is on-trip.** Once you land, plans break: you're tired, it's 44C, a venue's shut, a train's cancelled, your mood shifts. Today you're back to juggling Maps, a static itinerary doc, and group chats. Incumbents don't prioritize this because it doesn't directly drive a booking. (Validated first-hand: extended travel in China, June 2026 — excellent pre-trip tools, zero real on-trip companion.)
 
-**Our wedge: the live, self-correcting itinerary.** Locked reservations stay
-fixed; the engine proposes feasible changes around real-world context (weather,
-closures, transit, fatigue, mood), explains the trade-off, and the traveller
-confirms any mutation. "Self-correcting" means the product detects and helps
-recover from a broken day; it does not mean silent autonomous edits. This is the
-product, not a feature bolted onto a booking funnel.
+**Our wedge: grounded trip-scoped orchestration over a sparse trip spine.**
+Bookings, hotels, transfers, must-dos, and intentional gaps provide context;
+one durable Ask surface helps with today's decision, practical execution, and
+recovery. What Now/Rescue returns feasible structured choices. The traveller
+confirms every mutation; there is no silent autonomous reflow.
+
+The Oct 2026 Laos field trip and review of 138 Laos/China Gemini turns moved
+broad grounded Ask ahead of a standalone replanning UI. The repeated job was
+not merely "swap this stop": it was remember the changing trip and party,
+answer a practical question, compare options, and turn the chosen answer into
+the next action. Generic trip-less chat remains out of scope.
 
 ## 3. Who we're for (and where we start)
 
-**Primary user:** the independent / semi-independent traveler in emerging and non-Western destinations — Southeast Asia, Central Asia, the Middle East, the Caucasus. People who go off the beaten path, where connectivity is patchy and incumbent apps are weakest.
+**Primary user:** the independent trip captain -- solo, paired, or coordinating
+a family -- in emerging and non-Western destinations. This is the person
+holding the bookings and making the next decision when the day changes.
 
 **Why this segment:**
 - It's where the on-trip pain is sharpest and least served.
 - It's **defensible by focus** — big players won't prioritize it until it's proven.
 - We have real distribution into it: a network of trusted early testers across Azerbaijan, Singapore, the Philippines, Cambodia, Thailand, Kazakhstan, Kyrgyzstan.
 
-**Beachhead cities:** Dubai (polished demo) + the founder's field routes (Laos/SE-Asia, Oct 2026). We go **deep in a few**, not wide. (See S6.)
+**Beachhead cities:** Dubai (polished demo) + the founder's field routes
+(Laos/SE-Asia). We go **deep in a few**, not wide. (See S6.)
 
 **Beachhead traveller and the acquisition wedge (Aug 2026).** The umbrella above
 is unchanged. Within it, the segment we seed *first* is the solo or paired budget
@@ -57,6 +67,10 @@ backpackers it is the **Offline Vault** (§16 / SPEC-04) — a standalone, no-si
 rescue kit worth installing before departure; for the booking-heavy traveller it
 is confirmation import (§27 / SPEC-10). For this beachhead the Vault is not a
 feature, it is the tip of the spear.
+
+Backpackers remain the acquisition beachhead, not the limit of the product
+definition. Cross-trip evidence from a family China trip showed the same trip
+captain job with added party coordination, payments, entrances, and transport.
 
 The Indian-outbound corridor decided in `docs/MARKET_STRATEGY.md` is not
 discarded by this. It remains the **pipeline and monetization corridor** — the

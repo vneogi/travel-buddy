@@ -62,6 +62,20 @@ Coverage includes more than venue count:
 Expansion waits for SPEC-13/20 and a versioned coverage gate. A town is not
 "covered" because a JSON file has 40 rows.
 
+### Oct 2026 field evidence boundary
+
+The Laos trip and 138 reviewed Laos/China Gemini turns validate demand for
+trip-scoped decisions, recovery, operational facts, and persistent context.
+They do not validate this moat. The owner often followed hotel staff, local
+discovery, or Gemini instead of the app, so Travel Buddy did not yet record a
+meaningful feasible exposure set or outcome loop.
+
+Do not answer that gap with an arbitrary `100 venues per city` target. Measure
+effective choice density: three to five trustworthy feasible options in common,
+demand-weighted cells of time, neighbourhood, intent, dwell, weather/fatigue,
+party context, and next locked anchor. Catalog breadth without freshness,
+identity resolution, and decision/outcome capture remains copyable inventory.
+
 ## Four data planes
 
 ### 1. Private itinerary vault

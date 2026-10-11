@@ -13,6 +13,11 @@
 > It does not own security, money storage, push transport, PDF intake,
 > or city expansion.
 >
+> 11 Oct 2026 field amendment: the first owner trip exposed more than 20
+> notifications, stale schedule reviews, generic outcomes, dead actions, and
+> insufficient operational card detail. The next visible-surface slice is
+> hygiene and current/next execution, not more chrome.
+>
 > Depends on SPEC-22 (render/trust treatments), SPEC-17 (claims),
 > SPEC-26 (home snapshot), SPEC-25 (Ask), SPEC-12 (driver card),
 > SPEC-36 (corridor), SPEC-38 (focus/now), SPEC-41 (feasibility),
@@ -33,6 +38,20 @@ seconds, know:
 - how to change one stop without hunting icons
 - what the app knows, does not know, and will not change until they
   confirm
+
+Only the current actionable advisory belongs in the primary surface. Old-day
+reviews leave Today; duplicates are coalesced; a visible Review action must
+have a working destination. Booking outcomes use the booking kind:
+
+- flight: `Arrived in [city]?`;
+- hotel: `Checked in?` / `Checked out?`;
+- tour: `Did the tour happen?`;
+- flexible activity: `Did you visit?`.
+
+Cards needed during travel show sourced operational facts when available:
+entrance/landmark, local name, practical dress or preparation, expected dwell
+or excursion window, and the next locked-anchor implication. Missing facts are
+unknown, not generated filler.
 
 ## Why a new spec
 

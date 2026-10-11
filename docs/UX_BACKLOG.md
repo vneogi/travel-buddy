@@ -3,6 +3,23 @@
 we are already building — NOT re-architecture. Ideas are merged into our existing capability model
 (VISION §11). Architecture is unchanged (see §0).*
 
+## Oct 11 2026 field reprioritization
+
+The older priority labels below record earlier UI ideation; they do not override
+the current sequence in `PROJECT_STATUS.md`. Laos use plus 138 reviewed
+Laos/China Gemini turns moved these surfaces to the front:
+
+1. P0 current-surface hygiene: advisory cap, no stale day prompts,
+   booking-specific outcomes, no dead Review action, honest empty swaps.
+2. One broad, persistent, grounded trip Ask thread.
+3. What Now/Rescue/Hungry as structured results in that thread.
+4. Confirmed Ask-to-Add, then cross-slot/day Move and unknown-time excursions.
+5. Operational card detail and current/next route guidance.
+
+The map-first shell, Travelogue/Passport, social features, gamification,
+offline tiles, and cross-trip memory are deferred. Drag/reorder/add and maps are
+competitive table stakes; they are not the moat.
+
 ## 0. Architecture decisions NOT changing (read first)
 The source doc proposed a from-scratch stack. Our stack is built, tested, and staying. Do **not**
 migrate these — the cost is rewriting proven code for no product benefit:

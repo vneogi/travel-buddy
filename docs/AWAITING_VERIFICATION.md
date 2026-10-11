@@ -15,6 +15,59 @@ other.
 Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 `#85` and so on; those numbers cannot be reconciled against `git log`.
 
+## Finding -- Oct 11 2026 -- owner Laos field use and cross-trip chat review
+
+The owner used the frozen APK during the Oct 2-9 Laos trip and reported 26
+observations. This is owner-reported qualitative evidence from one traveller,
+not instrumented retention evidence or a non-owner acceptance result.
+
+Observed trust failures:
+
+- first open showed more than 20 notifications; some actions worked and some
+  did not;
+- old schedule reviews remained visible;
+- generic `Did it happen?` outcome copy did not fit flights, hotels, or tours;
+- some swaps returned no usable candidates, and schedule restrictions blocked
+  ordinary day changes;
+- excursion cards without start/end windows could not support honest conflict
+  detection.
+
+Observed itinerary failures:
+
+- the generated day was too dense for arrival heat, naps, rain, fatigue, and
+  spontaneous local choices;
+- the traveller needed Move across time/day/meal slots and Add for new stops;
+- hotel staff and local discovery displaced app recommendations;
+- Kuang Si, Pak Ou, Blue Lagoon 2/3, Papao Lao-Thai, and practical arrival
+  information exposed catalog or pack gaps; Wat Xieng Thong was catalogued but
+  did not reach the itinerary;
+- useful execution guidance was missing: route order, walk versus taxi,
+  coffee/rest stops, dress, SIM, transport, payment, and booking logistics.
+
+The owner also supplied the full Laos and China Gemini threads. The reviewed
+exports contained 65 Laos turns and 73 China turns. Across both trips the
+repeated job was a persistent trip-scoped conversation that remembered booking,
+party, hotel, completed-stop, weather, fatigue, and transport changes; answered
+`what now/today/tonight`; compared concrete options; and provided operational
+next steps. China added family-interest coordination, station/entrance precision,
+payment/app troubleshooting, and menu/photo-assisted ordering.
+
+Gemini also produced confident or potentially stale claims about official
+channels, geography, stations, hours, prices, rules, venues, and safety. This
+supports broad grounded Ask, not a generic unconstrained chatbot. The accepted
+direction is:
+
+- sparse offline trip spine plus intentional gaps;
+- one durable trip-scoped Ask surface;
+- What Now/Rescue as structured Ask results;
+- explicit Add and Move commands with confirmation and no silent reflow;
+- sourced answers, named unknowns, and authoritative handoff/refusal where the
+  repository cannot support a claim.
+
+This evidence validates important jobs, not the moat. It does not prove
+retention, ranking quality, or that 100 venues per city is the right target.
+Measure 3-5 feasible, trustworthy options in common decision cells instead.
+
 ## Finding -- Sep 27 2026 -- SPEC-44 field APK and owner phone evidence
 
 Owner Windows checkout was `9a7b9d9` (PR #67). Hosted migration 0025

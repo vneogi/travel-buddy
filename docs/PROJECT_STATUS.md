@@ -118,11 +118,11 @@
 | PDF itinerary intake (SPEC-39) | DEFERRED | No implementation brief. PDF/OCR, Day Sheet, and print-pack work remain outside the current sequence |
 | Guided Create Trip foundation (SPEC-40) | DONE (PR #61, `ebdea52`) | Five-step destination/date-range/party/interests/review flow backed by deterministic multi-day catalog selection. Post-merge CI and owner Flutter tests passed. Hosted deploy and phone acceptance are not yet repeated for this SHA |
 | Hours-aware scheduling and staged ranking (SPEC-41) | PHASE A COMPLETE (`d1fde14`, `7f25042`) | Create, corridor, and swap refuse known-closed or walking-unreachable target slots; day packing uses per-pair deterministic walking time and later opening windows; swap search/apply share reachability; locked non-hotel anchors remain reachable; cached `max_days` is guaranteed across weekdays and valid interest profiles |
-| Flexible trip span and sparse day editing (SPEC-42) | PARTIAL (`adc99d2`, merged `17e58ac`) | Catalog-derived date caps removed. Create accepts spans up to the 90-day sanity bound; generation fills at most five starter days; empty dates render from creationContext / corridor segments. Owner Windows flutter analyze had no errors and full flutter test was green on `adc99d2`. Add activity and cross-day Move remain; those online commands must exist before SPEC-02 can queue them offline |
+| Flexible trip span and sparse day editing (SPEC-42) | PARTIAL (`adc99d2`, merged `17e58ac`) | Catalog-derived date caps removed; generation fills at most five starter days and empty dates render. Oct 11 field evidence validates Add and Move. Sequence: thin grounded Ask-to-Add, then polished Move; trip-private uncatalogued nodes require confirmation and cannot enter the shared catalog without review |
 | Security, privacy and data governance foundation (SPEC-43) | SPECIFIED; AFTER LAOS BUILD, BEFORE NON-OWNER DISTRIBUTION | Owns twelve verified gaps across anonymous authentication, RLS, LLM egress, rights/retention, offline encryption, sign-out, consent, cache isolation, signal authorization, logging, abuse limits, and release transport. The current owner-only exception expires before the first external tester or December launch |
 | Backend integrity and future-readiness foundation (SPEC-44) | PHASE A ON MAIN (PR #67, `9a7b9d9`) | Atomic trip/party/graph writes, optimistic version, durable command_id replay, typed conflicts, and hosted 0025. A4/A5, Flutter command queue, and SPEC-43 remain out of this slice |
 | On-trip visible surface (SPEC-45) | PHASE A ON MAIN (`7939565`); PHONE EVIDENCE 2026-09-27 | Card IA, one Ask control, tappable details, and schedule-issue copy observed on APK `bd935bf2...` against Cloud Run `00012-8wv`. Remainders: operational place detail, honest transfer/arrival card, warning-to-Rescue once SPEC-46 exists. Map tiles, Add/Move, GPS, and SPEC-43 account chrome remain |
-| What Now foreground context (SPEC-46) | SPECIFIED; PHASED; EXPLORE AFTER LAOS | Phase A: trip stop/city, time/energy/walking, deterministic reasons. Rescue and Hungry now are the same engine with different entry. Situation chips are temporary. Phase B GPS only after SPEC-43. Contract: `docs/specs/SPEC-46-what-now-foreground-context.md` |
+| What Now foreground context (SPEC-46) | SPECIFIED; P1 STRUCTURED ASK MODE | Phase A: trip stop/city, time/energy/walking, deterministic reasons. Rescue and Hungry now are structured result modes of persistent SPEC-25 Ask, not a separate assistant. Situation chips are temporary. Phase B GPS only after SPEC-43 |
 | Data operations workbench (SPEC-47) | SPECIFIED; AFTER SPEC-43 + SPEC-17 | Protected internal observation review, conflicts, freshness, and versioned release manifests. Contribution prompts stay off until this exists. Operating model: `docs/DATA_FLYWHEEL_OPERATING_MODEL.md` |
 
 Migration numbers are assigned when a spec is implemented, not when it is
@@ -131,7 +131,7 @@ numbers were taken by other work while they sat unimplemented.
 
 ## What is Next (Priority Order)
 
-### October path (forcing function: Laos field test, Oct 2)
+### Post-field reset (evidence recorded Oct 11)
 
 Interim R5 relocate of VALID_DISH_CONTAINS landed in PR #15 (d061222). Device
 day is closed and the Windows laptop ran the product matrix on Aug 27-28.
@@ -142,24 +142,29 @@ Durable hearts passed on Windows Aug 30. Google Maps Distance Matrix and
 OpenWeather credentials returned successful real responses on Windows Sep 6;
 see docs/HOSTED_STATE.md for the credential-safe checks.
 
-Success for the phone gate was an installable build using a stable hosted
-HTTPS API, with the Laos corridor and pre-cached driver cards working after
-the laptop and USB are disconnected. That gate passed on 2026-09-13. Travel
-is still Oct 2-9. SPEC-44 Phase A is on `main` (`9a7b9d9`). Hosted 0025
-and Cloud Run `00012-8wv` are live. The owner phone matrix on APK
-`bd935bf2...` covered G0 plus SPEC-45 chrome, offline cache, and a
-reported Force-sync drain. Thursday freeze: keep this APK/revision,
-preload the real travel trip, then one airplane reopen. Do not start
-SPEC-42 Add/Move, SPEC-46, another city, or polish this week. After
-return: recorded Ask history, place prompts, and weather-day drill-down;
-fix the hotel-as-Flight display defect; then SPEC-43 before any non-owner APK.
-The accepted post-Laos moat sequence is not an optional backlog: trusted
-SPEC-13/17 observation and claim contracts -> SPEC-44 decision capture ->
-minimum SPEC-47 review queue -> narrow consented Laos evidence pilot ->
-SPEC-20 versioned packs with Bangkok as the factory acceptance case. Learned
-influence remains zero until held-out and rollback gates pass. The canonical
-detail is `docs/DATA_FLYWHEEL_OPERATING_MODEL.md`; the restart sequence is in
-`docs/HANDOFF_PLANNING_AGENT.md`. PDF intake remains deferred.
+The owner field trip is complete. It proved offline itinerary utility and
+exposed that live orchestration is not yet built: alert flood, stale prompts,
+generic outcome copy, sparse swaps, rigid scheduling, missing Add/Move, and
+ungrounded practical help. The 65-turn Laos and 73-turn China Gemini threads
+make one durable, broad, trip-scoped Ask surface the primary P1. What Now and
+Rescue are structured Ask modes; accepted advice may become only a typed,
+confirmed Add or Move.
+
+Current order:
+
+1. P0 trust hygiene: cap advisories, retire old-day prompts, use booking-kind
+   outcome copy, hide dead Review actions, and explain no-candidate swaps.
+2. P1 broad grounded Ask with persistent trip thread, explicit context changes,
+   authoritative sources/refusals, and practical trip intents.
+3. Structured What Now/Rescue plus thin Ask-to-Add; then the polished Move
+   editor and unknown-time excursion windows.
+4. Patch the Laos must-do/decision-cell data gaps. Target 3-5 feasible options
+   in common cells, not an arbitrary 100 venues per city.
+5. SPEC-43 before any non-owner APK; then a narrow external corridor pilot with
+   minimum SPEC-17/47 controls. Learned influence remains zero.
+
+Defer Travelogue/Passport, maps/offline tiles, social, gamification, PDF,
+cross-trip memory, OTA promotion, and another city until this loop works.
 
 1. Device day -- **CLOSED** 2026-08-17. Brief: docs/briefs/DEVICE_DAY.md.
    Dubai raw dump 6bfa1c6; migrations 0011-0018 applied; Laos reloaded;

@@ -28,11 +28,22 @@
 > deterministic retrieval or cache when facts already exist; rendering or
 > reopening them never invokes a model. A free-text follow-up uses the normal
 > cache, budget, grounding, and SPEC-43 egress gates.
+>
+> 11 Oct 2026 cross-trip field amendment: 65 Laos and 73 China Gemini turns
+> showed that the primary job is a durable, broad, trip-scoped conversation,
+> not a narrow place-fact box. It must remember explicit trip changes and
+> completed stops; answer today/tonight, nearby food/work, etiquette,
+> transport, payment, booking, and comparison questions; and convert accepted
+> advice only into typed, confirmed commands. What Now and Rescue are
+> structured result modes of this surface. "Broad" describes the traveller's
+> input, not permission for ungrounded generation.
 
 ## Goal
 
-One way in for a free-text question, from anywhere in the app, with or without a
-trip -- and one that cannot become a bypass around the trust contract.
+One durable way in for a free-text question from anywhere in an active trip,
+with bounded trip context and history, that cannot become a bypass around the
+trust contract. Trip-less Ask remains a later discovery surface, not the
+current priority.
 
 ## What exists today
 
@@ -76,21 +87,39 @@ The answer is constructed from retrieved claims. Empty retrieval produces an
 immediate hedge or refusal. It never gives the model a blank context and asks it
 to improvise a local fact.
 
-Natural-language query is not a second product. Classify the utterance into
-a typed command, then retrieve. `ASK_FACT` follows this remainder. Plan
-changes become structured trip events (`SWAP_NODE`, `ADD_BOOKING`, or the
-existing `EventType` equivalents) and never persist from the Ask response
-body. There is no free-form tool loop.
+Natural-language query is not a second product. Route it through:
 
-The initial grounded intents are deliberately narrow:
+```text
+free-form question
+-> closed intent
+-> grounded retrieval or approved provider
+-> structured answer, hedge, or refusal
+-> optional typed command proposal
+-> explicit confirmation
+```
+
+Plan changes become structured trip events (`SWAP_NODE`, `ADD_NODE`,
+`MOVE_NODE`, `ADD_BOOKING`, or their accepted equivalents) and never persist
+from the Ask response body. There is no free-form tool loop and no silent
+auto-reflow.
+
+The first field-priority intents are:
 
 - place identity and location;
 - saved opening-hours context, with an explicit staleness/verification hedge;
 - known dish and ingredient facts;
 - what is current or next on this trip;
+- today/tonight and next-step execution around locked anchors;
+- nearby food, coffee/work, low-effort, indoor, and social options;
+- sourced practical rules such as temple etiquette, arrival connectivity,
+  transport, payment, and booking channels;
+- comparison of a bounded set of grounded options;
+- What Now/Rescue/Hungry requests returning a short feasible candidate set;
 - out of scope.
 
-Live opening status, prices, cash acceptance, safety, dietary suitability, and
+Each intent may ship only with an authoritative retrieval source, deterministic
+constraint handling where relevant, and a defined refusal or handoff. Live
+opening status, prices, cash acceptance, safety, dietary suitability, and
 unrecorded venue details are not inferred from model knowledge.
 
 ### Canned fallback is a named state
@@ -139,6 +168,9 @@ Ask history is a traveller aid, not a raw analytics log:
   generation;
 - keep multiple questions in one thread so a later follow-up has explicit,
   bounded context;
+- record explicit changes to hotel, transport, party, completed stops, and
+  selected alternatives in their owning typed trip records; conversation
+  history may reference that state but is never its authoritative store;
 - include history in SPEC-27 export, deletion, retention, and offline-clear
   behavior; never put booking references or unrestricted itinerary JSON into
   the thread record;

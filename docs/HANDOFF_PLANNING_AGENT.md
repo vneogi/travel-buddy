@@ -30,7 +30,11 @@ factory follows; Bangkok proves it without a hardcoded exception.
 
 ## Where we are
 
-Forcing function: Laos field test, 2 October.
+The owner Laos field test is complete. The 11 Oct evidence record includes 26
+owner observations plus review of 65 Laos and 73 China Gemini turns. The app
+worked as an offline itinerary spine; it did not yet provide the broad,
+persistent, grounded orchestration the owner used Gemini for. Do not preserve
+the pre-departure freeze sequence as current work.
 
 Done on the October spine:
 
@@ -69,10 +73,10 @@ Status tables: `docs/PROJECT_STATUS.md`. Device-only queue:
 `docs/MARKET_STRATEGY.md` (Sep 2026 Banana Pancake addendum). The governed
 moat and post-Laos data sequence are owned by
 `docs/DATA_FLYWHEEL_OPERATING_MODEL.md`; the internal review product is
-SPEC-47. Next implementation after Thursday freeze: recorded SPEC-25
-history/prompts and SPEC-29 weather-day drill-down, then SPEC-43. Do not
-start SPEC-42 Add/Move this week. Do not treat in-memory pytest as PostgreSQL
-transaction proof.
+SPEC-47. The current product sequence is P0 trust hygiene, broad persistent
+SPEC-25 Ask, What Now/Rescue plus thin Ask-to-Add, then polished Move.
+SPEC-43 still gates every non-owner APK. Do not treat in-memory pytest as
+PostgreSQL transaction proof.
 
 ## Third-party review -- already adjudicated
 
@@ -141,33 +145,40 @@ decisions and later outcomes, not submission count.
 
 Resume in this order:
 
-1. Record Laos field evidence. Do not generalize from one owner trip.
-2. Close the small recorded trust defects: durable Ask history,
-   catalog-backed place prompts, weather-day drill-down/external attribution,
-   and the hotel rendered as Flight.
-3. Implement SPEC-43 G1 before any non-owner APK, hostel QR, production LLM
+1. Close P0 field trust defects: cap advisory/notification flood; stop old-day
+   prompts; use flight/hotel/tour-specific outcome copy; hide dead Review
+   actions; explain no-candidate swaps.
+2. Implement broad, persistent, trip-scoped SPEC-25 Ask. Cover today/tonight,
+   nearby food/work, etiquette, transport/payment/booking logistics,
+   comparisons, and next-step execution through closed grounded intents.
+3. Make SPEC-46 What Now/Rescue/Hungry structured result modes inside that
+   thread. Add three-to-five feasible options, reasons, unknowns, and compare.
+4. Add the thin typed Ask-to-Add path: confirmed uncatalogued places are
+   trip-private; shared catalog promotion waits for review. Then implement
+   polished SPEC-42 Move and unknown-time excursion windows. Never silently
+   reflow a day.
+5. Patch Laos spine and effective-choice gaps: Kuang Si, Pak Ou, Blue Lagoon
+   2/3, Papao, and the Wat Xieng Thong packing failure. Measure coverage by
+   common decision cell, not total POI count.
+6. Implement SPEC-43 G1 before any non-owner APK, hostel QR, production LLM
    on personal trips, or contribution collection.
-4. Implement SPEC-13 identity plus the minimum SPEC-17 claim/attribute
+7. Implement SPEC-13 identity plus the minimum SPEC-17 claim/attribute
    registry, append-only observation lifecycle, and SPEC-44 decision capture.
    Keep learned influence at zero.
-5. Build the minimum protected SPEC-47 review queue before contribution
+8. Build the minimum protected SPEC-47 review queue before contribution
    prompts turn on.
-6. Run one narrow, consented Laos-corridor evidence pilot. Measure
+9. Run one narrow, consented Laos-corridor evidence pilot. Measure
    corroboration, disputes, correction time, review cost, withdrawal/deletion,
    and accept-to-visit/outcome -- not raw submissions.
-7. Implement SPEC-20 versioned city/route packs. Bangkok proves the factory;
+10. Implement SPEC-20 versioned city/route packs. Bangkok proves the factory;
    Chiang Mai and Pai follow only after that proof.
-8. Permit learned ranking influence only after held-out evidence, sample-size
+11. Permit learned ranking influence only after held-out evidence, sample-size
    gates, inspectability, rollback, consent, and deletion are demonstrated.
-9. First engagement capability after those gates: SPEC-46 What Now, including
-   Rescue and Hungry now. Second: Travelogue / Route Passport (VISION
-   section 14). Transfer/arrival cards are SPEC-45 remainders. Revisit after
-   Laos field evidence; do not start during freeze.
 
-SPEC-42 Add/Move, SPEC-46, PDF, inspiration, another city, gamification,
-microservices, a graph database, and another vector database are not substitutes
-for steps 3-7. The detailed gates and data-plane separation live in the
-operating model; do not reconstruct them from chat.
+Travelogue/Passport, maps/offline tiles, social, gamification, PDF, cross-trip
+memory, OTA promotion, another city, microservices, a graph database, and
+another vector database are deferred. The detailed gates and data-plane
+separation live in the operating model; do not reconstruct them from chat.
 
 ## First job
 

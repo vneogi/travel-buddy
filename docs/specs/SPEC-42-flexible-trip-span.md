@@ -7,6 +7,12 @@
 > Depends on SPEC-31 date-scoped rendering, SPEC-40 guided creation, and
 > SPEC-41 feasibility-first scheduling. Starter generation is still at most
 > five days; that is fill capacity, not a user-facing trip-span cap.
+>
+> 11 Oct 2026 field evidence strongly validates Add and Move: the owner needed
+> to move lunch to dinner, defer stops after heat/rain/fatigue, and add locally
+> discovered venues and detours. Delivery is sequenced behind the primary
+> SPEC-25 grounded Ask slice and thin Ask-to-Add command, then the polished
+> Move editor. These mechanics are table stakes, not the product moat.
 
 ## Goal
 
@@ -100,6 +106,12 @@ Candidate search and apply both use SPEC-41:
 
 If no candidate fits, return a typed honest refusal and keep the day empty.
 
+A grounded SPEC-25 recommendation may propose Add. An uncatalogued place may
+become a trip-private node after explicit confirmation, with the minimum
+identity and source needed to render it honestly. It does not enter the shared
+catalog, ranking pool, or another traveller's results until the SPEC-17/47
+review lifecycle accepts it.
+
 ### Move between days
 
 A flexible activity can move to another date/time inside the trip span. The
@@ -116,6 +128,11 @@ Moving is not swapping:
 - add introduces a new node.
 
 Each receives its own typed event and tests.
+
+Common field shortcuts include `later today`, `tomorrow`, and changing a meal
+slot such as lunch to dinner. The server still resolves these into an explicit
+target date/slot, reruns feasibility, previews the effects, and requires
+confirmation. It never silently reflows the rest of the day.
 
 ## API evolution
 

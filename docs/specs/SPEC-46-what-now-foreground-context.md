@@ -11,6 +11,11 @@
 > visible surfaces. Phase B (device location) additionally depends on
 > the applicable SPEC-43 identity, consent, logging, retention, abuse,
 > and cache-isolation controls.
+>
+> 11 Oct 2026 cross-trip amendment: What Now, Rescue, and Hungry now are
+> structured result modes inside the durable SPEC-25 trip thread, not a
+> separate assistant or isolated sheet. The traveller may reach the same
+> closed intents through free text or situation chips.
 
 ## Goal
 
@@ -54,7 +59,9 @@ The sheet asks only for context the engine can use:
 
 It does not ask for a permanent personality profile.
 
-The result is a short list, not a chat essay. Each candidate shows:
+The result is a short structured list inside the trip thread, not a chat essay.
+It may also render as a focused sheet from the Today surface. Each candidate
+shows:
 
 - friendly name and neighbourhood
 - intended slot or activity type
@@ -64,6 +71,10 @@ The result is a short list, not a chat essay. Each candidate shows:
 - one primary action: compare / swap / view details
 
 No selection mutates the itinerary before explicit confirmation.
+
+The conversation can precede the structured result: Ask may clarify one missing
+constraint, compare the returned candidates, or explain why none fit. It may
+not manufacture a candidate outside the grounded feasible set.
 
 ## Phase A: useful without device GPS
 

@@ -108,25 +108,26 @@ The immediate order after the field-test gate:
 8. SPEC-45 Phase A visible itinerary chrome is on main (`7939565`);
    owner phone evidence 2026-09-27;
 9. SPEC-44 Phase A is on main (PR #67, `9a7b9d9`); hosted 0025 applied;
-10. implement SPEC-43 before any non-owner distribution, production LLM
+10. close the Oct 11 P0 visible-surface defects, then implement broad,
+    persistent, trip-scoped SPEC-25 Ask;
+11. make SPEC-46 What Now/Rescue/Hungry structured modes of that thread and
+    add thin typed Ask-to-Add before the polished SPEC-42 Move editor;
+12. implement SPEC-43 before any non-owner distribution, production LLM
    processing of personal trip data, or the planned December launch;
-11. implement SPEC-13, minimum SPEC-17 claims, and SPEC-20; Bangkok must
+13. implement SPEC-13, minimum SPEC-17 claims, and SPEC-20; Bangkok must
     onboard as a versioned pack with no Python, Dart, loader, or advertisement
     exception;
-12. capture SPEC-44 recommendation decisions only for consented subjects;
+14. capture SPEC-44 recommendation decisions only for consented subjects;
     learned ranking remains disabled until held-out and rollback gates pass;
-13. only then consider inspiration, model-generated itineraries, or a broader
+15. only then consider inspiration, model-generated itineraries, or a broader
     tester cohort.
-14. After G1 plus observation/claim contracts, the first traveller-facing
-    engagement capability is SPEC-46 What Now (Rescue and Hungry now included).
-    The second is Travelogue / Route Passport (VISION section 14). Transfer
-    and arrival cards stay SPEC-45 remainders. Revisit after Laos; do not
-    start during freeze.
 
 SPEC-39 PDF/itinerary import, SPEC-11 forced-choice capture, and similar-trip
-generation stay deferred. Provider-aware confirmation text is SPEC-10, not
-SPEC-39. Learned personalization may later reorder the SPEC-41 feasible set but
-cannot weaken hard constraints. A separate vector database, graph database,
+generation stay deferred. Travelogue/Passport, real map tiles, social,
+gamification, and cross-trip memory are also deferred until the current/next
+decision loop works. Provider-aware confirmation text is SPEC-10, not SPEC-39.
+Learned personalization may later reorder the SPEC-41 feasible set but cannot
+weaken hard constraints. A separate vector database, graph database,
 microservice split, generic agent memory, or collaborative ranker requires
 measured evidence under SPEC-44; none is a city-onboarding prerequisite.
 Natural-language query classifies to typed commands; mutations stay on the
