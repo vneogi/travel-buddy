@@ -425,7 +425,7 @@ class ActivityCard extends StatelessWidget {
                             child: Text(
                               isRecordingOutcome
                                   ? 'Saving outcome...'
-                                  : 'Did this happen?',
+                                  : outcomePromptText(node),
                             ),
                           ),
                         ],

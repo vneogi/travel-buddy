@@ -42,6 +42,7 @@ class SwapSheetState extends ConsumerState<SwapSheet> {
   final Set<String> _selectedVibes = {};
   VenueSearchResult? _selectedVenue;
   String? _error;
+  String? _refusalCopy; // SPEC-45 B4: reason for empty candidates
   bool _loading = true;
 
   @override
@@ -52,18 +53,19 @@ class SwapSheetState extends ConsumerState<SwapSheet> {
 
   Future<void> _loadVenues() async {
     try {
-      final results = await ref.read(tripRepoProvider).swapCandidates(
+      final result = await ref.read(tripRepoProvider).swapCandidates(
             tripId: widget.tripId,
             targetNodeId: widget.targetNodeId,
           );
       if (!mounted) return;
       setState(() {
-        _venues = results;
+        _venues = result.candidates;
+        _refusalCopy = result.refusalCopy;
         _loading = false;
       });
       widget.offeredVenueIds
         ..clear()
-        ..addAll(results.map((v) => v.venueId));
+        ..addAll(result.candidates.map((v) => v.venueId));
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -175,12 +177,18 @@ class SwapSheetState extends ConsumerState<SwapSheet> {
     }
     final venues = _visibleVenues;
     if (venues.isEmpty) {
+      // SPEC-45 B4: show the refusal reason when available.
+      final reason = _selectedVibes.isEmpty
+          ? (_refusalCopy ?? 'No alternative venues found nearby.')
+          : 'No alternatives match these filters.';
       return Center(
-        child: Text(
-          _selectedVibes.isEmpty
-              ? 'No alternative venues found nearby.'
-              : 'No alternatives match these filters.',
-          style: AppTypography.body.copyWith(color: AppColors.muted),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Text(
+            reason,
+            style: AppTypography.body.copyWith(color: AppColors.muted),
+            textAlign: TextAlign.center,
+          ),
         ),
       );
     }

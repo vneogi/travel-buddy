@@ -6,6 +6,18 @@ import 'models.dart';
 String _dateOnly(DateTime d) =>
     d.toIso8601String().substring(0, 10);
 
+/// SPEC-45 B4: Swap candidates with optional refusal explanation.
+class SwapCandidatesResult {
+  final List<VenueSearchResult> candidates;
+  final String? refusalCode;
+  final String? refusalCopy;
+  const SwapCandidatesResult({
+    required this.candidates,
+    this.refusalCode,
+    this.refusalCopy,
+  });
+}
+
 class TripRepository {
   final ApiClient _api;
   TripRepository(this._api);
@@ -117,15 +129,20 @@ class TripRepository {
   }
 
 
-  Future<List<VenueSearchResult>> swapCandidates({
+  Future<SwapCandidatesResult> swapCandidates({
     required String tripId,
     required String targetNodeId,
   }) async {
     final data = await _api.get('/trip/$tripId/swap_candidates/$targetNodeId');
-    final results = (data as Map)['candidates'] as List? ?? const [];
-    return results
+    final map = data as Map;
+    final results = (map['candidates'] as List? ?? const [])
         .map((v) => VenueSearchResult.fromJson(v as Map<String, dynamic>))
         .toList();
+    return SwapCandidatesResult(
+      candidates: results,
+      refusalCode: map['refusal_code'] as String?,
+      refusalCopy: map['refusal_copy'] as String?,
+    );
   }
 }
 

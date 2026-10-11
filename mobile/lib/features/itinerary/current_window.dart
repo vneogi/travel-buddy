@@ -1,3 +1,4 @@
+import '../../core/destination_tz.dart';
 import '../../data/models.dart';
 import '../../offline/offline_database.dart';
 
@@ -30,6 +31,15 @@ bool nodeIsElapsed(TripNode node, DateTime now) {
   return !now.isBefore(end);
 }
 
+/// True when an outcome prompt should appear on the primary Today surface.
+///
+/// Conditions:
+/// - Node is pending, no outcome recorded yet.
+/// - Node's scheduled start is in the past (or current window).
+/// - Node's destination-local date is **today** (SPEC-45 B2).
+///
+/// Past-day nodes are still recordable from their day section; they just
+/// must not flood Today.
 bool nodeCanRecordOutcome(
   TripNode node,
   DateTime now,
@@ -37,7 +47,34 @@ bool nodeCanRecordOutcome(
 ) {
   if (node.status != NodeStatus.pending) return false;
   if (recordedOutcome != null) return false;
-  return !now.isBefore(node.scheduledStart);
+  if (now.isBefore(node.scheduledStart)) return false;
+  // SPEC-45 B2: destination-local date must be today.
+  final nodeLocal = toDestinationLocal(node.scheduledStart, node.geoRegion);
+  final nowLocal = toDestinationLocal(now, node.geoRegion);
+  return nodeLocal.year == nowLocal.year &&
+      nodeLocal.month == nowLocal.month &&
+      nodeLocal.day == nowLocal.day;
+}
+
+/// Kind-specific outcome prompt copy (SPEC-45 B2).
+///
+/// - flight: "Arrived in [city]?" (or "Arrived?" if city unknown)
+/// - hotel first night: "Checked in?"
+/// - hotel checkout / last night: "Checked out?"
+/// - tour: "Did the tour happen?"
+/// - else: "Did you visit?"
+String outcomePromptText(TripNode node, {bool isLastHotelNight = false}) {
+  if (node.nodeKind == 'booking' && node.bookingType == 'flight') {
+    final city = node.venueName.isNotEmpty ? node.venueName : null;
+    return city != null ? 'Arrived in $city?' : 'Arrived?';
+  }
+  if (node.nodeKind == 'booking' && node.bookingType == 'hotel') {
+    return isLastHotelNight ? 'Checked out?' : 'Checked in?';
+  }
+  if (node.nodeKind == 'booking' && node.bookingType == 'tour') {
+    return 'Did the tour happen?';
+  }
+  return 'Did you visit?';
 }
 
 /// Returns the first unlocked pending node whose time window has not ended,

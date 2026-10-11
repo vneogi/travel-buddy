@@ -819,6 +819,10 @@ async def swap_candidates(
 
     results = []
     target_slot = getattr(target, "slot_name", None)
+    # SPEC-45 B4: Track refusal reasons so the client can explain an empty list.
+    _rejected_hours = 0
+    _rejected_reachability = 0
+    _considered = 0
     for row in venues_raw:
         vid = str(row.get("venue_id") or "")
         if not vid or vid in existing_ids:
@@ -826,15 +830,18 @@ async def swap_candidates(
         # G0-B4: shared eligibility: excludes infrastructure + slot-typed filter.
         if not is_swap_eligible_venue(row, target_slot):
             continue
+        _considered += 1
         # Same filtering as state_machine swap confirm path
         structured = row.get("opening_hours_structured")
         dwell = _dur_for(row)
         hr = hours_for_slot(structured, target.scheduled_start, dwell, target_region)
         if hr == HoursResult.CLOSED:
+            _rejected_hours += 1
             continue
         cand_lat = row.get("lat")
         cand_lng = row.get("lng")
         if not _is_swap_reachable(target, cand_lat, cand_lng, dwell, trip.nodes, target_idx):
+            _rejected_reachability += 1
             continue
         results.append(
             {
@@ -848,7 +855,20 @@ async def swap_candidates(
                 "slot_name": target_slot,
             }
         )
-    return {"candidates": results}
+
+    resp: dict = {"candidates": results}
+    # SPEC-45 B4: Typed refusal when empty.
+    if not results and _considered > 0:
+        if _rejected_hours >= _rejected_reachability:
+            resp["refusal_code"] = "hours"
+            resp["refusal_copy"] = "All nearby alternatives are closed at this time."
+        else:
+            resp["refusal_code"] = "reachability"
+            resp["refusal_copy"] = "Nearby alternatives are too far to reach within the schedule."
+    elif not results:
+        resp["refusal_code"] = "no_catalog"
+        resp["refusal_copy"] = "No alternative venues in the catalog for this area."
+    return resp
 
 
 @router.get("/venues/search")
