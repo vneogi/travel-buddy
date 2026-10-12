@@ -411,11 +411,12 @@ void main() {
       ],
     );
 
-    final container = await _loadItineraryContainer(trip: trip, repo: repo);
     tester.view.physicalSize = const Size(800, 1400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
+
+    final container = await _loadItineraryContainer(trip: trip, repo: repo);
 
     await tester.pumpWidget(
       UncontrolledProviderScope(
@@ -429,6 +430,8 @@ void main() {
     expect(find.text('Vientiane Market'), findsOneWidget);
     expect(find.text('Luang Prabang Temple'), findsOneWidget);
 
+    await tester.ensureVisible(find.byTooltip('Swap this activity').last);
+    await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Swap this activity').last);
     await tester.pumpAndSettle();
 
@@ -570,11 +573,12 @@ void main() {
       ],
     );
 
-    final container = await _loadItineraryContainer(trip: trip, repo: repo);
     tester.view.physicalSize = const Size(800, 1400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
+
+    final container = await _loadItineraryContainer(trip: trip, repo: repo);
 
     await tester.pumpWidget(
       UncontrolledProviderScope(
@@ -585,6 +589,8 @@ void main() {
     await tester.pump();
     await tester.pumpAndSettle();
 
+    await tester.ensureVisible(find.byTooltip('Swap this activity').last);
+    await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Swap this activity').last);
     await tester.pumpAndSettle();
 

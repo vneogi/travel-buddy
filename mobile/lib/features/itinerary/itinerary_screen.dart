@@ -31,7 +31,7 @@ import '../notifications/departure_notifier.dart';
 /// plus the system safe area. One value for both corridor and single-city
 /// timelines.  Accounts for TextField height (~48) + vertical padding
 /// (xs + sm = ~12) + SafeArea bottom (~34 on typical phone) + margin.
-const kItineraryBottomInset = 120.0;
+const kItineraryBottomInset = 200.0;
 
 
 Map<String, dynamic> preferencesForConfirmedSwap(

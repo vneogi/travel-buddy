@@ -23,7 +23,7 @@ ContextAlert _alert({
   DateTime? validFrom,
   DateTime? validUntil,
   DateTime? expiresAt,
-  String? geoRegion,
+  String? geoRegion = 'luang_prabang_laos',
   String suggestedAction = '',
   List<String> affectedNodeIds = const [],
 }) {
@@ -41,7 +41,7 @@ ContextAlert _alert({
     validUntil: validUntil ?? now.add(const Duration(hours: 12)),
     expiresAt: expiresAt ?? now.add(const Duration(hours: 24)),
     locationBasis: 'geo',
-    geoRegion: geoRegion ?? 'luang_prabang_laos',
+    geoRegion: geoRegion,
     evidence: const AlertEvidence(),
     suggestedAction: suggestedAction,
   );
@@ -56,7 +56,7 @@ TripNode _node({
   String kind = 'activity',
   String? bookingType,
   String status = 'pending',
-  String? geoRegion,
+  String? geoRegion = 'luang_prabang_laos',
 }) {
   return TripNode(
     nodeId: id,
@@ -66,7 +66,7 @@ TripNode _node({
     isLocked: locked,
     status: NodeStatus.fromWire(status),
     vibeTags: const [],
-    geoRegion: geoRegion ?? 'luang_prabang_laos',
+    geoRegion: geoRegion,
     nodeKind: kind,
     bookingType: bookingType,
   );
