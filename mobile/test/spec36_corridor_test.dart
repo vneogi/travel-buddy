@@ -369,6 +369,13 @@ void main() {
           ),
         ]));
 
+    // Dates relative to now so the later city is never past-collapsed.
+    final now = DateTime.now().toUtc();
+    final day1 = DateTime.utc(now.year, now.month, now.day + 1, 2);
+    final day4 = DateTime.utc(now.year, now.month, now.day + 4, 2);
+    String ymd(DateTime d) =>
+        '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
     final trip = TripState(
       tripId: 'trip-1',
       userId: 'user-1',
@@ -377,16 +384,15 @@ void main() {
       locationLat: 17.9757,
       locationLng: 102.6331,
       segments: [
-        _seg('vientiane_laos', '2026-10-02', '2026-10-03'),
-        _seg('vang_vieng_laos', '2026-10-04', '2026-10-05'),
-        _seg('luang_prabang_laos', '2026-10-06', '2026-10-08'),
+        _seg('vientiane_laos', ymd(day1), ymd(day1.add(const Duration(days: 1)))),
+        _seg('luang_prabang_laos', ymd(day4), ymd(day4.add(const Duration(days: 2)))),
       ],
       nodes: [
         TripNode(
           nodeId: 'vte-1',
           venueName: 'Vientiane Market',
           venueId: 'vte-1',
-          scheduledStart: DateTime.utc(2026, 10, 2, 2),
+          scheduledStart: day1,
           durationMinutes: 60,
           isLocked: false,
           status: NodeStatus.pending,
@@ -399,7 +405,7 @@ void main() {
           nodeId: 'lp-1',
           venueName: 'Luang Prabang Temple',
           venueId: 'lp-1',
-          scheduledStart: DateTime.utc(2026, 10, 6, 2),
+          scheduledStart: day4,
           durationMinutes: 60,
           isLocked: false,
           status: NodeStatus.pending,
@@ -430,9 +436,20 @@ void main() {
     expect(find.text('Vientiane Market'), findsOneWidget);
     expect(find.text('Luang Prabang Temple'), findsOneWidget);
 
-    await tester.ensureVisible(find.byTooltip('Swap this activity').last);
+    final laterCard = find.ancestor(
+      of: find.text('Luang Prabang Temple'),
+      matching: find.byType(ActivityCard),
+    );
+    await tester.scrollUntilVisible(
+      find.text('Luang Prabang Temple'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Swap this activity').last);
+    await tester.tap(find.descendant(
+      of: laterCard,
+      matching: find.byIcon(Icons.swap_horiz),
+    ));
     await tester.pumpAndSettle();
 
     verify(() => repo.swapCandidates(
@@ -531,6 +548,13 @@ void main() {
           targetNodeId: any(named: 'targetNodeId'),
         )).thenAnswer((_) async => const SwapCandidatesResult(candidates: []));
 
+    // Dates relative to now so city sections are not past-collapsed.
+    final now = DateTime.now().toUtc();
+    final day1 = DateTime.utc(now.year, now.month, now.day + 1, 2);
+    final day4 = DateTime.utc(now.year, now.month, now.day + 4, 2);
+    String ymd(DateTime d) =>
+        '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
     final trip = TripState(
       tripId: 'trip-1',
       userId: 'user-1',
@@ -539,16 +563,15 @@ void main() {
       locationLat: 17.9757,
       locationLng: 102.6331,
       segments: [
-        _seg('vientiane_laos', '2026-10-02', '2026-10-03'),
-        _seg('vang_vieng_laos', '2026-10-04', '2026-10-05'),
-        _seg('luang_prabang_laos', '2026-10-06', '2026-10-08'),
+        _seg('vientiane_laos', ymd(day1), ymd(day1.add(const Duration(days: 1)))),
+        _seg('luang_prabang_laos', ymd(day4), ymd(day4.add(const Duration(days: 2)))),
       ],
       nodes: [
         TripNode(
           nodeId: 'vte-1',
           venueName: 'Vientiane Market',
           venueId: 'vte-1',
-          scheduledStart: DateTime.utc(2026, 10, 2, 2),
+          scheduledStart: day1,
           durationMinutes: 60,
           isLocked: false,
           status: NodeStatus.pending,
@@ -561,7 +584,7 @@ void main() {
           nodeId: 'lp-1',
           venueName: 'Luang Prabang Temple',
           venueId: 'lp-1',
-          scheduledStart: DateTime.utc(2026, 10, 6, 2),
+          scheduledStart: day4,
           durationMinutes: 60,
           isLocked: false,
           status: NodeStatus.pending,
@@ -589,9 +612,20 @@ void main() {
     await tester.pump();
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.byTooltip('Swap this activity').last);
+    final laterCard = find.ancestor(
+      of: find.text('Luang Prabang Temple'),
+      matching: find.byType(ActivityCard),
+    );
+    await tester.scrollUntilVisible(
+      find.text('Luang Prabang Temple'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Swap this activity').last);
+    await tester.tap(find.descendant(
+      of: laterCard,
+      matching: find.byIcon(Icons.swap_horiz),
+    ));
     await tester.pumpAndSettle();
 
     verifyNever(() => repo.swapCandidates(

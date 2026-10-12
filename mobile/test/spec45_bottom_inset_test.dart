@@ -175,47 +175,54 @@ void main() {
 
         final repo = _MockTripRepository();
 
+        // Dates relative to now so city sections are not past-collapsed.
+        final now = DateTime.now().toUtc();
+        final day1 = DateTime.utc(now.year, now.month, now.day + 1);
+        final day2 = DateTime.utc(now.year, now.month, now.day + 2);
+        String ymd(DateTime d) =>
+            '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
         // Six nodes across two cities -- enough to require scrolling.
         final nodes = [
           _node(
             id: 'n1',
             name: 'Morning Walk',
-            start: DateTime.utc(2026, 10, 5, 2),
+            start: day1.add(const Duration(hours: 2)),
             geoRegion: 'vientiane_laos',
             slotName: 'morning_tour',
           ),
           _node(
             id: 'n2',
             name: 'Joma Bakery',
-            start: DateTime.utc(2026, 10, 5, 4),
+            start: day1.add(const Duration(hours: 4)),
             geoRegion: 'vientiane_laos',
             slotName: 'lunch',
           ),
           _node(
             id: 'n3',
             name: 'Pha That Luang',
-            start: DateTime.utc(2026, 10, 5, 7),
+            start: day1.add(const Duration(hours: 7)),
             geoRegion: 'vientiane_laos',
             slotName: 'afternoon_evening_tour',
           ),
           _node(
             id: 'n4',
             name: 'LP Waterfall',
-            start: DateTime.utc(2026, 10, 6, 2),
+            start: day2.add(const Duration(hours: 2)),
             geoRegion: 'luang_prabang_laos',
             slotName: 'morning_tour',
           ),
           _node(
             id: 'n5',
             name: 'PVO Vietnamese',
-            start: DateTime.utc(2026, 10, 6, 7),
+            start: day2.add(const Duration(hours: 7)),
             geoRegion: 'luang_prabang_laos',
             slotName: 'afternoon_evening_tour',
           ),
           _node(
             id: 'n6',
             name: 'Night Market Dinner',
-            start: DateTime.utc(2026, 10, 6, 11),
+            start: day2.add(const Duration(hours: 11)),
             geoRegion: 'luang_prabang_laos',
             slotName: 'dinner',
           ),
@@ -226,16 +233,16 @@ void main() {
           userId: 'u1',
           geoRegion: 'vientiane_laos',
           corridorId: 'laos_northbound_v1',
-          segments: const [
+          segments: [
             TripSegment(
               geoRegion: 'vientiane_laos',
-              startsOn: '2026-10-05',
-              endsOn: '2026-10-05',
+              startsOn: ymd(day1),
+              endsOn: ymd(day1),
             ),
             TripSegment(
               geoRegion: 'luang_prabang_laos',
-              startsOn: '2026-10-06',
-              endsOn: '2026-10-06',
+              startsOn: ymd(day2),
+              endsOn: ymd(day2),
             ),
           ],
           nodes: nodes,
@@ -266,9 +273,18 @@ void main() {
         final lastCard = find.text('Night Market Dinner');
         expect(lastCard, findsOneWidget);
 
-        // Scroll it into view and tap.
-        await tester.ensureVisible(lastCard);
+        // Scroll it into the viewport on the corridor Scrollable.
+        await tester.scrollUntilVisible(
+          lastCard,
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
         await tester.pumpAndSettle();
+
+        // Assert the card rect is inside the 390x844 view.
+        final box = tester.getRect(lastCard);
+        expect(box.top, greaterThan(0));
+        expect(box.bottom, lessThan(844));
 
         // Tap the card body (GestureDetector -> details).
         await tester.tap(lastCard);
