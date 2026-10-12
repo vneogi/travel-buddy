@@ -15,6 +15,7 @@ import '../../widgets/reroute_badge.dart';
 import '../../widgets/shimmer_card.dart';
 import '../../widgets/error_view.dart';
 import 'current_window.dart';
+import '../../core/destination_tz.dart';
 import 'date_scope.dart';
 import '../../widgets/city_section.dart';
 import 'itinerary_notifier.dart';
@@ -739,11 +740,11 @@ class _DateScopedTimeline extends StatelessWidget {
 
     final seenNodeIds = <String>{};
     // SPEC-45 R2: determine destination-local "today" for outcome restriction.
-    final _now = DateTime.now().toUtc();
-    DateTime? _currentHeaderDate;
+    final nowUtc = DateTime.now().toUtc();
+    DateTime? currentHeaderDate;
     final children = List<Widget>.generate(items.length, (i) {
         final item = items[i];
-        if (item.isHeader) _currentHeaderDate = item.date;
+        if (item.isHeader) currentHeaderDate = item.date;
         if (item.isHeader) {
           return _DateHeader(date: item.date!);
         }
@@ -778,7 +779,7 @@ class _DateScopedTimeline extends StatelessWidget {
         } else {
           widgetKey = ValueKey('${node.nodeId}_$i');
         }
-        final _isLastHotelNight = !isFirstOccurrence
+        final isLastHotelNight = !isFirstOccurrence
             && node.nodeKind == 'booking'
             && node.bookingType == 'hotel'
             && !items.skip(i + 1).any((later) =>
@@ -812,10 +813,10 @@ class _DateScopedTimeline extends StatelessWidget {
               isContinuation: !isFirstOccurrence
                   && node.nodeKind == 'booking'
                   && node.bookingType == 'hotel',
-              isLastHotelNight: _isLastHotelNight,
-              restrictOutcomeToToday: _currentHeaderDate != null && (() {
-                final nowLocal = toDestinationLocal(_now, node.geoRegion);
-                final hdr = _currentHeaderDate!;
+              isLastHotelNight: isLastHotelNight,
+              restrictOutcomeToToday: currentHeaderDate != null && (() {
+                final nowLocal = toDestinationLocal(nowUtc, node.geoRegion);
+                final hdr = currentHeaderDate!;
                 return hdr.year == nowLocal.year
                     && hdr.month == nowLocal.month
                     && hdr.day == nowLocal.day;
@@ -831,7 +832,7 @@ class _DateScopedTimeline extends StatelessWidget {
                       ? () => onDeleteBooking(node)
                       : null,
               onTapRecordOutcome:
-                  state.processing ? null : () => onOutcome(node, isLastHotelNight: _isLastHotelNight),
+                  state.processing ? null : () => onOutcome(node, isLastHotelNight: isLastHotelNight),
               onTapLoved: () => onLoved(node),
               onTapDetails: () {
                 Navigator.of(context).push(

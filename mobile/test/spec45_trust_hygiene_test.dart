@@ -60,14 +60,12 @@ TripNode _node({
 }) {
   return TripNode(
     nodeId: id,
-    dayIndex: 0,
-    seq: 1,
-    nodeType: 'activity',
     venueName: name,
     scheduledStart: start ?? DateTime.utc(2026, 10, 2, 9),
     durationMinutes: duration,
     isLocked: locked,
     status: NodeStatus.fromWire(status),
+    vibeTags: const [],
     geoRegion: geoRegion ?? 'luang_prabang_laos',
     nodeKind: kind,
     bookingType: bookingType,
