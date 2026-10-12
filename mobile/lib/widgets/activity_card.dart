@@ -98,6 +98,8 @@ class ActivityCard extends StatelessWidget {
   final NodeOutcome? recordedOutcome;
   final bool isRecordingOutcome;
   final bool isContinuation; // true for repeated hotel coverage dates
+  final bool isLastHotelNight; // true for checkout-day hotel coverage
+  final bool restrictOutcomeToToday; // true under today's header
   final DateTime? now; // injectable for tests
 
   const ActivityCard({
@@ -115,6 +117,8 @@ class ActivityCard extends StatelessWidget {
     this.onTapDeleteBooking,
     this.onTapDetails,
     this.isContinuation = false,
+    this.isLastHotelNight = false,
+    this.restrictOutcomeToToday = false,
     this.now,
   });
 
@@ -124,8 +128,9 @@ class ActivityCard extends StatelessWidget {
     final isActive = nodeIsCurrentWindow(node, currentTime);
     final isCompleted = node.status == NodeStatus.completed;
     final isSkipped = node.status == NodeStatus.skipped;
-    final canRecordOutcome =
-        nodeCanRecordOutcome(node, currentTime, recordedOutcome);
+    final canRecordOutcome = restrictOutcomeToToday
+        ? nodeShouldShowTodayOutcome(node, currentTime, recordedOutcome)
+        : nodeCanRecordOutcome(node, currentTime, recordedOutcome);
     final friendlyLocation = friendlyMicroLocation(node.microLocation);
 
     return Dismissible(
@@ -425,7 +430,7 @@ class ActivityCard extends StatelessWidget {
                             child: Text(
                               isRecordingOutcome
                                   ? 'Saving outcome...'
-                                  : 'Did this happen?',
+                                  : outcomePromptText(node, isLastHotelNight: isLastHotelNight),
                             ),
                           ),
                         ],

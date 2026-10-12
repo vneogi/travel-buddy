@@ -1,3 +1,5 @@
+import '../../core/destination_tz.dart';
+import 'date_scope.dart';
 import '../../data/models.dart';
 import '../../offline/offline_database.dart';
 
@@ -30,6 +32,11 @@ bool nodeIsElapsed(TripNode node, DateTime now) {
   return !now.isBefore(end);
 }
 
+/// True when an outcome prompt should appear on the node's **day section**.
+///
+/// Conditions: pending, start in the past, no recorded outcome.
+/// This is the original predicate -- past-day nodes are still recordable
+/// when the traveller scrolls to that day.
 bool nodeCanRecordOutcome(
   TripNode node,
   DateTime now,
@@ -38,6 +45,47 @@ bool nodeCanRecordOutcome(
   if (node.status != NodeStatus.pending) return false;
   if (recordedOutcome != null) return false;
   return !now.isBefore(node.scheduledStart);
+}
+
+/// True when an outcome prompt should appear on the **Today surface**.
+///
+/// Adds a destination-local-date == today check (SPEC-45 B2) on top of
+/// [nodeCanRecordOutcome] so day-1 prompts do not flood day-8.
+bool nodeShouldShowTodayOutcome(
+  TripNode node,
+  DateTime now,
+  NodeOutcome? recordedOutcome,
+) {
+  if (!nodeCanRecordOutcome(node, now, recordedOutcome)) return false;
+  if (nodeIsCurrentWindow(node, now)) return true;
+  final nodeLocal = toDestinationLocal(node.scheduledStart, node.geoRegion);
+  final nowLocal = toDestinationLocal(now, node.geoRegion);
+  return nodeLocal.year == nowLocal.year &&
+      nodeLocal.month == nowLocal.month &&
+      nodeLocal.day == nowLocal.day;
+}
+
+/// Kind-specific outcome prompt copy (SPEC-45 B2).
+///
+/// - flight: "Arrived in [city]?" (or "Arrived?" if city unknown)
+/// - hotel first night: "Checked in?"
+/// - hotel checkout / last night: "Checked out?"
+/// - tour: "Did the tour happen?"
+/// - else: "Did you visit?"
+String outcomePromptText(TripNode node, {bool isLastHotelNight = false}) {
+  if (node.nodeKind == 'booking' && node.bookingType == 'flight') {
+    // SPEC-45 B5: use region display name, not venueName (which may be
+    // an airline or hotel string). Never invent a city.
+    final city = regionDisplayNames[node.geoRegion];
+    return city != null ? 'Arrived in $city?' : 'Arrived?';
+  }
+  if (node.nodeKind == 'booking' && node.bookingType == 'hotel') {
+    return isLastHotelNight ? 'Checked out?' : 'Checked in?';
+  }
+  if (node.nodeKind == 'booking' && node.bookingType == 'tour') {
+    return 'Did the tour happen?';
+  }
+  return 'Did you visit?';
 }
 
 /// Returns the first unlocked pending node whose time window has not ended,

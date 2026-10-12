@@ -15,12 +15,14 @@ import '../../widgets/reroute_badge.dart';
 import '../../widgets/shimmer_card.dart';
 import '../../widgets/error_view.dart';
 import 'current_window.dart';
+import '../../core/destination_tz.dart';
 import 'date_scope.dart';
 import '../../widgets/city_section.dart';
 import 'itinerary_notifier.dart';
 import '../activity_detail/activity_detail_screen.dart';
 import 'replacement_ref.dart';
 import '../alerts/alerts_notifier.dart';
+import '../alerts/alert_policy.dart';
 import '../../widgets/alert_card.dart';
 import '../../widgets/departure_banner.dart';
 import '../notifications/departure_notifier.dart';
@@ -222,11 +224,12 @@ class ItineraryScreen extends ConsumerWidget {
   Future<void> _showOutcomePicker(
     BuildContext context,
     WidgetRef ref,
-    TripNode node,
-  ) async {
+    TripNode node, {
+    bool isLastHotelNight = false,
+  }) async {
     final decision = await showModalBottomSheet<_OutcomeDecision>(
       context: context,
-      builder: (_) => const _OutcomeSheet(),
+      builder: (_) => _OutcomeSheet(node: node, isLastHotelNight: isLastHotelNight),
     );
     if (decision == null || !context.mounted) return;
 
@@ -312,10 +315,18 @@ class ItineraryScreen extends ConsumerWidget {
                         .read(itineraryControllerProvider(tripId).notifier)
                         .clearBanner(),
                   ),
-                // SPEC-37: Compact schedule warnings summary.
-                if (state.scheduleWarnings.isNotEmpty)
+                // SPEC-37 + SPEC-45 B5: Only today's schedule warnings.
+                if (todayScheduleWarnings(
+                      state.scheduleWarnings,
+                      state.nodes,
+                      DateTime.now().toUtc(),
+                    ).isNotEmpty)
                   _ScheduleWarningsBanner(
-                    warnings: state.scheduleWarnings,
+                    warnings: todayScheduleWarnings(
+                      state.scheduleWarnings,
+                      state.nodes,
+                      DateTime.now().toUtc(),
+                    ),
                     nodes: state.nodes,
                     onFocusNode: (nodeId) => context.go(
                       '/trip/$tripId?focus=${Uri.encodeQueryComponent(nodeId)}',
@@ -329,6 +340,7 @@ class ItineraryScreen extends ConsumerWidget {
                 // render when available (no spinner replacement).
                 ItineraryAlertsSection(
                   tripId: tripId,
+                  nodes: state.nodes,
                   onScrollToNode: (nodeId) => context.go(
                     '/trip/$tripId?focus=${Uri.encodeQueryComponent(nodeId)}',
                   ),
@@ -350,8 +362,8 @@ class ItineraryScreen extends ConsumerWidget {
                               focusNodeId: focusNodeId,
                               onSwap: (node) => _swap(context, ref, node),
                               onCancel: (node) => _cancel(context, ref, node),
-                              onOutcome: (node) =>
-                                  _showOutcomePicker(context, ref, node),
+                              onOutcome: (node, {isLastHotelNight = false}) =>
+                                  _showOutcomePicker(context, ref, node, isLastHotelNight: isLastHotelNight),
                               onLoved: (node) {
                                 final placeRef =
                                     node.venueId ?? node.venueName;
@@ -390,8 +402,8 @@ class ItineraryScreen extends ConsumerWidget {
                               focusNodeId: focusNodeId,
                               onSwap: (node) => _swap(context, ref, node),
                               onCancel: (node) => _cancel(context, ref, node),
-                              onOutcome: (node) =>
-                                  _showOutcomePicker(context, ref, node),
+                              onOutcome: (node, {isLastHotelNight = false}) =>
+                                  _showOutcomePicker(context, ref, node, isLastHotelNight: isLastHotelNight),
                               onLoved: (node) {
                                 final placeRef =
                                     node.venueId ?? node.venueName;
@@ -435,7 +447,7 @@ class _CorridorTimeline extends StatefulWidget {
   final String? focusNodeId;
   final void Function(TripNode) onSwap;
   final void Function(TripNode) onCancel;
-  final void Function(TripNode) onOutcome;
+  final void Function(TripNode, {bool isLastHotelNight}) onOutcome;
   final void Function(TripNode) onLoved;
   final void Function(TripNode) onEditBooking;
   final void Function(TripNode) onDeleteBooking;
@@ -576,7 +588,7 @@ class _FocusedDateScopedTimeline extends StatefulWidget {
   final String? focusNodeId;
   final void Function(TripNode) onSwap;
   final void Function(TripNode) onCancel;
-  final void Function(TripNode) onOutcome;
+  final void Function(TripNode, {bool isLastHotelNight}) onOutcome;
   final void Function(TripNode) onLoved;
   final void Function(TripNode) onEditBooking;
   final void Function(TripNode) onDeleteBooking;
@@ -670,7 +682,7 @@ class _DateScopedTimeline extends StatelessWidget {
   final CreationContext? creationContext;
   final void Function(TripNode) onSwap;
   final void Function(TripNode) onCancel;
-  final void Function(TripNode) onOutcome;
+  final void Function(TripNode, {bool isLastHotelNight}) onOutcome;
   final void Function(TripNode) onLoved;
   final void Function(TripNode) onEditBooking;
   final void Function(TripNode) onDeleteBooking;
@@ -727,8 +739,12 @@ class _DateScopedTimeline extends StatelessWidget {
     }
 
     final seenNodeIds = <String>{};
+    // SPEC-45 R2: determine destination-local "today" for outcome restriction.
+    final nowUtc = DateTime.now().toUtc();
+    DateTime? currentHeaderDate;
     final children = List<Widget>.generate(items.length, (i) {
         final item = items[i];
+        if (item.isHeader) currentHeaderDate = item.date;
         if (item.isHeader) {
           return _DateHeader(date: item.date!);
         }
@@ -763,6 +779,12 @@ class _DateScopedTimeline extends StatelessWidget {
         } else {
           widgetKey = ValueKey('${node.nodeId}_$i');
         }
+        final isLastHotelNight = !isFirstOccurrence
+            && node.nodeKind == 'booking'
+            && node.bookingType == 'hotel'
+            && !items.skip(i + 1).any((later) =>
+                !later.isHeader && !later.isEmptyDay
+                && later.node!.nodeId == node.nodeId);
         return KeyedSubtree(
           key: widgetKey,
           child: AnimatedSwitcher(
@@ -791,6 +813,14 @@ class _DateScopedTimeline extends StatelessWidget {
               isContinuation: !isFirstOccurrence
                   && node.nodeKind == 'booking'
                   && node.bookingType == 'hotel',
+              isLastHotelNight: isLastHotelNight,
+              restrictOutcomeToToday: currentHeaderDate != null && (() {
+                final nowLocal = toDestinationLocal(nowUtc, node.geoRegion);
+                final hdr = currentHeaderDate!;
+                return hdr.year == nowLocal.year
+                    && hdr.month == nowLocal.month
+                    && hdr.day == nowLocal.day;
+              })(),
               onTapEditBooking:
                   (!state.processing && node.nodeKind == 'booking'
                       && !(node.bookingType == 'hotel' && !isFirstOccurrence))
@@ -802,7 +832,7 @@ class _DateScopedTimeline extends StatelessWidget {
                       ? () => onDeleteBooking(node)
                       : null,
               onTapRecordOutcome:
-                  state.processing ? null : () => onOutcome(node),
+                  state.processing ? null : () => onOutcome(node, isLastHotelNight: isLastHotelNight),
               onTapLoved: () => onLoved(node),
               onTapDetails: () {
                 Navigator.of(context).push(
@@ -1098,21 +1128,26 @@ class _SkipReasonSheet extends StatelessWidget {
 enum _OutcomeDecision { visited, skipped }
 
 class _OutcomeSheet extends StatelessWidget {
-  const _OutcomeSheet();
+  final TripNode node;
+  final bool isLastHotelNight;
+  const _OutcomeSheet({required this.node, this.isLastHotelNight = false});
 
   @override
   Widget build(BuildContext context) {
+    // SPEC-45 B2: kind-specific title and confirm copy.
+    final title = outcomePromptText(node, isLastHotelNight: isLastHotelNight);
+    final confirmText = _confirmLabel(node);
     return SafeArea(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Padding(
             padding: const EdgeInsets.all(AppSpacing.base),
-            child: Text('Did this happen?', style: AppTypography.h2),
+            child: Text(title, style: AppTypography.h2),
           ),
           ListTile(
             leading: const Icon(Icons.check_circle_outline),
-            title: const Text('Yes, I went'),
+            title: Text(confirmText),
             onTap: () => Navigator.pop(context, _OutcomeDecision.visited),
           ),
           ListTile(
@@ -1130,6 +1165,19 @@ class _OutcomeSheet extends StatelessWidget {
       ),
     );
   }
+
+  String _confirmLabel(TripNode node) {
+    if (node.nodeKind == 'booking' && node.bookingType == 'flight') {
+      return 'Yes, I arrived';
+    }
+    if (node.nodeKind == 'booking' && node.bookingType == 'hotel') {
+      return 'Yes';
+    }
+    if (node.nodeKind == 'booking' && node.bookingType == 'tour') {
+      return 'Yes, it happened';
+    }
+    return 'Yes, I went';
+  }
 }
 
 /// SPEC-29: Non-blocking alert section above the timeline.
@@ -1138,11 +1186,13 @@ class _OutcomeSheet extends StatelessWidget {
 /// or replace the itinerary while loading.
 class ItineraryAlertsSection extends ConsumerStatefulWidget {
   final String tripId;
+  final List<TripNode> nodes;
   final void Function(String nodeId)? onScrollToNode;
   final void Function(String nodeId)? onReviewAlternatives;
   const ItineraryAlertsSection({
     super.key,
     required this.tripId,
+    this.nodes = const [],
     this.onScrollToNode,
     this.onReviewAlternatives,
   });
@@ -1208,8 +1258,11 @@ class _ItineraryAlertsSectionState extends ConsumerState<ItineraryAlertsSection>
             loading: () => const SizedBox.shrink(),
             error: (_, __) => const SizedBox.shrink(),
             data: (alertsState) {
-              final visible = alertsState.visible;
-              if (visible.isEmpty) return const SizedBox.shrink();
+              final all = alertsState.visible;
+              if (all.isEmpty) return const SizedBox.shrink();
+              // SPEC-45 B1: coalesce duplicates, cap at 2, overflow row.
+              final coalesced = coalesceAlerts(all);
+              final (:visible, :overflowCount) = cappedAlerts(coalesced);
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -1222,17 +1275,34 @@ class _ItineraryAlertsSectionState extends ConsumerState<ItineraryAlertsSection>
                           : () => widget.onScrollToNode!(
                                 alert.affectedNodeIds.first,
                               ),
-                      onReviewAlternatives:
-                          alert.suggestedAction == 'review_outdoor_plans' &&
-                                  alert.affectedNodeIds.isNotEmpty &&
-                                  widget.onReviewAlternatives != null
-                              ? () => widget.onReviewAlternatives!(
-                                    alert.affectedNodeIds.first,
-                                  )
-                              : null,
+                      // SPEC-45 B3: Review alternatives only for unlocked nodes.
+                      onReviewAlternatives: () {
+                        if (alert.suggestedAction != 'review_outdoor_plans') return null;
+                        if (alert.affectedNodeIds.isEmpty) return null;
+                        if (widget.onReviewAlternatives == null) return null;
+                        final nodeId = alert.affectedNodeIds.first;
+                        final node = widget.nodes
+                            .where((n) => n.nodeId == nodeId)
+                            .firstOrNull;
+                        if (node == null || node.isLocked) return null;
+                        return () => widget.onReviewAlternatives!(nodeId);
+                      }(),
                       onDismiss: () => ref
                           .read(alertsNotifierProvider(widget.tripId).notifier)
                           .dismiss(alert.alertId),
+                    ),
+                  if (overflowCount > 0)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.base,
+                        vertical: AppSpacing.xs,
+                      ),
+                      child: Text(
+                        '$overflowCount more alerts',
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.muted,
+                        ),
+                      ),
                     ),
                 ],
               );

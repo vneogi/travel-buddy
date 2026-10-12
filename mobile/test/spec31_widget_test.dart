@@ -310,11 +310,11 @@ void main() {
       // Two cards under the same date header
       expect(find.byType(ActivityCard), findsNWidgets(2));
 
-      // The elapsed node should show "Did this happen?"
-      expect(find.text('Did this happen?'), findsOneWidget);
+      // The elapsed node should show "Did you visit?"
+      expect(find.text('Did you visit?'), findsOneWidget);
 
-      // Tap "Did this happen?" -> opens outcome sheet
-      await tester.tap(find.text('Did this happen?'));
+      // Tap "Did you visit?" -> opens outcome sheet
+      await tester.tap(find.text('Did you visit?'));
       await tester.pumpAndSettle();
 
       // Tap "Yes, I went" -> records visited

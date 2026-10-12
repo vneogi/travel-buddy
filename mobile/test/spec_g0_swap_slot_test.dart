@@ -80,7 +80,7 @@ void main() {
       when(() => repo.swapCandidates(
             tripId: any(named: 'tripId'),
             targetNodeId: any(named: 'targetNodeId'),
-          )).thenAnswer((_) async => [_food, _hospital]);
+          )).thenAnswer((_) async => SwapCandidatesResult(candidates: [_food, _hospital]));
 
       await tester.pumpWidget(
         _wrapSwapSheet(repo: repo, tripState: _minimalTrip()),
@@ -96,7 +96,7 @@ void main() {
       when(() => repo.swapCandidates(
             tripId: any(named: 'tripId'),
             targetNodeId: any(named: 'targetNodeId'),
-          )).thenAnswer((_) async => const <VenueSearchResult>[]);
+          )).thenAnswer((_) async => const SwapCandidatesResult(candidates: []));
 
       await tester.pumpWidget(
         _wrapSwapSheet(repo: repo, tripState: _minimalTrip()),

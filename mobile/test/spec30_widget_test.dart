@@ -116,7 +116,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Did this happen?'), findsOneWidget);
+      expect(find.text('Did you visit?'), findsOneWidget);
       expect(find.text('Elapsed Museum'), findsOneWidget);
       expect(find.text('Future Museum'), findsOneWidget);
     });
@@ -132,7 +132,7 @@ void main() {
       addTearDown(harness.dispose);
       await harness.pump(tester);
 
-      await tester.tap(find.text('Did this happen?'));
+      await tester.tap(find.text('Did you visit?'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Yes, I went'));
       await tester.pump(const Duration(milliseconds: 300));
@@ -154,7 +154,7 @@ void main() {
       addTearDown(harness.dispose);
       await harness.pump(tester);
 
-      await tester.tap(find.text('Did this happen?'));
+      await tester.tap(find.text('Did you visit?'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('No, I skipped it'));
       await tester.pumpAndSettle();
