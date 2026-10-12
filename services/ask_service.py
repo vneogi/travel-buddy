@@ -42,6 +42,10 @@ class AskIntent(str, Enum):
     DISH_FACT = "dish_fact"
     TRIP_CURRENT_NEXT = "trip_current_next"
     PLAN_CHANGE = "plan_change"
+    TODAY_TONIGHT = "today_tonight"
+    NEARBY_OPTION = "nearby_option"
+    PRACTICAL_RULE = "practical_rule"
+    COMPARE = "compare"
     OUT_OF_SCOPE = "out_of_scope"
 
 
@@ -306,6 +310,72 @@ _PLAN_CHANGE_KEYWORDS = {
 }
 
 
+_TODAY_TONIGHT_KEYWORDS = {
+    "today",
+    "tonight",
+    "this evening",
+    "rest of the day",
+    "remaining today",
+    "what's left",
+    "left today",
+    "still to do",
+    "this afternoon",
+}
+_NEARBY_OPTION_KEYWORDS = {
+    "where can i",
+    "nearby",
+    "close by",
+    "walking distance",
+    "somewhere to",
+    "find a",
+    "work",
+    "coffee",
+    "wifi",
+    "indoor",
+    "low effort",
+    "quick meal",
+    "grab food",
+    "lunch spot",
+    "dinner spot",
+    "breakfast",
+}
+_PRACTICAL_RULE_KEYWORDS = {
+    "temple",
+    "wat",
+    "dress code",
+    "wear",
+    "etiquette",
+    "tuk tuk",
+    "transport",
+    "how to get",
+    "atm",
+    "cash",
+    "payment",
+    "pay",
+    "kip",
+    "sim card",
+    "wifi",
+    "internet",
+    "connectivity",
+    "book",
+    "booking",
+    "reserve",
+    "how to book",
+}
+_COMPARE_KEYWORDS = {
+    "compare",
+    "versus",
+    "vs",
+    "which is better",
+    "difference between",
+    "which one",
+    "best of",
+    "options for",
+    "alternatives",
+    "x or y",
+}
+
+
 def classify_ask_intent(message: str) -> AskIntent:
     """Classify a free-text question into the closed intent set."""
     lower = message.lower()
@@ -319,6 +389,10 @@ def classify_ask_intent(message: str) -> AskIntent:
         AskIntent.DISH_FACT: _score(_DISH_KEYWORDS) + _score(_DIETARY_KEYWORDS),
         AskIntent.PLACE_IDENTITY: _score(_PLACE_KEYWORDS),
         AskIntent.TRIP_CURRENT_NEXT: _score(_CURRENT_NEXT_KEYWORDS),
+        AskIntent.TODAY_TONIGHT: _score(_TODAY_TONIGHT_KEYWORDS),
+        AskIntent.NEARBY_OPTION: _score(_NEARBY_OPTION_KEYWORDS),
+        AskIntent.PRACTICAL_RULE: _score(_PRACTICAL_RULE_KEYWORDS),
+        AskIntent.COMPARE: _score(_COMPARE_KEYWORDS),
     }
 
     best = max(scores, key=scores.get)  # type: ignore[arg-type]
@@ -637,6 +711,238 @@ def load_dish_glossary(geo_region: str) -> Optional[Dict]:
 
 
 # ---------------------------------------------------------------------------
+# Practical rules loader (SPEC-25 Phase B)
+# ---------------------------------------------------------------------------
+
+
+def load_practical_rules() -> list:
+    """Load the practical rules catalog."""
+    rules_path = Path(__file__).resolve().parent.parent / "data" / "practical_rules.json"
+    if not rules_path.exists():
+        return []
+    with open(rules_path) as f:
+        data = json.load(f)
+    return data.get("rules", [])
+
+
+def retrieve_practical_rule(question: str, geo_region: str) -> Optional[CatalogFact]:
+    """Retrieve a matching practical rule for the question and region."""
+    rules = load_practical_rules()
+    if not rules:
+        return None
+    lower = question.lower()
+    best = None
+    best_score = 0
+    for rule in rules:
+        if geo_region not in rule.get("geo_regions", []):
+            continue
+        score = sum(1 for kw in rule.get("keywords", []) if kw in lower)
+        if score > best_score:
+            best_score = score
+            best = rule
+    if best is None:
+        return None
+    return CatalogFact(
+        fact_type="practical_rule",
+        text=best["text"],
+        source_id=best["source_id"],
+        source_class=best.get("source_class", "curated_static"),
+        geo_region=geo_region,
+    )
+
+
+# ---------------------------------------------------------------------------
+# NEARBY_OPTION retrieval (SPEC-25 Phase B)
+# ---------------------------------------------------------------------------
+
+_NEARBY_CATEGORY_MAP = {
+    "coffee": ["cafe"],
+    "work": ["cafe"],
+    "wifi": ["cafe"],
+    "food": ["restaurant", "street_food"],
+    "eat": ["restaurant", "street_food"],
+    "lunch": ["restaurant", "street_food"],
+    "dinner": ["restaurant", "street_food"],
+    "breakfast": ["cafe", "restaurant"],
+    "quick meal": ["street_food", "restaurant"],
+    "grab food": ["street_food", "restaurant"],
+    "indoor": ["cafe", "museum", "massage_spa"],
+    "low effort": ["cafe", "massage_spa"],
+}
+
+
+def retrieve_nearby_options(
+    question: str,
+    geo_region: str,
+    db: Any,
+) -> list[CatalogFact]:
+    """Retrieve nearby catalog venues matching the question category."""
+    if not geo_region or db is None:
+        return []
+    lower = question.lower()
+    target_cats: set[str] = set()
+    for keyword, cats in _NEARBY_CATEGORY_MAP.items():
+        if keyword in lower:
+            target_cats.update(cats)
+    if not target_cats:
+        target_cats = {"cafe", "restaurant"}
+
+    venues = db.list_venues_for_region(geo_region)
+    facts = []
+    for v in venues:
+        cat = v.get("category", "")
+        if cat not in target_cats:
+            continue
+        name = v.get("name", "")
+        desc = v.get("description", "")
+        micro = v.get("micro_location", "")
+        facts.append(
+            CatalogFact(
+                fact_type="nearby_option",
+                text=f"{name} ({cat}) -- {micro}. {desc[:120]}",
+                source_id=v.get("venue_id", name),
+                source_class="curated_catalog",
+                geo_region=geo_region,
+            )
+        )
+        if len(facts) >= 3:
+            break
+    return facts
+
+
+# ---------------------------------------------------------------------------
+# COMPARE retrieval (SPEC-25 Phase B)
+# ---------------------------------------------------------------------------
+
+
+def retrieve_compare_options(
+    question: str,
+    geo_region: str,
+    db: Any,
+) -> list[CatalogFact]:
+    """Retrieve at most 3 catalog venues for comparison."""
+    if not geo_region or db is None:
+        return []
+    lower = question.lower()
+    venues = db.list_venues_for_region(geo_region)
+    matches = []
+    for v in venues:
+        name = v.get("name", "").lower()
+        if name and name in lower:
+            matches.append(v)
+    if not matches:
+        # Broad match: pick venues from the same category as hint words
+        target_cats: set[str] = set()
+        for keyword, cats in _NEARBY_CATEGORY_MAP.items():
+            if keyword in lower:
+                target_cats.update(cats)
+        if target_cats:
+            for v in venues:
+                if v.get("category", "") in target_cats:
+                    matches.append(v)
+                    if len(matches) >= 3:
+                        break
+
+    facts = []
+    for v in matches[:3]:
+        name = v.get("name", "")
+        desc = v.get("description", "")
+        micro = v.get("micro_location", "")
+        facts.append(
+            CatalogFact(
+                fact_type="compare_option",
+                text=f"{name} -- {micro}. {desc[:120]}",
+                source_id=v.get("venue_id", name),
+                source_class="curated_catalog",
+                geo_region=geo_region,
+            )
+        )
+    return facts
+
+
+# ---------------------------------------------------------------------------
+# TODAY_TONIGHT: filter trip nodes to today's remaining (SPEC-25 Phase B)
+# ---------------------------------------------------------------------------
+
+
+def format_today_tonight(
+    trip_nodes: list,
+    now_utc: Any,
+    geo_region: str,
+) -> Optional[tuple[str, list[str]]]:
+    """Format remaining stops today/this evening.
+
+    Returns (answer_text, source_ids) or None if no remaining nodes today.
+    Uses destination-local date comparison.
+    """
+    if not trip_nodes:
+        return None
+
+    try:
+        from core.destination_tz import toDestinationLocal
+    except ImportError:
+        # Fallback: treat scheduledStart as-is
+        toDestinationLocal = None  # noqa: N806
+
+    remaining = []
+    for node in trip_nodes:
+        start = node.get("scheduled_start") or node.get("scheduledStart")
+        if start is None:
+            continue
+        if hasattr(start, "timestamp"):
+            node_time = start
+        else:
+            from datetime import datetime as _dt
+
+            try:
+                node_time = _dt.fromisoformat(str(start).replace("Z", "+00:00"))
+            except (ValueError, TypeError):
+                continue
+
+        # Check destination-local date is today
+        node_region = node.get("geo_region") or geo_region
+        if toDestinationLocal is not None:
+            node_local = toDestinationLocal(node_time, node_region)
+            now_local = toDestinationLocal(now_utc, node_region)
+        else:
+            node_local = node_time
+            now_local = now_utc
+
+        if node_local.date() != now_local.date():
+            continue
+
+        # Only remaining (not ended)
+        duration = node.get("duration_minutes") or node.get("durationMinutes") or 60
+        end = node_time + __import__("datetime").timedelta(minutes=duration)
+        if now_utc >= end:
+            continue
+
+        status = node.get("status", "pending")
+        if status in ("completed", "skipped"):
+            continue
+
+        remaining.append(node)
+
+    if not remaining:
+        return None
+
+    lines = []
+    source_ids = []
+    for n in remaining:
+        name = n.get("venue_name") or n.get("venueName") or "Unknown"
+        start = n.get("scheduled_start") or n.get("scheduledStart")
+        start_str = ""
+        if hasattr(start, "strftime"):
+            start_str = f" at {start.strftime('%H:%M')}"
+        lines.append(f"- {name}{start_str}")
+        sid = n.get("venue_id") or n.get("venueId") or name
+        source_ids.append(sid)
+
+    answer = "Remaining today:\n" + "\n".join(lines)
+    return answer, source_ids
+
+
+# ---------------------------------------------------------------------------
 # Core Ask handler (no llm.complete this slice)
 # ---------------------------------------------------------------------------
 
@@ -716,6 +1022,7 @@ class AskService:
         next_node_summary: Optional[str] = None,
         llm_key_present: bool = False,
         target_node_id: Optional[str] = None,
+        **kwargs: Any,
     ) -> AskResponse:
         """Handle a trip-scoped Ask question.
 
@@ -777,6 +1084,119 @@ class AskService:
                 proposal=proposal,
             )
             tel.path = resp.path.value
+            tel.latency_ms = (time.monotonic() - t0) * 1000
+            self._emit_telemetry(tel)
+            return resp
+
+        # TODAY_TONIGHT: remaining stops today from trip nodes
+        if intent == AskIntent.TODAY_TONIGHT:
+            trip_nodes_raw = kwargs.get("trip_nodes") or []
+            from datetime import datetime, timezone
+
+            now_utc = kwargs.get("now_utc") or datetime.now(tz=timezone.utc)
+            result = format_today_tonight(trip_nodes_raw, now_utc, geo_region)
+            if result is not None:
+                answer_text, sids = result
+                resp = AskResponse(
+                    answer=answer_text,
+                    tier=TrustTier.HEDGE,
+                    path=AskPath.GROUNDED_DETERMINISTIC,
+                    intent=intent,
+                    source_ids=sids,
+                    source_class="trip_state",
+                )
+            else:
+                resp = AskResponse(
+                    answer=(
+                        "No remaining stops scheduled for today. "
+                        "Check tomorrow's plan or ask about nearby options."
+                    ),
+                    tier=TrustTier.REFUSE,
+                    path=AskPath.RETRIEVAL_MISS,
+                    intent=intent,
+                )
+            tel.path = resp.path.value
+            tel.source_ids = resp.source_ids
+            tel.latency_ms = (time.monotonic() - t0) * 1000
+            self._emit_telemetry(tel)
+            return resp
+
+        # NEARBY_OPTION: catalog venues by category in geo_region
+        if intent == AskIntent.NEARBY_OPTION:
+            facts = retrieve_nearby_options(question, geo_region, self.db)
+            if facts:
+                lines = [f.text for f in facts]
+                resp = AskResponse(
+                    answer="\n".join(lines),
+                    tier=TrustTier.HEDGE,
+                    path=AskPath.GROUNDED_DETERMINISTIC,
+                    intent=intent,
+                    source_ids=[f.source_id for f in facts],
+                    source_class="curated_catalog",
+                )
+            else:
+                resp = AskResponse(
+                    answer=("I don't have catalog options matching that in this region right now."),
+                    tier=TrustTier.REFUSE,
+                    path=AskPath.RETRIEVAL_MISS,
+                    intent=intent,
+                )
+            tel.path = resp.path.value
+            tel.source_ids = resp.source_ids
+            tel.latency_ms = (time.monotonic() - t0) * 1000
+            self._emit_telemetry(tel)
+            return resp
+
+        # PRACTICAL_RULE: sourced region rules from static catalog
+        if intent == AskIntent.PRACTICAL_RULE:
+            rule_fact = retrieve_practical_rule(question, geo_region)
+            if rule_fact is not None:
+                resp = AskResponse(
+                    answer=rule_fact.text,
+                    tier=TrustTier.HEDGE,
+                    path=AskPath.GROUNDED_DETERMINISTIC,
+                    intent=intent,
+                    source_ids=[rule_fact.source_id],
+                    source_class=rule_fact.source_class,
+                )
+            else:
+                resp = AskResponse(
+                    answer=(
+                        "I don't have verified information for that "
+                        "in this region. Check with local sources."
+                    ),
+                    tier=TrustTier.REFUSE,
+                    path=AskPath.RETRIEVAL_MISS,
+                    intent=intent,
+                )
+            tel.path = resp.path.value
+            tel.source_ids = resp.source_ids
+            tel.latency_ms = (time.monotonic() - t0) * 1000
+            self._emit_telemetry(tel)
+            return resp
+
+        # COMPARE: at most 3 catalog-backed options with source_ids
+        if intent == AskIntent.COMPARE:
+            facts = retrieve_compare_options(question, geo_region, self.db)
+            if facts:
+                lines = [f.text for f in facts]
+                resp = AskResponse(
+                    answer="\n".join(lines),
+                    tier=TrustTier.HEDGE,
+                    path=AskPath.GROUNDED_DETERMINISTIC,
+                    intent=intent,
+                    source_ids=[f.source_id for f in facts],
+                    source_class="curated_catalog",
+                )
+            else:
+                resp = AskResponse(
+                    answer=("I don't have enough catalog data to compare options in this region."),
+                    tier=TrustTier.REFUSE,
+                    path=AskPath.RETRIEVAL_MISS,
+                    intent=intent,
+                )
+            tel.path = resp.path.value
+            tel.source_ids = resp.source_ids
             tel.latency_ms = (time.monotonic() - t0) * 1000
             self._emit_telemetry(tel)
             return resp
