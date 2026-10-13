@@ -517,6 +517,10 @@ enum AskResponseIntent {
   dishFact('dish_fact'),
   tripCurrentNext('trip_current_next'),
   planChange('plan_change'),
+  todayTonight('today_tonight'),
+  nearbyOption('nearby_option'),
+  practicalRule('practical_rule'),
+  compare('compare'),
   outOfScope('out_of_scope');
 
   final String wire;
@@ -563,6 +567,12 @@ class AskProposal {
         targetNodeId: j['target_node_id'] as String? ?? '',
         summary: j['summary'] as String? ?? '',
       );
+
+  Map<String, dynamic> toJson() => {
+        'event_type': eventType.wire,
+        'target_node_id': targetNodeId,
+        'summary': summary,
+      };
 }
 
 /// Closed set of Ask tiers matching the backend wire values.
@@ -628,7 +638,22 @@ class AskResponse {
               (j['proposal'] as Map).cast<String, dynamic>()),
       foodDisclaimer: j['food_disclaimer'] as String?,
     );
-  }
+
+
+  /// Serialize to JSON for local storage (envelope_json column).
+  Map<String, dynamic> toJson() => {
+        'answer': answer,
+        'tier': tier.wire,
+        'path': path.wire,
+        'intent': intent.wire,
+        'source_ids': sourceIds,
+        'source_class': sourceClass,
+        'from_cache': fromCache,
+        if (fallbackReason != null) 'fallback_reason': fallbackReason,
+        if (proposal != null) 'proposal': proposal!.toJson(),
+        if (foodDisclaimer != null) 'food_disclaimer': foodDisclaimer,
+      };
+}
 }
 
 class TripEventResult {
