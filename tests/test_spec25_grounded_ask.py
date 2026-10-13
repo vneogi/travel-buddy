@@ -750,7 +750,7 @@ class TestHTTPIntegration:
         from main import app
         from services.database_service import db_service
         from models.schemas import TripState, TripNode, NodeStatus
-        from datetime import datetime, timezone
+        from datetime import datetime, timedelta, timezone
 
         self.client = TestClient(app)
         self.trip = TripState(
@@ -763,7 +763,7 @@ class TestHTTPIntegration:
                     venue_name="Ban Anou Night Market",
                     venue_id="ban_anou",
                     duration_minutes=90,
-                    scheduled_start=datetime(2026, 10, 5, 11, 0, tzinfo=timezone.utc),
+                    scheduled_start=datetime.now(tz=timezone.utc) + timedelta(hours=2),
                     is_locked=False,
                     status=NodeStatus.PENDING,
                     geo_region="vientiane_laos",
@@ -940,5 +940,9 @@ class TestNamedPaths:
             "dish_fact",
             "trip_current_next",
             "plan_change",
+            "today_tonight",
+            "nearby_option",
+            "practical_rule",
+            "compare",
             "out_of_scope",
         }

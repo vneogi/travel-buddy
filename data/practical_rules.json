@@ -1,0 +1,77 @@
+{
+  "version": "2026-10-13-v1",
+  "rules": [
+    {
+      "rule_id": "laos_temple_dress",
+      "geo_regions": ["vientiane_laos", "luang_prabang_laos", "vang_vieng_laos"],
+      "category": "temple_etiquette",
+      "keywords": ["temple", "wat", "dress", "wear", "clothing", "etiquette", "modest", "shoes"],
+      "text": "Cover shoulders and knees before entering any Lao temple. Remove shoes at the door. Women must not touch monks or hand objects directly to them. Sit with feet tucked away from Buddha images. Photography is usually allowed outside; ask before shooting inside the sim.",
+      "source_id": "laos_temple_dress_v1",
+      "source_class": "curated_static"
+    },
+    {
+      "rule_id": "laos_transport_tuk_tuk",
+      "geo_regions": ["vientiane_laos", "luang_prabang_laos", "vang_vieng_laos"],
+      "category": "transport",
+      "keywords": ["transport", "tuk tuk", "tuktuk", "taxi", "grab", "get around", "travel", "bus", "minivan", "songthaew"],
+      "text": "Tuk-tuks are the main short-distance transport. Agree on the fare before boarding. Grab is available in Vientiane only. Between cities, minivans and VIP buses run fixed routes from the northern or southern bus station. Songthaews (shared trucks) serve rural routes.",
+      "source_id": "laos_transport_v1",
+      "source_class": "curated_static"
+    },
+    {
+      "rule_id": "laos_payment_atm",
+      "geo_regions": ["vientiane_laos", "luang_prabang_laos", "vang_vieng_laos"],
+      "category": "payment",
+      "keywords": ["pay", "payment", "cash", "atm", "money", "kip", "baht", "usd", "dollar", "card", "credit card", "exchange"],
+      "text": "Lao kip (LAK) is the local currency. Thai baht and US dollars are widely accepted in tourist areas. ATMs dispense kip; daily withdrawal limits apply. Most markets and street vendors are cash-only. Mid-range restaurants and hotels in Luang Prabang and Vientiane accept cards.",
+      "source_id": "laos_payment_v1",
+      "source_class": "curated_static"
+    },
+    {
+      "rule_id": "laos_connectivity",
+      "geo_regions": ["vientiane_laos", "luang_prabang_laos", "vang_vieng_laos"],
+      "category": "connectivity",
+      "keywords": ["wifi", "internet", "sim", "data", "phone", "connectivity", "signal", "4g", "mobile"],
+      "text": "Buy a tourist SIM (Unitel or Lao Telecom) at the airport or any phone shop. 4G covers Vientiane, Luang Prabang centre, and Vang Vieng town. Signal drops on rural roads and river trips. Most cafes and hotels offer free Wi-Fi.",
+      "source_id": "laos_connectivity_v1",
+      "source_class": "curated_static"
+    },
+    {
+      "rule_id": "laos_booking_channels",
+      "geo_regions": ["vientiane_laos", "luang_prabang_laos", "vang_vieng_laos"],
+      "category": "booking",
+      "keywords": ["book", "booking", "reserve", "reservation", "how to book", "advance", "walk-in", "channel"],
+      "text": "Most Luang Prabang restaurants are walk-in only. Hotels book via Agoda, Booking.com, or direct WhatsApp. Day tours (Kuang Si, Pak Ou) book through hotel reception or street agencies the evening before. Cooking classes require one-day advance booking.",
+      "source_id": "laos_booking_v1",
+      "source_class": "curated_static"
+    },
+    {
+      "rule_id": "dubai_temple_dress",
+      "geo_regions": ["dubai_uae"],
+      "category": "temple_etiquette",
+      "keywords": ["mosque", "temple", "dress", "wear", "clothing", "etiquette", "modest"],
+      "text": "Cover shoulders and knees when visiting mosques. Women should bring a headscarf. Remove shoes before entering. Photography rules vary by mosque; Jumeirah Mosque welcomes visitors on guided tours.",
+      "source_id": "dubai_temple_dress_v1",
+      "source_class": "curated_static"
+    },
+    {
+      "rule_id": "dubai_transport",
+      "geo_regions": ["dubai_uae"],
+      "category": "transport",
+      "keywords": ["transport", "taxi", "metro", "get around", "travel", "bus", "uber", "careem"],
+      "text": "Dubai Metro covers major attractions along two lines. Taxis and Careem/Uber are widely available. A Nol card works on metro, bus, and tram. Water taxis (abras) cross Dubai Creek for 1 AED.",
+      "source_id": "dubai_transport_v1",
+      "source_class": "curated_static"
+    },
+    {
+      "rule_id": "dubai_payment",
+      "geo_regions": ["dubai_uae"],
+      "category": "payment",
+      "keywords": ["pay", "payment", "cash", "atm", "money", "dirham", "aed", "card", "credit card"],
+      "text": "UAE dirham (AED) is the local currency. Cards are accepted almost everywhere including taxis. ATMs are widely available. Souks and small shops may prefer cash.",
+      "source_id": "dubai_payment_v1",
+      "source_class": "curated_static"
+    }
+  ]
+}

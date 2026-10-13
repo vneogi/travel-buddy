@@ -373,6 +373,12 @@ async def test_process_event_fallback_preserves_luang_prabang_on_llm_failure():
         "place_identity",
         "opening_hours",
         "dish_fact",
+        "trip_current_next",
+        "plan_change",
+        "today_tonight",
+        "nearby_option",
+        "practical_rule",
+        "compare",
         "out_of_scope",
     )
 

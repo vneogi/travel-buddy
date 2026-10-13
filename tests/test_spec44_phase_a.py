@@ -1,7 +1,7 @@
 """Bounded SPEC-44 Phase A1-A3 integrity proofs."""
 
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 import importlib
 import os
 from pathlib import Path
@@ -511,14 +511,21 @@ def test_create_city_replay_json_equals_first_response(client):
     assert replay.json() == first.json()
 
 
+# SPEC-25 Phase B: dynamic future dates for past-date-proof tests
+_FUTURE_START = (date.today() + timedelta(days=2)).isoformat()
+_FUTURE_END_3 = (date.today() + timedelta(days=4)).isoformat()  # 3-day range
+_FUTURE_END_2 = (date.today() + timedelta(days=3)).isoformat()  # 2-day range
+_FUTURE_END_2_MISMATCH = (date.today() + timedelta(days=4)).isoformat()
+
+
 def test_create_range_replay_json_equals_first_response(client):
     """Range create: replay must reproduce the 'over N days' message."""
     user_id = "range-replay-spec44"
     db_service.get_or_create_user(user_id)
     body = {
         "city": "luang_prabang_laos",
-        "start_date": "2026-10-02",
-        "end_date": "2026-10-05",
+        "start_date": _FUTURE_START,
+        "end_date": _FUTURE_END_3,
         "initial_mood": "exploratory",
         "command_id": "range-replay-exact",
     }
@@ -567,8 +574,8 @@ def test_http_create_persists_trip_party_graph_and_command_atomically(client):
 
     body = {
         "city": "luang_prabang_laos",
-        "start_date": "2026-10-02",
-        "end_date": "2026-10-03",
+        "start_date": _FUTURE_START,
+        "end_date": _FUTURE_END_2,
         "initial_mood": "exploratory",
         "command_id": "create-atomic-once",
     }
@@ -648,8 +655,8 @@ def test_create_command_payload_mismatch_409(client):
         headers={"X-Debug-User-Id": user_id},
         json={
             "city": "luang_prabang_laos",
-            "start_date": "2026-10-02",
-            "end_date": "2026-10-03",
+            "start_date": _FUTURE_START,
+            "end_date": _FUTURE_END_2,
             "command_id": "create-mismatch",
         },
     )
@@ -660,8 +667,8 @@ def test_create_command_payload_mismatch_409(client):
         headers={"X-Debug-User-Id": user_id},
         json={
             "city": "luang_prabang_laos",
-            "start_date": "2026-10-02",
-            "end_date": "2026-10-04",  # different end_date
+            "start_date": _FUTURE_START,
+            "end_date": _FUTURE_END_2_MISMATCH,  # different end_date
             "command_id": "create-mismatch",
         },
     )
