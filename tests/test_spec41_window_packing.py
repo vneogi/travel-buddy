@@ -491,7 +491,7 @@ class TestTruthfulCapacity:
         r = client.get("/api/v1/trips", headers=HEADERS)
         max_days = r.json()["create_trip_options"]["max_days_by_region"]
         assert len(max_days) >= 1
-        anchor = date(2026, 10, 5)  # Monday
+        anchor = date.today() + timedelta(days=2)
         for region, md in max_days.items():
             rows = db_mod.db_service.list_venues_for_region(region)
             for wd in range(7):
@@ -513,7 +513,7 @@ class TestTruthfulCapacity:
         """One API smoke per region proves the HTTP path still succeeds at max."""
         r = client.get("/api/v1/trips", headers=HEADERS)
         max_days = r.json()["create_trip_options"]["max_days_by_region"]
-        start_date = date(2026, 10, 5)
+        start_date = date.today() + timedelta(days=2)
         for region, md in max_days.items():
             end_date = start_date + timedelta(days=md - 1)
             body = {
@@ -538,7 +538,7 @@ class TestTruthfulCapacity:
             if md >= MAX_DAYS_CEILING:
                 continue
             h = auth(f"spec41-overmax-{region}")
-            sd = date(2026, 10, 5)
+            sd = date.today() + timedelta(days=2)
             ed = sd + timedelta(days=md)  # one more than max
             body = {
                 "start_date": sd.isoformat(),

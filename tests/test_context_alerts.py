@@ -3,7 +3,7 @@
 All tests use mocked provider fixtures -- no live weather call.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -81,7 +81,8 @@ SOURCE_UPDATED = datetime(2026, 10, 5, 6, 30, tzinfo=timezone.utc)
 def test_no_openweather_key_returns_unconfigured_empty(client):
     from routers.alerts_router import get_weather_provider
 
-    resp = client.post("/api/v1/trip/create", json={"start_date": "2026-10-05"}, headers=_auth())
+    _future = (date.today() + timedelta(days=2)).isoformat()
+    resp = client.post("/api/v1/trip/create", json={"start_date": _future}, headers=_auth())
     trip_id = resp.json()["trip_id"]
 
     unconfigured = WeatherProvider(api_key="")
@@ -203,7 +204,11 @@ def test_alert_id_stable_for_identical_evidence():
 def test_provider_timeout_returns_503(client):
     from routers.alerts_router import get_weather_provider
 
-    resp = client.post("/api/v1/trip/create", json={"start_date": "2026-10-05"}, headers=_auth())
+    resp = client.post(
+        "/api/v1/trip/create",
+        json={"start_date": (date.today() + timedelta(days=2)).isoformat()},
+        headers=_auth(),
+    )
     trip_id = resp.json()["trip_id"]
 
     class FailingProvider:
@@ -231,7 +236,9 @@ def test_provider_timeout_returns_503(client):
 
 def test_alert_endpoint_auth_and_ownership(client):
     resp = client.post(
-        "/api/v1/trip/create", json={"start_date": "2026-10-05"}, headers=_auth("u1")
+        "/api/v1/trip/create",
+        json={"start_date": (date.today() + timedelta(days=2)).isoformat()},
+        headers=_auth("u1"),
     )
     trip_id = resp.json()["trip_id"]
 
@@ -247,7 +254,11 @@ def test_alert_endpoint_auth_and_ownership(client):
 def test_alert_endpoint_does_not_consume_reroute_quota(client):
     from routers.alerts_router import get_weather_provider
 
-    resp = client.post("/api/v1/trip/create", json={"start_date": "2026-10-05"}, headers=_auth())
+    resp = client.post(
+        "/api/v1/trip/create",
+        json={"start_date": (date.today() + timedelta(days=2)).isoformat()},
+        headers=_auth(),
+    )
     trip_id = resp.json()["trip_id"]
 
     unconfigured = WeatherProvider(api_key="")
@@ -344,7 +355,11 @@ def test_router_groups_by_region_not_global(client):
     """The alerts endpoint groups nodes by geo_region (integration check)."""
     from routers.alerts_router import get_weather_provider
 
-    resp = client.post("/api/v1/trip/create", json={"start_date": "2026-10-05"}, headers=_auth())
+    resp = client.post(
+        "/api/v1/trip/create",
+        json={"start_date": (date.today() + timedelta(days=2)).isoformat()},
+        headers=_auth(),
+    )
     trip_id = resp.json()["trip_id"]
 
     # Provider that tracks which coordinates were requested
@@ -447,7 +462,11 @@ def test_empty_string_api_key_is_unconfigured(monkeypatch):
 
 def test_alert_endpoint_unauthenticated_returns_401(client):
     """No auth header at all -> 401."""
-    resp = client.post("/api/v1/trip/create", json={"start_date": "2026-10-05"}, headers=_auth())
+    resp = client.post(
+        "/api/v1/trip/create",
+        json={"start_date": (date.today() + timedelta(days=2)).isoformat()},
+        headers=_auth(),
+    )
     trip_id = resp.json()["trip_id"]
 
     # Request with NO auth headers
@@ -484,7 +503,11 @@ def test_locked_cancel_does_not_consume_reroute(client):
 
     from services.db_provider import db_service
 
-    resp = client.post("/api/v1/trip/create", json={"start_date": "2026-10-05"}, headers=_auth())
+    resp = client.post(
+        "/api/v1/trip/create",
+        json={"start_date": (date.today() + timedelta(days=2)).isoformat()},
+        headers=_auth(),
+    )
     trip_id = resp.json()["trip_id"]
 
     # Directly lock the first node in the trip state

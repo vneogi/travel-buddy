@@ -621,7 +621,7 @@ class TestCapacityWithWalking:
         r = client.get("/api/v1/trips", headers=HEADERS)
         max_days = r.json()["create_trip_options"]["max_days_by_region"]
         assert len(max_days) >= 1
-        sd = date(2026, 10, 5)
+        sd = date.today() + timedelta(days=2)
         for region, md in max_days.items():
             ed = sd + timedelta(days=md - 1)
             body = {
