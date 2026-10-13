@@ -348,13 +348,13 @@ _PRACTICAL_RULE_KEYWORDS = {
     "tuk tuk",
     "transport",
     "how to get",
+    "get around",
     "atm",
     "cash",
     "payment",
     "pay",
     "kip",
     "sim card",
-    "wifi",
     "internet",
     "connectivity",
     "book",
@@ -878,11 +878,7 @@ def format_today_tonight(
     if not trip_nodes:
         return None
 
-    try:
-        from core.destination_tz import toDestinationLocal
-    except ImportError:
-        # Fallback: treat scheduledStart as-is
-        toDestinationLocal = None  # noqa: N806
+    from services.destination_tz import to_destination_local
 
     remaining = []
     for node in trip_nodes:
@@ -901,12 +897,8 @@ def format_today_tonight(
 
         # Check destination-local date is today
         node_region = node.get("geo_region") or geo_region
-        if toDestinationLocal is not None:
-            node_local = toDestinationLocal(node_time, node_region)
-            now_local = toDestinationLocal(now_utc, node_region)
-        else:
-            node_local = node_time
-            now_local = now_utc
+        node_local = to_destination_local(node_time, node_region)
+        now_local = to_destination_local(now_utc, node_region)
 
         if node_local.date() != now_local.date():
             continue

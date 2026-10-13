@@ -1201,6 +1201,9 @@ class TripStateMachine:
         is_anonymous = state.get("is_anonymous", True)
         llm_key_present = bool(settings.litellm_api_key or settings.gemini_api_key)
 
+        # SPEC-25 Phase B: pass trip nodes for TODAY_TONIGHT intent
+        trip_nodes_dicts = [n.model_dump(mode="json") for n in trip.nodes]
+
         ask_resp = await ask_svc.handle_ask(
             question=state["message"],
             geo_region=geo_region,
@@ -1213,6 +1216,7 @@ class TripStateMachine:
             next_node_summary=next_summary,
             llm_key_present=llm_key_present,
             target_node_id=state.get("target_node_id"),
+            trip_nodes=trip_nodes_dicts,
         )
 
         state["response"] = ask_resp.answer

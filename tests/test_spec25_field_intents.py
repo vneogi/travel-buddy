@@ -10,6 +10,7 @@ from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock
 
 import pytest
+from starlette.testclient import TestClient
 
 from services.ask_service import (
     AskBudget,
@@ -134,6 +135,14 @@ class TestClassifier:
     def test_compare_intent(self):
         assert classify_ask_intent("compare the cafes for me") == AskIntent.COMPARE
 
+    def test_transport_is_practical_rule(self):
+        """Proof: transport question must classify as PRACTICAL_RULE, not PLACE_IDENTITY."""
+        assert classify_ask_intent("how do I get around?") == AskIntent.PRACTICAL_RULE
+
+    def test_wifi_work_is_nearby_option(self):
+        """Proof: wifi/work question must classify as NEARBY_OPTION, not PRACTICAL_RULE."""
+        assert classify_ask_intent("where can I work with wifi?") == AskIntent.NEARBY_OPTION
+
 
 # ---------------------------------------------------------------------------
 # TODAY_TONIGHT
@@ -156,10 +165,11 @@ class TestTodayTonight:
         assert len(sids) == 2
 
     def test_tomorrow_nodes_not_invented_tonight(self):
-        now = datetime.now(tz=timezone.utc)
-        # Node is tomorrow
-        tomorrow_start = (now + timedelta(days=1)).replace(hour=8, minute=0, second=0)
-        nodes = [_make_node("Morning Walk", tomorrow_start)]
+        # Use morning UTC so ICT (UTC+7) is same calendar day
+        now = datetime.now(tz=timezone.utc).replace(hour=8, minute=0, second=0, microsecond=0)
+        # Node 2 days out -- definitely tomorrow even in ICT
+        future_start = (now + timedelta(days=2)).replace(hour=8, minute=0, second=0)
+        nodes = [_make_node("Morning Walk", future_start)]
         result = format_today_tonight(nodes, now, "luang_prabang_laos")
         assert result is None
 
@@ -311,9 +321,9 @@ class TestCompare:
             )
         )
         assert resp.intent == AskIntent.COMPARE
-        if resp.path == AskPath.GROUNDED_DETERMINISTIC:
-            assert len(resp.source_ids) <= 3
-            assert all(isinstance(s, str) for s in resp.source_ids)
+        assert resp.path == AskPath.GROUNDED_DETERMINISTIC
+        assert 1 <= len(resp.source_ids) <= 3
+        assert all(isinstance(s, str) for s in resp.source_ids)
 
 
 # ---------------------------------------------------------------------------
@@ -399,6 +409,75 @@ class TestCacheKeyHygiene:
 # ---------------------------------------------------------------------------
 # Existing spec25 grounded tests must not regress
 # ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# HTTP integration: TODAY_TONIGHT via state machine
+# ---------------------------------------------------------------------------
+
+
+class TestHTTPTodayTonight:
+    """POST /api/v1/trip/event ask_info 'what\'s left today?' must include
+    the pending venue name when the trip has a remaining node today."""
+
+    @pytest.fixture(autouse=True)
+    def _setup(self):
+        from datetime import datetime, timezone
+
+        from main import app
+        from models.schemas import NodeStatus, TripNode, TripState
+        from services.database_service import db_service
+        from services.destination_tz import to_destination_local
+
+        self.client = TestClient(app)
+        # Schedule node 30 min from real now -- still pending and same ICT date
+        real_now = datetime.now(tz=timezone.utc)
+        node_start = real_now + timedelta(minutes=30)
+        # Verify same ICT date (precondition)
+        now_ict = to_destination_local(real_now, "luang_prabang_laos")
+        node_ict = to_destination_local(node_start, "luang_prabang_laos")
+        assert now_ict.date() == node_ict.date(), (
+            f"Test precondition: {now_ict} and {node_ict} must share ICT date"
+        )
+        self.trip = TripState(
+            trip_id="today-trip-1",
+            user_id="test-user-today",
+            geo_region="luang_prabang_laos",
+            nodes=[
+                TripNode(
+                    node_id="tt1",
+                    venue_name="Saffron Coffee",
+                    venue_id="saffron_coffee",
+                    duration_minutes=60,
+                    scheduled_start=node_start,
+                    is_locked=False,
+                    status=NodeStatus.PENDING,
+                    geo_region="luang_prabang_laos",
+                ),
+            ],
+        )
+        db_service.save_trip(self.trip)
+        self.headers = {"X-Debug-User-Id": "test-user-today"}
+        yield
+        db_service._trips.pop("today-trip-1", None)
+
+    def test_today_tonight_includes_venue_name(self):
+        r = self.client.post(
+            "/api/v1/trip/event",
+            json={
+                "trip_id": "today-trip-1",
+                "event_type": "ask_info",
+                "message": "what's left today?",
+            },
+            headers=self.headers,
+        )
+        assert r.status_code == 200
+        data = r.json()
+        ask = data.get("ask_response")
+        assert ask is not None, "ask_response must be present"
+        assert ask["intent"] == "today_tonight"
+        assert ask["path"] == "grounded_deterministic"
+        assert "Saffron Coffee" in ask["answer"]
 
 
 class TestExistingIntentsStillWork:

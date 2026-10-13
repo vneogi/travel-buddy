@@ -273,6 +273,10 @@ class AskResponseEnvelope(BaseModel):
         "dish_fact",
         "trip_current_next",
         "plan_change",
+        "today_tonight",
+        "nearby_option",
+        "practical_rule",
+        "compare",
         "out_of_scope",
     ]
     source_ids: List[str] = []
