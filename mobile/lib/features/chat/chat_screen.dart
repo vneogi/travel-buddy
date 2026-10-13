@@ -83,7 +83,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       return;
     }
     _currentThreadId = thread['thread_id'] as String;
-    final rows = await _db.loadAskMessages(threadId: _currentThreadId!);
+    final rows = await _db.loadAskMessages(
+      threadId: _currentThreadId!,
+      identityScope: _identityScope,
+    );
     final loaded = <_ChatEntry>[];
     for (final row in rows) {
       final role = row['role'] as String;
@@ -299,44 +302,52 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         targetNodeId: target?.nodeId,
       );
       if (!mounted) return;
+
+      // Collect the payload to persist OUTSIDE setState.
+      AskResponse? askToStore;
+      String? plainTextToStore;
+
       setState(() {
         _isThinking = false;
         if (result == null) {
           _messages.add(const _ChatEntry.plainAssistant(
             'I could not complete that request. Please try again.',
           ));
+          plainTextToStore =
+              'I could not complete that request. Please try again.';
           return;
         }
         final ask = result.askResponse;
         if (eventType == EventType.askInfo) {
           if (ask != null) {
             _messages.add(_ChatEntry.askFact(ask, userText: text));
-            // Persist assistant envelope.
-            _persistAssistantEnvelope(threadId, ask);
+            askToStore = ask;
           } else {
             const fallback =
                 'I could not complete that request. Please try again.';
             _messages.add(const _ChatEntry.plainAssistant(fallback));
-            _db.insertAskMessage(
-              messageId: _uuid.v4(),
-              threadId: threadId,
-              role: 'assistant',
-              text: fallback,
-            );
+            plainTextToStore = fallback;
           }
         } else if (ask != null) {
           _messages.add(_ChatEntry.askFact(ask, userText: text));
-          _persistAssistantEnvelope(threadId, ask);
+          askToStore = ask;
         } else {
           _messages.add(_ChatEntry.plainAssistant(result.message));
-          _db.insertAskMessage(
-            messageId: _uuid.v4(),
-            threadId: threadId,
-            role: 'assistant',
-            text: result.message,
-          );
+          plainTextToStore = result.message;
         }
       });
+
+      // Persist after setState so the write completes even on dispose.
+      if (askToStore != null) {
+        await _persistAssistantEnvelope(threadId, askToStore!);
+      } else if (plainTextToStore != null) {
+        await _db.insertAskMessage(
+          messageId: _uuid.v4(),
+          threadId: threadId,
+          role: 'assistant',
+          text: plainTextToStore!,
+        );
+      }
     } catch (_) {
       if (!mounted) return;
       const errorMsg =
@@ -471,7 +482,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             ),
           );
           if (confirm == true) {
-            await _db.deleteAskThread(threadId);
+            await _db.deleteAskThread(
+              threadId: threadId,
+              identityScope: _identityScope,
+            );
             if (threadId == _currentThreadId) {
               _currentThreadId = null;
               setState(() => _messages.clear());

@@ -202,7 +202,7 @@ void main() {
         envelopeJson: envelope,
       );
 
-      final messages = await database.loadAskMessages(threadId: 't1');
+      final messages = await database.loadAskMessages(threadId: 't1', identityScope: 'account:a');
       expect(messages.length, 2);
       expect(messages[0]['role'], 'user');
       expect(messages[0]['text'], 'What are the opening hours?');
@@ -313,7 +313,7 @@ void main() {
         envelopeJson: safeEnvelope,
       );
 
-      final msgs = await database.loadAskMessages(threadId: 't-hyg');
+      final msgs = await database.loadAskMessages(threadId: 't-hyg', identityScope: 'account:a');
       final stored = msgs.first['envelope_json'] as String;
       expect(stored.contains('confirmation_code'), isFalse);
       expect(stored.contains('booking_notes'), isFalse);
@@ -353,7 +353,7 @@ void main() {
         envelopeJson: proposalEnvelope,
       );
 
-      final msgs = await database.loadAskMessages(threadId: 't-prop');
+      final msgs = await database.loadAskMessages(threadId: 't-prop', identityScope: 'account:a');
       final stored = jsonDecode(msgs.first['envelope_json'] as String)
           as Map<String, dynamic>;
       // Verify proposal is stored for display.
@@ -396,14 +396,14 @@ void main() {
         text: 'Hi there',
       );
 
-      await database.deleteAskThread('t-del');
+      await database.deleteAskThread(threadId: 't-del', identityScope: 'account:a');
 
       final threads = await database.listAskThreads(
         identityScope: 'account:a',
         tripId: 'trip-1',
       );
       expect(threads, isEmpty);
-      final msgs = await database.loadAskMessages(threadId: 't-del');
+      final msgs = await database.loadAskMessages(threadId: 't-del', identityScope: 'account:a');
       expect(msgs, isEmpty);
     });
 
@@ -539,7 +539,7 @@ void main() {
       }
 
       final msgs =
-          await database.loadAskMessages(threadId: 't-retention');
+          await database.loadAskMessages(threadId: 't-retention', identityScope: 'account:a');
       expect(msgs.length, 200);
       // The oldest (msg-0) should have been pruned.
       final ids = msgs.map((m) => m['message_id'] as String).toSet();
@@ -579,7 +579,7 @@ void main() {
       // DO NOT insert assistant message for offline refusal.
 
       final msgs =
-          await database.loadAskMessages(threadId: 't-offline');
+          await database.loadAskMessages(threadId: 't-offline', identityScope: 'account:a');
       expect(msgs.length, 1);
       expect(msgs.first['role'], 'user');
       // No assistant row for offline refusal.

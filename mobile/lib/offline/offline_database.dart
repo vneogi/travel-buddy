@@ -654,10 +654,19 @@ class OfflineDatabase {
   }
 
   /// Load messages for a thread, oldest first.
+  /// Requires identityScope: the thread must belong to this identity.
   Future<List<Map<String, dynamic>>> loadAskMessages({
     required String threadId,
+    required String identityScope,
   }) async {
     final database = await db;
+    // Verify thread ownership first.
+    final thread = await database.query(
+      'ask_thread',
+      where: 'thread_id = ? AND identity_scope = ?',
+      whereArgs: [threadId, identityScope],
+    );
+    if (thread.isEmpty) return [];
     return database.query(
       'ask_message',
       where: 'thread_id = ?',
@@ -683,8 +692,19 @@ class OfflineDatabase {
   }
 
   /// Delete one thread and its messages.
-  Future<void> deleteAskThread(String threadId) async {
+  /// Requires identityScope: refuses to delete another identity's thread.
+  Future<void> deleteAskThread({
+    required String threadId,
+    required String identityScope,
+  }) async {
     final database = await db;
+    // Verify ownership before deleting.
+    final thread = await database.query(
+      'ask_thread',
+      where: 'thread_id = ? AND identity_scope = ?',
+      whereArgs: [threadId, identityScope],
+    );
+    if (thread.isEmpty) return;
     await database.delete(
       'ask_message',
       where: 'thread_id = ?',
@@ -692,8 +712,8 @@ class OfflineDatabase {
     );
     await database.delete(
       'ask_thread',
-      where: 'thread_id = ?',
-      whereArgs: [threadId],
+      where: 'thread_id = ? AND identity_scope = ?',
+      whereArgs: [threadId, identityScope],
     );
   }
 
@@ -771,7 +791,10 @@ class OfflineDatabase {
       limit: excess,
     );
     for (final t in oldest) {
-      await deleteAskThread(t['thread_id'] as String);
+      await deleteAskThread(
+        threadId: t['thread_id'] as String,
+        identityScope: identityScope,
+      );
     }
   }
 
