@@ -638,7 +638,7 @@ class AskResponse {
               (j['proposal'] as Map).cast<String, dynamic>()),
       foodDisclaimer: j['food_disclaimer'] as String?,
     );
-
+  }
 
   /// Serialize to JSON for local storage (envelope_json column).
   Map<String, dynamic> toJson() => {
@@ -653,7 +653,6 @@ class AskResponse {
         if (proposal != null) 'proposal': proposal!.toJson(),
         if (foodDisclaimer != null) 'food_disclaimer': foodDisclaimer,
       };
-}
 }
 
 class TripEventResult {

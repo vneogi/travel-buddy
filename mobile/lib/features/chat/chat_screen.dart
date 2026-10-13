@@ -43,7 +43,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   bool _isThinking = false;
   late final ConnectivityHelper _connectivity;
   String? _currentThreadId;
-  bool _historyLoaded = false;
 
   OfflineDatabase get _db => ref.read(offlineDatabaseProvider);
   String get _identityScope => ref.read(identityCacheScopeProvider);
@@ -79,7 +78,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       );
     }
     if (thread == null) {
-      setState(() => _historyLoaded = true);
       return;
     }
     _currentThreadId = thread['thread_id'] as String;
@@ -110,7 +108,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     if (!mounted) return;
     setState(() {
       _messages.addAll(loaded);
-      _historyLoaded = true;
     });
   }
 
