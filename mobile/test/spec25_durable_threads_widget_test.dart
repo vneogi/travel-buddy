@@ -57,6 +57,7 @@ TripNode _node({
       durationMinutes: 60,
       isLocked: false,
       status: NodeStatus.pending,
+      vibeTags: const [],
       geoRegion: 'luang_prabang_laos',
     );
 
