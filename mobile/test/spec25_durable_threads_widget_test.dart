@@ -4,9 +4,8 @@
 // callbacks FakeAsync never sees. Every FFI await runs inside
 // tester.runAsync. After each runAsync, tester.pump() lands setState.
 //
-// GoogleFonts throws when allowRuntimeFetching is false and fonts are
-// not bundled in test assets. We swallow those exceptions in setUp and
-// _flushFfi so they do not fail the test.
+// GoogleFonts is disabled globally via flutter_test_config.dart
+// (AppTypography.useGoogleFonts = false).
 
 import 'dart:async';
 
@@ -39,28 +38,6 @@ class _FakeConnectivity extends ConnectivityHelper {
   _FakeConnectivity({this.online = true});
   @override
   Future<bool> checkConnectivity() async => online;
-}
-
-// ---------------------------------------------------------------------------
-// GoogleFonts error filter
-// ---------------------------------------------------------------------------
-
-bool _isGoogleFontsError(dynamic error) {
-  final msg = error.toString();
-  return msg.contains('GoogleFonts') ||
-      msg.contains('allowRuntimeFetching') ||
-      msg.contains('loadFontIfNecessary');
-}
-
-/// Drain tester.takeException() until empty; ignore GoogleFonts, rethrow rest.
-void _drainFontErrors(WidgetTester tester) {
-  for (;;) {
-    final e = tester.takeException();
-    if (e == null) break;
-    if (!_isGoogleFontsError(e)) {
-      throw e; // real error
-    }
-  }
 }
 
 // ---------------------------------------------------------------------------
@@ -191,22 +168,11 @@ Future<void> _flushFfi(
       () => Future<void>.delayed(const Duration(milliseconds: 50)),
     );
     await tester.pump();
-    _drainFontErrors(tester);
     if (until != null && tester.any(until)) return;
   }
   if (until != null) {
     expect(until, findsWidgets);
   }
-}
-
-/// Drain pending font errors at test end so they do not fire
-/// "after the test had completed".
-Future<void> _cleanupFonts(WidgetTester tester) async {
-  await tester.runAsync(
-    () => Future<void>.delayed(const Duration(milliseconds: 100)),
-  );
-  await tester.pump();
-  _drainFontErrors(tester);
 }
 
 void main() {
@@ -215,23 +181,6 @@ void main() {
   databaseFactory = databaseFactoryFfi;
 
   setUpAll(() => registerFallbackValue(EventType.askInfo));
-
-  void Function(FlutterErrorDetails)? previousHandler;
-
-  setUp(() {
-    // Swallow GoogleFonts errors globally during widget tests.
-    previousHandler = FlutterError.onError;
-    FlutterError.onError = (details) {
-      if (_isGoogleFontsError(details.exception)) return;
-      if (previousHandler != null) {
-        previousHandler!(details);
-      }
-    };
-  });
-
-  tearDown(() {
-    FlutterError.onError = previousHandler;
-  });
 
   // =========================================================================
   // 1. Persist round-trip: sendEvent called exactly once.
@@ -307,7 +256,6 @@ void main() {
       // No additional sendEvent calls.
       verifyNoMoreInteractions(h.mockService);
 
-      await _cleanupFonts(tester);
       h.closeSubscription();
       h.container.dispose();
       await tester.runAsync(() => h.realDb.close());
@@ -377,7 +325,6 @@ void main() {
       // No sendEvent called during offline reopen.
       verifyZeroInteractions(h.mockService);
 
-      await _cleanupFonts(tester);
       h.closeSubscription();
       h.container.dispose();
       await tester.runAsync(() => h.realDb.close());
@@ -449,7 +396,6 @@ void main() {
       // No sendEvent.
       verifyZeroInteractions(h.mockService);
 
-      await _cleanupFonts(tester);
       h.closeSubscription();
       h.container.dispose();
       await tester.runAsync(() => h.realDb.close());
@@ -519,7 +465,6 @@ void main() {
         reason: 'offline must persist only the user row',
       );
 
-      await _cleanupFonts(tester);
       h.closeSubscription();
       h.container.dispose();
       await tester.runAsync(() => h.realDb.close());
