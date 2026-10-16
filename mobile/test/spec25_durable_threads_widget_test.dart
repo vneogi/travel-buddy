@@ -216,7 +216,7 @@ void main() {
 
   setUpAll(() => registerFallbackValue(EventType.askInfo));
 
-  late FlutterExceptionHandler? previousHandler;
+  void Function(FlutterErrorDetails)? previousHandler;
 
   setUp(() {
     // Swallow GoogleFonts errors globally during widget tests.
