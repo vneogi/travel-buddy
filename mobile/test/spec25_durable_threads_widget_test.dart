@@ -1,13 +1,12 @@
 // SPEC-25 Phase C: ChatScreen widget tests for durable threads.
 //
-// These tests combine a real sqflite_ffi OfflineDatabase with mocked
-// providers to verify persist round-trip, offline reopen, proposal
-// safety, and offline refusal behavior.
-//
 // testWidgets runs inside FakeAsync. sqflite_ffi completes on native
-// callbacks FakeAsync never sees. Every FFI await therefore runs inside
-// tester.runAsync, which escapes FakeAsync for real I/O. After each
-// runAsync block, tester.pump() lands the resulting setState.
+// callbacks FakeAsync never sees. Every FFI await runs inside
+// tester.runAsync. After each runAsync, tester.pump() lands setState.
+//
+// GoogleFonts throws when allowRuntimeFetching is false and fonts are
+// not bundled in test assets. We swallow those exceptions in setUp and
+// _flushFfi so they do not fail the test.
 
 import 'dart:async';
 
@@ -43,11 +42,34 @@ class _FakeConnectivity extends ConnectivityHelper {
 }
 
 // ---------------------------------------------------------------------------
+// GoogleFonts error filter
+// ---------------------------------------------------------------------------
+
+bool _isGoogleFontsError(dynamic error) {
+  final msg = error.toString();
+  return msg.contains('GoogleFonts') ||
+      msg.contains('allowRuntimeFetching') ||
+      msg.contains('loadFontIfNecessary');
+}
+
+/// Drain tester.takeException() until empty; ignore GoogleFonts, rethrow rest.
+void _drainFontErrors(WidgetTester tester) {
+  for (;;) {
+    final e = tester.takeException();
+    if (e == null) break;
+    if (!_isGoogleFontsError(e)) {
+      throw e; // real error
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 const _scope = 'account:widget-test';
 const _tripId = 'trip-widget';
+int _harnessCounter = 0;
 
 TripNode _node({
   String id = 'n1',
@@ -98,12 +120,16 @@ typedef _Harness = ({
 
 /// Build a ProviderContainer with real OfflineDatabase and mocked services.
 /// MUST be called inside tester.runAsync (FFI I/O).
+/// Each call gets a unique in-memory DB so tests are isolated.
 Future<_Harness> _buildHarness({
   bool online = true,
   TripEventResult? nextResult,
 }) async {
   final now = DateTime.now().toUtc();
-  final realDb = OfflineDatabase(testPath: inMemoryDatabasePath);
+  _harnessCounter++;
+  final dbPath =
+      'file:spec25_widget_$_harnessCounter?mode=memory&cache=shared';
+  final realDb = OfflineDatabase(testPath: dbPath);
 
   final repo = _MockTripRepository();
   when(() => repo.getTrip(_tripId)).thenAnswer(
@@ -154,7 +180,7 @@ Future<_Harness> _buildHarness({
 }
 
 /// Let FFI futures land, then pump the widget tree.
-/// Polls until [finder] matches (or 2 s cap).
+/// Polls until [until] matches (or ~2 s cap).
 Future<void> _flushFfi(
   WidgetTester tester, {
   Finder? until,
@@ -165,12 +191,22 @@ Future<void> _flushFfi(
       () => Future<void>.delayed(const Duration(milliseconds: 50)),
     );
     await tester.pump();
+    _drainFontErrors(tester);
     if (until != null && tester.any(until)) return;
   }
   if (until != null) {
-    // One last check so expect() gives a clear message.
     expect(until, findsWidgets);
   }
+}
+
+/// Drain pending font errors at test end so they do not fire
+/// "after the test had completed".
+Future<void> _cleanupFonts(WidgetTester tester) async {
+  await tester.runAsync(
+    () => Future<void>.delayed(const Duration(milliseconds: 100)),
+  );
+  await tester.pump();
+  _drainFontErrors(tester);
 }
 
 void main() {
@@ -179,6 +215,23 @@ void main() {
   databaseFactory = databaseFactoryFfi;
 
   setUpAll(() => registerFallbackValue(EventType.askInfo));
+
+  late FlutterExceptionHandler? previousHandler;
+
+  setUp(() {
+    // Swallow GoogleFonts errors globally during widget tests.
+    previousHandler = FlutterError.onError;
+    FlutterError.onError = (details) {
+      if (_isGoogleFontsError(details.exception)) return;
+      if (previousHandler != null) {
+        previousHandler!(details);
+      }
+    };
+  });
+
+  tearDown(() {
+    FlutterError.onError = previousHandler;
+  });
 
   // =========================================================================
   // 1. Persist round-trip: sendEvent called exactly once.
@@ -210,13 +263,11 @@ void main() {
           ),
         ),
       );
-      // Flush _loadThread FFI.
       await _flushFfi(tester);
 
       // Send a question.
       await tester.enterText(find.byType(TextField), 'What time does it open?');
       await tester.tap(find.byIcon(Icons.send_rounded));
-      // Flush sendEvent + persist FFI.
       await _flushFfi(tester, until: find.byType(AskBubble));
 
       expect(find.byType(AskBubble), findsOneWidget);
@@ -246,7 +297,6 @@ void main() {
           ),
         ),
       );
-      // Flush _loadThread FFI (loads history from DB).
       await _flushFfi(tester, until: find.byType(AskBubble));
 
       // The user question and AskBubble answer should be visible.
@@ -257,6 +307,7 @@ void main() {
       // No additional sendEvent calls.
       verifyNoMoreInteractions(h.mockService);
 
+      await _cleanupFonts(tester);
       h.closeSubscription();
       h.container.dispose();
       await tester.runAsync(() => h.realDb.close());
@@ -317,7 +368,6 @@ void main() {
           ),
         ),
       );
-      // Flush _loadThread FFI.
       await _flushFfi(tester, until: find.byType(AskBubble));
 
       // History still renders.
@@ -327,6 +377,7 @@ void main() {
       // No sendEvent called during offline reopen.
       verifyZeroInteractions(h.mockService);
 
+      await _cleanupFonts(tester);
       h.closeSubscription();
       h.container.dispose();
       await tester.runAsync(() => h.realDb.close());
@@ -398,6 +449,7 @@ void main() {
       // No sendEvent.
       verifyZeroInteractions(h.mockService);
 
+      await _cleanupFonts(tester);
       h.closeSubscription();
       h.container.dispose();
       await tester.runAsync(() => h.realDb.close());
@@ -429,6 +481,8 @@ void main() {
 
       await tester.enterText(find.byType(TextField), 'What time does it open?');
       await tester.tap(find.byIcon(Icons.send_rounded));
+      // Unfocus TextField so re-pump does not re-fire send.
+      FocusManager.instance.primaryFocus?.unfocus();
       // Flush the offline path (createThread + insertUserMsg are FFI).
       await _flushFfi(
         tester,
@@ -459,14 +513,13 @@ void main() {
             identityScope: _scope,
           ));
       expect(msgs, isNotNull);
-      expect(msgs!.length, 1, reason: 'Only user message persisted');
-      expect(msgs.first['role'], 'user');
       expect(
-        msgs.where((m) => m['role'] == 'assistant').length,
-        0,
-        reason: 'Offline refusal must not be persisted as assistant',
+        msgs!.map((m) => m['role']).toList(),
+        ['user'],
+        reason: 'offline must persist only the user row',
       );
 
+      await _cleanupFonts(tester);
       h.closeSubscription();
       h.container.dispose();
       await tester.runAsync(() => h.realDb.close());

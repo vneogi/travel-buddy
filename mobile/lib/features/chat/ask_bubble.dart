@@ -39,7 +39,7 @@ class AskBubble extends StatelessWidget {
         ask.sourceClass.isNotEmpty ? ask.sourceClass : ask.path.wire;
 
     return Container(
-      key: Key(isPlanChange ? 'ask_plan_change_confirm' : 'ask_fact_view'),
+      key: Key(isPlanChange && onConfirm != null ? 'ask_plan_change_confirm' : 'ask_fact_view'),
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: AppColors.card,
@@ -79,8 +79,8 @@ class AskBubble extends StatelessWidget {
               ),
             ),
 
-          // Plan-change confirm -- all ProposalEventType values are known.
-          if (isPlanChange)
+          // Plan-change confirm -- display-only when from history (onConfirm null).
+          if (isPlanChange && onConfirm != null)
             Padding(
               padding: const EdgeInsets.only(top: AppSpacing.sm),
               child: ConfirmAffordance(
