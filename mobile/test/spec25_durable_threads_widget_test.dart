@@ -3,6 +3,11 @@
 // These tests combine a real sqflite_ffi OfflineDatabase with mocked
 // providers to verify persist round-trip, offline reopen, proposal
 // safety, and offline refusal behavior.
+//
+// testWidgets runs inside FakeAsync. sqflite_ffi completes on native
+// callbacks FakeAsync never sees. Every FFI await therefore runs inside
+// tester.runAsync, which escapes FakeAsync for real I/O. After each
+// runAsync block, tester.pump() lands the resulting setState.
 
 import 'dart:async';
 
@@ -82,15 +87,18 @@ AskResponse _planChangeProposal() => const AskResponse(
       ),
     );
 
+/// Harness record type.
+typedef _Harness = ({
+  ProviderContainer container,
+  _MockTripEventService mockService,
+  _FakeConnectivity connectivity,
+  OfflineDatabase realDb,
+  void Function() closeSubscription,
+});
+
 /// Build a ProviderContainer with real OfflineDatabase and mocked services.
-Future<
-    ({
-      ProviderContainer container,
-      _MockTripEventService mockService,
-      _FakeConnectivity connectivity,
-      OfflineDatabase realDb,
-      void Function() closeSubscription,
-    })> _buildHarness({
+/// MUST be called inside tester.runAsync (FFI I/O).
+Future<_Harness> _buildHarness({
   bool online = true,
   TripEventResult? nextResult,
 }) async {
@@ -125,7 +133,7 @@ Future<
     ],
   );
 
-  // Wait for itinerary to load.
+  // Wait for itinerary to load (hits OfflineDatabase via FFI).
   final loaded = Completer<void>();
   final sub = container.listen(
     itineraryControllerProvider(_tripId),
@@ -145,41 +153,28 @@ Future<
   );
 }
 
-Future<void> _pumpChat(
+/// Let FFI futures land, then pump the widget tree.
+/// Polls until [finder] matches (or 2 s cap).
+Future<void> _flushFfi(
   WidgetTester tester, {
-  required ProviderContainer container,
-  required _FakeConnectivity connectivity,
-  String? threadId,
+  Finder? until,
+  int maxRounds = 40,
 }) async {
-  await tester.pumpWidget(
-    UncontrolledProviderScope(
-      container: container,
-      child: MaterialApp(
-        home: ChatScreen(
-          tripId: _tripId,
-          connectivityOverride: connectivity,
-          threadId: threadId,
-        ),
-      ),
-    ),
-  );
-  // Pump several frames for initState + _loadThread future.
-  await tester.pump();
-  await tester.pump();
-  await tester.pump();
-  await tester.pump();
-}
-
-Future<void> _sendMessage(WidgetTester tester, String text) async {
-  await tester.enterText(find.byType(TextField), text);
-  await tester.tap(find.byIcon(Icons.send_rounded));
-  await tester.pump();
-  await tester.pump();
-  await tester.pump();
-  await tester.pump();
+  for (var i = 0; i < maxRounds; i++) {
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pump();
+    if (until != null && tester.any(until)) return;
+  }
+  if (until != null) {
+    // One last check so expect() gives a clear message.
+    expect(until, findsWidgets);
+  }
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   sqfliteFfiInit();
   databaseFactory = databaseFactoryFfi;
 
@@ -190,21 +185,39 @@ void main() {
   // =========================================================================
   testWidgets(
     'persist round-trip: question + answer survive dispose; sendEvent once',
+    timeout: const Timeout(Duration(seconds: 30)),
     (tester) async {
-      final h = await _buildHarness(
-        nextResult: TripEventResult(
-          message: '',
-          updatedNodes: const [],
-          routingTier: 'light',
-          fromCache: false,
-          askResponse: _groundedHours(),
+      final h = await tester.runAsync(() => _buildHarness(
+            nextResult: TripEventResult(
+              message: '',
+              updatedNodes: const [],
+              routingTier: 'light',
+              fromCache: false,
+              askResponse: _groundedHours(),
+            ),
+          ));
+      if (h == null) fail('_buildHarness returned null from runAsync');
+
+      // First session: pump ChatScreen.
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: h.container,
+          child: MaterialApp(
+            home: ChatScreen(
+              tripId: _tripId,
+              connectivityOverride: h.connectivity,
+            ),
+          ),
         ),
       );
+      // Flush _loadThread FFI.
+      await _flushFfi(tester);
 
-      // First session: send a question.
-      await _pumpChat(tester,
-          container: h.container, connectivity: h.connectivity);
-      await _sendMessage(tester, 'What time does it open?');
+      // Send a question.
+      await tester.enterText(find.byType(TextField), 'What time does it open?');
+      await tester.tap(find.byIcon(Icons.send_rounded));
+      // Flush sendEvent + persist FFI.
+      await _flushFfi(tester, until: find.byType(AskBubble));
 
       expect(find.byType(AskBubble), findsOneWidget);
       expect(find.text(_groundedHours().answer), findsOneWidget);
@@ -222,11 +235,19 @@ void main() {
           )).called(1);
 
       // Second session: rebuild ChatScreen for the same trip.
-      // It should load persisted messages without calling sendEvent.
-      await _pumpChat(tester,
-          container: h.container, connectivity: h.connectivity);
-      await tester.pump();
-      await tester.pump();
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: h.container,
+          child: MaterialApp(
+            home: ChatScreen(
+              tripId: _tripId,
+              connectivityOverride: h.connectivity,
+            ),
+          ),
+        ),
+      );
+      // Flush _loadThread FFI (loads history from DB).
+      await _flushFfi(tester, until: find.byType(AskBubble));
 
       // The user question and AskBubble answer should be visible.
       expect(find.text('What time does it open?'), findsOneWidget);
@@ -238,7 +259,7 @@ void main() {
 
       h.closeSubscription();
       h.container.dispose();
-      await h.realDb.close();
+      await tester.runAsync(() => h.realDb.close());
     },
   );
 
@@ -247,21 +268,36 @@ void main() {
   // =========================================================================
   testWidgets(
     'offline reopen: history renders without network, no sendEvent',
+    timeout: const Timeout(Duration(seconds: 30)),
     (tester) async {
-      final h = await _buildHarness(
-        nextResult: TripEventResult(
-          message: '',
-          updatedNodes: const [],
-          routingTier: 'light',
-          fromCache: false,
-          askResponse: _groundedHours(),
-        ),
-      );
+      final h = await tester.runAsync(() => _buildHarness(
+            nextResult: TripEventResult(
+              message: '',
+              updatedNodes: const [],
+              routingTier: 'light',
+              fromCache: false,
+              askResponse: _groundedHours(),
+            ),
+          ));
+      if (h == null) fail('_buildHarness returned null from runAsync');
 
       // First session online: send a question.
-      await _pumpChat(tester,
-          container: h.container, connectivity: h.connectivity);
-      await _sendMessage(tester, 'What time does it open?');
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: h.container,
+          child: MaterialApp(
+            home: ChatScreen(
+              tripId: _tripId,
+              connectivityOverride: h.connectivity,
+            ),
+          ),
+        ),
+      );
+      await _flushFfi(tester);
+
+      await tester.enterText(find.byType(TextField), 'What time does it open?');
+      await tester.tap(find.byIcon(Icons.send_rounded));
+      await _flushFfi(tester, until: find.byType(AskBubble));
       expect(find.byType(AskBubble), findsOneWidget);
 
       await tester.pumpWidget(const MaterialApp(home: SizedBox()));
@@ -281,10 +317,8 @@ void main() {
           ),
         ),
       );
-      await tester.pump();
-      await tester.pump();
-      await tester.pump();
-      await tester.pump();
+      // Flush _loadThread FFI.
+      await _flushFfi(tester, until: find.byType(AskBubble));
 
       // History still renders.
       expect(find.text('What time does it open?'), findsOneWidget);
@@ -295,7 +329,7 @@ void main() {
 
       h.closeSubscription();
       h.container.dispose();
-      await h.realDb.close();
+      await tester.runAsync(() => h.realDb.close());
     },
   );
 
@@ -304,21 +338,36 @@ void main() {
   // =========================================================================
   testWidgets(
     'history-loaded proposal renders but confirm does not call sendEvent',
+    timeout: const Timeout(Duration(seconds: 30)),
     (tester) async {
-      final h = await _buildHarness(
-        nextResult: TripEventResult(
-          message: '',
-          updatedNodes: const [],
-          routingTier: 'light',
-          fromCache: false,
-          askResponse: _planChangeProposal(),
-        ),
-      );
+      final h = await tester.runAsync(() => _buildHarness(
+            nextResult: TripEventResult(
+              message: '',
+              updatedNodes: const [],
+              routingTier: 'light',
+              fromCache: false,
+              askResponse: _planChangeProposal(),
+            ),
+          ));
+      if (h == null) fail('_buildHarness returned null from runAsync');
 
       // First session: send a question that gets a plan-change proposal.
-      await _pumpChat(tester,
-          container: h.container, connectivity: h.connectivity);
-      await _sendMessage(tester, 'Is there a cafe nearby?');
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: h.container,
+          child: MaterialApp(
+            home: ChatScreen(
+              tripId: _tripId,
+              connectivityOverride: h.connectivity,
+            ),
+          ),
+        ),
+      );
+      await _flushFfi(tester);
+
+      await tester.enterText(find.byType(TextField), 'Is there a cafe nearby?');
+      await tester.tap(find.byIcon(Icons.send_rounded));
+      await _flushFfi(tester, until: find.byType(AskBubble));
       expect(find.byType(AskBubble), findsOneWidget);
 
       await tester.pumpWidget(const MaterialApp(home: SizedBox()));
@@ -326,10 +375,18 @@ void main() {
       reset(h.mockService);
 
       // Second session: load from history.
-      await _pumpChat(tester,
-          container: h.container, connectivity: h.connectivity);
-      await tester.pump();
-      await tester.pump();
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: h.container,
+          child: MaterialApp(
+            home: ChatScreen(
+              tripId: _tripId,
+              connectivityOverride: h.connectivity,
+            ),
+          ),
+        ),
+      );
+      await _flushFfi(tester, until: find.byType(AskBubble));
 
       // Proposal bubble renders.
       expect(find.byType(AskBubble), findsOneWidget);
@@ -343,7 +400,7 @@ void main() {
 
       h.closeSubscription();
       h.container.dispose();
-      await h.realDb.close();
+      await tester.runAsync(() => h.realDb.close());
     },
   );
 
@@ -352,12 +409,31 @@ void main() {
   // =========================================================================
   testWidgets(
     'offline question shows refusal; no assistant row persisted',
+    timeout: const Timeout(Duration(seconds: 30)),
     (tester) async {
-      final h = await _buildHarness(online: false);
+      final h = await tester.runAsync(() => _buildHarness(online: false));
+      if (h == null) fail('_buildHarness returned null from runAsync');
 
-      await _pumpChat(tester,
-          container: h.container, connectivity: h.connectivity);
-      await _sendMessage(tester, 'What time does it open?');
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: h.container,
+          child: MaterialApp(
+            home: ChatScreen(
+              tripId: _tripId,
+              connectivityOverride: h.connectivity,
+            ),
+          ),
+        ),
+      );
+      await _flushFfi(tester);
+
+      await tester.enterText(find.byType(TextField), 'What time does it open?');
+      await tester.tap(find.byIcon(Icons.send_rounded));
+      // Flush the offline path (createThread + insertUserMsg are FFI).
+      await _flushFfi(
+        tester,
+        until: find.byKey(const Key('ask_offline_refuse')),
+      );
 
       // Offline refusal shown.
       expect(find.byKey(const Key('ask_offline_refuse')), findsOneWidget);
@@ -371,17 +447,19 @@ void main() {
           ));
 
       // Verify via real DB: user message exists but no assistant row.
-      final threads = await h.realDb.listAskThreads(
-        identityScope: _scope,
-        tripId: _tripId,
-      );
-      expect(threads, isNotEmpty, reason: 'Thread should exist');
+      final threads = await tester.runAsync(() => h.realDb.listAskThreads(
+            identityScope: _scope,
+            tripId: _tripId,
+          ));
+      expect(threads, isNotNull);
+      expect(threads!, isNotEmpty, reason: 'Thread should exist');
       final threadId = threads.first['thread_id'] as String;
-      final msgs = await h.realDb.loadAskMessages(
-        threadId: threadId,
-        identityScope: _scope,
-      );
-      expect(msgs.length, 1, reason: 'Only user message persisted');
+      final msgs = await tester.runAsync(() => h.realDb.loadAskMessages(
+            threadId: threadId,
+            identityScope: _scope,
+          ));
+      expect(msgs, isNotNull);
+      expect(msgs!.length, 1, reason: 'Only user message persisted');
       expect(msgs.first['role'], 'user');
       expect(
         msgs.where((m) => m['role'] == 'assistant').length,
@@ -391,7 +469,7 @@ void main() {
 
       h.closeSubscription();
       h.container.dispose();
-      await h.realDb.close();
+      await tester.runAsync(() => h.realDb.close());
     },
   );
 }
