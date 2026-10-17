@@ -944,5 +944,6 @@ class TestNamedPaths:
             "nearby_option",
             "practical_rule",
             "compare",
+            "what_now",
             "out_of_scope",
         }

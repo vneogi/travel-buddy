@@ -27,7 +27,17 @@ from models.schemas import (
 )
 from services.db_provider import db_service
 from services.cache_service import cache_service
-from services.ask_service import AskService, AskPath, load_dish_glossary
+from pydantic import ValidationError
+from services.ask_service import (
+    AskService,
+    AskIntent,
+    AskPath,
+    AskResponse,
+    TrustTier,
+    WhatNowRequest,
+    handle_what_now,
+    load_dish_glossary,
+)
 import math
 from datetime import timedelta as _td
 
@@ -1204,20 +1214,54 @@ class TripStateMachine:
         # SPEC-25 Phase B: pass trip nodes for TODAY_TONIGHT intent
         trip_nodes_dicts = [n.model_dump(mode="json") for n in trip.nodes]
 
-        ask_resp = await ask_svc.handle_ask(
-            question=state["message"],
-            geo_region=geo_region,
-            user_id=user_id,
-            is_anonymous=is_anonymous,
-            venue_name=venue_name,
-            venue_id=venue_id or "",
-            next_venue_name=next_venue_name,
-            current_node_summary=current_summary,
-            next_node_summary=next_summary,
-            llm_key_present=llm_key_present,
-            target_node_id=state.get("target_node_id"),
-            trip_nodes=trip_nodes_dicts,
-        )
+        # SPEC-46: Route what_now via preferences.mode
+        _prefs_raw = state.get("preferences") or {}
+        if _prefs_raw.get("mode") == "what_now":
+            from datetime import datetime as _dt
+            from datetime import timezone as _tz
+
+            try:
+                wn_req = WhatNowRequest(
+                    available_minutes=_prefs_raw.get("available_minutes", 90),
+                    energy=_prefs_raw.get("energy", "normal"),
+                    walking=_prefs_raw.get("walking", "normal"),
+                    intent=_prefs_raw.get("intent", "anything"),
+                    context_node_id=_prefs_raw.get("context_node_id"),
+                )
+            except (ValidationError, ValueError):
+                ask_resp = AskResponse(
+                    answer=(
+                        "I could not process that What Now request. "
+                        "Please pick from the available options and try again."
+                    ),
+                    tier=TrustTier.REFUSE,
+                    path=AskPath.RETRIEVAL_MISS,
+                    intent=AskIntent.WHAT_NOW,
+                )
+            else:
+                _now = state.get("now_utc") or _dt.now(tz=_tz.utc)
+                ask_resp = handle_what_now(
+                    request=wn_req,
+                    trip_nodes=trip_nodes_dicts,
+                    now_utc=_now,
+                    geo_region=geo_region,
+                    db=db_service,
+                )
+        else:
+            ask_resp = await ask_svc.handle_ask(
+                question=state["message"],
+                geo_region=geo_region,
+                user_id=user_id,
+                is_anonymous=is_anonymous,
+                venue_name=venue_name,
+                venue_id=venue_id or "",
+                next_venue_name=next_venue_name,
+                current_node_summary=current_summary,
+                next_node_summary=next_summary,
+                llm_key_present=llm_key_present,
+                target_node_id=state.get("target_node_id"),
+                trip_nodes=trip_nodes_dicts,
+            )
 
         state["response"] = ask_resp.answer
         # Bug #1: structured Ask envelope for downstream.
@@ -1240,6 +1284,7 @@ class TripStateMachine:
             "fallback_reason": ask_resp.fallback_reason,
             "proposal": proposal_dict,
             "food_disclaimer": ask_resp.food_disclaimer,
+            "what_now": ask_resp.what_now,
         }
         return state
 

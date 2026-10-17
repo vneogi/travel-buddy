@@ -521,6 +521,7 @@ enum AskResponseIntent {
   nearbyOption('nearby_option'),
   practicalRule('practical_rule'),
   compare('compare'),
+  whatNow('what_now'),
   outOfScope('out_of_scope');
 
   final String wire;
@@ -592,6 +593,80 @@ enum AskTier {
       );
 }
 
+class WhatNowCandidate {
+  final String candidateId;
+  final String venueId;
+  final String name;
+  final String microLocationDisplay;
+  final String category;
+  final int? typicalDwellMinutes;
+  final String? scheduledStart;
+  final List<String> reasonCodes;
+  final List<String> unknownFields;
+
+  const WhatNowCandidate({
+    required this.candidateId,
+    required this.venueId,
+    required this.name,
+    this.microLocationDisplay = '',
+    this.category = '',
+    this.typicalDwellMinutes,
+    this.scheduledStart,
+    this.reasonCodes = const [],
+    this.unknownFields = const [],
+  });
+
+  factory WhatNowCandidate.fromJson(Map<String, dynamic> j) => WhatNowCandidate(
+        candidateId: j['candidate_id'] as String? ?? '',
+        venueId: j['venue_id'] as String? ?? '',
+        name: j['name'] as String? ?? '',
+        microLocationDisplay: j['micro_location_display'] as String? ?? '',
+        category: j['category'] as String? ?? '',
+        typicalDwellMinutes: j['typical_dwell_minutes'] as int?,
+        scheduledStart: j['scheduled_start'] as String?,
+        reasonCodes: ((j['reason_codes'] as List?) ?? const []).cast<String>(),
+        unknownFields: ((j['unknown_fields'] as List?) ?? const []).cast<String>(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'candidate_id': candidateId,
+        'venue_id': venueId,
+        'name': name,
+        'micro_location_display': microLocationDisplay,
+        'category': category,
+        if (typicalDwellMinutes != null) 'typical_dwell_minutes': typicalDwellMinutes,
+        if (scheduledStart != null) 'scheduled_start': scheduledStart,
+        'reason_codes': reasonCodes,
+        'unknown_fields': unknownFields,
+      };
+}
+
+class WhatNowResult {
+  final String locationSource;
+  final String contextLabel;
+  final List<WhatNowCandidate> candidates;
+
+  const WhatNowResult({
+    required this.locationSource,
+    required this.contextLabel,
+    this.candidates = const [],
+  });
+
+  factory WhatNowResult.fromJson(Map<String, dynamic> j) => WhatNowResult(
+        locationSource: j['location_source'] as String? ?? '',
+        contextLabel: j['context_label'] as String? ?? '',
+        candidates: ((j['candidates'] as List?) ?? const [])
+            .map((c) => WhatNowCandidate.fromJson((c as Map).cast<String, dynamic>()))
+            .toList(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'location_source': locationSource,
+        'context_label': contextLabel,
+        'candidates': candidates.map((c) => c.toJson()).toList(),
+      };
+}
+
 /// SPEC-25 typed Ask response. Parsed from `ask_response` on TripEventResult.
 class AskResponse {
   final String answer;
@@ -604,6 +679,7 @@ class AskResponse {
   final String? fallbackReason;
   final AskProposal? proposal;
   final String? foodDisclaimer;
+  final WhatNowResult? whatNow;
 
   const AskResponse({
     required this.answer,
@@ -616,6 +692,7 @@ class AskResponse {
     this.fallbackReason,
     this.proposal,
     this.foodDisclaimer,
+    this.whatNow,
   });
 
   factory AskResponse.fromJson(Map<String, dynamic> j) {
@@ -637,6 +714,10 @@ class AskResponse {
           : AskProposal.fromJson(
               (j['proposal'] as Map).cast<String, dynamic>()),
       foodDisclaimer: j['food_disclaimer'] as String?,
+      whatNow: j['what_now'] == null
+          ? null
+          : WhatNowResult.fromJson(
+              (j['what_now'] as Map).cast<String, dynamic>()),
     );
   }
 
@@ -652,6 +733,7 @@ class AskResponse {
         if (fallbackReason != null) 'fallback_reason': fallbackReason,
         if (proposal != null) 'proposal': proposal!.toJson(),
         if (foodDisclaimer != null) 'food_disclaimer': foodDisclaimer,
+        if (whatNow != null) 'what_now': whatNow!.toJson(),
       };
 }
 

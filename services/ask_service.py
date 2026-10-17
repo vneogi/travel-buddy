@@ -22,7 +22,9 @@ import time
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
+
+from pydantic import BaseModel, ConfigDict
 
 from services.opening_hours import is_valid_structured_hours as _validate_structured_hours
 
@@ -46,6 +48,7 @@ class AskIntent(str, Enum):
     NEARBY_OPTION = "nearby_option"
     PRACTICAL_RULE = "practical_rule"
     COMPARE = "compare"
+    WHAT_NOW = "what_now"
     OUT_OF_SCOPE = "out_of_scope"
 
 
@@ -95,6 +98,7 @@ class AskResponse:
     fallback_reason: str = ""
     proposal: Optional[Dict[str, Any]] = None
     food_disclaimer: Optional[str] = None
+    what_now: Optional[Dict[str, Any]] = None
 
 
 # ---------------------------------------------------------------------------
@@ -950,6 +954,541 @@ except ImportError:
 
 _shared_cache = AskCache()
 _shared_budget = AskBudget()
+
+
+# ---------------------------------------------------------------------------
+# SPEC-46 What Now -- closed request context and deterministic handler
+# ---------------------------------------------------------------------------
+
+_WHAT_NOW_INTENT_MAP: Dict[str, set] = {
+    "quiet": {"temple", "viewpoint", "nature", "walking_area", "museum"},
+    "food": {"restaurant", "street_food", "cafe"},
+    "indoors": {"museum", "cafe", "restaurant", "massage_spa"},
+    "culture": {"temple", "museum"},
+    "anything": set(),
+}
+
+_WALKING_CAPS: Dict[str, int] = {"short": 15, "normal": 25, "longer": 45}
+_ENERGY_DWELL_CAPS: Dict[str, int] = {"low": 60, "normal": 120, "high": 180}
+
+
+class WhatNowRequest(BaseModel):
+    """Validated What Now request context (Pydantic)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    mode: str = "what_now"
+    available_minutes: int
+    energy: str = "normal"
+    walking: str = "normal"
+    intent: str = "anything"
+    context_node_id: Optional[str] = None
+
+    ALLOWED_MINUTES: ClassVar = {45, 90, 120}
+    ALLOWED_ENERGY: ClassVar = {"low", "normal", "high"}
+    ALLOWED_WALKING: ClassVar = {"short", "normal", "longer"}
+    ALLOWED_INTENT: ClassVar = {"quiet", "food", "indoors", "culture", "anything"}
+
+    def model_post_init(self, __context: Any) -> None:
+        if self.available_minutes not in self.ALLOWED_MINUTES:
+            raise ValueError(
+                f"available_minutes must be one of {sorted(self.ALLOWED_MINUTES)}, "
+                f"got {self.available_minutes}"
+            )
+        if self.energy not in self.ALLOWED_ENERGY:
+            raise ValueError(
+                f"energy must be one of {sorted(self.ALLOWED_ENERGY)}, got {self.energy!r}"
+            )
+        if self.walking not in self.ALLOWED_WALKING:
+            raise ValueError(
+                f"walking must be one of {sorted(self.ALLOWED_WALKING)}, got {self.walking!r}"
+            )
+        if self.intent not in self.ALLOWED_INTENT:
+            raise ValueError(
+                f"intent must be one of {sorted(self.ALLOWED_INTENT)}, got {self.intent!r}"
+            )
+
+
+def _resolve_what_now_context(
+    request: WhatNowRequest,
+    trip_nodes: List[Dict[str, Any]],
+    now_utc,
+    geo_region: str,
+) -> Optional[Dict[str, Any]]:
+    """Resolve context node and location source for What Now."""
+    from datetime import timedelta
+
+    from services.destination_tz import to_destination_local
+
+    if request.context_node_id:
+        for n in trip_nodes:
+            if n.get("node_id") == request.context_node_id:
+                node_region = n.get("geo_region") or geo_region
+                if node_region:
+                    return {
+                        "node": n,
+                        "location_source": "trip_position",
+                        "context_label": "Using your trip position",
+                        "geo_region": node_region,
+                    }
+                return None
+        return None
+
+    local_now = to_destination_local(now_utc, geo_region)
+    best_node = None
+    best_distance = None
+    for n in trip_nodes:
+        start_raw = n.get("scheduled_start")
+        if not start_raw:
+            continue
+        if isinstance(start_raw, str):
+            from datetime import datetime as _dt
+
+            try:
+                start = _dt.fromisoformat(start_raw.replace("Z", "+00:00"))
+            except (ValueError, TypeError):
+                continue
+        else:
+            start = start_raw
+        node_region = n.get("geo_region") or geo_region
+        node_local = to_destination_local(start, node_region)
+        dur = n.get("duration_minutes", 90)
+        end_local = node_local + timedelta(minutes=dur)
+        if node_local <= local_now < end_local:
+            return {
+                "node": n,
+                "location_source": "trip_position",
+                "context_label": "Using your trip position",
+                "geo_region": node_region,
+            }
+        dist = abs((node_local - local_now).total_seconds())
+        if best_distance is None or dist < best_distance:
+            best_distance = dist
+            best_node = n
+    if best_node:
+        node_region = best_node.get("geo_region") or geo_region
+        return {
+            "node": best_node,
+            "location_source": "trip_position",
+            "context_label": "Using your trip position",
+            "geo_region": node_region,
+        }
+
+    if geo_region:
+        from config.regions import REGIONS
+
+        region = REGIONS.get(geo_region)
+        display = region.display_name if region else geo_region
+        return {
+            "node": None,
+            "location_source": "region_anchor",
+            "context_label": f"Browsing in {display}",
+            "geo_region": geo_region,
+        }
+    return None
+
+
+def _compute_walking_minutes(
+    context_node: Optional[Dict[str, Any]], candidate: Dict[str, Any]
+) -> Optional[int]:
+    if context_node is None:
+        return None
+    from services.transit import walking_minutes as _walking
+
+    try:
+        return _walking(
+            context_node.get("lat"),
+            context_node.get("lng"),
+            candidate.get("lat"),
+            candidate.get("lng"),
+        )
+    except (ValueError, TypeError):
+        return None
+
+
+def _candidate_reason_codes(
+    candidate: Dict[str, Any],
+    request: "WhatNowRequest",
+    context_node: Optional[Dict[str, Any]],
+    walk_min: Optional[int],
+    hours_ok: bool,
+    has_next_booking: bool,
+    trip_vibe_tags: set,
+) -> List[str]:
+    codes: List[str] = []
+    dwell = candidate.get("typical_dwell_minutes")
+    walk_known = walk_min is not None
+    if dwell is not None and walk_known:
+        total = dwell + walk_min
+        if total <= request.available_minutes:
+            codes.append("fits_available_window")
+    if hours_ok:
+        codes.append("open_for_planned_time")
+    if has_next_booking and walk_known:
+        codes.append("keeps_next_booking_reachable")
+    cat = candidate.get("category", "")
+    intent_cats = _WHAT_NOW_INTENT_MAP.get(request.intent, set())
+    if intent_cats and cat in intent_cats:
+        codes.append("matches_requested_type")
+    cand_vibes = set(candidate.get("vibe_tags") or [])
+    if trip_vibe_tags and cand_vibes & trip_vibe_tags:
+        codes.append("matches_trip_interest")
+    if context_node and candidate.get("micro_location"):
+        ctx_micro = context_node.get("micro_location", "")
+        if ctx_micro and ctx_micro == candidate.get("micro_location"):
+            codes.append("same_neighbourhood")
+    if walk_min is not None and walk_min <= 15:
+        codes.append("short_walk_from_context")
+    if dwell is not None and dwell <= 45:
+        codes.append("lower_typical_dwell")
+    indoor = candidate.get("indoor_outdoor", "")
+    has_ac = candidate.get("has_aircon", False)
+    if indoor in ("indoor", "mixed") or has_ac:
+        codes.append("indoor_option")
+    return codes
+
+
+def _candidate_unknown_fields(
+    candidate: Dict[str, Any], walk_min: Optional[int], hours_ok
+) -> List[str]:
+    unknowns: List[str] = []
+    if candidate.get("typical_dwell_minutes") is None:
+        unknowns.append("typical_dwell")
+    if walk_min is None:
+        unknowns.append("walking_time")
+    if hours_ok is None:
+        unknowns.append("opening_hours")
+    unknowns.extend(["price", "live_crowds", "traffic"])
+    return unknowns
+
+
+def _find_next_locked_non_hotel(
+    trip_nodes: List[Dict[str, Any]], now_utc
+) -> Optional[Dict[str, Any]]:
+    """Find the next future locked non-hotel booking."""
+    from datetime import datetime as _dt
+
+    from services.booking_constraints import _ensure_aware
+
+    best = None
+    best_start = None
+    for n in trip_nodes:
+        if not n.get("is_locked"):
+            continue
+        if n.get("node_kind") != "booking":
+            continue
+        if n.get("booking_type") == "hotel":
+            continue
+        raw = n.get("scheduled_start")
+        if not raw:
+            continue
+        if isinstance(raw, str):
+            try:
+                start = _dt.fromisoformat(raw.replace("Z", "+00:00"))
+            except (ValueError, TypeError):
+                continue
+        else:
+            start = raw
+        start = _ensure_aware(start)
+        aware_now = _ensure_aware(now_utc)
+        if start <= aware_now:
+            continue
+        if best_start is None or start < best_start:
+            best = n
+            best_start = start
+    return best
+
+
+def _violates_next_booking(
+    now_utc,
+    dwell_minutes: int,
+    walk_to_candidate: Optional[int],
+    candidate: Dict[str, Any],
+    booking: Dict[str, Any],
+    geo_region: str,
+) -> bool:
+    """True when candidate cannot finish and walk to the lock before it starts.
+
+    Delegates to the shared ``fits_next_lock`` in booking_constraints which
+    handles same-region, same local day, hotel skip, flight cutoff,
+    and coord + walking arrival -- identical to pack_day.
+    """
+    from datetime import datetime as _dt
+    from datetime import timedelta
+
+    from services.booking_constraints import _ensure_aware, fits_next_lock
+
+    # Build a lightweight TripNode-like object for the lock
+    raw = booking.get("scheduled_start")
+    if isinstance(raw, str):
+        booking_start = _dt.fromisoformat(raw.replace("Z", "+00:00"))
+    else:
+        booking_start = raw
+    booking_start = _ensure_aware(booking_start)
+
+    aware_now = _ensure_aware(now_utc)
+    activity_start = aware_now + timedelta(minutes=walk_to_candidate or 0)
+
+    # Synthesise a minimal object with the fields fits_next_lock reads
+    class _LockProxy:
+        def __init__(self, b):
+            self.scheduled_start = booking_start
+            self.lat = b.get("lat")
+            self.lng = b.get("lng")
+            self.node_kind = b.get("node_kind", "booking")
+            self.booking_type = b.get("booking_type", "")
+            self.geo_region = b.get("geo_region")
+
+    lock_proxy = _LockProxy(booking)
+    return not fits_next_lock(candidate, activity_start, dwell_minutes, lock_proxy, geo_region)
+
+
+def _violates_hotel_boundary(
+    venue: Dict[str, Any],
+    now_utc,
+    dwell_minutes: int,
+    walk_min: Optional[int],
+    trip_nodes: List[Dict[str, Any]],
+    geo_region: str,
+) -> bool:
+    """True when candidate would breach hotel evening return."""
+    import math
+    from datetime import timedelta
+
+    from services.booking_constraints import (
+        _ensure_aware,
+        _local_date_of,
+        find_covering_hotel,
+        hotel_evening_wall,
+    )
+    from services.transit import walking_minutes as _walking
+
+    aware_now = _ensure_aware(now_utc)
+    local_date = _local_date_of(aware_now, geo_region)
+
+    from models.schemas import TripNode
+
+    node_objs = []
+    for n in trip_nodes:
+        try:
+            node_objs.append(TripNode(**{k: v for k, v in n.items() if k in TripNode.model_fields}))
+        except Exception:
+            continue
+
+    hotel = find_covering_hotel(node_objs, geo_region, local_date)
+    if hotel is None:
+        return False
+
+    wall = hotel_evening_wall(hotel, geo_region, local_date)
+    activity_start = aware_now + timedelta(minutes=walk_min or 0)
+    activity_end = activity_start + timedelta(minutes=dwell_minutes)
+
+    hotel_has_coords = (
+        hotel.lat is not None
+        and hotel.lng is not None
+        and math.isfinite(hotel.lat)
+        and math.isfinite(hotel.lng)
+    )
+    venue_has_coords = venue.get("lat") is not None and venue.get("lng") is not None
+    if hotel_has_coords and venue_has_coords:
+        try:
+            walk_back = _walking(venue.get("lat"), venue.get("lng"), hotel.lat, hotel.lng)
+            if activity_end + timedelta(minutes=walk_back) > wall:
+                return True
+        except (ValueError, TypeError):
+            pass
+    elif hotel_has_coords:
+        return True
+
+    return False
+
+
+def handle_what_now(
+    request: "WhatNowRequest",
+    trip_nodes: List[Dict[str, Any]],
+    now_utc,
+    geo_region: str,
+    db: Any,
+) -> "AskResponse":
+    """Deterministic What Now handler. No LLM calls."""
+    from datetime import timedelta
+
+    from services.destination_tz import to_destination_local
+
+    ctx = _resolve_what_now_context(request, trip_nodes, now_utc, geo_region)
+    if ctx is None:
+        return AskResponse(
+            answer="I could not determine your current location from the trip.",
+            tier=TrustTier.REFUSE,
+            path=AskPath.RETRIEVAL_MISS,
+            intent=AskIntent.WHAT_NOW,
+        )
+
+    context_node = ctx["node"]
+    location_source = ctx["location_source"]
+    context_label = ctx["context_label"]
+    resolved_region = ctx["geo_region"]
+
+    all_venues = db.list_venues_for_region(resolved_region) if db else []
+    itinerary_ids = set()
+    itinerary_names = set()
+    trip_vibe_tags: set = set()
+    for n in trip_nodes:
+        vid = n.get("venue_id")
+        if vid:
+            itinerary_ids.add(vid)
+        vname = n.get("venue_name", "")
+        if vname:
+            itinerary_names.add(vname.lower())
+        trip_vibe_tags.update(n.get("vibe_tags") or [])
+
+    ctx_name = (context_node.get("venue_name", "") if context_node else "").lower()
+    ctx_vid = (context_node.get("venue_id") or "") if context_node else ""
+
+    local_now = to_destination_local(now_utc, resolved_region)
+    next_locked_booking = _find_next_locked_non_hotel(trip_nodes, now_utc)
+
+    intent_cats = _WHAT_NOW_INTENT_MAP.get(request.intent, set())
+    walking_cap = _WALKING_CAPS.get(request.walking, 25)
+    energy_dwell_cap = _ENERGY_DWELL_CAPS.get(request.energy, 120)
+    candidates = []
+
+    for venue in all_venues:
+        cat = venue.get("category", "")
+        name = venue.get("name", "")
+        raw_vid = venue.get("venue_id")
+        if not raw_vid or not isinstance(raw_vid, str) or not raw_vid.strip():
+            continue
+        venue_id = raw_vid.strip()
+        if cat in ("hospital", "pharmacy", "transport_hub"):
+            continue
+        if not name.strip():
+            continue
+        if venue_id in itinerary_ids or name.lower() in itinerary_names:
+            continue
+        if ctx_name and name.lower() == ctx_name:
+            continue
+        if ctx_vid and venue_id == ctx_vid:
+            continue
+        if intent_cats and cat not in intent_cats:
+            continue
+
+        walk_min = None
+        if location_source == "trip_position" and context_node:
+            walk_min = _compute_walking_minutes(context_node, venue)
+        if walk_min is not None and walk_min > walking_cap:
+            continue
+
+        dwell = venue.get("typical_dwell_minutes")
+        if dwell is not None and dwell > energy_dwell_cap:
+            continue
+        if dwell is not None and (dwell + (walk_min or 0)) > request.available_minutes:
+            continue
+
+        hours_struct = venue.get("opening_hours_structured")
+        if hours_struct is None and isinstance(venue.get("opening_hours"), dict):
+            hours_struct = venue.get("opening_hours")
+        hours_ok = None
+        if hours_struct is not None:
+            from services.opening_hours import HoursResult, hours_for_slot
+
+            proposed_utc = now_utc + timedelta(minutes=walk_min or 0)
+            try:
+                result = hours_for_slot(hours_struct, proposed_utc, dwell or 60, resolved_region)
+                if result == HoursResult.CLOSED:
+                    continue
+                hours_ok = result == HoursResult.FITS
+            except (ValueError, TypeError):
+                pass
+
+        has_next_booking = False
+        if next_locked_booking is not None:
+            if _violates_next_booking(
+                now_utc,
+                dwell or 60,
+                walk_min,
+                venue,
+                next_locked_booking,
+                resolved_region,
+            ):
+                continue
+            has_next_booking = True
+
+        # Hotel return boundary (SPEC-10)
+        if _violates_hotel_boundary(
+            venue, now_utc, dwell or 60, walk_min, trip_nodes, resolved_region
+        ):
+            continue
+
+        reason_codes = _candidate_reason_codes(
+            venue,
+            request,
+            context_node,
+            walk_min,
+            hours_ok or False,
+            has_next_booking,
+            trip_vibe_tags,
+        )
+        unknown_fields = _candidate_unknown_fields(venue, walk_min, hours_ok)
+        proposed_start_local = local_now + timedelta(minutes=walk_min or 0)
+
+        candidates.append(
+            {
+                "candidate_id": f"what_now:{venue_id}",
+                "venue_id": venue_id,
+                "name": name,
+                "micro_location_display": venue.get("micro_location", ""),
+                "category": cat,
+                "typical_dwell_minutes": dwell,
+                "scheduled_start": proposed_start_local.isoformat(),
+                "reason_codes": reason_codes,
+                "unknown_fields": unknown_fields,
+                "_rc": len(reason_codes),
+                "_dw": dwell or 999,
+                "_wk": walk_min if walk_min is not None else 999,
+                "_nm": name.lower(),
+            }
+        )
+
+    candidates.sort(key=lambda c: (-c["_rc"], c["_dw"], c["_wk"], c["_nm"]))
+    result_candidates = [
+        {k: v for k, v in c.items() if not k.startswith("_")} for c in candidates[:5]
+    ]
+
+    if not result_candidates:
+        return AskResponse(
+            answer=(
+                f"No feasible options found for {request.available_minutes} minutes "
+                "with your current filters. Try a longer window or different activity type."
+            ),
+            tier=TrustTier.REFUSE,
+            path=AskPath.RETRIEVAL_MISS,
+            intent=AskIntent.WHAT_NOW,
+        )
+
+    what_now_result = {
+        "location_source": location_source,
+        "context_label": context_label,
+        "candidates": result_candidates,
+    }
+    count = len(result_candidates)
+    names_str = ", ".join(c["name"] for c in result_candidates[:3])
+    suffix = f" and {count - 3} more" if count > 3 else ""
+    if location_source == "region_anchor":
+        answer = f"Found {count} option{'s' if count != 1 else ''}: {names_str}{suffix}."
+    else:
+        answer = (
+            f"Found {count} option{'s' if count != 1 else ''} within reach: {names_str}{suffix}."
+        )
+    return AskResponse(
+        answer=answer,
+        tier=TrustTier.HEDGE,
+        path=AskPath.GROUNDED_DETERMINISTIC,
+        intent=AskIntent.WHAT_NOW,
+        source_ids=[c["venue_id"] for c in result_candidates],
+        source_class="curated_catalog",
+        what_now=what_now_result,
+    )
 
 
 class AskService:
