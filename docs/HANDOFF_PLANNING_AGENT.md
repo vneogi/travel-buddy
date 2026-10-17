@@ -181,15 +181,15 @@ separation live in the operating model; do not reconstruct them from chat.
 
 ## First job
 
-`origin/main` includes the 11 Oct field strategy reset (`bf31814`).
-Application freeze SHA remains `9a7b9d9`. Hosted 0025 applied. Cloud Run
+`origin/main` includes documentation status `aecc423` over the SPEC-25
+Phase C application merge `7d825c0`. Hosted 0025 applied. Cloud Run
 `00012-8wv`. Owner APK SHA256 `bd935bf2...`.
 
-Genie next: remainder 2
-`docs/briefs/GENIE_SPEC_45_FIELD_TRUST_HYGIENE_REMAINDER_2.md` on
-`feat/spec45-field-trust-hygiene` (`afcde2a`). Do not merge. The Today
-outcome helper and last-hotel-night flag are still unwired or wrong.
-Do not start Ask, What Now, Add/Move, SPEC-43, catalog patches, or APK.
+Genie next:
+`docs/briefs/GENIE_SPEC_46_WHAT_NOW_PHASE_A.md` on
+`feat/spec46-phase-a-what-now`. Do not merge, deploy, or build an APK.
+Do not start production LLM processing, trip-less Ask, Ask-to-Add/Move,
+or SPEC-43 implementation.
 
 Historical context (do not treat as current work):
 

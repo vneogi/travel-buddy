@@ -5,8 +5,8 @@
 > revision `travel-buddy-00012-8wv` serves that code. Remainders A4/A5,
 > Flutter command queue, and SPEC-43 are out of this slice.
 >
-> Sequence: SPEC-45 Phase A is on main (`7939565`). SPEC-41 A3b, SPEC-10
-> paste/scheduler, and SPEC-25 grounded trip-scoped Ask are on main.
+> Sequence: SPEC-45 field trust hygiene and SPEC-25 grounded field intents
+> plus device-local durable threads are on main through `7d825c0`.
 > Close A4/A5 before treating normalized itinerary rows as authoritative
 > across devices. SPEC-43 remains the release gate before any non-owner
 > distribution or production LLM processing of personal trip data.
@@ -541,11 +541,10 @@ Before the first non-owner release:
 
 ## Delivery sequence
 
-1. With SPEC-41 A3b complete at `7f25042` and SPEC-10 paste plus
-   flight/hotel scheduler on main, finish SPEC-25 grounded trip-scoped Ask
-   after laptop tests, then the Laos hosted/API/APK re-verification.
-2. Implement Phase A transactional integrity, concurrency, idempotency, and
-   persistence contracts.
+1. SPEC-41 A3b, SPEC-10 paste/scheduler, SPEC-25 grounded trip-scoped Ask
+   through durable threads, and SPEC-44 Phase A are complete on main.
+2. Implement deterministic no-GPS SPEC-46 What Now Phase A as the next
+   product slice; it does not alter the release gates below.
 3. Implement SPEC-43, including SPEC-24/27 dependencies, before any non-owner
    distribution or personal-data LLM use.
 4. Implement SPEC-13 plus the minimum SPEC-17 claim store and SPEC-20 city

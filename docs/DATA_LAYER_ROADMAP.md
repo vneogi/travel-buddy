@@ -366,11 +366,13 @@ for the owner's itinerary reliability work.
 
 The immediate sequence is now:
 
-1. G0 field-fix-2, SPEC-45 Phase A, and SPEC-44 Phase A are on `main`
-   (`b8cf305`, `7939565`, `9a7b9d9`). Hosted 0025 is applied. Phone
-   APK evidence is recorded 2026-09-27.
-2. SPEC-41 Phase A, SPEC-10 paste/scheduler, and SPEC-25 grounded
-   trip-scoped Ask are on main.
+1. G0 field-fix-2, SPEC-45 field trust hygiene, SPEC-44 Phase A, and
+   SPEC-25 grounded field intents plus device-local durable threads are on
+   `main` through `7d825c0`. Hosted 0025 is applied. Phone APK evidence is
+   recorded 2026-09-27.
+2. The next product slice is deterministic, no-GPS SPEC-46 What Now Phase A.
+   It adds no hosted migration; Phase C thread storage is device-local
+   SQLite v8.
 3. SPEC-44 A4/A5 and Flutter command queue remain after the Laos trip
    unless a blocker requires them.
 4. implement SPEC-43 before any non-owner tester or production LLM

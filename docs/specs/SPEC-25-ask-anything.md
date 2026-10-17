@@ -59,13 +59,11 @@ nowhere to post, and a question asked while standing in front of a restaurant
 before any trip exists cannot be asked at all. SPEC-18's central scenario -- I am
 here, is this place worth it -- is exactly that question.
 
-The trip-scoped composer is not yet a grounded assistant. When no configured
-model key is available, or when the model call fails, the server returns a
-region-safe canned response. Field evidence recorded in
-`docs/AWAITING_VERIFICATION.md` showed that fallback. Even with a key, the
-current Ask path does not retrieve catalog hours, dishes, or sourced claims
-before generation. Key presence is therefore necessary for a model call but
-insufficient for a trustworthy answer.
+The trip-scoped composer now has deterministic retrieval over catalog, trip,
+and practical-rule facts. Phase B adds the field intents `TODAY_TONIGHT`,
+`NEARBY_OPTION`, `PRACTICAL_RULE`, and `COMPARE`; Phase C adds device-local
+durable threads and message history. Production LLM processing, trip-less Ask,
+and catalog-backed place-detail prompts remain later work.
 
 The current heavy response path can also serialize booking references, notes,
 times, and coordinates from itinerary nodes. Grounding does not authorize that
@@ -162,7 +160,13 @@ capability.
 
 ### Durable threads and suggested questions
 
-Ask history is a traveller aid, not a raw analytics log:
+The device-local subset landed in Phase C (`7d825c0`): travellers can retain
+and reopen trip threads, keep multiple messages in a thread, start a New
+conversation, and revisit rendered response envelopes without rerunning
+retrieval. Broader identity, export, deletion, and retention integration still
+follows SPEC-27 and SPEC-43.
+
+The durable contract remains:
 
 - persist the user question, rendered response envelope, source references,
   created time, and trip/place context under the owning identity;

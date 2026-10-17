@@ -1,11 +1,11 @@
 # SPEC-45: On-Trip Visible Surface
 
-> Status: PHASE A IMPLEMENTED on main (`7939565`, laptop Flutter
-> `61b07d0`). Owner phone evidence 2026-09-27 on APK `bd935bf2...`
+> Status: PHASE A AND PHASE B IMPLEMENTED on main (`7939565`,
+> `5bf6aa9`). Owner phone evidence 2026-09-27 on APK `bd935bf2...`
 > against Cloud Run `00012-8wv` showed tappable cards, one Ask composer,
 > schedule-issue details, and neighbourhood labels. Remainder of this
-> spec (map tiles, Add/Move, GPS, SPEC-43 account chrome) is not this
-> merge.
+> spec (operational place detail, SPEC-46, map tiles, Add/Move, GPS,
+> SPEC-43 account chrome) remains later work.
 >
 > Recorded 24 Sep 2026 from an external UX/product review of `d9f89ba`
 > plus owner Android screenshots the same day. This spec owns **visible
@@ -15,9 +15,9 @@
 >
 > 11 Oct 2026 field amendment: the first owner trip exposed more than 20
 > notifications, stale schedule reviews, generic outcomes, dead actions, and
-> insufficient operational card detail. Phase B is trust hygiene on the
-> current surface. Brief: `docs/briefs/GENIE_SPEC_45_FIELD_TRUST_HYGIENE.md`.
-> Broad Ask, What Now, Add/Move, and operational place-detail remain later.
+> insufficient operational card detail. Phase B trust hygiene is now on main.
+> Deterministic no-GPS SPEC-46 What Now Phase A is next; Add/Move and
+> operational place detail remain later.
 >
 > Depends on SPEC-22 (render/trust treatments), SPEC-17 (claims),
 > SPEC-26 (home snapshot), SPEC-25 (Ask), SPEC-12 (driver card),
@@ -294,7 +294,7 @@ A schedule-issue row already names and opens the stop. After SPEC-46
 exists, the next control is Rescue (What Now with a broken-plan
 preset). Until then, do not add a fake Fix it button.
 
-### 15. Phase B -- field trust hygiene (next build)
+### 15. Phase B -- field trust hygiene (implemented)
 
 Owner Laos evidence, not a visual redesign:
 

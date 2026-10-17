@@ -358,10 +358,11 @@ bounded phase, but must not silently omit or reorder these gates.
 0. **Close field evidence.** Record Laos observations and product failures in
    `AWAITING_VERIFICATION.md`; turn accepted findings into the appropriate spec
    or risk. Do not treat one owner trip as a validated flywheel.
-1. **Close the small on-trip trust remainders.** Durable Ask history,
-   catalog-backed place prompts, weather-day detail, and the hotel/flight type
-   display defect come before broadening the product. They improve the evidence
-   surface without enabling collection from other people.
+1. **Close the small on-trip trust remainders.** Device-local durable Ask
+   history landed in SPEC-25 Phase C (`7d825c0`). Catalog-backed place prompts
+   and weather-day detail remain. Deterministic no-GPS SPEC-46 What Now Phase A
+   is the next product slice, but it does not bypass SPEC-43 or these flywheel
+   gates.
 2. **Implement SPEC-43's applicable G1 gates.** Server-issued identity,
    ownership, consent purpose/version, withdrawal and deletion, private cache
    isolation, safe diagnostics, abuse controls, and release transport are

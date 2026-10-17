@@ -10,9 +10,9 @@
 >
 > 11 Oct 2026 field evidence strongly validates Add and Move: the owner needed
 > to move lunch to dinner, defer stops after heat/rain/fatigue, and add locally
-> discovered venues and detours. Delivery is sequenced behind the primary
-> SPEC-25 grounded Ask slice and thin Ask-to-Add command, then the polished
-> Move editor. These mechanics are table stakes, not the product moat.
+> discovered venues and detours. Delivery is sequenced after SPEC-46 What Now
+> Phase A: first the thin Ask-to-Add command, then the polished Move editor.
+> These mechanics are table stakes, not the product moat.
 
 ## Goal
 
