@@ -1,8 +1,10 @@
 # SPEC-25: The Ask Anything Surface
 
-> Status: PARTIAL. Trip-scoped grounded Ask is on main (`30a4270`, from
-> `a586e78`). Owner Windows Flutter Ask envelope tests passed. The
-> trip-optional surface and full contract below are not.
+> Status: PARTIAL. Grounded trip-scoped Ask, the field-priority intents, and
+> durable identity-scoped device-local threads are on main through SPEC-25
+> Phase C (`7d825c0`, PR #72). Owner Windows Flutter analysis and the full
+> Flutter suite passed for the merged slice. Trip-optional Ask, production LLM
+> processing, and the full contract below are not implemented.
 >
 > Depends on SPEC-17 for the response envelope, SPEC-18 for the discovery path,
 > and SPEC-22 for how any of it is rendered. It does not depend on SPEC-18 being
@@ -20,10 +22,10 @@
 > claims are separate memory planes. No generic traveler-memory blob is created.
 >
 > 27 Sep 2026 field addendum: one entry point is not the same as one
-> disposable conversation. The current Flutter screen keeps `_messages` only
-> in memory. A traveller who leaves Chat cannot reliably reopen an answer at
-> the venue hours later. The remainder therefore includes durable,
-> trip-scoped threads and a history affordance. Place details may also show a
+> disposable conversation. Phase C now persists trip-scoped threads and typed
+> Ask envelopes in identity-scoped device-local SQLite, with History and New
+> conversation affordances. Reopened proposals are display-only. Place details
+> may also show a
 > small set of catalog-backed suggested questions. These suggestions must use
 > deterministic retrieval or cache when facts already exist; rendering or
 > reopening them never invokes a model. A free-text follow-up uses the normal

@@ -1,6 +1,8 @@
 # SPEC-46: What Now and Foreground Context
 
-> Status: SPECIFIED. Not implemented.
+> Status: SPECIFIED; PHASE A BRIEF READY. Not implemented.
+> Execution brief:
+> `docs/briefs/GENIE_SPEC_46_WHAT_NOW_PHASE_A.md`.
 >
 > Recorded 24 Sep 2026. This is the in-the-moment engagement loop:
 > "I have two hours, I am tired, what still works?" It is not a generic
@@ -29,17 +31,15 @@ traffic, crowds, price, weather, or a reason.
 
 ## Priority
 
-1. Close the current G0 field-test blockers and retest the owner APK
-   (include SPEC-45 Phase A chrome already on `main`).
-2. Close SPEC-44 Phase A (ephemeral PostgreSQL proof, then merge).
-3. Complete remaining SPEC-25 trip-optional Ask and SPEC-10 paste work
-   as sequenced in PROJECT_STATUS.
-4. Implement SPEC-43 before any non-owner distribution.
-4. Re-run G0 hosted/device acceptance.
-5. Implement SPEC-43 before any non-owner build.
-6. Phase A may be built for the owner alongside grounded SPEC-25 if it
-   remains a deterministic, no-GPS slice. It must not delay SPEC-43.
-7. Phase B foreground location starts only after its SPEC-43 controls pass.
+1. SPEC-45 field trust hygiene and SPEC-25 grounded, broad, durable
+   trip-scoped Ask are on main.
+2. Implement Phase A as the next owner-only product slice: deterministic,
+   no GPS, no LLM, and no mutation before a later confirmed command slice.
+3. Thin typed Ask-to-Add follows the structured candidate proof; polished
+   Move follows Add.
+4. Implement SPEC-43 before any non-owner build or production LLM processing
+   of personal trip data.
+5. Phase B foreground location starts only after its SPEC-43 controls pass.
 
 The capability is designed now but does not jump reliability or release
 safety. A 27 Sep 2026 engagement review accepted Rescue, Hungry now, and

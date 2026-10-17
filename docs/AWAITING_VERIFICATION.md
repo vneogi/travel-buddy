@@ -15,6 +15,28 @@ other.
 Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 `#85` and so on; those numbers cannot be reconciled against `git log`.
 
+## Finding -- Oct 17 2026 -- SPEC-25 field intents and durable threads
+
+The owner verified the SPEC-25 Phase C branch at `4049ab4` on Windows.
+`flutter analyze --no-fatal-infos` exited successfully with informational
+findings. Focused durable-thread unit, widget, Ask-envelope, node-outcome, and
+SPEC-30 widget tests passed. The full Flutter suite completed with 562 passing
+tests.
+
+PR #72 merged to `main` as `7d825c0`. The merged slice includes grounded
+field-priority intents, identity-scoped device-local SQLite threads, History
+and New conversation actions, typed envelope round-trip, display-only
+historical proposals, and offline refusal without an assistant row.
+
+GitHub's only red PR check was `postgres-proof`, failing during the existing
+pgvector package installation step before SQL proofs. The application branch
+did not change PostgreSQL migrations or the proof workflow. This remains CI
+infrastructure baseline evidence, not a SPEC-25 product failure.
+
+No hosted deploy, APK, or phone acceptance was performed for this slice.
+SPEC-43 still blocks non-owner distribution and production LLM processing of
+personal trip data.
+
 ## Finding -- Oct 11 2026 -- owner Laos field use and cross-trip chat review
 
 The owner used the frozen APK during the Oct 2-9 Laos trip and reported 26

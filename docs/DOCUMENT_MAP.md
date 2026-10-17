@@ -21,11 +21,13 @@ Do not start with a full-repo archaeology, a canvas, or a transcript. If two
 documents disagree, follow Precedence below and name the conflict in
 `PROJECT_STATUS.md` until the owning document is updated.
 
-## Continuity state on 11 Oct 2026
+## Continuity state on 17 Oct 2026
 
-- Application field APK remained based on `9a7b9d9` (SPEC-44 Phase A).
-  GitHub `main` after the field-strategy reset: `bf31814`.
-  Next Genie job: `docs/briefs/GENIE_SPEC_45_FIELD_TRUST_HYGIENE.md`.
+- GitHub `main` is through `7d825c0`: SPEC-45 field trust hygiene,
+  SPEC-25 field-priority intents, and SPEC-25 Phase C durable device-local
+  threads are merged.
+- Next Genie job:
+  `docs/briefs/GENIE_SPEC_46_WHAT_NOW_PHASE_A.md`.
 - Hosted: migrations through 0025; Cloud Run `travel-buddy-00012-8wv`.
 - Owner Laos field use is complete. The dated 26 observations and cross-trip
   review of 65 Laos plus 73 China Gemini turns are in
@@ -96,9 +98,9 @@ which specs belong together so a new session does not reopen the wrong era.
 SPEC-16, SPEC-22, SPEC-30, SPEC-31, SPEC-32, SPEC-35 through SPEC-38,
 SPEC-40, SPEC-41 Phase A, SPEC-45 Phase A, SPEC-44 Phase A.
 
-**Specified remainders on that spine.** SPEC-45 Phase B field trust
-hygiene (next Genie brief); SPEC-25 durable/broad trip Ask; SPEC-46 as
-structured Ask modes; SPEC-42 Add/Move; SPEC-10 HITL reflow; SPEC-29
+**Specified remainders on that spine.** SPEC-46 Phase A structured What Now
+(next Genie brief); SPEC-42 Add/Move; trip-optional and production-LLM
+SPEC-25; SPEC-10 HITL reflow; SPEC-29
 weather-day detail; SPEC-44 A4/A5 and Flutter command queue.
 
 **Release and non-owner gates.** SPEC-43, then SPEC-09 remainder / SPEC-24 /

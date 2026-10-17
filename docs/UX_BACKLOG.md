@@ -9,10 +9,9 @@ The older priority labels below record earlier UI ideation; they do not override
 the current sequence in `PROJECT_STATUS.md`. Laos use plus 138 reviewed
 Laos/China Gemini turns moved these surfaces to the front:
 
-1. P0 current-surface hygiene: advisory cap, no stale day prompts,
-   booking-specific outcomes, no dead Review action, honest empty swaps.
-2. One broad, persistent, grounded trip Ask thread.
-3. What Now/Rescue/Hungry as structured results in that thread.
+1. P0 current-surface hygiene is on main.
+2. Broad, persistent, grounded trip Ask threads are on main.
+3. What Now Phase A is next: deterministic structured results in that thread.
 4. Confirmed Ask-to-Add, then cross-slot/day Move and unknown-time excursions.
 5. Operational card detail and current/next route guidance.
 

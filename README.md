@@ -45,7 +45,7 @@ Oct 2 2026.
       monitoring/error_log.py     request IDs and traceback capture
 
     Supabase (PostgreSQL + pgvector)
-      supabase/migrations/0001 .. 0024 (hosted state in docs/HOSTED_STATE.md)
+      supabase/migrations/0001 .. 0025 (hosted state in docs/HOSTED_STATE.md)
 
 The orchestrator is **not** LangGraph, despite what older revisions of this file
 and the BRD claimed. `langgraph` is commented out in `requirements.txt` and the

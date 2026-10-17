@@ -6,8 +6,9 @@ only the baton: what is true now, what the previous planning agent already
 adjudicated, and what the next agent must not reopen in the first week.
 
 Read this file and the two contracts above. SPEC-36 through SPEC-38,
-SPEC-40, SPEC-41 Phase A, G0 field-fix-2, SPEC-25 grounded trip-scoped
-Ask, SPEC-45 Phase A, and SPEC-44 Phase A are on `main` (`9a7b9d9`).
+SPEC-40, SPEC-41 Phase A, G0 field-fix-2, SPEC-45 field trust hygiene,
+SPEC-44 Phase A, and SPEC-25 grounded, broad, durable trip-scoped Ask are
+on `main` through `7d825c0`.
 Hosted 0025 is applied. Cloud Run `travel-buddy-00012-8wv` is the live
 untagged revision. SPEC-42 uncap / empty-date render is PARTIAL;
 Add/Move remain. Create-then-book HITL reflow remains. Trip-optional
@@ -73,8 +74,9 @@ Status tables: `docs/PROJECT_STATUS.md`. Device-only queue:
 `docs/MARKET_STRATEGY.md` (Sep 2026 Banana Pancake addendum). The governed
 moat and post-Laos data sequence are owned by
 `docs/DATA_FLYWHEEL_OPERATING_MODEL.md`; the internal review product is
-SPEC-47. The current product sequence is P0 trust hygiene, broad persistent
-SPEC-25 Ask, What Now/Rescue plus thin Ask-to-Add, then polished Move.
+SPEC-47. P0 trust hygiene and broad, persistent SPEC-25 Ask are now on main.
+The next Genie job is deterministic SPEC-46 What Now Phase A, then thin
+Ask-to-Add, then polished Move.
 SPEC-43 still gates every non-owner APK. Do not treat in-memory pytest as
 PostgreSQL transaction proof.
 
@@ -145,14 +147,11 @@ decisions and later outcomes, not submission count.
 
 Resume in this order:
 
-1. Close P0 field trust defects: cap advisory/notification flood; stop old-day
-   prompts; use flight/hotel/tour-specific outcome copy; hide dead Review
-   actions; explain no-candidate swaps.
-2. Implement broad, persistent, trip-scoped SPEC-25 Ask. Cover today/tonight,
-   nearby food/work, etiquette, transport/payment/booking logistics,
-   comparisons, and next-step execution through closed grounded intents.
-3. Make SPEC-46 What Now/Rescue/Hungry structured result modes inside that
-   thread. Add three-to-five feasible options, reasons, unknowns, and compare.
+1. P0 field trust defects are closed on main.
+2. Grounded field intents and durable SPEC-25 trip threads are on main.
+3. Implement SPEC-46 What Now Phase A from
+   `docs/briefs/GENIE_SPEC_46_WHAT_NOW_PHASE_A.md`: three-to-five feasible
+   options, deterministic reasons, named unknowns, and no GPS or LLM.
 4. Add the thin typed Ask-to-Add path: confirmed uncatalogued places are
    trip-private; shared catalog promotion waits for review. Then implement
    polished SPEC-42 Move and unknown-time excursion windows. Never silently

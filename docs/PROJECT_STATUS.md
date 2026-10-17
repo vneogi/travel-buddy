@@ -28,8 +28,9 @@
   and FastAPI provider ports rather than MCP or a multi-agent runtime.
 - AI: LiteLLM paths exist (gpt-4o heavy, gpt-4o-mini light,
   text-embedding-3-small embeddings), but the 2026-09-13 hosted phone Ask
-  evidence used the deterministic router fallback. Live LLM-backed Ask is not
-  verified, and the current Ask path is not catalog-grounded even with a key.
+  evidence used the deterministic router fallback. Grounded deterministic
+  trip Ask and its field-priority intents are on main. Live LLM-backed Ask is
+  not verified or enabled for personal trip processing.
 - Data as last loaded: 74 venues (16 Dubai, 23 Luang Prabang, 15 Vang Vieng,
   20 Vientiane), 44 venue dishes, 30 dish-glossary entries. Confirm with a
   count query against venues_rag rather than trusting these numbers.
@@ -103,7 +104,7 @@
 | Money as a dimension (SPEC-23) | SPECIFIED | Not implemented. The engineering contract under VISION section 20, and roadmap concern 7. A band and an amount are different things and both are needed; no amount is storable without its currency; a band is meaningless until anchored to a region, which is what makes price tolerance portable between cities; transport cost belongs on trip_edge; budget is revealed from rejections rather than asked for, with a volunteered hard cap honoured exactly; amounts are SPEC-17 claims on a weeks-scale horizon and degrade to a band when stale. Depends on SPEC-13, SPEC-16 and SPEC-17 |
 
 | Identity lifecycle (SPEC-24) | SPECIFIED | Not implemented, and the design is deliberately settled ahead of the build. Sign-in itself is nearly free because Supabase Auth owns the provider flow and security.py already verifies the token; the work is what happens to the anonymous history. Owns credential aliases, the anonymous-to-account merge, multi-device, and sign-out. Merge direction is fixed one way, which extends the upgrade-on-sight rule already live on identity_kind. Union rather than dedupe; tier and quota both resolve to the maximum, since taking the minimum makes sign-in a way to refill the daily reroute allowance |
-| Ask Anything surface (SPEC-25) | PARTIAL (trip-scoped on main) | Grounded trip-scoped Ask on main (`30a4270`). 27 Sep phone Ask returned `curated_catalog` dish facts. Durable thread history and catalog-backed place prompts are recorded remainders. Trip-optional Ask, budgets, and hosted LLM remain |
+| Ask Anything surface (SPEC-25) | PARTIAL (grounded, broad, durable trip Ask on main) | Initial grounding (`30a4270`), field-priority intents, and identity-scoped device-local thread history are on main through Phase C (`7d825c0`, PR #72). History/New conversation and typed envelope round-trip are implemented; reopened proposals are display-only. Trip-optional Ask, production LLM processing, and catalog-backed place prompts remain |
 | Home surface (SPEC-26) | IMPLEMENTED (snapshot) | GET /trips now returns featured_trip: active trip (or earliest upcoming) with actionable stop (no state_json, no full nodes). Dart HomeSnapshot parses and caches it. Home renders Now/Up next card above trip list. Offline cache renders same card with cache age. Full SPEC-22 migration remains |
 | App lifecycle and data rights (SPEC-27) | SPECIFIED | Not implemented. Owns push transport for candidates produced by capabilities such as SPEC-35, with tokens that survive the SPEC-24 merge and delivery through the SPEC-22 interruption budget enforced server-side. Also owns deletion/export under DPDP and GDPR and a minimum supported client that blocks writes but never reads |
 | Trip inspiration (SPEC-28) | DECIDED, NOT SCHEDULED | Opt-in, delayed, region-level public trip snapshots as inspiration. No live people/location, DMs or comments in v1. Requires identity, deletion/export and moderation gates |
@@ -121,8 +122,8 @@
 | Flexible trip span and sparse day editing (SPEC-42) | PARTIAL (`adc99d2`, merged `17e58ac`) | Catalog-derived date caps removed; generation fills at most five starter days and empty dates render. Oct 11 field evidence validates Add and Move. Sequence: thin grounded Ask-to-Add, then polished Move; trip-private uncatalogued nodes require confirmation and cannot enter the shared catalog without review |
 | Security, privacy and data governance foundation (SPEC-43) | SPECIFIED; AFTER LAOS BUILD, BEFORE NON-OWNER DISTRIBUTION | Owns twelve verified gaps across anonymous authentication, RLS, LLM egress, rights/retention, offline encryption, sign-out, consent, cache isolation, signal authorization, logging, abuse limits, and release transport. The current owner-only exception expires before the first external tester or December launch |
 | Backend integrity and future-readiness foundation (SPEC-44) | PHASE A ON MAIN (PR #67, `9a7b9d9`) | Atomic trip/party/graph writes, optimistic version, durable command_id replay, typed conflicts, and hosted 0025. A4/A5, Flutter command queue, and SPEC-43 remain out of this slice |
-| On-trip visible surface (SPEC-45) | PHASE A ON MAIN (`7939565`); PHASE B BRIEF READY | Phase A chrome on APK `bd935bf2...`. Phase B is field trust hygiene: cap alerts, today-only kind-specific outcomes, hide dead Review, explain empty swaps. Brief: `docs/briefs/GENIE_SPEC_45_FIELD_TRUST_HYGIENE.md`. Operational place detail, transfer cards, and Rescue wait |
-| What Now foreground context (SPEC-46) | SPECIFIED; P1 STRUCTURED ASK MODE | Phase A: trip stop/city, time/energy/walking, deterministic reasons. Rescue and Hungry now are structured result modes of persistent SPEC-25 Ask, not a separate assistant. Situation chips are temporary. Phase B GPS only after SPEC-43 |
+| On-trip visible surface (SPEC-45) | PHASE A + FIELD TRUST HYGIENE ON MAIN | Phase A chrome is on the field APK. Phase B field trust hygiene is on main through the post-field merge sequence: capped alerts, current-day/kind-specific outcomes, dead Review removal, and honest empty-swap refusal. Operational place detail, transfer cards, and Rescue remain later |
+| What Now foreground context (SPEC-46) | SPECIFIED; PHASE A BRIEF READY | Next Genie slice: deterministic no-GPS structured candidates inside the durable SPEC-25 thread, with temporary time/energy/walking context, inspectable reasons, and named unknowns. Brief: `docs/briefs/GENIE_SPEC_46_WHAT_NOW_PHASE_A.md`. Phase B GPS only after SPEC-43 |
 | Data operations workbench (SPEC-47) | SPECIFIED; AFTER SPEC-43 + SPEC-17 | Protected internal observation review, conflicts, freshness, and versioned release manifests. Contribution prompts stay off until this exists. Operating model: `docs/DATA_FLYWHEEL_OPERATING_MODEL.md` |
 
 Migration numbers are assigned when a spec is implemented, not when it is
@@ -152,14 +153,12 @@ confirmed Add or Move.
 
 Current order:
 
-1. P0 trust hygiene -- Genie brief
-   `docs/briefs/GENIE_SPEC_45_FIELD_TRUST_HYGIENE.md`: cap advisories,
-   retire old-day prompts, use booking-kind outcome copy, hide dead Review
-   actions, and explain no-candidate swaps.
-2. P1 broad grounded Ask with persistent trip thread, explicit context changes,
-   authoritative sources/refusals, and practical trip intents.
-3. Structured What Now/Rescue plus thin Ask-to-Add; then the polished Move
-   editor and unknown-time excursion windows.
+1. P0 trust hygiene and the grounded, broad, durable SPEC-25 trip Ask are on
+   main.
+2. Implement deterministic SPEC-46 What Now Phase A from
+   `docs/briefs/GENIE_SPEC_46_WHAT_NOW_PHASE_A.md`.
+3. Add thin typed Ask-to-Add; then the polished Move editor and unknown-time
+   excursion windows.
 4. Patch the Laos must-do/decision-cell data gaps. Target 3-5 feasible options
    in common cells, not an arbitrary 100 venues per city.
 5. SPEC-43 before any non-owner APK; then a narrow external corridor pilot with

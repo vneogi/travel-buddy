@@ -30,7 +30,7 @@ and the anonymous-to-account merge.
 | Account linking and merge | Trigger and sign-out | **All of it** -- SPEC-24 |
 | Home screen layout | Thin list shipped on the October path | Rich home aggregate -- SPEC-26. Create is catalog-backed (SPEC-32) |
 | Add trip journey | SPEC-40 wizard is merged | Feasibility/ranking -- SPEC-41; region registry -- SPEC-13 |
-| Ask Anything box | Trip-scoped composer reaches the backend | Grounded trip-scoped retrieval first; trip-optional endpoint, budgets and full SPEC-17 envelopes later -- SPEC-25 |
+| Ask Anything box | Grounded field intents plus durable trip-scoped thread/history are on main | Trip-optional endpoint, production LLM controls, catalog-backed place prompts, and full SPEC-17 envelopes later -- SPEC-25 |
 | Push notifications | Permission and display | Token store and send path -- SPEC-27 |
 | Delete and export | Entry point | **All of it** -- SPEC-27 |
 | Forced upgrade | Refusal state | Minimum version declaration -- SPEC-27 |
@@ -108,10 +108,11 @@ The immediate order after the field-test gate:
 8. SPEC-45 Phase A visible itinerary chrome is on main (`7939565`);
    owner phone evidence 2026-09-27;
 9. SPEC-44 Phase A is on main (PR #67, `9a7b9d9`); hosted 0025 applied;
-10. close the Oct 11 P0 visible-surface defects, then implement broad,
-    persistent, trip-scoped SPEC-25 Ask;
-11. make SPEC-46 What Now/Rescue/Hungry structured modes of that thread and
-    add thin typed Ask-to-Add before the polished SPEC-42 Move editor;
+10. Oct 11 P0 visible-surface defects and broad, persistent, trip-scoped
+    SPEC-25 Ask are on main through `7d825c0`;
+11. implement deterministic SPEC-46 What Now Phase A from
+    `docs/briefs/GENIE_SPEC_46_WHAT_NOW_PHASE_A.md`, then add thin typed
+    Ask-to-Add before the polished SPEC-42 Move editor;
 12. implement SPEC-43 before any non-owner distribution, production LLM
    processing of personal trip data, or the planned December launch;
 13. implement SPEC-13, minimum SPEC-17 claims, and SPEC-20; Bangkok must
