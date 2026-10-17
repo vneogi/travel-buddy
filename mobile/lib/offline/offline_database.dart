@@ -32,7 +32,7 @@ class NodeOutcome {
 /// Invariant: a user action is durable in outbox BEFORE any network attempt.
 class OfflineDatabase {
   static const _dbName = 'travel_buddy_offline.db';
-  static const _dbVersion = 7;
+  static const _dbVersion = 8;
 
   /// Optional path override for testing (pass inMemoryDatabasePath for isolation).
   final String? _testPath;
@@ -114,6 +114,7 @@ class OfflineDatabase {
     await _createAppKvTable(db);
     await _createNodeOutcomeTable(db);
     await _createNotificationTables(db);
+    await _createAskThreadTables(db);
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -134,6 +135,9 @@ class OfflineDatabase {
     }
     if (oldVersion < 7) {
       await _createNotificationTables(db);
+    }
+    if (oldVersion < 8) {
+      await _createAskThreadTables(db);
     }
   }
 
@@ -547,6 +551,277 @@ class OfflineDatabase {
     final jitter = (cappedMs * 0.2 * (DateTime.now().millisecond / 1000))
         .round();
     return cappedMs + jitter;
+  }
+
+  /// SPEC-25 Phase C: Durable Ask thread tables.
+  Future<void> _createAskThreadTables(Database db) async {
+    await db.execute(
+      'CREATE TABLE ask_thread ('
+      '  thread_id      TEXT PRIMARY KEY,'
+      '  identity_scope TEXT NOT NULL,'
+      '  trip_id        TEXT NOT NULL,'
+      '  title          TEXT NOT NULL,'
+      '  created_at     TEXT NOT NULL,'
+      '  updated_at     TEXT NOT NULL'
+      ')',
+    );
+    await db.execute(
+      'CREATE INDEX idx_ask_thread_scope_trip '
+      'ON ask_thread(identity_scope, trip_id, updated_at)',
+    );
+    await db.execute(
+      'CREATE TABLE ask_message ('
+      '  message_id     TEXT PRIMARY KEY,'
+      '  thread_id      TEXT NOT NULL,'
+      '  role           TEXT NOT NULL,'
+      '  text           TEXT NOT NULL,'
+      '  envelope_json  TEXT,'
+      '  created_at     TEXT NOT NULL'
+      ')',
+    );
+    await db.execute(
+      'CREATE INDEX idx_ask_message_thread '
+      'ON ask_message(thread_id, created_at)',
+    );
+  }
+
+  // ============================================================
+  // Ask thread operations (SPEC-25 Phase C)
+  // ============================================================
+
+  /// Create a new Ask thread.
+  Future<void> createAskThread({
+    required String threadId,
+    required String identityScope,
+    required String tripId,
+    required String title,
+    DateTime? createdAt,
+  }) async {
+    final database = await db;
+    final now = (createdAt ?? DateTime.now()).toUtc().toIso8601String();
+    await database.insert('ask_thread', {
+      'thread_id': threadId,
+      'identity_scope': identityScope,
+      'trip_id': tripId,
+      'title': title,
+      'created_at': now,
+      'updated_at': now,
+    }, conflictAlgorithm: ConflictAlgorithm.ignore);
+    // Retention: keep at most 50 threads per trip.
+    await _pruneAskThreads(identityScope: identityScope, tripId: tripId);
+  }
+
+  /// Insert a message into a thread.
+  Future<void> insertAskMessage({
+    required String messageId,
+    required String threadId,
+    required String role,
+    required String text,
+    String? envelopeJson,
+    DateTime? createdAt,
+  }) async {
+    final database = await db;
+    final now = (createdAt ?? DateTime.now()).toUtc().toIso8601String();
+    await database.insert('ask_message', {
+      'message_id': messageId,
+      'thread_id': threadId,
+      'role': role,
+      'text': text,
+      'envelope_json': envelopeJson,
+      'created_at': now,
+    }, conflictAlgorithm: ConflictAlgorithm.ignore);
+    // Touch the thread's updated_at.
+    await database.rawUpdate(
+      'UPDATE ask_thread SET updated_at = ? WHERE thread_id = ?',
+      [now, threadId],
+    );
+    // Retention: keep at most 200 messages per thread.
+    await _pruneAskMessages(threadId: threadId);
+  }
+
+  /// List threads for a trip, newest first.
+  Future<List<Map<String, dynamic>>> listAskThreads({
+    required String identityScope,
+    required String tripId,
+  }) async {
+    final database = await db;
+    return database.query(
+      'ask_thread',
+      where: 'identity_scope = ? AND trip_id = ?',
+      whereArgs: [identityScope, tripId],
+      orderBy: 'updated_at DESC',
+    );
+  }
+
+  /// Load messages for a thread, oldest first.
+  /// Requires identityScope: the thread must belong to this identity.
+  Future<List<Map<String, dynamic>>> loadAskMessages({
+    required String threadId,
+    required String identityScope,
+  }) async {
+    final database = await db;
+    // Verify thread ownership first.
+    final thread = await database.query(
+      'ask_thread',
+      where: 'thread_id = ? AND identity_scope = ?',
+      whereArgs: [threadId, identityScope],
+    );
+    if (thread.isEmpty) return [];
+    return database.query(
+      'ask_message',
+      where: 'thread_id = ?',
+      whereArgs: [threadId],
+      orderBy: 'created_at ASC',
+    );
+  }
+
+  /// Get the most recent thread for a trip (or null).
+  Future<Map<String, dynamic>?> getMostRecentAskThread({
+    required String identityScope,
+    required String tripId,
+  }) async {
+    final database = await db;
+    final rows = await database.query(
+      'ask_thread',
+      where: 'identity_scope = ? AND trip_id = ?',
+      whereArgs: [identityScope, tripId],
+      orderBy: 'updated_at DESC',
+      limit: 1,
+    );
+    return rows.isEmpty ? null : rows.first;
+  }
+
+  /// Delete one thread and its messages.
+  /// Requires identityScope: refuses to delete another identity's thread.
+  Future<void> deleteAskThread({
+    required String threadId,
+    required String identityScope,
+  }) async {
+    final database = await db;
+    // Verify ownership before deleting.
+    final thread = await database.query(
+      'ask_thread',
+      where: 'thread_id = ? AND identity_scope = ?',
+      whereArgs: [threadId, identityScope],
+    );
+    if (thread.isEmpty) return;
+    await database.delete(
+      'ask_message',
+      where: 'thread_id = ?',
+      whereArgs: [threadId],
+    );
+    await database.delete(
+      'ask_thread',
+      where: 'thread_id = ? AND identity_scope = ?',
+      whereArgs: [threadId, identityScope],
+    );
+  }
+
+  /// Delete all Ask threads and messages for a trip.
+  Future<void> deleteAskHistoryForTrip({
+    required String identityScope,
+    required String tripId,
+  }) async {
+    final database = await db;
+    final threads = await database.query(
+      'ask_thread',
+      columns: ['thread_id'],
+      where: 'identity_scope = ? AND trip_id = ?',
+      whereArgs: [identityScope, tripId],
+    );
+    for (final t in threads) {
+      await database.delete(
+        'ask_message',
+        where: 'thread_id = ?',
+        whereArgs: [t['thread_id']],
+      );
+    }
+    await database.delete(
+      'ask_thread',
+      where: 'identity_scope = ? AND trip_id = ?',
+      whereArgs: [identityScope, tripId],
+    );
+  }
+
+  /// Delete all Ask threads and messages for an identity.
+  Future<void> deleteAskHistoryForIdentity({
+    required String identityScope,
+  }) async {
+    final database = await db;
+    final threads = await database.query(
+      'ask_thread',
+      columns: ['thread_id'],
+      where: 'identity_scope = ?',
+      whereArgs: [identityScope],
+    );
+    for (final t in threads) {
+      await database.delete(
+        'ask_message',
+        where: 'thread_id = ?',
+        whereArgs: [t['thread_id']],
+      );
+    }
+    await database.delete(
+      'ask_thread',
+      where: 'identity_scope = ?',
+      whereArgs: [identityScope],
+    );
+  }
+
+  /// Retention: keep at most 50 threads per trip, prune oldest.
+  Future<void> _pruneAskThreads({
+    required String identityScope,
+    required String tripId,
+  }) async {
+    final database = await db;
+    final count = await database.rawQuery(
+      'SELECT COUNT(*) as cnt FROM ask_thread '
+      'WHERE identity_scope = ? AND trip_id = ?',
+      [identityScope, tripId],
+    );
+    final total = (count.first['cnt'] as int?) ?? 0;
+    if (total <= 50) return;
+    final excess = total - 50;
+    final oldest = await database.query(
+      'ask_thread',
+      columns: ['thread_id'],
+      where: 'identity_scope = ? AND trip_id = ?',
+      whereArgs: [identityScope, tripId],
+      orderBy: 'updated_at ASC',
+      limit: excess,
+    );
+    for (final t in oldest) {
+      await deleteAskThread(
+        threadId: t['thread_id'] as String,
+        identityScope: identityScope,
+      );
+    }
+  }
+
+  /// Retention: keep at most 200 messages per thread, prune oldest.
+  Future<void> _pruneAskMessages({required String threadId}) async {
+    final database = await db;
+    final count = await database.rawQuery(
+      'SELECT COUNT(*) as cnt FROM ask_message WHERE thread_id = ?',
+      [threadId],
+    );
+    final total = (count.first['cnt'] as int?) ?? 0;
+    if (total <= 200) return;
+    final excess = total - 200;
+    final oldest = await database.query(
+      'ask_message',
+      columns: ['message_id'],
+      where: 'thread_id = ?',
+      whereArgs: [threadId],
+      orderBy: 'created_at ASC',
+      limit: excess,
+    );
+    final ids = oldest.map((m) => m['message_id'] as String).toList();
+    final placeholders = ids.map((_) => '?').join(',');
+    await database.rawDelete(
+      'DELETE FROM ask_message WHERE message_id IN ($placeholders)',
+      ids,
+    );
   }
 
   /// Close the database (for testing).

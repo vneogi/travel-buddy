@@ -59,6 +59,38 @@ void _stubDatabase(_MockOfflineDatabase database) {
         reason: any(named: 'reason'),
         recordedAt: any(named: 'recordedAt'),
       )).thenAnswer((_) async {});
+  // SPEC-25 Phase C: Ask thread stubs.
+  when(() => database.getMostRecentAskThread(
+        identityScope: any(named: 'identityScope'),
+        tripId: any(named: 'tripId'),
+      )).thenAnswer((_) async => null);
+  when(() => database.loadAskMessages(
+        threadId: any(named: 'threadId'),
+        identityScope: any(named: 'identityScope'),
+      )).thenAnswer((_) async => <Map<String, dynamic>>[]);
+  when(() => database.createAskThread(
+        threadId: any(named: 'threadId'),
+        identityScope: any(named: 'identityScope'),
+        tripId: any(named: 'tripId'),
+        title: any(named: 'title'),
+        createdAt: any(named: 'createdAt'),
+      )).thenAnswer((_) async {});
+  when(() => database.insertAskMessage(
+        messageId: any(named: 'messageId'),
+        threadId: any(named: 'threadId'),
+        role: any(named: 'role'),
+        text: any(named: 'text'),
+        envelopeJson: any(named: 'envelopeJson'),
+        createdAt: any(named: 'createdAt'),
+      )).thenAnswer((_) async {});
+  when(() => database.listAskThreads(
+        identityScope: any(named: 'identityScope'),
+        tripId: any(named: 'tripId'),
+      )).thenAnswer((_) async => <Map<String, dynamic>>[]);
+  when(() => database.deleteAskThread(
+        threadId: any(named: 'threadId'),
+        identityScope: any(named: 'identityScope'),
+      )).thenAnswer((_) async {});
 }
 
 // ---------------------------------------------------------------------------
