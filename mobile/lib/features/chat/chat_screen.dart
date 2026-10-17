@@ -10,6 +10,7 @@ import '../../data/models.dart';
 import '../../offline/offline_database.dart';
 import '../../render/offline_state.dart';
 import 'ask_bubble.dart';
+import 'what_now_bubble.dart';
 import '../../theme/colors.dart';
 import '../../theme/typography.dart';
 import '../../theme/spacing.dart';
@@ -128,6 +129,102 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     return threadId;
   }
 
+  TripNode? _defaultWhatNowContextNode() {
+    final itState = ref.read(itineraryControllerProvider(widget.tripId));
+    final next = nextMovableStop(
+      itState.nodes,
+      DateTime.now().toUtc(),
+      excludedNodeIds: itState.nodeOutcomes.keys.toSet(),
+    );
+    return next ?? (itState.nodes.isNotEmpty ? itState.nodes.first : null);
+  }
+
+  Future<void> _openWhatNowSheet() async {
+    final contextNode = _defaultWhatNowContextNode();
+    final prefs = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => _WhatNowSheet(contextNode: contextNode),
+    );
+    if (!mounted || prefs == null) return;
+    await _sendWhatNow(prefs);
+  }
+
+  Future<void> _sendWhatNow(Map<String, dynamic> preferences) async {
+    if (_isThinking) return;
+    const text = 'What now?';
+    setState(() {
+      _messages.add(const _ChatEntry.user(text));
+      _isThinking = true;
+    });
+
+    final threadId = await _ensureThread(text);
+    await _db.insertAskMessage(
+      messageId: _uuid.v4(),
+      threadId: threadId,
+      role: 'user',
+      text: text,
+    );
+
+    final online = await _connectivity.checkConnectivity();
+    if (!mounted) return;
+    if (!online) {
+      setState(() {
+        _isThinking = false;
+        _messages.add(const _ChatEntry.offlineRefuse());
+      });
+      return;
+    }
+
+    try {
+      final result = await ref.read(tripEventProvider).sendEvent(
+        tripId: widget.tripId,
+        type: EventType.askInfo,
+        message: text,
+        preferences: preferences,
+      );
+      if (!mounted) return;
+
+      AskResponse? askToStore;
+      String? plainTextToStore;
+      setState(() {
+        _isThinking = false;
+        if (result.askResponse != null) {
+          _messages.add(_ChatEntry.askFact(result.askResponse!, userText: text));
+          askToStore = result.askResponse!;
+        } else {
+          const fallback = 'I could not complete that request. Please try again.';
+          _messages.add(const _ChatEntry.plainAssistant(fallback));
+          plainTextToStore = fallback;
+        }
+      });
+      if (askToStore != null) {
+        await _persistAssistantEnvelope(threadId, askToStore!);
+      } else if (plainTextToStore != null) {
+        await _db.insertAskMessage(
+          messageId: _uuid.v4(),
+          threadId: threadId,
+          role: 'assistant',
+          text: plainTextToStore!,
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      const errorMsg =
+          'I could not reach Travel Buddy. Check your connection and try again.';
+      setState(() {
+        _isThinking = false;
+        _messages.add(const _ChatEntry.plainAssistant(errorMsg));
+      });
+      await _db.insertAskMessage(
+        messageId: _uuid.v4(),
+        threadId: threadId,
+        role: 'assistant',
+        text: errorMsg,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -187,6 +284,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               padding: EdgeInsets.symmetric(horizontal: AppSpacing.base),
               child: _ThinkingBubble(),
             ),
+          _WhatNowEntryBar(
+            enabled: !_isThinking,
+            onTap: _openWhatNowSheet,
+          ),
           _InputBar(
             controller: _controller,
             enabled: !_isThinking,
@@ -602,11 +703,13 @@ class _ChatEntry {
       child: Container(
         margin: const EdgeInsets.only(bottom: AppSpacing.sm),
         constraints: const BoxConstraints(maxWidth: 280),
-        child: AskBubble(
-          askResponse: askResponse!,
-          onConfirm: onConfirmProposal,
-          onDismiss: onDismissProposal,
-        ),
+        child: askResponse!.whatNow != null
+            ? WhatNowBubble(askResponse: askResponse!)
+            : AskBubble(
+                askResponse: askResponse!,
+                onConfirm: onConfirmProposal,
+                onDismiss: onDismissProposal,
+              ),
       ),
     );
   }
@@ -715,6 +818,153 @@ class _InputBar extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _WhatNowEntryBar extends StatelessWidget {
+  final bool enabled;
+  final VoidCallback onTap;
+  const _WhatNowEntryBar({required this.enabled, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(AppSpacing.base, AppSpacing.sm, AppSpacing.base, 0),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: OutlinedButton.icon(
+          key: const Key('what_now_entry'),
+          onPressed: enabled ? onTap : null,
+          icon: const Icon(Icons.explore_outlined),
+          label: const Text('What now?'),
+        ),
+      ),
+    );
+  }
+}
+
+class _WhatNowSheet extends StatefulWidget {
+  final TripNode? contextNode;
+  const _WhatNowSheet({required this.contextNode});
+  @override
+  State<_WhatNowSheet> createState() => _WhatNowSheetState();
+}
+
+class _WhatNowSheetState extends State<_WhatNowSheet> {
+  int _minutes = 90;
+  String _energy = 'normal';
+  String _walking = 'normal';
+  String _intent = 'anything';
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.base),
+        child: Column(
+          key: const Key('what_now_sheet'),
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('What now?', style: AppTypography.h2),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              widget.contextNode != null
+                  ? 'Using ${widget.contextNode!.venueName}'
+                  : 'Browsing your current city',
+              key: const Key('what_now_context_label'),
+              style: AppTypography.body,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            _ChipGroup<int>(
+              label: 'Available time',
+              values: const [45, 90, 120],
+              selected: _minutes,
+              textFor: (v) => v == 120 ? '2 hours' : '$v min',
+              keyFor: (v) => 'what_now_minutes_$v',
+              onSelected: (v) => setState(() => _minutes = v),
+            ),
+            _ChipGroup<String>(
+              label: 'Energy',
+              values: const ['low', 'normal', 'high'],
+              selected: _energy,
+              textFor: (v) => v[0].toUpperCase() + v.substring(1),
+              keyFor: (v) => 'what_now_energy_$v',
+              onSelected: (v) => setState(() => _energy = v),
+            ),
+            _ChipGroup<String>(
+              label: 'Walking',
+              values: const ['short', 'normal', 'longer'],
+              selected: _walking,
+              textFor: (v) => v[0].toUpperCase() + v.substring(1),
+              keyFor: (v) => 'what_now_walking_$v',
+              onSelected: (v) => setState(() => _walking = v),
+            ),
+            _ChipGroup<String>(
+              label: 'Intent',
+              values: const ['quiet', 'food', 'indoors', 'culture', 'anything'],
+              selected: _intent,
+              textFor: (v) => v == 'anything' ? 'Anything' : v[0].toUpperCase() + v.substring(1),
+              keyFor: (v) => 'what_now_intent_$v',
+              onSelected: (v) => setState(() => _intent = v),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                key: const Key('what_now_submit'),
+                onPressed: () => Navigator.pop(context, {
+                  'mode': 'what_now',
+                  'available_minutes': _minutes,
+                  'energy': _energy,
+                  'walking': _walking,
+                  'intent': _intent,
+                  if (widget.contextNode != null)
+                    'context_node_id': widget.contextNode!.nodeId,
+                }),
+                child: const Text('Find options'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ChipGroup<T> extends StatelessWidget {
+  final String label;
+  final List<T> values;
+  final T selected;
+  final String Function(T value) textFor;
+  final String Function(T value) keyFor;
+  final void Function(T value) onSelected;
+  const _ChipGroup({
+    required this.label, required this.values, required this.selected,
+    required this.textFor, required this.keyFor, required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: AppTypography.label),
+          const SizedBox(height: AppSpacing.xs),
+          Wrap(spacing: AppSpacing.xs, children: [
+            for (final value in values)
+              ChoiceChip(
+                key: Key(keyFor(value)),
+                label: Text(textFor(value)),
+                selected: value == selected,
+                onSelected: (_) => onSelected(value),
+              ),
+          ]),
+        ],
       ),
     );
   }
