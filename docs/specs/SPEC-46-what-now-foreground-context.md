@@ -1,6 +1,6 @@
 # SPEC-46: What Now and Foreground Context
 
-> Status: SPECIFIED; PHASE A BRIEF READY. Not implemented.
+> Status: PHASE A ON MAIN (PR #73, `d1df944`). Phase B GPS is not implemented.
 > Execution brief:
 > `docs/briefs/GENIE_SPEC_46_WHAT_NOW_PHASE_A.md`.
 >

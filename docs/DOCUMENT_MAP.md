@@ -96,12 +96,14 @@ which specs belong together so a new session does not reopen the wrong era.
 
 **October field spine (largely on main).** SPEC-01 through SPEC-10, SPEC-12,
 SPEC-16, SPEC-22, SPEC-30, SPEC-31, SPEC-32, SPEC-35 through SPEC-38,
-SPEC-40, SPEC-41 Phase A, SPEC-45 Phase A, SPEC-44 Phase A.
+SPEC-40, SPEC-41 Phase A, SPEC-45 Phase A, SPEC-44 Phase A,
+SPEC-46 Phase A.
 
-**Specified remainders on that spine.** SPEC-46 Phase A structured What Now
-(next Genie brief); SPEC-42 Add/Move; trip-optional and production-LLM
-SPEC-25; SPEC-10 HITL reflow; SPEC-29
-weather-day detail; SPEC-44 A4/A5 and Flutter command queue.
+**Specified remainders on that spine.** SPEC-46 Phase A is on main
+(`d1df944`); remaining are thin Ask-to-Add then SPEC-42 Add/Move;
+trip-optional and production-LLM SPEC-25; SPEC-10 HITL reflow; SPEC-29
+weather-day detail; SPEC-44 A4/A5 and Flutter command queue. SPEC-46
+Phase B GPS waits for SPEC-43.
 
 **Release and non-owner gates.** SPEC-43, then SPEC-09 remainder / SPEC-24 /
 SPEC-27 as called by SPEC-43 and RELEASE_READINESS.

@@ -1,5 +1,8 @@
 # Genie brief: SPEC-46 What Now Phase A
 
+Landed on `main` as `d1df944` (PR #73). Do not re-implement this slice.
+Phase B GPS is a later spec after SPEC-43.
+
 ## Goal
 
 Build the first deterministic, no-GPS What Now mode inside the existing

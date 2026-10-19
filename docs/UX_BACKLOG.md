@@ -157,10 +157,12 @@ remaining product order is:
 2. Owner phone retest of G0 plus SPEC-45 chrome is recorded
    2026-09-27. Thursday freeze uses APK `bd935bf2...` and Cloud Run
    `00012-8wv`.
-3. After return: Ask thread history, catalog place prompts, and
-   weather-day drill-down (recorded in SPEC-25 / SPEC-29). Then SPEC-43
-   closes all twelve security/privacy gaps before another person uses
-   the app or production LLM processing handles personal trip data.
+3. Durable Ask threads and SPEC-46 What Now Phase A are on `main`
+   (`d1df944`). Next product work is thin Ask-to-Add, then polished
+   Move. Catalog place prompts and weather-day drill-down remain
+   recorded SPEC-25 / SPEC-29 follow-ups. SPEC-43 still closes all
+   twelve security/privacy gaps before another person uses the app or
+   production LLM processing handles personal trip data.
 4. SPEC-13, minimum SPEC-17 claims, and SPEC-20 make Bangkok a
    versioned city pack rather than another Python/Dart exception.
 5. Only after Bangkok proves that factory, prototype SPEC-04 offline

@@ -15,6 +15,27 @@ other.
 Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 `#85` and so on; those numbers cannot be reconciled against `git log`.
 
+## Finding -- Oct 19 2026 -- SPEC-46 What Now Phase A merged
+
+Owner Windows checkout of `feat/spec46-phase-a-what-now` at `e664f06`
+passed Flutter gates before squash-merge:
+
+- `flutter analyze --no-fatal-infos` on `lib` plus SPEC-25 envelope,
+  durable-thread, and SPEC-46 widget tests: informational findings only
+- focused `flutter test` of those files: all passed
+- full `flutter test`: all passed
+
+PR #73 merged to `main` as `d1df944`. The slice adds deterministic no-GPS
+What Now on trip-scoped Ask (`preferences.mode=what_now`), shared
+`fits_next_lock`, Flutter sheet plus display-only WhatNowBubble, and
+offline refuse that matches SPEC-25 (user row only, no `sendEvent`).
+
+Genie Python gates on the branch were green. GitHub showed 8 of 9 checks
+on the merge; treat the red check as CI baseline unless a later proof
+shows an application regression. No hosted deploy, APK, or phone
+acceptance was performed for this SHA. Phase B GPS remains blocked on
+SPEC-43.
+
 ## Finding -- Oct 17 2026 -- SPEC-25 field intents and durable threads
 
 The owner verified the SPEC-25 Phase C branch at `4049ab4` on Windows.
