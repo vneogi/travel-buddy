@@ -35,6 +35,7 @@ from services.ask_service import (
     AskResponse,
     TrustTier,
     WhatNowRequest,
+    handle_ask_to_add,
     handle_what_now,
     load_dish_glossary,
 )
@@ -359,6 +360,13 @@ class TripStateMachine:
 
         # Bug #4: ASK_INFO bypasses legacy semantic cache entirely
         is_ask = event_type == EventType.ASK_INFO.value
+
+        # Typed Ask-to-Add: add_activity + preferences.mode=ask_to_add
+        _prefs = preferences or {}
+        if event_type == EventType.ADD_ACTIVITY.value:
+            if _prefs.get("mode") == "ask_to_add":
+                return await self._handle_typed_add(state)
+            return self._refuse_bare_add(state)
 
         state = self._node_classify_intent(state)
         if not is_ask:
@@ -1285,6 +1293,72 @@ class TripStateMachine:
             "proposal": proposal_dict,
             "food_disclaimer": ask_resp.food_disclaimer,
             "what_now": ask_resp.what_now,
+            "added_node": getattr(ask_resp, "added_node", None),
+        }
+        return state
+
+    async def _handle_typed_add(self, state: Dict) -> Dict:
+        """Handle add_activity with preferences.mode=ask_to_add."""
+        from datetime import datetime as _dt
+        from datetime import timezone as _tz
+
+        trip: TripState = state["trip_state"]
+        geo_region = trip.geo_region or ""
+        prefs = state.get("preferences") or {}
+        trip_nodes_dicts = [n.model_dump(mode="json") for n in trip.nodes]
+        _now = state.get("now_utc") or _dt.now(tz=_tz.utc)
+
+        ask_resp = handle_ask_to_add(
+            preferences=prefs,
+            trip_nodes=trip_nodes_dicts,
+            now_utc=_now,
+            geo_region=geo_region,
+            db=db_service,
+        )
+
+        if ask_resp.added_node is not None:
+            new_node = TripNode(
+                **{k: v for k, v in ask_resp.added_node.items() if k in TripNode.model_fields}
+            )
+            trip.nodes.append(new_node)
+            state["trip_state"] = trip
+
+        state["response"] = ask_resp.answer
+        state["ask_response"] = {
+            "answer": ask_resp.answer,
+            "tier": ask_resp.tier.value,
+            "path": ask_resp.path.value,
+            "intent": ask_resp.intent.value,
+            "source_ids": ask_resp.source_ids,
+            "source_class": ask_resp.source_class,
+            "from_cache": False,
+            "fallback_reason": "",
+            "proposal": None,
+            "food_disclaimer": None,
+            "what_now": None,
+            "added_node": ask_resp.added_node,
+        }
+        return state
+
+    def _refuse_bare_add(self, state: Dict) -> Dict:
+        """Refuse add_activity without a typed venue payload."""
+        state["response"] = (
+            "I need a specific venue to add. Use What Now to browse "
+            "available options, then tap Add to plan."
+        )
+        state["ask_response"] = {
+            "answer": state["response"],
+            "tier": "refuse",
+            "path": "retrieval_miss",
+            "intent": "what_now",
+            "source_ids": [],
+            "source_class": "",
+            "from_cache": False,
+            "fallback_reason": "",
+            "proposal": None,
+            "food_disclaimer": None,
+            "what_now": None,
+            "added_node": None,
         }
         return state
 

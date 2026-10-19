@@ -99,6 +99,7 @@ class AskResponse:
     proposal: Optional[Dict[str, Any]] = None
     food_disclaimer: Optional[str] = None
     what_now: Optional[Dict[str, Any]] = None
+    added_node: Optional[Dict[str, Any]] = None
 
 
 # ---------------------------------------------------------------------------
@@ -1488,6 +1489,152 @@ def handle_what_now(
         source_ids=[c["venue_id"] for c in result_candidates],
         source_class="curated_catalog",
         what_now=what_now_result,
+    )
+
+
+def handle_ask_to_add(
+    preferences: dict,
+    trip_nodes: list,
+    now_utc,
+    geo_region: str,
+    db,
+) -> "AskResponse":
+    """Typed Ask-to-Add: confirm one What Now candidate onto the trip.
+
+    Returns an AskResponse with the new node in ``added_node`` on success,
+    or a typed refusal on any failed predicate. Zero LLM calls.
+    """
+    from datetime import datetime as _dt
+    from datetime import timedelta, timezone as _tz
+
+    from services.booking_constraints import _ensure_aware, fits_next_lock
+    from services.destination_tz import destination_tz, to_destination_local
+    from services.opening_hours import HoursResult, hours_for_slot
+    from services.transit import walking_minutes as _walking
+
+    def _refuse(msg: str) -> "AskResponse":
+        return AskResponse(
+            answer=msg,
+            tier=TrustTier.REFUSE,
+            path=AskPath.RETRIEVAL_MISS,
+            intent=AskIntent.WHAT_NOW,
+        )
+
+    venue_id = (preferences.get("venue_id") or "").strip()
+    if not venue_id:
+        return _refuse("I need to know which venue to add. Use What Now to pick a specific place.")
+
+    venue = db.get_venue_by_id(venue_id) if db else None
+    if venue is None:
+        return _refuse(f"I could not find venue '{venue_id}' in the catalog.")
+
+    venue_dict = venue.model_dump() if hasattr(venue, "model_dump") else dict(venue)
+
+    venue_region = venue_dict.get("geo_region") or ""
+    if venue_region != geo_region:
+        return _refuse(f"{venue.name} is in a different region and cannot be added here.")
+
+    cat = (venue_dict.get("category") or "").lower()
+    if cat in ("hospital", "pharmacy", "transport_hub"):
+        return _refuse(f"{venue.name} is infrastructure and cannot be added.")
+
+    itinerary_ids = {n.get("venue_id") for n in trip_nodes if n.get("venue_id")}
+    if venue_id in itinerary_ids:
+        return _refuse(f"{venue.name} is already on your itinerary.")
+
+    dwell = venue_dict.get("typical_dwell_minutes")
+    if dwell is None:
+        return _refuse(
+            f"I do not know the typical visit duration for {venue.name}, "
+            "so I cannot safely schedule it."
+        )
+
+    aware_now = _ensure_aware(now_utc)
+    candidate_start_str = preferences.get("scheduled_start")
+    if candidate_start_str:
+        try:
+            planned_start = _dt.fromisoformat(str(candidate_start_str).replace("Z", "+00:00"))
+            planned_start = _ensure_aware(planned_start)
+        except (ValueError, TypeError):
+            planned_start = None
+    else:
+        planned_start = None
+
+    if planned_start is None:
+        from models.schemas import NodeStatus
+
+        best_end = aware_now
+        for n in trip_nodes:
+            raw_start = n.get("scheduled_start")
+            if not raw_start:
+                continue
+            if isinstance(raw_start, str):
+                try:
+                    ns = _dt.fromisoformat(raw_start.replace("Z", "+00:00"))
+                except (ValueError, TypeError):
+                    continue
+            else:
+                ns = raw_start
+            ns = _ensure_aware(ns)
+            dur = n.get("duration_minutes") or 60
+            end = ns + timedelta(minutes=dur)
+            if end > best_end:
+                best_end = end
+        planned_start = best_end
+
+    hours_struct = venue_dict.get("opening_hours_structured")
+    if hours_struct is None and isinstance(venue_dict.get("opening_hours"), dict):
+        hours_struct = venue_dict.get("opening_hours")
+    if hours_struct is not None:
+        try:
+            result = hours_for_slot(hours_struct, planned_start, dwell, geo_region)
+            if result == HoursResult.CLOSED:
+                local_start = to_destination_local(planned_start, geo_region)
+                return _refuse(f"{venue.name} would be closed at {local_start.strftime('%H:%M')}.")
+        except (ValueError, TypeError):
+            pass
+
+    next_locked = _find_next_locked_non_hotel(trip_nodes, now_utc)
+    if next_locked is not None:
+        if _violates_next_booking(
+            planned_start,
+            dwell,
+            None,
+            venue_dict,
+            next_locked,
+            geo_region,
+        ):
+            return _refuse(f"Adding {venue.name} would make your next booking unreachable.")
+
+    import uuid
+
+    local_start = to_destination_local(planned_start, geo_region)
+    new_node_id = f"n-{uuid.uuid4().hex[:8]}"
+    added_node = {
+        "node_id": new_node_id,
+        "venue_name": venue.name,
+        "venue_id": venue_id,
+        "scheduled_start": planned_start.isoformat(),
+        "duration_minutes": dwell,
+        "is_locked": False,
+        "status": "pending",
+        "geo_region": venue_region,
+        "micro_location": venue_dict.get("micro_location"),
+        "vibe_tags": venue_dict.get("vibe_tags") or [],
+        "lat": venue_dict.get("lat"),
+        "lng": venue_dict.get("lng"),
+        "opening_hours": venue_dict.get("opening_hours"),
+        "opening_hours_structured": hours_struct,
+    }
+
+    return AskResponse(
+        answer=f"Added {venue.name} to your plan at {local_start.strftime('%H:%M')}.",
+        tier=TrustTier.ASSERT,
+        path=AskPath.GROUNDED_DETERMINISTIC,
+        intent=AskIntent.WHAT_NOW,
+        source_ids=[venue_id],
+        source_class="curated_catalog",
+        added_node=added_node,
     )
 
 
