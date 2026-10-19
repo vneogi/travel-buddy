@@ -407,3 +407,83 @@ def is_last_unlocked_activity(
         if n_date == local_date:
             last = n
     return last is not None and last.node_id == node.node_id
+
+
+def fits_next_lock(
+    venue: dict,
+    slot: datetime,
+    dwell: int,
+    next_locked_booking: Optional["TripNode"],
+    geo_region: Optional[str],
+) -> bool:
+    """True if the candidate can reach the next locked booking in time.
+
+    Extracted from catalog_itinerary.pack_day so it can be shared by What Now.
+
+    Ignores the lock when it is a hotel (background anchor), belongs to a
+    different geo_region, or falls on a different destination-local day.
+    For locked flights, uses the canonical ``violates_flight_cutoff``
+    (150-minute buffer) instead of plain walking-arrival.
+    Non-flight, same-day lock: require coords + walking arrival.
+    """
+    import math as _m
+
+    from services.destination_tz import destination_tz as _dest_tz
+    from services.transit import walking_minutes as _walking
+
+    if next_locked_booking is None:
+        return True
+    lock = next_locked_booking
+    # Hotels are background anchors, not reachability targets.
+    if (
+        getattr(lock, "node_kind", "activity") == "booking"
+        and getattr(lock, "booking_type", "") == "hotel"
+    ):
+        return True
+    # Different region -> not a same-city constraint.
+    lock_region = getattr(lock, "geo_region", None)
+    if lock_region and lock_region != geo_region:
+        return True
+    # Different local day -> not a same-day constraint.
+    tz = _dest_tz(geo_region)
+    if tz is not None:
+        lock_local_day = _ensure_aware(lock.scheduled_start).astimezone(tz).date()
+        slot_local_day = _ensure_aware(slot).astimezone(tz).date()
+    else:
+        lock_local_day = lock.scheduled_start.date()
+        slot_local_day = slot.date()
+    if lock_local_day != slot_local_day:
+        return True
+
+    # Flights: use the canonical 150-minute cutoff.
+    if getattr(lock, "booking_type", "") == "flight":
+        return not violates_flight_cutoff(
+            slot,
+            dwell,
+            lock,
+            activity_lat=venue.get("lat"),
+            activity_lng=venue.get("lng"),
+        )
+
+    # Non-flight, same-day lock: require coords + walking arrival.
+    if (
+        lock.lat is None
+        or lock.lng is None
+        or not _m.isfinite(lock.lat)
+        or not _m.isfinite(lock.lng)
+    ):
+        return False  # missing lock coords -> ineligible
+
+    v_lat = venue.get("lat")
+    v_lng = venue.get("lng")
+    if v_lat is None or v_lng is None:
+        return False
+    try:
+        if not _m.isfinite(v_lat) or not _m.isfinite(v_lng):
+            return False
+    except TypeError:
+        return False
+
+    cand_end = slot + timedelta(minutes=dwell)
+    transfer = _walking(v_lat, v_lng, lock.lat, lock.lng)
+    return cand_end + timedelta(minutes=transfer) <= _ensure_aware(lock.scheduled_start)

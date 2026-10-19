@@ -582,4 +582,66 @@ void main() {
       harness.dispose();
     });
   });
+
+  // SPEC-46: WhatNow parse / serialize contract
+  group('SPEC-46 what_now contract', () {
+    test('WhatNowCandidate round-trips through JSON', () {
+      final json = {
+        'candidate_id': 'what_now:v1', 'venue_id': 'v1',
+        'name': 'Wat Si Saket', 'micro_location_display': 'nam_phou_fountain',
+        'category': 'temple', 'typical_dwell_minutes': 45,
+        'scheduled_start': '2026-10-02T11:05:00',
+        'reason_codes': ['fits_available_window', 'open_for_planned_time'],
+        'unknown_fields': ['price', 'live_crowds'],
+      };
+      final c = WhatNowCandidate.fromJson(json);
+      expect(c.candidateId, 'what_now:v1');
+      expect(c.venueId, 'v1');
+      expect(c.typicalDwellMinutes, 45);
+      expect(c.reasonCodes, hasLength(2));
+      final out = c.toJson();
+      expect(out['candidate_id'], 'what_now:v1');
+    });
+
+    test('WhatNowResult round-trips through JSON', () {
+      final json = {
+        'location_source': 'trip_position',
+        'context_label': 'Using your trip position',
+        'candidates': [{'candidate_id': 'what_now:v1', 'venue_id': 'v1',
+                         'name': 'Wat', 'reason_codes': ['fits_available_window'],
+                         'unknown_fields': ['price']}],
+      };
+      final r = WhatNowResult.fromJson(json);
+      expect(r.locationSource, 'trip_position');
+      expect(r.candidates, hasLength(1));
+      final out = r.toJson();
+      expect((out['candidates'] as List).first['venue_id'], 'v1');
+    });
+
+    test('AskResponse.whatNow parsed from envelope JSON', () {
+      final json = {
+        'answer': 'Found 1 option', 'tier': 'hedge', 'path': 'grounded_deterministic', 'intent': 'what_now',
+        'what_now': {
+          'location_source': 'region_anchor',
+          'context_label': 'Browsing in Vientiane',
+          'candidates': [{'candidate_id': 'what_now:v1', 'venue_id': 'v1',
+                           'name': 'Cafe', 'reason_codes': [],
+                           'unknown_fields': ['price']}],
+        },
+      };
+      final resp = AskResponse.fromJson(json);
+      expect(resp.intent, AskResponseIntent.whatNow);
+      expect(resp.whatNow, isNotNull);
+      expect(resp.whatNow!.locationSource, 'region_anchor');
+      final out = resp.toJson();
+      expect(out['what_now']['location_source'], 'region_anchor');
+    });
+
+    test('AskResponse.whatNow null when absent', () {
+      final json = {'answer': 'Hello', 'tier': 'hedge', 'path': 'grounded_deterministic', 'intent': 'place_identity'};
+      final resp = AskResponse.fromJson(json);
+      expect(resp.whatNow, isNull);
+      expect(resp.toJson().containsKey('what_now'), isFalse);
+    });
+  });
 }

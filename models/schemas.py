@@ -251,6 +251,24 @@ class PlanChangeProposal(BaseModel):
     summary: str = ""
 
 
+class WhatNowCandidate(BaseModel):
+    candidate_id: str
+    venue_id: str
+    name: str
+    micro_location_display: str = ""
+    category: str = ""
+    typical_dwell_minutes: Optional[int] = None
+    scheduled_start: Optional[str] = None
+    reason_codes: List[str] = []
+    unknown_fields: List[str] = []
+
+
+class WhatNowResult(BaseModel):
+    location_source: Literal["trip_position", "region_anchor"]
+    context_label: str
+    candidates: List[WhatNowCandidate] = []
+
+
 class AskResponseEnvelope(BaseModel):
     """SPEC-25: Typed Ask response envelope."""
 
@@ -277,6 +295,7 @@ class AskResponseEnvelope(BaseModel):
         "nearby_option",
         "practical_rule",
         "compare",
+        "what_now",
         "out_of_scope",
     ]
     source_ids: List[str] = []
@@ -285,6 +304,7 @@ class AskResponseEnvelope(BaseModel):
     fallback_reason: str = ""
     proposal: Optional[PlanChangeProposal] = None
     food_disclaimer: Optional[str] = None
+    what_now: Optional[WhatNowResult] = None
 
 
 class TripEventResponse(BaseModel):

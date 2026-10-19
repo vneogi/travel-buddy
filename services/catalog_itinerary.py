@@ -351,63 +351,11 @@ def pack_day(
         return prev_end + timedelta(minutes=transfer)
 
     def _fits_next_lock(venue: dict, slot: datetime, dwell: int) -> bool:
-        """True if the candidate can reach the next locked booking in time.
+        # booking_type check lives in the shared fits_next_lock helper
+        # (hotel skip, flight cutoff, walking arrival for other booking_type).
+        from services.booking_constraints import fits_next_lock as _fnl
 
-        Ignores the lock when it is a hotel (background anchor), belongs to a
-        different geo_region, or falls on a different destination-local day.
-        For locked flights, uses the canonical ``violates_flight_cutoff``
-        (150-minute buffer) instead of plain walking-arrival.
-        """
-        from services.booking_constraints import violates_flight_cutoff as _vfc
-
-        if next_locked_booking is None:
-            return True
-        lock = next_locked_booking
-        # Hotels are background anchors, not reachability targets.
-        if (
-            getattr(lock, "node_kind", "activity") == "booking"
-            and getattr(lock, "booking_type", "") == "hotel"
-        ):
-            return True
-        # Different region -> not a same-city constraint.
-        lock_region = getattr(lock, "geo_region", None)
-        if lock_region and lock_region != geo_region:
-            return True
-        # Different local day -> not a same-day constraint.
-        if tz is not None:
-            lock_local_day = lock.scheduled_start.astimezone(tz).date()
-            slot_local_day = slot.astimezone(tz).date()
-        else:
-            lock_local_day = lock.scheduled_start.date()
-            slot_local_day = slot.date()
-        if lock_local_day != slot_local_day:
-            return True
-
-        # Flights: use the canonical 150-minute cutoff.
-        if getattr(lock, "booking_type", "") == "flight":
-            return not _vfc(
-                slot,
-                dwell,
-                lock,
-                activity_lat=venue.get("lat"),
-                activity_lng=venue.get("lng"),
-            )
-
-        # Non-flight, same-day lock: require coords + walking arrival.
-        import math as _m
-
-        if (
-            lock.lat is None
-            or lock.lng is None
-            or not _m.isfinite(lock.lat)
-            or not _m.isfinite(lock.lng)
-        ):
-            return False  # missing lock coords -> ineligible
-        if not _has_venue_coords(venue):
-            return False
-        cand_end = slot + timedelta(minutes=dwell)
-        transfer = _walking_minutes(venue["lat"], venue["lng"], lock.lat, lock.lng)
-        return cand_end + timedelta(minutes=transfer) <= lock.scheduled_start
+        return _fnl(venue, slot, dwell, next_locked_booking, geo_region)
 
     # G0 field-fix: iterate named slots in SLOT_ORDER so the scheduled_start
     # sequence always follows morning -> lunch -> afternoon -> dinner.
