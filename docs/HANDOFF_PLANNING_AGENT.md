@@ -75,8 +75,8 @@ Status tables: `docs/PROJECT_STATUS.md`. Device-only queue:
 moat and post-Laos data sequence are owned by
 `docs/DATA_FLYWHEEL_OPERATING_MODEL.md`; the internal review product is
 SPEC-47. P0 trust hygiene, broad persistent SPEC-25 Ask, and SPEC-46 What
-Now Phase A are now on main (`d1df944`). The next Genie job is thin typed
-Ask-to-Add, then polished Move.
+Now Phase A are now on main (`d1df944`). The next Genie job is
+`docs/briefs/GENIE_ASK_TO_ADD_THIN.md`, then polished Move.
 SPEC-43 still gates every non-owner APK. Do not treat in-memory pytest as
 PostgreSQL transaction proof.
 
@@ -181,15 +181,14 @@ separation live in the operating model; do not reconstruct them from chat.
 
 ## First job
 
-`origin/main` includes documentation status `aecc423` over the SPEC-25
-Phase C application merge `7d825c0`. Hosted 0025 applied. Cloud Run
-`00012-8wv`. Owner APK SHA256 `bd935bf2...`.
+`origin/main` includes SPEC-46 Phase A as `d1df944` (PR #73). Hosted
+0025 applied. Cloud Run `00012-8wv`. Owner APK SHA256 `bd935bf2...`.
 
 Genie next:
-`docs/briefs/GENIE_SPEC_46_WHAT_NOW_PHASE_A.md` on
-`feat/spec46-phase-a-what-now`. Do not merge, deploy, or build an APK.
-Do not start production LLM processing, trip-less Ask, Ask-to-Add/Move,
-or SPEC-43 implementation.
+`docs/briefs/GENIE_ASK_TO_ADD_THIN.md` on `feat/ask-to-add-thin`.
+Do not merge, deploy, or build an APK. Do not start production LLM
+processing, trip-less Ask, empty-day Add chrome, Move, uncatalogued
+nodes, or SPEC-43 implementation.
 
 Historical context (do not treat as current work):
 

@@ -157,8 +157,9 @@ Current order:
    main.
 2. Deterministic SPEC-46 What Now Phase A is on main (PR #73, `d1df944`).
    Owner Windows Flutter gates green; hosted/phone not repeated for this SHA.
-3. Add thin typed Ask-to-Add; then the polished Move editor and unknown-time
-   excursion windows.
+3. Thin typed Ask-to-Add from
+   `docs/briefs/GENIE_ASK_TO_ADD_THIN.md`; then the polished Move editor and
+   unknown-time excursion windows.
 4. Patch the Laos must-do/decision-cell data gaps. Target 3-5 feasible options
    in common cells, not an arbitrary 100 venues per city.
 5. SPEC-43 before any non-owner APK; then a narrow external corridor pilot with

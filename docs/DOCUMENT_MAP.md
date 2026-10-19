@@ -100,7 +100,8 @@ SPEC-40, SPEC-41 Phase A, SPEC-45 Phase A, SPEC-44 Phase A,
 SPEC-46 Phase A.
 
 **Specified remainders on that spine.** SPEC-46 Phase A is on main
-(`d1df944`); remaining are thin Ask-to-Add then SPEC-42 Add/Move;
+(`d1df944`); remaining are thin Ask-to-Add
+(`docs/briefs/GENIE_ASK_TO_ADD_THIN.md`) then SPEC-42 Add/Move;
 trip-optional and production-LLM SPEC-25; SPEC-10 HITL reflow; SPEC-29
 weather-day detail; SPEC-44 A4/A5 and Flutter command queue. SPEC-46
 Phase B GPS waits for SPEC-43.
