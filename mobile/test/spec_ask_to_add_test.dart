@@ -211,7 +211,6 @@ void main() {
   testWidgets('confirm sends add_activity with preferences', timeout: const Timeout(Duration(seconds: 30)),
     (tester) async {
       // First sendEvent returns what_now, second returns add success
-      var callCount = 0;
       final h = await tester.runAsync(() => _buildHarness(nextResult: _whatNowEventResult()));
       if (h == null) fail('harness null');
 

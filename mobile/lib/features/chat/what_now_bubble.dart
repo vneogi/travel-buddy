@@ -121,8 +121,8 @@ class _CandidateCard extends StatelessWidget {
             ]),
           ],
           const SizedBox(height: AppSpacing.sm),
-          Row(
-            mainAxisSize: MainAxisSize.min,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               TextButton(
                 key: Key('what_now_details_${candidate.venueId}'),
@@ -152,7 +152,7 @@ class _CandidateCard extends StatelessWidget {
                 child: const Text('View details'),
               ),
               if (showAddToPlan) ...[
-                const SizedBox(width: AppSpacing.sm),
+                const SizedBox(height: AppSpacing.xs),
                 ElevatedButton(
                   key: Key('what_now_add_${candidate.venueId}'),
                   onPressed: () => onAddToPlan?.call(candidate),
