@@ -525,8 +525,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   /// SPEC-25: Confirm a plan-change proposal from Ask.
   Future<void> _confirmAddToPlan(WhatNowCandidate candidate) async {
-    final db = ref.read(offlineDatabaseProvider);
-    final scope = ref.read(identityCacheScopeProvider);
     final tripEvents = ref.read(tripEventProvider);
     final tripId = widget.tripId;
 

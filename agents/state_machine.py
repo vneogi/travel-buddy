@@ -1323,8 +1323,7 @@ class TripStateMachine:
             trip.nodes.append(new_node)
             state["trip_state"] = trip
 
-        state["response"] = ask_resp.answer
-        state["ask_response"] = {
+        ask_response_dict = {
             "answer": ask_resp.answer,
             "tier": ask_resp.tier.value,
             "path": ask_resp.path.value,
@@ -1338,16 +1337,24 @@ class TripStateMachine:
             "what_now": None,
             "added_node": ask_resp.added_node,
         }
-        return state
+        return {
+            "updated_trip_state": trip,
+            "response": ask_resp.answer,
+            "routing_tier_used": "light",
+            "from_cache": False,
+            "venues_found": [],
+            "schedule_warnings": [],
+            "ask_response": ask_response_dict,
+        }
 
     def _refuse_bare_add(self, state: Dict) -> Dict:
         """Refuse add_activity without a typed venue payload."""
-        state["response"] = (
+        msg = (
             "I need a specific venue to add. Use What Now to browse "
             "available options, then tap Add to plan."
         )
-        state["ask_response"] = {
-            "answer": state["response"],
+        ask_response_dict = {
+            "answer": msg,
             "tier": "refuse",
             "path": "retrieval_miss",
             "intent": "what_now",
@@ -1360,7 +1367,15 @@ class TripStateMachine:
             "what_now": None,
             "added_node": None,
         }
-        return state
+        return {
+            "updated_trip_state": state["trip_state"],
+            "response": msg,
+            "routing_tier_used": "light",
+            "from_cache": False,
+            "venues_found": [],
+            "schedule_warnings": [],
+            "ask_response": ask_response_dict,
+        }
 
     def _fallback_response(self, state: Dict) -> str:
         return (

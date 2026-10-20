@@ -121,43 +121,47 @@ class _CandidateCard extends StatelessWidget {
             ]),
           ],
           const SizedBox(height: AppSpacing.sm),
-          TextButton(
-            key: Key('what_now_details_${candidate.venueId}'),
-            onPressed: () => showModalBottomSheet(
-              context: context,
-              builder: (_) => Padding(
-                key: Key('what_now_detail_sheet_${candidate.venueId}'),
-                padding: const EdgeInsets.all(AppSpacing.base),
-                child: SafeArea(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(candidate.name, style: AppTypography.h2),
-                      if (candidate.microLocationDisplay.isNotEmpty)
-                        Text(candidate.microLocationDisplay, style: AppTypography.body),
-                      if (candidate.category.isNotEmpty)
-                        Text('Category: ${candidate.category}', style: AppTypography.body),
-                      if (candidate.typicalDwellMinutes != null)
-                        Text('Typical dwell: ${candidate.typicalDwellMinutes} min',
-                            style: AppTypography.body),
-                    ],
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextButton(
+                key: Key('what_now_details_${candidate.venueId}'),
+                onPressed: () => showModalBottomSheet(
+                  context: context,
+                  builder: (_) => Padding(
+                    key: Key('what_now_detail_sheet_${candidate.venueId}'),
+                    padding: const EdgeInsets.all(AppSpacing.base),
+                    child: SafeArea(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(candidate.name, style: AppTypography.h2),
+                          if (candidate.microLocationDisplay.isNotEmpty)
+                            Text(candidate.microLocationDisplay, style: AppTypography.body),
+                          if (candidate.category.isNotEmpty)
+                            Text('Category: ${candidate.category}', style: AppTypography.body),
+                          if (candidate.typicalDwellMinutes != null)
+                            Text('Typical dwell: ${candidate.typicalDwellMinutes} min',
+                                style: AppTypography.body),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
-            child: const Text('View details'),
+                child: const Text('View details'),
               ),
               if (showAddToPlan) ...[
                 const SizedBox(width: AppSpacing.sm),
                 ElevatedButton(
-                  key: Key('what_now_add_\${candidate.venueId}'),
+                  key: Key('what_now_add_${candidate.venueId}'),
                   onPressed: () => onAddToPlan?.call(candidate),
                   child: const Text('Add to plan'),
                 ),
               ],
             ],
           ),
+
         ],
       ),
     );

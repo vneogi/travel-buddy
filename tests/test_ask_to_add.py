@@ -203,7 +203,7 @@ class TestRefusals:
                 now_utc=now_utc,
             )
         )
-        assert len(result["trip_state"].nodes) == 1
+        assert len(result["updated_trip_state"].nodes) == 1
         assert "specific venue" in result.get("response", "").lower()
 
 
@@ -322,3 +322,154 @@ class TestZeroLLM:
                     now_utc=now_utc,
                 )
             )
+
+
+# =========================================================================
+# process_event contract tests
+# =========================================================================
+
+CONTRACT_KEYS = {
+    "updated_trip_state",
+    "response",
+    "routing_tier_used",
+    "from_cache",
+    "venues_found",
+    "schedule_warnings",
+    "ask_response",
+}
+
+
+class TestProcessEventContract:
+    """process_event must return the standard contract dict, not internal state."""
+
+    def test_bare_refuse_returns_contract(self, now_utc):
+        trip = TripState(
+            trip_id="t1",
+            user_id="u1",
+            geo_region="vientiane_laos",
+            nodes=[
+                TripNode(
+                    venue_name="Temple",
+                    venue_id="ctx-1",
+                    scheduled_start=now_utc,
+                    duration_minutes=60,
+                    geo_region="vientiane_laos",
+                ),
+            ],
+        )
+        result = asyncio.run(
+            state_machine.process_event(
+                trip_state=trip,
+                event_type=EventType.ADD_ACTIVITY.value,
+                message="add a cafe",
+                now_utc=now_utc,
+            )
+        )
+        # Must have all contract keys
+        assert CONTRACT_KEYS <= set(result.keys()), (
+            f"Missing keys: {CONTRACT_KEYS - set(result.keys())}"
+        )
+        # No internal keys leaked
+        assert "trip_state" not in result
+        assert "routing_tier" not in result
+        assert "event_type" not in result
+
+        # Values
+        assert result["updated_trip_state"] is not None
+        assert len(result["updated_trip_state"].nodes) == 1  # unchanged
+        assert isinstance(result["response"], str)
+        assert len(result["response"]) > 0
+        assert result["routing_tier_used"] == "light"
+        assert result["from_cache"] is False
+        assert result["venues_found"] == []
+        assert result["schedule_warnings"] == []
+        assert result["ask_response"]["tier"] == "refuse"
+        assert result["ask_response"]["added_node"] is None
+
+    def test_typed_add_returns_contract(self, now_utc):
+        """Typed add via process_event, with venue injected into db_service."""
+        from services.database_service import db_service
+
+        # Inject a venue so handle_ask_to_add finds it
+        injected = VenueRAG(
+            venue_id="contract-v1",
+            name="Contract Temple",
+            description="Test venue",
+            micro_location="test_loc",
+            lat=17.9640,
+            lng=102.6120,
+            category="temple",
+            geo_region="vientiane_laos",
+            typical_dwell_minutes=40,
+            opening_hours_structured={
+                d: [["08:00", "22:00"]] for d in ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+            },
+            opening_hours="08:00-22:00",
+        )
+        # Monkey-patch get_venue_by_id for this test
+        orig_get = db_service.get_venue_by_id
+
+        def _patched_get(venue_id):
+            if venue_id == "contract-v1":
+                return injected
+            return orig_get(venue_id)
+
+        db_service.get_venue_by_id = _patched_get
+        try:
+            trip = TripState(
+                trip_id="t1",
+                user_id="u1",
+                geo_region="vientiane_laos",
+                nodes=[
+                    TripNode(
+                        venue_name="Temple",
+                        venue_id="ctx-1",
+                        scheduled_start=now_utc,
+                        duration_minutes=60,
+                        geo_region="vientiane_laos",
+                    ),
+                ],
+            )
+            result = asyncio.run(
+                state_machine.process_event(
+                    trip_state=trip,
+                    event_type=EventType.ADD_ACTIVITY.value,
+                    message="add",
+                    preferences={
+                        "mode": "ask_to_add",
+                        "venue_id": "contract-v1",
+                    },
+                    now_utc=now_utc,
+                )
+            )
+
+            # Must have all contract keys
+            assert CONTRACT_KEYS <= set(result.keys()), (
+                f"Missing keys: {CONTRACT_KEYS - set(result.keys())}"
+            )
+            assert "trip_state" not in result
+            assert "routing_tier" not in result
+
+            # Success: node count incremented
+            assert len(result["updated_trip_state"].nodes) == 2
+            new_node = result["updated_trip_state"].nodes[1]
+            assert new_node.venue_id == "contract-v1"
+            assert new_node.venue_name == "Contract Temple"
+            assert new_node.duration_minutes == 40
+
+            # Original node unchanged
+            orig = result["updated_trip_state"].nodes[0]
+            assert orig.venue_id == "ctx-1"
+            assert orig.scheduled_start == now_utc
+
+            # Other contract fields
+            assert isinstance(result["response"], str)
+            assert "Contract Temple" in result["response"]
+            assert result["routing_tier_used"] == "light"
+            assert result["from_cache"] is False
+            assert result["venues_found"] == []
+            assert result["schedule_warnings"] == []
+            assert result["ask_response"]["added_node"] is not None
+            assert result["ask_response"]["added_node"]["venue_id"] == "contract-v1"
+        finally:
+            db_service.get_venue_by_id = orig_get
