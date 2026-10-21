@@ -95,6 +95,7 @@ class _CandidateCard extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(candidate.name, style: AppTypography.bodyMedium),
           if (candidate.microLocationDisplay.isNotEmpty)

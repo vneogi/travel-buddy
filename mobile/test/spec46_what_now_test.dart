@@ -521,9 +521,8 @@ void main() {
       );
       final nodesBefore = itState.nodes.length;
 
-      final detailsFinder = find.byKey(const Key('what_now_details_v1'));
-      expect(detailsFinder, findsOneWidget);
-      await tester.tap(detailsFinder);
+      expect(find.byKey(const Key('what_now_details_v1')), findsOneWidget);
+      await _tapKey(tester, 'what_now_details_v1');
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
 

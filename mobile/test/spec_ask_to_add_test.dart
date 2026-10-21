@@ -419,7 +419,7 @@ void main() {
 
       final nodesBefore = h.container.read(itineraryControllerProvider(_tripId)).nodes.length;
 
-      await tester.tap(find.byKey(const Key('what_now_details_v1')));
+      await _tapKey(tester, 'what_now_details_v1');
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
 
