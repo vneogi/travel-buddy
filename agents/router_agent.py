@@ -77,6 +77,7 @@ class RouterAgent:
             EventType.REROUTE,
             EventType.WEATHER_ALERT,
             EventType.CHANGE_MOOD,
+            EventType.MOVE_ACTIVITY,
         }
 
         if event_type in [e.value for e in structural_events]:

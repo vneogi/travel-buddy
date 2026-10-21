@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/connectivity_helper.dart';
 import '../../core/providers.dart';
+import '../../render/render_strings.dart';
+import '../move/move_sheet.dart';
 import 'warning_helpers.dart';
 import '../../data/models.dart';
 import '../../theme/colors.dart';
@@ -55,10 +58,12 @@ Map<String, dynamic> preferencesForConfirmedSwap(
 class ItineraryScreen extends ConsumerWidget {
   final String tripId;
   final String? focusNodeId;
+  final ConnectivityHelper? connectivityOverride; // tests
   const ItineraryScreen({
     super.key,
     required this.tripId,
     this.focusNodeId,
+    this.connectivityOverride,
   });
 
   String _sig(TripNode n) =>
@@ -122,6 +127,42 @@ class ItineraryScreen extends ConsumerWidget {
             );
       }
     }
+  }
+
+  /// SPEC-42: typed Move. Picker -> confirm -> one move_activity.
+  /// Offline refuses with the existing unavailable copy; nothing enqueued.
+  Future<void> _move(BuildContext context, WidgetRef ref, TripNode node) async {
+    if (!nodeIsMovable(node)) return;
+    final controller = ref.read(itineraryControllerProvider(tripId).notifier);
+    final state = ref.read(itineraryControllerProvider(tripId));
+    final options = moveOptionsFor(
+      node: node,
+      nodes: state.nodes,
+      segments: state.segments,
+      creationContext: state.creationContext,
+    );
+    final connectivity = connectivityOverride ?? ConnectivityHelper();
+
+    final choice = await showModalBottomSheet<MoveChoice>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => MoveSheet(node: node, options: options),
+    );
+    if (choice == null) return;
+
+    final online = await connectivity.checkConnectivity();
+    if (!online) {
+      controller.showBanner(
+        '${RenderStrings.offlineUnavailable}. ${RenderStrings.offlineRetry}.',
+      );
+      return;
+    }
+    await controller.applyEvent(
+      type: EventType.moveActivity,
+      message: 'Move ${node.venueName}',
+      targetNodeId: node.nodeId,
+      preferences: choice.toPreferences(),
+    );
   }
 
   /// Build a TripState with coords for SwapSheet venue search.
@@ -362,6 +403,7 @@ class ItineraryScreen extends ConsumerWidget {
                               focusNodeId: focusNodeId,
                               onSwap: (node) => _swap(context, ref, node),
                               onCancel: (node) => _cancel(context, ref, node),
+                              onMove: (node) => _move(context, ref, node),
                               onOutcome: (node, {isLastHotelNight = false}) =>
                                   _showOutcomePicker(context, ref, node, isLastHotelNight: isLastHotelNight),
                               onLoved: (node) {
@@ -402,6 +444,7 @@ class ItineraryScreen extends ConsumerWidget {
                               focusNodeId: focusNodeId,
                               onSwap: (node) => _swap(context, ref, node),
                               onCancel: (node) => _cancel(context, ref, node),
+                              onMove: (node) => _move(context, ref, node),
                               onOutcome: (node, {isLastHotelNight = false}) =>
                                   _showOutcomePicker(context, ref, node, isLastHotelNight: isLastHotelNight),
                               onLoved: (node) {
@@ -447,6 +490,7 @@ class _CorridorTimeline extends StatefulWidget {
   final String? focusNodeId;
   final void Function(TripNode) onSwap;
   final void Function(TripNode) onCancel;
+  final void Function(TripNode)? onMove;
   final void Function(TripNode, {bool isLastHotelNight}) onOutcome;
   final void Function(TripNode) onLoved;
   final void Function(TripNode) onEditBooking;
@@ -460,6 +504,7 @@ class _CorridorTimeline extends StatefulWidget {
     this.focusNodeId,
     required this.onSwap,
     required this.onCancel,
+    this.onMove,
     required this.onOutcome,
     required this.onLoved,
     required this.onEditBooking,
@@ -567,6 +612,7 @@ class _CorridorTimelineState extends State<_CorridorTimeline> {
         state: widget.state,
         onSwap: widget.onSwap,
         onCancel: widget.onCancel,
+        onMove: widget.onMove,
         onOutcome: widget.onOutcome,
         onLoved: widget.onLoved,
         onEditBooking: widget.onEditBooking,
@@ -588,6 +634,7 @@ class _FocusedDateScopedTimeline extends StatefulWidget {
   final String? focusNodeId;
   final void Function(TripNode) onSwap;
   final void Function(TripNode) onCancel;
+  final void Function(TripNode)? onMove;
   final void Function(TripNode, {bool isLastHotelNight}) onOutcome;
   final void Function(TripNode) onLoved;
   final void Function(TripNode) onEditBooking;
@@ -601,6 +648,7 @@ class _FocusedDateScopedTimeline extends StatefulWidget {
     this.focusNodeId,
     required this.onSwap,
     required this.onCancel,
+    this.onMove,
     required this.onOutcome,
     required this.onLoved,
     required this.onEditBooking,
@@ -667,6 +715,7 @@ class _FocusedDateScopedTimelineState
         creationContext: widget.creationContext,
         onSwap: widget.onSwap,
         onCancel: widget.onCancel,
+        onMove: widget.onMove,
         onOutcome: widget.onOutcome,
         onLoved: widget.onLoved,
         onEditBooking: widget.onEditBooking,
@@ -682,6 +731,7 @@ class _DateScopedTimeline extends StatelessWidget {
   final CreationContext? creationContext;
   final void Function(TripNode) onSwap;
   final void Function(TripNode) onCancel;
+  final void Function(TripNode)? onMove;
   final void Function(TripNode, {bool isLastHotelNight}) onOutcome;
   final void Function(TripNode) onLoved;
   final void Function(TripNode) onEditBooking;
@@ -698,6 +748,7 @@ class _DateScopedTimeline extends StatelessWidget {
     this.creationContext,
     required this.onSwap,
     required this.onCancel,
+    this.onMove,
     required this.onOutcome,
     required this.onLoved,
     required this.onEditBooking,
@@ -810,6 +861,9 @@ class _DateScopedTimeline extends StatelessWidget {
               ),
               onTapSwap: state.processing ? null : () => onSwap(node),
               onTapCancel: state.processing ? null : () => onCancel(node),
+              onTapMove: (state.processing || onMove == null || !nodeIsMovable(node))
+                  ? null
+                  : () => onMove!(node),
               isContinuation: !isFirstOccurrence
                   && node.nodeKind == 'booking'
                   && node.bookingType == 'hotel',
@@ -847,6 +901,12 @@ class _DateScopedTimeline extends StatelessWidget {
                         Navigator.of(context).pop();
                         onCancel(node);
                       },
+                      onMove: (state.processing || onMove == null || !nodeIsMovable(node))
+                          ? null
+                          : () {
+                              Navigator.of(context).pop();
+                              onMove!(node);
+                            },
                     ),
                   ),
                 );

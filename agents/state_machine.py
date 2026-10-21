@@ -111,6 +111,7 @@ STRUCTURAL_EDIT_EVENTS = {
     EventType.ADD_BOOKING.value,
     EventType.EDIT_BOOKING.value,
     EventType.DELETE_BOOKING.value,
+    EventType.MOVE_ACTIVITY.value,
 }
 VENUE_REQUIRED_EVENTS = {
     EventType.SWAP_ACTIVITY.value,
@@ -360,6 +361,10 @@ class TripStateMachine:
 
         # Bug #4: ASK_INFO bypasses legacy semantic cache entirely
         is_ask = event_type == EventType.ASK_INFO.value
+
+        # SPEC-42 thin typed Move: deterministic, no venue search, no LLM.
+        if event_type == EventType.MOVE_ACTIVITY.value:
+            return self._handle_move(state)
 
         # Typed Ask-to-Add: add_activity + preferences.mode=ask_to_add
         _prefs = preferences or {}
@@ -1376,6 +1381,37 @@ class TripStateMachine:
             "schedule_warnings": [],
             "ask_response": ask_response_dict,
         }
+
+    def _handle_move(self, state: Dict) -> Dict:
+        """SPEC-42: move one flexible node to a typed date + slot.
+
+        Returns the real process_event contract. On refusal the trip is
+        returned unchanged with ``move_refused`` so the router can refuse
+        before persistence and before quota.
+        """
+        from services.move_service import apply_move
+
+        trip: TripState = state["trip_state"]
+        outcome = apply_move(
+            trip,
+            state.get("target_node_id"),
+            state.get("preferences") or {},
+            db=db_service,
+        )
+        if outcome.ok:
+            trip = trip.model_copy(update={"nodes": outcome.nodes})
+        result = {
+            "updated_trip_state": trip,
+            "response": outcome.message,
+            "routing_tier_used": RoutingTier.LIGHT.value,
+            "from_cache": False,
+            "venues_found": [],
+            "schedule_warnings": [],
+        }
+        if not outcome.ok:
+            result["move_refused"] = True
+            result["move_refusal_code"] = outcome.code
+        return result
 
     def _fallback_response(self, state: Dict) -> str:
         return (

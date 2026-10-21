@@ -648,9 +648,25 @@ async def process_trip_event(
         EventType.REROUTE,
         EventType.CHANGE_MOOD,
         EventType.WEATHER_ALERT,
+        EventType.MOVE_ACTIVITY,
     }
 
     if request.event_type in structural_events:
+        # SPEC-42: locked/booking move refusal must not consume quota.
+        if request.event_type == EventType.MOVE_ACTIVITY and request.target_node_id:
+            target = next(
+                (n for n in trip.nodes if n.node_id == request.target_node_id),
+                None,
+            )
+            if target and (target.is_locked or target.node_kind == "booking"):
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail={
+                        "error": "locked_move_refused",
+                        "message": "Locked bookings cannot be moved.",
+                    },
+                )
+
         # SPEC-29 D6: Locked cancel refusal must not consume quota.
         # Validate target before reserving for CANCEL_ACTIVITY.
         if request.event_type == EventType.CANCEL_ACTIVITY and request.target_node_id:
@@ -698,6 +714,17 @@ async def process_trip_event(
         user_id=user_id,
         is_anonymous=is_anonymous,
     )
+
+    # SPEC-42: typed move refusal -- nothing persisted, no quota consumed.
+    if result.get("move_refused"):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "error": "move_refused",
+                "code": result.get("move_refusal_code", ""),
+                "message": result.get("response", "Move refused."),
+            },
+        )
 
     # B3: booking refused -- return 422 with the refusal message.
     if result.get("booking_refused"):
