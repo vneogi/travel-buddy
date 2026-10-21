@@ -306,6 +306,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       // Proposals from history are display-only: no confirm/dismiss.
                       final hasLiveProposal = entry.askResponse?.proposal != null &&
                           !entry.fromHistory;
+                      final hasLiveWhatNow = entry.askResponse?.whatNow != null &&
+                          !entry.fromHistory;
                       return entry.build(
                         onConfirmProposal: hasLiveProposal
                             ? () => _confirmAskProposal(
@@ -315,6 +317,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                             : null,
                         onDismissProposal: hasLiveProposal
                             ? () => setState(() => _messages.remove(entry))
+                            : null,
+                        onAddToPlan: hasLiveWhatNow
+                            ? (candidate) => _confirmAddToPlan(candidate)
                             : null,
                       );
                     },
@@ -519,6 +524,90 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   /// SPEC-25: Confirm a plan-change proposal from Ask.
+  Future<void> _confirmAddToPlan(WhatNowCandidate candidate) async {
+    final tripEvents = ref.read(tripEventProvider);
+    final tripId = widget.tripId;
+
+    final dwellText = candidate.typicalDwellMinutes != null
+        ? '${candidate.typicalDwellMinutes} min'
+        : 'unknown duration';
+    final timeText = candidate.scheduledStart ?? '';
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        key: const Key('ask_to_add_confirm_dialog'),
+        title: Text('Add ${candidate.name}?'),
+        content: Text(
+          'Add ${candidate.name} to your plan'
+          '${timeText.isNotEmpty ? " at $timeText" : ""}'
+          ' ($dwellText).',
+        ),
+        actions: [
+          TextButton(
+            key: const Key('ask_to_add_cancel'),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            key: const Key('ask_to_add_confirm'),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || confirmed != true) return;
+
+    final online = await _connectivity.checkConnectivity();
+    if (!mounted) return;
+    if (!online) {
+      setState(() {
+        _messages.add(const _ChatEntry.offlineRefuse());
+      });
+      return;
+    }
+
+    setState(() => _isThinking = true);
+
+    try {
+      final result = await tripEvents.sendEvent(
+        tripId: tripId,
+        type: EventType.addActivity,
+        message: 'Add ${candidate.name}',
+        preferences: {
+          'mode': 'ask_to_add',
+          'venue_id': candidate.venueId,
+          'candidate_id': candidate.candidateId,
+          if (candidate.scheduledStart != null)
+            'scheduled_start': candidate.scheduledStart,
+        },
+      );
+      if (!mounted) return;
+
+      setState(() {
+        _isThinking = false;
+        if (result == null) {
+          _messages.add(const _ChatEntry.plainAssistant(
+            'I could not complete that request. Please try again.',
+          ));
+        } else {
+          _messages.add(_ChatEntry.plainAssistant(result.message));
+        }
+      });
+
+      ref.read(itineraryControllerProvider(tripId).notifier).load();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isThinking = false;
+        _messages.add(const _ChatEntry.plainAssistant(
+          'I could not reach Travel Buddy. Check your connection and try again.',
+        ));
+      });
+    }
+  }
+
   Future<void> _confirmAskProposal(
     AskProposal proposal,
     String originalText,
@@ -711,6 +800,7 @@ class _ChatEntry {
   Widget build({
     VoidCallback? onConfirmProposal,
     VoidCallback? onDismissProposal,
+    void Function(WhatNowCandidate)? onAddToPlan,
   }) {
     switch (kind) {
       case _EntryKind.user:
@@ -731,21 +821,26 @@ class _ChatEntry {
           ),
         );
       case _EntryKind.askFact:
-        return _buildAskFact(onConfirmProposal, onDismissProposal);
+        return _buildAskFact(onConfirmProposal, onDismissProposal, onAddToPlan: onAddToPlan);
     }
   }
 
   Widget _buildAskFact(
     VoidCallback? onConfirmProposal,
-    VoidCallback? onDismissProposal,
-  ) {
+    VoidCallback? onDismissProposal, {
+    void Function(WhatNowCandidate)? onAddToPlan,
+  }) {
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.only(bottom: AppSpacing.sm),
         constraints: const BoxConstraints(maxWidth: 280),
         child: askResponse!.whatNow != null
-            ? WhatNowBubble(askResponse: askResponse!)
+            ? WhatNowBubble(
+                askResponse: askResponse!,
+                fromHistory: fromHistory,
+                onAddToPlan: onAddToPlan,
+              )
             : AskBubble(
                 askResponse: askResponse!,
                 onConfirm: onConfirmProposal,
