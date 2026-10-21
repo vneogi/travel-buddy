@@ -26,8 +26,8 @@ documents disagree, follow Precedence below and name the conflict in
 - GitHub `main` is through `0344b4b`: SPEC-45 field trust hygiene,
   SPEC-25 field-priority intents, SPEC-25 Phase C durable device-local
   threads, SPEC-46 What Now Phase A, and thin typed Ask-to-Add are merged.
-- Next product remainders: polished Move, empty-day Add chrome, and
-  trip-private uncatalogued nodes. No Genie brief is open for those yet.
+- Next Genie job: `docs/briefs/GENIE_SPEC_42_MOVE_THIN.md`. Empty-day
+  Add chrome and trip-private uncatalogued nodes remain after Move.
 - Hosted: migrations through 0025; Cloud Run `travel-buddy-00012-8wv`.
 - Owner Laos field use is complete. The dated 26 observations and cross-trip
   review of 65 Laos plus 73 China Gemini turns are in
@@ -100,9 +100,10 @@ SPEC-40, SPEC-41 Phase A, SPEC-45 Phase A, SPEC-44 Phase A,
 SPEC-46 Phase A.
 
 **Specified remainders on that spine.** SPEC-46 Phase A (`d1df944`) and
-thin typed Ask-to-Add (`0344b4b`) are on main; remaining are SPEC-42
-empty-day Add chrome, polished Move, and uncatalogued trip-private
-nodes; trip-optional and production-LLM SPEC-25; SPEC-10 HITL reflow;
+thin typed Ask-to-Add (`0344b4b`) are on main; remaining are thin
+typed Move (`docs/briefs/GENIE_SPEC_42_MOVE_THIN.md`), then SPEC-42
+empty-day Add chrome and uncatalogued trip-private nodes;
+trip-optional and production-LLM SPEC-25; SPEC-10 HITL reflow;
 SPEC-29 weather-day detail; SPEC-44 A4/A5 and Flutter command queue.
 SPEC-46 Phase B GPS waits for SPEC-43.
 

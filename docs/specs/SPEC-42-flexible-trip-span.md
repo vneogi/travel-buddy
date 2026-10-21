@@ -12,8 +12,8 @@
 > 11 Oct 2026 field evidence strongly validates Add and Move: the owner needed
 > to move lunch to dinner, defer stops after heat/rain/fatigue, and add locally
 > discovered venues and detours. Catalog Ask-to-Add from What Now is on main;
-> the polished Move editor is the next remainder. These mechanics are table
-> stakes, not the product moat.
+> next remainder is thin typed Move (`docs/briefs/GENIE_SPEC_42_MOVE_THIN.md`).
+> These mechanics are table stakes, not the product moat.
 
 ## Goal
 
