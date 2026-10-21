@@ -110,9 +110,10 @@ The immediate order after the field-test gate:
 9. SPEC-44 Phase A is on main (PR #67, `9a7b9d9`); hosted 0025 applied;
 10. Oct 11 P0 visible-surface defects and broad, persistent, trip-scoped
     SPEC-25 Ask are on main through `7d825c0`;
-11. SPEC-46 What Now Phase A is on main (PR #73, `d1df944`); next is thin
-    typed Ask-to-Add (`docs/briefs/GENIE_ASK_TO_ADD_THIN.md`) before the
-    polished SPEC-42 Move editor;
+11. SPEC-46 What Now Phase A (PR #73, `d1df944`) and thin typed
+    Ask-to-Add (PR #74, `0344b4b`) are on main; next is the polished
+    SPEC-42 Move editor, then empty-day Add chrome and uncatalogued
+    nodes;
 12. implement SPEC-43 before any non-owner distribution, production LLM
    processing of personal trip data, or the planned December launch;
 13. implement SPEC-13, minimum SPEC-17 claims, and SPEC-20; Bangkok must

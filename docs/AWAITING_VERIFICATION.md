@@ -15,6 +15,25 @@ other.
 Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 `#85` and so on; those numbers cannot be reconciled against `git log`.
 
+## Finding -- Oct 21 2026 -- thin typed Ask-to-Add merged
+
+Owner Windows checkout of `feat/ask-to-add-thin` at `d551b72` passed
+Flutter gates before squash-merge:
+
+- focused `flutter test` of `spec_ask_to_add_test.dart` and
+  `spec46_what_now_test.dart`: all passed
+- full `flutter test`: all passed
+
+PR #74 merged to `main` as `0344b4b`. The slice lets a live What Now
+card confirm one catalog venue onto the trip (`event_type=add_activity`
+with `preferences.mode=ask_to_add` and required `venue_id`). Bare
+`add_activity` is refused. History cards stay display-only. Offline
+refuses without enqueue.
+
+Genie Python gates on the branch were green. No hosted deploy, APK, or
+phone acceptance was performed for this SHA. Empty-day Add chrome,
+polished Move, and uncatalogued nodes remain later slices.
+
 ## Finding -- Oct 19 2026 -- SPEC-46 What Now Phase A merged
 
 Owner Windows checkout of `feat/spec46-phase-a-what-now` at `e664f06`

@@ -1,5 +1,8 @@
 # Genie brief: thin typed Ask-to-Add
 
+Landed on `main` as `0344b4b` (PR #74). Do not re-implement this slice.
+Empty-day Add chrome, polished Move, and uncatalogued nodes are later.
+
 ## Goal
 
 Let the traveller add one What Now catalog candidate to the trip as a new

@@ -1,7 +1,8 @@
 # SPEC-42: Flexible Trip Span and Sparse Day Editing
 
 > Status: PARTIAL. Uncap and empty-date rendering merged as `17e58ac`
-> (branch head `adc99d2`). Add activity and cross-day Move are not
+> (branch head `adc99d2`). Thin typed Ask-to-Add from What Now merged as
+> `0344b4b` (PR #74). Empty-day Add chrome and cross-day Move are not
 > implemented.
 >
 > Depends on SPEC-31 date-scoped rendering, SPEC-40 guided creation, and
@@ -10,9 +11,9 @@
 >
 > 11 Oct 2026 field evidence strongly validates Add and Move: the owner needed
 > to move lunch to dinner, defer stops after heat/rain/fatigue, and add locally
-> discovered venues and detours. Delivery is sequenced after SPEC-46 What Now
-> Phase A: first the thin Ask-to-Add command, then the polished Move editor.
-> These mechanics are table stakes, not the product moat.
+> discovered venues and detours. Catalog Ask-to-Add from What Now is on main;
+> the polished Move editor is the next remainder. These mechanics are table
+> stakes, not the product moat.
 
 ## Goal
 

@@ -7,12 +7,13 @@ adjudicated, and what the next agent must not reopen in the first week.
 
 Read this file and the two contracts above. SPEC-36 through SPEC-38,
 SPEC-40, SPEC-41 Phase A, G0 field-fix-2, SPEC-45 field trust hygiene,
-SPEC-44 Phase A, SPEC-25 grounded, broad, durable trip-scoped Ask, and
-SPEC-46 What Now Phase A are on `main` through `d1df944` (PR #73).
-Hosted 0025 is applied. Cloud Run `travel-buddy-00012-8wv` is the live
-untagged revision. SPEC-42 uncap / empty-date render is PARTIAL;
-Add/Move remain. Create-then-book HITL reflow remains. Trip-optional
-Ask remains. What Now Phase B GPS remains blocked on SPEC-43.
+SPEC-44 Phase A, SPEC-25 grounded, broad, durable trip-scoped Ask,
+SPEC-46 What Now Phase A, and thin typed Ask-to-Add are on `main`
+through `0344b4b` (PR #74). Hosted 0025 is applied. Cloud Run
+`travel-buddy-00012-8wv` is the live untagged revision. SPEC-42 uncap /
+empty-date render is PARTIAL; empty-day Add chrome and Move remain.
+Create-then-book HITL reflow remains. Trip-optional Ask remains. What
+Now Phase B GPS remains blocked on SPEC-43.
 
 SPEC-44 Phase A application code merged as PR #67 (`9a7b9d9`). Planning
 reviews; Genie implements. SPEC-43 is the release foundation before any
@@ -75,8 +76,9 @@ Status tables: `docs/PROJECT_STATUS.md`. Device-only queue:
 moat and post-Laos data sequence are owned by
 `docs/DATA_FLYWHEEL_OPERATING_MODEL.md`; the internal review product is
 SPEC-47. P0 trust hygiene, broad persistent SPEC-25 Ask, and SPEC-46 What
-Now Phase A are now on main (`d1df944`). The next Genie job is
-`docs/briefs/GENIE_ASK_TO_ADD_THIN.md`, then polished Move.
+Now Phase A (`d1df944`) and thin typed Ask-to-Add (`0344b4b`) are now
+on main. Next product remainders are polished Move, empty-day Add
+chrome, and trip-private uncatalogued nodes.
 SPEC-43 still gates every non-owner APK. Do not treat in-memory pytest as
 PostgreSQL transaction proof.
 
@@ -152,10 +154,10 @@ Resume in this order:
 3. SPEC-46 What Now Phase A is on main (PR #73, `d1df944`): three-to-five
    feasible options, deterministic reasons, named unknowns, and no GPS or
    LLM. Hosted/phone not repeated for this SHA.
-4. Add the thin typed Ask-to-Add path: confirmed uncatalogued places are
-   trip-private; shared catalog promotion waits for review. Then implement
-   polished SPEC-42 Move and unknown-time excursion windows. Never silently
-   reflow a day.
+4. Thin typed Ask-to-Add from What Now is on main (PR #74, `0344b4b`).
+   Next: polished SPEC-42 Move, empty-day Add chrome, and trip-private
+   uncatalogued nodes (shared catalog promotion waits for review).
+   Unknown-time excursion windows stay later. Never silently reflow a day.
 5. Patch Laos spine and effective-choice gaps: Kuang Si, Pak Ou, Blue Lagoon
    2/3, Papao, and the Wat Xieng Thong packing failure. Measure coverage by
    common decision cell, not total POI count.
@@ -181,14 +183,13 @@ separation live in the operating model; do not reconstruct them from chat.
 
 ## First job
 
-`origin/main` includes SPEC-46 Phase A as `d1df944` (PR #73). Hosted
-0025 applied. Cloud Run `00012-8wv`. Owner APK SHA256 `bd935bf2...`.
+`origin/main` includes thin typed Ask-to-Add as `0344b4b` (PR #74).
+Hosted 0025 applied. Cloud Run `00012-8wv`. Owner APK SHA256
+`bd935bf2...`.
 
-Genie next:
-`docs/briefs/GENIE_ASK_TO_ADD_THIN.md` on `feat/ask-to-add-thin`.
-Do not merge, deploy, or build an APK. Do not start production LLM
+Do not deploy or build an APK for this SHA. Do not start production LLM
 processing, trip-less Ask, empty-day Add chrome, Move, uncatalogued
-nodes, or SPEC-43 implementation.
+nodes, or SPEC-43 implementation until the owner names the next brief.
 
 Historical context (do not treat as current work):
 
