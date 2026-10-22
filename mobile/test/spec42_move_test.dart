@@ -354,6 +354,7 @@ void main() {
     await _pumpScreen(tester, h, _FakeConnectivity());
     await _pickLunchToDinner(tester);
     await _tapKey(tester, 'move_cancel');
+    await _settle(tester); // advance the sheet's reverse animation
     await _flushFfi(tester, maxRounds: 6);
     expect(find.byKey(const Key('move_sheet_v1')), findsNothing);
     verifyNever(() => h.repo.sendEvent(
