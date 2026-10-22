@@ -94,6 +94,7 @@ class ActivityCard extends StatelessWidget {
   final VoidCallback? onTapEditBooking;
   final VoidCallback? onTapDeleteBooking;
   final VoidCallback? onTapDetails;
+  final VoidCallback? onTapMove; // SPEC-42: overflow Move
   final bool isLoved; // filled heart once the user has loved this venue
   final NodeOutcome? recordedOutcome;
   final bool isRecordingOutcome;
@@ -116,6 +117,7 @@ class ActivityCard extends StatelessWidget {
     this.onTapEditBooking,
     this.onTapDeleteBooking,
     this.onTapDetails,
+    this.onTapMove,
     this.isContinuation = false,
     this.isLastHotelNight = false,
     this.restrictOutcomeToToday = false,
@@ -466,6 +468,24 @@ class ActivityCard extends StatelessWidget {
       ));
     }
 
+    // SPEC-42: Move lives in the overflow (no second title-row icon).
+    if (onTapMove != null &&
+        !node.isLocked &&
+        node.nodeKind != 'booking' &&
+        !isCompleted &&
+        !isSkipped) {
+      items.add(PopupMenuItem(
+        key: Key('move_menu_${node.nodeId}'),
+        value: 'move',
+        child: const ListTile(
+          leading: Icon(Icons.event_repeat, size: 20),
+          title: Text('Move'),
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+        ),
+      ));
+    }
+
     if (onTapLoved != null && !isCompleted && !isSkipped) {
       items.add(PopupMenuItem(
         value: 'love',
@@ -507,6 +527,8 @@ class ActivityCard extends StatelessWidget {
           switch (value) {
             case 'cancel':
               onTapCancel?.call();
+            case 'move':
+              onTapMove?.call();
             case 'love':
               onTapLoved?.call();
             case 'driver':

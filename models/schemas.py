@@ -53,6 +53,7 @@ class EventType(str, Enum):
     ADD_BOOKING = "add_booking"
     EDIT_BOOKING = "edit_booking"
     DELETE_BOOKING = "delete_booking"
+    MOVE_ACTIVITY = "move_activity"  # SPEC-42 thin typed Move
 
 
 # ==============================================================================

@@ -222,7 +222,9 @@ class ItineraryController extends StateNotifier<ItineraryState> {
         processing: false,
         banner: error is NetworkException
             ? "Can't reach Travel Buddy \u2014 check your connection."
-            : 'Something went wrong. Please try again.',
+            : error is ValidationException
+                ? error.message
+                : 'Something went wrong. Please try again.',
       );
       return null;
     }
@@ -230,6 +232,7 @@ class ItineraryController extends StateNotifier<ItineraryState> {
 
   void clearRerouteLimit() => state = state.copyWith(rerouteLimitHit: false);
   void clearBanner() => state = state.copyWith(banner: null);
+  void showBanner(String text) => state = state.copyWith(banner: text);
   void clearScheduleWarnings() => state = state.copyWith(scheduleWarnings: []);
 
   /// Mark a venue as loved: optimistic UI update, then persist.

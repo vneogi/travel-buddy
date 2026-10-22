@@ -10,11 +10,13 @@ class ActivityDetailScreen extends StatelessWidget {
   final TripNode node;
   final VoidCallback? onSwap;
   final VoidCallback? onCancel;
+  final VoidCallback? onMove; // SPEC-42
   const ActivityDetailScreen({
     super.key,
     required this.node,
     this.onSwap,
     this.onCancel,
+    this.onMove,
   });
 
   @override
@@ -69,6 +71,20 @@ class ActivityDetailScreen extends StatelessWidget {
                   ),
                 ],
               ),
+              if (onMove != null &&
+                  node.nodeKind != 'booking' &&
+                  (node.status == NodeStatus.pending ||
+                      node.status == NodeStatus.active)) ...[
+                const SizedBox(height: AppSpacing.sm),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    key: Key('move_detail_${node.nodeId}'),
+                    onPressed: onMove,
+                    child: const Text('Move'),
+                  ),
+                ),
+              ],
             ] else
               Center(
                 child: Row(

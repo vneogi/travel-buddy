@@ -12,7 +12,8 @@ enum EventType {
   reroute('reroute'),
   addBooking('add_booking'),
   editBooking('edit_booking'),
-  deleteBooking('delete_booking');
+  deleteBooking('delete_booking'),
+  moveActivity('move_activity');
 
   final String wire;
   const EventType(this.wire);
