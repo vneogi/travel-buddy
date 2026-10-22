@@ -15,6 +15,28 @@ other.
 Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 `#85` and so on; those numbers cannot be reconciled against `git log`.
 
+## Finding -- Oct 22 2026 -- thin typed Move merged
+
+Owner Windows checkout of `feat/spec42-move-thin` at `d1bbcdc` passed
+Flutter gates before squash-merge:
+
+- `flutter analyze --no-fatal-infos`: informational findings only
+- focused `flutter test` of spec42 Move, Ask-to-Add, and SPEC-46 What
+  Now: all passed after remainder 1 settled the cancel-sheet animation
+- full `flutter test`: all passed
+
+PR #75 merged to `main` as `e51513e`. The slice adds `move_activity`:
+one flexible node to an explicit date and named slot, same `node_id`.
+Locked/booking targets return 409 before quota. Other refusals return
+422 with no write. Overflow and detail Move; offline refuses without
+enqueue.
+
+Genie Python gates on the branch were green. No hosted deploy, APK, or
+phone acceptance was performed for this SHA. Empty-day Add chrome and
+uncatalogued nodes remain. Neighbours without coordinates can still
+succeed because walking is skipped; that is a recorded remainder, not
+this merge.
+
 ## Finding -- Oct 21 2026 -- thin typed Ask-to-Add merged
 
 Owner Windows checkout of `feat/ask-to-add-thin` at `d551b72` passed

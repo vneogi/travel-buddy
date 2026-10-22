@@ -2,8 +2,8 @@
 
 > Status: PARTIAL. Uncap and empty-date rendering merged as `17e58ac`
 > (branch head `adc99d2`). Thin typed Ask-to-Add from What Now merged as
-> `0344b4b` (PR #74). Empty-day Add chrome and cross-day Move are not
-> implemented.
+> `0344b4b` (PR #74). Thin typed Move merged as `e51513e` (PR #75).
+> Empty-day Add chrome is not implemented.
 >
 > Depends on SPEC-31 date-scoped rendering, SPEC-40 guided creation, and
 > SPEC-41 feasibility-first scheduling. Starter generation is still at most
@@ -11,9 +11,9 @@
 >
 > 11 Oct 2026 field evidence strongly validates Add and Move: the owner needed
 > to move lunch to dinner, defer stops after heat/rain/fatigue, and add locally
-> discovered venues and detours. Catalog Ask-to-Add from What Now is on main;
-> next remainder is thin typed Move (`docs/briefs/GENIE_SPEC_42_MOVE_THIN.md`).
-> These mechanics are table stakes, not the product moat.
+> discovered venues and detours. Catalog Ask-to-Add and typed Move are on
+> main; next remainder is empty-day Add chrome. These mechanics are table
+> stakes, not the product moat.
 
 ## Goal
 

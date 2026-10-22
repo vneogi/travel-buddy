@@ -1,5 +1,8 @@
 # Genie brief: thin typed Move
 
+Landed on `main` as `e51513e` (PR #75). Do not re-implement this slice.
+Empty-day Add chrome and uncatalogued nodes are later.
+
 ## Goal
 
 Let the traveller move one flexible itinerary node to another date and
