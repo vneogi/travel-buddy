@@ -158,8 +158,9 @@ Current order:
 2. Deterministic SPEC-46 What Now Phase A is on main (PR #73, `d1df944`).
    Owner Windows Flutter gates green; hosted/phone not repeated for this SHA.
 3. Thin typed Ask-to-Add (PR #74, `0344b4b`) and thin typed Move
-   (PR #75, `e51513e`) are on main. Next: empty-day Add chrome and
-   trip-private uncatalogued nodes. No Genie brief is open for those yet.
+   (PR #75, `e51513e`) are on main. Next: empty-day catalog Add from
+   `docs/briefs/GENIE_SPEC_42_EMPTY_DAY_ADD.md`; trip-private
+   uncatalogued nodes follow.
 4. Patch the Laos must-do/decision-cell data gaps. Target 3-5 feasible options
    in common cells, not an arbitrary 100 venues per city.
 5. SPEC-43 before any non-owner APK; then a narrow external corridor pilot with

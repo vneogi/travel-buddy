@@ -112,7 +112,8 @@ The immediate order after the field-test gate:
     SPEC-25 Ask are on main through `7d825c0`;
 11. SPEC-46 What Now Phase A (PR #73, `d1df944`), thin typed
     Ask-to-Add (PR #74, `0344b4b`), and thin typed Move (PR #75,
-    `e51513e`) are on main; next is empty-day Add chrome and
+    `e51513e`) are on main; next is empty-day catalog Add
+    (`docs/briefs/GENIE_SPEC_42_EMPTY_DAY_ADD.md`), then
     uncatalogued nodes;
 12. implement SPEC-43 before any non-owner distribution, production LLM
    processing of personal trip data, or the planned December launch;

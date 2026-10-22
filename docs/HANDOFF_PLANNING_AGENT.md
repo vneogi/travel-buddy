@@ -77,8 +77,9 @@ moat and post-Laos data sequence are owned by
 `docs/DATA_FLYWHEEL_OPERATING_MODEL.md`; the internal review product is
 SPEC-47. P0 trust hygiene, broad persistent SPEC-25 Ask, and SPEC-46 What
 Now Phase A (`d1df944`), thin typed Ask-to-Add (`0344b4b`), and thin
-typed Move (`e51513e`) are now on main. Next product remainders are
-empty-day Add chrome and trip-private uncatalogued nodes.
+typed Move (`e51513e`) are now on main. The next Genie job is
+`docs/briefs/GENIE_SPEC_42_EMPTY_DAY_ADD.md`. Trip-private
+uncatalogued nodes remain after catalog Add.
 SPEC-43 still gates every non-owner APK. Do not treat in-memory pytest as
 PostgreSQL transaction proof.
 
@@ -155,9 +156,10 @@ Resume in this order:
    feasible options, deterministic reasons, named unknowns, and no GPS or
    LLM. Hosted/phone not repeated for this SHA.
 4. Thin typed Ask-to-Add (PR #74, `0344b4b`) and thin typed Move
-   (PR #75, `e51513e`) are on main. Next: empty-day Add chrome and
-   trip-private uncatalogued nodes. Unknown-time excursion windows
-   stay later. Never silently reflow a day.
+   (PR #75, `e51513e`) are on main. Next Genie job is empty-day catalog
+   Add (`docs/briefs/GENIE_SPEC_42_EMPTY_DAY_ADD.md`). Trip-private
+   uncatalogued nodes follow. Unknown-time excursion windows stay later.
+   Never silently reflow a day.
 5. Patch Laos spine and effective-choice gaps: Kuang Si, Pak Ou, Blue Lagoon
    2/3, Papao, and the Wat Xieng Thong packing failure. Measure coverage by
    common decision cell, not total POI count.
@@ -186,9 +188,11 @@ separation live in the operating model; do not reconstruct them from chat.
 `origin/main` includes thin typed Move as `e51513e` (PR #75). Hosted
 0025 applied. Cloud Run `00012-8wv`. Owner APK SHA256 `bd935bf2...`.
 
-Do not deploy or build an APK for this SHA. Do not start production LLM
-processing, trip-less Ask, empty-day Add chrome, uncatalogued nodes,
-or SPEC-43 implementation until the owner names the next brief.
+Genie next:
+`docs/briefs/GENIE_SPEC_42_EMPTY_DAY_ADD.md` on
+`feat/spec42-empty-day-add`. Do not merge, deploy, or build an APK.
+Do not start production LLM processing, trip-less Ask, uncatalogued
+nodes, or SPEC-43 implementation.
 
 Historical context (do not treat as current work):
 

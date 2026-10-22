@@ -12,8 +12,9 @@
 > 11 Oct 2026 field evidence strongly validates Add and Move: the owner needed
 > to move lunch to dinner, defer stops after heat/rain/fatigue, and add locally
 > discovered venues and detours. Catalog Ask-to-Add and typed Move are on
-> main; next remainder is empty-day Add chrome. These mechanics are table
-> stakes, not the product moat.
+> main; next remainder is empty-day catalog Add
+> (`docs/briefs/GENIE_SPEC_42_EMPTY_DAY_ADD.md`). These mechanics are
+> table stakes, not the product moat.
 
 ## Goal
 

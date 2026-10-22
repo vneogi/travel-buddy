@@ -27,8 +27,8 @@ documents disagree, follow Precedence below and name the conflict in
   SPEC-25 field-priority intents, SPEC-25 Phase C durable device-local
   threads, SPEC-46 What Now Phase A, thin typed Ask-to-Add, and thin
   typed Move are merged.
-- Next product remainders: empty-day Add chrome and trip-private
-  uncatalogued nodes. No Genie brief is open for those yet.
+- Next Genie job: `docs/briefs/GENIE_SPEC_42_EMPTY_DAY_ADD.md`.
+  Trip-private uncatalogued nodes remain after catalog Add.
 - Hosted: migrations through 0025; Cloud Run `travel-buddy-00012-8wv`.
 - Owner Laos field use is complete. The dated 26 observations and cross-trip
   review of 65 Laos plus 73 China Gemini turns are in
@@ -102,7 +102,8 @@ SPEC-46 Phase A.
 
 **Specified remainders on that spine.** SPEC-46 Phase A (`d1df944`),
 thin typed Ask-to-Add (`0344b4b`), and thin typed Move (`e51513e`) are
-on main; remaining are SPEC-42 empty-day Add chrome and uncatalogued
+on main; next is SPEC-42 empty-day catalog Add
+(`docs/briefs/GENIE_SPEC_42_EMPTY_DAY_ADD.md`), then uncatalogued
 trip-private nodes;
 trip-optional and production-LLM SPEC-25; SPEC-10 HITL reflow;
 SPEC-29 weather-day detail; SPEC-44 A4/A5 and Flutter command queue.
