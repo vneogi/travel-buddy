@@ -61,7 +61,9 @@ def derive_arrival_delta(
         trip = get_owned_trip(trip_id, user_id)
         if not trip:
             logger.debug(
-                "arrival_delta: trip %s not found or not owned for signal %s", trip_id, source_signal_id
+                "arrival_delta: trip %s not found or not owned for signal %s",
+                trip_id,
+                source_signal_id,
             )
             return None
 
