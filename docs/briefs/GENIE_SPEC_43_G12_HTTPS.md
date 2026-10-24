@@ -1,5 +1,8 @@
 # Genie brief: SPEC-43 Gap 12 -- release HTTPS fail-closed
 
+Landed on `main` as `6f1dab8` (PR #82). Do not re-implement this slice.
+Next: Gap 12 cache keys (brief not written).
+
 ## Goal
 
 A release build must not talk to the API or Supabase over HTTP.

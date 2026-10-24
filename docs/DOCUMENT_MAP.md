@@ -21,14 +21,14 @@ Do not start with a full-repo archaeology, a canvas, or a transcript. If two
 documents disagree, follow Precedence below and name the conflict in
 `PROJECT_STATUS.md` until the owning document is updated.
 
-## Continuity state on 24 Oct 2026
+## Continuity state on 25 Oct 2026
 
-- GitHub `main` is through `163a14c`: SPEC-45 field trust hygiene,
+- GitHub `main` is through `6f1dab8`: SPEC-45 field trust hygiene,
   SPEC-25 field-priority intents, SPEC-25 Phase C durable device-local
   threads, SPEC-46 What Now Phase A, thin typed Ask-to-Add, thin
   typed Move, empty-day catalog Add, trip-private uncatalogued Add,
-  and SPEC-43 Gaps 1, 6, 2, and 9 (ownership) are merged.
-- Next Genie job: `docs/briefs/GENIE_SPEC_43_G12_HTTPS.md`.
+  and SPEC-43 Gaps 1, 6, 2, 9 (ownership), and 12 HTTPS are merged.
+- Next Genie job: Gap 12 cache keys after planning writes the brief.
   Hosted apply of 0026 waits on `rolbypassrls`. Remaining Gap 9
   schema/poisoning, Laos decision-cell coverage, and unknown-time
   excursions stay later.
@@ -108,9 +108,9 @@ SPEC-46 Phase A.
 thin typed Ask-to-Add (`0344b4b`), thin typed Move (`e51513e`),
 empty-day catalog Add (`b6ddecf`), and trip-private uncatalogued Add
 (`05d917e`), SPEC-43 Gap 1 (`2460edf`), and SPEC-43 Gap 6
-(`c65261c`), SPEC-43 Gap 2 (`0b8125f`), and SPEC-43 Gap 9
-(`163a14c`) are on main; next is SPEC-43 Gap 12 HTTPS
-(`docs/briefs/GENIE_SPEC_43_G12_HTTPS.md`); SPEC-42 unknown-time
+(`c65261c`), SPEC-43 Gap 2 (`0b8125f`), SPEC-43 Gap 9
+(`163a14c`), and SPEC-43 Gap 12 HTTPS (`6f1dab8`) are on main;
+next is Gap 12 cache keys (brief not written); SPEC-42 unknown-time
 excursions stay later;
 trip-optional and production-LLM SPEC-25; SPEC-10 HITL reflow;
 SPEC-29 weather-day detail; SPEC-44 A4/A5 and Flutter command queue.

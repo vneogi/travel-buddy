@@ -1,9 +1,9 @@
 # SPEC-43: Security, Privacy and Data Governance Foundation
 
 > Status: PARTIAL. Gap 1 `2460edf` (PR #78). Gap 6 `c65261c` (PR #79).
-> Gap 2 `0b8125f` (PR #80). Gap 9 ownership `163a14c` (PR #81). Next
-> is Gap 12 HTTPS. Hosted apply of 0026 and deploy of Gaps 1/6 are not
-> done.
+> Gap 2 `0b8125f` (PR #80). Gap 9 ownership `163a14c` (PR #81).
+> Gap 12 HTTPS `6f1dab8` (PR #82). Next is Gap 12 cache keys. Hosted
+> apply of 0026 and deploy of Gaps 1/6 are not done.
 >
 > Sequence: start after the Laos reliability and build tranche is complete:
 > SPEC-41 scheduling, SPEC-10 paste and flight/hotel scheduler, SPEC-25
@@ -441,8 +441,14 @@ or LLM budget that survives UUID rotation.
 
 ### Gap 12: release transport and mobile cache isolation are incomplete
 
-**Current fact.** The API base URL defaults to HTTP and release code does not
-reject cleartext configuration. `cache_trip` is keyed only by trip ID and
+**Status on main.** HTTPS fail-closed merged as `6f1dab8` (PR #82).
+Release `assertSecureTransport` throws unless API and Supabase URLs
+are https with a host. Debug/profile keep `http://10.0.2.2:8000` and
+allow empty Supabase. HTTP is never rewritten to HTTPS. Cache keys,
+chat query strings, ATS/network-security XML, and deep-link ownership
+remain.
+
+**Current fact.** `cache_trip` is keyed only by trip ID and
 `cache_place` by place reference. Offline itinerary fallback does not verify
 the cached user. Chat text is placed in a route query string.
 
