@@ -79,10 +79,9 @@ moat and post-Laos data sequence are owned by
 SPEC-47. P0 trust hygiene, broad persistent SPEC-25 Ask, and SPEC-46 What
 Now Phase A (`d1df944`), thin typed Ask-to-Add (`0344b4b`), thin
 typed Move (`e51513e`), empty-day catalog Add (`b6ddecf`), and
-trip-private uncatalogued Add (`05d917e`) are now on main. No Genie
-branch is queued. Next sequenced work is Laos decision-cell coverage,
-then SPEC-43 Phase 1 before any non-owner APK. Unknown-time excursion
-windows stay later.
+trip-private uncatalogued Add (`05d917e`) are now on main. The next Genie job is
+`docs/briefs/GENIE_SPEC_43_G1_ANON_JWT.md`. Gaps 2/6/9, unknown-time
+excursions, and Laos decision-cell coverage stay later.
 SPEC-43 still gates every non-owner APK. Do not treat in-memory pytest as
 PostgreSQL transaction proof.
 
@@ -191,9 +190,11 @@ separation live in the operating model; do not reconstruct them from chat.
 (PR #77). Hosted 0025 applied. Cloud Run `00012-8wv`. Owner APK SHA256
 `bd935bf2...`.
 
-Genie next: none queued. Do not start SPEC-43, unknown-time excursions,
-populated-day Add, production LLM processing, trip-less Ask, deploy, or
-an APK until planning writes the next brief.
+Genie next:
+`docs/briefs/GENIE_SPEC_43_G1_ANON_JWT.md` on
+`feat/spec43-g1-anon-jwt`. Do not merge, deploy, or build an APK.
+Do not start Gap 2 RLS, Gap 6 sign-out wipe, Gap 9 signals, production
+LLM processing, trip-less Ask, or unknown-time excursions.
 
 Historical context (do not treat as current work):
 

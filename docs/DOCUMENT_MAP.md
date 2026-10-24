@@ -28,8 +28,9 @@ documents disagree, follow Precedence below and name the conflict in
   threads, SPEC-46 What Now Phase A, thin typed Ask-to-Add, thin
   typed Move, empty-day catalog Add, and trip-private uncatalogued Add
   are merged.
-- Next Genie job: none queued. Laos decision-cell coverage, then
-  SPEC-43 Phase 1. Unknown-time excursions stay later.
+- Next Genie job: `docs/briefs/GENIE_SPEC_43_G1_ANON_JWT.md`.
+  SPEC-43 Gaps 2/6/9, Laos decision-cell coverage, and unknown-time
+  excursions stay later.
 - Hosted: migrations through 0025; Cloud Run `travel-buddy-00012-8wv`.
 - Owner Laos field use is complete. The dated 26 observations and cross-trip
   review of 65 Laos plus 73 China Gemini turns are in
@@ -105,7 +106,9 @@ SPEC-46 Phase A.
 **Specified remainders on that spine.** SPEC-46 Phase A (`d1df944`),
 thin typed Ask-to-Add (`0344b4b`), thin typed Move (`e51513e`),
 empty-day catalog Add (`b6ddecf`), and trip-private uncatalogued Add
-(`05d917e`) are on main; SPEC-42 unknown-time excursions stay later;
+(`05d917e`) are on main; next is SPEC-43 Gap 1
+(`docs/briefs/GENIE_SPEC_43_G1_ANON_JWT.md`); SPEC-42 unknown-time
+excursions stay later;
 trip-optional and production-LLM SPEC-25; SPEC-10 HITL reflow;
 SPEC-29 weather-day detail; SPEC-44 A4/A5 and Flutter command queue.
 SPEC-46 Phase B GPS waits for SPEC-43.

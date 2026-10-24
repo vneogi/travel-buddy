@@ -160,7 +160,9 @@ Current order:
 3. Thin typed Ask-to-Add (PR #74, `0344b4b`), thin typed Move
    (PR #75, `e51513e`), empty-day catalog Add (PR #76, `b6ddecf`), and
    trip-private uncatalogued Add (PR #77, `05d917e`) are on main.
-   Unknown-time excursions stay later.
+   Next Genie job is SPEC-43 Gap 1
+   (`docs/briefs/GENIE_SPEC_43_G1_ANON_JWT.md`). Unknown-time
+   excursions stay later.
 4. Patch the Laos must-do/decision-cell data gaps. Target 3-5 feasible options
    in common cells, not an arbitrary 100 venues per city.
 5. SPEC-43 before any non-owner APK; then a narrow external corridor pilot with
