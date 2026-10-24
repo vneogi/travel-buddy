@@ -212,9 +212,14 @@ class TestObservedDuration:
         )
 
     def test_derivation_failure_does_not_reject_source(self):
-        """Derivation failure (unknown trip) never rejects the source
-        visited_confirmed -- the batch still reports it accepted.
+        """Derivation failure (owned trip, no matching node) never rejects the
+        source visited_confirmed -- the batch still reports it accepted.
+
+        SPEC-43 Gap 9: an unknown trip_id is now an ownership reject, so the
+        derivation failure is driven by a place_ref with no node instead.
         """
+        now = datetime.now(timezone.utc)
+        trip_id = _make_trip([("Other Venue", "other-venue", now - timedelta(hours=1))])
         signal_id = str(uuid.uuid4())
         payload = {
             "signals": [
@@ -222,7 +227,7 @@ class TestObservedDuration:
                     "signal_id": signal_id,
                     "signal_type": "visited_confirmed",
                     "place_ref": "some-venue",
-                    "trip_id": "nonexistent-trip-999",
+                    "trip_id": trip_id,
                     "captured_at": datetime.now(timezone.utc).isoformat(),
                 }
             ]

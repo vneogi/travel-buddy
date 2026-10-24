@@ -50,7 +50,6 @@ class TestSignalIngest:
             "place_ref": place_ref,
             "value_text": "loved",
             "captured_at": captured_at,
-            "trip_id": "trip-001",
         }
 
     def test_valid_signal_accepted(self):

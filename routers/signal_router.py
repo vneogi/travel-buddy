@@ -23,6 +23,7 @@ from pydantic import BaseModel, Field
 
 from security import get_current_user_id
 from services.db_provider import db_service
+from services.trip_ownership import TRIP_OWNERSHIP_REJECT_REASON, is_trip_owned_by
 from models.signal_types import SERVER_DERIVED_TYPES, NODE_SKIPPED_REASONS, DISH_SIGNAL_TYPES
 
 logger = logging.getLogger(__name__)
@@ -309,12 +310,20 @@ async def ingest_signals(
             rejected.append(RejectedSignal(signal_id=sig.signal_id, reason=skew_error))
             continue
 
+        # SPEC-43 Gap 9: a present trip_id must exist and belong to the caller.
+        # Checked before party_context, trip_day, record_signal, and derive_*.
+        if sig.trip_id and not is_trip_owned_by(sig.trip_id, user_id):
+            rejected.append(
+                RejectedSignal(signal_id=sig.signal_id, reason=TRIP_OWNERSHIP_REJECT_REASON)
+            )
+            continue
+
         # Build provenance (notes extreme skew for analytics)
         provenance = _compute_provenance(sig.captured_at)
 
         # SPEC-03: stamp party_context server-side at ingest.
-        # Merged INTO value_json (not overwriting). If trip unknown, omit --
-        # never fail ingest due to missing party data.
+        # Merged INTO value_json (not overwriting). Owned trip with no party:
+        # omit -- missing party is not missing ownership.
         value_json = dict(sig.value_json) if sig.value_json else {}
         if sig.trip_id:
             party_context = _build_party_context(sig.trip_id, sig.captured_at)

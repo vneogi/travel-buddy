@@ -33,6 +33,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from services.db_provider import db_service
+from services.trip_ownership import get_owned_trip
 
 logger = logging.getLogger(__name__)
 
@@ -56,10 +57,11 @@ def derive_arrival_delta(
         return None
 
     try:
-        trip = db_service.get_trip(trip_id)
+        # SPEC-43 Gap 9: re-check ownership even if ingest already did.
+        trip = get_owned_trip(trip_id, user_id)
         if not trip:
             logger.debug(
-                "arrival_delta: trip %s not found for signal %s", trip_id, source_signal_id
+                "arrival_delta: trip %s not found or not owned for signal %s", trip_id, source_signal_id
             )
             return None
 

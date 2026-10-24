@@ -100,7 +100,6 @@ def test_client_emittable_types_accepted(signal_type):
         "signal_id": signal_id,
         "signal_type": signal_type,
         "place_ref": "test-place-001",
-        "trip_id": "test-trip-001",
         "captured_at": datetime.now(timezone.utc).isoformat(),
     }
     # Dish signal types require entity_type='dish' + entity_id (section 29)
@@ -129,7 +128,6 @@ def test_arrival_delta_rejected_from_client():
                 "signal_id": signal_id,
                 "signal_type": "arrival_delta",
                 "place_ref": "test-place-001",
-                "trip_id": "test-trip-001",
                 "captured_at": datetime.now(timezone.utc).isoformat(),
                 "value_json": {"minutes": 5},
             }
@@ -157,7 +155,6 @@ def test_unregistered_type_rejected():
                 "signal_id": signal_id,
                 "signal_type": "bogus_type",
                 "place_ref": "test-place-001",
-                "trip_id": "test-trip-001",
                 "captured_at": datetime.now(timezone.utc).isoformat(),
             }
         ]
@@ -220,7 +217,6 @@ def test_node_skipped_valid_reason_accepted():
                 "signal_id": signal_id,
                 "signal_type": "node_skipped",
                 "place_ref": "test-place-001",
-                "trip_id": "test-trip-001",
                 "captured_at": datetime.now(timezone.utc).isoformat(),
                 "value_json": {"reason": "too_tired"},
             }
@@ -242,7 +238,6 @@ def test_node_skipped_invalid_reason_rejected():
                 "signal_id": signal_id,
                 "signal_type": "node_skipped",
                 "place_ref": "test-place-001",
-                "trip_id": "test-trip-001",
                 "captured_at": datetime.now(timezone.utc).isoformat(),
                 "value_json": {"reason": "was tired lol"},
             }
