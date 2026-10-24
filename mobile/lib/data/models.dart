@@ -944,3 +944,66 @@ class VenueSearchResult {
         sponsoredBoostApplied: j['sponsored_boost_applied'] as bool? ?? false,
       );
 }
+
+
+/// SPEC-42 empty-day Add: one server-approved catalog candidate.
+class AddCandidate {
+  final String venueId;
+  final String name;
+  final String category;
+  final String? microLocation;
+  final List<String> vibeTags;
+  final String plannedStart; // destination-local ISO-8601 with offset
+  final int typicalDwellMinutes;
+
+  const AddCandidate({
+    required this.venueId,
+    required this.name,
+    required this.category,
+    this.microLocation,
+    this.vibeTags = const [],
+    required this.plannedStart,
+    required this.typicalDwellMinutes,
+  });
+
+  factory AddCandidate.fromJson(Map<String, dynamic> j) => AddCandidate(
+        venueId: j['venue_id'] as String,
+        name: j['name'] as String? ?? '',
+        category: j['category'] as String? ?? '',
+        microLocation: j['micro_location'] as String?,
+        vibeTags: (j['vibe_tags'] as List? ?? const []).cast<String>(),
+        plannedStart: j['planned_start'] as String,
+        typicalDwellMinutes: (j['typical_dwell_minutes'] as num).toInt(),
+      );
+}
+
+/// SPEC-42 GET /trip/{id}/add_candidates (closed DTO).
+class AddCandidatesResult {
+  final String targetDate;
+  final String targetSlot;
+  final String? geoRegion;
+  final List<AddCandidate> candidates;
+  final String? refusalCode;
+  final String? refusalCopy;
+
+  const AddCandidatesResult({
+    required this.targetDate,
+    required this.targetSlot,
+    this.geoRegion,
+    this.candidates = const [],
+    this.refusalCode,
+    this.refusalCopy,
+  });
+
+  factory AddCandidatesResult.fromJson(Map<String, dynamic> j) =>
+      AddCandidatesResult(
+        targetDate: j['target_date'] as String? ?? '',
+        targetSlot: j['target_slot'] as String? ?? '',
+        geoRegion: j['geo_region'] as String?,
+        candidates: (j['candidates'] as List? ?? const [])
+            .map((c) => AddCandidate.fromJson(Map<String, dynamic>.from(c as Map)))
+            .toList(),
+        refusalCode: j['refusal_code'] as String?,
+        refusalCopy: j['refusal_copy'] as String?,
+      );
+}
