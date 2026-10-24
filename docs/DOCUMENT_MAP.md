@@ -21,21 +21,21 @@ Do not start with a full-repo archaeology, a canvas, or a transcript. If two
 documents disagree, follow Precedence below and name the conflict in
 `PROJECT_STATUS.md` until the owning document is updated.
 
-## Continuity state on 22 Oct 2026
+## Continuity state on 24 Oct 2026
 
-- GitHub `main` is through `e51513e`: SPEC-45 field trust hygiene,
+- GitHub `main` is through `b6ddecf`: SPEC-45 field trust hygiene,
   SPEC-25 field-priority intents, SPEC-25 Phase C durable device-local
-  threads, SPEC-46 What Now Phase A, thin typed Ask-to-Add, and thin
-  typed Move are merged.
-- Next Genie job: `docs/briefs/GENIE_SPEC_42_EMPTY_DAY_ADD.md`.
-  Trip-private uncatalogued nodes remain after catalog Add.
+  threads, SPEC-46 What Now Phase A, thin typed Ask-to-Add, thin
+  typed Move, and empty-day catalog Add are merged.
+- Next Genie job: `docs/briefs/GENIE_SPEC_42_UNCATALOGUED_ADD.md`.
 - Hosted: migrations through 0025; Cloud Run `travel-buddy-00012-8wv`.
 - Owner Laos field use is complete. The dated 26 observations and cross-trip
   review of 65 Laos plus 73 China Gemini turns are in
   `AWAITING_VERIFICATION.md`.
 - Accepted reset: sparse trip spine plus one broad, persistent, grounded
   trip-scoped Ask surface. What Now/Rescue/Hungry are structured Ask modes.
-  Catalog Ask-to-Add and typed Move are on main. No silent auto-reflow.
+  Catalog Ask-to-Add, typed Move, and empty-day catalog Add are on main.
+  No silent auto-reflow.
 - P0 is trust hygiene. SPEC-43 still gates all non-owner distribution.
   Travelogue/Passport, maps/offline tiles, social, gamification, PDF,
   cross-trip memory, OTA promotion, and another city are deferred.
@@ -101,10 +101,10 @@ SPEC-40, SPEC-41 Phase A, SPEC-45 Phase A, SPEC-44 Phase A,
 SPEC-46 Phase A.
 
 **Specified remainders on that spine.** SPEC-46 Phase A (`d1df944`),
-thin typed Ask-to-Add (`0344b4b`), and thin typed Move (`e51513e`) are
-on main; next is SPEC-42 empty-day catalog Add
-(`docs/briefs/GENIE_SPEC_42_EMPTY_DAY_ADD.md`), then uncatalogued
-trip-private nodes;
+thin typed Ask-to-Add (`0344b4b`), thin typed Move (`e51513e`), and
+empty-day catalog Add (`b6ddecf`) are on main; next is SPEC-42
+trip-private uncatalogued Add
+(`docs/briefs/GENIE_SPEC_42_UNCATALOGUED_ADD.md`);
 trip-optional and production-LLM SPEC-25; SPEC-10 HITL reflow;
 SPEC-29 weather-day detail; SPEC-44 A4/A5 and Flutter command queue.
 SPEC-46 Phase B GPS waits for SPEC-43.

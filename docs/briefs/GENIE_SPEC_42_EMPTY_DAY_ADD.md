@@ -1,5 +1,9 @@
 # Genie brief: SPEC-42 empty-day catalog Add
 
+Landed on `main` as `b6ddecf` (PR #76). Do not re-implement this slice.
+Trip-private uncatalogued Add is next:
+`docs/briefs/GENIE_SPEC_42_UNCATALOGUED_ADD.md`.
+
 ## Goal
 
 Turn an intentionally empty itinerary date into a useful day by letting the

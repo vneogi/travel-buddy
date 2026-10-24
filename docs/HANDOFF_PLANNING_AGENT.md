@@ -8,11 +8,11 @@ adjudicated, and what the next agent must not reopen in the first week.
 Read this file and the two contracts above. SPEC-36 through SPEC-38,
 SPEC-40, SPEC-41 Phase A, G0 field-fix-2, SPEC-45 field trust hygiene,
 SPEC-44 Phase A, SPEC-25 grounded, broad, durable trip-scoped Ask,
-SPEC-46 What Now Phase A, thin typed Ask-to-Add, and thin typed Move
-are on `main` through `e51513e` (PR #75). Hosted 0025 is applied. Cloud
-Run `travel-buddy-00012-8wv` is the live untagged revision. SPEC-42
-uncap / empty-date render is PARTIAL; empty-day Add chrome remains.
-Create-then-book HITL reflow remains. Trip-optional Ask remains. What
+SPEC-46 What Now Phase A, thin typed Ask-to-Add, thin typed Move, and
+empty-day catalog Add are on `main` through `b6ddecf` (PR #76). Hosted
+0025 is applied. Cloud Run `travel-buddy-00012-8wv` is the live untagged
+revision. SPEC-42 remains PARTIAL until trip-private uncatalogued nodes
+land. Create-then-book HITL reflow remains. Trip-optional Ask remains. What
 Now Phase B GPS remains blocked on SPEC-43.
 
 SPEC-44 Phase A application code merged as PR #67 (`9a7b9d9`). Planning
@@ -76,10 +76,11 @@ Status tables: `docs/PROJECT_STATUS.md`. Device-only queue:
 moat and post-Laos data sequence are owned by
 `docs/DATA_FLYWHEEL_OPERATING_MODEL.md`; the internal review product is
 SPEC-47. P0 trust hygiene, broad persistent SPEC-25 Ask, and SPEC-46 What
-Now Phase A (`d1df944`), thin typed Ask-to-Add (`0344b4b`), and thin
-typed Move (`e51513e`) are now on main. The next Genie job is
-`docs/briefs/GENIE_SPEC_42_EMPTY_DAY_ADD.md`. Trip-private
-uncatalogued nodes remain after catalog Add.
+Now Phase A (`d1df944`), thin typed Ask-to-Add (`0344b4b`), thin
+typed Move (`e51513e`), and empty-day catalog Add (`b6ddecf`) are now
+on main. The next Genie job is
+`docs/briefs/GENIE_SPEC_42_UNCATALOGUED_ADD.md`. Unknown-time
+excursion windows stay later.
 SPEC-43 still gates every non-owner APK. Do not treat in-memory pytest as
 PostgreSQL transaction proof.
 
@@ -155,11 +156,11 @@ Resume in this order:
 3. SPEC-46 What Now Phase A is on main (PR #73, `d1df944`): three-to-five
    feasible options, deterministic reasons, named unknowns, and no GPS or
    LLM. Hosted/phone not repeated for this SHA.
-4. Thin typed Ask-to-Add (PR #74, `0344b4b`) and thin typed Move
-   (PR #75, `e51513e`) are on main. Next Genie job is empty-day catalog
-   Add (`docs/briefs/GENIE_SPEC_42_EMPTY_DAY_ADD.md`). Trip-private
-   uncatalogued nodes follow. Unknown-time excursion windows stay later.
-   Never silently reflow a day.
+4. Thin typed Ask-to-Add (PR #74, `0344b4b`), thin typed Move
+   (PR #75, `e51513e`), and empty-day catalog Add (PR #76, `b6ddecf`)
+   are on main. Next Genie job is trip-private uncatalogued Add
+   (`docs/briefs/GENIE_SPEC_42_UNCATALOGUED_ADD.md`). Unknown-time
+   excursion windows stay later. Never silently reflow a day.
 5. Patch Laos spine and effective-choice gaps: Kuang Si, Pak Ou, Blue Lagoon
    2/3, Papao, and the Wat Xieng Thong packing failure. Measure coverage by
    common decision cell, not total POI count.
@@ -185,21 +186,22 @@ separation live in the operating model; do not reconstruct them from chat.
 
 ## First job
 
-`origin/main` includes thin typed Move as `e51513e` (PR #75). Hosted
-0025 applied. Cloud Run `00012-8wv`. Owner APK SHA256 `bd935bf2...`.
+`origin/main` includes empty-day catalog Add as `b6ddecf` (PR #76).
+Hosted 0025 applied. Cloud Run `00012-8wv`. Owner APK SHA256
+`bd935bf2...`.
 
 Genie next:
-`docs/briefs/GENIE_SPEC_42_EMPTY_DAY_ADD.md` on
-`feat/spec42-empty-day-add`. Do not merge, deploy, or build an APK.
-Do not start production LLM processing, trip-less Ask, uncatalogued
-nodes, or SPEC-43 implementation.
+`docs/briefs/GENIE_SPEC_42_UNCATALOGUED_ADD.md` on
+`feat/spec42-uncatalogued-add`. Do not merge, deploy, or build an APK.
+Do not start production LLM processing, trip-less Ask, populated-day
+Add, unknown-time excursions, or SPEC-43 implementation.
 
 Historical context (do not treat as current work):
 
 - SPEC-40 is done as `ebdea52`. SPEC-42 uncap is PARTIAL on main
    (`17e58ac`): catalog caps are gone and empty dates render. Do not
-   reopen the five-day *starter* budget. Empty-day Add chrome is a later
-   slice.
+   reopen the five-day *starter* budget. Empty-day catalog Add is on
+   main (`b6ddecf`). Uncatalogued trip-private Add is next.
 - SPEC-41 Phase A is complete. A3a merged as `d1fde14`; A3b branch head
    `7f25042` replaces the 30-minute buffer and random/clock mock transit with
    deterministic walking time, city/day boundaries, apply-time retry,

@@ -3,7 +3,8 @@
 > Status: PARTIAL. Uncap and empty-date rendering merged as `17e58ac`
 > (branch head `adc99d2`). Thin typed Ask-to-Add from What Now merged as
 > `0344b4b` (PR #74). Thin typed Move merged as `e51513e` (PR #75).
-> Empty-day Add chrome is not implemented.
+> Empty-day catalog Add merged as `b6ddecf` (PR #76). Trip-private
+> uncatalogued nodes remain.
 >
 > Depends on SPEC-31 date-scoped rendering, SPEC-40 guided creation, and
 > SPEC-41 feasibility-first scheduling. Starter generation is still at most
@@ -12,8 +13,9 @@
 > 11 Oct 2026 field evidence strongly validates Add and Move: the owner needed
 > to move lunch to dinner, defer stops after heat/rain/fatigue, and add locally
 > discovered venues and detours. Catalog Ask-to-Add and typed Move are on
-> main; next remainder is empty-day catalog Add
-> (`docs/briefs/GENIE_SPEC_42_EMPTY_DAY_ADD.md`). These mechanics are
+> main. Empty-day catalog Add is on main (`b6ddecf`, PR #76); next
+> remainder is trip-private uncatalogued Add
+> (`docs/briefs/GENIE_SPEC_42_UNCATALOGUED_ADD.md`). These mechanics are
 > table stakes, not the product moat.
 
 ## Goal
@@ -210,7 +212,7 @@ reachability, lock, region, or trip-boundary constraints.
 - [ ] Destination cards and the date picker show no catalog-derived day maximum
 - [ ] Initial generation populates no more than five deterministic dates
 - [ ] Every date in the inclusive span renders, including empty days
-- [ ] Empty days provide a direct Add activity action
+- [x] Empty days provide a direct Add activity action (`b6ddecf`, catalog path)
 - [ ] Flexible activities can move across dates without changing `node_id`
 - [ ] Locked bookings remain immovable
 - [ ] Add and Move use SPEC-41 feasibility before persistence

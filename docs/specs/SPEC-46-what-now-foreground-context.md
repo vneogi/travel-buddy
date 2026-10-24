@@ -35,8 +35,9 @@ traffic, crowds, price, weather, or a reason.
    trip-scoped Ask are on main.
 2. Implement Phase A as the next owner-only product slice: deterministic,
    no GPS, no LLM, and no mutation before a later confirmed command slice.
-3. Thin typed Ask-to-Add (PR #74) and thin typed Move (PR #75) are on
-   main; empty-day Add chrome follows.
+3. Thin typed Ask-to-Add (PR #74), thin typed Move (PR #75), and
+   empty-day catalog Add (PR #76) are on main; uncatalogued trip-private
+   Add follows.
 4. Implement SPEC-43 before any non-owner build or production LLM processing
    of personal trip data.
 5. Phase B foreground location starts only after its SPEC-43 controls pass.

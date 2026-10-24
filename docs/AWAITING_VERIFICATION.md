@@ -15,6 +15,30 @@ other.
 Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 `#85` and so on; those numbers cannot be reconciled against `git log`.
 
+## Finding -- Oct 24 2026 -- empty-day catalog Add merged
+
+Owner Windows checkout of `feat/spec42-empty-day-add` at `5bb6a60`
+passed Flutter gates before squash-merge:
+
+- `flutter analyze --no-fatal-infos`: informational findings only
+- focused `flutter test` of `spec42_direct_add_test.dart`: all passed
+- focused Move / Ask-to-Add / What Now widgets: all passed
+- full `flutter test`: all passed
+
+PR #76 merged to `main` as `b6ddecf`. The slice adds empty-day
+`Add activity`, `GET /trip/{id}/add_candidates`, and confirm via
+`add_activity` plus `mode=direct_add`. Listing and apply share one
+evaluator. 422 refusals write nothing. Offline tap does not open the
+sheet.
+
+Genie Python gates on the branch were green. GitHub `postgres-proof`
+stayed red on the known apt baseline; that job is out of this slice.
+No hosted deploy, APK, or phone acceptance was performed for this SHA.
+Trip-private uncatalogued nodes remain. Catalog confirm still uses
+`_make_node`, which requires lat/lng; a true empty day with a
+no-coordinate catalog row can pass listing and crash apply. That is a
+recorded remainder, not this merge.
+
 ## Finding -- Oct 22 2026 -- thin typed Move merged
 
 Owner Windows checkout of `feat/spec42-move-thin` at `d1bbcdc` passed
