@@ -120,7 +120,7 @@
 | Guided Create Trip foundation (SPEC-40) | DONE (PR #61, `ebdea52`) | Five-step destination/date-range/party/interests/review flow backed by deterministic multi-day catalog selection. Post-merge CI and owner Flutter tests passed. Hosted deploy and phone acceptance are not yet repeated for this SHA |
 | Hours-aware scheduling and staged ranking (SPEC-41) | PHASE A COMPLETE (`d1fde14`, `7f25042`) | Create, corridor, and swap refuse known-closed or walking-unreachable target slots; day packing uses per-pair deterministic walking time and later opening windows; swap search/apply share reachability; locked non-hotel anchors remain reachable; cached `max_days` is guaranteed across weekdays and valid interest profiles |
 | Flexible trip span and sparse day editing (SPEC-42) | PARTIAL (`adc99d2`, merged `17e58ac`; Ask-to-Add `0344b4b`; Move `e51513e`; empty-day Add `b6ddecf`; uncatalogued `05d917e`) | Catalog-derived date caps removed; generation fills at most five starter days and empty dates render. Thin typed Ask-to-Add (PR #74), thin typed Move (PR #75), empty-day catalog Add (PR #76), and trip-private uncatalogued Add (PR #77) are on main. Unknown-time excursions remain later. Uncatalogued nodes cannot enter the shared catalog without review |
-| Security, privacy and data governance foundation (SPEC-43) | PARTIAL (Gaps 1, 6, 2 on main) | Gap 1 JWT `2460edf`. Gap 6 sign-out `c65261c`. Gap 2 RLS migration 0026 `0b8125f` (PR #80). Hosted apply of 0026 waits on `rolbypassrls`. Gap 9 signal ownership is next. Hosted deploy of G1/G6 is not done |
+| Security, privacy and data governance foundation (SPEC-43) | PARTIAL (Gaps 1, 6, 2, 9 ownership on main) | Gap 1 JWT `2460edf`. Gap 6 `c65261c`. Gap 2 0026 `0b8125f`. Gap 9 ingest ownership `163a14c` (PR #81). Next is Gap 12 HTTPS. Hosted 0026 and G1/G6 deploy are not done. Closed signal schemas remain |
 | Backend integrity and future-readiness foundation (SPEC-44) | PHASE A ON MAIN (PR #67, `9a7b9d9`) | Atomic trip/party/graph writes, optimistic version, durable command_id replay, typed conflicts, and hosted 0025. A4/A5, Flutter command queue, and SPEC-43 remain out of this slice |
 | On-trip visible surface (SPEC-45) | PHASE A + FIELD TRUST HYGIENE ON MAIN | Phase A chrome is on the field APK. Phase B field trust hygiene is on main through the post-field merge sequence: capped alerts, current-day/kind-specific outcomes, dead Review removal, and honest empty-swap refusal. Operational place detail, transfer cards, and Rescue remain later |
 | What Now foreground context (SPEC-46) | PHASE A ON MAIN (PR #73, `d1df944`) | Deterministic no-GPS What Now inside trip-scoped Ask: temporary time/energy/walking/intent, trip-position or region-anchor, shared `fits_next_lock`, inspectable reasons, named unknowns, display-only details. Owner Windows analyze infos-only; What Now widgets and full Flutter suite green. Hosted deploy, APK, and phone use not done. Phase B GPS only after SPEC-43 |
@@ -160,9 +160,9 @@ Current order:
 3. Thin typed Ask-to-Add (PR #74, `0344b4b`), thin typed Move
    (PR #75, `e51513e`), empty-day catalog Add (PR #76, `b6ddecf`), and
    trip-private uncatalogued Add (PR #77, `05d917e`) are on main.
-   SPEC-43 Gaps 1, 6, and 2 are on main (`0b8125f`, PR #80). Next
-   Genie job is Gap 9 signal ownership
-   (`docs/briefs/GENIE_SPEC_43_G9_SIGNAL_OWNERSHIP.md`). Unknown-time
+   SPEC-43 Gaps 1, 6, 2, and 9 ownership are on main (`163a14c`,
+   PR #81). Next Genie job is Gap 12 HTTPS
+   (`docs/briefs/GENIE_SPEC_43_G12_HTTPS.md`). Unknown-time
    excursions stay later.
 4. Patch the Laos must-do/decision-cell data gaps. Target 3-5 feasible options
    in common cells, not an arbitrary 100 venues per city.
@@ -297,6 +297,11 @@ Seed-shaped cohorts.
     Hosted apply waits on `rolbypassrls` for `postgres` and
     `service_role` (SECURITY DEFINER `commit_trip_command`). Two-JWT
     PostgREST proof is after apply.
+9i. SPEC-43 Gap 9 signal ownership -- **DONE on main** (PR #81,
+    `163a14c`). Present `trip_id` must be owned; unknown/foreign is a
+    per-item reject. Derive services re-check. Genie focused ownership
+    tests green; R17 named test failed then restored. No Flutter in
+    this slice. Closed schemas / poisoning remain.
 10. SPEC-42 uncap / sparse-span foundation -- **PARTIAL on main**
     (`adc99d2`, merge `17e58ac`; empty-day Add `b6ddecf`; uncatalogued
     `05d917e`). Catalog date caps are gone. Unknown-time excursions
@@ -319,9 +324,10 @@ Seed-shaped cohorts.
     `9a7b9d9`). Hosted 0025 applied 2026-09-27. Cloud Run `00012-8wv`.
     A4/A5, Flutter command queue, and SPEC-43 remain.
 14. SPEC-43 security, privacy, and data governance -- **PARTIAL**. Gaps
-    1, 6, and 2 are on main. Next is Gap 9 signal ownership. Complete
-    remaining gaps before any non-owner APK, production LLM processing
-    of personal trip data, or the planned December public launch.
+    1, 6, 2, and 9 ownership are on main. Next is Gap 12 HTTPS.
+    Complete remaining gaps before any non-owner APK, production LLM
+    processing of personal trip data, or the planned December public
+    launch.
 15. After SPEC-43, implement the SPEC-13 registry, minimum SPEC-17 claim store,
     and SPEC-20 city factory. Bangkok proves the pack; do not ingest another
     country through hardcoded exceptions.
@@ -404,7 +410,7 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 | SPEC-43 gap 6: sign-out does not revoke or clear the prior identity | Closed on main (`c65261c`, PR #79); hosted/phone not done | Halt sync, DELETE all local tables including outbox, GoTrue signOut, then mint a new anonymous JWT. Profile button keyed `profile_sign_out`. Access tokens may live until exp (no denylist). |
 | SPEC-43 gap 7: behavioral consent is a pass-through stub | High before collecting a tester cohort | Necessary operation, analytics, personalization, location, and marketing are not separated. Add a versioned purpose ledger, block optional capture before choice, and propagate withdrawal to outbox, features, and training inputs |
 | SPEC-43 gap 8: semantic cache can cross user boundaries | High when Ask is model-backed | Region and venue are insufficient private cache keys. Cache only public facts globally; otherwise use owner plus complete context/source/version scope, refuse restricted content, and actively purge expiry |
-| SPEC-43 gap 9: trip-linked signals lack ownership and poisoning controls | High before learned ranking | A supplied trip ID can be used for party/derived context without an ownership gate. Require ownership in ingest and derivation transactions, close every signal schema, and gate influence by provenance, quality, plausibility, and sample size |
+| SPEC-43 gap 9: trip-linked signals lack ownership and poisoning controls | Ownership closed on main (`163a14c`, PR #81); schema/poisoning remain | Ingest and derive reject unknown/foreign trip_id. Closed value_json schemas, size limits, and ranking-influence gates are not this merge |
 | SPEC-43 gap 10: errors and provider failures can retain sensitive values | High under debug/provider failure | Validation values, provider URLs, messages, and tracebacks can enter diagnostics. Centralize redaction, return stable public errors, protect debug with admin IAM, reject production debug, regionalize logs, and enforce retention |
 | SPEC-43 gap 11: general request and provider-spend abuse controls are absent | High when access expands | Reroute quota does not bound account creation, bodies, search, Ask, signals, webhooks, or downstream cost. Add gateway, account/IP/device-reputation, size, depth, concurrency, timeout, idempotency, anomaly, and spend controls |
 | SPEC-43 gap 12: release HTTPS and private mobile cache isolation are incomplete | High before release distribution | Release code does not reject HTTP; trip/place cache keys are not consistently identity-scoped; chat text enters route URLs. Enforce TLS at build/startup, identity-key caches, ownership checks, private navigation state, and authorized deep links |

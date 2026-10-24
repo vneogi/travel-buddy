@@ -15,6 +15,22 @@ other.
 Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 `#85` and so on; those numbers cannot be reconciled against `git log`.
 
+## Finding -- Oct 25 2026 -- SPEC-43 Gap 9 signal ownership merged
+
+PR #81 merged to `main` as `163a14c`. `POST /api/v1/signals` rejects a
+present `trip_id` that is unknown or not owned, before party_context,
+persist, or derive. `derive_arrival_delta` and
+`derive_observed_duration` re-check via `services/trip_ownership.py`.
+
+Genie: ruff clean; focused ownership plus signal/party/derive files
+green; named R17
+`test_foreign_trip_id_is_rejected_and_writes_nothing` failed when the
+ingest check was skipped, then the focused file was green after
+restore. No Flutter in this slice.
+
+A planning follow-up on the same PR dropped a hardcoded pytest count
+in PROJECT_STATUS that had failed `test_living_docs_do_not_hardcode_test_counts`.
+
 ## Finding -- Oct 25 2026 -- SPEC-43 Gap 2 RLS merged
 
 PR #80 merged to `main` as `0b8125f`. Additive migration

@@ -1,5 +1,8 @@
 # Genie brief: SPEC-43 Gap 9 -- trip-linked signal ownership
 
+Landed on `main` as `163a14c` (PR #81). Do not re-implement this slice.
+Next: `docs/briefs/GENIE_SPEC_43_G12_HTTPS.md`.
+
 ## Goal
 
 A caller must not attach signals or derived facts to someone else's trip.

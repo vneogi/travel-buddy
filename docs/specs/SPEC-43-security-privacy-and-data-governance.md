@@ -1,8 +1,9 @@
 # SPEC-43: Security, Privacy and Data Governance Foundation
 
 > Status: PARTIAL. Gap 1 `2460edf` (PR #78). Gap 6 `c65261c` (PR #79).
-> Gap 2 `0b8125f` (PR #80). Gap 9 remains in Phase 1. Hosted apply of
-> 0026 and deploy of Gaps 1/6 are not done.
+> Gap 2 `0b8125f` (PR #80). Gap 9 ownership `163a14c` (PR #81). Next
+> is Gap 12 HTTPS. Hosted apply of 0026 and deploy of Gaps 1/6 are not
+> done.
 >
 > Sequence: start after the Laos reliability and build tranche is complete:
 > SPEC-41 scheduling, SPEC-10 paste and flight/hotel scheduler, SPEC-25
@@ -355,9 +356,13 @@ complete grounded context. The persistent cache schema is even more general.
 
 ### Gap 9: signal ingestion lacks trip ownership and poisoning controls
 
-**Current fact.** The server derives `user_id`, but a supplied `trip_id` is
-used to read trip and party context without first requiring ownership. Client
-`value_json` is flexible, and derived writers can act on linked trip data.
+**Status on main.** Ownership gate merged as `163a14c` (PR #81). Closed
+schemas, size limits, and ranking-influence / quarantine remain.
+
+**Current fact (pre-ownership / remaining).** The server derives
+`user_id`. Ownership of a supplied `trip_id` is now required at ingest
+and in derive services. Client `value_json` is still flexible, and
+poisoning / sample-size gates are not built.
 
 **Solution.**
 
