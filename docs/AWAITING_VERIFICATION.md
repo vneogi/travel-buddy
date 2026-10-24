@@ -15,6 +15,28 @@ other.
 Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 `#85` and so on; those numbers cannot be reconciled against `git log`.
 
+## Finding -- Oct 24 2026 -- SPEC-43 Gap 1 anonymous JWT merged
+
+Owner Windows checkout of `feat/spec43-g1-anon-jwt` at `fb40bbe`
+passed Flutter gates before squash-merge:
+
+- `flutter analyze --no-fatal-infos`: 115 informational findings
+- focused `flutter test` of `spec43_g1_anon_jwt_test.dart`,
+  `api_client_test.dart`, and `device_identity_test.dart`: all passed
+- full `flutter test`: +610 all passed
+
+PR #78 merged to `main` as `2460edf`. The slice issues a Supabase
+anonymous JWT at startup, sends only `Authorization: Bearer`, and
+verifies JWKS (issuer, audience, expiry, subject, role, kid).
+`Authorization: Anonymous <uuid>` is 401. The device UUID stays a
+non-secret diagnostic id.
+
+Genie Python gates on the branch were green. GitHub `postgres-proof`
+stayed red on the known apt baseline; that job is out of this slice.
+No hosted deploy, APK, or phone acceptance was performed for this SHA.
+Do not deploy until Anonymous sign-ins are enabled and Cloud Run has
+JWKS URL plus issuer. Profile sign-out remains navigation-only (Gap 6).
+
 ## Finding -- Oct 24 2026 -- trip-private uncatalogued Add merged
 
 Owner Windows checkout of `feat/spec42-uncatalogued-add` at `3f6c79e`

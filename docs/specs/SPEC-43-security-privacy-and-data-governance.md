@@ -1,6 +1,8 @@
 # SPEC-43: Security, Privacy and Data Governance Foundation
 
-> Status: SPECIFIED. Not implemented.
+> Status: PARTIAL. Gap 1 (server-issued anonymous JWT) merged as
+> `2460edf` (PR #78). Gaps 2, 6, and 9 remain in Phase 1. Hosted
+> deploy of Gap 1 is not done.
 >
 > Sequence: start after the Laos reliability and build tranche is complete:
 > SPEC-41 scheduling, SPEC-10 paste and flight/hotel scheduler, SPEC-25
@@ -95,11 +97,16 @@ A parent or guardian may describe a party using coarse age bands. The product:
 
 ### Gap 1: self-issued anonymous UUID acts as an account credential
 
-**Current fact.** The client creates a UUID and sends
-`Authorization: Anonymous <uuid>`. The UUID is high entropy and stored in
-secure storage, but the server did not issue it, cannot expire it, and cannot
-distinguish a legitimate device from an attacker who selected another UUID.
-Unlimited new UUIDs also bypass per-user cost quotas.
+**Status on main.** Closed in application code as `2460edf` (PR #78).
+Hosted Cloud Run is not this SHA. Unlimited anonymous JWTs still bypass
+per-user cost quotas (Gap 11).
+
+**Current fact (pre-Gap 1 / still true on the live revision).** The
+client creates a UUID and sends `Authorization: Anonymous <uuid>`. The
+UUID is high entropy and stored in secure storage, but the server did
+not issue it, cannot expire it, and cannot distinguish a legitimate
+device from an attacker who selected another UUID. Unlimited new
+UUIDs also bypass per-user cost quotas.
 
 **Solution.**
 

@@ -87,7 +87,7 @@
 | Docs hygiene guard | DONE | tests/test_docs_hygiene.py walks every markdown file outside build and vendor directories, and the SPEC-reference check also scans .py and .sql. Known non-ASCII files are allowlisted; the list may only shrink. The ASCII check itself still covers markdown only |
 | Data format guard | DONE | Every data/ file is ASCII by byte count, venue and glossary files round-trip byte-identically, and Lao-script fields are checked for foreign script |
 | Offline vault (SPEC-04) | CACHE FLOOR DONE; RESCUE REMOVED | PR #22 (`b7e10c3`) + PR #23 (`dab16c0`) shipped offline itinerary fallback and cached driver cards. Sep 5 owner decision retired the duplicate Hotel Rescue AppBar shortcut; driver-card action on hotel bookings remains. Offline maps are a post-Bangkok-factory measured prototype with an optional versioned artifact manifest, not a current vendor commitment |
-| Anonymous identity (SPEC-09) | DONE (client + server) | Client half landed PR #16 (`7173a3f`): UUID v4 in flutter_secure_storage, Anonymous header, TB_DEBUG_USER_ID removed. Server half already verified. Record any remaining Anonymous E2E gap explicitly; the laptop is available |
+| Anonymous identity (SPEC-09) | DONE (client + server); Gap 1 JWT on main | Device UUID remains a diagnostic id in secure storage. API credential is a Supabase anonymous JWT (`2460edf`, PR #78). Hosted Cloud Run still accepts the old Anonymous header until Gap 1 is deployed |
 | Itinerary normalisation (SPEC-16) | IMPLEMENTED | Decompose and compose land in services/itinerary_normaliser.py, dual-write in both backends, round-trip equality asserted, wire format unchanged. node_id is stable across reschedules via state_json and now comes from models/ids.py. SPEC-30 (`f8349a8`) writes `trip_edge.observed_duration_minutes` from consecutive arrivals |
 | Booking anchors (SPEC-10) | PARTIAL | Create/edit/delete on main (PR #20, PR #37). Provider-aware paste on main (`fc6926b`). Flight cutoff and hotel origin/return on main (`e7a0457`). Naive wall times are destination-local on main (`933c705`). Hotel stay display on main (`7b62818`). Named slots on create/corridor (`9173b23`). G0 field-fix on main (`2ab8d57`): slot-order packing, `GET /trip/{id}/swap_candidates/{node_id}`, one hotel card per night plus checkout copy. Create-then-book HITL reflow and server-side document consent remain |
 | Forced-choice preferences (SPEC-11) | SPECIFIED | Not implemented. Cold-start preference capture remains after field evidence; SPEC-40 interests are trip constraints, not a durable preference profile |
@@ -120,7 +120,7 @@
 | Guided Create Trip foundation (SPEC-40) | DONE (PR #61, `ebdea52`) | Five-step destination/date-range/party/interests/review flow backed by deterministic multi-day catalog selection. Post-merge CI and owner Flutter tests passed. Hosted deploy and phone acceptance are not yet repeated for this SHA |
 | Hours-aware scheduling and staged ranking (SPEC-41) | PHASE A COMPLETE (`d1fde14`, `7f25042`) | Create, corridor, and swap refuse known-closed or walking-unreachable target slots; day packing uses per-pair deterministic walking time and later opening windows; swap search/apply share reachability; locked non-hotel anchors remain reachable; cached `max_days` is guaranteed across weekdays and valid interest profiles |
 | Flexible trip span and sparse day editing (SPEC-42) | PARTIAL (`adc99d2`, merged `17e58ac`; Ask-to-Add `0344b4b`; Move `e51513e`; empty-day Add `b6ddecf`; uncatalogued `05d917e`) | Catalog-derived date caps removed; generation fills at most five starter days and empty dates render. Thin typed Ask-to-Add (PR #74), thin typed Move (PR #75), empty-day catalog Add (PR #76), and trip-private uncatalogued Add (PR #77) are on main. Unknown-time excursions remain later. Uncatalogued nodes cannot enter the shared catalog without review |
-| Security, privacy and data governance foundation (SPEC-43) | SPECIFIED; AFTER LAOS BUILD, BEFORE NON-OWNER DISTRIBUTION | Owns twelve verified gaps across anonymous authentication, RLS, LLM egress, rights/retention, offline encryption, sign-out, consent, cache isolation, signal authorization, logging, abuse limits, and release transport. The current owner-only exception expires before the first external tester or December launch |
+| Security, privacy and data governance foundation (SPEC-43) | PARTIAL (Gap 1 on main, `2460edf`, PR #78) | Gap 1: server-issued anonymous JWT via JWKS; `Anonymous <uuid>` is 401. Hosted deploy of this SHA is not done and would 401 the current field-test header until JWKS env and dashboard Anonymous sign-ins are set. Gaps 2 (RLS), 6 (sign-out), and 9 (signals) remain before any non-owner APK |
 | Backend integrity and future-readiness foundation (SPEC-44) | PHASE A ON MAIN (PR #67, `9a7b9d9`) | Atomic trip/party/graph writes, optimistic version, durable command_id replay, typed conflicts, and hosted 0025. A4/A5, Flutter command queue, and SPEC-43 remain out of this slice |
 | On-trip visible surface (SPEC-45) | PHASE A + FIELD TRUST HYGIENE ON MAIN | Phase A chrome is on the field APK. Phase B field trust hygiene is on main through the post-field merge sequence: capped alerts, current-day/kind-specific outcomes, dead Review removal, and honest empty-swap refusal. Operational place detail, transfer cards, and Rescue remain later |
 | What Now foreground context (SPEC-46) | PHASE A ON MAIN (PR #73, `d1df944`) | Deterministic no-GPS What Now inside trip-scoped Ask: temporary time/energy/walking/intent, trip-position or region-anchor, shared `fits_next_lock`, inspectable reasons, named unknowns, display-only details. Owner Windows analyze infos-only; What Now widgets and full Flutter suite green. Hosted deploy, APK, and phone use not done. Phase B GPS only after SPEC-43 |
@@ -160,9 +160,9 @@ Current order:
 3. Thin typed Ask-to-Add (PR #74, `0344b4b`), thin typed Move
    (PR #75, `e51513e`), empty-day catalog Add (PR #76, `b6ddecf`), and
    trip-private uncatalogued Add (PR #77, `05d917e`) are on main.
-   Next Genie job is SPEC-43 Gap 1
-   (`docs/briefs/GENIE_SPEC_43_G1_ANON_JWT.md`). Unknown-time
-   excursions stay later.
+   SPEC-43 Gap 1 is on main (`2460edf`, PR #78). Next Genie job is
+   Gap 6 sign-out (`docs/briefs/GENIE_SPEC_43_G6_SIGNOUT.md`).
+   Unknown-time excursions stay later.
 4. Patch the Laos must-do/decision-cell data gaps. Target 3-5 feasible options
    in common cells, not an arbitrary 100 venues per city.
 5. SPEC-43 before any non-owner APK; then a narrow external corridor pilot with
@@ -275,6 +275,13 @@ Seed-shaped cohorts.
     `place_source=trip_private`, required dwell, no catalog write.
     Owner Windows analyze infos-only; focused and full Flutter suites
     green. Hosted/phone not done.
+9f. SPEC-43 Gap 1 anonymous JWT -- **DONE on main** (PR #78, `2460edf`).
+    Startup `signInAnonymously`; Bearer-only `ApiClient`; JWKS then
+    HS256 then debug. `Authorization: Anonymous <uuid>` is always 401.
+    Owner Windows at `fb40bbe`: analyze infos-only; focused
+    `spec43_g1_anon_jwt_test.dart` plus api_client and device_identity
+    green; full suite +610 green. Hosted deploy not done. Gap 11
+    unlimited anon JWTs remain.
 10. SPEC-42 uncap / sparse-span foundation -- **PARTIAL on main**
     (`adc99d2`, merge `17e58ac`; empty-day Add `b6ddecf`; uncatalogued
     `05d917e`). Catalog date caps are gone. Unknown-time excursions
@@ -296,10 +303,11 @@ Seed-shaped cohorts.
 13. SPEC-44 Phase A backend integrity -- **DONE on main** (PR #67,
     `9a7b9d9`). Hosted 0025 applied 2026-09-27. Cloud Run `00012-8wv`.
     A4/A5, Flutter command queue, and SPEC-43 remain.
-14. SPEC-43 security, privacy, and data governance -- **NEXT RELEASE
-   FOUNDATION AFTER THE LAOS BUILD**. Complete all twelve gaps before any
-   non-owner APK, production LLM processing of personal trip data, or the
-   planned December public launch.
+14. SPEC-43 security, privacy, and data governance -- **PARTIAL**. Gap 1
+    is on main (`2460edf`). Next is Gap 6 sign-out wipe, then Gaps 2/9.
+    Complete remaining gaps before any non-owner APK, production LLM
+    processing of personal trip data, or the planned December public
+    launch.
 15. After SPEC-43, implement the SPEC-13 registry, minimum SPEC-17 claim store,
     and SPEC-20 city factory. Bangkok proves the pack; do not ingest another
     country through hardcoded exceptions.
@@ -374,7 +382,7 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 | Empty-day catalog Add | Closed on main (`b6ddecf`, PR #76); hosted/phone not done | Shared evaluator lists and applies one catalog venue onto an empty date/slot. Missing dwell is never filled with 90. Confirm 422 before persist. Flutter sheet is online-only. The catalog missing-lat `_make_node` crash remains |
 | Trip-private uncatalogued Add | Closed on main (`05d917e`, PR #77); hosted/phone not done | Confirm-only `uncatalogued_add`. Null venue_id, trip_private source, required dwell, catalog unchanged. Matching catalog names refuse. Flutter never sends coordinates (empty-day only) |
 | Thin typed Move | Closed on main (`e51513e`, PR #75); hosted/phone not done | One flexible node moves to an explicit date and named slot. Same node_id. Occupied slot, wrong type, lock, and cross-city dates refuse. Neighbours without coordinates can still succeed (walk skipped); that remainder is recorded, not this merge |
-| SPEC-43 gap 1: self-issued anonymous UUID is a replayable account credential | High before non-owner use | The hosted owner build accepts any canonical UUIDv4 without server issuance, expiry, revocation, or proof of possession. Replace it with Supabase anonymous Auth JWTs, JWKS verification, rotation, and account/IP abuse limits after the Laos build |
+| SPEC-43 gap 1: self-issued anonymous UUID is a replayable account credential | Closed on main (`2460edf`, PR #78); hosted still on pre-G1 revision | App and API on this SHA reject `Anonymous <uuid>` and require a JWKS-verified Bearer JWT. Hosted Cloud Run is not this SHA; deploying it would 401 the current field-test header until dashboard Anonymous sign-ins and JWKS env are set. Gap 11 still allows unlimited anon JWTs |
 | SPEC-43 gap 2: RLS and public grants are not comprehensive | High | Migration 0007 omits core personal tables and uses permissive party inserts; service-role access bypasses RLS. Audit the live schema, revoke by default, enforce owner policies on every personal table, and prove isolation with two hosted JWTs |
 | SPEC-43 gap 3: personal trip fields can cross the LLM boundary | High; production personal LLM use blocked | Heavy prompts can serialize booking codes, notes, exact times, and coordinates, while fallback can cross providers. Use deterministic create/swap plus one redacting allowlist gateway and an approved provider-region-retention matrix |
 | SPEC-43 gap 4: export, deletion, and retention are unimplemented | High before public launch | SPEC-27 is specified only. Build self-service rights, schema-walking erasure, physical expiry, backup tombstones, and restore tests before non-owner distribution |
