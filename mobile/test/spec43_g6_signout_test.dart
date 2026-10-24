@@ -394,6 +394,31 @@ void main() {
       itinerarySubAfter.close();
     });
 
+    testWidgets('profile_sign_out is keyed on Profile', (tester) async {
+      final db = await tester.runAsync(_db);
+      if (db == null) fail('failed to open test database');
+      final auth = _FakeAnonAuth(accessToken: 'token-a');
+      final sync = _MockSyncEngine();
+      _stubSyncLifecycle(sync, <String>[]);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            offlineDatabaseProvider.overrideWithValue(db),
+            anonAuthProvider.overrideWithValue(auth),
+            syncEngineProvider.overrideWithValue(sync),
+            userStatusProvider.overrideWith((ref) async => _status('user-a')),
+            deviceIdProvider.overrideWith((ref) => 'device-1'),
+          ],
+          child: const MaterialApp(home: ProfileScreen()),
+        ),
+      );
+      await tester.pump();
+      expect(find.byKey(const Key('profile_sign_out')), findsOneWidget);
+
+      await tester.runAsync(db.close);
+    }, timeout: const Timeout(Duration(seconds: 20)));
+
     testWidgets('router: signed-out user is not left on /trip/<old-id>',
         (tester) async {
       final db = await tester.runAsync(_db);
@@ -401,13 +426,6 @@ void main() {
       final auth = _FakeAnonAuth(accessToken: 'token-a');
       final sync = _MockSyncEngine();
       _stubSyncLifecycle(sync, <String>[]);
-      final repo = _MockTripRepository();
-      when(() => repo.getHomeSnapshot()).thenAnswer(
-        (_) async => const HomeSnapshot(
-          supportedRegions: ['luang_prabang_laos'],
-          trips: [],
-        ),
-      );
 
       final router = GoRouter(
         initialLocation: '/trip/trip-a',
@@ -422,15 +440,11 @@ void main() {
             path: '/trip/:tripId',
             builder: (context, state) => Scaffold(
               body: Center(
-                child: ElevatedButton(
-                  key: const Key('open_profile'),
-                  onPressed: () => context.push('/profile'),
-                  child: const Text('Profile'),
-                ),
+                child: Text('trip ${state.pathParameters['tripId']}',
+                    key: const Key('trip_page')),
               ),
             ),
           ),
-          GoRoute(path: '/profile', builder: (context, state) => const ProfileScreen()),
         ],
       );
 
@@ -440,7 +454,6 @@ void main() {
             offlineDatabaseProvider.overrideWithValue(db),
             anonAuthProvider.overrideWithValue(auth),
             syncEngineProvider.overrideWithValue(sync),
-            tripRepoProvider.overrideWithValue(repo),
             userStatusProvider.overrideWith((ref) async => _status('user-a')),
             deviceIdProvider.overrideWith((ref) => 'device-1'),
           ],
@@ -448,15 +461,10 @@ void main() {
         ),
       );
       await tester.pump();
-      expect(find.byKey(const Key('open_profile')), findsOneWidget);
+      expect(find.byKey(const Key('trip_page')), findsOneWidget);
+      expect(router.routeInformationProvider.value.uri.path, '/trip/trip-a');
 
-      await tester.tap(find.byKey(const Key('open_profile')));
-      await tester.pump();
-      expect(find.byKey(const Key('profile_sign_out')), findsOneWidget);
-
-      // Sqflite and SignOutController.run must run on the real event loop.
-      // Starting that work from a tap inside fake-async never completes.
-      final element = tester.element(find.byKey(const Key('profile_sign_out')));
+      final element = tester.element(find.byKey(const Key('trip_page')));
       final container = ProviderScope.containerOf(element);
       final goRouter = GoRouter.of(element);
       final result = await tester.runAsync(
@@ -468,7 +476,7 @@ void main() {
       await tester.pump();
 
       expect(find.byKey(const Key('home_root')), findsOneWidget);
-      expect(find.byKey(const Key('profile_sign_out')), findsNothing);
+      expect(find.byKey(const Key('trip_page')), findsNothing);
       expect(router.routeInformationProvider.value.uri.path, '/');
 
       router.dispose();
@@ -477,9 +485,13 @@ void main() {
 
     test('sign-in failure keeps sync halted and returns a short error', () async {
       final db = await _db();
-      final auth = _FakeAnonAuth(accessToken: 'token-a', signInFails: true);
-      final sync = _MockSyncEngine();
       final events = <String>[];
+      final auth = _FakeAnonAuth(
+        accessToken: 'token-a',
+        events: events,
+        signInFails: true,
+      );
+      final sync = _MockSyncEngine();
       _stubSyncLifecycle(sync, events);
 
       final container = ProviderContainer(overrides: [
