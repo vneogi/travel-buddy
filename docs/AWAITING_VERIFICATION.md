@@ -15,6 +15,29 @@ other.
 Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 `#85` and so on; those numbers cannot be reconciled against `git log`.
 
+## Finding -- Oct 25 2026 -- SPEC-43 Gap 12 HTTPS merged
+
+Owner Windows checkout of `feat/spec43-g12-https` at `928a5ce`
+(squash-merged to `main` as `6f1dab8`, PR #82):
+
+- `git rev-parse --short HEAD`: `928a5ce`
+- `flutter analyze --no-fatal-infos`: informational findings only
+- focused `flutter test test/spec43_g12_https_test.dart`: +7
+- R17: after replacing the API-URL throw block with `return;`,
+  `test_release_http_api_base_url_is_rejected` failed (expected
+  InsecureTransportError, actual returned null). Restored via
+  `git checkout -- mobile/lib/core/env.dart`; focused file +7.
+- full `flutter test` was not run for this SHA
+
+Release `assertSecureTransport` in `mobile/lib/core/env.dart` is
+called from `main()` after bindings and before Supabase init. Debug
+emulator HTTP is unchanged. No hosted deploy, APK, or phone
+acceptance. Cache keys, chat query strings, and platform ATS XML
+remain.
+
+Genie Python gates on the branch were green. Flutter SDK was absent
+on Genie's machine.
+
 ## Finding -- Oct 25 2026 -- SPEC-43 Gap 9 signal ownership merged
 
 PR #81 merged to `main` as `163a14c`. `POST /api/v1/signals` rejects a

@@ -120,7 +120,7 @@
 | Guided Create Trip foundation (SPEC-40) | DONE (PR #61, `ebdea52`) | Five-step destination/date-range/party/interests/review flow backed by deterministic multi-day catalog selection. Post-merge CI and owner Flutter tests passed. Hosted deploy and phone acceptance are not yet repeated for this SHA |
 | Hours-aware scheduling and staged ranking (SPEC-41) | PHASE A COMPLETE (`d1fde14`, `7f25042`) | Create, corridor, and swap refuse known-closed or walking-unreachable target slots; day packing uses per-pair deterministic walking time and later opening windows; swap search/apply share reachability; locked non-hotel anchors remain reachable; cached `max_days` is guaranteed across weekdays and valid interest profiles |
 | Flexible trip span and sparse day editing (SPEC-42) | PARTIAL (`adc99d2`, merged `17e58ac`; Ask-to-Add `0344b4b`; Move `e51513e`; empty-day Add `b6ddecf`; uncatalogued `05d917e`) | Catalog-derived date caps removed; generation fills at most five starter days and empty dates render. Thin typed Ask-to-Add (PR #74), thin typed Move (PR #75), empty-day catalog Add (PR #76), and trip-private uncatalogued Add (PR #77) are on main. Unknown-time excursions remain later. Uncatalogued nodes cannot enter the shared catalog without review |
-| Security, privacy and data governance foundation (SPEC-43) | PARTIAL (Gaps 1, 6, 2, 9 ownership on main) | Gap 1 JWT `2460edf`. Gap 6 `c65261c`. Gap 2 0026 `0b8125f`. Gap 9 ingest ownership `163a14c` (PR #81). Next is Gap 12 HTTPS. Hosted 0026 and G1/G6 deploy are not done. Closed signal schemas remain |
+| Security, privacy and data governance foundation (SPEC-43) | PARTIAL (Gaps 1, 6, 2, 9 ownership, 12 HTTPS on main) | Gap 1 JWT `2460edf`. Gap 6 `c65261c`. Gap 2 0026 `0b8125f`. Gap 9 ingest ownership `163a14c` (PR #81). Gap 12 HTTPS `6f1dab8` (PR #82). Next is Gap 12 cache keys. Hosted 0026 and G1/G6 deploy are not done. Closed signal schemas remain |
 | Backend integrity and future-readiness foundation (SPEC-44) | PHASE A ON MAIN (PR #67, `9a7b9d9`) | Atomic trip/party/graph writes, optimistic version, durable command_id replay, typed conflicts, and hosted 0025. A4/A5, Flutter command queue, and SPEC-43 remain out of this slice |
 | On-trip visible surface (SPEC-45) | PHASE A + FIELD TRUST HYGIENE ON MAIN | Phase A chrome is on the field APK. Phase B field trust hygiene is on main through the post-field merge sequence: capped alerts, current-day/kind-specific outcomes, dead Review removal, and honest empty-swap refusal. Operational place detail, transfer cards, and Rescue remain later |
 | What Now foreground context (SPEC-46) | PHASE A ON MAIN (PR #73, `d1df944`) | Deterministic no-GPS What Now inside trip-scoped Ask: temporary time/energy/walking/intent, trip-position or region-anchor, shared `fits_next_lock`, inspectable reasons, named unknowns, display-only details. Owner Windows analyze infos-only; What Now widgets and full Flutter suite green. Hosted deploy, APK, and phone use not done. Phase B GPS only after SPEC-43 |
@@ -160,10 +160,9 @@ Current order:
 3. Thin typed Ask-to-Add (PR #74, `0344b4b`), thin typed Move
    (PR #75, `e51513e`), empty-day catalog Add (PR #76, `b6ddecf`), and
    trip-private uncatalogued Add (PR #77, `05d917e`) are on main.
-   SPEC-43 Gaps 1, 6, 2, and 9 ownership are on main (`163a14c`,
-   PR #81). Next Genie job is Gap 12 HTTPS
-   (`docs/briefs/GENIE_SPEC_43_G12_HTTPS.md`). Unknown-time
-   excursions stay later.
+   SPEC-43 Gaps 1, 6, 2, 9 ownership, and 12 HTTPS are on main
+   (`6f1dab8`, PR #82). Next Genie job is Gap 12 cache keys after
+   planning writes the brief. Unknown-time excursions stay later.
 4. Patch the Laos must-do/decision-cell data gaps. Target 3-5 feasible options
    in common cells, not an arbitrary 100 venues per city.
 5. SPEC-43 before any non-owner APK; then a narrow external corridor pilot with
@@ -302,6 +301,13 @@ Seed-shaped cohorts.
     per-item reject. Derive services re-check. Genie focused ownership
     tests green; R17 named test failed then restored. No Flutter in
     this slice. Closed schemas / poisoning remain.
+9j. SPEC-43 Gap 12 HTTPS -- **DONE on main** (PR #82, `6f1dab8`).
+    Release `assertSecureTransport` fails closed unless API and
+    Supabase URLs are https with a host. Debug keeps
+    `http://10.0.2.2:8000`. Owner Windows: analyze infos-only;
+    focused `spec43_g12_https_test.dart` green; R17 named test failed
+    with returned null then restored +7. Cache keys, chat query
+    strings, and platform ATS XML are not this merge.
 10. SPEC-42 uncap / sparse-span foundation -- **PARTIAL on main**
     (`adc99d2`, merge `17e58ac`; empty-day Add `b6ddecf`; uncatalogued
     `05d917e`). Catalog date caps are gone. Unknown-time excursions
@@ -324,10 +330,10 @@ Seed-shaped cohorts.
     `9a7b9d9`). Hosted 0025 applied 2026-09-27. Cloud Run `00012-8wv`.
     A4/A5, Flutter command queue, and SPEC-43 remain.
 14. SPEC-43 security, privacy, and data governance -- **PARTIAL**. Gaps
-    1, 6, 2, and 9 ownership are on main. Next is Gap 12 HTTPS.
-    Complete remaining gaps before any non-owner APK, production LLM
-    processing of personal trip data, or the planned December public
-    launch.
+    1, 6, 2, 9 ownership, and 12 HTTPS are on main. Next is Gap 12
+    cache keys. Complete remaining gaps before any non-owner APK,
+    production LLM processing of personal trip data, or the planned
+    December public launch.
 15. After SPEC-43, implement the SPEC-13 registry, minimum SPEC-17 claim store,
     and SPEC-20 city factory. Bangkok proves the pack; do not ingest another
     country through hardcoded exceptions.
@@ -413,7 +419,7 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 | SPEC-43 gap 9: trip-linked signals lack ownership and poisoning controls | Ownership closed on main (`163a14c`, PR #81); schema/poisoning remain | Ingest and derive reject unknown/foreign trip_id. Closed value_json schemas, size limits, and ranking-influence gates are not this merge |
 | SPEC-43 gap 10: errors and provider failures can retain sensitive values | High under debug/provider failure | Validation values, provider URLs, messages, and tracebacks can enter diagnostics. Centralize redaction, return stable public errors, protect debug with admin IAM, reject production debug, regionalize logs, and enforce retention |
 | SPEC-43 gap 11: general request and provider-spend abuse controls are absent | High when access expands | Reroute quota does not bound account creation, bodies, search, Ask, signals, webhooks, or downstream cost. Add gateway, account/IP/device-reputation, size, depth, concurrency, timeout, idempotency, anomaly, and spend controls |
-| SPEC-43 gap 12: release HTTPS and private mobile cache isolation are incomplete | High before release distribution | Release code does not reject HTTP; trip/place cache keys are not consistently identity-scoped; chat text enters route URLs. Enforce TLS at build/startup, identity-key caches, ownership checks, private navigation state, and authorized deep links |
+| SPEC-43 gap 12: release HTTPS and private mobile cache isolation are incomplete | HTTPS closed on main (`6f1dab8`, PR #82); cache/chat remain | Release startup throws on non-https API or empty/non-https Supabase. Debug emulator HTTP is unchanged. Identity-scoped cache keys, chat text in route URLs, ATS/network-security XML, and authorized deep links are not this merge |
 | Create conflates trip span with auto-fill capacity | Closed on main for span vs fill (`17e58ac`); catalog Add `b6ddecf`; uncatalogued `05d917e` | Wider spans are accepted; at most five starter days are generated; empty dates render and can take a catalog or trip-private Add. Unknown-time excursions remain later |
 | Range create persists trip and party in two writes | High before multi-device or non-owner scale | A failure between writes can leave an orphan trip. SPEC-44 Phase A makes trip, party, normalized graph, compatibility projection, and command record one transaction before normalized reads or multi-device use |
 | Trip graph dual-write is non-transactional and blob-authoritative | High before SPEC-16 read cutover | Supabase replaces nodes and edges through separate calls while `get_trip` still reads `state_json`, so partial row writes can remain hidden. SPEC-44 requires crash-injection rollback proof, shadow-read equality, and a rollback window before rows become authoritative |
