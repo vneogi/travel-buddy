@@ -5,7 +5,7 @@ Verifies:
 2. Create trip WITHOUT party -> defaults to solo/1
 3. GET /trip/{id} returns the party
 4. Signal for a trip with a party gets party_context stamped into value_json
-5. Signal for an unknown trip still succeeds (party_context omitted, never fail)
+5. Signal for an unknown trip is rejected (SPEC-43 Gap 9 trip ownership)
 6. Signal with no trip_id still succeeds
 7. party_context is MERGED into value_json (doesn't overwrite existing fields)
 8. No birth date fields accepted (age_band only)
@@ -186,10 +186,12 @@ def test_signal_gets_party_context_stamped():
     assert vj["original_field"] == "preserved"
 
 
-def test_signal_unknown_trip_still_succeeds():
-    """Signal for a non-existent trip -> ingest succeeds, no party_context.
+def test_signal_unknown_trip_is_rejected():
+    """Signal for a non-existent trip -> per-item reject, no stored row.
 
-    SPEC-03: never fail ingest due to missing party data.
+    SPEC-43 Gap 9: a present trip_id must exist and be owned by the caller.
+    (Supersedes the SPEC-03 "unknown trip still succeeds" behaviour, which
+    let a caller attach signals to a trip they do not own.)
     """
     resp = client.post(
         "/api/v1/signals",
@@ -208,15 +210,12 @@ def test_signal_unknown_trip_still_succeeds():
     )
 
     assert resp.status_code == 200
-    assert resp.json()["accepted"] == 1
-
-    # Signal stored, but no party_context
-    stored = db_service.get_signal("sig-unknown-trip")
-    assert stored is not None
-    # value_json should be None or empty (no party_context injected)
-    vj = stored["value_json"]
-    if vj:
-        assert "party_context" not in vj
+    body = resp.json()
+    assert body["accepted"] == 0
+    assert [r["signal_id"] for r in body["rejected"]] == ["sig-unknown-trip"]
+    reason = body["rejected"][0]["reason"]
+    assert "trip" in reason and "owner" in reason
+    assert db_service.get_signal("sig-unknown-trip") is None
 
 
 def test_signal_no_trip_id_still_succeeds():

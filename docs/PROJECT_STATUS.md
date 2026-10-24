@@ -292,7 +292,8 @@ Seed-shaped cohorts.
 9h. SPEC-43 Gap 2 RLS -- **DONE on main** (PR #80, `0b8125f`).
     Migration 0026 FORCE RLS, revoke anon/authenticated, grant
     service_role, trip_states owner policies. `cached_responses` is
-    service_role-only (no owner column). Genie pytest 1220 passed.
+    service_role-only (no owner column). Genie pytest was green; run
+    `pytest -q -ra` for the current count.
     Hosted apply waits on `rolbypassrls` for `postgres` and
     `service_role` (SECURITY DEFINER `commit_trip_command`). Two-JWT
     PostgREST proof is after apply.
