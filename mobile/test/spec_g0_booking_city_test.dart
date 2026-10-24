@@ -95,7 +95,11 @@ class _FakeItineraryController extends StateNotifier<ItineraryState>
 /// Fake offline database -- stubs cachePlace for the save path.
 class _FakeOfflineDatabase extends Fake implements OfflineDatabase {
   @override
-  Future<void> cachePlace(String placeRef, String dataJson) async {}
+  Future<void> cachePlace(
+    String placeRef,
+    String dataJson, {
+    required String identityScope,
+  }) async {}
 }
 
 // ---------------------------------------------------------------------------

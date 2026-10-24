@@ -44,7 +44,10 @@ class _DriverCardScreenState extends ConsumerState<DriverCardScreen> {
 
   Future<void> _loadFromCache() async {
     final db = ref.read(offlineDatabaseProvider);
-    final cached = await db.getCachedPlace(widget.nodeId);
+    final cached = await db.getCachedPlace(
+      widget.nodeId,
+      identityScope: ref.read(identityCacheScopeProvider),
+    );
     if (cached != null && mounted) {
       final data = PlaceDriverCardData.deserialize(cached);
       final entry = resolvePreferredLocalEntry(
@@ -123,7 +126,11 @@ class _DriverCardScreenState extends ConsumerState<DriverCardScreen> {
       geoRegion: _data!.geoRegion,
     );
     final db = ref.read(offlineDatabaseProvider);
-    await db.cachePlace(_data!.placeRef, newData.serialize());
+    await db.cachePlace(
+      _data!.placeRef,
+      newData.serialize(),
+      identityScope: ref.read(identityCacheScopeProvider),
+    );
     _resolvedSource = newSource;
   }
 

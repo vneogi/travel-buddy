@@ -187,12 +187,17 @@ void main() {
         ),
       ],
     );
-    await db.cacheTrip('trip-1', jsonEncode(trip.toJson()));
+    await db.cacheTrip(
+      'trip-1',
+      jsonEncode(trip.toJson()),
+      identityScope: 'anonymous:device-1',
+    );
 
     final tripDay = await tripDayFromCachedTrip(
       db,
       'trip-1',
       DateTime.utc(2026, 10, 4, 8),
+      identityScope: 'anonymous:device-1',
     );
 
     expect(tripDay, 2);
@@ -204,6 +209,7 @@ void main() {
         db,
         'missing-trip',
         DateTime.utc(2026, 10, 4),
+        identityScope: 'anonymous:device-1',
       ),
       isNull,
     );

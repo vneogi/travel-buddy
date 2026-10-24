@@ -44,9 +44,9 @@ void _stubDatabase(_MockOfflineDatabase database) {
         identityScope: any(named: 'identityScope'),
         tripId: any(named: 'tripId'),
       )).thenAnswer((_) async => <String, NodeOutcome>{});
-  when(() => database.cachePlace(any(), any())).thenAnswer((_) async {});
-  when(() => database.cacheTrip(any(), any())).thenAnswer((_) async {});
-  when(() => database.getCachedTrip(any())).thenAnswer((_) async => null);
+  when(() => database.cachePlace(any(), any(), identityScope: any(named: 'identityScope'))).thenAnswer((_) async {});
+  when(() => database.cacheTrip(any(), any(), identityScope: any(named: 'identityScope'))).thenAnswer((_) async {});
+  when(() => database.getCachedTrip(any(), identityScope: any(named: 'identityScope'))).thenAnswer((_) async => null);
   when(() => database.pruneAlertData()).thenAnswer((_) async {});
   when(() => database.getDismissedAlertIds(
         identityScope: any(named: 'identityScope'),

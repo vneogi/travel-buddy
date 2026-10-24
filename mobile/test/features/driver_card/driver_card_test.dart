@@ -230,10 +230,17 @@ void main() {
         lng: 102.14321,
         geoRegion: 'luang_prabang_laos',
       );
-      await db.cachePlace('wat_xieng_thong', data.serialize());
+      await db.cachePlace(
+        'wat_xieng_thong',
+        data.serialize(),
+        identityScope: 'account:user-a',
+      );
 
       // Read back from cache (simulating what DriverCardScreen does)
-      final cached = await db.getCachedPlace('wat_xieng_thong');
+      final cached = await db.getCachedPlace(
+        'wat_xieng_thong',
+        identityScope: 'account:user-a',
+      );
       expect(cached, isNotNull);
 
       final loaded = PlaceDriverCardData.deserialize(cached!);
@@ -362,7 +369,7 @@ void main() {
         lng: 55.2972,
         geoRegion: 'dubai_uae',
       ).serialize();
-      when(() => db.getCachedPlace('dubai_museum'))
+      when(() => db.getCachedPlace('dubai_museum', identityScope: any(named: 'identityScope')))
           .thenAnswer((_) async => cachedPlace);
 
       await tester.pumpWidget(

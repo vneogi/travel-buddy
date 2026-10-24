@@ -32,7 +32,7 @@ class NodeOutcome {
 /// Invariant: a user action is durable in outbox BEFORE any network attempt.
 class OfflineDatabase {
   static const _dbName = 'travel_buddy_offline.db';
-  static const _dbVersion = 8;
+  static const _dbVersion = 9;
 
   /// Optional path override for testing (pass inMemoryDatabasePath for isolation).
   final String? _testPath;
@@ -94,20 +94,7 @@ class OfflineDatabase {
     await db.execute(
       'CREATE INDEX idx_outbox_state ON outbox(state, next_retry_at)',
     );
-    await db.execute(
-      'CREATE TABLE cache_trip ('
-      '  trip_id     TEXT PRIMARY KEY,'
-      '  state_json  TEXT NOT NULL,'
-      '  cached_at   TEXT NOT NULL'
-      ')',
-    );
-    await db.execute(
-      'CREATE TABLE cache_place ('
-      '  place_ref   TEXT PRIMARY KEY,'
-      '  data_json   TEXT NOT NULL,'
-      '  cached_at   TEXT NOT NULL'
-      ')',
-    );
+    await _createScopedTripAndPlaceCache(db);
     await _createTripListCache(db);
     await _createAlertTables(db);
     await _createLovedPlacesTable(db);
@@ -138,6 +125,57 @@ class OfflineDatabase {
     }
     if (oldVersion < 8) {
       await _createAskThreadTables(db);
+    }
+    if (oldVersion < 9) {
+      // SPEC-43 Gap 12: unscoped cache rows have no owner. Drop them
+      // (fail closed) and rebuild with identity_scope in the primary key.
+      await db.execute('DROP TABLE IF EXISTS cache_trip');
+      await db.execute('DROP TABLE IF EXISTS cache_place');
+      await _createScopedTripAndPlaceCache(db);
+    }
+  }
+
+  /// SPEC-43 Gap 12: trip and place caches keyed by identity scope.
+  Future<void> _createScopedTripAndPlaceCache(Database db) async {
+    await db.execute(
+      'CREATE TABLE cache_trip ('
+      '  identity_scope TEXT NOT NULL,'
+      '  trip_id        TEXT NOT NULL,'
+      '  state_json     TEXT NOT NULL,'
+      '  cached_at      TEXT NOT NULL,'
+      '  PRIMARY KEY (identity_scope, trip_id)'
+      ')',
+    );
+    await db.execute(
+      'CREATE TABLE cache_place ('
+      '  identity_scope TEXT NOT NULL,'
+      '  place_ref      TEXT NOT NULL,'
+      '  data_json      TEXT NOT NULL,'
+      '  cached_at      TEXT NOT NULL,'
+      '  PRIMARY KEY (identity_scope, place_ref)'
+      ')',
+    );
+  }
+
+  /// SPEC-43 Gap 12: a usable cache scope is non-empty and, for the
+  /// `anonymous:` / `account:` namespaces, has an id after the colon.
+  static bool isUsableIdentityScope(String identityScope) {
+    if (identityScope.isEmpty) return false;
+    for (final prefix in const ['anonymous:', 'account:']) {
+      if (identityScope.startsWith(prefix)) {
+        return identityScope.length > prefix.length;
+      }
+    }
+    return true;
+  }
+
+  static void _requireIdentityScope(String identityScope) {
+    if (!isUsableIdentityScope(identityScope)) {
+      throw ArgumentError.value(
+        identityScope,
+        'identityScope',
+        'must be a non-empty identity scope',
+      );
     }
   }
 
@@ -315,23 +353,34 @@ class OfflineDatabase {
   // Cache operations (offline reads — SPEC-02 B.4)
   // ============================================================
 
-  /// Cache a trip state.
-  Future<void> cacheTrip(String tripId, String stateJson) async {
+  /// Cache a trip state for one identity (SPEC-43 Gap 12).
+  Future<void> cacheTrip(
+    String tripId,
+    String stateJson, {
+    required String identityScope,
+  }) async {
+    _requireIdentityScope(identityScope);
     final database = await db;
     await database.insert('cache_trip', {
+      'identity_scope': identityScope,
       'trip_id': tripId,
       'state_json': stateJson,
       'cached_at': DateTime.now().toUtc().toIso8601String(),
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
-  /// Read cached trip state (returns null if not cached).
-  Future<String?> getCachedTrip(String tripId) async {
+  /// Read cached trip state for one identity (null if not cached or the
+  /// scope is unusable). Never looks up by trip_id alone.
+  Future<String?> getCachedTrip(
+    String tripId, {
+    required String identityScope,
+  }) async {
+    if (!isUsableIdentityScope(identityScope)) return null;
     final database = await db;
     final rows = await database.query(
       'cache_trip',
-      where: 'trip_id = ?',
-      whereArgs: [tripId],
+      where: 'identity_scope = ? AND trip_id = ?',
+      whereArgs: [identityScope, tripId],
     );
     return rows.isEmpty ? null : rows.first['state_json'] as String;
   }
@@ -361,23 +410,34 @@ class OfflineDatabase {
     );
   }
 
-  /// Cache a place/venue.
-  Future<void> cachePlace(String placeRef, String dataJson) async {
+  /// Cache a place/venue for one identity (SPEC-43 Gap 12).
+  Future<void> cachePlace(
+    String placeRef,
+    String dataJson, {
+    required String identityScope,
+  }) async {
+    _requireIdentityScope(identityScope);
     final database = await db;
     await database.insert('cache_place', {
+      'identity_scope': identityScope,
       'place_ref': placeRef,
       'data_json': dataJson,
       'cached_at': DateTime.now().toUtc().toIso8601String(),
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
-  /// Read cached place data (returns null if not cached).
-  Future<String?> getCachedPlace(String placeRef) async {
+  /// Read cached place data for one identity (null if not cached or the
+  /// scope is unusable). Never looks up by place_ref alone.
+  Future<String?> getCachedPlace(
+    String placeRef, {
+    required String identityScope,
+  }) async {
+    if (!isUsableIdentityScope(identityScope)) return null;
     final database = await db;
     final rows = await database.query(
       'cache_place',
-      where: 'place_ref = ?',
-      whereArgs: [placeRef],
+      where: 'identity_scope = ? AND place_ref = ?',
+      whereArgs: [identityScope, placeRef],
     );
     return rows.isEmpty ? null : rows.first['data_json'] as String;
   }

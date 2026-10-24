@@ -350,7 +350,13 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
       final placeData = savedNode == null
           ? PlaceDriverCardData(placeRef: title, venueName: title)
           : PlaceDriverCardData.fromTripNode(savedNode);
-      db.cachePlace(title, placeData.serialize()).catchError((_) {});
+      db
+          .cachePlace(
+            title,
+            placeData.serialize(),
+            identityScope: ref.read(identityCacheScopeProvider),
+          )
+          .catchError((_) {});
     } catch (_) {}
 
     if (mounted) Navigator.of(context).pop();

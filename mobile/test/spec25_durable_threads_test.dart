@@ -140,11 +140,11 @@ void main() {
       });
       await v7db.close();
 
-      // Reopen through OfflineDatabase which upgrades to v8.
+      // Reopen through OfflineDatabase which upgrades to v9.
       final offDb = OfflineDatabase(testPath: inMemoryDatabasePath);
       final database = await offDb.db;
 
-      expect(await database.getVersion(), 8);
+      expect(await database.getVersion(), 9);
 
       // Verify new tables exist.
       final tables = await database.rawQuery(

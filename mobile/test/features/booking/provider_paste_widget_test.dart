@@ -93,7 +93,11 @@ class FakeOfflineDatabase extends Fake implements OfflineDatabase {
   bool cachePlaceCalled = false;
 
   @override
-  Future<void> cachePlace(String placeRef, String dataJson) async {
+  Future<void> cachePlace(
+    String placeRef,
+    String dataJson, {
+    required String identityScope,
+  }) async {
     cachePlaceCalled = true;
   }
 }

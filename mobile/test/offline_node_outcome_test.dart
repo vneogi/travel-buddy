@@ -42,7 +42,7 @@ void main() {
         tripId: 'trip-1',
       );
 
-      expect(await (await database.db).getVersion(), 8);
+      expect(await (await database.db).getVersion(), 9);
       expect(outcomes['node-1']?.wasVisited, isTrue);
       expect(outcomes['node-1']?.recordedAt, visitedAt);
       expect(outcomes['node-2']?.wasSkipped, isTrue);
@@ -142,7 +142,7 @@ void main() {
     });
   });
 
-  test('opening a real v5 database upgrades to v8 and preserves rows', () async {
+  test('opening a real v5 database upgrades to v9, preserves scoped rows, drops unscoped caches', () async {
     final directory = await Directory.systemTemp.createTemp('spec30-v5-');
     final path = '${directory.path}/offline.db';
     addTearDown(() => directory.delete(recursive: true));
@@ -225,9 +225,15 @@ void main() {
     addTearDown(upgraded.close);
     final db = await upgraded.db;
 
-    expect(await db.getVersion(), 8);
+    expect(await db.getVersion(), 9);
     expect(await db.query('outbox'), hasLength(1));
-    expect(await db.query('cache_trip'), hasLength(1));
+    // SPEC-43 Gap 12: unscoped v5 cache rows have no owner and are dropped.
+    expect(await db.query('cache_trip'), isEmpty);
+    expect(await db.query('cache_place'), isEmpty);
+    expect(
+      await upgraded.getCachedTrip('trip-1', identityScope: 'account:a'),
+      isNull,
+    );
     expect(await db.query('loved_places'), hasLength(1));
     expect(await db.query('app_kv'), hasLength(1));
     final productionTables = await db.rawQuery(
