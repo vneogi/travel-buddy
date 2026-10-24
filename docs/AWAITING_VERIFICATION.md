@@ -15,6 +15,32 @@ other.
 Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 `#85` and so on; those numbers cannot be reconciled against `git log`.
 
+## Finding -- Oct 24 2026 -- SPEC-43 Gap 6 sign-out merged
+
+Owner Windows checkout of `feat/spec43-g6-signout` at `377f7d8`
+passed Flutter gates before squash-merge:
+
+- focused `flutter test` of `spec43_g6_signout_test.dart`: +7 all passed
+- full `flutter test`: +617 all passed
+- `flutter analyze --no-fatal-infos` was infos-only on the earlier
+  compile-fix SHA `aaee532` (114 findings); later commits were tests
+  only
+
+PR #79 merged to `main` as `c65261c`. Profile Sign Out halts sync,
+wipes every local table including outbox, signs out GoTrue, mints a
+new anonymous JWT, invalidates identity-scoped providers, and
+navigates to `/`.
+
+The named R17 test
+`test_sign_out_does_not_upload_prior_outbox_under_new_identity` exists
+and passed in the green focused file. The owner did not run the
+temporary-skip-outbox-delete sabotage drill on the laptop.
+
+Genie Python gates on the original branch were green. No hosted
+deploy, APK, or phone acceptance was performed for this SHA. Do not
+deploy Gaps 1/6 until Anonymous sign-ins and Cloud Run JWKS env are
+set.
+
 ## Finding -- Oct 24 2026 -- SPEC-43 Gap 1 anonymous JWT merged
 
 Owner Windows checkout of `feat/spec43-g1-anon-jwt` at `fb40bbe`

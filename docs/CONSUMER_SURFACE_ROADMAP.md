@@ -114,8 +114,8 @@ The immediate order after the field-test gate:
     Ask-to-Add (PR #74, `0344b4b`), thin typed Move (PR #75,
     `e51513e`), empty-day catalog Add (PR #76, `b6ddecf`), and
     trip-private uncatalogued Add (PR #77, `05d917e`) are on main;
-    SPEC-43 Gap 1 is on main (`2460edf`); next is Gap 6 sign-out
-    (`docs/briefs/GENIE_SPEC_43_G6_SIGNOUT.md`);
+    SPEC-43 Gaps 1 and 6 are on main (`c65261c`); next is Gap 2 RLS
+    (`docs/briefs/GENIE_SPEC_43_G2_RLS.md`);
     unknown-time excursions stay later;
 12. implement SPEC-43 before any non-owner distribution, production LLM
    processing of personal trip data, or the planned December launch;

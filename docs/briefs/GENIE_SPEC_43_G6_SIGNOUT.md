@@ -1,5 +1,8 @@
 # Genie brief: SPEC-43 Gap 6 -- sign-out as identity lifecycle
 
+Landed on `main` as `c65261c` (PR #79). Do not re-implement this slice.
+Next: `docs/briefs/GENIE_SPEC_43_G2_RLS.md`.
+
 ## Goal
 
 Make Profile "Sign Out" a real identity change, not a navigation.

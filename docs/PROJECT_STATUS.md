@@ -120,7 +120,7 @@
 | Guided Create Trip foundation (SPEC-40) | DONE (PR #61, `ebdea52`) | Five-step destination/date-range/party/interests/review flow backed by deterministic multi-day catalog selection. Post-merge CI and owner Flutter tests passed. Hosted deploy and phone acceptance are not yet repeated for this SHA |
 | Hours-aware scheduling and staged ranking (SPEC-41) | PHASE A COMPLETE (`d1fde14`, `7f25042`) | Create, corridor, and swap refuse known-closed or walking-unreachable target slots; day packing uses per-pair deterministic walking time and later opening windows; swap search/apply share reachability; locked non-hotel anchors remain reachable; cached `max_days` is guaranteed across weekdays and valid interest profiles |
 | Flexible trip span and sparse day editing (SPEC-42) | PARTIAL (`adc99d2`, merged `17e58ac`; Ask-to-Add `0344b4b`; Move `e51513e`; empty-day Add `b6ddecf`; uncatalogued `05d917e`) | Catalog-derived date caps removed; generation fills at most five starter days and empty dates render. Thin typed Ask-to-Add (PR #74), thin typed Move (PR #75), empty-day catalog Add (PR #76), and trip-private uncatalogued Add (PR #77) are on main. Unknown-time excursions remain later. Uncatalogued nodes cannot enter the shared catalog without review |
-| Security, privacy and data governance foundation (SPEC-43) | PARTIAL (Gap 1 on main, `2460edf`, PR #78) | Gap 1: server-issued anonymous JWT via JWKS; `Anonymous <uuid>` is 401. Hosted deploy of this SHA is not done and would 401 the current field-test header until JWKS env and dashboard Anonymous sign-ins are set. Gaps 2 (RLS), 6 (sign-out), and 9 (signals) remain before any non-owner APK |
+| Security, privacy and data governance foundation (SPEC-43) | PARTIAL (Gaps 1 and 6 on main) | Gap 1 JWT `2460edf` (PR #78). Gap 6 sign-out wipe `c65261c` (PR #79). Hosted deploy of these SHAs is not done. Gaps 2 (RLS) and 9 (signals) remain before any non-owner APK |
 | Backend integrity and future-readiness foundation (SPEC-44) | PHASE A ON MAIN (PR #67, `9a7b9d9`) | Atomic trip/party/graph writes, optimistic version, durable command_id replay, typed conflicts, and hosted 0025. A4/A5, Flutter command queue, and SPEC-43 remain out of this slice |
 | On-trip visible surface (SPEC-45) | PHASE A + FIELD TRUST HYGIENE ON MAIN | Phase A chrome is on the field APK. Phase B field trust hygiene is on main through the post-field merge sequence: capped alerts, current-day/kind-specific outcomes, dead Review removal, and honest empty-swap refusal. Operational place detail, transfer cards, and Rescue remain later |
 | What Now foreground context (SPEC-46) | PHASE A ON MAIN (PR #73, `d1df944`) | Deterministic no-GPS What Now inside trip-scoped Ask: temporary time/energy/walking/intent, trip-position or region-anchor, shared `fits_next_lock`, inspectable reasons, named unknowns, display-only details. Owner Windows analyze infos-only; What Now widgets and full Flutter suite green. Hosted deploy, APK, and phone use not done. Phase B GPS only after SPEC-43 |
@@ -160,9 +160,10 @@ Current order:
 3. Thin typed Ask-to-Add (PR #74, `0344b4b`), thin typed Move
    (PR #75, `e51513e`), empty-day catalog Add (PR #76, `b6ddecf`), and
    trip-private uncatalogued Add (PR #77, `05d917e`) are on main.
-   SPEC-43 Gap 1 is on main (`2460edf`, PR #78). Next Genie job is
-   Gap 6 sign-out (`docs/briefs/GENIE_SPEC_43_G6_SIGNOUT.md`).
-   Unknown-time excursions stay later.
+   SPEC-43 Gap 1 (`2460edf`, PR #78) and Gap 6 (`c65261c`, PR #79)
+   are on main. Next Genie job is Gap 2 RLS
+   (`docs/briefs/GENIE_SPEC_43_G2_RLS.md`). Unknown-time
+   excursions stay later.
 4. Patch the Laos must-do/decision-cell data gaps. Target 3-5 feasible options
    in common cells, not an arbitrary 100 venues per city.
 5. SPEC-43 before any non-owner APK; then a narrow external corridor pilot with
@@ -282,6 +283,12 @@ Seed-shaped cohorts.
     `spec43_g1_anon_jwt_test.dart` plus api_client and device_identity
     green; full suite +610 green. Hosted deploy not done. Gap 11
     unlimited anon JWTs remain.
+9g. SPEC-43 Gap 6 sign-out -- **DONE on main** (PR #79, `c65261c`).
+    Ordered halt, wipe including outbox, signOut, new anonymous JWT,
+    provider invalidate, `go('/')`. Owner Windows at `377f7d8`:
+    focused G6 +7 green; full suite +617 green. Analyze infos-only on
+    the compile-fix SHA. R17 sabotage was not executed on the laptop;
+    the named outbox test exists. Hosted/phone not done.
 10. SPEC-42 uncap / sparse-span foundation -- **PARTIAL on main**
     (`adc99d2`, merge `17e58ac`; empty-day Add `b6ddecf`; uncatalogued
     `05d917e`). Catalog date caps are gone. Unknown-time excursions
@@ -303,11 +310,10 @@ Seed-shaped cohorts.
 13. SPEC-44 Phase A backend integrity -- **DONE on main** (PR #67,
     `9a7b9d9`). Hosted 0025 applied 2026-09-27. Cloud Run `00012-8wv`.
     A4/A5, Flutter command queue, and SPEC-43 remain.
-14. SPEC-43 security, privacy, and data governance -- **PARTIAL**. Gap 1
-    is on main (`2460edf`). Next is Gap 6 sign-out wipe, then Gaps 2/9.
-    Complete remaining gaps before any non-owner APK, production LLM
-    processing of personal trip data, or the planned December public
-    launch.
+14. SPEC-43 security, privacy, and data governance -- **PARTIAL**. Gaps
+    1 and 6 are on main. Next is Gap 2 RLS, then Gap 9. Complete
+    remaining gaps before any non-owner APK, production LLM processing
+    of personal trip data, or the planned December public launch.
 15. After SPEC-43, implement the SPEC-13 registry, minimum SPEC-17 claim store,
     and SPEC-20 city factory. Bangkok proves the pack; do not ingest another
     country through hardcoded exceptions.
@@ -387,7 +393,7 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 | SPEC-43 gap 3: personal trip fields can cross the LLM boundary | High; production personal LLM use blocked | Heavy prompts can serialize booking codes, notes, exact times, and coordinates, while fallback can cross providers. Use deterministic create/swap plus one redacting allowlist gateway and an approved provider-region-retention matrix |
 | SPEC-43 gap 4: export, deletion, and retention are unimplemented | High before public launch | SPEC-27 is specified only. Build self-service rights, schema-walking erasure, physical expiry, backup tombstones, and restore tests before non-owner distribution |
 | SPEC-43 gap 5: offline trip and booking data is plaintext and backup policy is implicit | High before non-owner use | SQLite holds trips, booking fields, signals, alerts, and outcomes while Android backup exclusions are absent. Encrypt with hardware-backed keys, exclude backups, mask restricted fields, and test extracted artifacts |
-| SPEC-43 gap 6: sign-out does not revoke or clear the prior identity | High before shared-device use | Profile navigation is not logout. Stop sync, clear/revoke tokens, wipe every identity-scoped local row, create a fresh anonymous identity, and prove account-switch isolation |
+| SPEC-43 gap 6: sign-out does not revoke or clear the prior identity | Closed on main (`c65261c`, PR #79); hosted/phone not done | Halt sync, DELETE all local tables including outbox, GoTrue signOut, then mint a new anonymous JWT. Profile button keyed `profile_sign_out`. Access tokens may live until exp (no denylist). |
 | SPEC-43 gap 7: behavioral consent is a pass-through stub | High before collecting a tester cohort | Necessary operation, analytics, personalization, location, and marketing are not separated. Add a versioned purpose ledger, block optional capture before choice, and propagate withdrawal to outbox, features, and training inputs |
 | SPEC-43 gap 8: semantic cache can cross user boundaries | High when Ask is model-backed | Region and venue are insufficient private cache keys. Cache only public facts globally; otherwise use owner plus complete context/source/version scope, refuse restricted content, and actively purge expiry |
 | SPEC-43 gap 9: trip-linked signals lack ownership and poisoning controls | High before learned ranking | A supplied trip ID can be used for party/derived context without an ownership gate. Require ownership in ingest and derivation transactions, close every signal schema, and gate influence by provenance, quality, plausibility, and sample size |

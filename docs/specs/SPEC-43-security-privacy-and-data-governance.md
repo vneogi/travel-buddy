@@ -1,8 +1,8 @@
 # SPEC-43: Security, Privacy and Data Governance Foundation
 
-> Status: PARTIAL. Gap 1 (server-issued anonymous JWT) merged as
-> `2460edf` (PR #78). Gaps 2, 6, and 9 remain in Phase 1. Hosted
-> deploy of Gap 1 is not done.
+> Status: PARTIAL. Gap 1 merged as `2460edf` (PR #78). Gap 6 merged as
+> `c65261c` (PR #79). Gaps 2 and 9 remain in Phase 1. Hosted deploy
+> of Gaps 1/6 is not done.
 >
 > Sequence: start after the Laos reliability and build tranche is complete:
 > SPEC-41 scheduling, SPEC-10 paste and flight/hotel scheduler, SPEC-25
@@ -268,9 +268,12 @@ storage. Android backup exclusions are not declared.
 
 ### Gap 6: sign-out does not revoke or clear the prior identity
 
-**Current fact.** The profile action only navigates to onboarding. It does not
-revoke or clear a Supabase session, stop synchronization, rotate identity, or
-wipe account-scoped local records.
+**Status on main.** Closed in application code as `c65261c` (PR #79).
+Hosted/phone not done. Access tokens may live until `exp` (no denylist).
+
+**Current fact (pre-Gap 6).** The profile action only navigates to
+onboarding. It does not revoke or clear a Supabase session, stop
+synchronization, rotate identity, or wipe account-scoped local records.
 
 **Solution.**
 

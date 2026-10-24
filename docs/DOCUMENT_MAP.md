@@ -23,13 +23,13 @@ documents disagree, follow Precedence below and name the conflict in
 
 ## Continuity state on 24 Oct 2026
 
-- GitHub `main` is through `2460edf`: SPEC-45 field trust hygiene,
+- GitHub `main` is through `c65261c`: SPEC-45 field trust hygiene,
   SPEC-25 field-priority intents, SPEC-25 Phase C durable device-local
   threads, SPEC-46 What Now Phase A, thin typed Ask-to-Add, thin
   typed Move, empty-day catalog Add, trip-private uncatalogued Add,
-  and SPEC-43 Gap 1 anonymous JWT are merged.
-- Next Genie job: `docs/briefs/GENIE_SPEC_43_G6_SIGNOUT.md`.
-  SPEC-43 Gaps 2/9, Laos decision-cell coverage, and unknown-time
+  SPEC-43 Gap 1 anonymous JWT, and SPEC-43 Gap 6 sign-out are merged.
+- Next Genie job: `docs/briefs/GENIE_SPEC_43_G2_RLS.md`.
+  SPEC-43 Gap 9, Laos decision-cell coverage, and unknown-time
   excursions stay later.
 - Hosted: migrations through 0025; Cloud Run `travel-buddy-00012-8wv`.
 - Owner Laos field use is complete. The dated 26 observations and cross-trip
@@ -106,9 +106,10 @@ SPEC-46 Phase A.
 **Specified remainders on that spine.** SPEC-46 Phase A (`d1df944`),
 thin typed Ask-to-Add (`0344b4b`), thin typed Move (`e51513e`),
 empty-day catalog Add (`b6ddecf`), and trip-private uncatalogued Add
-(`05d917e`) and SPEC-43 Gap 1 (`2460edf`) are on main; next is
-SPEC-43 Gap 6 (`docs/briefs/GENIE_SPEC_43_G6_SIGNOUT.md`); SPEC-42
-unknown-time excursions stay later;
+(`05d917e`), SPEC-43 Gap 1 (`2460edf`), and SPEC-43 Gap 6
+(`c65261c`) are on main; next is SPEC-43 Gap 2
+(`docs/briefs/GENIE_SPEC_43_G2_RLS.md`); SPEC-42 unknown-time
+excursions stay later;
 trip-optional and production-LLM SPEC-25; SPEC-10 HITL reflow;
 SPEC-29 weather-day detail; SPEC-44 A4/A5 and Flutter command queue.
 SPEC-46 Phase B GPS waits for SPEC-43.
