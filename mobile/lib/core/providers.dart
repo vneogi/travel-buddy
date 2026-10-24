@@ -44,11 +44,7 @@ final tokenProvider = Provider<TokenProvider>((ref) {
 
 /// Central API client (SPEC-09: Anonymous header when no JWT).
 final apiClientProvider = Provider<ApiClient>((ref) {
-  final resolvedDeviceId = ref.watch(deviceIdProvider);
-  return ApiClient(
-    tokenProvider: ref.watch(tokenProvider),
-    deviceIdProvider: () async => resolvedDeviceId,
-  );
+  return ApiClient(tokenProvider: ref.watch(tokenProvider));
 });
 
 /// Offline database (SQLite -- SPEC-02 Part A).

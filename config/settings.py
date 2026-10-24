@@ -28,13 +28,19 @@ class Settings(BaseSettings):
 
     # --- Auth (Supabase JWT verification) ---
     # Project Settings -> API -> JWT Secret. Loaded from TB_SUPABASE_JWT_SECRET.
+    # Legacy HS256 path: used ONLY when TB_SUPABASE_JWKS_URL is unset.
     supabase_jwt_secret: Optional[str] = None
     jwt_audience: str = "authenticated"
+    # SPEC-43 Gap 1: asymmetric verification from the project's JWKS.
+    # e.g. https://<ref>.supabase.co/auth/v1/.well-known/jwks.json
+    supabase_jwks_url: Optional[str] = None  # TB_SUPABASE_JWKS_URL
+    # Required when JWKS URL is set, e.g. https://<ref>.supabase.co/auth/v1
+    supabase_jwt_iss: Optional[str] = None  # TB_SUPABASE_JWT_ISS
 
-    # --- Anonymous identity (SPEC-09) ---
-    # When True, accepts Authorization: Anonymous <uuid-v4> as a valid identity.
-    # Defaults to False (fail-closed). Must be explicitly enabled for deployments
-    # that accept device-only identities. Ignored when supabase_jwt_secret is set.
+    # --- Anonymous identity (SPEC-09, retired by SPEC-43 Gap 1) ---
+    # NO-OP. Kept so existing hosted env (TB_ALLOW_ANONYMOUS=true) still
+    # parses. Authorization: Anonymous <uuid> is rejected in every config;
+    # anonymous travellers use a server-issued Supabase anonymous JWT.
     allow_anonymous: bool = False
 
     # --- Model Gateway (LiteLLM) ---
