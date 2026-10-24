@@ -49,3 +49,27 @@ def test_debug_header_cannot_override_real_jwt(client, monkeypatch):
     assert r.status_code == 401, (
         f"SECURITY BUG: X-Debug-User-Id bypassed JWT auth! Got {r.status_code}"
     )
+
+
+def test_debug_header_cannot_override_jwks(client, monkeypatch):
+    """SPEC-43 G1: with JWKS configured, X-Debug-User-Id is never trusted."""
+    import sys
+
+    s = sys.modules["config.settings"].settings
+    monkeypatch.setattr(
+        s, "supabase_jwks_url", "https://p.supabase.co/auth/v1/.well-known/jwks.json"
+    )
+    monkeypatch.setattr(s, "supabase_jwt_iss", "https://p.supabase.co/auth/v1")
+    r = client.get("/api/v1/user/status", headers={"X-Debug-User-Id": "attacker"})
+    assert r.status_code == 401
+
+
+def test_anonymous_header_rejected_even_when_allowed(client, monkeypatch):
+    """SPEC-43 G1: TB_ALLOW_ANONYMOUS is a no-op; Anonymous <uuid> is 401."""
+    import sys
+    import uuid
+
+    s = sys.modules["config.settings"].settings
+    monkeypatch.setattr(s, "allow_anonymous", True)
+    r = client.get("/api/v1/user/status", headers={"Authorization": f"Anonymous {uuid.uuid4()}"})
+    assert r.status_code == 401

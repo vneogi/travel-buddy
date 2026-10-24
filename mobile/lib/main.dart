@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'core/anon_session.dart';
 import 'core/env.dart';
 import 'core/providers.dart';
 import 'data/models.dart';
@@ -21,12 +22,16 @@ Future<void> main() async {
       url: Env.supabaseUrl,
       publishableKey: Env.supabaseAnonKey,
     );
+    // SPEC-43 Gap 1: server-issued anonymous JWT before the first API call.
+    // Reuses a persisted session; never sends the device UUID as auth.
+    await ensureAnonymousSession(SupabaseAnonAuth(Supabase.instance.client.auth));
   }
 
   // Create container so we can resolve identity and start sync before runApp.
   final container = ProviderContainer();
 
-  // SPEC-09: Resolve device identity before anything touches the network.
+  // SPEC-09: Resolve the local device id (non-secret; local cache namespace
+  // and diagnostics only -- SPEC-43 Gap 1: never an API credential).
   // getOrCreate() reads from secure storage or generates a UUID v4.
   final deviceId = await container.read(deviceIdentityProvider).getOrCreate();
   container.read(deviceIdProvider.notifier).state = deviceId;

@@ -6,20 +6,17 @@ import 'api_exception.dart';
 /// Returns the current Supabase access token, or null in dev.
 typedef TokenProvider = Future<String?> Function();
 
-/// Returns the resolved device UUID (SPEC-09 anonymous identity).
-typedef DeviceIdProvider = Future<String> Function();
-
 /// Central HTTP client. Handles auth injection and error mapping.
 ///
-/// Header precedence (SPEC-09):
-///   1. Bearer <jwt> -- when Supabase session is active
-///   2. Anonymous <device-uuid> -- device identity fallback
+/// SPEC-43 Gap 1: the only credential is `Bearer <access_token>` from a
+/// server-issued Supabase session (anonymous or signed-in). With no token,
+/// Authorization is omitted and the server answers 401. The device UUID is a
+/// local diagnostic id only and is never sent as a credential.
 class ApiClient {
   final Dio dio;
 
   ApiClient({
     required TokenProvider tokenProvider,
-    required DeviceIdProvider deviceIdProvider,
     @visibleForTesting Dio? dioOverride,
   }) : dio = dioOverride ??
             Dio(BaseOptions(
@@ -34,8 +31,7 @@ class ApiClient {
         if (token != null && token.isNotEmpty) {
           options.headers['Authorization'] = 'Bearer $token';
         } else {
-          final deviceId = await deviceIdProvider();
-          options.headers['Authorization'] = 'Anonymous $deviceId';
+          options.headers.remove('Authorization');
         }
         handler.next(options);
       },

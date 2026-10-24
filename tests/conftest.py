@@ -37,6 +37,8 @@ _SAVED_SUPABASE_JWT_SECRET = os.environ.get("TB_SUPABASE_JWT_SECRET", "")
 # Override Supabase creds (env vars take precedence over .env file in pydantic).
 # Setting to empty string makes Optional[str] fields resolve to None.
 os.environ["TB_SUPABASE_JWT_SECRET"] = ""
+os.environ["TB_SUPABASE_JWKS_URL"] = ""
+os.environ["TB_SUPABASE_JWT_ISS"] = ""
 os.environ["TB_SUPABASE_URL"] = ""
 os.environ["TB_SUPABASE_KEY"] = ""
 os.environ["TB_DEBUG"] = "true"

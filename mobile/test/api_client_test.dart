@@ -32,85 +32,41 @@ void main() {
       testDio = Dio(BaseOptions(baseUrl: 'http://localhost:9999/api/v1'));
     });
 
-    ApiClient _buildClient({
-      required Future<String?> Function() tokenProvider,
-      required Future<String> Function() deviceIdProvider,
-    }) {
-      final client = ApiClient(
-        tokenProvider: tokenProvider,
-        deviceIdProvider: deviceIdProvider,
-        dioOverride: testDio,
-      );
+    ApiClient buildClient(Future<String?> Function() tokenProvider) {
+      final client = ApiClient(tokenProvider: tokenProvider, dioOverride: testDio);
       // Append capture AFTER the auth interceptor that ApiClient just added.
       client.dio.interceptors.add(capture);
       return client;
     }
 
-    test('sends Anonymous <uuid> when tokenProvider returns null', () async {
-      const deviceId = 'aaaaaaaa-bbbb-4ccc-9ddd-eeeeeeeeeeee';
-
-      final client = _buildClient(
-        tokenProvider: () async => null,
-        deviceIdProvider: () async => deviceId,
-      );
-
+    test('omits Authorization (never Anonymous) when token is null', () async {
+      final client = buildClient(() async => null);
       try {
         await client.get('/test');
-      } catch (_) {
-        // Expected: capture rejects -> ApiClient._map -> ServerException
-      }
-
-      expect(capture.lastRequest, isNotNull,
-          reason: 'Request must have been intercepted');
-      expect(
-        capture.lastRequest!.headers['Authorization'],
-        equals('Anonymous aaaaaaaa-bbbb-4ccc-9ddd-eeeeeeeeeeee'),
-      );
+      } catch (_) {}
+      expect(capture.lastRequest, isNotNull);
+      expect(capture.lastRequest!.headers.containsKey('Authorization'), isFalse);
     });
 
-    test('sends Anonymous when tokenProvider returns empty string', () async {
-      const deviceId = 'aaaaaaaa-bbbb-4ccc-9ddd-eeeeeeeeeeee';
-
-      final client = _buildClient(
-        tokenProvider: () async => '',
-        deviceIdProvider: () async => deviceId,
-      );
-
+    test('omits Authorization (never Anonymous) when token is empty', () async {
+      final client = buildClient(() async => '');
       try {
         await client.get('/health');
       } catch (_) {}
-
       expect(capture.lastRequest, isNotNull);
-      expect(
-        capture.lastRequest!.headers['Authorization'],
-        equals('Anonymous aaaaaaaa-bbbb-4ccc-9ddd-eeeeeeeeeeee'),
-      );
+      expect(capture.lastRequest!.headers.containsKey('Authorization'), isFalse);
     });
 
     test('sends Bearer when tokenProvider returns a JWT', () async {
-      const deviceId = 'aaaaaaaa-bbbb-4ccc-9ddd-eeeeeeeeeeee';
-      const jwt = 'eyJhbGciOiJIUzI1NiJ9.test.signature';
-
-      final client = _buildClient(
-        tokenProvider: () async => jwt,
-        deviceIdProvider: () async => deviceId,
-      );
-
+      const jwt = 'eyJhbGciOiJSUzI1NiJ9.test.signature';
+      final client = buildClient(() async => jwt);
       try {
         await client.post('/signals', body: {'signals': []});
       } catch (_) {}
-
       expect(capture.lastRequest, isNotNull);
       expect(
         capture.lastRequest!.headers['Authorization'],
-        equals('Bearer eyJhbGciOiJIUzI1NiJ9.test.signature'),
-      );
-      expect(
-        capture.lastRequest!.headers['Authorization']
-            .toString()
-            .contains('Anonymous'),
-        isFalse,
-        reason: 'Anonymous must not appear when Bearer is active',
+        equals('Bearer eyJhbGciOiJSUzI1NiJ9.test.signature'),
       );
     });
   });
@@ -119,7 +75,6 @@ void main() {
     final dio = Dio(BaseOptions(baseUrl: 'http://localhost:9999/api/v1'));
     final client = ApiClient(
       tokenProvider: () async => null,
-      deviceIdProvider: () async => 'device-id',
       dioOverride: dio,
     );
     dio.interceptors.add(
@@ -144,7 +99,6 @@ void main() {
     final dio = Dio(BaseOptions(baseUrl: 'http://localhost:9999/api/v1'));
     final client = ApiClient(
       tokenProvider: () async => null,
-      deviceIdProvider: () async => 'device-id',
       dioOverride: dio,
     );
     dio.interceptors.add(
@@ -184,7 +138,6 @@ void main() {
     final dio = Dio(BaseOptions(baseUrl: 'http://localhost:9999/api/v1'));
     final client = ApiClient(
       tokenProvider: () async => null,
-      deviceIdProvider: () async => 'device-id',
       dioOverride: dio,
     );
     dio.interceptors.add(
@@ -218,7 +171,6 @@ void main() {
     final dio = Dio(BaseOptions(baseUrl: 'http://localhost:9999/api/v1'));
     final client = ApiClient(
       tokenProvider: () async => null,
-      deviceIdProvider: () async => 'device-id',
       dioOverride: dio,
     );
     dio.interceptors.add(
@@ -258,7 +210,6 @@ void main() {
     final dio = Dio(BaseOptions(baseUrl: 'http://localhost:9999/api/v1'));
     final client = ApiClient(
       tokenProvider: () async => null,
-      deviceIdProvider: () async => 'device-id',
       dioOverride: dio,
     );
     dio.interceptors.add(
