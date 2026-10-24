@@ -161,8 +161,9 @@ Current order:
    (PR #75, `e51513e`), empty-day catalog Add (PR #76, `b6ddecf`), and
    trip-private uncatalogued Add (PR #77, `05d917e`) are on main.
    SPEC-43 Gaps 1, 6, 2, 9 ownership, and 12 HTTPS are on main
-   (`6f1dab8`, PR #82). Next Genie job is Gap 12 cache keys after
-   planning writes the brief. Unknown-time excursions stay later.
+   (`6f1dab8`, PR #82). Next Genie job is Gap 12 cache keys
+   (`docs/briefs/GENIE_SPEC_43_G12_CACHE.md`). Unknown-time
+   excursions stay later.
 4. Patch the Laos must-do/decision-cell data gaps. Target 3-5 feasible options
    in common cells, not an arbitrary 100 venues per city.
 5. SPEC-43 before any non-owner APK; then a narrow external corridor pilot with

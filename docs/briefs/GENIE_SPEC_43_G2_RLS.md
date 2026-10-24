@@ -1,7 +1,7 @@
 # Genie brief: SPEC-43 Gap 2 -- RLS and public grants
 
 Landed on `main` as `0b8125f` (PR #80). Do not re-implement this slice.
-Next: Gap 12 cache keys (brief not written). Gap 9 ownership and Gap 12 HTTPS are on main.
+Next: `docs/briefs/GENIE_SPEC_43_G12_CACHE.md`. Gap 9 ownership and Gap 12 HTTPS are on main.
 Do not apply 0026 on hosted until `rolbypassrls` is true for `postgres`
 and `service_role`.
 

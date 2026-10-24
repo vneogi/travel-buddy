@@ -17,7 +17,8 @@ Cloud Run `travel-buddy-00012-8wv` is the live untagged revision.
 SPEC-42 remains PARTIAL (unknown-time excursions later).
 Create-then-book HITL reflow remains. Trip-optional Ask remains.
 What Now Phase B GPS remains blocked on remaining SPEC-43. Next is
-Gap 12 cache keys (brief not written). Do not apply 0026 until
+Gap 12 cache keys
+(`docs/briefs/GENIE_SPEC_43_G12_CACHE.md`). Do not apply 0026 until
 `rolbypassrls` is confirmed.
 
 SPEC-44 Phase A application code merged as PR #67 (`9a7b9d9`). Planning
@@ -86,9 +87,9 @@ typed Move (`e51513e`), empty-day catalog Add (`b6ddecf`), and
 trip-private uncatalogued Add (`05d917e`) are now on main. SPEC-43 Gap 1
 (`2460edf`), Gap 6 (`c65261c`), Gap 2 (`0b8125f`), Gap 9
 (`163a14c`), and Gap 12 HTTPS (`6f1dab8`) are on main. The next
-Genie job is Gap 12 cache keys after planning writes the brief.
-Remaining Gap 9 schema/poisoning, unknown-time excursions, and Laos
-decision-cell coverage stay later.
+Genie job is `docs/briefs/GENIE_SPEC_43_G12_CACHE.md`. Remaining Gap 9
+schema/poisoning, unknown-time excursions, and Laos decision-cell
+coverage stay later.
 SPEC-43 still gates every non-owner APK. Do not treat in-memory pytest as
 PostgreSQL transaction proof.
 
@@ -175,7 +176,8 @@ Resume in this order:
 5. Patch Laos spine and effective-choice gaps: Kuang Si, Pak Ou, Blue Lagoon
    2/3, Papao, and the Wat Xieng Thong packing failure. Measure coverage by
    common decision cell, not total POI count.
-6. Implement remaining SPEC-43 (next: Gap 12 cache keys) before any
+6. Implement remaining SPEC-43 (next: Gap 12 cache keys,
+   `docs/briefs/GENIE_SPEC_43_G12_CACHE.md`) before any
    non-owner APK, hostel QR, production LLM on personal trips, or
    contribution collection. Hosted 0026 waits on `rolbypassrls`.
 7. Implement SPEC-13 identity plus the minimum SPEC-17 claim/attribute
@@ -202,13 +204,13 @@ separation live in the operating model; do not reconstruct them from chat.
 Hosted 0025 applied. Cloud Run `00012-8wv`. Owner APK SHA256
 `bd935bf2...`.
 
-Genie next: wait for the Gap 12 cache-key brief. Do not implement
-cache keys, remaining Gap 9 schema/poisoning, Gap 5, production LLM,
-trip-less Ask, or unknown-time excursions without that brief. Do not
-apply 0026 until `rolbypassrls` is confirmed for `postgres` and
-`service_role`. Do not deploy Gap 1/6 until Anonymous sign-ins and
-JWKS env are set. Do not merge, deploy, or build an APK from this
-docs update.
+Genie next:
+`docs/briefs/GENIE_SPEC_43_G12_CACHE.md` on `feat/spec43-g12-cache`.
+Do not merge, deploy, or build an APK. Do not start chat-URL Gap 12,
+ATS XML, remaining Gap 9 schema/poisoning, Gap 5, production LLM,
+trip-less Ask, or unknown-time excursions. Do not apply 0026 until
+`rolbypassrls` is confirmed for `postgres` and `service_role`. Do not
+deploy Gap 1/6 until Anonymous sign-ins and JWKS env are set.
 
 Historical context (do not treat as current work):
 

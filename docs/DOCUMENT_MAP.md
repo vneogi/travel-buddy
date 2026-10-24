@@ -28,7 +28,7 @@ documents disagree, follow Precedence below and name the conflict in
   threads, SPEC-46 What Now Phase A, thin typed Ask-to-Add, thin
   typed Move, empty-day catalog Add, trip-private uncatalogued Add,
   and SPEC-43 Gaps 1, 6, 2, 9 (ownership), and 12 HTTPS are merged.
-- Next Genie job: Gap 12 cache keys after planning writes the brief.
+- Next Genie job: `docs/briefs/GENIE_SPEC_43_G12_CACHE.md`.
   Hosted apply of 0026 waits on `rolbypassrls`. Remaining Gap 9
   schema/poisoning, Laos decision-cell coverage, and unknown-time
   excursions stay later.
@@ -110,7 +110,8 @@ empty-day catalog Add (`b6ddecf`), and trip-private uncatalogued Add
 (`05d917e`), SPEC-43 Gap 1 (`2460edf`), and SPEC-43 Gap 6
 (`c65261c`), SPEC-43 Gap 2 (`0b8125f`), SPEC-43 Gap 9
 (`163a14c`), and SPEC-43 Gap 12 HTTPS (`6f1dab8`) are on main;
-next is Gap 12 cache keys (brief not written); SPEC-42 unknown-time
+next is Gap 12 cache keys
+(`docs/briefs/GENIE_SPEC_43_G12_CACHE.md`); SPEC-42 unknown-time
 excursions stay later;
 trip-optional and production-LLM SPEC-25; SPEC-10 HITL reflow;
 SPEC-29 weather-day detail; SPEC-44 A4/A5 and Flutter command queue.
