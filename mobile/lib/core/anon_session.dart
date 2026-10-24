@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 abstract class AnonAuth {
   bool get hasSession;
   Future<void> signInAnonymously();
+  Future<void> signOut();
 }
 
 /// Production adapter over the Supabase GoTrue client.
@@ -19,6 +20,11 @@ class SupabaseAnonAuth implements AnonAuth {
   @override
   Future<void> signInAnonymously() async {
     await _auth.signInAnonymously();
+  }
+
+  @override
+  Future<void> signOut() async {
+    await _auth.signOut();
   }
 }
 

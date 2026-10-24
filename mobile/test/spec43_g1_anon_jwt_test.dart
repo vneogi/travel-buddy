@@ -36,6 +36,11 @@ class _FakeAuth implements AnonAuth {
     if (fail) throw Exception('anonymous sign-ins are disabled');
     session = true;
   }
+
+  @override
+  Future<void> signOut() async {
+    session = false;
+  }
 }
 
 const _deviceUuid = 'aaaaaaaa-bbbb-4ccc-9ddd-eeeeeeeeeeee';

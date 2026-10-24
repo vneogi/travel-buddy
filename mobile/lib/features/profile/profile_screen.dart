@@ -6,14 +6,34 @@ import '../../core/providers.dart';
 import '../../theme/colors.dart';
 import '../../theme/typography.dart';
 import '../../theme/spacing.dart';
+import 'sign_out_controller.dart';
 
-class ProfileScreen extends ConsumerWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  Future<void> _signOut() async {
+    final ok = await ref.read(signOutControllerProvider.notifier).run();
+    if (!mounted) return;
+    if (ok.ok) {
+      context.go('/');
+      return;
+    }
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    messenger?.showSnackBar(
+      SnackBar(content: Text(ok.error ?? 'Sign out failed. Please try again.')),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final statusAsync = ref.watch(userStatusProvider);
     final deviceId = ref.watch(deviceIdProvider);
+    final signingOut = ref.watch(signOutControllerProvider);
 
     return Scaffold(
       appBar: AppBar(title: Text('Profile', style: AppTypography.h2)),
@@ -67,11 +87,12 @@ class ProfileScreen extends ConsumerWidget {
             ),
             const Spacer(),
             TextButton(
-              onPressed: () {
-                // TODO: Supabase sign out
-                context.go('/onboarding');
-              },
-              child: Text('Sign Out', style: TextStyle(color: AppColors.danger)),
+              key: const Key('profile_sign_out'),
+              onPressed: signingOut ? null : _signOut,
+              child: Text(
+                signingOut ? 'Signing out…' : 'Sign Out',
+                style: TextStyle(color: AppColors.danger),
+              ),
             ),
           ],
         ),

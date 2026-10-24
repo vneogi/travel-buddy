@@ -825,6 +825,38 @@ class OfflineDatabase {
   }
 
   /// Close the database (for testing).
+
+  /// SPEC-43 Gap 6: wipe every local row during sign-out.
+  ///
+  /// Deletes data only; never drops the database file or recreates schema.
+  /// Includes the entire outbox so identity A's pending rows can never POST
+  /// under identity B's Bearer after the auth transition.
+  Future<void> deleteAllLocalRows() async {
+    final database = await db;
+    const tables = [
+      'outbox',
+      'cache_trip',
+      'cache_place',
+      'cache_trip_list',
+      'alert_cache',
+      'alert_dismissals',
+      'loved_places',
+      'app_kv',
+      'node_outcome',
+      'ask_message',
+      'ask_thread',
+      'notification_cache',
+      'notification_dismissals',
+    ];
+    await database.transaction((txn) async {
+      final batch = txn.batch();
+      for (final table in tables) {
+        batch.delete(table);
+      }
+      await batch.commit(noResult: true);
+    });
+  }
+
   Future<void> close() async {
     final opening = _opening;
     if (opening != null) {

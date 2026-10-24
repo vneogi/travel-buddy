@@ -88,6 +88,15 @@ class SyncEngine {
     _connectivitySub = null;
   }
 
+  /// SPEC-43 Gap 6: freeze sync during an auth transition.
+  ///
+  /// Must happen before wiping the outbox so no in-flight POST from identity A
+  /// can complete under identity B's future Bearer token.
+  void haltForAuthChange() {
+    _authHalted = true;
+    stop();
+  }
+
   /// Trigger sync (called after each emit, on resume, etc).
   /// Non-blocking — returns immediately. Safe to call frequently.
   void triggerSync() {
