@@ -171,19 +171,6 @@ void _stubSyncLifecycle(_MockSyncEngine sync, List<String> events) {
   });
 }
 
-Future<void> _pumpUntil(
-  WidgetTester tester,
-  bool Function() done, {
-  int maxRounds = 30,
-}) async {
-  for (var i = 0; i < maxRounds; i++) {
-    await tester.runAsync(
-      () => Future<void>.delayed(const Duration(milliseconds: 30)),
-    );
-    await tester.pump();
-    if (done()) return;
-  }
-}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -409,10 +396,18 @@ void main() {
 
     testWidgets('router: signed-out user is not left on /trip/<old-id>',
         (tester) async {
-      final db = await _db();
+      final db = await tester.runAsync(_db);
+      if (db == null) fail('failed to open test database');
       final auth = _FakeAnonAuth(accessToken: 'token-a');
       final sync = _MockSyncEngine();
       _stubSyncLifecycle(sync, <String>[]);
+      final repo = _MockTripRepository();
+      when(() => repo.getHomeSnapshot()).thenAnswer(
+        (_) async => const HomeSnapshot(
+          supportedRegions: ['luang_prabang_laos'],
+          trips: [],
+        ),
+      );
 
       final router = GoRouter(
         initialLocation: '/trip/trip-a',
@@ -445,6 +440,7 @@ void main() {
             offlineDatabaseProvider.overrideWithValue(db),
             anonAuthProvider.overrideWithValue(auth),
             syncEngineProvider.overrideWithValue(sync),
+            tripRepoProvider.overrideWithValue(repo),
             userStatusProvider.overrideWith((ref) async => _status('user-a')),
             deviceIdProvider.overrideWith((ref) => 'device-1'),
           ],
@@ -452,21 +448,32 @@ void main() {
         ),
       );
       await tester.pump();
+      expect(find.byKey(const Key('open_profile')), findsOneWidget);
+
       await tester.tap(find.byKey(const Key('open_profile')));
       await tester.pump();
-      await _pumpUntil(tester, () => find.byKey(const Key('profile_sign_out')).evaluate().isNotEmpty);
+      expect(find.byKey(const Key('profile_sign_out')), findsOneWidget);
 
-      await tester.tap(find.byKey(const Key('profile_sign_out')));
+      // Sqflite and SignOutController.run must run on the real event loop.
+      // Starting that work from a tap inside fake-async never completes.
+      final element = tester.element(find.byKey(const Key('profile_sign_out')));
+      final container = ProviderScope.containerOf(element);
+      final goRouter = GoRouter.of(element);
+      final result = await tester.runAsync(
+        () => container.read(signOutControllerProvider.notifier).run(),
+      );
+      expect(result, isNotNull);
+      expect(result!.ok, isTrue);
+      goRouter.go('/');
       await tester.pump();
-      await _pumpUntil(tester, () => find.byKey(const Key('home_root')).evaluate().isNotEmpty);
 
       expect(find.byKey(const Key('home_root')), findsOneWidget);
       expect(find.byKey(const Key('profile_sign_out')), findsNothing);
-      expect(router.routeInformationProvider.value.uri.toString(), '/');
+      expect(router.routeInformationProvider.value.uri.path, '/');
 
       router.dispose();
-      await db.close();
-    });
+      await tester.runAsync(db.close);
+    }, timeout: const Timeout(Duration(seconds: 20)));
 
     test('sign-in failure keeps sync halted and returns a short error', () async {
       final db = await _db();
