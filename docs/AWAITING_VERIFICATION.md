@@ -15,6 +15,27 @@ other.
 Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 `#85` and so on; those numbers cannot be reconciled against `git log`.
 
+## Finding -- Oct 24 2026 -- trip-private uncatalogued Add merged
+
+Owner Windows checkout of `feat/spec42-uncatalogued-add` at `3f6c79e`
+passed Flutter gates before squash-merge:
+
+- `flutter analyze --no-fatal-infos`: informational findings only
+- focused `flutter test` of `spec42_uncatalogued_add_test.dart`: all passed
+- focused catalog Add / Move / Ask-to-Add widgets: all passed
+- full `flutter test`: all passed
+
+PR #77 merged to `main` as `05d917e`. The slice adds confirm-only
+`add_activity` plus `mode=uncatalogued_add`: one trip-private node, null
+`venue_id`, required dwell, no catalog write. Matching catalog names
+refuse. Flutter empty-day sheet has a not-in-catalog path and never
+sends coordinates.
+
+Genie Python gates on the branch were green. No hosted deploy, APK, or
+phone acceptance was performed for this SHA. Unknown-time excursions
+remain later. Catalog `direct_add` still uses `_make_node`, which
+requires lat/lng.
+
 ## Finding -- Oct 24 2026 -- empty-day catalog Add merged
 
 Owner Windows checkout of `feat/spec42-empty-day-add` at `5bb6a60`
@@ -34,10 +55,9 @@ sheet.
 Genie Python gates on the branch were green. GitHub `postgres-proof`
 stayed red on the known apt baseline; that job is out of this slice.
 No hosted deploy, APK, or phone acceptance was performed for this SHA.
-Trip-private uncatalogued nodes remain. Catalog confirm still uses
-`_make_node`, which requires lat/lng; a true empty day with a
-no-coordinate catalog row can pass listing and crash apply. That is a
-recorded remainder, not this merge.
+Catalog confirm still uses `_make_node`, which requires lat/lng; a true
+empty day with a no-coordinate catalog row can pass listing and crash
+apply. That is a recorded remainder, not this merge.
 
 ## Finding -- Oct 22 2026 -- thin typed Move merged
 

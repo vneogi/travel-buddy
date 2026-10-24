@@ -112,9 +112,9 @@ The immediate order after the field-test gate:
     SPEC-25 Ask are on main through `7d825c0`;
 11. SPEC-46 What Now Phase A (PR #73, `d1df944`), thin typed
     Ask-to-Add (PR #74, `0344b4b`), thin typed Move (PR #75,
-    `e51513e`), and empty-day catalog Add (PR #76, `b6ddecf`) are
-    on main; next is trip-private uncatalogued Add
-    (`docs/briefs/GENIE_SPEC_42_UNCATALOGUED_ADD.md`);
+    `e51513e`), empty-day catalog Add (PR #76, `b6ddecf`), and
+    trip-private uncatalogued Add (PR #77, `05d917e`) are on main;
+    unknown-time excursions stay later;
 12. implement SPEC-43 before any non-owner distribution, production LLM
    processing of personal trip data, or the planned December launch;
 13. implement SPEC-13, minimum SPEC-17 claims, and SPEC-20; Bangkok must

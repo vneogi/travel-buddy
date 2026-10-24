@@ -1,5 +1,9 @@
 # Genie brief: SPEC-42 trip-private uncatalogued Add
 
+Landed on `main` as `05d917e` (PR #77). Do not re-implement this slice.
+Unknown-time excursion windows stay later. SPEC-43 still gates every
+non-owner APK.
+
 ## Goal
 
 Let the traveller put a place that is not in the catalog onto an empty

@@ -1,8 +1,7 @@
 # Genie brief: SPEC-42 empty-day catalog Add
 
 Landed on `main` as `b6ddecf` (PR #76). Do not re-implement this slice.
-Trip-private uncatalogued Add is next:
-`docs/briefs/GENIE_SPEC_42_UNCATALOGUED_ADD.md`.
+Trip-private uncatalogued Add landed as `05d917e` (PR #77).
 
 ## Goal
 

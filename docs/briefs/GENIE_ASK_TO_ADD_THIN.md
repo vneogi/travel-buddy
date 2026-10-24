@@ -1,7 +1,8 @@
 # Genie brief: thin typed Ask-to-Add
 
 Landed on `main` as `0344b4b` (PR #74). Do not re-implement this slice.
-Empty-day catalog Add landed as `b6ddecf`. Uncatalogued nodes are later.
+Empty-day catalog Add landed as `b6ddecf`. Uncatalogued Add landed as
+`05d917e`.
 
 ## Goal
 

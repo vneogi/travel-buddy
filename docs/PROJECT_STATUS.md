@@ -119,7 +119,7 @@
 | PDF itinerary intake (SPEC-39) | DEFERRED | No implementation brief. PDF/OCR, Day Sheet, and print-pack work remain outside the current sequence |
 | Guided Create Trip foundation (SPEC-40) | DONE (PR #61, `ebdea52`) | Five-step destination/date-range/party/interests/review flow backed by deterministic multi-day catalog selection. Post-merge CI and owner Flutter tests passed. Hosted deploy and phone acceptance are not yet repeated for this SHA |
 | Hours-aware scheduling and staged ranking (SPEC-41) | PHASE A COMPLETE (`d1fde14`, `7f25042`) | Create, corridor, and swap refuse known-closed or walking-unreachable target slots; day packing uses per-pair deterministic walking time and later opening windows; swap search/apply share reachability; locked non-hotel anchors remain reachable; cached `max_days` is guaranteed across weekdays and valid interest profiles |
-| Flexible trip span and sparse day editing (SPEC-42) | PARTIAL (`adc99d2`, merged `17e58ac`; Ask-to-Add `0344b4b`; Move `e51513e`; empty-day Add `b6ddecf`) | Catalog-derived date caps removed; generation fills at most five starter days and empty dates render. Thin typed Ask-to-Add (PR #74), thin typed Move (PR #75), and empty-day catalog Add (PR #76) are on main. Trip-private uncatalogued nodes remain; they cannot enter the shared catalog without review |
+| Flexible trip span and sparse day editing (SPEC-42) | PARTIAL (`adc99d2`, merged `17e58ac`; Ask-to-Add `0344b4b`; Move `e51513e`; empty-day Add `b6ddecf`; uncatalogued `05d917e`) | Catalog-derived date caps removed; generation fills at most five starter days and empty dates render. Thin typed Ask-to-Add (PR #74), thin typed Move (PR #75), empty-day catalog Add (PR #76), and trip-private uncatalogued Add (PR #77) are on main. Unknown-time excursions remain later. Uncatalogued nodes cannot enter the shared catalog without review |
 | Security, privacy and data governance foundation (SPEC-43) | SPECIFIED; AFTER LAOS BUILD, BEFORE NON-OWNER DISTRIBUTION | Owns twelve verified gaps across anonymous authentication, RLS, LLM egress, rights/retention, offline encryption, sign-out, consent, cache isolation, signal authorization, logging, abuse limits, and release transport. The current owner-only exception expires before the first external tester or December launch |
 | Backend integrity and future-readiness foundation (SPEC-44) | PHASE A ON MAIN (PR #67, `9a7b9d9`) | Atomic trip/party/graph writes, optimistic version, durable command_id replay, typed conflicts, and hosted 0025. A4/A5, Flutter command queue, and SPEC-43 remain out of this slice |
 | On-trip visible surface (SPEC-45) | PHASE A + FIELD TRUST HYGIENE ON MAIN | Phase A chrome is on the field APK. Phase B field trust hygiene is on main through the post-field merge sequence: capped alerts, current-day/kind-specific outcomes, dead Review removal, and honest empty-swap refusal. Operational place detail, transfer cards, and Rescue remain later |
@@ -158,9 +158,9 @@ Current order:
 2. Deterministic SPEC-46 What Now Phase A is on main (PR #73, `d1df944`).
    Owner Windows Flutter gates green; hosted/phone not repeated for this SHA.
 3. Thin typed Ask-to-Add (PR #74, `0344b4b`), thin typed Move
-   (PR #75, `e51513e`), and empty-day catalog Add (PR #76, `b6ddecf`)
-   are on main. Next: trip-private uncatalogued Add from
-   `docs/briefs/GENIE_SPEC_42_UNCATALOGUED_ADD.md`.
+   (PR #75, `e51513e`), empty-day catalog Add (PR #76, `b6ddecf`), and
+   trip-private uncatalogued Add (PR #77, `05d917e`) are on main.
+   Unknown-time excursions stay later.
 4. Patch the Laos must-do/decision-cell data gaps. Target 3-5 feasible options
    in common cells, not an arbitrary 100 venues per city.
 5. SPEC-43 before any non-owner APK; then a narrow external corridor pilot with
@@ -266,10 +266,17 @@ Seed-shaped cohorts.
     five catalog candidates from a shared evaluator; confirm is
     `add_activity` plus `mode=direct_add`. 422 refusals write nothing.
     Owner Windows analyze infos-only; focused and full Flutter suites
-    green. Hosted/phone not done. Uncatalogued trip-private nodes remain.
+    green. Hosted/phone not done.
+9e. Trip-private uncatalogued Add -- **DONE on main** (PR #77, `05d917e`).
+    Empty-day sheet can confirm a place not in the catalog via
+    `add_activity` plus `mode=uncatalogued_add`. Null `venue_id`,
+    `place_source=trip_private`, required dwell, no catalog write.
+    Owner Windows analyze infos-only; focused and full Flutter suites
+    green. Hosted/phone not done.
 10. SPEC-42 uncap / sparse-span foundation -- **PARTIAL on main**
-    (`adc99d2`, merge `17e58ac`; empty-day Add `b6ddecf`). Catalog date
-    caps are gone. Uncatalogued Add remains later.
+    (`adc99d2`, merge `17e58ac`; empty-day Add `b6ddecf`; uncatalogued
+    `05d917e`). Catalog date caps are gone. Unknown-time excursions
+    remain later.
 11. SPEC-10 hotel stay display -- **DONE on main** (`1f251a3`, merge
     `7b62818`). Dual check-in/out on hotel cards; multi-night coverage
     reuses one node_id; catalog name-match fills coords only when both
@@ -313,11 +320,11 @@ Seed-shaped cohorts.
 - Inspiration, similar-trip retrieval, and LLM itinerary generation remain
   after SPEC-41. An LLM may explain solver output; it does not schedule.
 - SPEC-39 PDF/OCR/Day Sheet remains deferred; Agoda paste does not reopen it.
-- SPEC-42 trip-private uncatalogued Add. Uncap, empty-date render,
-  Ask-to-Add, typed Move, and empty-day catalog Add are on main
-  (`b6ddecf`). Only after that online command and SPEC-44 Phase A exist
-  may SPEC-02 queue typed commands offline; conflicts are not resolved
-  locally.
+- SPEC-42 unknown-time excursion windows. Uncap, empty-date render,
+  Ask-to-Add, typed Move, empty-day catalog Add, and trip-private
+  uncatalogued Add are on main (`05d917e`). Only after those online
+  commands and SPEC-44 Phase A exist may SPEC-02 queue typed commands
+  offline; conflicts are not resolved locally.
 - Remaining signal/UI polish.
 - Full SPEC-04 remainder only if field evidence supports it. Offline maps wait
   until Bangkok proves the city factory, then begin as a measured device
@@ -351,7 +358,7 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 
 | Issue | Severity | Detail |
 |-------|----------|--------|
-| Destination-specific date caps make real trips impossible to enter | Closed on main (`17e58ac`) | Create no longer rejects a stay because the catalog fills fewer days. User-facing "Up to N days" copy is gone. Remaining bound is the 90-day sanity limit. Empty-day catalog Add is on main (`b6ddecf`); uncatalogued nodes remain |
+| Destination-specific date caps make real trips impossible to enter | Closed on main (`17e58ac`) | Create no longer rejects a stay because the catalog fills fewer days. User-facing "Up to N days" copy is gone. Remaining bound is the 90-day sanity limit. Empty-day catalog Add and uncatalogued Add are on main |
 | Activity cards have no place-detail response | Medium, retention surface | A card tap should open an offline detail sheet/page with grounded short description, attributed photo when available, and sourced/fresh insider tips. VISION defines the product direction; SPEC-17 governs claims and review extraction |
 | Generated schedules expose false precision and ignore remaining-day shape | Closed on main (`9173b23`, field-fix `2ab8d57`) | Flexible cards show named slots. Create/corridor pack morning then lunch then afternoon then dinner. Create-then-book HITL reflow remains; travel-day occupancy at create still has no bookings to consume |
 | Hotel stay can shift local date and collapse to one timestamp | Closed on main (`7b62818`, field-fix `2ab8d57`) | Destination-local conversion was `933c705`. Dual Check-in/Check-out, one card per covered night, nights-plus-checkout copy, and hotel coords landed with stay-display plus the field-fix |
@@ -362,7 +369,8 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 | Trip-scoped Ask grounding and durable history | Closed on main (`30a4270`, `84a10f0`, `7d825c0`); new slices still need hosted/phone validation | Deterministic catalog, trip, rules, and field intents are grounded; device-local history is durable. Trip-optional Ask and production LLM processing remain blocked or unimplemented |
 | What Now Phase A (no GPS) | Closed on main (`d1df944`, PR #73); hosted/phone not done | Structured prefs, trip-position or region-anchor, shared lock helper, display-only details. Offline refuse matches SPEC-25 (user row only, no sendEvent). Phase B GPS is not this slice |
 | Thin typed Ask-to-Add | Closed on main (`0344b4b`, PR #74); hosted/phone not done | One confirmed What Now catalog candidate becomes one new node. Apply reuses region, infrastructure, duplicate, known dwell, hours, and `fits_next_lock`. Bare add_activity is refused. Uncatalogued nodes are not this slice |
-| Empty-day catalog Add | Closed on main (`b6ddecf`, PR #76); hosted/phone not done | Shared evaluator lists and applies one catalog venue onto an empty date/slot. Missing dwell is never filled with 90. Confirm 422 before persist. Flutter sheet is online-only. Uncatalogued nodes and the catalog missing-lat `_make_node` crash remain |
+| Empty-day catalog Add | Closed on main (`b6ddecf`, PR #76); hosted/phone not done | Shared evaluator lists and applies one catalog venue onto an empty date/slot. Missing dwell is never filled with 90. Confirm 422 before persist. Flutter sheet is online-only. The catalog missing-lat `_make_node` crash remains |
+| Trip-private uncatalogued Add | Closed on main (`05d917e`, PR #77); hosted/phone not done | Confirm-only `uncatalogued_add`. Null venue_id, trip_private source, required dwell, catalog unchanged. Matching catalog names refuse. Flutter never sends coordinates (empty-day only) |
 | Thin typed Move | Closed on main (`e51513e`, PR #75); hosted/phone not done | One flexible node moves to an explicit date and named slot. Same node_id. Occupied slot, wrong type, lock, and cross-city dates refuse. Neighbours without coordinates can still succeed (walk skipped); that remainder is recorded, not this merge |
 | SPEC-43 gap 1: self-issued anonymous UUID is a replayable account credential | High before non-owner use | The hosted owner build accepts any canonical UUIDv4 without server issuance, expiry, revocation, or proof of possession. Replace it with Supabase anonymous Auth JWTs, JWKS verification, rotation, and account/IP abuse limits after the Laos build |
 | SPEC-43 gap 2: RLS and public grants are not comprehensive | High | Migration 0007 omits core personal tables and uses permissive party inserts; service-role access bypasses RLS. Audit the live schema, revoke by default, enforce owner policies on every personal table, and prove isolation with two hosted JWTs |
@@ -376,7 +384,7 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 | SPEC-43 gap 10: errors and provider failures can retain sensitive values | High under debug/provider failure | Validation values, provider URLs, messages, and tracebacks can enter diagnostics. Centralize redaction, return stable public errors, protect debug with admin IAM, reject production debug, regionalize logs, and enforce retention |
 | SPEC-43 gap 11: general request and provider-spend abuse controls are absent | High when access expands | Reroute quota does not bound account creation, bodies, search, Ask, signals, webhooks, or downstream cost. Add gateway, account/IP/device-reputation, size, depth, concurrency, timeout, idempotency, anomaly, and spend controls |
 | SPEC-43 gap 12: release HTTPS and private mobile cache isolation are incomplete | High before release distribution | Release code does not reject HTTP; trip/place cache keys are not consistently identity-scoped; chat text enters route URLs. Enforce TLS at build/startup, identity-key caches, ownership checks, private navigation state, and authorized deep links |
-| Create conflates trip span with auto-fill capacity | Closed on main for span vs fill (`17e58ac`); catalog Add `b6ddecf` | Wider spans are accepted; at most five starter days are generated; empty dates render and can take a catalog Add. Uncatalogued trip-private Add remains |
+| Create conflates trip span with auto-fill capacity | Closed on main for span vs fill (`17e58ac`); catalog Add `b6ddecf`; uncatalogued `05d917e` | Wider spans are accepted; at most five starter days are generated; empty dates render and can take a catalog or trip-private Add. Unknown-time excursions remain later |
 | Range create persists trip and party in two writes | High before multi-device or non-owner scale | A failure between writes can leave an orphan trip. SPEC-44 Phase A makes trip, party, normalized graph, compatibility projection, and command record one transaction before normalized reads or multi-device use |
 | Trip graph dual-write is non-transactional and blob-authoritative | High before SPEC-16 read cutover | Supabase replaces nodes and edges through separate calls while `get_trip` still reads `state_json`, so partial row writes can remain hidden. SPEC-44 requires crash-injection rollback proof, shadow-read equality, and a rollback window before rows become authoritative |
 | Trip mutation is last-write-wins | High before account linking or multiple devices | Mutation carries no expected trip version, so concurrent devices can silently overwrite newer state. SPEC-44 adds monotonic versioning, typed conflict, refresh/retry, and durable command idempotency |
