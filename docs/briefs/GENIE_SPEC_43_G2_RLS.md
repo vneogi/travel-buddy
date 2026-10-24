@@ -1,5 +1,10 @@
 # Genie brief: SPEC-43 Gap 2 -- RLS and public grants
 
+Landed on `main` as `0b8125f` (PR #80). Do not re-implement this slice.
+Next: `docs/briefs/GENIE_SPEC_43_G9_SIGNAL_OWNERSHIP.md`.
+Do not apply 0026 on hosted until `rolbypassrls` is true for `postgres`
+and `service_role`.
+
 ## Goal
 
 Stop PostgREST (anon / authenticated JWT) from reading or mutating another

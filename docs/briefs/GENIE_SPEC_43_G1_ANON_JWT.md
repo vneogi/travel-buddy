@@ -1,7 +1,7 @@
 # Genie brief: SPEC-43 Gap 1 -- server-issued anonymous JWT
 
 Landed on `main` as `2460edf` (PR #78). Do not re-implement this slice.
-Next: `docs/briefs/GENIE_SPEC_43_G2_RLS.md` (Gap 6 already landed).
+Next: `docs/briefs/GENIE_SPEC_43_G9_SIGNAL_OWNERSHIP.md` (Gaps 6 and 2 already landed).
 
 ## Goal
 

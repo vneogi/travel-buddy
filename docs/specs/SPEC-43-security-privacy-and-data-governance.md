@@ -1,8 +1,8 @@
 # SPEC-43: Security, Privacy and Data Governance Foundation
 
-> Status: PARTIAL. Gap 1 merged as `2460edf` (PR #78). Gap 6 merged as
-> `c65261c` (PR #79). Gaps 2 and 9 remain in Phase 1. Hosted deploy
-> of Gaps 1/6 is not done.
+> Status: PARTIAL. Gap 1 `2460edf` (PR #78). Gap 6 `c65261c` (PR #79).
+> Gap 2 `0b8125f` (PR #80). Gap 9 remains in Phase 1. Hosted apply of
+> 0026 and deploy of Gaps 1/6 are not done.
 >
 > Sequence: start after the Laos reliability and build tranche is complete:
 > SPEC-41 scheduling, SPEC-10 paste and flight/hotel scheduler, SPEC-25
@@ -131,9 +131,14 @@ UUIDs also bypass per-user cost quotas.
 
 ### Gap 2: personal tables are not comprehensively protected by RLS
 
-**Current fact.** Migration 0007 enables RLS on seven tables, but not on core
-personal tables including `user_tiers`, `trip_states`, `event_log`,
-`cached_responses`, `trip_node`, and `trip_edge`. The party insert policies use
+**Status on main.** Closed in migration 0026 as `0b8125f` (PR #80).
+Hosted apply waits on `rolbypassrls`. FastAPI still uses service_role.
+Two-JWT PostgREST proof is after apply.
+
+**Current fact (pre-Gap 2 / still true on hosted until 0026).** Migration
+0007 enables RLS on seven tables, but not on core personal tables
+including `user_tiers`, `trip_states`, `event_log`, `cached_responses`,
+`trip_node`, and `trip_edge`. The party insert policies use
 `WITH CHECK (true)`. The backend service-role key bypasses RLS.
 
 **Solution.**

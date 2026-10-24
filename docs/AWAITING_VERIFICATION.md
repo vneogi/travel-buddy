@@ -15,6 +15,24 @@ other.
 Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 `#85` and so on; those numbers cannot be reconciled against `git log`.
 
+## Finding -- Oct 25 2026 -- SPEC-43 Gap 2 RLS merged
+
+PR #80 merged to `main` as `0b8125f`. Additive migration
+`0026_spec43_g2_rls.sql` FORCE RLS on personal tables, revokes
+anon/authenticated, grants service_role, and replaces 0007 party
+`WITH CHECK (true)` with trip_states ownership. Catalog tables stay
+SELECT-only. FastAPI is unchanged (service_role).
+
+Genie: ruff clean; pytest 1220 passed / 17 skipped; focused
+`tests/test_spec43_g2_rls.py` 69/69. R17:
+`test_trip_states_force_rls_is_present_in_0026` failed when FORCE RLS
+on trip_states was removed; 69/69 after restore.
+
+No Flutter in this slice. No hosted apply. Before applying 0026 in
+the SQL editor, confirm `rolbypassrls` is true for `postgres` and
+`service_role` so SECURITY DEFINER `commit_trip_command` still writes
+the graph. Two-JWT PostgREST isolation is after that apply.
+
 ## Finding -- Oct 24 2026 -- SPEC-43 Gap 6 sign-out merged
 
 Owner Windows checkout of `feat/spec43-g6-signout` at `377f7d8`

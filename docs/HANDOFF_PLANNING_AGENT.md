@@ -10,12 +10,13 @@ SPEC-40, SPEC-41 Phase A, G0 field-fix-2, SPEC-45 field trust hygiene,
 SPEC-44 Phase A, SPEC-25 grounded, broad, durable trip-scoped Ask,
 SPEC-46 What Now Phase A, thin typed Ask-to-Add, thin typed Move,
 empty-day catalog Add, trip-private uncatalogued Add, SPEC-43 Gap 1
-anonymous JWT, and SPEC-43 Gap 6 sign-out are on `main` through
-`c65261c` (PR #79). Hosted 0025 is applied. Cloud Run
+anonymous JWT, SPEC-43 Gap 6 sign-out, and SPEC-43 Gap 2 RLS are on
+`main` through `0b8125f` (PR #80). Hosted 0025 is applied. Cloud Run
 `travel-buddy-00012-8wv` is the live untagged revision. SPEC-42 remains
 PARTIAL (unknown-time excursions later). Create-then-book HITL reflow
 remains. Trip-optional Ask remains. What Now Phase B GPS remains
-blocked on SPEC-43. RLS (Gap 2) is next.
+blocked on SPEC-43. Signal ownership (Gap 9) is next. Do not apply
+0026 until `rolbypassrls` is confirmed.
 
 SPEC-44 Phase A application code merged as PR #67 (`9a7b9d9`). Planning
 reviews; Genie implements. SPEC-43 is the release foundation before any
@@ -81,9 +82,9 @@ SPEC-47. P0 trust hygiene, broad persistent SPEC-25 Ask, and SPEC-46 What
 Now Phase A (`d1df944`), thin typed Ask-to-Add (`0344b4b`), thin
 typed Move (`e51513e`), empty-day catalog Add (`b6ddecf`), and
 trip-private uncatalogued Add (`05d917e`) are now on main. SPEC-43 Gap 1
-(`2460edf`) and Gap 6 (`c65261c`) are on main. The next Genie job is
-`docs/briefs/GENIE_SPEC_43_G2_RLS.md`. Gap 9, unknown-time
-excursions, and Laos decision-cell coverage stay later.
+(`2460edf`), Gap 6 (`c65261c`), and Gap 2 (`0b8125f`) are on main.
+The next Genie job is `docs/briefs/GENIE_SPEC_43_G9_SIGNAL_OWNERSHIP.md`.
+Unknown-time excursions and Laos decision-cell coverage stay later.
 SPEC-43 still gates every non-owner APK. Do not treat in-memory pytest as
 PostgreSQL transaction proof.
 
@@ -163,14 +164,15 @@ Resume in this order:
    (PR #75, `e51513e`), empty-day catalog Add (PR #76, `b6ddecf`),
    trip-private uncatalogued Add (PR #77, `05d917e`), SPEC-43 Gap 1
    anonymous JWT (PR #78, `2460edf`), and SPEC-43 Gap 6 sign-out
-   (PR #79, `c65261c`) are on main. Unknown-time excursion windows
-   stay later. Never silently reflow a day.
+   (PR #79, `c65261c`), and SPEC-43 Gap 2 RLS (PR #80, `0b8125f`)
+   are on main. Unknown-time excursion windows stay later. Never
+   silently reflow a day.
 5. Patch Laos spine and effective-choice gaps: Kuang Si, Pak Ou, Blue Lagoon
    2/3, Papao, and the Wat Xieng Thong packing failure. Measure coverage by
    common decision cell, not total POI count.
-6. Implement SPEC-43 Gap 2 (RLS / grants) then Gap 9 before any
+6. Implement SPEC-43 Gap 9 (signal trip ownership) before any
    non-owner APK, hostel QR, production LLM on personal trips, or
-   contribution collection.
+   contribution collection. Hosted 0026 waits on `rolbypassrls`.
 7. Implement SPEC-13 identity plus the minimum SPEC-17 claim/attribute
    registry, append-only observation lifecycle, and SPEC-44 decision capture.
    Keep learned influence at zero.
@@ -191,15 +193,17 @@ separation live in the operating model; do not reconstruct them from chat.
 
 ## First job
 
-`origin/main` includes SPEC-43 Gap 6 as `c65261c` (PR #79). Hosted
+`origin/main` includes SPEC-43 Gap 2 as `0b8125f` (PR #80). Hosted
 0025 applied. Cloud Run `00012-8wv`. Owner APK SHA256 `bd935bf2...`.
 
 Genie next:
-`docs/briefs/GENIE_SPEC_43_G2_RLS.md` on `feat/spec43-g2-rls`.
-Do not merge, deploy, or build an APK. Do not start Gap 9 signals,
-production LLM processing, trip-less Ask, or unknown-time excursions.
-Do not switch FastAPI off service_role. Do not deploy Gap 1/6 until
-Anonymous sign-ins are enabled and Cloud Run has JWKS URL + issuer.
+`docs/briefs/GENIE_SPEC_43_G9_SIGNAL_OWNERSHIP.md` on
+`feat/spec43-g9-signal-ownership`.
+Do not merge, deploy, or build an APK. Do not start remaining Gap 9
+schema/poisoning, production LLM, trip-less Ask, or unknown-time
+excursions. Do not switch FastAPI off service_role. Do not apply 0026
+until `rolbypassrls` is confirmed for `postgres` and `service_role`.
+Do not deploy Gap 1/6 until Anonymous sign-ins and JWKS env are set.
 
 Historical context (do not treat as current work):
 

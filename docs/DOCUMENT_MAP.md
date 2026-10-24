@@ -23,14 +23,14 @@ documents disagree, follow Precedence below and name the conflict in
 
 ## Continuity state on 24 Oct 2026
 
-- GitHub `main` is through `c65261c`: SPEC-45 field trust hygiene,
+- GitHub `main` is through `0b8125f`: SPEC-45 field trust hygiene,
   SPEC-25 field-priority intents, SPEC-25 Phase C durable device-local
   threads, SPEC-46 What Now Phase A, thin typed Ask-to-Add, thin
   typed Move, empty-day catalog Add, trip-private uncatalogued Add,
-  SPEC-43 Gap 1 anonymous JWT, and SPEC-43 Gap 6 sign-out are merged.
-- Next Genie job: `docs/briefs/GENIE_SPEC_43_G2_RLS.md`.
-  SPEC-43 Gap 9, Laos decision-cell coverage, and unknown-time
-  excursions stay later.
+  SPEC-43 Gaps 1, 6, and 2 are merged.
+- Next Genie job: `docs/briefs/GENIE_SPEC_43_G9_SIGNAL_OWNERSHIP.md`.
+  Hosted apply of 0026 waits on `rolbypassrls`. Laos decision-cell
+  coverage and unknown-time excursions stay later.
 - Hosted: migrations through 0025; Cloud Run `travel-buddy-00012-8wv`.
 - Owner Laos field use is complete. The dated 26 observations and cross-trip
   review of 65 Laos plus 73 China Gemini turns are in
@@ -107,9 +107,9 @@ SPEC-46 Phase A.
 thin typed Ask-to-Add (`0344b4b`), thin typed Move (`e51513e`),
 empty-day catalog Add (`b6ddecf`), and trip-private uncatalogued Add
 (`05d917e`), SPEC-43 Gap 1 (`2460edf`), and SPEC-43 Gap 6
-(`c65261c`) are on main; next is SPEC-43 Gap 2
-(`docs/briefs/GENIE_SPEC_43_G2_RLS.md`); SPEC-42 unknown-time
-excursions stay later;
+(`c65261c`) and SPEC-43 Gap 2 (`0b8125f`) are on main; next is
+SPEC-43 Gap 9 (`docs/briefs/GENIE_SPEC_43_G9_SIGNAL_OWNERSHIP.md`);
+SPEC-42 unknown-time excursions stay later;
 trip-optional and production-LLM SPEC-25; SPEC-10 HITL reflow;
 SPEC-29 weather-day detail; SPEC-44 A4/A5 and Flutter command queue.
 SPEC-46 Phase B GPS waits for SPEC-43.

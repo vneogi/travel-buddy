@@ -120,7 +120,7 @@
 | Guided Create Trip foundation (SPEC-40) | DONE (PR #61, `ebdea52`) | Five-step destination/date-range/party/interests/review flow backed by deterministic multi-day catalog selection. Post-merge CI and owner Flutter tests passed. Hosted deploy and phone acceptance are not yet repeated for this SHA |
 | Hours-aware scheduling and staged ranking (SPEC-41) | PHASE A COMPLETE (`d1fde14`, `7f25042`) | Create, corridor, and swap refuse known-closed or walking-unreachable target slots; day packing uses per-pair deterministic walking time and later opening windows; swap search/apply share reachability; locked non-hotel anchors remain reachable; cached `max_days` is guaranteed across weekdays and valid interest profiles |
 | Flexible trip span and sparse day editing (SPEC-42) | PARTIAL (`adc99d2`, merged `17e58ac`; Ask-to-Add `0344b4b`; Move `e51513e`; empty-day Add `b6ddecf`; uncatalogued `05d917e`) | Catalog-derived date caps removed; generation fills at most five starter days and empty dates render. Thin typed Ask-to-Add (PR #74), thin typed Move (PR #75), empty-day catalog Add (PR #76), and trip-private uncatalogued Add (PR #77) are on main. Unknown-time excursions remain later. Uncatalogued nodes cannot enter the shared catalog without review |
-| Security, privacy and data governance foundation (SPEC-43) | PARTIAL (Gaps 1 and 6 on main) | Gap 1 JWT `2460edf` (PR #78). Gap 6 sign-out wipe `c65261c` (PR #79). Hosted deploy of these SHAs is not done. Gaps 2 (RLS) and 9 (signals) remain before any non-owner APK |
+| Security, privacy and data governance foundation (SPEC-43) | PARTIAL (Gaps 1, 6, 2 on main) | Gap 1 JWT `2460edf`. Gap 6 sign-out `c65261c`. Gap 2 RLS migration 0026 `0b8125f` (PR #80). Hosted apply of 0026 waits on `rolbypassrls`. Gap 9 signal ownership is next. Hosted deploy of G1/G6 is not done |
 | Backend integrity and future-readiness foundation (SPEC-44) | PHASE A ON MAIN (PR #67, `9a7b9d9`) | Atomic trip/party/graph writes, optimistic version, durable command_id replay, typed conflicts, and hosted 0025. A4/A5, Flutter command queue, and SPEC-43 remain out of this slice |
 | On-trip visible surface (SPEC-45) | PHASE A + FIELD TRUST HYGIENE ON MAIN | Phase A chrome is on the field APK. Phase B field trust hygiene is on main through the post-field merge sequence: capped alerts, current-day/kind-specific outcomes, dead Review removal, and honest empty-swap refusal. Operational place detail, transfer cards, and Rescue remain later |
 | What Now foreground context (SPEC-46) | PHASE A ON MAIN (PR #73, `d1df944`) | Deterministic no-GPS What Now inside trip-scoped Ask: temporary time/energy/walking/intent, trip-position or region-anchor, shared `fits_next_lock`, inspectable reasons, named unknowns, display-only details. Owner Windows analyze infos-only; What Now widgets and full Flutter suite green. Hosted deploy, APK, and phone use not done. Phase B GPS only after SPEC-43 |
@@ -160,9 +160,9 @@ Current order:
 3. Thin typed Ask-to-Add (PR #74, `0344b4b`), thin typed Move
    (PR #75, `e51513e`), empty-day catalog Add (PR #76, `b6ddecf`), and
    trip-private uncatalogued Add (PR #77, `05d917e`) are on main.
-   SPEC-43 Gap 1 (`2460edf`, PR #78) and Gap 6 (`c65261c`, PR #79)
-   are on main. Next Genie job is Gap 2 RLS
-   (`docs/briefs/GENIE_SPEC_43_G2_RLS.md`). Unknown-time
+   SPEC-43 Gaps 1, 6, and 2 are on main (`0b8125f`, PR #80). Next
+   Genie job is Gap 9 signal ownership
+   (`docs/briefs/GENIE_SPEC_43_G9_SIGNAL_OWNERSHIP.md`). Unknown-time
    excursions stay later.
 4. Patch the Laos must-do/decision-cell data gaps. Target 3-5 feasible options
    in common cells, not an arbitrary 100 venues per city.
@@ -289,6 +289,13 @@ Seed-shaped cohorts.
     focused G6 +7 green; full suite +617 green. Analyze infos-only on
     the compile-fix SHA. R17 sabotage was not executed on the laptop;
     the named outbox test exists. Hosted/phone not done.
+9h. SPEC-43 Gap 2 RLS -- **DONE on main** (PR #80, `0b8125f`).
+    Migration 0026 FORCE RLS, revoke anon/authenticated, grant
+    service_role, trip_states owner policies. `cached_responses` is
+    service_role-only (no owner column). Genie pytest 1220 passed.
+    Hosted apply waits on `rolbypassrls` for `postgres` and
+    `service_role` (SECURITY DEFINER `commit_trip_command`). Two-JWT
+    PostgREST proof is after apply.
 10. SPEC-42 uncap / sparse-span foundation -- **PARTIAL on main**
     (`adc99d2`, merge `17e58ac`; empty-day Add `b6ddecf`; uncatalogued
     `05d917e`). Catalog date caps are gone. Unknown-time excursions
@@ -311,7 +318,7 @@ Seed-shaped cohorts.
     `9a7b9d9`). Hosted 0025 applied 2026-09-27. Cloud Run `00012-8wv`.
     A4/A5, Flutter command queue, and SPEC-43 remain.
 14. SPEC-43 security, privacy, and data governance -- **PARTIAL**. Gaps
-    1 and 6 are on main. Next is Gap 2 RLS, then Gap 9. Complete
+    1, 6, and 2 are on main. Next is Gap 9 signal ownership. Complete
     remaining gaps before any non-owner APK, production LLM processing
     of personal trip data, or the planned December public launch.
 15. After SPEC-43, implement the SPEC-13 registry, minimum SPEC-17 claim store,
@@ -389,7 +396,7 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 | Trip-private uncatalogued Add | Closed on main (`05d917e`, PR #77); hosted/phone not done | Confirm-only `uncatalogued_add`. Null venue_id, trip_private source, required dwell, catalog unchanged. Matching catalog names refuse. Flutter never sends coordinates (empty-day only) |
 | Thin typed Move | Closed on main (`e51513e`, PR #75); hosted/phone not done | One flexible node moves to an explicit date and named slot. Same node_id. Occupied slot, wrong type, lock, and cross-city dates refuse. Neighbours without coordinates can still succeed (walk skipped); that remainder is recorded, not this merge |
 | SPEC-43 gap 1: self-issued anonymous UUID is a replayable account credential | Closed on main (`2460edf`, PR #78); hosted still on pre-G1 revision | App and API on this SHA reject `Anonymous <uuid>` and require a JWKS-verified Bearer JWT. Hosted Cloud Run is not this SHA; deploying it would 401 the current field-test header until dashboard Anonymous sign-ins and JWKS env are set. Gap 11 still allows unlimited anon JWTs |
-| SPEC-43 gap 2: RLS and public grants are not comprehensive | High | Migration 0007 omits core personal tables and uses permissive party inserts; service-role access bypasses RLS. Audit the live schema, revoke by default, enforce owner policies on every personal table, and prove isolation with two hosted JWTs |
+| SPEC-43 gap 2: RLS and public grants are not comprehensive | Closed on main (`0b8125f`, PR #80); hosted 0026 not applied | 0026 FORCE RLS + revoke + service_role grant. Party WITH CHECK (true) replaced. FastAPI still uses service_role (BYPASSRLS). Confirm rolbypassrls before hosted apply. Two-JWT PostgREST proof after apply |
 | SPEC-43 gap 3: personal trip fields can cross the LLM boundary | High; production personal LLM use blocked | Heavy prompts can serialize booking codes, notes, exact times, and coordinates, while fallback can cross providers. Use deterministic create/swap plus one redacting allowlist gateway and an approved provider-region-retention matrix |
 | SPEC-43 gap 4: export, deletion, and retention are unimplemented | High before public launch | SPEC-27 is specified only. Build self-service rights, schema-walking erasure, physical expiry, backup tombstones, and restore tests before non-owner distribution |
 | SPEC-43 gap 5: offline trip and booking data is plaintext and backup policy is implicit | High before non-owner use | SQLite holds trips, booking fields, signals, alerts, and outcomes while Android backup exclusions are absent. Encrypt with hardware-backed keys, exclude backups, mask restricted fields, and test extracted artifacts |
