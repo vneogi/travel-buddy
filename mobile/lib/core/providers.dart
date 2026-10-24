@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'anon_session.dart';
 import 'api_client.dart';
 import 'device_identity.dart';
 import 'env.dart';
@@ -28,6 +29,16 @@ final identityCacheScopeProvider = Provider<String>((ref) {
     } catch (_) {}
   }
   return 'anonymous:${ref.watch(deviceIdProvider)}';
+});
+
+/// Supabase auth surface used by startup and Gap 6 sign-out.
+final anonAuthProvider = Provider<AnonAuth?>((ref) {
+  if (Env.supabaseUrl.isEmpty || Env.supabaseAnonKey.isEmpty) return null;
+  try {
+    return SupabaseAnonAuth(Supabase.instance.client.auth);
+  } catch (_) {
+    return null;
+  }
 });
 
 /// Supabase access token provider (null when no Supabase session).
