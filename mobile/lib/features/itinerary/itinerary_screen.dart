@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/connectivity_helper.dart';
 import '../../core/providers.dart';
 import '../../render/render_strings.dart';
+import '../direct_add/direct_add_sheet.dart';
 import '../move/move_sheet.dart';
 import 'warning_helpers.dart';
 import '../../data/models.dart';
@@ -127,6 +128,38 @@ class ItineraryScreen extends ConsumerWidget {
             );
       }
     }
+  }
+
+  /// SPEC-42: empty-day catalog Add. Offline refuses before any sheet.
+  Future<void> _addToDate(BuildContext context, WidgetRef ref, DateTime date) async {
+    final controller = ref.read(itineraryControllerProvider(tripId).notifier);
+    final repo = ref.read(tripRepoProvider);
+    final connectivity = connectivityOverride ?? ConnectivityHelper();
+    final targetDate = directAddIsoDate(date);
+
+    final online = await connectivity.checkConnectivity();
+    if (!online) {
+      controller.showBanner(
+        '${RenderStrings.offlineUnavailable}. ${RenderStrings.offlineRetry}.',
+      );
+      return;
+    }
+    if (!context.mounted) return;
+    final choice = await showModalBottomSheet<DirectAddChoice>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => DirectAddSheet(
+        tripId: tripId,
+        targetDate: targetDate,
+        repo: repo,
+      ),
+    );
+    if (choice == null) return;
+    await controller.applyEvent(
+      type: EventType.addActivity,
+      message: 'Add ${choice.venueName}',
+      preferences: choice.toPreferences(),
+    );
   }
 
   /// SPEC-42: typed Move. Picker -> confirm -> one move_activity.
@@ -404,6 +437,7 @@ class ItineraryScreen extends ConsumerWidget {
                               onSwap: (node) => _swap(context, ref, node),
                               onCancel: (node) => _cancel(context, ref, node),
                               onMove: (node) => _move(context, ref, node),
+                              onAddToDate: (date) => _addToDate(context, ref, date),
                               onOutcome: (node, {isLastHotelNight = false}) =>
                                   _showOutcomePicker(context, ref, node, isLastHotelNight: isLastHotelNight),
                               onLoved: (node) {
@@ -445,6 +479,7 @@ class ItineraryScreen extends ConsumerWidget {
                               onSwap: (node) => _swap(context, ref, node),
                               onCancel: (node) => _cancel(context, ref, node),
                               onMove: (node) => _move(context, ref, node),
+                              onAddToDate: (date) => _addToDate(context, ref, date),
                               onOutcome: (node, {isLastHotelNight = false}) =>
                                   _showOutcomePicker(context, ref, node, isLastHotelNight: isLastHotelNight),
                               onLoved: (node) {
@@ -491,6 +526,7 @@ class _CorridorTimeline extends StatefulWidget {
   final void Function(TripNode) onSwap;
   final void Function(TripNode) onCancel;
   final void Function(TripNode)? onMove;
+  final void Function(DateTime)? onAddToDate;
   final void Function(TripNode, {bool isLastHotelNight}) onOutcome;
   final void Function(TripNode) onLoved;
   final void Function(TripNode) onEditBooking;
@@ -505,6 +541,7 @@ class _CorridorTimeline extends StatefulWidget {
     required this.onSwap,
     required this.onCancel,
     this.onMove,
+    this.onAddToDate,
     required this.onOutcome,
     required this.onLoved,
     required this.onEditBooking,
@@ -613,6 +650,7 @@ class _CorridorTimelineState extends State<_CorridorTimeline> {
         onSwap: widget.onSwap,
         onCancel: widget.onCancel,
         onMove: widget.onMove,
+        onAddToDate: widget.onAddToDate,
         onOutcome: widget.onOutcome,
         onLoved: widget.onLoved,
         onEditBooking: widget.onEditBooking,
@@ -635,6 +673,7 @@ class _FocusedDateScopedTimeline extends StatefulWidget {
   final void Function(TripNode) onSwap;
   final void Function(TripNode) onCancel;
   final void Function(TripNode)? onMove;
+  final void Function(DateTime)? onAddToDate;
   final void Function(TripNode, {bool isLastHotelNight}) onOutcome;
   final void Function(TripNode) onLoved;
   final void Function(TripNode) onEditBooking;
@@ -649,6 +688,7 @@ class _FocusedDateScopedTimeline extends StatefulWidget {
     required this.onSwap,
     required this.onCancel,
     this.onMove,
+    this.onAddToDate,
     required this.onOutcome,
     required this.onLoved,
     required this.onEditBooking,
@@ -716,6 +756,7 @@ class _FocusedDateScopedTimelineState
         onSwap: widget.onSwap,
         onCancel: widget.onCancel,
         onMove: widget.onMove,
+        onAddToDate: widget.onAddToDate,
         onOutcome: widget.onOutcome,
         onLoved: widget.onLoved,
         onEditBooking: widget.onEditBooking,
@@ -732,6 +773,7 @@ class _DateScopedTimeline extends StatelessWidget {
   final void Function(TripNode) onSwap;
   final void Function(TripNode) onCancel;
   final void Function(TripNode)? onMove;
+  final void Function(DateTime)? onAddToDate;
   final void Function(TripNode, {bool isLastHotelNight}) onOutcome;
   final void Function(TripNode) onLoved;
   final void Function(TripNode) onEditBooking;
@@ -749,6 +791,7 @@ class _DateScopedTimeline extends StatelessWidget {
     required this.onSwap,
     required this.onCancel,
     this.onMove,
+    this.onAddToDate,
     required this.onOutcome,
     required this.onLoved,
     required this.onEditBooking,
@@ -781,7 +824,7 @@ class _DateScopedTimeline extends StatelessWidget {
     for (final group in groups) {
       items.add(_TimelineItem.header(group.date));
       if (group.nodes.isEmpty) {
-        items.add(_TimelineItem.emptyDay());
+        items.add(_TimelineItem.emptyDay(group.date));
       } else {
         for (final node in group.nodes) {
           items.add(_TimelineItem.card(node));
@@ -800,7 +843,13 @@ class _DateScopedTimeline extends StatelessWidget {
           return _DateHeader(date: item.date!);
         }
         if (item.isEmptyDay) {
-          return const _EmptyDayCard();
+          final emptyDate = item.date!;
+          return _EmptyDayCard(
+            date: emptyDate,
+            onAdd: (state.processing || onAddToDate == null)
+                ? null
+                : () => onAddToDate!(emptyDate),
+          );
         }
         final node = item.node!;
         // nextNode: next card-type item in the flat list (skipping headers),
@@ -944,15 +993,18 @@ class _TimelineItem {
 
   factory _TimelineItem.header(DateTime date) => _TimelineItem._(date: date);
   factory _TimelineItem.card(TripNode node) => _TimelineItem._(node: node);
-  factory _TimelineItem.emptyDay() =>
-      const _TimelineItem._(isEmptyDay: true);
+  /// SPEC-42: carries the empty calendar date (never inferred from clock).
+  factory _TimelineItem.emptyDay(DateTime date) =>
+      _TimelineItem._(date: date, isEmptyDay: true);
 
   bool get isHeader => date != null && !isEmptyDay;
 }
 
 /// SPEC-42: placeholder for an empty day in a sparse itinerary.
 class _EmptyDayCard extends StatelessWidget {
-  const _EmptyDayCard();
+  final DateTime date;
+  final VoidCallback? onAdd;
+  const _EmptyDayCard({required this.date, this.onAdd});
 
   @override
   Widget build(BuildContext context) {
@@ -961,12 +1013,24 @@ class _EmptyDayCard extends StatelessWidget {
         horizontal: AppSpacing.base,
         vertical: AppSpacing.sm,
       ),
-      child: Text(
-        'Open day',
-        style: Theme.of(context)
-            .textTheme
-            .bodySmall
-            ?.copyWith(color: Colors.grey),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              'Open day',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: Colors.grey),
+            ),
+          ),
+          TextButton.icon(
+            key: Key('empty_day_add_${directAddIsoDate(date)}'),
+            onPressed: onAdd,
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('Add activity'),
+          ),
+        ],
       ),
     );
   }

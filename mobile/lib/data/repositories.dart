@@ -144,6 +144,19 @@ class TripRepository {
       refusalCopy: map['refusal_copy'] as String?,
     );
   }
+
+  /// SPEC-42 empty-day Add: read-only server candidates for one date/slot.
+  Future<AddCandidatesResult> addCandidates({
+    required String tripId,
+    required String targetDate,
+    required String targetSlot,
+  }) async {
+    final data = await _api.get(
+      '/trip/$tripId/add_candidates',
+      query: {'target_date': targetDate, 'target_slot': targetSlot},
+    );
+    return AddCandidatesResult.fromJson(Map<String, dynamic>.from(data as Map));
+  }
 }
 
 /// User status and tier info.

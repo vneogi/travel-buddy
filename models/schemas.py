@@ -324,6 +324,31 @@ class TripEventResponse(BaseModel):
     ask_response: Optional[AskResponseEnvelope] = None
 
 
+class AddCandidate(BaseModel):
+    """SPEC-42 empty-day Add: one server-approved catalog candidate."""
+
+    venue_id: str
+    name: str
+    category: str = ""
+    micro_location: Optional[str] = None
+    vibe_tags: List[str] = []
+    planned_start: str  # destination-local ISO-8601 with offset
+    typical_dwell_minutes: int
+
+
+class AddCandidatesResponse(BaseModel):
+    """SPEC-42 GET /trip/{trip_id}/add_candidates (closed DTO)."""
+
+    target_date: str
+    target_slot: str
+    geo_region: Optional[str] = None
+    candidates: List[AddCandidate] = []
+    refusal_code: Optional[
+        Literal["no_catalog", "duplicate", "hours", "reachability", "occupied", "invalid_date"]
+    ] = None
+    refusal_copy: Optional[str] = None
+
+
 class CreatePreferences(BaseModel):
     """SPEC-40: Typed preferences for guided create."""
 

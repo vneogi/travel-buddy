@@ -27,6 +27,7 @@ from config.interests import (
 from config.regions import REGIONS
 from config.settings import settings
 from models.schemas import (
+    AddCandidatesResponse,
     CreationContext,
     FeaturedStop,
     FeaturedTrip,
@@ -715,6 +716,17 @@ async def process_trip_event(
         is_anonymous=is_anonymous,
     )
 
+    # SPEC-42: empty-day direct add refusal -- nothing persisted, no quota.
+    if result.get("direct_add_refused"):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "error": "direct_add_refused",
+                "code": result.get("direct_add_refusal_code", ""),
+                "message": result.get("response", "Add refused."),
+            },
+        )
+
     # SPEC-42: typed move refusal -- nothing persisted, no quota consumed.
     if result.get("move_refused"):
         raise HTTPException(
@@ -807,6 +819,35 @@ async def process_trip_event(
 # NOTE: The old `POST /user/{user_id}/upgrade` endpoint was removed. It granted
 # Pro with no payment and no auth. Tier upgrades now happen only via verified
 # payments (see routers/payment_router.py -- fix #2).
+
+
+@router.get("/trip/{trip_id}/add_candidates", response_model=AddCandidatesResponse)
+async def add_candidates(
+    trip_id: str,
+    target_date: str,
+    target_slot: str,
+    user_id: str = Depends(get_current_user_id),
+):
+    """SPEC-42 empty-day Add: deterministic catalog candidates for one slot.
+
+    Read-only: no quota, persistence, version bump, command record, signal,
+    venue search, or model call. Uses the same evaluator as confirm.
+    """
+    from services.day_slots import SLOT_ORDER
+    from services.direct_add_service import candidates_response
+
+    trip = db_service.get_trip(trip_id)
+    if trip is None or trip.user_id != user_id:
+        raise HTTPException(status_code=404, detail="Trip not found.")
+    if target_slot not in SLOT_ORDER:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "error": "invalid_slot",
+                "message": "Choose morning, lunch, afternoon, or dinner.",
+            },
+        )
+    return candidates_response(trip, target_date, target_slot, db_service)
 
 
 @router.get("/trip/{trip_id}/swap_candidates/{node_id}")
