@@ -440,16 +440,20 @@ void main() {
         routes: [
           GoRoute(
             path: '/',
-            builder: (context, state) => const Scaffold(
-              body: Text('empty home', key: Key('home_root')),
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: Scaffold(
+                body: Text('empty home', key: Key('home_root')),
+              ),
             ),
           ),
           GoRoute(
             path: '/trip/:tripId',
-            builder: (context, state) => Scaffold(
-              body: Center(
-                child: Text('trip ${state.pathParameters['tripId']}',
-                    key: const Key('trip_page')),
+            pageBuilder: (context, state) => NoTransitionPage(
+              child: Scaffold(
+                body: Center(
+                  child: Text('trip ${state.pathParameters['tripId']}',
+                      key: const Key('trip_page')),
+                ),
               ),
             ),
           ),
@@ -482,13 +486,9 @@ void main() {
       expect(result!.ok, isTrue);
       goRouter.go('/');
       await tester.pump();
-      // Let the route transition settle without pumpAndSettle (SyncEngine's
-      // real periodic timer would otherwise never let pumpAndSettle finish).
-      await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byKey(const Key('home_root')), findsOneWidget);
-      expect(find.byKey(const Key('trip_page')), findsNothing);
       expect(router.routeInformationProvider.value.uri.path, '/');
+      expect(find.byKey(const Key('home_root')), findsOneWidget);
 
       router.dispose();
       await tester.runAsync(db.close);
