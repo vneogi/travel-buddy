@@ -8,17 +8,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:travel_buddy/core/anon_session.dart';
 import 'package:travel_buddy/core/api_client.dart';
 import 'package:travel_buddy/core/providers.dart';
 import 'package:travel_buddy/data/models.dart';
 import 'package:travel_buddy/data/repositories.dart';
-import 'package:travel_buddy/features/alerts/alerts_notifier.dart';
 import 'package:travel_buddy/features/home/home_controller.dart';
 import 'package:travel_buddy/features/itinerary/itinerary_notifier.dart';
-import 'package:travel_buddy/features/notifications/departure_notifier.dart';
 import 'package:travel_buddy/features/profile/profile_screen.dart';
 import 'package:travel_buddy/features/profile/sign_out_controller.dart';
 import 'package:travel_buddy/offline/offline_database.dart';
@@ -117,7 +114,6 @@ Future<void> _seedWipeSurface(OfflineDatabase db) async {
     identityScope: 'account:user-a',
     tripId: 'trip-a',
     placeRef: 'place-a',
-    loved: true,
   );
   await db.setAppValue('last_session_at', DateTime.now().toUtc().toIso8601String());
   await db.upsertNodeOutcome(
