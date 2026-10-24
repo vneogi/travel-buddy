@@ -395,6 +395,14 @@ void main() {
     });
 
     testWidgets('profile_sign_out is keyed on Profile', (tester) async {
+      // ProfileScreen's Column overflows the default 800x600 test surface
+      // (pre-existing on main; not a Gap 6 regression). Match the precedent
+      // in spec36_corridor_test.dart / spec17_sponsored_disclosure_test.dart.
+      tester.view.physicalSize = const Size(800, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
       final db = await tester.runAsync(_db);
       if (db == null) fail('failed to open test database');
       final auth = _FakeAnonAuth(accessToken: 'token-a');
@@ -474,6 +482,9 @@ void main() {
       expect(result!.ok, isTrue);
       goRouter.go('/');
       await tester.pump();
+      // Let the route transition settle without pumpAndSettle (SyncEngine's
+      // real periodic timer would otherwise never let pumpAndSettle finish).
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byKey(const Key('home_root')), findsOneWidget);
       expect(find.byKey(const Key('trip_page')), findsNothing);
