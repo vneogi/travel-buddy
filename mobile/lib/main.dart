@@ -14,6 +14,8 @@ import 'theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // SPEC-43 Gap 12: fail startup before any network client is created.
+  assertSecureTransport();
   initDatabaseFactory();
 
   // Initialize Supabase (for auth). Skipped gracefully if no URL configured.
