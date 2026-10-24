@@ -716,6 +716,17 @@ async def process_trip_event(
         is_anonymous=is_anonymous,
     )
 
+    # SPEC-42: trip-private uncatalogued add refusal -- nothing persisted.
+    if result.get("uncatalogued_add_refused"):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "error": "uncatalogued_add_refused",
+                "code": result.get("uncatalogued_add_refusal_code", ""),
+                "message": result.get("response", "Add refused."),
+            },
+        )
+
     # SPEC-42: empty-day direct add refusal -- nothing persisted, no quota.
     if result.get("direct_add_refused"):
         raise HTTPException(

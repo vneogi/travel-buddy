@@ -373,6 +373,8 @@ class TripStateMachine:
                 return await self._handle_typed_add(state)
             if _prefs.get("mode") == "direct_add":
                 return self._handle_direct_add(state)
+            if _prefs.get("mode") == "uncatalogued_add":
+                return self._handle_uncatalogued_add(state)
             return self._refuse_bare_add(state)
 
         state = self._node_classify_intent(state)
@@ -1383,6 +1385,31 @@ class TripStateMachine:
             "schedule_warnings": [],
             "ask_response": ask_response_dict,
         }
+
+    def _handle_uncatalogued_add(self, state: Dict) -> Dict:
+        """SPEC-42 trip-private Add: one node, no catalog write.
+
+        Refusals carry ``uncatalogued_add_refused`` so the router refuses
+        before persistence.
+        """
+        from services.uncatalogued_add_service import apply_uncatalogued_add
+
+        trip: TripState = state["trip_state"]
+        outcome = apply_uncatalogued_add(trip, state.get("preferences") or {}, db_service)
+        if outcome.ok:
+            trip = trip.model_copy(update={"nodes": outcome.nodes})
+        result = {
+            "updated_trip_state": trip,
+            "response": outcome.message,
+            "routing_tier_used": RoutingTier.LIGHT.value,
+            "from_cache": False,
+            "venues_found": [],
+            "schedule_warnings": [],
+        }
+        if not outcome.ok:
+            result["uncatalogued_add_refused"] = True
+            result["uncatalogued_add_refusal_code"] = outcome.code
+        return result
 
     def _handle_direct_add(self, state: Dict) -> Dict:
         """SPEC-42 empty-day catalog Add: one node, shared evaluator.
