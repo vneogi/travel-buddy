@@ -56,6 +56,11 @@ class TripNode {
   // SPEC-41: named day slot for flexible catalog-packed nodes.
   // Null for locked bookings (they display exact local times).
   final String? slotName;
+  // SPEC-42: provenance. 'catalog' (default; old cached trips) or
+  // 'trip_private' (traveller-added place, only on this trip).
+  final String placeSource;
+
+  bool get isTripPrivate => placeSource == 'trip_private';
 
   const TripNode({
     required this.nodeId,
@@ -80,6 +85,7 @@ class TripNode {
     this.bookingNotes,
     this.importSource,
     this.slotName,
+    this.placeSource = 'catalog',
   });
 
   factory TripNode.fromJson(Map<String, dynamic> j) => TripNode(
@@ -105,6 +111,7 @@ class TripNode {
         bookingNotes: j['booking_notes'] as String?,
         importSource: j['import_source'] as String?,
         slotName: j['slot_name'] as String?,
+        placeSource: (j['place_source'] as String?) ?? 'catalog',
       );
 
   Map<String, dynamic> toJson() => {
@@ -130,6 +137,7 @@ class TripNode {
         'booking_notes': bookingNotes,
         'import_source': importSource,
         'slot_name': slotName,
+        'place_source': placeSource,
       };
 }
 

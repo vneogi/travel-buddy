@@ -385,6 +385,15 @@ class ActivityCard extends StatelessWidget {
                           const SizedBox(height: AppSpacing.xs),
                           Text(friendlyLocation, style: AppTypography.caption),
                         ],
+                        // SPEC-42: honest provenance for trip-private places.
+                        if (node.isTripPrivate) ...[
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(
+                            'Added by you',
+                            key: Key('trip_private_badge_${node.nodeId}'),
+                            style: AppTypography.caption,
+                          ),
+                        ],
                         if (node.nodeKind == 'booking' &&
                             node.bookingType == 'hotel') ...[
                           const SizedBox(height: AppSpacing.xs),

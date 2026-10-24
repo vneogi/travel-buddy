@@ -111,32 +111,108 @@ def _walk(a_lat, a_lng, b_lat, b_lng) -> Optional[int]:
     return walking_minutes(a_lat, a_lng, b_lat, b_lng)
 
 
-def _evaluate_row(
-    row: dict,
+@dataclass
+class DayContext:
+    """Resolved empty-day context shared by catalog and trip-private Add."""
+
+    trip: TripState
+    region: str
+    target_date: date
+    target_slot: str
+    tz: Any
+    local_day: datetime
+    floor_utc: datetime
+    day_nodes: List[TripNode]
+    stops: List[TripNode]
+    locks_after: List[TripNode]
+
+
+def day_context(
+    trip: TripState, target_date_raw: Any, target_slot: Any
+) -> tuple[Optional[DayContext], Optional[str]]:
+    """Slot/date/region resolution plus the occupancy predicate.
+
+    Returns ``(ctx, None)`` when the slot is free, ``(ctx, "occupied")`` when
+    the region resolved but the slot is taken, else ``(None, code)``.
+    """
+    from services.catalog_itinerary import _slot_floor_utc
+    from services.destination_tz import destination_tz
+
+    if target_slot not in SLOT_ORDER:
+        return None, "invalid_slot"
+    target_date = parse_target_date(target_date_raw)
+    if target_date is None:
+        return None, "invalid_date"
+    region = resolve_target_region(trip, target_date)
+    if not region:
+        return None, "invalid_date"
+
+    day_nodes = [
+        n
+        for n in trip.nodes
+        if _region(n, trip) == region
+        and _local_date(n, trip) == target_date
+        and n.status != NodeStatus.SKIPPED
+    ]
+    tz = destination_tz(region)
+    local_day = datetime(
+        target_date.year,
+        target_date.month,
+        target_date.day,
+        _DAY_START_HOUR,
+        tzinfo=tz or timezone.utc,
+    )
+    floor_utc = max(
+        _aware(_slot_floor_utc(target_slot, local_day, tz)),
+        local_day.astimezone(timezone.utc),
+    )
+    stops = sorted(
+        (n for n in day_nodes if not _is_hotel(n)),
+        key=lambda n: _aware(n.scheduled_start),
+    )
+    locks_after = sorted(
+        (n for n in trip.nodes if not _is_flexible(n) and not _is_hotel(n)),
+        key=lambda n: _aware(n.scheduled_start),
+    )
+    ctx = DayContext(
+        trip=trip,
+        region=region,
+        target_date=target_date,
+        target_slot=target_slot,
+        tz=tz,
+        local_day=local_day,
+        floor_utc=floor_utc,
+        day_nodes=day_nodes,
+        stops=stops,
+        locks_after=locks_after,
+    )
+    # 6. occupancy
+    if any(_is_flexible(n) and n.slot_name == target_slot for n in day_nodes):
+        return ctx, "occupied"
+    return ctx, None
+
+
+def place_timing(
+    ctx: DayContext,
     *,
-    target_slot: str,
-    region: str,
-    local_day: datetime,
-    floor_utc: datetime,
-    stops: Sequence[TripNode],
-    locks_after: Sequence[TripNode],
-) -> tuple[Optional[Candidate], str]:
-    """Run predicates 4-10 for one already region/infra/duplicate-clean row."""
+    lat: Any,
+    lng: Any,
+    dwell: int,
+    structured: Optional[dict],
+    check_hours: bool,
+) -> tuple[Optional[datetime], str]:
+    """Predicates 7-10 for one place: server start or a refusal reason.
+
+    ``structured=None`` + ``check_hours=False`` is the trip-private path:
+    unknown hours schedule at the cursor and never claim "open".
+    """
     from services.booking_constraints import fits_next_lock
     from services.catalog_itinerary import _slot_accepts_start
     from services.opening_hours import HoursResult, hours_for_slot, next_slot_start
 
-    # 4. slot type (whole-day excursions out of this slice)
-    if is_whole_day_excursion(row) or not venue_fits_slot(row, target_slot, list(SLOT_ORDER)):
-        return None, "no_catalog"
-    # 5. canonical dwell
-    dwell = canonical_dwell(row)
-    if dwell is None:
-        return None, "no_catalog"
-    lat, lng = row.get("lat"), row.get("lng")
-
+    region, stops = ctx.region, ctx.stops
     # 7. earliest start: slot floor, then previous non-hotel dwell + walk
-    earliest = floor_utc
+    earliest = ctx.floor_utc
     prev = None
     for n in stops:
         if _aware(n.scheduled_start) <= earliest:
@@ -148,12 +224,11 @@ def _evaluate_row(
         prev_end = _aware(prev.scheduled_start) + timedelta(minutes=prev.duration_minutes)
         earliest = max(earliest, prev_end + timedelta(minutes=walk))
 
-    structured = row.get("opening_hours_structured")
-    start = next_slot_start(structured, earliest, dwell, region, local_day)
-    if start is None or not _slot_accepts_start(target_slot, start, region):
+    start = next_slot_start(structured, earliest, dwell, region, ctx.local_day)
+    if start is None or not _slot_accepts_start(ctx.target_slot, start, region):
         return None, "hours"
-    # 8. known hours must fit start + canonical dwell
-    if hours_for_slot(structured, start, dwell, region) == HoursResult.CLOSED:
+    # 8. known hours must fit start + dwell (catalog only)
+    if check_hours and hours_for_slot(structured, start, dwell, region) == HoursResult.CLOSED:
         return None, "hours"
     end = start + timedelta(minutes=dwell)
 
@@ -177,10 +252,31 @@ def _evaluate_row(
             return None, "reachability"
 
     # 10. next locked non-hotel via the shared helper (flight cutoff included)
-    next_lock = next((n for n in locks_after if _aware(n.scheduled_start) >= start), None)
-    if not fits_next_lock(row, start, dwell, next_lock, region):
+    next_lock = next((n for n in ctx.locks_after if _aware(n.scheduled_start) >= start), None)
+    if not fits_next_lock({"lat": lat, "lng": lng}, start, dwell, next_lock, region):
         return None, "reachability"
+    return start, ""
 
+
+def _evaluate_row(row: dict, ctx: DayContext) -> tuple[Optional[Candidate], str]:
+    """Run predicates 4-10 for one already region/infra/duplicate-clean row."""
+    # 4. slot type (whole-day excursions out of this slice)
+    if is_whole_day_excursion(row) or not venue_fits_slot(row, ctx.target_slot, list(SLOT_ORDER)):
+        return None, "no_catalog"
+    # 5. canonical dwell
+    dwell = canonical_dwell(row)
+    if dwell is None:
+        return None, "no_catalog"
+    start, why = place_timing(
+        ctx,
+        lat=row.get("lat"),
+        lng=row.get("lng"),
+        dwell=dwell,
+        structured=row.get("opening_hours_structured"),
+        check_hours=True,
+    )
+    if start is None:
+        return None, why
     return Candidate(
         venue_id=str(row["venue_id"]), row=row, start_utc=start, dwell=dwell, score=0.0
     ), ""
@@ -195,53 +291,15 @@ def evaluate(
     venue_id: Optional[str] = None,
 ) -> Evaluation:
     """Shared evaluator. ``rows_for_region(region) -> list[dict]``."""
-    from services.catalog_itinerary import (
-        INFRASTRUCTURE_CATEGORIES,
-        _interest_score,
-        _slot_floor_utc,
-    )
-    from services.destination_tz import destination_tz
+    from services.catalog_itinerary import INFRASTRUCTURE_CATEGORIES, _interest_score
 
-    if target_slot not in SLOT_ORDER:
-        return Evaluation(geo_region=None, refusal_code="invalid_slot")
-    target_date = parse_target_date(target_date_raw)
-    if target_date is None:
-        return Evaluation(geo_region=None, refusal_code="invalid_date")
-    region = resolve_target_region(trip, target_date)
-    if not region:
-        return Evaluation(geo_region=None, refusal_code="invalid_date")
+    ctx, code = day_context(trip, target_date_raw, target_slot)
+    if ctx is None:
+        return Evaluation(geo_region=None, refusal_code=code)
+    region, tz = ctx.region, ctx.tz
+    if code:
+        return Evaluation(geo_region=region, refusal_code=code)
 
-    day_nodes = [
-        n
-        for n in trip.nodes
-        if _region(n, trip) == region
-        and _local_date(n, trip) == target_date
-        and n.status != NodeStatus.SKIPPED
-    ]
-    # 6. occupancy
-    if any(_is_flexible(n) and n.slot_name == target_slot for n in day_nodes):
-        return Evaluation(geo_region=region, refusal_code="occupied")
-
-    tz = destination_tz(region)
-    local_day = datetime(
-        target_date.year,
-        target_date.month,
-        target_date.day,
-        _DAY_START_HOUR,
-        tzinfo=tz or timezone.utc,
-    )
-    floor_utc = max(
-        _aware(_slot_floor_utc(target_slot, local_day, tz)),
-        local_day.astimezone(timezone.utc),
-    )
-    stops = sorted(
-        (n for n in day_nodes if not _is_hotel(n)),
-        key=lambda n: _aware(n.scheduled_start),
-    )
-    locks_after = sorted(
-        (n for n in trip.nodes if not _is_flexible(n) and not _is_hotel(n)),
-        key=lambda n: _aware(n.scheduled_start),
-    )
     existing_ids = {n.venue_id for n in trip.nodes if n.venue_id}
     interest_ids = list(getattr(trip.creation_context, "interest_ids", None) or [])
 
@@ -265,15 +323,7 @@ def evaluate(
         if vid in existing_ids:
             counts["duplicate"] += 1
             continue
-        cand, why = _evaluate_row(
-            row,
-            target_slot=target_slot,
-            region=region,
-            local_day=local_day,
-            floor_utc=floor_utc,
-            stops=stops,
-            locks_after=locks_after,
-        )
+        cand, why = _evaluate_row(row, ctx)
         if cand is None:
             if why in counts:
                 counts[why] += 1

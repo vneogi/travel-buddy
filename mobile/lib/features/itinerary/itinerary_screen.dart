@@ -145,7 +145,7 @@ class ItineraryScreen extends ConsumerWidget {
       return;
     }
     if (!context.mounted) return;
-    final choice = await showModalBottomSheet<DirectAddChoice>(
+    final choice = await showModalBottomSheet<EmptyDayAddChoice>(
       context: context,
       isScrollControlled: true,
       builder: (_) => DirectAddSheet(

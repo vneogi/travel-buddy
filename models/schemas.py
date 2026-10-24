@@ -92,6 +92,9 @@ class TripNode(BaseModel):
     # SPEC-41: named day slot for flexible catalog-packed nodes.
     # Locked bookings keep None (they render exact local times).
     slot_name: Optional[str] = None
+    # SPEC-42: provenance. Missing on old cached trips -> "catalog".
+    # "trip_private" = traveller-added place, never written to the catalog.
+    place_source: Literal["catalog", "trip_private"] = "catalog"
 
 
 class CurrentContext(BaseModel):

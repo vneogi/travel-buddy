@@ -32,10 +32,50 @@ String directAddIsoDate(DateTime d) =>
 String plannedLocalTime(String plannedStart) =>
     plannedStart.length >= 16 ? plannedStart.substring(11, 16) : plannedStart;
 
-class DirectAddChoice {
+/// What the empty-day sheet pops on confirm.
+abstract class EmptyDayAddChoice {
+  String get venueName;
+  Map<String, dynamic> toPreferences();
+}
+
+/// Traveller-stated stay lengths for a place not in the catalog.
+const kUncataloguedDwellChoices = <int>[15, 30, 45, 60, 90, 120];
+
+/// SPEC-42 trip-private Add: no venue_id, no client timestamp.
+class UncataloguedAddChoice implements EmptyDayAddChoice {
+  final String name;
+  final String targetDate;
+  final String targetSlot;
+  final int dwellMinutes;
+  final String? microLocation;
+  const UncataloguedAddChoice({
+    required this.name,
+    required this.targetDate,
+    required this.targetSlot,
+    required this.dwellMinutes,
+    this.microLocation,
+  });
+
+  @override
+  String get venueName => name;
+
+  @override
+  Map<String, dynamic> toPreferences() => {
+        'mode': 'uncatalogued_add',
+        'name': name,
+        'target_date': targetDate,
+        'target_slot': targetSlot,
+        'typical_dwell_minutes': dwellMinutes,
+        if (microLocation != null && microLocation!.isNotEmpty)
+          'micro_location': microLocation,
+      };
+}
+
+class DirectAddChoice implements EmptyDayAddChoice {
   final String venueId;
   final String targetDate;
   final String targetSlot;
+  @override
   final String venueName;
   const DirectAddChoice({
     required this.venueId,
@@ -44,6 +84,7 @@ class DirectAddChoice {
     required this.venueName,
   });
 
+  @override
   Map<String, dynamic> toPreferences() => {
         'mode': 'direct_add',
         'venue_id': venueId,
@@ -53,7 +94,7 @@ class DirectAddChoice {
 }
 
 /// Empty-day Add: slot -> server candidates -> explicit confirm.
-/// Pops a [DirectAddChoice] on confirm, null on cancel.
+/// Pops an [EmptyDayAddChoice] on confirm, null on cancel.
 class DirectAddSheet extends StatefulWidget {
   final String tripId;
   final String targetDate;
@@ -76,6 +117,99 @@ class _DirectAddSheetState extends State<DirectAddSheet> {
   AddCandidatesResult? _result;
   AddCandidate? _selected;
   int _request = 0;
+  // SPEC-42 trip-private path.
+  bool _private = false;
+  int? _dwell;
+  final _nameCtl = TextEditingController();
+  final _microCtl = TextEditingController();
+
+  @override
+  void dispose() {
+    _nameCtl.dispose();
+    _microCtl.dispose();
+    super.dispose();
+  }
+
+  String get _name => _nameCtl.text.trim().split(RegExp(r'\s+')).join(' ');
+  bool get _privateReady =>
+      _slot != null && _dwell != null && _name.length >= 2 && _name.length <= 80;
+
+  String get _micro => _microCtl.text.trim();
+
+  Widget _privateForm() {
+    final slot = _slot!;
+    return Column(
+      key: const Key('uncatalogued_add_form'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextField(
+          key: const Key('uncatalogued_add_name'),
+          controller: _nameCtl,
+          maxLength: 80,
+          decoration: const InputDecoration(labelText: 'Place name'),
+          onChanged: (_) => setState(() {}),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Text('How long will you stay?', style: AppTypography.body),
+        Wrap(
+          spacing: AppSpacing.xs,
+          runSpacing: AppSpacing.xs,
+          children: [
+            for (final m in kUncataloguedDwellChoices)
+              ChoiceChip(
+                key: Key('uncatalogued_add_dwell_$m'),
+                label: Text('$m min'),
+                selected: _dwell == m,
+                onSelected: (_) => setState(() => _dwell = m),
+              ),
+          ],
+        ),
+        TextField(
+          key: const Key('uncatalogued_add_micro'),
+          controller: _microCtl,
+          decoration: const InputDecoration(labelText: 'Area (optional)'),
+          onChanged: (_) => setState(() {}),
+        ),
+        if (_privateReady) ...[
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'Add $_name on ${widget.targetDate} ${directAddSlotLabel(slot)} '
+            'for $_dwell min? This place is only on this trip.',
+            key: const Key('uncatalogued_add_confirm_copy'),
+            style: AppTypography.body,
+          ),
+        ],
+        const SizedBox(height: AppSpacing.base),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                key: const Key('uncatalogued_add_cancel'),
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancel'),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: ElevatedButton(
+                key: const Key('uncatalogued_add_confirm'),
+                onPressed: !_privateReady
+                    ? null
+                    : () => Navigator.of(context).pop(UncataloguedAddChoice(
+                          name: _name,
+                          targetDate: widget.targetDate,
+                          targetSlot: slot,
+                          dwellMinutes: _dwell!,
+                          microLocation: _micro.isEmpty ? null : _micro,
+                        )),
+                child: const Text('Add'),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 
   Future<void> _load(String slot) async {
     final request = ++_request;
@@ -186,7 +320,17 @@ class _DirectAddSheetState extends State<DirectAddSheet> {
               ],
             ),
             const SizedBox(height: AppSpacing.sm),
+            if (_private && _slot != null) _privateForm() else ...[
             _body(),
+            if (_slot != null)
+              TextButton(
+                key: const Key('uncatalogued_add_open'),
+                onPressed: () => setState(() {
+                  _private = true;
+                  _selected = null;
+                }),
+                child: const Text('Not in the list? Add a place not in the catalog'),
+              ),
             if (selected != null && _slot != null) ...[
               const SizedBox(height: AppSpacing.sm),
               Text(
@@ -225,6 +369,7 @@ class _DirectAddSheetState extends State<DirectAddSheet> {
                 ),
               ],
             ),
+            ],
           ],
         ),
       ),
