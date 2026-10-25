@@ -1,7 +1,8 @@
 # Genie brief: SPEC-43 Gap 12 -- chat question out of route URLs
 
-Next after this lands: remaining Gap 12 ATS / network-security XML /
-deep-link ownership (brief not written).
+Landed on `main` as `14ce56d` (PR #89). Do not re-implement this slice.
+Next: remaining Gap 12 ATS / network-security XML / deep-link
+ownership (brief not written).
 
 ## Goal
 

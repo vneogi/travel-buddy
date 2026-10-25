@@ -1,7 +1,7 @@
 # Genie brief: SPEC-43 Gap 9 -- trip-linked signal ownership
 
 Landed on `main` as `163a14c` (PR #81). Do not re-implement this slice.
-Next: `docs/briefs/GENIE_SPEC_43_G12_CHAT_URL.md`. Gap 12 cache keys are on main as `290f821`.
+Next: remaining Gap 12 ATS / deep links (brief not written). Chat URLs landed as `14ce56d`.
 
 ## Goal
 
