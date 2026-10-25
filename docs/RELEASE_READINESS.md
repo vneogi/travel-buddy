@@ -37,7 +37,7 @@ The Laos field APK did not contain post-trip Ask, Add/Move, What Now,
 trust hygiene, JWT, or scoped cache. Build one owner-only signed APK
 after both are true:
 
-1. Gap 12 cache keys are on `main` (HTTPS fail-closed already is).
+1. Gap 12 HTTPS and cache keys are on `main` (`290f821`, PR #85).
 2. Hosted Cloud Run is a Gap 1 revision: dashboard Anonymous sign-ins
    on, JWKS URL and issuer set. Today's `00012-8wv` still expects the
    old Anonymous header; a Gap 1 APK against it would 401.
@@ -82,7 +82,7 @@ not anonymous, and it is not safe to hand to a tester.
 | Signal ownership and poisoning controls | SPEC-43 gap 9 | A supplied trip id is not a write primitive |
 | Redacted diagnostics; no production debug | SPEC-43 gap 10, SPEC-05 | Failures do not retain secrets |
 | Abuse and provider-spend limits | SPEC-43 gap 11 | A stolen APK cannot run unbounded Ask |
-| Release HTTPS and identity-scoped caches | SPEC-43 gap 12 | HTTPS fail-closed on main (`6f1dab8`); cache keys and chat URLs remain |
+| Release HTTPS and identity-scoped caches | SPEC-43 gap 12 | HTTPS+cache on main (`290f821`); chat URLs / ATS / deep links remain |
 
 SPEC-24 (merge, aliases, sign-out) and SPEC-27 (rights, minimum client,
 push transport) are implementation dependencies inside this gate, not
