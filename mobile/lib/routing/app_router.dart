@@ -6,6 +6,7 @@ import '../features/onboarding/onboarding_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/itinerary/itinerary_screen.dart';
 import '../features/chat/chat_screen.dart';
+import 'chat_route.dart';
 import '../features/profile/profile_screen.dart';
 import '../features/upgrade/upgrade_screen.dart';
 import '../features/debug/sync_status_screen.dart';
@@ -63,7 +64,8 @@ final appRouter = GoRouter(
           path: '/trip/:tripId/chat',
           builder: (_, state) => ChatScreen(
             tripId: state.pathParameters['tripId']!,
-            initialQuestion: state.uri.queryParameters['q'],
+            // SPEC-43 Gap 12: typed extra only; query q is ignored.
+            initialQuestion: chatInitialQuestionFromExtra(state.extra),
           ),
         ),
         GoRoute(
