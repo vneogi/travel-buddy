@@ -15,6 +15,26 @@ other.
 Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 `#85` and so on; those numbers cannot be reconciled against `git log`.
 
+## Finding -- Oct 25 2026 -- SPEC-43 Gap 12 ATS merged
+
+Owner Windows checkout of `feat/spec43-g12-ats` at `cead31f`
+(squash-merged to `main` as `be89128`, PR #92):
+
+- `flutter analyze`: 115 infos, no errors
+- full `flutter test`: All tests passed
+- R17: release `network_security_config.xml` `base-config`
+  flipped to `cleartextTrafficPermitted="true"`;
+  `test_release_network_security_config_forbids_cleartext` failed
+  (expected contains `false`). Restored via
+  `git checkout -- mobile/android/app/src/main/res/xml/network_security_config.xml`;
+  full suite green again.
+
+No hosted deploy, APK, or phone acceptance. Deep-link ownership
+remains. Owner G0 APK still waits on hosted Gap 1 JWKS.
+
+Genie Python gates on the branch were green. Flutter SDK was absent
+on Genie's machine.
+
 ## Finding -- Oct 25 2026 -- SPEC-43 Gap 12 chat URLs merged
 
 Owner Windows checkout of `feat/spec43-g12-chat-url` at `006ad68`

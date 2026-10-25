@@ -1,6 +1,7 @@
 # Genie brief: SPEC-43 Gap 12 -- Android network security and iOS ATS
 
-Next after this lands: Gap 12 deep-link ownership (brief not written).
+Landed on `main` as `be89128` (PR #92). Do not re-implement this slice.
+Next: Gap 12 deep-link ownership (brief not written).
 
 ## Goal
 

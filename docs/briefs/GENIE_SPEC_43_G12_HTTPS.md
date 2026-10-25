@@ -1,8 +1,8 @@
 # Genie brief: SPEC-43 Gap 12 -- release HTTPS fail-closed
 
 Landed on `main` as `6f1dab8` (PR #82). Do not re-implement this slice.
-Cache keys `290f821`. Chat URLs `14ce56d`. Next:
-`docs/briefs/GENIE_SPEC_43_G12_ATS.md`.
+Cache keys `290f821`. Chat URLs `14ce56d`. ATS `be89128`. Next:
+Gap 12 deep-link ownership (brief not written).
 
 ## Goal
 

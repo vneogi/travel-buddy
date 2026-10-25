@@ -3,9 +3,8 @@
 > Status: PARTIAL. Gap 1 `2460edf` (PR #78). Gap 6 `c65261c` (PR #79).
 > Gap 2 `0b8125f` (PR #80). Gap 9 ownership `163a14c` (PR #81).
 > Gap 12 HTTPS `6f1dab8` (PR #82). Gap 12 cache keys `290f821`
-> (PR #85). Gap 12 chat URLs `14ce56d` (PR #89). Next is Gap 12 ATS
-> (`docs/briefs/GENIE_SPEC_43_G12_ATS.md`), then deep-link
-> ownership. Hosted
+> (PR #85). Gap 12 chat URLs `14ce56d` (PR #89). Gap 12 ATS
+> `be89128` (PR #92). Next is Gap 12 deep-link ownership. Hosted
 > apply of 0026 and deploy of Gaps 1/6 are not done.
 >
 > Sequence: start after the Laos reliability and build tranche is complete:
@@ -447,12 +446,14 @@ or LLM budget that survives UUID rotation.
 **Status on main.** HTTPS fail-closed merged as `6f1dab8` (PR #82).
 Identity-scoped `cache_trip` / `cache_place` merged as `290f821`
 (PR #85). Schema v9 drops unscoped rows. Writes refuse empty /
-`anonymous:` / `account:` scopes. Chat query strings,
-ATS/network-security XML, and deep-link ownership remain.
+`anonymous:` / `account:` scopes. Chat query strings landed as
+`14ce56d`. ATS / network-security XML landed as `be89128`.
+Deep-link ownership remains.
 
-**Current fact.** Chat text is placed in a route query string.
-Android network security and iOS ATS are not declared for release.
-Incoming deep links are not authorized against the current identity.
+**Current fact.** Incoming deep links are not authorized against
+the current identity. There are no custom URL schemes or VIEW
+intent filters yet; `/trip/:tripId` still opens without an
+identity ownership check.
 
 **Solution.**
 

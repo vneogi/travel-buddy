@@ -1,7 +1,8 @@
 # Genie brief: SPEC-43 Gap 12 -- identity-scoped trip and place cache
 
 Landed on `main` as `290f821` (PR #85). Do not re-implement this slice.
-Chat URLs landed as `14ce56d`. Next: `docs/briefs/GENIE_SPEC_43_G12_ATS.md`.
+Chat URLs `14ce56d`. ATS `be89128`. Next: Gap 12 deep-link ownership
+(brief not written).
 
 ## Goal
 
