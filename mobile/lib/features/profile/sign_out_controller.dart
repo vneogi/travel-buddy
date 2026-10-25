@@ -6,6 +6,7 @@ import '../../features/alerts/alerts_notifier.dart';
 import '../../features/home/home_controller.dart';
 import '../../features/itinerary/itinerary_notifier.dart';
 import '../../features/notifications/departure_notifier.dart';
+import '../../routing/trip_route_auth.dart';
 
 /// Result of the SPEC-43 Gap 6 sign-out lifecycle.
 class SignOutResult {
@@ -48,6 +49,8 @@ class SignOutController extends StateNotifier<bool> {
 
     try {
       await db.deleteAllLocalRows();
+      // SPEC-43 Gap 12: the prior identity's owned trips are not ours.
+      ownedTripCatalog.clear();
       await auth.signOut();
       if (auth.hasSession) {
         return const SignOutResult.failure('Could not finish signing out. Please try again.');

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/api_exception.dart';
 import '../../core/providers.dart';
+import '../../routing/trip_route_auth.dart';
 import '../../data/models.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
@@ -146,6 +147,8 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
             partySize: _partySize,
             interestIds: _selectedInterests.toList(),
           );
+      // SPEC-43 Gap 12: own the new trip before routing to it.
+      ownedTripCatalog.add(trip.tripId);
       ref.invalidate(homeSnapshotProvider);
       if (!mounted) return;
       context.go('/trip/${trip.tripId}');
