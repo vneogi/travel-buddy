@@ -107,9 +107,17 @@ Future<void> _seedWipeSurface(OfflineDatabase db) async {
     }),
     DateTime.now().toUtc().toIso8601String(),
   );
-  await db.cacheTrip('trip-a', jsonEncode({'trip_id': 'trip-a', 'nodes': []}));
+  await db.cacheTrip(
+    'trip-a',
+    jsonEncode({'trip_id': 'trip-a', 'nodes': []}),
+    identityScope: 'account:user-a',
+  );
   await db.cacheTripList('account:user-a', jsonEncode({'trips': []}));
-  await db.cachePlace('place-a', jsonEncode({'name': 'Place A'}));
+  await db.cachePlace(
+    'place-a',
+    jsonEncode({'name': 'Place A'}),
+    identityScope: 'account:user-a',
+  );
   await db.upsertLovedPlace(
     identityScope: 'account:user-a',
     tripId: 'trip-a',

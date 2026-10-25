@@ -221,15 +221,25 @@ void main() {
   // Test 8: offline read — cached trip returned
   // ============================================================
   test('8. offline read: cached trip available', () async {
-    await db.cacheTrip('trip-123', jsonEncode({'id': 'trip-123', 'status': 'active'}));
+    await db.cacheTrip(
+      'trip-123',
+      jsonEncode({'id': 'trip-123', 'status': 'active'}),
+      identityScope: 'account:user-a',
+    );
 
-    final cached = await db.getCachedTrip('trip-123');
+    final cached = await db.getCachedTrip(
+      'trip-123',
+      identityScope: 'account:user-a',
+    );
     expect(cached, isNotNull);
     final data = jsonDecode(cached!);
     expect(data['id'], 'trip-123');
     expect(data['status'], 'active');
 
-    final missing = await db.getCachedTrip('trip-999');
+    final missing = await db.getCachedTrip(
+      'trip-999',
+      identityScope: 'account:user-a',
+    );
     expect(missing, isNull);
   });
 

@@ -144,7 +144,12 @@ class _TravelBuddyAppState extends State<TravelBuddyApp>
         );
         final tripDay = tripId == null
             ? null
-            : await tripDayFromCachedTrip(db, tripId, now);
+            : await tripDayFromCachedTrip(
+                db,
+                tripId,
+                now,
+                identityScope: container.read(identityCacheScopeProvider),
+              );
 
         await signal.emitSessionStart(
           coldStart: coldStart,
@@ -192,10 +197,14 @@ bool shouldEmitSessionStartOnResume({
 Future<int?> tripDayFromCachedTrip(
   OfflineDatabase db,
   String tripId,
-  DateTime capturedAt,
-) async {
+  DateTime capturedAt, {
+  required String identityScope,
+}) async {
   try {
-    final cachedJson = await db.getCachedTrip(tripId);
+    final cachedJson = await db.getCachedTrip(
+      tripId,
+      identityScope: identityScope,
+    );
     if (cachedJson == null) return null;
     final trip = TripState.fromJson(
       (jsonDecode(cachedJson) as Map).cast<String, dynamic>(),

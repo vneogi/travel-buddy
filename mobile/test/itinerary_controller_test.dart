@@ -39,7 +39,7 @@ void main() {
     mockDb = MockOfflineDatabase();
     when(() => repo.getTrip('t1'))
         .thenAnswer((_) async => _trip([_node('n1', 'Old')]));
-    when(() => mockDb.cachePlace(any(), any())).thenAnswer((_) async {});
+    when(() => mockDb.cachePlace(any(), any(), identityScope: any(named: 'identityScope'))).thenAnswer((_) async {});
     when(() => mockDb.getLovedPlaceRefs(
       identityScope: any(named: 'identityScope'),
       tripId: any(named: 'tripId'),
@@ -53,7 +53,7 @@ void main() {
       tripId: any(named: 'tripId'),
       placeRef: any(named: 'placeRef'),
     )).thenAnswer((_) async {});
-    when(() => mockDb.getCachedTrip(any())).thenAnswer((_) async => null);
+    when(() => mockDb.getCachedTrip(any(), identityScope: any(named: 'identityScope'))).thenAnswer((_) async => null);
     container = ProviderContainer(
       overrides: [
         tripRepoProvider.overrideWithValue(repo),
@@ -223,9 +223,9 @@ void main() {
         userId: 'u1',
         nodes: [_node('n1', 'Cached Hotel')],
       );
-      when(() => mockDb.getCachedTrip('t1'))
+      when(() => mockDb.getCachedTrip('t1', identityScope: any(named: 'identityScope')))
           .thenAnswer((_) async => jsonEncode(cachedTrip.toJson()));
-      when(() => mockDb.cachePlace(any(), any())).thenAnswer((_) async {});
+      when(() => mockDb.cachePlace(any(), any(), identityScope: any(named: 'identityScope'))).thenAnswer((_) async {});
       when(() => mockDb.getLovedPlaceRefs(
             identityScope: any(named: 'identityScope'),
             tripId: any(named: 'tripId'),
@@ -246,8 +246,8 @@ void main() {
     });
 
     test('successful load caches trip to SQLite cache_trip', () async {
-      when(() => mockDb.cacheTrip(any(), any())).thenAnswer((_) async {});
-      when(() => mockDb.cachePlace(any(), any())).thenAnswer((_) async {});
+      when(() => mockDb.cacheTrip(any(), any(), identityScope: any(named: 'identityScope'))).thenAnswer((_) async {});
+      when(() => mockDb.cachePlace(any(), any(), identityScope: any(named: 'identityScope'))).thenAnswer((_) async {});
     when(() => mockDb.getLovedPlaceRefs(
       identityScope: any(named: 'identityScope'),
       tripId: any(named: 'tripId'),
@@ -257,12 +257,12 @@ void main() {
       tripId: any(named: 'tripId'),
       placeRef: any(named: 'placeRef'),
     )).thenAnswer((_) async {});
-    when(() => mockDb.getCachedTrip(any())).thenAnswer((_) async => null);
+    when(() => mockDb.getCachedTrip(any(), identityScope: any(named: 'identityScope'))).thenAnswer((_) async => null);
 
       await ready();
       await Future.delayed(const Duration(milliseconds: 50));
 
-      verify(() => mockDb.cacheTrip('t1', any())).called(1);
+      verify(() => mockDb.cacheTrip('t1', any(), identityScope: 'account:test')).called(1);
     });
   });
 

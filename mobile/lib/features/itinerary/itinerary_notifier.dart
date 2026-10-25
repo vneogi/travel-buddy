@@ -116,7 +116,13 @@ class ItineraryController extends StateNotifier<ItineraryState> {
       // SPEC-04: Persist to SQLite cache_trip for offline reads
       try {
         final db = _ref.read(offlineDatabaseProvider);
-        db.cacheTrip(tripId, jsonEncode(trip.toJson())).catchError((e) {
+        db
+            .cacheTrip(
+              tripId,
+              jsonEncode(trip.toJson()),
+              identityScope: _ref.read(identityCacheScopeProvider),
+            )
+            .catchError((e) {
           debugPrint('[ItineraryController] Cache trip error: $e');
         });
       } catch (_) {}
@@ -125,7 +131,10 @@ class ItineraryController extends StateNotifier<ItineraryState> {
       // SPEC-04: Offline fallback -- read from SQLite cache_trip
       try {
         final db = _ref.read(offlineDatabaseProvider);
-        final cachedJson = await db.getCachedTrip(tripId);
+        final cachedJson = await db.getCachedTrip(
+          tripId,
+          identityScope: _ref.read(identityCacheScopeProvider),
+        );
         if (!mounted) return;
         if (cachedJson != null) {
           final cachedMap = jsonDecode(cachedJson) as Map<String, dynamic>;
@@ -166,10 +175,17 @@ class ItineraryController extends StateNotifier<ItineraryState> {
   void _preCachePlaces(List<TripNode> nodes) {
     try {
       final db = _ref.read(offlineDatabaseProvider);
+      final identityScope = _ref.read(identityCacheScopeProvider);
       for (final node in nodes) {
         final placeRef = node.venueId ?? node.venueName;
         final data = PlaceDriverCardData.fromTripNode(node);
-        db.cachePlace(placeRef, data.serialize()).catchError((e) {
+        db
+            .cachePlace(
+              placeRef,
+              data.serialize(),
+              identityScope: identityScope,
+            )
+            .catchError((e) {
           debugPrint('[ItineraryController] Pre-cache place error: $e');
         });
       }
@@ -424,11 +440,20 @@ class ItineraryController extends StateNotifier<ItineraryState> {
   void _cacheUpdatedTripNodes(List<TripNode> nodes) {
     try {
       final db = _ref.read(offlineDatabaseProvider);
-      db.getCachedTrip(tripId).then((cachedJson) {
+      final identityScope = _ref.read(identityCacheScopeProvider);
+      db
+          .getCachedTrip(tripId, identityScope: identityScope)
+          .then((cachedJson) {
         if (cachedJson == null) return;
         final cached = (jsonDecode(cachedJson) as Map).cast<String, dynamic>();
         cached['nodes'] = nodes.map((node) => node.toJson()).toList();
-        db.cacheTrip(tripId, jsonEncode(cached)).catchError((error) {
+        db
+            .cacheTrip(
+              tripId,
+              jsonEncode(cached),
+              identityScope: identityScope,
+            )
+            .catchError((error) {
           debugPrint('[ItineraryController] Updated trip cache error: $error');
         });
       }).catchError((error) {
