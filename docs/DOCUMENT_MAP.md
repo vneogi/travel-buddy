@@ -93,6 +93,10 @@ there. VISION Part III is not committed.
 
 Do not add a ninth strategy memo for a question that already has a row.
 Amend the owner, or record a rejected alternative in that owner.
+The 25 Oct 2026 external travel-strategy memo is adjudicated in
+`HANDOFF_PLANNING_AGENT.md` plus VISION, MARKET_STRATEGY,
+DATA_FLYWHEEL, and RELEASE_READINESS. The Google Doc is not
+canonical.
 
 ## Spec clusters -- read the cluster, not the archive
 

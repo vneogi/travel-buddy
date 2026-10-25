@@ -118,6 +118,14 @@ enough overlapping, quality-controlled outcomes to improve the product.
 model choice, LangGraph or any other agent framework, a vector store, or "we use
 AI." Those are available to every funded competitor.
 
+A 25 Oct 2026 travel-strategy review restated the same split: OTAs
+abandon the traveller after booking; in-trip attention and
+un-scraped operational facts are the wedge; LLM prompts, Flutter
+chrome, and a B2C Pro subscription are copyable. Adjudication lives
+in `docs/HANDOFF_PLANNING_AGENT.md`. Do not treat that memo as a
+new product: no ClickHouse/Mem0 stack, no silent reflow, no
+Travelogue this season, no Dubai-luxury fork.
+
 ## 5. Offline resilience is core, not a checkbox
 
 Our users are frequently in low- or no-connectivity areas. An on-trip companion

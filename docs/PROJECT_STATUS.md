@@ -168,6 +168,9 @@ Current order:
    in common cells, not an arbitrary 100 venues per city.
 5. SPEC-43 before any non-owner APK; then a narrow external corridor pilot with
    minimum SPEC-17/47 controls. Learned influence remains zero.
+   Owner G0 checkpoint APK is earlier than that: after Gap 12 cache
+   keys land and hosted Gap 1 (JWKS + Anonymous sign-ins) is live.
+   Not immediately. Not after Gaps 3-11. See RELEASE_READINESS.
 
 Defer Travelogue/Passport, maps/offline tiles, social, gamification, PDF,
 cross-trip memory, OTA promotion, and another city until this loop works.

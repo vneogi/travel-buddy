@@ -31,6 +31,24 @@ feels.
 Do not skip G1 because a hostel common-area QR is cheap. A QR is
 distribution of personal-data software.
 
+### G0 owner checkpoint APK (logical point, not immediate)
+
+The Laos field APK did not contain post-trip Ask, Add/Move, What Now,
+trust hygiene, JWT, or scoped cache. Build one owner-only signed APK
+after both are true:
+
+1. Gap 12 cache keys are on `main` (HTTPS fail-closed already is).
+2. Hosted Cloud Run is a Gap 1 revision: dashboard Anonymous sign-ins
+   on, JWKS URL and issuer set. Today's `00012-8wv` still expects the
+   old Anonymous header; a Gap 1 APK against it would 401.
+
+That APK is the first chance to feel the post-Laos product on a phone
+before more SPEC-43. It is still G0 (owner only). Do not wait for Gaps
+3-11, chat-in-URL, ATS XML, MapLibre, or catalog cells. Do not apply
+migration 0026 until `rolbypassrls` is confirmed for `postgres` and
+`service_role`. First open of that APK drops unscoped `cache_trip` /
+`cache_place` (schema v9); recache from the network is expected.
+
 ## What this file is not
 
 - Not a city-expansion plan. Seeding order lives in
