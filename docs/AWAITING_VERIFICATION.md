@@ -15,6 +15,19 @@ other.
 Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 `#85` and so on; those numbers cannot be reconciled against `git log`.
 
+## Finding -- Oct 25 2026 -- travel-strategy memo adjudicated
+
+Owner asked planning to keep a 25 Oct external travel-product memo
+(Google Doc) without treating chat as storage. Useful claims already
+matched VISION / MARKET_STRATEGY / DATA_FLYWHEEL: on-trip wedge,
+copyable LLM/UI/paywall, low-frequency cold start, sachet
+monetization later. False or deferred claims (no offline engine,
+immediate MapLibre/ClickHouse/Mem0, silent reflow, Travelogue now,
+Dubai-luxury fork) were rejected in HANDOFF. Owner G0 checkpoint APK
+is recorded in RELEASE_READINESS: after Gap 12 cache on main plus
+hosted Gap 1, not immediately and not after every remaining SPEC-43
+gap.
+
 ## Finding -- Oct 25 2026 -- SPEC-43 Gap 12 HTTPS merged
 
 Owner Windows checkout of `feat/spec43-g12-https` at `928a5ce`

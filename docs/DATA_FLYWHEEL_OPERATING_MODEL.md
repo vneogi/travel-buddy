@@ -76,6 +76,14 @@ demand-weighted cells of time, neighbourhood, intent, dwell, weather/fatigue,
 party context, and next locked anchor. Catalog breadth without freshness,
 identity resolution, and decision/outcome capture remains copyable inventory.
 
+Leisure travel is low-frequency. Do not wait for thousands of overlapping
+trips before the planner is useful: seed operational facts (hours, ATMs,
+heat, transfer friction, scam warnings) as reviewed claims, then let
+consented outcomes correct them. Dwell-versus-reputation discrepancy is
+a later measurement on the existing Postgres fact store, not a reason
+to add ClickHouse, H3, or a memory product. Learned ranking stays off
+until held-out evidence exists.
+
 ## Four data planes
 
 ### 1. Private itinerary vault

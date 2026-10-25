@@ -18,6 +18,13 @@
 > Laos/China evidence showed the same orchestration job with different party,
 > payment, transport, and attraction needs. The Indian-outbound corridor
 > remains the pipeline and monetization hypothesis, not a field-validated ICP.
+>
+> 25 Oct 2026 amendment: an external memo called a "beachhead identity
+> crisis" (Laos backpacker vs Dubai luxury UI). That is not a product
+> fork. One ICP: independent trip captain. Seed on the Banana Pancake
+> corridor. Dubai rows stay demo/catalog, not the design centre.
+> Calm-editorial chrome is surface debt, not a second app. Do not
+> split engineering into survival-kit vs concierge.
 
 ## The decision
 

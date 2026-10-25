@@ -150,6 +150,47 @@ has no owner. SPEC-24 vs accumulating device UUIDs is already a Medium row in
 PROJECT_STATUS. It remains required before non-owner distribution, but it does
 not outrank the field-proven itinerary trust gaps for the owner's trip.
 
+## Travel-strategy memo -- 25 Oct 2026 -- already adjudicated
+
+An external travel-product memo (Google Doc, 25 Oct) agrees the on-trip
+wedge is the unserved layer, that LLM/UI/Pro-paywall are not a moat, that
+travel is low-frequency so learned ranking cannot wait on volume, and that
+B2C leisure subscriptions usually fail. Those points already live in
+VISION, MARKET_STRATEGY, and DATA_FLYWHEEL. Do not create a ninth
+strategy file for the memo.
+
+Accept into planning (already sequenced; do not restart the stack):
+
+- Keep one corridor-deep product for the independent trip captain.
+  Backpacker acquisition remains the seed; Dubai venues are demo data,
+  not a second luxury ICP.
+- Moat work is operational facts, feasible recovery, and in-trip reopen
+  -- not a chatbot, a map widget, or a paywall.
+- Cold-start seed (catalog + SPEC-17 claims) before learned influence.
+  Learned ranking stays zero.
+- Monetization later is on-trip sachet/affiliate at the moment of need,
+  not an upfront Pro gate for the beachhead.
+- Owner checkpoint APK after Gap 12 cache is on main and hosted Gap 1
+  (Anonymous sign-ins + JWKS) is live. That is G0, not G1. Do not wait
+  for Gaps 3-11 or MapLibre for that owner run. Do not apply 0026 until
+  `rolbypassrls` is confirmed.
+
+Reject or keep deferred (do not start from this memo):
+
+- "The repo has no offline engine" -- false. SQLite outbox, cache_trip /
+  cache_place, driver cards, and offline itinerary fallback are on main.
+- Immediate MapLibre + PMTiles, Isar, ClickHouse, Uber H3, Mem0, or a
+  second graph/vector store. Stack decision is Flutter / SQLite /
+  FastAPI / Postgres / pgvector. Offline maps wait until Bangkok proves
+  SPEC-20; candidates are not commitments.
+- Silent single-tap schedule reflow. Typed confirmed Add/Move only.
+- Automated post-trip share vault / Travelogue. Deferred.
+- Forking the product into backpacker-survival vs Dubai-concierge.
+- Ripping the RevenueCat scaffold this week. VISION already says
+  subscription is not the backpacker lever; do not spend a slice on it
+  until a monetization spec exists.
+- Hostel QR or non-owner APK before remaining SPEC-43.
+
 ## Durable post-Laos plan -- do not lose at handoff
 
 The 24 Sep moat review is accepted, not pending advice. Its canonical record is
@@ -180,6 +221,9 @@ Resume in this order:
    `docs/briefs/GENIE_SPEC_43_G12_CACHE.md`) before any
    non-owner APK, hostel QR, production LLM on personal trips, or
    contribution collection. Hosted 0026 waits on `rolbypassrls`.
+   Owner G0 checkpoint APK: after cache keys merge plus hosted Gap 1
+   deploy (JWKS + Anonymous sign-ins). Not immediately. Not after
+   every remaining gap.
 7. Implement SPEC-13 identity plus the minimum SPEC-17 claim/attribute
    registry, append-only observation lifecycle, and SPEC-44 decision capture.
    Keep learned influence at zero.
