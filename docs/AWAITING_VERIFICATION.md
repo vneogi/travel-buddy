@@ -15,6 +15,32 @@ other.
 Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 `#85` and so on; those numbers cannot be reconciled against `git log`.
 
+## Finding -- Oct 25 2026 -- SPEC-43 Gap 12 cache keys merged
+
+Owner Windows checkout of `feat/spec43-g12-cache` at `282a66b`
+(squash-merged to `main` as `290f821`, PR #85):
+
+- focused `flutter test test/spec43_g12_cache_test.dart`: +6
+- `itinerary_controller_test.dart`: +9
+- `session_start_test.dart`: +8 (SyncEngine network retry logs on
+  the fake path)
+- `offline_node_outcome_test.dart`: +6
+- `spec43_g6_signout_test.dart`: +7. During sign-out, itinerary
+  cache writes logged ArgumentError for identityScope `anonymous:`
+  (empty id). Tests still passed; fail-closed is intended.
+- R17: `getCachedTrip` queried `trip_id` only;
+  `test_foreign_identity_cannot_read_cached_trip` failed (expected
+  null, got user-a JSON). Restored via
+  `git checkout -- mobile/lib/offline/offline_database.dart`;
+  focused file +6.
+
+No hosted deploy, APK, or phone acceptance. Chat query strings,
+ATS XML, and deep-link ownership remain. Owner G0 APK still waits
+on hosted Gap 1 JWKS.
+
+Genie Python gates on the branch were green. Flutter SDK was absent
+on Genie's machine.
+
 ## Finding -- Oct 25 2026 -- travel-strategy memo adjudicated
 
 Owner asked planning to keep a 25 Oct external travel-product memo

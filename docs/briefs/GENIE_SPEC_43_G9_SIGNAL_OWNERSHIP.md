@@ -1,7 +1,7 @@
 # Genie brief: SPEC-43 Gap 9 -- trip-linked signal ownership
 
 Landed on `main` as `163a14c` (PR #81). Do not re-implement this slice.
-Next: `docs/briefs/GENIE_SPEC_43_G12_CACHE.md`. Gap 12 HTTPS is on main as `6f1dab8`.
+Next: remaining Gap 12 navigation privacy. Gap 12 cache keys are on main as `290f821`.
 
 ## Goal
 

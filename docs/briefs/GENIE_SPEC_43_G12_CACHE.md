@@ -1,5 +1,8 @@
 # Genie brief: SPEC-43 Gap 12 -- identity-scoped trip and place cache
 
+Landed on `main` as `290f821` (PR #85). Do not re-implement this slice.
+Next: remaining Gap 12 navigation privacy (brief not written).
+
 ## Goal
 
 A second identity on the same install must not read the first identity's

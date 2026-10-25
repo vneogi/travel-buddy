@@ -2,8 +2,8 @@
 
 > Status: PARTIAL. Gap 1 `2460edf` (PR #78). Gap 6 `c65261c` (PR #79).
 > Gap 2 `0b8125f` (PR #80). Gap 9 ownership `163a14c` (PR #81).
-> Gap 12 HTTPS `6f1dab8` (PR #82). Next is Gap 12 cache keys
-> (`docs/briefs/GENIE_SPEC_43_G12_CACHE.md`). Hosted
+> Gap 12 HTTPS `6f1dab8` (PR #82). Gap 12 cache keys `290f821`
+> (PR #85). Next is Gap 12 chat URLs / ATS / deep links. Hosted
 > apply of 0026 and deploy of Gaps 1/6 are not done.
 >
 > Sequence: start after the Laos reliability and build tranche is complete:
@@ -443,15 +443,14 @@ or LLM budget that survives UUID rotation.
 ### Gap 12: release transport and mobile cache isolation are incomplete
 
 **Status on main.** HTTPS fail-closed merged as `6f1dab8` (PR #82).
-Release `assertSecureTransport` throws unless API and Supabase URLs
-are https with a host. Debug/profile keep `http://10.0.2.2:8000` and
-allow empty Supabase. HTTP is never rewritten to HTTPS. Cache keys,
-chat query strings, ATS/network-security XML, and deep-link ownership
-remain.
+Identity-scoped `cache_trip` / `cache_place` merged as `290f821`
+(PR #85). Schema v9 drops unscoped rows. Writes refuse empty /
+`anonymous:` / `account:` scopes. Chat query strings,
+ATS/network-security XML, and deep-link ownership remain.
 
-**Current fact.** `cache_trip` is keyed only by trip ID and
-`cache_place` by place reference. Offline itinerary fallback does not verify
-the cached user. Chat text is placed in a route query string.
+**Current fact.** Chat text is placed in a route query string.
+Android network security and iOS ATS are not declared for release.
+Incoming deep links are not authorized against the current identity.
 
 **Solution.**
 
