@@ -18,6 +18,7 @@ import '../swap_sheet/swap_sheet.dart';
 import '../../widgets/reroute_badge.dart';
 import '../../widgets/shimmer_card.dart';
 import '../../widgets/error_view.dart';
+import '../../routing/chat_route.dart';
 import 'current_window.dart';
 import '../../core/destination_tz.dart';
 import 'date_scope.dart';
@@ -364,8 +365,10 @@ class ItineraryScreen extends ConsumerWidget {
       // SPEC-45 item 5: FAB removed; keep AskEntryBar as composer.
       bottomNavigationBar: AskEntryBar(
         enabled: !state.processing,
+        // SPEC-43 Gap 12: question in typed extra, never in the URI.
         onSubmit: (question) => context.push(
-          '/trip/$tripId/chat?q=${Uri.encodeQueryComponent(question)}',
+          chatRoutePath(tripId),
+          extra: ChatRouteExtra(initialQuestion: question),
         ),
       ),
       body: state.loading
