@@ -115,7 +115,7 @@ The immediate order after the field-test gate:
     `e51513e`), empty-day catalog Add (PR #76, `b6ddecf`), and
     trip-private uncatalogued Add (PR #77, `05d917e`) are on main;
     SPEC-43 Gaps 1, 6, 2, 9 ownership, and 12 HTTPS are on main
-    (`290f821`); next is `docs/briefs/GENIE_SPEC_43_G12_CHAT_URL.md`;
+    (`14ce56d`); next is remaining Gap 12 ATS / deep links;
     unknown-time excursions stay later;
 12. implement SPEC-43 before any non-owner distribution, production LLM
    processing of personal trip data, or the planned December launch;

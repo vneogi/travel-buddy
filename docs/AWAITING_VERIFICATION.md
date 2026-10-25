@@ -15,6 +15,28 @@ other.
 Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 `#85` and so on; those numbers cannot be reconciled against `git log`.
 
+## Finding -- Oct 25 2026 -- SPEC-43 Gap 12 chat URLs merged
+
+Owner Windows checkout of `feat/spec43-g12-chat-url` at `006ad68`
+(squash-merged to `main` as `14ce56d`, PR #89):
+
+- `flutter analyze`: 115 infos, no errors (pre-existing dangling
+  library comments, quotes, const)
+- full `flutter test`: All tests passed
+- R17: `chatRoutePath` appended `?q=` with the named-test question;
+  `test_chat_question_is_not_in_route_uri` failed Expected empty,
+  Actual `{'q': 'secret ask about hidden courtyard'}`. Restored via
+  `git checkout -- mobile/lib/routing/chat_route.dart`; full suite
+  green again.
+- Gap 6 sign-out still logs ArgumentError for identityScope
+  `anonymous:` during wipe. Fail-closed; not a merge blocker.
+
+No hosted deploy, APK, or phone acceptance. ATS XML and deep-link
+ownership remain. Owner G0 APK still waits on hosted Gap 1 JWKS.
+
+Genie Python gates on the branch were green. Flutter SDK was absent
+on Genie's machine.
+
 ## Finding -- Oct 25 2026 -- SPEC-43 Gap 12 cache keys merged
 
 Owner Windows checkout of `feat/spec43-g12-cache` at `282a66b`
