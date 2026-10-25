@@ -3,8 +3,9 @@
 > Status: PARTIAL. Gap 1 `2460edf` (PR #78). Gap 6 `c65261c` (PR #79).
 > Gap 2 `0b8125f` (PR #80). Gap 9 ownership `163a14c` (PR #81).
 > Gap 12 HTTPS `6f1dab8` (PR #82). Gap 12 cache keys `290f821`
-> (PR #85). Gap 12 chat URLs `14ce56d` (PR #89). Next is Gap 12
-> ATS / deep links. Hosted
+> (PR #85). Gap 12 chat URLs `14ce56d` (PR #89). Next is Gap 12 ATS
+> (`docs/briefs/GENIE_SPEC_43_G12_ATS.md`), then deep-link
+> ownership. Hosted
 > apply of 0026 and deploy of Gaps 1/6 are not done.
 >
 > Sequence: start after the Laos reliability and build tranche is complete:

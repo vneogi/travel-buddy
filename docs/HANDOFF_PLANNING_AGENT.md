@@ -17,8 +17,8 @@ and SPEC-43 Gap 12 identity-scoped caches and chat URLs are on
 `travel-buddy-00012-8wv` is the live untagged revision. SPEC-42
 remains PARTIAL (unknown-time excursions later). Create-then-book
 HITL reflow remains. Trip-optional Ask remains. What Now Phase B GPS
-remains blocked on remaining SPEC-43. Next remaining Gap 12 is ATS /
-deep links (brief not written).
+remains blocked on remaining SPEC-43. Next remaining Gap 12 is
+`docs/briefs/GENIE_SPEC_43_G12_ATS.md`, then deep-link ownership.
 Do not apply 0026 until `rolbypassrls` is confirmed.
 
 SPEC-44 Phase A application code merged as PR #67 (`9a7b9d9`). Planning
@@ -88,8 +88,7 @@ trip-private uncatalogued Add (`05d917e`) are now on main. SPEC-43 Gap 1
 (`2460edf`), Gap 6 (`c65261c`), Gap 2 (`0b8125f`), Gap 9
 (`163a14c`), Gap 12 HTTPS (`6f1dab8`), and Gap 12 cache keys
 (`290f821`), and Gap 12 chat URLs (`14ce56d`) are on main. The next
-Genie job is remaining Gap 12 ATS / deep links (brief not written).
-Remaining Gap 9
+Genie job is `docs/briefs/GENIE_SPEC_43_G12_ATS.md`. Remaining Gap 9
 schema/poisoning, unknown-time excursions, and Laos decision-cell
 coverage stay later.
 SPEC-43 still gates every non-owner APK. Do not treat in-memory pytest as
@@ -221,7 +220,8 @@ Resume in this order:
 5. Patch Laos spine and effective-choice gaps: Kuang Si, Pak Ou, Blue Lagoon
    2/3, Papao, and the Wat Xieng Thong packing failure. Measure coverage by
    common decision cell, not total POI count.
-6. Implement remaining SPEC-43 (next: Gap 12 ATS / deep links)
+6. Implement remaining SPEC-43 (next:
+   `docs/briefs/GENIE_SPEC_43_G12_ATS.md`, then deep-link ownership)
    before any non-owner APK, hostel QR, production LLM on
    personal trips, or contribution collection. Hosted 0026 waits on
    `rolbypassrls`. Owner G0 checkpoint APK: cache keys are on main;
@@ -251,8 +251,8 @@ separation live in the operating model; do not reconstruct them from chat.
 (PR #89). Hosted 0025 applied. Cloud Run `00012-8wv`. Owner APK
 SHA256 `bd935bf2...`.
 
-Genie next: wait for the remaining Gap 12 ATS / deep-link brief.
-Do not start Gap 5,
+Genie next: `docs/briefs/GENIE_SPEC_43_G12_ATS.md`. Then deep-link
+ownership. Do not start Gap 5,
 remaining Gap 9 schema/poisoning, production LLM, trip-less Ask, or
 unknown-time excursions without a brief. Do not apply 0026 until
 `rolbypassrls` is confirmed for `postgres` and `service_role`. Do not
