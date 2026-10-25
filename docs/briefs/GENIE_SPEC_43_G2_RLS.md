@@ -1,7 +1,7 @@
 # Genie brief: SPEC-43 Gap 2 -- RLS and public grants
 
 Landed on `main` as `0b8125f` (PR #80). Do not re-implement this slice.
-Next: `docs/briefs/GENIE_SPEC_43_G12_ATS.md`. Chat URLs landed as `14ce56d`.
+Next: Gap 12 deep-link ownership (brief not written). ATS landed as `be89128`.
 Do not apply 0026 on hosted until `rolbypassrls` is true for `postgres`
 and `service_role`.
 

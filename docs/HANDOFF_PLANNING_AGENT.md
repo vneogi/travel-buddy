@@ -12,13 +12,13 @@ SPEC-46 What Now Phase A, thin typed Ask-to-Add, thin typed Move,
 empty-day catalog Add, trip-private uncatalogued Add, SPEC-43 Gap 1
 anonymous JWT, SPEC-43 Gap 6 sign-out, SPEC-43 Gap 2 RLS,
 SPEC-43 Gap 9 signal ownership, SPEC-43 Gap 12 HTTPS fail-closed,
-and SPEC-43 Gap 12 identity-scoped caches and chat URLs are on
-`main` through `14ce56d` (PR #89). Hosted 0025 is applied. Cloud Run
+and SPEC-43 Gap 12 identity-scoped caches, chat URLs, and ATS are on
+`main` through `be89128` (PR #92). Hosted 0025 is applied. Cloud Run
 `travel-buddy-00012-8wv` is the live untagged revision. SPEC-42
 remains PARTIAL (unknown-time excursions later). Create-then-book
 HITL reflow remains. Trip-optional Ask remains. What Now Phase B GPS
 remains blocked on remaining SPEC-43. Next remaining Gap 12 is
-`docs/briefs/GENIE_SPEC_43_G12_ATS.md`, then deep-link ownership.
+deep-link ownership (brief not written).
 Do not apply 0026 until `rolbypassrls` is confirmed.
 
 SPEC-44 Phase A application code merged as PR #67 (`9a7b9d9`). Planning
@@ -87,8 +87,9 @@ typed Move (`e51513e`), empty-day catalog Add (`b6ddecf`), and
 trip-private uncatalogued Add (`05d917e`) are now on main. SPEC-43 Gap 1
 (`2460edf`), Gap 6 (`c65261c`), Gap 2 (`0b8125f`), Gap 9
 (`163a14c`), Gap 12 HTTPS (`6f1dab8`), and Gap 12 cache keys
-(`290f821`), and Gap 12 chat URLs (`14ce56d`) are on main. The next
-Genie job is `docs/briefs/GENIE_SPEC_43_G12_ATS.md`. Remaining Gap 9
+(`290f821`), Gap 12 chat URLs (`14ce56d`), and Gap 12 ATS
+(`be89128`) are on main. The next
+Genie job is Gap 12 deep-link ownership (brief not written). Remaining Gap 9
 schema/poisoning, unknown-time excursions, and Laos decision-cell
 coverage stay later.
 SPEC-43 still gates every non-owner APK. Do not treat in-memory pytest as
@@ -214,14 +215,14 @@ Resume in this order:
    (PR #79, `c65261c`), SPEC-43 Gap 2 RLS (PR #80, `0b8125f`),
    SPEC-43 Gap 9 ownership (PR #81, `163a14c`), SPEC-43 Gap 12
    HTTPS (PR #82, `6f1dab8`), Gap 12 cache keys (PR #85,
-   `290f821`), and Gap 12 chat URLs (PR #89, `14ce56d`) are on
+   `290f821`), Gap 12 chat URLs (PR #89, `14ce56d`), and Gap 12
+   ATS (PR #92, `be89128`) are on
    main. Unknown-time excursion windows stay
    later. Never silently reflow a day.
 5. Patch Laos spine and effective-choice gaps: Kuang Si, Pak Ou, Blue Lagoon
    2/3, Papao, and the Wat Xieng Thong packing failure. Measure coverage by
    common decision cell, not total POI count.
-6. Implement remaining SPEC-43 (next:
-   `docs/briefs/GENIE_SPEC_43_G12_ATS.md`, then deep-link ownership)
+6. Implement remaining SPEC-43 (next: Gap 12 deep-link ownership)
    before any non-owner APK, hostel QR, production LLM on
    personal trips, or contribution collection. Hosted 0026 waits on
    `rolbypassrls`. Owner G0 checkpoint APK: cache keys are on main;
@@ -247,12 +248,12 @@ separation live in the operating model; do not reconstruct them from chat.
 
 ## First job
 
-`origin/main` includes SPEC-43 Gap 12 chat URLs as `14ce56d`
-(PR #89). Hosted 0025 applied. Cloud Run `00012-8wv`. Owner APK
+`origin/main` includes SPEC-43 Gap 12 ATS as `be89128`
+(PR #92). Hosted 0025 applied. Cloud Run `00012-8wv`. Owner APK
 SHA256 `bd935bf2...`.
 
-Genie next: `docs/briefs/GENIE_SPEC_43_G12_ATS.md`. Then deep-link
-ownership. Do not start Gap 5,
+Genie next: wait for the Gap 12 deep-link ownership brief.
+Do not start Gap 5,
 remaining Gap 9 schema/poisoning, production LLM, trip-less Ask, or
 unknown-time excursions without a brief. Do not apply 0026 until
 `rolbypassrls` is confirmed for `postgres` and `service_role`. Do not
