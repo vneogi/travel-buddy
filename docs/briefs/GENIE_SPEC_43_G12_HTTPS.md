@@ -1,7 +1,7 @@
 # Genie brief: SPEC-43 Gap 12 -- release HTTPS fail-closed
 
 Landed on `main` as `6f1dab8` (PR #82). Do not re-implement this slice.
-Next: remaining Gap 12 navigation privacy (cache keys landed as `290f821`).
+Next: `docs/briefs/GENIE_SPEC_43_G12_CHAT_URL.md`. Cache keys landed as `290f821`.
 
 ## Goal
 

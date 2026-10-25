@@ -1,7 +1,7 @@
 # Genie brief: SPEC-43 Gap 2 -- RLS and public grants
 
 Landed on `main` as `0b8125f` (PR #80). Do not re-implement this slice.
-Next: remaining Gap 12 navigation privacy. Gap 12 cache keys are on main as `290f821`.
+Next: `docs/briefs/GENIE_SPEC_43_G12_CHAT_URL.md`. Gap 12 cache keys are on main as `290f821`.
 Do not apply 0026 on hosted until `rolbypassrls` is true for `postgres`
 and `service_role`.
 
