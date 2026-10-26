@@ -5,7 +5,9 @@
 > Gap 12 HTTPS `6f1dab8` (PR #82). Gap 12 cache keys `290f821`
 > (PR #85). Gap 12 chat URLs `14ce56d` (PR #89). Gap 12 ATS
 > `be89128` (PR #92). Gap 12 trip-route ownership `f486079`
-> (PR #95). Gap 12 lock-screen waits on OS push. Hosted
+> (PR #95). Next is Gap 9 closed schemas
+> (`docs/briefs/GENIE_SPEC_43_G9_SIGNAL_SCHEMA.md`). Gap 12
+> lock-screen waits on OS push. Hosted
 > apply of 0026 and deploy of Gaps 1/6 are not done.
 >
 > Sequence: start after the Laos reliability and build tranche is complete:

@@ -29,8 +29,9 @@ documents disagree, follow Precedence below and name the conflict in
   typed Move, empty-day catalog Add, trip-private uncatalogued Add,
   and SPEC-43 Gaps 1, 6, 2, 9 (ownership), and 12 HTTPS, cache keys,
   chat URLs, ATS, and trip-route ownership are merged.
-- Next Genie job: wait for a new brief. Gap 12 lock-screen waits on
-  OS push. Remaining Gap 9 schema/poisoning and Gap 5 stay later.
+- Next Genie job: `docs/briefs/GENIE_SPEC_43_G9_SIGNAL_SCHEMA.md`.
+  Gap 12 lock-screen waits on OS push. Gap 5 and ranking/quarantine
+  stay later.
   Hosted apply of 0026 waits on `rolbypassrls`. Remaining Gap 9
   schema/poisoning, Laos decision-cell coverage, and unknown-time
   excursions stay later.
@@ -119,8 +120,7 @@ empty-day catalog Add (`b6ddecf`), and trip-private uncatalogued Add
 keys (`290f821`), Gap 12 chat URLs (`14ce56d`), and Gap 12 ATS
 (`be89128`), and Gap 12 trip-route ownership (`f486079`) are on
 main;
-next is a new SPEC-43 brief (Gap 5 / remaining Gap 9 / lock-screen
-later);
+next is `docs/briefs/GENIE_SPEC_43_G9_SIGNAL_SCHEMA.md`;
 SPEC-42 unknown-time
 excursions stay later;
 trip-optional and production-LLM SPEC-25; SPEC-10 HITL reflow;

@@ -1,7 +1,8 @@
 # Genie brief: SPEC-43 Gap 9 -- trip-linked signal ownership
 
 Landed on `main` as `163a14c` (PR #81). Do not re-implement this slice.
-Gap 12 navigation privacy landed through `f486079`. Next: wait for a new brief.
+Gap 12 navigation privacy landed through `f486079`. Next:
+`docs/briefs/GENIE_SPEC_43_G9_SIGNAL_SCHEMA.md`.
 
 ## Goal
 
@@ -118,7 +119,7 @@ Report the test name that failed.
 
 ## Non-goals
 
-- closed schemas / size limits for every signal type (later Gap 9 slice)
+- closed schemas / size limits: `docs/briefs/GENIE_SPEC_43_G9_SIGNAL_SCHEMA.md`
 - ranking influence, sample-size, quarantine
 - Gap 2 hosted apply / two-JWT PostgREST
 - Gap 5, Gap 11
