@@ -120,7 +120,7 @@
 | Guided Create Trip foundation (SPEC-40) | DONE (PR #61, `ebdea52`) | Five-step destination/date-range/party/interests/review flow backed by deterministic multi-day catalog selection. Post-merge CI and owner Flutter tests passed. Hosted deploy and phone acceptance are not yet repeated for this SHA |
 | Hours-aware scheduling and staged ranking (SPEC-41) | PHASE A COMPLETE (`d1fde14`, `7f25042`) | Create, corridor, and swap refuse known-closed or walking-unreachable target slots; day packing uses per-pair deterministic walking time and later opening windows; swap search/apply share reachability; locked non-hotel anchors remain reachable; cached `max_days` is guaranteed across weekdays and valid interest profiles |
 | Flexible trip span and sparse day editing (SPEC-42) | PARTIAL (`adc99d2`, merged `17e58ac`; Ask-to-Add `0344b4b`; Move `e51513e`; empty-day Add `b6ddecf`; uncatalogued `05d917e`) | Catalog-derived date caps removed; generation fills at most five starter days and empty dates render. Thin typed Ask-to-Add (PR #74), thin typed Move (PR #75), empty-day catalog Add (PR #76), and trip-private uncatalogued Add (PR #77) are on main. Unknown-time excursions remain later. Uncatalogued nodes cannot enter the shared catalog without review |
-| Security, privacy and data governance foundation (SPEC-43) | PARTIAL (Gaps 1, 6, 2, 9 ownership, 12 HTTPS+cache+chat URLs+ATS on main) | Gap 1 JWT `2460edf`. Gap 6 `c65261c`. Gap 2 0026 `0b8125f`. Gap 9 ingest ownership `163a14c` (PR #81). Gap 12 HTTPS `6f1dab8` (PR #82). Gap 12 cache keys `290f821` (PR #85). Gap 12 chat URLs `14ce56d` (PR #89). Gap 12 ATS `be89128` (PR #92). Next is `docs/briefs/GENIE_SPEC_43_G12_DEEPLINK.md`. Hosted 0026 and G1/G6 deploy are not done. Closed signal schemas remain |
+| Security, privacy and data governance foundation (SPEC-43) | PARTIAL (Gaps 1, 6, 2, 9 ownership, 12 navigation privacy on main) | Gap 1 JWT `2460edf`. Gap 6 `c65261c`. Gap 2 0026 `0b8125f`. Gap 9 ingest ownership `163a14c` (PR #81). Gap 12 HTTPS `6f1dab8` (PR #82). Gap 12 cache keys `290f821` (PR #85). Gap 12 chat URLs `14ce56d` (PR #89). Gap 12 ATS `be89128` (PR #92). Gap 12 trip-route ownership `f486079` (PR #95). Next waits on a new brief (Gap 5 / remaining Gap 9 / lock-screen). Hosted 0026 and G1/G6 deploy are not done. Closed signal schemas remain |
 | Backend integrity and future-readiness foundation (SPEC-44) | PHASE A ON MAIN (PR #67, `9a7b9d9`) | Atomic trip/party/graph writes, optimistic version, durable command_id replay, typed conflicts, and hosted 0025. A4/A5, Flutter command queue, and SPEC-43 remain out of this slice |
 | On-trip visible surface (SPEC-45) | PHASE A + FIELD TRUST HYGIENE ON MAIN | Phase A chrome is on the field APK. Phase B field trust hygiene is on main through the post-field merge sequence: capped alerts, current-day/kind-specific outcomes, dead Review removal, and honest empty-swap refusal. Operational place detail, transfer cards, and Rescue remain later |
 | What Now foreground context (SPEC-46) | PHASE A ON MAIN (PR #73, `d1df944`) | Deterministic no-GPS What Now inside trip-scoped Ask: temporary time/energy/walking/intent, trip-position or region-anchor, shared `fits_next_lock`, inspectable reasons, named unknowns, display-only details. Owner Windows analyze infos-only; What Now widgets and full Flutter suite green. Hosted deploy, APK, and phone use not done. Phase B GPS only after SPEC-43 |
@@ -161,8 +161,8 @@ Current order:
    (PR #75, `e51513e`), empty-day catalog Add (PR #76, `b6ddecf`), and
    trip-private uncatalogued Add (PR #77, `05d917e`) are on main.
    SPEC-43 Gaps 1, 6, 2, 9 ownership, 12 HTTPS, cache keys, and
-   chat URLs, and ATS are on main (`be89128`, PR #92). Next Genie
-   job is `docs/briefs/GENIE_SPEC_43_G12_DEEPLINK.md`. Unknown-time
+   chat URLs, ATS, and trip-route ownership are on main (`f486079`,
+   PR #95). Next Genie job waits for a new brief. Unknown-time
    excursions stay later.
 4. Patch the Laos must-do/decision-cell data gaps. Target 3-5 feasible options
    in common cells, not an arbitrary 100 venues per city.
@@ -331,7 +331,14 @@ Seed-shaped cohorts.
     `127.0.0.1`. iOS `Info.plist` sets `NSAllowsArbitraryLoads`
     false. Owner Windows: analyze infos-only; full `flutter test`
     green; R17 named test failed on `cleartextTrafficPermitted="true"`
-    then restored green. Deep-link ownership remains.
+    then restored green. Trip-route ownership landed as `f486079`.
+9n. SPEC-43 Gap 12 trip-route ownership -- **DONE on main**
+    (PR #95, `f486079`). `redirectForTripOwnership` sends a loaded
+    catalog's foreign `/trip/<id>` (chat/card too) home. Create and
+    successful `getTrip` add the id first. Gap 6 sign-out clears.
+    Owner Windows: analyze infos-only; full `flutter test` green;
+    R17 named test failed with null instead of `'/'` then restored
+    green. Lock-screen waits on OS push.
 10. SPEC-42 uncap / sparse-span foundation -- **PARTIAL on main**
     (`adc99d2`, merge `17e58ac`; empty-day Add `b6ddecf`; uncatalogued
     `05d917e`). Catalog date caps are gone. Unknown-time excursions
@@ -355,8 +362,8 @@ Seed-shaped cohorts.
     A4/A5, Flutter command queue, and SPEC-43 remain.
 14. SPEC-43 security, privacy, and data governance -- **PARTIAL**. Gaps
     1, 6, 2, 9 ownership, 12 HTTPS, 12 cache keys, 12 chat URLs, and
-    12 ATS are on main. Next is `docs/briefs/GENIE_SPEC_43_G12_DEEPLINK.md`.
-    Complete remaining
+    12 ATS, and 12 trip-route ownership are on main. Next waits on a
+    new brief. Complete remaining
     gaps before any non-owner APK, production LLM processing of
     personal trip data, or the planned December public launch.
 15. After SPEC-43, implement the SPEC-13 registry, minimum SPEC-17 claim store,

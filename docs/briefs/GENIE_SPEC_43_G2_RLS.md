@@ -1,7 +1,7 @@
 # Genie brief: SPEC-43 Gap 2 -- RLS and public grants
 
 Landed on `main` as `0b8125f` (PR #80). Do not re-implement this slice.
-Next: `docs/briefs/GENIE_SPEC_43_G12_DEEPLINK.md`. ATS landed as `be89128`.
+Gap 12 navigation privacy landed through `f486079`. Next: wait for a new brief.
 Do not apply 0026 on hosted until `rolbypassrls` is true for `postgres`
 and `service_role`.
 

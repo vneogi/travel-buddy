@@ -4,8 +4,8 @@
 > Gap 2 `0b8125f` (PR #80). Gap 9 ownership `163a14c` (PR #81).
 > Gap 12 HTTPS `6f1dab8` (PR #82). Gap 12 cache keys `290f821`
 > (PR #85). Gap 12 chat URLs `14ce56d` (PR #89). Gap 12 ATS
-> `be89128` (PR #92). Next is Gap 12 deep-link ownership
-> (`docs/briefs/GENIE_SPEC_43_G12_DEEPLINK.md`). Hosted
+> `be89128` (PR #92). Gap 12 trip-route ownership `f486079`
+> (PR #95). Gap 12 lock-screen waits on OS push. Hosted
 > apply of 0026 and deploy of Gaps 1/6 are not done.
 >
 > Sequence: start after the Laos reliability and build tranche is complete:
@@ -449,12 +449,13 @@ Identity-scoped `cache_trip` / `cache_place` merged as `290f821`
 (PR #85). Schema v9 drops unscoped rows. Writes refuse empty /
 `anonymous:` / `account:` scopes. Chat query strings landed as
 `14ce56d`. ATS / network-security XML landed as `be89128`.
-Deep-link ownership remains.
+Trip-route ownership landed as `f486079`. Lock-screen / OS-push
+privacy remains until OS push exists.
 
-**Current fact.** Incoming deep links are not authorized against
-the current identity. There are no custom URL schemes or VIEW
-intent filters yet; `/trip/:tripId` still opens without an
-identity ownership check.
+**Current fact.** There are no custom URL schemes or VIEW intent
+filters. GoRouter `/trip/:tripId` (and chat / card children)
+redirects home when the current identity's owned-trip catalog is
+loaded and does not contain that id.
 
 **Solution.**
 

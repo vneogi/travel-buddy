@@ -23,13 +23,14 @@ documents disagree, follow Precedence below and name the conflict in
 
 ## Continuity state on 25 Oct 2026
 
-- GitHub `main` is through `be89128`: SPEC-45 field trust hygiene,
+- GitHub `main` is through `f486079`: SPEC-45 field trust hygiene,
   SPEC-25 field-priority intents, SPEC-25 Phase C durable device-local
   threads, SPEC-46 What Now Phase A, thin typed Ask-to-Add, thin
   typed Move, empty-day catalog Add, trip-private uncatalogued Add,
-  and SPEC-43 Gaps 1, 6, 2, 9 (ownership), 12 HTTPS, 12 cache keys,
-  12 chat URLs, and 12 ATS are merged.
-- Next Genie job: `docs/briefs/GENIE_SPEC_43_G12_DEEPLINK.md`.
+  and SPEC-43 Gaps 1, 6, 2, 9 (ownership), and 12 HTTPS, cache keys,
+  chat URLs, ATS, and trip-route ownership are merged.
+- Next Genie job: wait for a new brief. Gap 12 lock-screen waits on
+  OS push. Remaining Gap 9 schema/poisoning and Gap 5 stay later.
   Hosted apply of 0026 waits on `rolbypassrls`. Remaining Gap 9
   schema/poisoning, Laos decision-cell coverage, and unknown-time
   excursions stay later.
@@ -116,8 +117,10 @@ empty-day catalog Add (`b6ddecf`), and trip-private uncatalogued Add
 (`c65261c`), SPEC-43 Gap 2 (`0b8125f`), SPEC-43 Gap 9
 (`163a14c`), SPEC-43 Gap 12 HTTPS (`6f1dab8`), and Gap 12 cache
 keys (`290f821`), Gap 12 chat URLs (`14ce56d`), and Gap 12 ATS
-(`be89128`) are on main;
-next is `docs/briefs/GENIE_SPEC_43_G12_DEEPLINK.md`;
+(`be89128`), and Gap 12 trip-route ownership (`f486079`) are on
+main;
+next is a new SPEC-43 brief (Gap 5 / remaining Gap 9 / lock-screen
+later);
 SPEC-42 unknown-time
 excursions stay later;
 trip-optional and production-LLM SPEC-25; SPEC-10 HITL reflow;
