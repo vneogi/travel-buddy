@@ -15,6 +15,26 @@ other.
 Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 `#85` and so on; those numbers cannot be reconciled against `git log`.
 
+## Finding -- Oct 26 2026 -- SPEC-43 Gap 12 trip-route ownership merged
+
+Owner Windows checkout of `feat/spec43-g12-deeplink` at `4b4753a`
+(squash-merged to `main` as `f486079`, PR #95):
+
+- `flutter analyze`: 115 infos, no errors
+- full `flutter test`: All tests passed
+- R17: `redirectForTripOwnership` returned null instead of `'/'`;
+  `test_foreign_trip_deep_link_is_refused` failed Expected `'/'`
+  Actual null. Restored via
+  `git checkout -- mobile/lib/routing/trip_route_auth.dart` from
+  repo root (pathspec fails if run from `mobile/`); full suite
+  green again.
+
+No hosted deploy, APK, or phone acceptance. Gap 12 lock-screen
+waits on OS push. Owner G0 APK still waits on hosted Gap 1 JWKS.
+
+Genie Python gates on the branch were green. Flutter SDK was absent
+on Genie's machine.
+
 ## Finding -- Oct 25 2026 -- SPEC-43 Gap 12 ATS merged
 
 Owner Windows checkout of `feat/spec43-g12-ats` at `cead31f`

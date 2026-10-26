@@ -1,7 +1,7 @@
 # Genie brief: SPEC-43 Gap 9 -- trip-linked signal ownership
 
 Landed on `main` as `163a14c` (PR #81). Do not re-implement this slice.
-Next: `docs/briefs/GENIE_SPEC_43_G12_DEEPLINK.md`. ATS landed as `be89128`.
+Gap 12 navigation privacy landed through `f486079`. Next: wait for a new brief.
 
 ## Goal
 
