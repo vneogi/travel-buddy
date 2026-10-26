@@ -612,6 +612,17 @@ class DatabaseService:
         }
         return True
 
+    def count_signals_for_user_place(self, user_id: str, signal_type: str, place_ref: str) -> int:
+        """SPEC-43 Gap 9: stored signals for one (user, type, place)."""
+        uid = str(user_id)
+        return sum(
+            1
+            for s in self._signals.values()
+            if str(s.get("user_id")) == uid
+            and s.get("signal_type") == signal_type
+            and s.get("place_ref") == place_ref
+        )
+
     def get_signals_count(self) -> int:
         """Get total signals stored (for testing)."""
         return len(self._signals)
