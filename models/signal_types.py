@@ -21,6 +21,9 @@ tests/test_signal_types.py asserts keys AND value_kind agree across Python
 and migrations, so drift in either direction fails CI.
 """
 
+import json
+
+
 # Keys must match migrations exactly.
 # value_kind must match the value_kind column in the corresponding migration INSERT.
 # The SQL value_kind vocabulary (from 0002 comment): numeric | enum | json | boolean
@@ -68,6 +71,55 @@ PAYLOAD_SHAPES: dict[str, str] = {
     "booking_added": "json: {booking_type: str, import_source: str}",
     "session_start": "json: {trip_id: optional str, trip_day: optional int, minutes_since_last_open: optional int, cold_start: bool}",
 }
+
+
+# SPEC-43 Gap 9: closed value_json schemas. Each client-emittable type maps
+# to the ONLY keys a client may send. Aligned with PAYLOAD_SHAPES and the
+# Flutter SignalService emit payloads. Server-stamped keys (party_context,
+# and session_start trip_day when derived) are added after validation and
+# are not client-allowlisted unless the client legitimately sends them.
+VALUE_JSON_ALLOWED_KEYS: dict[str, frozenset[str]] = {
+    "user_loved": frozenset(),
+    "visited_confirmed": frozenset(),
+    "reroute_accepted": frozenset({"replacement_ref"}),
+    "reroute_rejected": frozenset({"rejected_refs"}),
+    "node_skipped": frozenset({"reason"}),
+    "dish_loved": frozenset({"dish_name"}),
+    "dish_ordered": frozenset({"dish_name"}),
+    "prompt_dismissed": frozenset({"kind", "attribute", "entity_id"}),
+    "driver_card_shown": frozenset({"place_ref", "was_offline", "name_source"}),
+    "name_confirmed": frozenset({"place_ref", "lang", "shown_value", "verdict"}),
+    "booking_added": frozenset({"booking_type", "import_source"}),
+    "session_start": frozenset({"cold_start", "minutes_since_last_open", "trip_day", "trip_id"}),
+}
+
+# Max UTF-8 bytes of json.dumps(client value_json) before server merge.
+VALUE_JSON_MAX_BYTES = 4096
+
+# Keys only the server may write into value_json.
+SERVER_STAMPED_VALUE_KEYS = frozenset({"party_context"})
+
+
+def value_json_schema_error(signal_type: str, value_json: object) -> str | None:
+    """Return a reject reason if client value_json is not a closed, bounded map.
+
+    None or {} is always allowed. Unknown types fail closed (no keys allowed).
+    """
+    if value_json is None:
+        return None
+    if not isinstance(value_json, dict):
+        return f"value_json schema: expected object for '{signal_type}'"
+    size = len(json.dumps(value_json, ensure_ascii=False, default=str).encode("utf-8"))
+    if size > VALUE_JSON_MAX_BYTES:
+        return f"value_json size {size} bytes exceeds {VALUE_JSON_MAX_BYTES} byte limit"
+    spoofed = sorted(SERVER_STAMPED_VALUE_KEYS & set(value_json))
+    if spoofed:
+        return f"value_json schema: unknown client key(s) {spoofed} are server-stamped only"
+    allowed = VALUE_JSON_ALLOWED_KEYS.get(signal_type, frozenset())
+    unknown = sorted(set(value_json) - allowed)
+    if unknown:
+        return f"value_json schema: unknown key(s) {unknown} for '{signal_type}'; allowed {sorted(allowed)}"
+    return None
 
 
 # Closed enum for node_skipped reasons. Client must present a picker,

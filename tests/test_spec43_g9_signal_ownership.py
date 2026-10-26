@@ -110,7 +110,7 @@ def test_foreign_trip_id_is_rejected_and_writes_nothing():
     edges_before = _edge_durations(trip_id)
     party_before = db_service.get_trip_party(trip_id)
 
-    loved = _signal("user_loved", _place_ref(second), trip_id, value_json={"original_field": "x"})
+    loved = _signal("user_loved", _place_ref(second), trip_id)
     confirmed = _signal(
         "visited_confirmed",
         _place_ref(second),

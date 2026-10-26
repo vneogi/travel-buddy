@@ -24,7 +24,12 @@ from pydantic import BaseModel, Field
 from security import get_current_user_id
 from services.db_provider import db_service
 from services.trip_ownership import TRIP_OWNERSHIP_REJECT_REASON, is_trip_owned_by
-from models.signal_types import SERVER_DERIVED_TYPES, NODE_SKIPPED_REASONS, DISH_SIGNAL_TYPES
+from models.signal_types import (
+    SERVER_DERIVED_TYPES,
+    NODE_SKIPPED_REASONS,
+    DISH_SIGNAL_TYPES,
+    value_json_schema_error,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -284,6 +289,13 @@ async def ingest_signals(
                     )
                 )
                 continue
+
+        # SPEC-43 Gap 9: client value_json is a closed, bounded map. Checked
+        # before party_context merge and record_signal; nothing is stored.
+        schema_error = value_json_schema_error(sig.signal_type, sig.value_json)
+        if schema_error:
+            rejected.append(RejectedSignal(signal_id=sig.signal_id, reason=schema_error))
+            continue
 
         # S29: dish signal types require entity_type='dish' + entity_id
         if sig.signal_type in DISH_SIGNAL_TYPES:
