@@ -99,9 +99,11 @@ def test_empty_value_json_accepts():
 
 def test_client_party_context_is_rejected():
     trip_id = _create_trip()
+    node = db_service.get_trip(trip_id).nodes[0]
     sig = _signal(
         "user_loved",
         trip_id=trip_id,
+        place_ref=node.venue_id or node.venue_name,
         value_json={"party_context": {"party_type": "family_young_kids", "size": 9}},
     )
     body = _post([sig])
@@ -146,7 +148,10 @@ def test_node_skipped_extra_key_is_rejected():
 
 def test_owned_trip_user_loved_accepts_with_server_party_context():
     trip_id = _create_trip()
+    node = db_service.get_trip(trip_id).nodes[0]
     sig = _signal("user_loved", value_text="loved", trip_id=trip_id)
+    # SPEC-43 Gap 9 trip-place: a trip-linked signal must name a node.
+    sig["place_ref"] = node.venue_id or node.venue_name
     body = _post([sig])
     assert body["accepted"] == 1 and body["rejected"] == []
     stored = db_service.get_signal(sig["signal_id"])

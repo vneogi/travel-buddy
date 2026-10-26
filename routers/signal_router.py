@@ -23,7 +23,12 @@ from pydantic import BaseModel, Field
 
 from security import get_current_user_id
 from services.db_provider import db_service
-from services.trip_ownership import TRIP_OWNERSHIP_REJECT_REASON, is_trip_owned_by
+from services.trip_ownership import (
+    TRIP_OWNERSHIP_REJECT_REASON,
+    is_place_on_trip,
+    is_trip_owned_by,
+    trip_place_reject_reason,
+)
 from models.signal_types import (
     SERVER_DERIVED_TYPES,
     NODE_SKIPPED_REASONS,
@@ -31,6 +36,7 @@ from models.signal_types import (
     value_json_schema_error,
     RANKING_CORPUS_SIGNAL_TYPES,
     RANKING_CORPUS_PER_PLACE_CAP,
+    TRIP_PLACE_EXEMPT_SIGNAL_TYPES,
 )
 
 logger = logging.getLogger(__name__)
@@ -360,6 +366,21 @@ async def ingest_signals(
                     )
                 )
                 continue
+
+        # SPEC-43 Gap 9: a trip-linked venue signal must name a node on that
+        # trip. A retry of a stored signal_id stays on the duplicate path.
+        if (
+            sig.trip_id
+            and sig.signal_type not in TRIP_PLACE_EXEMPT_SIGNAL_TYPES
+            and db_service.get_signal(sig.signal_id) is None
+            and not is_place_on_trip(sig.trip_id, sig.place_ref)
+        ):
+            rejected.append(
+                RejectedSignal(
+                    signal_id=sig.signal_id, reason=trip_place_reject_reason(sig.place_ref)
+                )
+            )
+            continue
 
         # Build provenance (notes extreme skew for analytics)
         provenance = _compute_provenance(sig.captured_at)
