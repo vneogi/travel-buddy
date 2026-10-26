@@ -3,11 +3,12 @@
 > Status: PARTIAL. Gap 1 `2460edf` (PR #78). Gap 6 `c65261c` (PR #79).
 > Gap 2 `0b8125f` (PR #80). Gap 9 ownership `163a14c` (PR #81).
 > Gap 9 closed schemas `fb72545` (PR #98). Gap 9 ranking isolation
-> `9b49fd0` (PR #101). Gap 12 HTTPS `6f1dab8`
+> `9b49fd0` (PR #101). Gap 9 trip-place `cafba3c` (PR #103).
+> Gap 12 HTTPS `6f1dab8`
 > (PR #82). Gap 12 cache keys `290f821` (PR #85). Gap 12 chat
 > URLs `14ce56d` (PR #89). Gap 12 ATS `be89128` (PR #92). Gap 12
 > trip-route ownership `f486079` (PR #95). Next is
-> `docs/briefs/GENIE_SPEC_43_G9_TRIP_PLACE.md`. Gap 12
+> `docs/briefs/GENIE_SPEC_43_G5_BACKUP.md`. Gap 12
 > lock-screen waits on OS push. Hosted apply of 0026 and deploy of
 > Gaps 1/6 are not done.
 >
@@ -364,12 +365,13 @@ complete grounded context. The persistent cache schema is even more general.
 
 **Status on main.** Ownership `163a14c` (PR #81). Closed schemas
 `fb72545` (PR #98). Ranking isolation and per-place rate `9b49fd0`
-(PR #101). Trip-place membership and GPS remain.
+(PR #101). Trip-place membership `cafba3c` (PR #103). GPS and
+`derived_feature` remain.
 
 **Current fact (remaining).** Ownership of a supplied `trip_id` is
 required. Client `value_json` is a closed bounded map. Ranking-corpus
 types are capped at 3 per (user, type, place). `pack_day` does not
-read signals. A trip-linked `place_ref` need not be a node on that
+read signals. A trip-linked venue `place_ref` must be a node on that
 trip. GPS plausibility and `derived_feature` sample-size are not
 built.
 
