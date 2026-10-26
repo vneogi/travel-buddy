@@ -1,9 +1,7 @@
 # Genie brief: SPEC-43 Gap 12 -- refuse another identity's trip route
 
 Landed on `main` as `f486079` (PR #95). Do not re-implement this slice.
-Next: Gap 12 lock-screen / OS-push privacy waits until OS push exists.
-Do not start Gap 5, remaining Gap 9 schema, deploy, or an APK without
-a new brief.
+Next: `docs/briefs/GENIE_SPEC_43_G9_SIGNAL_SCHEMA.md`.
 
 ## Goal
 
