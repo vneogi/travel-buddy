@@ -2,7 +2,8 @@
 
 Landed on `main` as `0b8125f` (PR #80). Do not re-implement this slice.
 Gap 12 navigation privacy landed through `f486079`. Gap 9 closed
-schemas `fb72545`. Next waits on a new brief.
+schemas `fb72545`. Next:
+`docs/briefs/GENIE_SPEC_43_G9_RANKING_ISOLATION.md`.
 Do not apply 0026 on hosted until `rolbypassrls` is true for `postgres`
 and `service_role`.
 

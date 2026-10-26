@@ -1,9 +1,8 @@
 # Genie brief: SPEC-43 Gap 9 -- closed signal value_json schemas
 
 Landed on `main` as `fb72545` (PR #98). Do not re-implement this slice.
-Next waits on a new brief (ranking-influence / quarantine / sample-size,
-still Gap 9). Do not start Gap 5, Gap 7, Gap 10, Gap 11, deploy, or
-an APK without a new brief.
+Next: `docs/briefs/GENIE_SPEC_43_G9_RANKING_ISOLATION.md`. Do not start
+Gap 5, Gap 7, Gap 10, Gap 11, deploy, or an APK without a new brief.
 
 ## Goal
 
