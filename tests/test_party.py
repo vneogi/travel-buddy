@@ -46,6 +46,12 @@ def reset_db():
     yield
 
 
+def _node_place_ref(trip_id: str) -> str:
+    """SPEC-43 Gap 9: a trip-linked signal must name a node on the trip."""
+    node = db_service.get_trip(trip_id).nodes[0]
+    return node.venue_id or node.venue_name
+
+
 def test_create_trip_with_party():
     """Create trip with explicit family party -- persisted and returned."""
     resp = client.post(
@@ -156,7 +162,7 @@ def test_signal_gets_party_context_stamped():
                 {
                     "signal_id": "sig-party-001",
                     "signal_type": "user_loved",
-                    "place_ref": "dubai-aquarium",
+                    "place_ref": _node_place_ref(trip_id),
                     "trip_id": trip_id,
                     "captured_at": _recent_iso(),
                 }
@@ -258,7 +264,7 @@ def test_party_context_merge_preserves_existing_value_json():
                 {
                     "signal_id": "sig-merge-test",
                     "signal_type": "node_skipped",
-                    "place_ref": "test-venue",
+                    "place_ref": _node_place_ref(trip_id),
                     "trip_id": trip_id,
                     "captured_at": _recent_iso(2),
                     "value_json": {"reason": "too_tired"},

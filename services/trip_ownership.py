@@ -40,3 +40,38 @@ def get_owned_trip(trip_id: Optional[str], user_id: str) -> Optional[TripState]:
 def is_trip_owned_by(trip_id: Optional[str], user_id: str) -> bool:
     """True when ``trip_id`` exists and is owned by ``user_id``."""
     return get_owned_trip(trip_id, user_id) is not None
+
+
+def _norm_place(value: object) -> str:
+    return str(value).strip().casefold() if value is not None else ""
+
+
+def trip_has_place(trip: Optional[TripState], place_ref: str) -> bool:
+    """SPEC-43 Gap 9: True if *place_ref* names a node on *trip*.
+
+    Matches any node venue_id or venue_name, case-insensitive after strip.
+    Uncatalogued nodes still match on venue_name. Missing trip -> False.
+    """
+    if trip is None:
+        return False
+    target = _norm_place(place_ref)
+    if not target:
+        return False
+    for node in trip.nodes or []:
+        for candidate in (getattr(node, "venue_id", None), getattr(node, "venue_name", None)):
+            if candidate is not None and _norm_place(candidate) == target:
+                return True
+    return False
+
+
+def is_place_on_trip(trip_id: str, place_ref: str) -> bool:
+    """SPEC-43 Gap 9: resolve *trip_id* via get_trip and check membership."""
+    try:
+        trip = db_service.get_trip(trip_id)
+    except Exception:  # noqa: BLE001 -- fail closed
+        return False
+    return trip_has_place(trip, place_ref)
+
+
+def trip_place_reject_reason(place_ref: str) -> str:
+    return f"place: {place_ref!r} is not a node on this trip"

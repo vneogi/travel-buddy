@@ -138,6 +138,11 @@ RANKING_CORPUS_SIGNAL_TYPES = frozenset(
 RANKING_CORPUS_PER_PLACE_CAP = 3
 
 
+# SPEC-43 Gap 9: with a trip_id, place_ref must be a node on that trip.
+# These types use non-venue place_refs ('app', 'booking') and are exempt.
+TRIP_PLACE_EXEMPT_SIGNAL_TYPES = frozenset({"session_start", "booking_added"})
+
+
 # Closed enum for node_skipped reasons. Client must present a picker,
 # not a free-text field. Unanalyzable free-text defeats the purpose.
 NODE_SKIPPED_REASONS = frozenset(
