@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPEC-43 Gap 5: Auto Backup rules (API 23-30). The offline SQLite
+     store (travel_buddy_offline.db plus WAL/SHM) and SharedPreferences
+     are plaintext and must never be backed up. -->
+<full-backup-content>
+    <exclude domain="database" />
+    <exclude domain="sharedpref" />
+</full-backup-content>
