@@ -13,6 +13,7 @@ import '../features/debug/sync_status_screen.dart';
 import '../features/create_trip/create_trip_screen.dart';
 import '../features/driver_card/driver_card_screen.dart';
 import 'redirect_for_auth.dart';
+import 'trip_route_auth.dart';
 
 /// True only when Supabase was actually initialized (real creds configured).
 bool get _supabaseReady =>
@@ -20,14 +21,23 @@ bool get _supabaseReady =>
 
 final appRouter = GoRouter(
   initialLocation: '/',
+  // SPEC-43 Gap 12: re-run redirects when the owned-trip catalog changes,
+  // so a restored foreign trip route does not stay open.
+  refreshListenable: ownedTripCatalog,
   redirect: (context, state) {
     final session = _supabaseReady
         ? Supabase.instance.client.auth.currentSession
         : null;
-    return redirectForAuth(
+    final authRedirect = redirectForAuth(
       supabaseReady: _supabaseReady,
       hasSession: session != null,
       location: state.matchedLocation,
+    );
+    if (authRedirect != null) return authRedirect;
+    return redirectForTripOwnership(
+      location: state.matchedLocation,
+      catalogLoaded: ownedTripCatalog.loaded,
+      ownedTripIds: ownedTripCatalog.ids,
     );
   },
   routes: [

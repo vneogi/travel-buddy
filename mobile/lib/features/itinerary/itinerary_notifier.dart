@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/api_exception.dart';
 import '../../core/providers.dart';
+import '../../routing/trip_route_auth.dart';
 import '../../data/models.dart';
 import '../../offline/offline_database.dart';
 import '../../services/signal_service.dart';
@@ -96,6 +97,8 @@ class ItineraryController extends StateNotifier<ItineraryState> {
     );
     try {
       final trip = await _ref.read(tripRepoProvider).getTrip(tripId);
+      // SPEC-43 Gap 12: server returned it to this identity, so it is owned.
+      ownedTripCatalog.add(tripId);
       if (!mounted) return;
       // Restore persisted hearts (state hydration only -- no signal emission).
       final restored = await _restoreLovedRefs();
