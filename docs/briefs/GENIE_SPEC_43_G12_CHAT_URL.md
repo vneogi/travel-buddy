@@ -1,8 +1,8 @@
 # Genie brief: SPEC-43 Gap 12 -- chat question out of route URLs
 
 Landed on `main` as `14ce56d` (PR #89). Do not re-implement this slice.
-ATS `be89128`. Deep-link ownership `f486079`. Next:
-`docs/briefs/GENIE_SPEC_43_G9_SIGNAL_SCHEMA.md`.
+ATS `be89128`. Deep-link ownership `f486079`. Gap 9 schemas
+`fb72545`. Next waits on a new brief.
 
 ## Goal
 

@@ -1,8 +1,8 @@
 # Genie brief: SPEC-43 Gap 12 -- identity-scoped trip and place cache
 
 Landed on `main` as `290f821` (PR #85). Do not re-implement this slice.
-Chat URLs `14ce56d`. ATS `be89128`. Deep-link `f486079`. Next: wait
-for `docs/briefs/GENIE_SPEC_43_G9_SIGNAL_SCHEMA.md`.
+Chat URLs `14ce56d`. ATS `be89128`. Deep-link `f486079`. Gap 9
+schemas `fb72545`. Next waits on a new brief.
 
 ## Goal
 
@@ -216,7 +216,7 @@ R14: this brief and any living-doc touch stay ASCII.
 - lock-screen notification privacy
 - Gap 5 SQLCipher / backup exclusion
 - Gap 6 sign-out sequence (do not rewrite it)
-- remaining Gap 9 closed schemas / poisoning
+- remaining Gap 9 ranking/quarantine
 - hosted deploy, APK, applying 0026
 - production LLM
 

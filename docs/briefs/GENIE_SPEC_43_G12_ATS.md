@@ -1,8 +1,8 @@
 # Genie brief: SPEC-43 Gap 12 -- Android network security and iOS ATS
 
 Landed on `main` as `be89128` (PR #92). Do not re-implement this slice.
-Deep-link ownership landed as `f486079`. Next:
-`docs/briefs/GENIE_SPEC_43_G9_SIGNAL_SCHEMA.md`.
+Deep-link ownership landed as `f486079`. Gap 9 schemas `fb72545`.
+Next waits on a new brief.
 
 ## Goal
 
