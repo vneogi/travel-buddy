@@ -122,6 +122,22 @@ def value_json_schema_error(signal_type: str, value_json: object) -> str | None:
     return None
 
 
+# SPEC-43 Gap 9: ranking-corpus signals are capped per (user, type, place)
+# at ingest so one user or device cannot flood a venue. Other client types
+# (session_start, node_skipped, driver_card_shown, ...) are not capped.
+RANKING_CORPUS_SIGNAL_TYPES = frozenset(
+    {
+        "user_loved",
+        "visited_confirmed",
+        "reroute_accepted",
+        "reroute_rejected",
+        "dish_loved",
+        "dish_ordered",
+    }
+)
+RANKING_CORPUS_PER_PLACE_CAP = 3
+
+
 # Closed enum for node_skipped reasons. Client must present a picker,
 # not a free-text field. Unanalyzable free-text defeats the purpose.
 NODE_SKIPPED_REASONS = frozenset(

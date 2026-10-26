@@ -849,6 +849,32 @@ class SupabaseService:
         result = self.client.table("signal").select("signal_id", count="exact").execute()
         return result.count or 0
 
+    def count_signals_for_user_place(self, user_id: str, signal_type: str, place_ref: str) -> int:
+        """SPEC-43 Gap 9: stored signals for one (user, type, place).
+
+        Filters on signal_type_id like record_signal. On a query error,
+        fail closed: return a count at or above any cap so ingest rejects
+        rather than silently uncapping the ranking corpus.
+        """
+        if signal_type not in self._signal_type_cache:
+            self.get_valid_signal_types()
+        type_id = self._signal_type_cache.get(signal_type)
+        if not type_id:
+            return 0
+        try:
+            result = (
+                self.client.table("signal")
+                .select("signal_id", count="exact")
+                .eq("user_id", str(user_id))
+                .eq("place_ref", place_ref)
+                .eq("signal_type_id", type_id)
+                .execute()
+            )
+            return result.count or 0
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("count_signals_for_user_place failed; failing closed: %s", exc)
+            return 1_000_000
+
     def get_signal(self, signal_id: str) -> Optional[dict]:
         """Get a signal by ID (for diagnostics/testing)."""
         result = self.client.table("signal").select("*").eq("signal_id", signal_id).execute()

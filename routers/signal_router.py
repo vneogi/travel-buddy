@@ -29,6 +29,8 @@ from models.signal_types import (
     NODE_SKIPPED_REASONS,
     DISH_SIGNAL_TYPES,
     value_json_schema_error,
+    RANKING_CORPUS_SIGNAL_TYPES,
+    RANKING_CORPUS_PER_PLACE_CAP,
 )
 
 logger = logging.getLogger(__name__)
@@ -257,8 +259,13 @@ async def ingest_signals(
     accepted = 0
     duplicates = 0
     rejected: List[RejectedSignal] = []
+    # SPEC-43 Gap 9 rate cap: stored count snapshot (first sight in this
+    # batch) plus items accepted earlier in the same batch.
+    corpus_stored: Dict[tuple, int] = {}
+    corpus_accepted: Dict[tuple, int] = {}
 
     for sig in batch.signals:
+        rate_key: Optional[tuple] = None
         # Per-item validation: unknown signal_type
         if sig.signal_type not in valid_types:
             rejected.append(
@@ -330,6 +337,30 @@ async def ingest_signals(
             )
             continue
 
+        # SPEC-43 Gap 9: per-user per-place cap on ranking-corpus signals.
+        # A retry of a stored signal_id skips the cap and stays a duplicate.
+        if (
+            sig.signal_type in RANKING_CORPUS_SIGNAL_TYPES
+            and db_service.get_signal(sig.signal_id) is None
+        ):
+            rate_key = (str(user_id), sig.signal_type, sig.place_ref)
+            if rate_key not in corpus_stored:
+                corpus_stored[rate_key] = db_service.count_signals_for_user_place(
+                    user_id, sig.signal_type, sig.place_ref
+                )
+            in_batch = corpus_accepted.get(rate_key, 0)
+            if corpus_stored[rate_key] + in_batch >= RANKING_CORPUS_PER_PLACE_CAP:
+                rejected.append(
+                    RejectedSignal(
+                        signal_id=sig.signal_id,
+                        reason=(
+                            f"rate limit: at most {RANKING_CORPUS_PER_PLACE_CAP} "
+                            f"'{sig.signal_type}' signals per place per user"
+                        ),
+                    )
+                )
+                continue
+
         # Build provenance (notes extreme skew for analytics)
         provenance = _compute_provenance(sig.captured_at)
 
@@ -369,6 +400,8 @@ async def ingest_signals(
         )
         if was_new:
             accepted += 1
+            if rate_key is not None:
+                corpus_accepted[rate_key] = corpus_accepted.get(rate_key, 0) + 1
             # SPEC-07: derive arrival_delta from visited_confirmed
             if sig.signal_type == "visited_confirmed":
                 from services.arrival_delta_service import derive_arrival_delta
