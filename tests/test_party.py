@@ -7,7 +7,8 @@ Verifies:
 4. Signal for a trip with a party gets party_context stamped into value_json
 5. Signal for an unknown trip is rejected (SPEC-43 Gap 9 trip ownership)
 6. Signal with no trip_id still succeeds
-7. party_context is MERGED into value_json (doesn't overwrite existing fields)
+7. party_context is MERGED into value_json (allowlisted client keys kept;
+   unknown keys are rejected per SPEC-43 Gap 9 closed schemas)
 8. No birth date fields accepted (age_band only)
 """
 
@@ -158,7 +159,6 @@ def test_signal_gets_party_context_stamped():
                     "place_ref": "dubai-aquarium",
                     "trip_id": trip_id,
                     "captured_at": _recent_iso(),
-                    "value_json": {"original_field": "preserved"},
                 }
             ],
         },
@@ -181,9 +181,8 @@ def test_signal_gets_party_context_stamped():
     # time_of_day is from captured_at (recent, within the hour)
     assert ":" in pc["time_of_day"]  # format HH:MM
     assert "day_index" in pc  # relative to trip start
-
-    # CRITICAL: original value_json fields preserved (merged, not overwritten)
-    assert vj["original_field"] == "preserved"
+    # SPEC-43 Gap 9: no client keys were sent, so only the server stamp exists.
+    assert set(vj) == {"party_context"}
 
 
 def test_signal_unknown_trip_is_rejected():
@@ -240,7 +239,7 @@ def test_signal_no_trip_id_still_succeeds():
 
 
 def test_party_context_merge_preserves_existing_value_json():
-    """party_context is MERGED into value_json, not overwriting it."""
+    """party_context is MERGED into value_json, not overwriting allowlisted keys."""
     # Create trip with solo party
     create_resp = client.post(
         "/api/v1/trip/create",
@@ -251,22 +250,18 @@ def test_party_context_merge_preserves_existing_value_json():
     )
     trip_id = create_resp.json()["trip_id"]
 
-    # Send signal with existing value_json fields
+    # Send signal with an allowlisted client value_json key
     resp = client.post(
         "/api/v1/signals",
         json={
             "signals": [
                 {
                     "signal_id": "sig-merge-test",
-                    "signal_type": "user_loved",
+                    "signal_type": "node_skipped",
                     "place_ref": "test-venue",
                     "trip_id": trip_id,
                     "captured_at": _recent_iso(2),
-                    "value_json": {
-                        "intensity": 0.9,
-                        "source": "heart_button",
-                        "nested": {"key": "value"},
-                    },
+                    "value_json": {"reason": "too_tired"},
                 }
             ],
         },
@@ -274,13 +269,12 @@ def test_party_context_merge_preserves_existing_value_json():
     )
 
     assert resp.status_code == 200
+    assert resp.json()["accepted"] == 1
     stored = db_service.get_signal("sig-merge-test")
     vj = stored["value_json"]
 
-    # Original fields preserved
-    assert vj["intensity"] == 0.9
-    assert vj["source"] == "heart_button"
-    assert vj["nested"] == {"key": "value"}
+    # Allowlisted client field preserved
+    assert vj["reason"] == "too_tired"
     # party_context added alongside them
     assert "party_context" in vj
     assert vj["party_context"]["party_type"] == "solo"
