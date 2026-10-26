@@ -116,7 +116,7 @@ The immediate order after the field-test gate:
     trip-private uncatalogued Add (PR #77, `05d917e`) are on main;
     SPEC-43 Gaps 1, 6, 2, 9 ownership+schemas, and 12 HTTPS are on
     main (`fb72545`); next is
-    `docs/briefs/GENIE_SPEC_43_G9_RANKING_ISOLATION.md`;
+    `docs/briefs/GENIE_SPEC_43_G9_TRIP_PLACE.md`;
     unknown-time excursions stay later;
 12. implement SPEC-43 before any non-owner distribution, production LLM
    processing of personal trip data, or the planned December launch;

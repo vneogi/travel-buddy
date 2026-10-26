@@ -14,13 +14,13 @@ anonymous JWT, SPEC-43 Gap 6 sign-out, SPEC-43 Gap 2 RLS,
 SPEC-43 Gap 9 signal ownership and closed schemas, SPEC-43 Gap 12
 HTTPS fail-closed, and SPEC-43 Gap 12 identity-scoped caches, chat
 URLs, ATS, and trip-route ownership are on `main` through
-`fb72545` (PR #98). Hosted 0025 is applied. Cloud Run
+`9b49fd0` (PR #101). Hosted 0025 is applied. Cloud Run
 `travel-buddy-00012-8wv` is the live untagged revision. SPEC-42
 remains PARTIAL (unknown-time excursions later). Create-then-book
 HITL reflow remains. Trip-optional Ask remains. What Now Phase B GPS
 remains blocked on remaining SPEC-43. Gap 12 navigation privacy is
 landed; lock-screen waits on OS push. Next is
-`docs/briefs/GENIE_SPEC_43_G9_RANKING_ISOLATION.md`.
+`docs/briefs/GENIE_SPEC_43_G9_TRIP_PLACE.md`.
 Do not apply 0026 until `rolbypassrls` is confirmed.
 
 SPEC-44 Phase A application code merged as PR #67 (`9a7b9d9`). Planning
@@ -88,11 +88,12 @@ Now Phase A (`d1df944`), thin typed Ask-to-Add (`0344b4b`), thin
 typed Move (`e51513e`), empty-day catalog Add (`b6ddecf`), and
 trip-private uncatalogued Add (`05d917e`) are now on main. SPEC-43 Gap 1
 (`2460edf`), Gap 6 (`c65261c`), Gap 2 (`0b8125f`), Gap 9
-(`163a14c`), Gap 9 closed schemas (`fb72545`), Gap 12 HTTPS
+(`163a14c`), Gap 9 closed schemas (`fb72545`), Gap 9 ranking
+isolation (`9b49fd0`), Gap 12 HTTPS
 (`6f1dab8`), and Gap 12 cache keys (`290f821`), Gap 12 chat
 URLs (`14ce56d`), and Gap 12 ATS (`be89128`), and Gap 12
 trip-route ownership (`f486079`) are on main. The next Genie job is
-`docs/briefs/GENIE_SPEC_43_G9_RANKING_ISOLATION.md`. Remaining Gap 9
+`docs/briefs/GENIE_SPEC_43_G9_TRIP_PLACE.md`. Remaining Gap 9
 GPS/sample-size,
 unknown-time excursions, and Laos decision-cell coverage stay later.
 SPEC-43 still gates every non-owner APK. Do not treat in-memory pytest as
@@ -228,7 +229,7 @@ Resume in this order:
    2/3, Papao, and the Wat Xieng Thong packing failure. Measure coverage by
    common decision cell, not total POI count.
 6. Implement remaining SPEC-43 (next:
-   `docs/briefs/GENIE_SPEC_43_G9_RANKING_ISOLATION.md`; then Gap 5,
+   `docs/briefs/GENIE_SPEC_43_G9_TRIP_PLACE.md`; then Gap 5,
    hosted 0026 / G1 deploy; Gap 12 lock-screen waits on OS push)
    before any non-owner APK, hostel QR, production LLM on
    personal trips, or contribution collection. Hosted 0026 waits on
@@ -255,11 +256,11 @@ separation live in the operating model; do not reconstruct them from chat.
 
 ## First job
 
-`origin/main` includes SPEC-43 Gap 9 closed schemas as
-`fb72545` (PR #98). Hosted 0025 applied. Cloud Run `00012-8wv`.
+`origin/main` includes SPEC-43 Gap 9 ranking isolation as
+`9b49fd0` (PR #101). Hosted 0025 applied. Cloud Run `00012-8wv`.
 Owner APK SHA256 `bd935bf2...`.
 
-Genie next: `docs/briefs/GENIE_SPEC_43_G9_RANKING_ISOLATION.md`.
+Genie next: `docs/briefs/GENIE_SPEC_43_G9_TRIP_PLACE.md`.
 Do not start Gap 5,
 remaining Gap 9 GPS/sample-size, production LLM, trip-less Ask, or
 unknown-time excursions without a brief. Do not apply 0026 until

@@ -1,7 +1,7 @@
 # Genie brief: SPEC-43 Gap 12 -- refuse another identity's trip route
 
 Landed on `main` as `f486079` (PR #95). Do not re-implement this slice.
-Next: `docs/briefs/GENIE_SPEC_43_G9_RANKING_ISOLATION.md`.
+Next: `docs/briefs/GENIE_SPEC_43_G9_TRIP_PLACE.md`.
 
 ## Goal
 
