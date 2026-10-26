@@ -2,7 +2,7 @@
 
 Landed on `main` as `be89128` (PR #92). Do not re-implement this slice.
 Deep-link ownership landed as `f486079`. Gap 9 schemas `fb72545`.
-Next: `docs/briefs/GENIE_SPEC_43_G9_TRIP_PLACE.md`.
+Next: `docs/briefs/GENIE_SPEC_43_G5_BACKUP.md`.
 
 ## Goal
 

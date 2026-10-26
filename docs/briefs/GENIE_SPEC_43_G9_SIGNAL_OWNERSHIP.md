@@ -3,7 +3,7 @@
 Landed on `main` as `163a14c` (PR #81). Do not re-implement this slice.
 Gap 12 navigation privacy landed through `f486079`. Closed schemas
 landed as `fb72545`. Next:
-`docs/briefs/GENIE_SPEC_43_G9_TRIP_PLACE.md`.
+`docs/briefs/GENIE_SPEC_43_G5_BACKUP.md`.
 
 ## Goal
 
