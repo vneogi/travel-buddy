@@ -1,7 +1,7 @@
 # Genie brief: SPEC-43 Gap 9 -- ranking isolation and per-place rate
 
-Next after this lands: remaining Gap 9 (GPS/time plausibility,
-contributor quality, derived_feature sample-size). Do not start Gap 5,
+Landed on `main` as `9b49fd0` (PR #101). Do not re-implement this slice.
+Next: `docs/briefs/GENIE_SPEC_43_G9_TRIP_PLACE.md`. Do not start Gap 5,
 Gap 7, Gap 10, Gap 11, deploy, or an APK without a new brief.
 
 ## Goal
