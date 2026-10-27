@@ -5,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:sqflite/sqflite.dart';
 
 import 'package:travel_buddy/core/api_client.dart';
 import 'package:travel_buddy/core/api_exception.dart';
@@ -39,6 +38,7 @@ TripNode _node(String id, String name) => TripNode(
 void main() {
   sqfliteFfiInit();
   databaseFactory = databaseFactoryFfi;
+  var dbCounter = 0;
 
   // ============================================================
   // Group A: Durable Hearts
@@ -49,7 +49,10 @@ void main() {
     late MockTripRepository repo;
 
     setUp(() {
-      realDb = OfflineDatabase(testPath: inMemoryDatabasePath);
+      dbCounter += 1;
+      realDb = OfflineDatabase(
+        testPath: 'file:durable_hearts_$dbCounter?mode=memory&cache=shared',
+      );
       repo = MockTripRepository();
       when(() => repo.getTrip('t1'))
           .thenAnswer((_) async => _trip([_node('n1', 'Old Souk')]));
@@ -210,7 +213,10 @@ void main() {
     // ----------------------------------------------------------
     test('getLovedPlaceRefs failure still loads trip with empty loved refs', () async {
       // Use a fresh DB that we sabotage after setup
-      final brokenDb = OfflineDatabase(testPath: inMemoryDatabasePath);
+      dbCounter += 1;
+      final brokenDb = OfflineDatabase(
+        testPath: 'file:durable_hearts_$dbCounter?mode=memory&cache=shared',
+      );
       addTearDown(() async => await brokenDb.close());
 
       final brokenRepo = MockTripRepository();
@@ -253,7 +259,10 @@ void main() {
 
   group('Sync status refresh', () {
     test('refresh waits before counts', () async {
-      final db = OfflineDatabase(testPath: inMemoryDatabasePath);
+      dbCounter += 1;
+      final db = OfflineDatabase(
+        testPath: 'file:durable_hearts_$dbCounter?mode=memory&cache=shared',
+      );
       addTearDown(() async => await db.close());
 
       final mockApi = MockApiClient();
@@ -289,7 +298,10 @@ void main() {
 
   group('401 auth halt', () {
     test('401 blocks a second POST', () async {
-      final db = OfflineDatabase(testPath: inMemoryDatabasePath);
+      dbCounter += 1;
+      final db = OfflineDatabase(
+        testPath: 'file:durable_hearts_$dbCounter?mode=memory&cache=shared',
+      );
       addTearDown(() async => await db.close());
 
       final mockApi = MockApiClient();
