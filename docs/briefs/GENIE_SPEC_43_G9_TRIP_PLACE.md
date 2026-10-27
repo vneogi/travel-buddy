@@ -1,7 +1,7 @@
 # Genie brief: SPEC-43 Gap 9 -- trip-linked place must be on the trip
 
 Landed on `main` as `cafba3c` (PR #103). Do not re-implement this slice.
-Next: `docs/briefs/GENIE_SPEC_43_G5_SQLCIPHER.md`. Remaining Gap 9
+Next: owner hosted Gap 1, then G0 APK. Gap 7 has no Genie brief yet. Remaining Gap 9
 (GPS coords, derived_feature sample-size) stays later. Do not start
 SQLCipher, Gap 7, Gap 10, Gap 11, deploy, or an APK without a new brief.
 

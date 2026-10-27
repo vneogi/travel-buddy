@@ -15,6 +15,30 @@ other.
 Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 `#85` and so on; those numbers cannot be reconciled against `git log`.
 
+## Finding -- Oct 27 2026 -- SPEC-43 Gap 5 SQLCipher merged
+
+Owner Windows checkout of `feat/spec43-g5-sqlcipher` at `c943ebe`
+then lock pin `75c4465` (squash-merged to `main` as `9cb2324`,
+PR #107):
+
+- `flutter analyze`: 115 infos, no errors
+- full `flutter test`: +656 All tests passed
+- R17: removed `password:` from `cipher.openDatabase` in
+  `offline_open_io.dart`; named test
+  `test_production_offline_open_passes_sqlcipher_password` failed;
+  restore passed.
+
+`mobile/pubspec.lock` is now tracked (was a local Windows file) and
+pins `sqflite_sqlcipher` 3.4.1.
+
+No hosted deploy, APK, or phone acceptance. Owner G0 APK still
+waits on hosted Gap 1 JWKS. First phone open of this SHA wipes a
+leftover plaintext `travel_buddy_offline.db`.
+
+Genie had no Flutter SDK; Windows ran the gates.
+
+Backup exclusion landed earlier the same day as `1672759` (PR #105).
+
 ## Finding -- Oct 26 2026 -- SPEC-43 Gap 12 trip-route ownership merged
 
 Owner Windows checkout of `feat/spec43-g12-deeplink` at `4b4753a`

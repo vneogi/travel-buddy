@@ -38,16 +38,20 @@ trust hygiene, JWT, or scoped cache. Build one owner-only signed APK
 after both are true:
 
 1. Gap 12 HTTPS and cache keys are on `main` (`290f821`, PR #85).
+   App SHA may be `9cb2324` (also includes ATS, deep-link, backup
+   exclusion, SQLCipher).
 2. Hosted Cloud Run is a Gap 1 revision: dashboard Anonymous sign-ins
    on, JWKS URL and issuer set. Today's `00012-8wv` still expects the
    old Anonymous header; a Gap 1 APK against it would 401.
 
 That APK is the first chance to feel the post-Laos product on a phone
 before more SPEC-43. It is still G0 (owner only). Do not wait for Gaps
-3-11, chat-in-URL, ATS XML, MapLibre, or catalog cells. Do not apply
+3-4, 7-11, MapLibre, or catalog cells. Do not apply
 migration 0026 until `rolbypassrls` is confirmed for `postgres` and
 `service_role`. First open of that APK drops unscoped `cache_trip` /
-`cache_place` (schema v9); recache from the network is expected.
+`cache_place` (schema v9) and wipes a leftover plaintext
+`travel_buddy_offline.db` so SQLCipher can recreate it; recache
+from the network is expected.
 
 ## What this file is not
 
@@ -75,14 +79,14 @@ not anonymous, and it is not safe to hand to a tester.
 | RLS and ownership on every personal table | SPEC-43 gap 2 | Two hosted JWTs cannot read each other's trips |
 | LLM egress allowlist; no booking secrets in prompts | SPEC-43 gap 3 | Personal LLM traffic stays off until this passes |
 | Export, deletion, retention, backup tombstones | SPEC-43 gap 4, SPEC-27 | A tester can leave and take or erase their data |
-| Encrypted offline store; backup exclusion | SPEC-43 gap 5, SPEC-04 | Extracted SQLite is not plaintext bookings |
+| Encrypted offline store; backup exclusion | SPEC-43 gap 5, SPEC-04 | Backup `1672759` + SQLCipher `9cb2324` on main. Remainders: masking, FLAG_SECURE, iOS file protection, ProGuard if minify on |
 | Real sign-out and account-switch isolation | SPEC-43 gap 6, SPEC-24 | Shared-phone hostel use does not leak the last identity |
 | Versioned purpose consent; optional capture blocked | SPEC-43 gap 7 | No cohort analytics before a real choice |
 | Private semantic-cache isolation | SPEC-43 gap 8 | Ask cache cannot cross users |
 | Signal ownership and poisoning controls | SPEC-43 gap 9 | A supplied trip id is not a write primitive |
 | Redacted diagnostics; no production debug | SPEC-43 gap 10, SPEC-05 | Failures do not retain secrets |
 | Abuse and provider-spend limits | SPEC-43 gap 11 | A stolen APK cannot run unbounded Ask |
-| Release HTTPS and identity-scoped caches | SPEC-43 gap 12 | HTTPS+cache+chat URLs+ATS+trip-route ownership on main (`f486079`); lock-screen waits on OS push. Gap 5 backup `1672759`. Next Genie: `docs/briefs/GENIE_SPEC_43_G5_SQLCIPHER.md` |
+| Release HTTPS and identity-scoped caches | SPEC-43 gap 12 | HTTPS+cache+chat URLs+ATS+trip-route ownership on main (`f486079`); lock-screen waits on OS push. Gap 5 backup+SQLCipher on main (`9cb2324`). Next: owner hosted Gap 1, then G0 APK |
 
 SPEC-24 (merge, aliases, sign-out) and SPEC-27 (rights, minimum client,
 push transport) are implementation dependencies inside this gate, not

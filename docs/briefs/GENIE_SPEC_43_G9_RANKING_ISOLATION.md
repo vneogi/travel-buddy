@@ -1,7 +1,7 @@
 # Genie brief: SPEC-43 Gap 9 -- ranking isolation and per-place rate
 
 Landed on `main` as `9b49fd0` (PR #101). Do not re-implement this slice.
-Next: `docs/briefs/GENIE_SPEC_43_G5_SQLCIPHER.md`. Do not start
+Next: owner hosted Gap 1, then G0 APK. Gap 7 has no Genie brief yet. Do not start
 SQLCipher, Gap 7, Gap 10, Gap 11, deploy, or an APK without a new
 brief.
 
