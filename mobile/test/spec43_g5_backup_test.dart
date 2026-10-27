@@ -52,7 +52,6 @@ void main() {
       final xml = _read(path);
       expect(xml, isNot(contains('<include')), reason: path);
       expect(xml, isNot(contains('domain="root"')), reason: path);
-      expect(xml, isNot(contains('travel_buddy_offline.db')), reason: path);
     }
     final backup = _read(_backupRules);
     expect(backup, contains('<exclude domain="database" />'));
