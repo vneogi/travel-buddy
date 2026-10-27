@@ -23,16 +23,16 @@ documents disagree, follow Precedence below and name the conflict in
 
 ## Continuity state on 25 Oct 2026
 
-- GitHub `main` is through `1672759`: SPEC-45 field trust hygiene,
+- GitHub `main` is through `9cb2324`: SPEC-45 field trust hygiene,
   SPEC-25 field-priority intents, SPEC-25 Phase C durable device-local
   threads, SPEC-46 What Now Phase A, thin typed Ask-to-Add, thin
   typed Move, empty-day catalog Add, trip-private uncatalogued Add,
   and SPEC-43 Gaps 1, 6, 2, 9 (ownership + closed schemas), and 12
   HTTPS, cache keys, chat URLs, ATS, and trip-route ownership are
   merged.
-- Next Genie job: `docs/briefs/GENIE_SPEC_43_G5_SQLCIPHER.md`.
-  Gap 12 lock-screen waits on OS push. Gap 5 backup exclusion is
-  on main (`1672759`).
+- Next: owner hosted Gap 1, then G0 APK. No Genie brief is open
+  (Gap 7 later). Gap 12 lock-screen waits on OS push. Gap 5 backup
+  (`1672759`) and SQLCipher (`9cb2324`) are on main.
   Hosted apply of 0026 waits on `rolbypassrls`. Remaining Gap 9
   GPS/sample-size, Laos decision-cell coverage, and unknown-time
   excursions stay later.
@@ -121,7 +121,7 @@ empty-day catalog Add (`b6ddecf`), and trip-private uncatalogued Add
 HTTPS (`6f1dab8`), and Gap 12 cache keys (`290f821`), Gap 12
 chat URLs (`14ce56d`), and Gap 12 ATS (`be89128`), and Gap 12
 trip-route ownership (`f486079`) are on main;
-next is `docs/briefs/GENIE_SPEC_43_G5_SQLCIPHER.md`;
+next is owner hosted Gap 1, then G0 APK; Gap 7 has no brief yet;
 SPEC-42 unknown-time
 excursions stay later;
 trip-optional and production-LLM SPEC-25; SPEC-10 HITL reflow;

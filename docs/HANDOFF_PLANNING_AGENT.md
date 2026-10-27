@@ -14,14 +14,15 @@ anonymous JWT, SPEC-43 Gap 6 sign-out, SPEC-43 Gap 2 RLS,
 SPEC-43 Gap 9 signal ownership and closed schemas, SPEC-43 Gap 12
 HTTPS fail-closed, and SPEC-43 Gap 12 identity-scoped caches, chat
 URLs, ATS, and trip-route ownership are on `main` through
-`cafba3c` (PR #103). Hosted 0025 is applied. Cloud Run
+`9cb2324` (PR #107). Hosted 0025 is applied. Cloud Run
 `travel-buddy-00012-8wv` is the live untagged revision. SPEC-42
 remains PARTIAL (unknown-time excursions later). Create-then-book
 HITL reflow remains. Trip-optional Ask remains. What Now Phase B GPS
 remains blocked on remaining SPEC-43. Gap 12 navigation privacy is
 landed; lock-screen waits on OS push. Gap 5 backup
-`1672759` (PR #105) is on main. Next is
-`docs/briefs/GENIE_SPEC_43_G5_SQLCIPHER.md`.
+`1672759` (PR #105) and SQLCipher `9cb2324` (PR #107)
+are on main. Next is owner hosted Gap 1, then G0 APK.
+Gap 7 has no Genie brief yet.
 Do not apply 0026 until `rolbypassrls` is confirmed.
 
 SPEC-44 Phase A application code merged as PR #67 (`9a7b9d9`). Planning
@@ -94,8 +95,9 @@ isolation (`9b49fd0`), Gap 9 trip-place (`cafba3c`), Gap 12 HTTPS
 (`6f1dab8`), and Gap 12 cache keys (`290f821`), Gap 12 chat
 URLs (`14ce56d`), and Gap 12 ATS (`be89128`), and Gap 12
 trip-route ownership (`f486079`) are on main. Gap 5 backup
-(`1672759`) is on main. The next Genie job is
-`docs/briefs/GENIE_SPEC_43_G5_SQLCIPHER.md`. Remaining Gap 9
+(`1672759`) and SQLCipher (`9cb2324`) are on main. No
+Genie job is open. Next is owner hosted Gap 1, then G0 APK.
+Remaining Gap 9
 GPS/sample-size,
 unknown-time excursions, and Laos decision-cell coverage stay later.
 SPEC-43 still gates every non-owner APK. Do not treat in-memory pytest as
@@ -230,14 +232,15 @@ Resume in this order:
 5. Patch Laos spine and effective-choice gaps: Kuang Si, Pak Ou, Blue Lagoon
    2/3, Papao, and the Wat Xieng Thong packing failure. Measure coverage by
    common decision cell, not total POI count.
-6. Implement remaining SPEC-43 (next:
-   `docs/briefs/GENIE_SPEC_43_G5_SQLCIPHER.md`; then
-   hosted 0026 / G1 deploy; Gap 12 lock-screen waits on OS push)
-   before any non-owner APK, hostel QR, production LLM on
+6. Implement remaining SPEC-43 (Gap 5 backup+SQLCipher are on
+   main; next owner work is hosted Gap 1 then G0 APK; then Gap 7
+   once a brief exists; hosted 0026; Gap 12 lock-screen waits on
+   OS push) before any non-owner APK, hostel QR, production LLM on
    personal trips, or contribution collection. Hosted 0026 waits on
-   `rolbypassrls`. Owner G0 checkpoint APK: cache keys are on main;
-   still needs hosted Gap 1 deploy (JWKS + Anonymous sign-ins). Not
-   immediately. Not after every remaining gap.
+   `rolbypassrls`. Owner G0 checkpoint APK: cache keys and SQLCipher
+   are on main (`9cb2324`); still needs hosted Gap 1 deploy
+   (JWKS + Anonymous sign-ins). Not immediately. Not after every
+   remaining gap.
 7. Implement SPEC-13 identity plus the minimum SPEC-17 claim/attribute
    registry, append-only observation lifecycle, and SPEC-44 decision capture.
    Keep learned influence at zero.
@@ -258,17 +261,17 @@ separation live in the operating model; do not reconstruct them from chat.
 
 ## First job
 
-`origin/main` includes SPEC-43 Gap 5 backup exclusion as
-`1672759` (PR #105). Hosted 0025 applied. Cloud Run `00012-8wv`.
-Owner APK SHA256 `bd935bf2...`.
+`origin/main` includes SPEC-43 Gap 5 SQLCipher as
+`9cb2324` (PR #107). Hosted 0025 applied. Cloud Run `00012-8wv`.
+Owner APK SHA256 `bd935bf2...` (pre-JWT, pre-SQLCipher).
 
-Genie next: `docs/briefs/GENIE_SPEC_43_G5_SQLCIPHER.md`.
-Do not start Gap 7,
-remaining Gap 9 GPS/sample-size, production LLM, trip-less Ask, or
-unknown-time excursions without a brief. Do not apply 0026 until
-`rolbypassrls` is confirmed for `postgres` and `service_role`. Do not
-deploy Gap 1/6 until Anonymous sign-ins and JWKS env are set. Do not
-build the owner G0 APK until that hosted Gap 1 deploy exists.
+No Genie job is open. Next is owner hosted Gap 1 (JWKS +
+Anonymous sign-ins), then the G0 APK from `9cb2324`. Do not start
+Gap 7, remaining Gap 9 GPS/sample-size, production LLM, trip-less
+Ask, or unknown-time excursions without a brief. Do not apply 0026
+until `rolbypassrls` is confirmed for `postgres` and `service_role`.
+Do not deploy Gap 1/6 until Anonymous sign-ins and JWKS env are set.
+Do not build the owner G0 APK until that hosted Gap 1 deploy exists.
 
 Historical context (do not treat as current work):
 

@@ -30,6 +30,14 @@ Settled identity:
 - applicationId / namespace / MainActivity package: `com.vneogi.travelbuddy`
 - INTERNET on the main manifest
 - release minify and resource shrinking off
+- `main` `9cb2324` (PR #107) encrypts the Android/iOS offline DB
+  with SQLCipher. First open wipes a leftover plaintext file.
+  Do not build the owner G0 APK until hosted Gap 1 (JWKS +
+  Anonymous sign-ins) is live; a JWT client against `00012-8wv`
+  would 401.
+- If release minify is later turned on, add
+  `-keep class net.sqlcipher.** { *; }` to ProGuard. Minify is
+  off today, so that keep is not load-bearing yet.
 
 ## 1. Pull the reviewed commit (PowerShell)
 

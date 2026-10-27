@@ -3,7 +3,7 @@
 Landed on `main` as `290f821` (PR #85). Do not re-implement this slice.
 Chat URLs `14ce56d`. ATS `be89128`. Deep-link `f486079`. Gap 9
 schemas `fb72545`. Next:
-`docs/briefs/GENIE_SPEC_43_G5_SQLCIPHER.md`.
+owner hosted Gap 1, then G0 APK. Gap 7 has no Genie brief yet.
 
 ## Goal
 
