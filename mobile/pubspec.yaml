@@ -23,6 +23,8 @@ dependencies:
   flutter_svg: ^2.0.10
   shared_preferences: ^2.3.2
   sqflite: ^2.3.3+1
+  # SPEC-43 Gap 5: encrypted offline store on Android/iOS only.
+  sqflite_sqlcipher: ^3.1.0
   sqflite_common_ffi: ^2.3.3
   sqflite_common_ffi_web: ^1.1.1
   path: ^1.9.0

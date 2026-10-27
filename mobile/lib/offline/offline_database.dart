@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
+import 'offline_open.dart';
+
 @immutable
 class NodeOutcome {
   static const visited = 'visited';
@@ -63,15 +65,25 @@ class OfflineDatabase {
   }
 
   Future<Database> _open() async {
+    final testPath = _testPath;
+    if (testPath != null) {
+      // Tests: unencrypted in-memory / temp-file database.
+      return openDatabase(
+        testPath,
+        version: _dbVersion,
+        onCreate: _onCreate,
+        onUpgrade: _onUpgrade,
+      );
+    }
     final String path;
-    if (_testPath != null) {
-      path = _testPath;
-    } else if (kIsWeb) {
+    if (kIsWeb) {
       path = _dbName;
     } else {
       path = join(await getDatabasesPath(), _dbName);
     }
-    return openDatabase(
+    // SPEC-43 Gap 5: Android/iOS open with SQLCipher; web/desktop stay
+    // unencrypted this slice (see offline_open_io.dart).
+    return openOfflineStore(
       path,
       version: _dbVersion,
       onCreate: _onCreate,
