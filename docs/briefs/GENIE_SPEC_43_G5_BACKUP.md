@@ -1,8 +1,8 @@
 # Genie brief: SPEC-43 Gap 5 -- exclude offline store from Android backup
 
-Next after this lands: Gap 5 SQLCipher / Keystore (new brief).
-Do not start SQLCipher, Gap 7, Gap 10, Gap 11, deploy, or an APK
-without a new brief.
+Landed on `main` as `1672759` (PR #105). Do not re-implement this slice.
+Next: `docs/briefs/GENIE_SPEC_43_G5_SQLCIPHER.md`. Do not start
+Gap 7, Gap 10, Gap 11, deploy, or an APK without a new brief.
 
 ## Goal
 
