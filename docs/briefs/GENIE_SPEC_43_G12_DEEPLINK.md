@@ -1,7 +1,7 @@
 # Genie brief: SPEC-43 Gap 12 -- refuse another identity's trip route
 
 Landed on `main` as `f486079` (PR #95). Do not re-implement this slice.
-Next: `docs/briefs/GENIE_SPEC_43_G5_BACKUP.md`.
+Next: `docs/briefs/GENIE_SPEC_43_G5_SQLCIPHER.md`.
 
 ## Goal
 

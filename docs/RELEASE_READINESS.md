@@ -82,7 +82,7 @@ not anonymous, and it is not safe to hand to a tester.
 | Signal ownership and poisoning controls | SPEC-43 gap 9 | A supplied trip id is not a write primitive |
 | Redacted diagnostics; no production debug | SPEC-43 gap 10, SPEC-05 | Failures do not retain secrets |
 | Abuse and provider-spend limits | SPEC-43 gap 11 | A stolen APK cannot run unbounded Ask |
-| Release HTTPS and identity-scoped caches | SPEC-43 gap 12 | HTTPS+cache+chat URLs+ATS+trip-route ownership on main (`f486079`); lock-screen waits on OS push. Next Genie: `docs/briefs/GENIE_SPEC_43_G5_BACKUP.md` |
+| Release HTTPS and identity-scoped caches | SPEC-43 gap 12 | HTTPS+cache+chat URLs+ATS+trip-route ownership on main (`f486079`); lock-screen waits on OS push. Gap 5 backup `1672759`. Next Genie: `docs/briefs/GENIE_SPEC_43_G5_SQLCIPHER.md` |
 
 SPEC-24 (merge, aliases, sign-out) and SPEC-27 (rights, minimum client,
 push transport) are implementation dependencies inside this gate, not
