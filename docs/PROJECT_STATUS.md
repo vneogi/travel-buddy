@@ -120,7 +120,7 @@
 | Guided Create Trip foundation (SPEC-40) | DONE (PR #61, `ebdea52`) | Five-step destination/date-range/party/interests/review flow backed by deterministic multi-day catalog selection. Post-merge CI and owner Flutter tests passed. Hosted deploy and phone acceptance are not yet repeated for this SHA |
 | Hours-aware scheduling and staged ranking (SPEC-41) | PHASE A COMPLETE (`d1fde14`, `7f25042`) | Create, corridor, and swap refuse known-closed or walking-unreachable target slots; day packing uses per-pair deterministic walking time and later opening windows; swap search/apply share reachability; locked non-hotel anchors remain reachable; cached `max_days` is guaranteed across weekdays and valid interest profiles |
 | Flexible trip span and sparse day editing (SPEC-42) | PARTIAL (`adc99d2`, merged `17e58ac`; Ask-to-Add `0344b4b`; Move `e51513e`; empty-day Add `b6ddecf`; uncatalogued `05d917e`) | Catalog-derived date caps removed; generation fills at most five starter days and empty dates render. Thin typed Ask-to-Add (PR #74), thin typed Move (PR #75), empty-day catalog Add (PR #76), and trip-private uncatalogued Add (PR #77) are on main. Unknown-time excursions remain later. Uncatalogued nodes cannot enter the shared catalog without review |
-| Security, privacy and data governance foundation (SPEC-43) | PARTIAL (Gaps 1, 6, 2, 9 ownership+schemas, 12 navigation privacy, 5 backup+SQLCipher on main) | Gap 1 JWT `2460edf`. Gap 6 `c65261c`. Gap 2 0026 `0b8125f`. Gap 9 ingest ownership `163a14c` (PR #81). Gap 9 closed schemas `fb72545` (PR #98). Gap 9 ranking isolation `9b49fd0` (PR #101). Gap 9 trip-place `cafba3c` (PR #103). Gap 12 HTTPS `6f1dab8` (PR #82). Gap 12 cache keys `290f821` (PR #85). Gap 12 chat URLs `14ce56d` (PR #89). Gap 12 ATS `be89128` (PR #92). Gap 12 trip-route ownership `f486079` (PR #95). Gap 5 backup `1672759` (PR #105). Gap 5 SQLCipher `9cb2324` (PR #107). Next is owner hosted Gap 1, then G0 APK. Gap 7 has no Genie brief yet. Hosted 0026 and G1/G6 deploy are not done |
+| Security, privacy and data governance foundation (SPEC-43) | PARTIAL (Gaps 1, 6, 2, 9 ownership+schemas, 12 navigation privacy, 5 backup+SQLCipher on main; hosted G1 live) | Gap 1 JWT `2460edf` hosted on `00014-sbm`. Gap 6 `c65261c`. Gap 2 0026 `0b8125f` (not hosted). Gap 9 ingest ownership `163a14c` (PR #81). Gap 9 closed schemas `fb72545` (PR #98). Gap 9 ranking isolation `9b49fd0` (PR #101). Gap 9 trip-place `cafba3c` (PR #103). Gap 12 HTTPS `6f1dab8` (PR #82). Gap 12 cache keys `290f821` (PR #85). Gap 12 chat URLs `14ce56d` (PR #89). Gap 12 ATS `be89128` (PR #92). Gap 12 trip-route ownership `f486079` (PR #95). Gap 5 backup `1672759` (PR #105). Gap 5 SQLCipher `9cb2324` (PR #107). Owner G0 APK `76d7e9be...` on `1aa405c` after `pm clear`. Next Genie: `docs/briefs/GENIE_SPEC_43_G5_SQLCIPHER_OPEN_FAILED.md`. Hosted 0026 not applied |
 | Backend integrity and future-readiness foundation (SPEC-44) | PHASE A ON MAIN (PR #67, `9a7b9d9`) | Atomic trip/party/graph writes, optimistic version, durable command_id replay, typed conflicts, and hosted 0025. A4/A5, Flutter command queue, and SPEC-43 remain out of this slice |
 | On-trip visible surface (SPEC-45) | PHASE A + FIELD TRUST HYGIENE ON MAIN | Phase A chrome is on the field APK. Phase B field trust hygiene is on main through the post-field merge sequence: capped alerts, current-day/kind-specific outcomes, dead Review removal, and honest empty-swap refusal. Operational place detail, transfer cards, and Rescue remain later |
 | What Now foreground context (SPEC-46) | PHASE A ON MAIN (PR #73, `d1df944`) | Deterministic no-GPS What Now inside trip-scoped Ask: temporary time/energy/walking/intent, trip-position or region-anchor, shared `fits_next_lock`, inspectable reasons, named unknowns, display-only details. Owner Windows analyze infos-only; What Now widgets and full Flutter suite green. Hosted deploy, APK, and phone use not done. Phase B GPS only after SPEC-43 |
@@ -164,16 +164,18 @@ Current order:
    chat URLs, ATS, and trip-route ownership are on main (`fb72545`,
    PR #98). Ranking isolation `9b49fd0` (PR #101). Gap 5 backup
    `1672759` (PR #105). Gap 5 SQLCipher `9cb2324` (PR #107).
-   Next is owner hosted Gap 1, then G0 APK. Gap 7 has no
-   Genie brief yet. Unknown-time
+   Hosted Gap 1 and owner G0 APK are live (`00014-sbm`,
+   `1aa405c`). Next Genie:
+   `docs/briefs/GENIE_SPEC_43_G5_SQLCIPHER_OPEN_FAILED.md`.
+   Unknown-time
    excursions stay later.
 4. Patch the Laos must-do/decision-cell data gaps. Target 3-5 feasible options
    in common cells, not an arbitrary 100 venues per city.
 5. SPEC-43 before any non-owner APK; then a narrow external corridor pilot with
    minimum SPEC-17/47 controls. Learned influence remains zero.
-   Owner G0 checkpoint APK is earlier than that: after Gap 12 cache
-   keys land and hosted Gap 1 (JWKS + Anonymous sign-ins) is live.
-   Not immediately. Not after Gaps 3-11. See RELEASE_READINESS.
+   Owner G0 checkpoint APK is on the phone (`1aa405c` /
+   `76d7e9be...` vs `00014-sbm`) after `pm clear`. Next code is
+   SQLCipher `open_failed` leftover wipe, not Gaps 3-11.
 
 Defer Travelogue/Passport, maps/offline tiles, social, gamification, PDF,
 cross-trip memory, OTA promotion, and another city until this loop works.
@@ -361,13 +363,13 @@ Seed-shaped cohorts.
     checkout copy. Owner Windows `flutter test` was green on
     `db754d9` (2026-09-24). Create-then-book HITL reflow remains.
 13. SPEC-44 Phase A backend integrity -- **DONE on main** (PR #67,
-    `9a7b9d9`). Hosted 0025 applied 2026-09-27. Cloud Run `00012-8wv`.
+    `9a7b9d9`). Hosted 0025 applied 2026-09-27. Cloud Run `00014-sbm`.
     A4/A5, Flutter command queue, and SPEC-43 remain.
 14. SPEC-43 security, privacy, and data governance -- **PARTIAL**. Gaps
     1, 6, 2, 9 ownership+schemas, 12 HTTPS, 12 cache keys, 12 chat
     URLs, 12 ATS, and 12 trip-route ownership are on main. Next
-    is owner hosted Gap 1, then G0 APK. Gap 7 has no Genie
-    brief yet. Complete remaining
+    is `docs/briefs/GENIE_SPEC_43_G5_SQLCIPHER_OPEN_FAILED.md`.
+    Complete remaining
     gaps before any non-owner APK, production LLM processing of
     personal trip data, or the planned December public launch.
 15. After SPEC-43, implement the SPEC-13 registry, minimum SPEC-17 claim store,
@@ -444,11 +446,11 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 | Empty-day catalog Add | Closed on main (`b6ddecf`, PR #76); hosted/phone not done | Shared evaluator lists and applies one catalog venue onto an empty date/slot. Missing dwell is never filled with 90. Confirm 422 before persist. Flutter sheet is online-only. The catalog missing-lat `_make_node` crash remains |
 | Trip-private uncatalogued Add | Closed on main (`05d917e`, PR #77); hosted/phone not done | Confirm-only `uncatalogued_add`. Null venue_id, trip_private source, required dwell, catalog unchanged. Matching catalog names refuse. Flutter never sends coordinates (empty-day only) |
 | Thin typed Move | Closed on main (`e51513e`, PR #75); hosted/phone not done | One flexible node moves to an explicit date and named slot. Same node_id. Occupied slot, wrong type, lock, and cross-city dates refuse. Neighbours without coordinates can still succeed (walk skipped); that remainder is recorded, not this merge |
-| SPEC-43 gap 1: self-issued anonymous UUID is a replayable account credential | Closed on main (`2460edf`, PR #78); hosted still on pre-G1 revision | App and API on this SHA reject `Anonymous <uuid>` and require a JWKS-verified Bearer JWT. Hosted Cloud Run is not this SHA; deploying it would 401 the current field-test header until dashboard Anonymous sign-ins and JWKS env are set. Gap 11 still allows unlimited anon JWTs |
+| SPEC-43 gap 1: self-issued anonymous UUID is a replayable account credential | Closed on main (`2460edf`); hosted on `00014-sbm` | App and API reject `Anonymous <uuid>` and require a JWKS-verified Bearer JWT. Owner G0 APK 2026-10-31. Gap 11 still allows unlimited anon JWTs |
 | SPEC-43 gap 2: RLS and public grants are not comprehensive | Closed on main (`0b8125f`, PR #80); hosted 0026 not applied | 0026 FORCE RLS + revoke + service_role grant. Party WITH CHECK (true) replaced. FastAPI still uses service_role (BYPASSRLS). Confirm rolbypassrls before hosted apply. Two-JWT PostgREST proof after apply |
 | SPEC-43 gap 3: personal trip fields can cross the LLM boundary | High; production personal LLM use blocked | Heavy prompts can serialize booking codes, notes, exact times, and coordinates, while fallback can cross providers. Use deterministic create/swap plus one redacting allowlist gateway and an approved provider-region-retention matrix |
 | SPEC-43 gap 4: export, deletion, and retention are unimplemented | High before public launch | SPEC-27 is specified only. Build self-service rights, schema-walking erasure, physical expiry, backup tombstones, and restore tests before non-owner distribution |
-| SPEC-43 gap 5: offline trip and booking data is plaintext and backup policy is implicit | Backup+SQLCipher on main; remainders later | Backup exclusion `1672759` (PR #105). SQLCipher `9cb2324` (PR #107): Android/iOS open with `sqflite_sqlcipher` 3.4.1; key in FlutterSecureStorage. Tests/web/desktop FFI stay plaintext. Remainders: masking, FLAG_SECURE, iOS NSFileProtection, ProGuard if minify is on, iOS Xcode project |
+| SPEC-43 gap 5: offline trip and booking data is plaintext and backup policy is implicit | Backup+SQLCipher on main; leftover-open hang on upgrade | Backup `1672759`. SQLCipher `9cb2324`. Owner upgrade from plaintext hung (`open_failed` not matched); `pm clear` recovered. Next: `docs/briefs/GENIE_SPEC_43_G5_SQLCIPHER_OPEN_FAILED.md`. Later: masking, FLAG_SECURE, iOS file protection |
 | SPEC-43 gap 6: sign-out does not revoke or clear the prior identity | Closed on main (`c65261c`, PR #79); hosted/phone not done | Halt sync, DELETE all local tables including outbox, GoTrue signOut, then mint a new anonymous JWT. Profile button keyed `profile_sign_out`. Access tokens may live until exp (no denylist). |
 | SPEC-43 gap 7: behavioral consent is a pass-through stub | High before collecting a tester cohort | Necessary operation, analytics, personalization, location, and marketing are not separated. Add a versioned purpose ledger, block optional capture before choice, and propagate withdrawal to outbox, features, and training inputs |
 | SPEC-43 gap 8: semantic cache can cross user boundaries | High when Ask is model-backed | Region and venue are insufficient private cache keys. Cache only public facts globally; otherwise use owner plus complete context/source/version scope, refuse restricted content, and actively purge expiry |

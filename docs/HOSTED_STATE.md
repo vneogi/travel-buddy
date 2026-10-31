@@ -10,14 +10,15 @@ successful test of a named variable.
 
 ## Current verified state
 
-Last verified: 2026-09-27. SPEC-44 Phase A is on `main` (`9a7b9d9`,
-PR #67). Hosted migration 0025 sentinels and bounded-input RPC guard
-passed. Cloud Run `travel-buddy-00012-8wv` serves untagged traffic.
-Owner signed APK SHA256
-`bd935bf2654b17be17f27acedc5ad449e8ce5f67d390a4b35e4e4d68c1df0e2b`.
-SPEC-38 phone pass remains 2026-09-14 against `00004-62g`. G0 plus
-SPEC-45 chrome were retested on this APK; dated evidence is in
-`docs/AWAITING_VERIFICATION.md`.
+Last verified: 2026-10-31. Hosted Gap 1 is live. Cloud Run
+`travel-buddy-00014-sbm` (100% LATEST) serves untagged traffic from
+`main` `1aa405c`. JWKS URL, issuer, and audience env names are set.
+Owner laptop: health healthy; Anonymous header 401; Bearer
+anonymous JWT 200. Owner signed APK SHA256
+`76d7e9be3186a817a12664ed51b62e1db1ea8c946d5d5ac67b47912762036714`
+after `pm clear` (SQLCipher leftover-plaintext hang; see
+`AWAITING_VERIFICATION.md`). Migration 0025 remains applied; 0026
+is not. SPEC-38 phone pass remains 2026-09-14 against `00004-62g`.
 
 ### Hosted Supabase
 
@@ -55,24 +56,25 @@ It does not prove they are configured on a hosted backend deployment.
 ### Hosted application deployment
 
 Cloud Run service `travel-buddy` in project `ultra-solution-499410-e9`,
-region `asia-south1`. Owner deployed from Windows `main` at `9a7b9d9`
-on 2026-09-26 UTC (27 Sep local). Traffic was then moved to LATEST.
-Existing env names were preserved (no `--set-env-vars`). The
-`g0fix0924` tag remains on `travel-buddy-00009-qek` at 0% for rollback.
+region `asia-south1`. Owner deployed from Windows `main` at `1aa405c`
+on 2026-10-31. Env updated with JWKS names first (`00013-zq6`), then
+source (`00014-sbm`). No `--set-env-vars`. The `g0fix0924` tag
+remains on `travel-buddy-00009-qek` at 0% for rollback.
 
 | Field | Value |
 |---|---|
-| Revision | `travel-buddy-00012-8wv` (100% LATEST). Tag `g0fix0924` still names `00009-qek` at 0%. |
+| Revision | `travel-buddy-00014-sbm` (100% LATEST). Tag `g0fix0924` still names `00009-qek` at 0%. Prior field revision `00012-8wv` is not serving. |
 | URL | `https://travel-buddy-196190001420.asia-south1.run.app` |
-| Health | HTTP 200 `GET /api/v1/health` (`status=healthy`, `venues_loaded=74`) on 2026-09-27. Health does not encode git SHA. |
-| Flags | Last recorded names: `TB_DEBUG`, `TB_ALLOW_ANONYMOUS`, `TB_SUPABASE_URL`, `TB_SUPABASE_KEY`, `TB_GOOGLE_MAPS_API_KEY`, `TB_OPENWEATHER_API_KEY`. Values are not recorded. |
+| Health | HTTP 200 `GET /api/v1/health` (`status=healthy`) on 2026-10-31. Health does not encode git SHA. |
+| Auth smoke | Anonymous header 401. Bearer anonymous JWT 200 on `/api/v1/user/status`. |
+| Flags | Last recorded names: `TB_DEBUG`, `TB_ALLOW_ANONYMOUS`, `TB_SUPABASE_URL`, `TB_SUPABASE_KEY`, `TB_GOOGLE_MAPS_API_KEY`, `TB_OPENWEATHER_API_KEY`, `TB_SUPABASE_JWKS_URL`, `TB_SUPABASE_JWT_ISS`, `TB_JWT_AUDIENCE`. Values are not recorded. `TB_ALLOW_ANONYMOUS` remains a no-op for the UUID header. |
 
 Release posture: this is an owner-only field-test service, not a beta or public
 launch. SPEC-43 records twelve security/privacy gaps that must close after the
-Laos build and before another person receives an APK. In particular, the
-self-issued anonymous UUID remains a temporary owner credential, and production
-LLM processing of personal trip data remains disabled until the redacting
-egress and provider/region/retention controls pass.
+Laos build and before another person receives an APK. The owner G0 APK now uses a Supabase anonymous JWT. Gap 11 still
+allows unlimited anon JWTs. Production LLM processing of personal
+trip data remains disabled until the redacting egress and
+provider/region/retention controls pass.
 
 Secret values are not recorded. Startup booleans (`llm_key_present`,
 `supabase_configured`) live in Cloud Run logs, not in the public health

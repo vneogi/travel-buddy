@@ -9,10 +9,10 @@
 > URLs `14ce56d` (PR #89). Gap 12 ATS `be89128` (PR #92). Gap 12
 > trip-route ownership `f486079` (PR #95). Gap 5 backup
 > `1672759` (PR #105). Gap 5 SQLCipher `9cb2324` (PR #107).
-> Next is owner hosted Gap 1, then G0 APK. Gap 7 has no
-> Genie brief yet. Gap 12
-> lock-screen waits on OS push. Hosted apply of 0026 and deploy of
-> Gaps 1/6 are not done.
+> Hosted Gap 1 live on `00014-sbm`. Owner G0 APK 2026-10-31.
+> Next is `docs/briefs/GENIE_SPEC_43_G5_SQLCIPHER_OPEN_FAILED.md`.
+> Gap 12 lock-screen waits on OS push. Hosted apply of 0026 is
+> not done.
 >
 > Sequence: start after the Laos reliability and build tranche is complete:
 > SPEC-41 scheduling, SPEC-10 paste and flight/hotel scheduler, SPEC-25

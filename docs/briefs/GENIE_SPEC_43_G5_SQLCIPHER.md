@@ -1,9 +1,9 @@
 # Genie brief: SPEC-43 Gap 5 -- SQLCipher the offline store
 
 Landed on `main` as `9cb2324` (PR #107). Do not re-implement this slice.
-Next: owner hosted Gap 1 (JWKS + Anonymous sign-ins), then G0 APK.
-Gap 7 has no Genie brief yet. Do not start Gap 7, masking, lock-screen,
-deploy, or an APK without a new brief.
+Next: `docs/briefs/GENIE_SPEC_43_G5_SQLCIPHER_OPEN_FAILED.md`.
+Do not start Gap 7, masking, lock-screen, deploy, or an APK without
+a new brief.
 
 ## Goal
 
