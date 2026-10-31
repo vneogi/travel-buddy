@@ -3,7 +3,7 @@
 Landed on `main` as `163a14c` (PR #81). Do not re-implement this slice.
 Gap 12 navigation privacy landed through `f486079`. Closed schemas
 landed as `fb72545`. Next:
-owner hosted Gap 1, then G0 APK. Gap 7 has no Genie brief yet.
+`docs/briefs/GENIE_SPEC_43_G5_SQLCIPHER_OPEN_FAILED.md`.
 
 ## Goal
 

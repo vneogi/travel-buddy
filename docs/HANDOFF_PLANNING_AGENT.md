@@ -14,15 +14,15 @@ anonymous JWT, SPEC-43 Gap 6 sign-out, SPEC-43 Gap 2 RLS,
 SPEC-43 Gap 9 signal ownership and closed schemas, SPEC-43 Gap 12
 HTTPS fail-closed, and SPEC-43 Gap 12 identity-scoped caches, chat
 URLs, ATS, and trip-route ownership are on `main` through
-`9cb2324` (PR #107). Hosted 0025 is applied. Cloud Run
-`travel-buddy-00012-8wv` is the live untagged revision. SPEC-42
-remains PARTIAL (unknown-time excursions later). Create-then-book
+`1aa405c`. Hosted 0025 is applied. Cloud Run
+`travel-buddy-00014-sbm` is the live untagged revision (Gap 1 JWKS).
+SPEC-42 remains PARTIAL (unknown-time excursions later). Create-then-book
 HITL reflow remains. Trip-optional Ask remains. What Now Phase B GPS
 remains blocked on remaining SPEC-43. Gap 12 navigation privacy is
 landed; lock-screen waits on OS push. Gap 5 backup
 `1672759` (PR #105) and SQLCipher `9cb2324` (PR #107)
-are on main. Next is owner hosted Gap 1, then G0 APK.
-Gap 7 has no Genie brief yet.
+are on main. Owner G0 APK is on the phone. Next is
+`docs/briefs/GENIE_SPEC_43_G5_SQLCIPHER_OPEN_FAILED.md`.
 Do not apply 0026 until `rolbypassrls` is confirmed.
 
 SPEC-44 Phase A application code merged as PR #67 (`9a7b9d9`). Planning
@@ -95,8 +95,9 @@ isolation (`9b49fd0`), Gap 9 trip-place (`cafba3c`), Gap 12 HTTPS
 (`6f1dab8`), and Gap 12 cache keys (`290f821`), Gap 12 chat
 URLs (`14ce56d`), and Gap 12 ATS (`be89128`), and Gap 12
 trip-route ownership (`f486079`) are on main. Gap 5 backup
-(`1672759`) and SQLCipher (`9cb2324`) are on main. No
-Genie job is open. Next is owner hosted Gap 1, then G0 APK.
+(`1672759`) and SQLCipher (`9cb2324`) are on main. Hosted
+Gap 1 and the owner G0 APK are live. Next Genie job is
+`docs/briefs/GENIE_SPEC_43_G5_SQLCIPHER_OPEN_FAILED.md`.
 Remaining Gap 9
 GPS/sample-size,
 unknown-time excursions, and Laos decision-cell coverage stay later.
@@ -180,10 +181,9 @@ Accept into planning (already sequenced; do not restart the stack):
   Learned ranking stays zero.
 - Monetization later is on-trip sachet/affiliate at the moment of need,
   not an upfront Pro gate for the beachhead.
-- Owner checkpoint APK after Gap 12 cache is on main and hosted Gap 1
-  (Anonymous sign-ins + JWKS) is live. That is G0, not G1. Do not wait
-  for Gaps 3-11 or MapLibre for that owner run. Do not apply 0026 until
-  `rolbypassrls` is confirmed.
+- Owner checkpoint APK is on the phone (`1aa405c` / `00014-sbm`).
+  That is G0, not G1. Next code is SQLCipher `open_failed` leftover
+  wipe. Do not apply 0026 until `rolbypassrls` is confirmed.
 
 Reject or keep deferred (do not start from this memo):
 
@@ -232,15 +232,13 @@ Resume in this order:
 5. Patch Laos spine and effective-choice gaps: Kuang Si, Pak Ou, Blue Lagoon
    2/3, Papao, and the Wat Xieng Thong packing failure. Measure coverage by
    common decision cell, not total POI count.
-6. Implement remaining SPEC-43 (Gap 5 backup+SQLCipher are on
-   main; next owner work is hosted Gap 1 then G0 APK; then Gap 7
-   once a brief exists; hosted 0026; Gap 12 lock-screen waits on
-   OS push) before any non-owner APK, hostel QR, production LLM on
-   personal trips, or contribution collection. Hosted 0026 waits on
-   `rolbypassrls`. Owner G0 checkpoint APK: cache keys and SQLCipher
-   are on main (`9cb2324`); still needs hosted Gap 1 deploy
-   (JWKS + Anonymous sign-ins). Not immediately. Not after every
-   remaining gap.
+6. Implement remaining SPEC-43 (next:
+   `docs/briefs/GENIE_SPEC_43_G5_SQLCIPHER_OPEN_FAILED.md`; then
+   Gap 7 once a brief exists; hosted 0026; Gap 12 lock-screen waits
+   on OS push) before any non-owner APK, hostel QR, production LLM
+   on personal trips, or contribution collection. Hosted 0026 waits
+   on `rolbypassrls`. Owner G0 checkpoint APK is on the phone
+   (`1aa405c` / `00014-sbm`) after `pm clear`.
 7. Implement SPEC-13 identity plus the minimum SPEC-17 claim/attribute
    registry, append-only observation lifecycle, and SPEC-44 decision capture.
    Keep learned influence at zero.
@@ -261,17 +259,16 @@ separation live in the operating model; do not reconstruct them from chat.
 
 ## First job
 
-`origin/main` includes SPEC-43 Gap 5 SQLCipher as
-`9cb2324` (PR #107). Hosted 0025 applied. Cloud Run `00012-8wv`.
-Owner APK SHA256 `bd935bf2...` (pre-JWT, pre-SQLCipher).
+`origin/main` includes hosted Gap 1 plus SQLCipher docs as
+`1aa405c`. Cloud Run `00014-sbm`. Owner APK SHA256
+`76d7e9be3186a817a12664ed51b62e1db1ea8c946d5d5ac67b47912762036714`.
 
-No Genie job is open. Next is owner hosted Gap 1 (JWKS +
-Anonymous sign-ins), then the G0 APK from `9cb2324`. Do not start
-Gap 7, remaining Gap 9 GPS/sample-size, production LLM, trip-less
-Ask, or unknown-time excursions without a brief. Do not apply 0026
-until `rolbypassrls` is confirmed for `postgres` and `service_role`.
-Do not deploy Gap 1/6 until Anonymous sign-ins and JWKS env are set.
-Do not build the owner G0 APK until that hosted Gap 1 deploy exists.
+Genie next:
+`docs/briefs/GENIE_SPEC_43_G5_SQLCIPHER_OPEN_FAILED.md`.
+Do not start Gap 7, remaining Gap 9 GPS/sample-size, production
+LLM, trip-less Ask, or unknown-time excursions without a brief.
+Do not apply 0026 until `rolbypassrls` is confirmed for `postgres`
+and `service_role`.
 
 Historical context (do not treat as current work):
 

@@ -2,7 +2,7 @@
 
 Landed on `main` as `14ce56d` (PR #89). Do not re-implement this slice.
 ATS `be89128`. Deep-link ownership `f486079`. Gap 9 schemas
-`fb72545`. Next: owner hosted Gap 1, then G0 APK. Gap 7 has no Genie brief yet.
+`fb72545`. Next: `docs/briefs/GENIE_SPEC_43_G5_SQLCIPHER_OPEN_FAILED.md`.
 
 ## Goal
 

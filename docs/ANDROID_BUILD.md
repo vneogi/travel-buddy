@@ -30,11 +30,11 @@ Settled identity:
 - applicationId / namespace / MainActivity package: `com.vneogi.travelbuddy`
 - INTERNET on the main manifest
 - release minify and resource shrinking off
-- `main` `9cb2324` (PR #107) encrypts the Android/iOS offline DB
-  with SQLCipher. First open wipes a leftover plaintext file.
-  Do not build the owner G0 APK until hosted Gap 1 (JWKS +
-  Anonymous sign-ins) is live; a JWT client against `00012-8wv`
-  would 401.
+- `main` `1aa405c` encrypts the Android/iOS offline DB with
+  SQLCipher and talks JWT to `00014-sbm`. A leftover plaintext
+  DB currently hangs splash (`open_failed`); `pm clear` unblocked
+  the 2026-10-31 owner APK. Pass `TB_SUPABASE_URL` and
+  `TB_SUPABASE_ANON_KEY` dart-defines on release.
 - If release minify is later turned on, add
   `-keep class net.sqlcipher.** { *; }` to ProGuard. Minify is
   off today, so that keep is not load-bearing yet.
@@ -122,7 +122,20 @@ the phone home screen. Profile > API Host must show the Cloud Run hostname.
 
 ## What to record in the PR (no secrets)
 
-Field APK used 2026-09-27 (owner Windows, `main` `9a7b9d9`):
+Field APK used 2026-10-31 (owner Windows, `main` `1aa405c`):
+
+| Field | Value |
+|---|---|
+| Source commit SHA | `1aa405c57f04fa204ce52ff67f1333e2ffb49408` |
+| Platform | Android |
+| Artifact | Signed release APK |
+| Hosted API hostname | `travel-buddy-196190001420.asia-south1.run.app` |
+| Cloud Run revision | `travel-buddy-00014-sbm` |
+| Build command | `flutter build apk --release` with `TB_API_BASE_URL`, `TB_SUPABASE_URL`, `TB_SUPABASE_ANON_KEY` dart-defines |
+| APK SHA-256 | `76d7e9be3186a817a12664ed51b62e1db1ea8c946d5d5ac67b47912762036714` |
+| Device | `49261FDKD001JM` (`pm clear` then `adb install -r`) |
+
+Prior field APK 2026-09-27 (owner Windows, `main` `9a7b9d9`, pre-JWT):
 
 | Field | Value |
 |---|---|

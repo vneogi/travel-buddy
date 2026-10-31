@@ -1,7 +1,7 @@
 # Genie brief: SPEC-43 Gap 9 -- closed signal value_json schemas
 
 Landed on `main` as `fb72545` (PR #98). Do not re-implement this slice.
-Next: owner hosted Gap 1, then G0 APK. Gap 7 has no Genie brief yet. Do not start
+Next: `docs/briefs/GENIE_SPEC_43_G5_SQLCIPHER_OPEN_FAILED.md`. Do not start
 Gap 5, Gap 7, Gap 10, Gap 11, deploy, or an APK without a new brief.
 
 ## Goal

@@ -15,6 +15,33 @@ other.
 Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 `#85` and so on; those numbers cannot be reconciled against `git log`.
 
+## Finding -- Oct 31 2026 -- owner G0 APK on hosted Gap 1
+
+Owner Windows built `main` `1aa405c` (SQLCipher `9cb2324` plus
+docs) against Cloud Run `travel-buddy-00014-sbm`. Anonymous
+sign-ins on. JWKS URL and issuer set. Laptop smoke: health
+healthy; `Authorization: Anonymous ...` 401; Bearer anonymous JWT
+200 on `/api/v1/user/status` with a UUID `sub`.
+
+Signed release APK SHA256
+`76d7e9be3186a817a12664ed51b62e1db1ea8c946d5d5ac67b47912762036714`.
+Device `49261FDKD001JM`. First launch stuck on LaunchTheme:
+SQLCipher HMAC failed on leftover plaintext
+`travel_buddy_offline.db`; plugin wrapped as
+`DatabaseException(open_failed ...)`; `_isUnreadableWithKey` missed
+it; `main()` never reached `runApp`. `adb shell pm clear
+com.vneogi.travelbuddy` then relaunch reached home.
+
+Phone after clear (owner screenshots, online): Profile API Host
+`travel-buddy-196190001420.asia-south1.run.app`; Vientiane trip
+recached (Nov 2-4, 33 stops, Up next COPE Visitor Centre); weather
+cards; trip Ask and What Now; Sign Out visible. Airplane mode not
+in those screenshots. Old UUID-owned local rows did not survive
+`pm clear`, as expected.
+
+0026 not applied. Next code slice:
+`docs/briefs/GENIE_SPEC_43_G5_SQLCIPHER_OPEN_FAILED.md`.
+
 ## Finding -- Oct 27 2026 -- SPEC-43 Gap 5 SQLCipher merged
 
 Owner Windows checkout of `feat/spec43-g5-sqlcipher` at `c943ebe`
