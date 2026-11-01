@@ -78,14 +78,17 @@ PAYLOAD_SHAPES: dict[str, str] = {
 # Flutter SignalService emit payloads. Server-stamped keys (party_context,
 # and session_start trip_day when derived) are added after validation and
 # are not client-allowlisted unless the client legitimately sends them.
+# SPEC-43 Gap 9 GPS: optional coordinates for the GPS-capable types.
+_GPS_KEYS = frozenset({"lat", "lng", "accuracy_m"})
+
 VALUE_JSON_ALLOWED_KEYS: dict[str, frozenset[str]] = {
-    "user_loved": frozenset(),
-    "visited_confirmed": frozenset(),
+    "user_loved": _GPS_KEYS,
+    "visited_confirmed": _GPS_KEYS,
     "reroute_accepted": frozenset({"replacement_ref"}),
     "reroute_rejected": frozenset({"rejected_refs"}),
-    "node_skipped": frozenset({"reason"}),
-    "dish_loved": frozenset({"dish_name"}),
-    "dish_ordered": frozenset({"dish_name"}),
+    "node_skipped": frozenset({"reason"}) | _GPS_KEYS,
+    "dish_loved": frozenset({"dish_name"}) | _GPS_KEYS,
+    "dish_ordered": frozenset({"dish_name"}) | _GPS_KEYS,
     "prompt_dismissed": frozenset({"kind", "attribute", "entity_id"}),
     "driver_card_shown": frozenset({"place_ref", "was_offline", "name_source"}),
     "name_confirmed": frozenset({"place_ref", "lang", "shown_value", "verdict"}),

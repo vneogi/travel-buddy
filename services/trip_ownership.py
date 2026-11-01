@@ -46,22 +46,27 @@ def _norm_place(value: object) -> str:
     return str(value).strip().casefold() if value is not None else ""
 
 
-def trip_has_place(trip: Optional[TripState], place_ref: str) -> bool:
-    """SPEC-43 Gap 9: True if *place_ref* names a node on *trip*.
+def find_trip_node(trip: Optional[TripState], place_ref: str):
+    """SPEC-43 Gap 9: first node on *trip* named by *place_ref*, else None.
 
     Matches any node venue_id or venue_name, case-insensitive after strip.
-    Uncatalogued nodes still match on venue_name. Missing trip -> False.
+    Uncatalogued nodes still match on venue_name. Missing trip -> None.
     """
     if trip is None:
-        return False
+        return None
     target = _norm_place(place_ref)
     if not target:
-        return False
+        return None
     for node in trip.nodes or []:
         for candidate in (getattr(node, "venue_id", None), getattr(node, "venue_name", None)):
             if candidate is not None and _norm_place(candidate) == target:
-                return True
-    return False
+                return node
+    return None
+
+
+def trip_has_place(trip: Optional[TripState], place_ref: str) -> bool:
+    """SPEC-43 Gap 9: True if *place_ref* names a node on *trip*."""
+    return find_trip_node(trip, place_ref) is not None
 
 
 def is_place_on_trip(trip_id: str, place_ref: str) -> bool:
