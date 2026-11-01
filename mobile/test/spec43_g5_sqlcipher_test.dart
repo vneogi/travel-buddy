@@ -45,6 +45,22 @@ List<String> _callArgs(String code, String callee) {
   }
 }
 
+/// Body of the top-level function whose signature starts with [signature]
+/// (balanced braces), or empty when absent.
+String _functionBody(String code, String signature) {
+  final start = code.indexOf(signature);
+  if (start < 0) return '';
+  final open = code.indexOf('{', start);
+  if (open < 0) return '';
+  var depth = 1;
+  var i = open + 1;
+  for (; i < code.length && depth > 0; i++) {
+    if (code[i] == '{') depth++;
+    if (code[i] == '}') depth--;
+  }
+  return code.substring(open + 1, i - 1);
+}
+
 /// Bodies of every `catch (...) { ... }` block (balanced braces).
 List<String> _catchBodies(String code) {
   final out = <String>[];
@@ -92,6 +108,15 @@ void main() {
       _code(_read(_offlineDb)),
       contains("_dbName = 'travel_buddy_offline.db'"),
     );
+
+    // SPEC-43 Gap 5: sqflite_sqlcipher wraps the HMAC failure on a
+    // pre-SQLCipher plaintext file as open_failed; it must take the
+    // delete-and-retry-with-password path, not rethrow and stall splash.
+    final matcher = _functionBody(io, 'bool _isUnreadableWithKey(');
+    expect(matcher, isNotEmpty);
+    expect(matcher, contains("'open_failed'"));
+    expect(matcher, contains("'file is encrypted'"));
+    expect(matcher, contains("'hmac'"));
   });
 
   test('offline store helpers exist and production open is routed', () {

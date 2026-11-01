@@ -53,9 +53,15 @@ Future<plain.Database> _openEncrypted(
   );
 }
 
+/// True when SQLCipher could not decrypt the existing file (pre-SQLCipher
+/// plaintext leftover or a lost key). sqflite_sqlcipher may wrap the
+/// HMAC failure as DatabaseException(open_failed ...), so that is matched
+/// too. Other DatabaseExceptions are not treated as leftovers.
 bool _isUnreadableWithKey(Object error) {
   final message = error.toString().toLowerCase();
-  return message.contains('file is not a database') ||
+  return message.contains('open_failed') ||
+      message.contains('file is encrypted') ||
+      message.contains('file is not a database') ||
       message.contains('hmac') ||
       message.contains('not an encrypted') ||
       message.contains('sqlite_notadb') ||
