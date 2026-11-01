@@ -2,7 +2,7 @@
 
 Landed on `main` as `14ce56d` (PR #89). Do not re-implement this slice.
 ATS `be89128`. Deep-link ownership `f486079`. Gap 9 schemas
-`fb72545`. Next: Gap 10 error-ring redaction (`docs/briefs/GENIE_SPEC_43_G10_LOGS.md`).
+`fb72545`. Next: Gap 11 body/depth bounds (`docs/briefs/GENIE_SPEC_43_G11_ABUSE.md`).
 
 ## Goal
 

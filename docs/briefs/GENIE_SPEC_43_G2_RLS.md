@@ -3,7 +3,7 @@
 Landed on `main` as `0b8125f` (PR #80). Do not re-implement this slice.
 Gap 12 navigation privacy landed through `f486079`. Gap 9 closed
 schemas `fb72545`. Next:
-next Genie is Gap 10 error-ring redaction (`docs/briefs/GENIE_SPEC_43_G10_LOGS.md`).
+next Genie is Gap 11 body/depth bounds (`docs/briefs/GENIE_SPEC_43_G11_ABUSE.md`).
 Do not apply 0026 on hosted until `rolbypassrls` is true for `postgres`
 and `service_role`.
 

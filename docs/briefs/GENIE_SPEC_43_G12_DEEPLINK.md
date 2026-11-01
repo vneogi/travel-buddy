@@ -1,7 +1,7 @@
 # Genie brief: SPEC-43 Gap 12 -- refuse another identity's trip route
 
 Landed on `main` as `f486079` (PR #95). Do not re-implement this slice.
-Next: Gap 10 error-ring redaction (`docs/briefs/GENIE_SPEC_43_G10_LOGS.md`).
+Next: Gap 11 body/depth bounds (`docs/briefs/GENIE_SPEC_43_G11_ABUSE.md`).
 
 ## Goal
 
