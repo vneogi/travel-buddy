@@ -1,10 +1,10 @@
 # Genie brief: SPEC-43 Gap 5 -- treat SQLCipher open_failed as leftover DB
 
 Landed on `main` as `1de6ff2` (PR #110). Do not re-implement this slice.
-Gap 7 landed as `e3eaa81` (PR #112). Next: Gap 8 identity-scoped
-semantic cache (`docs/briefs/GENIE_SPEC_43_G8_CACHE.md`). Do not
-start Gap 10, masking, lock-screen, 0026, deploy, or an APK
-without a new brief.
+Gap 7 landed as `e3eaa81` (PR #112). Gap 8 landed as `62927dd`
+(PR #114). Next: Gap 10 has no Genie brief yet. Do not start
+Gap 10, masking, lock-screen, 0026, deploy, or an APK without a
+new brief.
 
 ## Goal
 

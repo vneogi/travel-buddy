@@ -1,8 +1,9 @@
 # Genie brief: SPEC-43 Gap 8 -- identity-scope the semantic cache
 
-This is the open Gap 8 first slice. Implement it. Do not start
-Gap 10, Gap 11, remaining Gap 9 GPS/`derived_feature`, hosted 0026,
-Flutter, deploy, or an APK.
+Landed on `main` as `62927dd` (PR #114). Do not re-implement this slice.
+Next: Gap 10 has no Genie brief yet. Do not start Gap 10, Gap 11,
+remaining Gap 9 GPS/`derived_feature`, hosted 0026, Flutter, deploy,
+or an APK without a new brief.
 
 ## Goal
 

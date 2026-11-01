@@ -3,7 +3,7 @@
 Landed on `main` as `0b8125f` (PR #80). Do not re-implement this slice.
 Gap 12 navigation privacy landed through `f486079`. Gap 9 closed
 schemas `fb72545`. Next:
-Gap 8 identity-scoped semantic cache (`docs/briefs/GENIE_SPEC_43_G8_CACHE.md`).
+Gap 10 has no Genie brief yet.
 Do not apply 0026 on hosted until `rolbypassrls` is true for `postgres`
 and `service_role`.
 

@@ -2,7 +2,7 @@
 
 Landed on `main` as `be89128` (PR #92). Do not re-implement this slice.
 Deep-link ownership landed as `f486079`. Gap 9 schemas `fb72545`.
-Next: Gap 8 identity-scoped semantic cache (`docs/briefs/GENIE_SPEC_43_G8_CACHE.md`).
+Next: Gap 10 has no Genie brief yet.
 
 ## Goal
 
