@@ -16,8 +16,8 @@
 > Gap 11 body/depth `2077d8d` (PR #119). Gap 9 GPS
 > `08253cb` (PR #122). Gap 9 derived metadata `4265403`
 > (PR #125). Gap 11 rate `c70296c` (PR #128). Gap 11 spend
-> `e7c89b5` (PR #131). Next Genie: Gap 10 422
-> (`docs/briefs/GENIE_SPEC_43_G10_422.md`). Gap 12
+> `e7c89b5` (PR #131). Gap 10 422 stripping `04169f9`
+> (PR #134). Gap 12
 > lock-screen waits on OS push. Hosted apply of 0026 is not done.
 >
 > Sequence: start after the Laos reliability and build tranche is complete:
@@ -423,9 +423,8 @@ within 50 km of the matched node. Derived `arrival_delta` stamps
 ### Gap 10: errors and provider failures can carry sensitive values
 
 **Status on main.** Ring redaction + Cloud Run debug refuse
-`fbe96f6` (PR #117). Next Genie: 422 value stripping
-(`docs/briefs/GENIE_SPEC_43_G10_422.md`). Remainders: admin
-IAM, retention.
+`fbe96f6` (PR #117). 422 value stripping `04169f9` (PR #134).
+Remainders: admin IAM, retention.
 
 **Current fact.** Validation details, exception text, and full tracebacks can
 enter logs or the in-memory ring. Debug mode exposes the ring without separate
