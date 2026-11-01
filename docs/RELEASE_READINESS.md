@@ -81,7 +81,7 @@ not anonymous, and it is not safe to hand to a tester.
 | Real sign-out and account-switch isolation | SPEC-43 gap 6, SPEC-24 | Shared-phone hostel use does not leak the last identity |
 | Versioned purpose consent; optional capture blocked | SPEC-43 gap 7 | Server fail-closed optional ingest on main (`e3eaa81`). Flutter outbox/UI remainder |
 | Private semantic-cache isolation | SPEC-43 gap 8 | Live in-memory identity isolation on main (`62927dd`). HMAC/canaries/SQL remainder |
-| Signal ownership and poisoning controls | SPEC-43 gap 9 | Ownership+place+GPS on main (`08253cb`). Remainder: `derived_feature` |
+| Signal ownership and poisoning controls | SPEC-43 gap 9 | Ownership+place+GPS on main (`08253cb`). Next Genie: derived metadata (`docs/briefs/GENIE_SPEC_43_G9_DERIVED.md`) |
 | Redacted diagnostics; no production debug | SPEC-43 gap 10, SPEC-05 | Ring redaction + Cloud Run debug refuse on main (`fbe96f6`). Admin IAM remainder |
 | Abuse and provider-spend limits | SPEC-43 gap 11 | Body/depth on main (`2077d8d`). Remainders: gateway, per-account rate, spend |
 | Release HTTPS and identity-scoped caches | SPEC-43 gap 12 | HTTPS+cache+chat URLs+ATS+trip-route ownership on main (`f486079`); lock-screen waits on OS push. Hosted Gap 1 `00014-sbm`. Leftover-open `1de6ff2`. Gap 7 `e3eaa81`. Gap 8 `62927dd`. Gap 10 `fbe96f6`. Gap 11 `2077d8d` |

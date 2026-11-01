@@ -14,7 +14,8 @@
 > ingest `e3eaa81` (PR #112). Gap 8 identity cache `62927dd`
 > (PR #114). Gap 10 error-ring redaction `fbe96f6` (PR #117).
 > Gap 11 body/depth `2077d8d` (PR #119). Gap 9 GPS
-> `08253cb` (PR #122). Gap 12
+> `08253cb` (PR #122). Next Genie: Gap 9 derived-fact metadata
+> (`docs/briefs/GENIE_SPEC_43_G9_DERIVED.md`). Gap 12
 > lock-screen waits on OS push. Hosted apply of 0026 is not done.
 >
 > Sequence: start after the Laos reliability and build tranche is complete:
@@ -385,15 +386,18 @@ restricted-content canaries are not in the key.
 **Status on main.** Ownership `163a14c` (PR #81). Closed schemas
 `fb72545` (PR #98). Ranking isolation and per-place rate `9b49fd0`
 (PR #101). Trip-place membership `cafba3c` (PR #103). GPS
-plausibility `08253cb` (PR #122). `derived_feature` remains.
+plausibility `08253cb` (PR #122). Next Genie: derived-fact
+metadata (`docs/briefs/GENIE_SPEC_43_G9_DERIVED.md`).
+`derived_feature` table remains.
 
 **Current fact (remaining).** Ownership of a supplied `trip_id` is
 required. Client `value_json` is a closed bounded map. Ranking-corpus
 types are capped at 3 per (user, type, place). `pack_day` does not
 read signals. A trip-linked venue `place_ref` must be a node on that
 trip. Optional GPS on visit/skip is range-checked and must be
-within 50 km of the matched node. `derived_feature` sample-size
-is not built.
+within 50 km of the matched node. Derived `arrival_delta` does
+not yet stamp `method_version` / `sample_size` / server provenance.
+`derived_feature` table is not built.
 
 **Solution.**
 
