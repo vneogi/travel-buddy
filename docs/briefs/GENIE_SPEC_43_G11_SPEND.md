@@ -1,10 +1,10 @@
 # Genie brief: SPEC-43 Gap 11 -- in-process provider-spend circuit
 
 Landed on `main` as `e7c89b5` (PR #131). Do not re-implement this slice.
-Remainders: gateway/Cloud Armor, Play Integrity. `derived_feature`
-table stays later. Do not start hosted 0026, Flutter, deploy, an
-APK, or production LLM processing of personal trip data without a
-new brief. No open Genie brief.
+Next: Gap 10 422 stripping
+(`docs/briefs/GENIE_SPEC_43_G10_422.md`). Remainders: gateway,
+Play Integrity. `derived_feature` table stays later. Do not start
+hosted 0026, Flutter, deploy, or an APK without a new brief.
 
 ## Goal
 
