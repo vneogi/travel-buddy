@@ -32,6 +32,7 @@ from routers.alerts_router import router as alerts_router
 from routers.notifications_router import router as notifications_router
 from routers.debug_router import router as debug_router
 from monitoring.error_log import error_log
+from monitoring.redact import redact_secrets
 from seed_data import seed_venues
 
 # ==============================================================================
@@ -75,9 +76,22 @@ except ImportError:
 # ==============================================================================
 
 
+def assert_production_debug_off() -> None:
+    """SPEC-43 Gap 10: refuse to start on Cloud Run with debug on.
+
+    Cloud Run sets K_SERVICE. JWKS presence is not the signal: a local .env
+    can carry JWKS together with TB_DEBUG.
+    """
+    if os.environ.get("K_SERVICE") and settings.debug:
+        raise RuntimeError(
+            "TB_DEBUG is not allowed on Cloud Run (K_SERVICE is set); refusing to start"
+        )
+
+
 @asynccontextmanager
 async def _lifespan(app):
     """Application lifespan: startup logic runs before yield, shutdown after."""
+    assert_production_debug_off()
     venue_count, venue_source = seed_venues()
     logger.info("=" * 60)
     logger.info("%s v%s", settings.app_name, settings.app_version)
@@ -191,7 +205,8 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
     """Log the FULL traceback for any unhandled exception. No silent 500s."""
     request_id = getattr(request.state, "request_id", "unknown")
     tb = tb_module.format_exception(type(exc), exc, exc.__traceback__)
-    tb_str = "".join(tb)
+    # SPEC-43 Gap 10: never write keys or tokens to the log line.
+    tb_str = redact_secrets("".join(tb))
     logger.error(
         "Unhandled %s on %s %s request_id=%s\n%s",
         type(exc).__name__,

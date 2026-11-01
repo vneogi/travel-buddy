@@ -13,6 +13,8 @@ from collections import deque
 from datetime import datetime, timezone
 from typing import Deque, Dict, List, Optional
 
+from monitoring.redact import redact_secrets
+
 MAX_ERRORS = 100
 
 
@@ -39,8 +41,10 @@ class ErrorLog:
             "path": path,
             "status": status,
             "exc_type": exc_type,
-            "message": message[:2000],
-            "traceback": (traceback_str or "")[:8000],
+            # SPEC-43 Gap 10: redact on write so every writer is covered.
+            # Redact before truncation so a cut cannot expose a key prefix.
+            "message": redact_secrets(message or "")[:2000],
+            "traceback": redact_secrets(traceback_str or "")[:8000],
         }
         with self._lock:
             self._entries.append(entry)
