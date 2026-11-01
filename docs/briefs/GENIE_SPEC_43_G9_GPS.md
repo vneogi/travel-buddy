@@ -1,7 +1,8 @@
 # Genie brief: SPEC-43 Gap 9 -- GPS plausibility on ingest
 
-This is the open Gap 9 GPS first slice. Implement it. Do not start
-`derived_feature`, hosted 0026, Flutter, deploy, or an APK.
+Landed on `main` as `08253cb` (PR #122). Do not re-implement this slice.
+No open Genie job. Remainders: `derived_feature` sample-size.
+Do not start hosted 0026, Flutter, deploy, or an APK without a new brief.
 
 ## Goal
 

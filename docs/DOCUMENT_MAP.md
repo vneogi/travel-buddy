@@ -23,14 +23,14 @@ documents disagree, follow Precedence below and name the conflict in
 
 ## Continuity state on 25 Oct 2026
 
-- GitHub `main` is through `2077d8d`: SPEC-45 field trust hygiene,
+- GitHub `main` is through `08253cb`: SPEC-45 field trust hygiene,
   SPEC-25 field-priority intents, SPEC-25 Phase C durable device-local
   threads, SPEC-46 What Now Phase A, thin typed Ask-to-Add, thin
   typed Move, empty-day catalog Add, trip-private uncatalogued Add,
   and SPEC-43 Gaps 1, 6, 2, 9 (ownership + closed schemas), and 12
   HTTPS, cache keys, chat URLs, ATS, and trip-route ownership are
   merged.
-- Next Genie: Gap 9 GPS (`docs/briefs/GENIE_SPEC_43_G9_GPS.md`).
+- No open Genie job. Gap 9 GPS is on main (`08253cb`, PR #122).
   Gap 11 body/depth bounds is on main
   (`2077d8d`, PR #119). Gap 10 error-ring
   redaction is on main (`fbe96f6`, PR #117). Gap 8 identity-scoped
@@ -40,7 +40,7 @@ documents disagree, follow Precedence below and name the conflict in
   main (`1de6ff2`); rebuild the APK from that SHA to overlay
   leftover plaintext without `pm clear`. Hosted Gap 1 and the
   owner G0 APK are live (`00014-sbm`). Hosted apply of 0026
-  waits on `rolbypassrls`. Remaining Gap 9 GPS/sample-size, Laos
+  waits on `rolbypassrls`. Remaining Gap 9 `derived_feature`, Laos
   decision-cell coverage, and unknown-time excursions stay later.
 - Hosted: migrations through 0025; Cloud Run `travel-buddy-00014-sbm`.
 - Owner Laos field use is complete. The dated 26 observations and cross-trip
@@ -128,7 +128,7 @@ HTTPS (`6f1dab8`), and Gap 12 cache keys (`290f821`), Gap 12
 chat URLs (`14ce56d`), and Gap 12 ATS (`be89128`), and Gap 12
 trip-route ownership (`f486079`) are on main;
 Gap 11 body/depth (`2077d8d`, PR #119) is on main;
-next is Gap 9 GPS (`docs/briefs/GENIE_SPEC_43_G9_GPS.md`);
+Gap 9 GPS (`08253cb`, PR #122) is on main;
 SPEC-42 unknown-time
 excursions stay later;
 trip-optional and production-LLM SPEC-25; SPEC-10 HITL reflow;
