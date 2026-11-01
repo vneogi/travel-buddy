@@ -39,8 +39,25 @@ cards; trip Ask and What Now; Sign Out visible. Airplane mode not
 in those screenshots. Old UUID-owned local rows did not survive
 `pm clear`, as expected.
 
-0026 not applied. Next code slice:
-`docs/briefs/GENIE_SPEC_43_G5_SQLCIPHER_OPEN_FAILED.md`.
+0026 not applied.
+
+## Finding -- Nov 1 2026 -- SQLCipher open_failed leftover wipe merged
+
+Owner Windows on `feat/spec43-g5-sqlcipher-open-failed` at `56c7a0c`
+(squash-merged to `main` as `1de6ff2`, PR #110):
+
+- `flutter analyze`: 115 infos, no errors
+- full `flutter test`: one durable-hearts FFI flake
+  (`database already closed`); focused
+  `flutter test test/durable_hearts_test.dart` then +7 passed
+- R17: removed `open_failed` from `_isUnreadableWithKey`; named
+  test `test_production_offline_open_passes_sqlcipher_password`
+  failed; restore passed
+
+Overlay-install on a leftover plaintext store is not yet proven.
+The 2026-10-31 G0 APK (`76d7e9be...`) still needs `pm clear` if
+upgrading from pre-SQLCipher. Rebuild from `1de6ff2` for that
+upgrade path. Gap 7 has no brief yet. 0026 not applied.
 
 ## Finding -- Oct 27 2026 -- SPEC-43 Gap 5 SQLCipher merged
 
