@@ -22,6 +22,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
 from security import get_current_user_id
+from services import consent
 from services.db_provider import db_service
 from services.trip_ownership import (
     TRIP_OWNERSHIP_REJECT_REASON,
@@ -147,14 +148,12 @@ class SignalBatchResponse(BaseModel):
 # ==============================================================================
 
 
-def require_consent(scope: str, user_id: str) -> None:
-    """Stub: in a future spec, this checks the user's granted consent scopes.
+def require_consent(signal_type: str, user_id: str) -> None:
+    """SPEC-43 Gap 7: per-signal purpose check. Delegates to services.consent.
 
-    Currently passes unconditionally. The seam exists so wiring real consent
-    enforcement is a one-place change, not a refactor.
+    Raises consent.ConsentRequired when the purpose is not granted.
     """
-    # TODO(SPEC-future): check consent table for user_id + scope
-    pass
+    consent.require_consent_for_signal(signal_type, user_id)
 
 
 # ==============================================================================
@@ -254,12 +253,9 @@ async def ingest_signals(
     - Validates signal_type exists (rejects per-item, not whole batch).
     - Validates captured_at skew (30d old / 5min future tolerance).
     - Idempotent: ON CONFLICT (signal_id) DO NOTHING.
-    - Consent: stub (passes; wired in a later spec).
+    - Consent (SPEC-43 Gap 7): optional purposes fail closed per item.
     - Returns {accepted, duplicates, rejected} -- never 500s the whole batch.
     """
-    # Consent check (stub -- passes for now)
-    require_consent("behavioral_capture", user_id)
-
     valid_types = db_service.get_valid_signal_types()
 
     accepted = 0
@@ -382,6 +378,15 @@ async def ingest_signals(
             )
             continue
 
+        # SPEC-43 Gap 7: optional purposes fail closed per item. A retry of a
+        # stored signal_id stays on the duplicate path.
+        if db_service.get_signal(sig.signal_id) is None:
+            try:
+                require_consent(sig.signal_type, user_id)
+            except consent.ConsentRequired as denied:
+                rejected.append(RejectedSignal(signal_id=sig.signal_id, reason=denied.reason))
+                continue
+
         # Build provenance (notes extreme skew for analytics)
         provenance = _compute_provenance(sig.captured_at)
 
@@ -423,17 +428,20 @@ async def ingest_signals(
             accepted += 1
             if rate_key is not None:
                 corpus_accepted[rate_key] = corpus_accepted.get(rate_key, 0) + 1
-            # SPEC-07: derive arrival_delta from visited_confirmed
+            # SPEC-07: derive arrival_delta from visited_confirmed.
+            # SPEC-43 Gap 7: arrival_delta is optional analytics; skip the
+            # derive unless analytics is granted. observed_duration still runs.
             if sig.signal_type == "visited_confirmed":
-                from services.arrival_delta_service import derive_arrival_delta
+                if consent.has_consent(user_id, consent.PURPOSE_ANALYTICS):
+                    from services.arrival_delta_service import derive_arrival_delta
 
-                derive_arrival_delta(
-                    source_signal_id=sig.signal_id,
-                    user_id=user_id,
-                    place_ref=sig.place_ref,
-                    captured_at=sig.captured_at,
-                    trip_id=sig.trip_id,
-                )
+                    derive_arrival_delta(
+                        source_signal_id=sig.signal_id,
+                        user_id=user_id,
+                        place_ref=sig.place_ref,
+                        captured_at=sig.captured_at,
+                        trip_id=sig.trip_id,
+                    )
                 from services.observed_duration_service import (
                     derive_observed_duration,
                 )
