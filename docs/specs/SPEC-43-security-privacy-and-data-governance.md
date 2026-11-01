@@ -13,7 +13,8 @@
 > Leftover-open wipe `1de6ff2` (PR #110). Gap 7 fail-closed
 > ingest `e3eaa81` (PR #112). Gap 8 identity cache `62927dd`
 > (PR #114). Gap 10 error-ring redaction `fbe96f6` (PR #117).
-> Gap 11 body/depth `2077d8d` (PR #119). Gap 12
+> Gap 11 body/depth `2077d8d` (PR #119). Next Genie: Gap 9 GPS
+> (`docs/briefs/GENIE_SPEC_43_G9_GPS.md`). Gap 12
 > lock-screen waits on OS push. Hosted apply of 0026 is not done.
 >
 > Sequence: start after the Laos reliability and build tranche is complete:
@@ -383,8 +384,9 @@ restricted-content canaries are not in the key.
 
 **Status on main.** Ownership `163a14c` (PR #81). Closed schemas
 `fb72545` (PR #98). Ranking isolation and per-place rate `9b49fd0`
-(PR #101). Trip-place membership `cafba3c` (PR #103). GPS and
-`derived_feature` remain.
+(PR #101). Trip-place membership `cafba3c` (PR #103). Next Genie:
+GPS plausibility (`docs/briefs/GENIE_SPEC_43_G9_GPS.md`).
+`derived_feature` remains.
 
 **Current fact (remaining).** Ownership of a supplied `trip_id` is
 required. Client `value_json` is a closed bounded map. Ranking-corpus
