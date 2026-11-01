@@ -1,8 +1,8 @@
 # Genie brief: SPEC-43 Gap 9 -- derived facts keep method version and sample size
 
-This is the open Gap 9 derived-fact first slice. Implement it. Do not
-start a `derived_feature` table, hosted 0026, Flutter, deploy, or an
-APK.
+Landed on `main` as `4265403` (PR #125). Do not re-implement this slice.
+No open Genie job. Remainder: `derived_feature` table. Do not start
+hosted 0026, Flutter, deploy, or an APK without a new brief.
 
 ## Goal
 

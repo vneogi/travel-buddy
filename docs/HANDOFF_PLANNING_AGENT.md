@@ -14,7 +14,7 @@ anonymous JWT, SPEC-43 Gap 6 sign-out, SPEC-43 Gap 2 RLS,
 SPEC-43 Gap 9 signal ownership and closed schemas, SPEC-43 Gap 12
 HTTPS fail-closed, and SPEC-43 Gap 12 identity-scoped caches, chat
 URLs, ATS, and trip-route ownership are on `main` through
-`08253cb`. Hosted 0025 is applied. Cloud Run
+`4265403`. Hosted 0025 is applied. Cloud Run
 `travel-buddy-00014-sbm` is the live untagged revision (Gap 1 JWKS).
 SPEC-42 remains PARTIAL (unknown-time excursions later). Create-then-book
 HITL reflow remains. Trip-optional Ask remains. What Now Phase B GPS
@@ -27,8 +27,8 @@ is on main. Gap 8 identity-scoped semantic cache `62927dd`
 (PR #114) is on main. Gap 10 error-ring redaction `fbe96f6`
 (PR #117) is on main. Gap 11 body/depth bounds `2077d8d`
 (PR #119) is on main. Gap 9 GPS `08253cb` (PR #122) is on
-main. Owner G0 APK is on the phone. Next Genie is Gap 9
-derived-fact metadata (`docs/briefs/GENIE_SPEC_43_G9_DERIVED.md`).
+main. Owner G0 APK is on the phone. Gap 9 derived metadata
+`4265403` (PR #125) is on main. No open Genie job.
 Do not apply 0026 until `rolbypassrls` is confirmed.
 
 SPEC-44 Phase A application code merged as PR #67 (`9a7b9d9`). Planning
@@ -108,8 +108,8 @@ Gap 1 and the owner G0 APK are live. Leftover-open wipe
 `62927dd` (PR #114) is on main. Gap 10 error-ring redaction
 `fbe96f6` (PR #117) is on main. Gap 11 body/depth bounds
 `2077d8d` (PR #119) is on main. Gap 9 GPS `08253cb`
-(PR #122) is on main. Next Genie is Gap 9 derived-fact
-metadata (`docs/briefs/GENIE_SPEC_43_G9_DERIVED.md`).
+(PR #122) is on main. Gap 9 derived metadata `4265403`
+(PR #125) is on main. No open Genie job.
 Remaining Gap 9
 `derived_feature` table,
 unknown-time excursions, and Laos decision-cell coverage stay later.
@@ -244,8 +244,7 @@ Resume in this order:
 5. Patch Laos spine and effective-choice gaps: Kuang Si, Pak Ou, Blue Lagoon
    2/3, Papao, and the Wat Xieng Thong packing failure. Measure coverage by
    common decision cell, not total POI count.
-6. Implement remaining SPEC-43 (Gap 9 derived-fact metadata is the
-   open Genie job; `derived_feature` table later; Gap 11
+6. Implement remaining SPEC-43 (`derived_feature` table; Gap 11
    remainders; hosted 0026; Gap 12 lock-screen waits on OS
    push) before any
    non-owner APK, hostel QR, production LLM on
@@ -273,12 +272,12 @@ separation live in the operating model; do not reconstruct them from chat.
 
 ## First job
 
-`origin/main` includes Gap 9 GPS as `08253cb` (PR #122) and docs
-`e8621a4`. Cloud Run `00014-sbm`. Owner APK SHA256
+`origin/main` includes Gap 9 derived metadata as `4265403`
+(PR #125). Cloud Run `00014-sbm`. Owner APK SHA256
 `76d7e9be3186a817a12664ed51b62e1db1ea8c946d5d5ac67b47912762036714`
 (built from `1aa405c`; rebuild from `1de6ff2` to drop `pm clear`).
 
-Open Genie job: `docs/briefs/GENIE_SPEC_43_G9_DERIVED.md`. Do not
+No open Genie job. Do not
 start a `derived_feature` table, production LLM, trip-less
 Ask, or unknown-time excursions without a brief. Do not apply 0026
 until `rolbypassrls` is confirmed for `postgres` and `service_role`.
