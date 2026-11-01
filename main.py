@@ -33,6 +33,7 @@ from routers.notifications_router import router as notifications_router
 from routers.debug_router import router as debug_router
 from monitoring.error_log import error_log
 from monitoring.redact import redact_secrets
+from monitoring.validation_public import public_validation_errors
 from monitoring.spend_circuit import SPEND_CAPPED, SpendCapped
 from monitoring.payload_limits import PayloadLimitMiddleware
 from monitoring.rate_limit import RateLimitMiddleware
@@ -262,12 +263,16 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     typed invalid_interests error rather than Pydantic's generic list.
     """
     request_id = getattr(request.state, "request_id", "unknown")
+    # SPEC-43 Gap 10: never echo, log, or ring-store request values. Only
+    # type/loc/msg leave this handler.
+    errors = exc.errors()
+    public_errors = public_validation_errors(errors)
     logger.warning(
         "Validation error on %s %s request_id=%s: %s",
         request.method,
         request.url.path,
         request_id,
-        exc.errors(),
+        public_errors,
     )
     error_log.record(
         request_id=request_id,
@@ -275,7 +280,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         path=request.url.path,
         status=422,
         exc_type="RequestValidationError",
-        message=str(exc.errors()),
+        message=str(public_errors),
     )
 
     # Map typed field errors to domain-specific responses.
@@ -283,7 +288,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     _is_create = request.method == "POST" and request.url.path.endswith("/trip/create")
     if _is_create:
         _date_fields = frozenset({"start_date", "end_date"})
-        for err in exc.errors():
+        for err in public_errors:
             loc = tuple(err.get("loc", ()))
             # Match (body, preferences, interest_ids, ...)
             if len(loc) >= 3 and loc[1] == "preferences" and loc[2] == "interest_ids":
@@ -292,7 +297,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
                     content={
                         "detail": {
                             "error": "invalid_interests",
-                            "message": err.get("msg", str(err)),
+                            "message": err.get("msg", ""),
                         },
                         "request_id": request_id,
                     },
@@ -304,7 +309,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
                     content={
                         "detail": {
                             "error": "invalid_date",
-                            "message": f"Malformed {loc[1]}: {err.get('msg', str(err))}",
+                            "message": f"Malformed {loc[1]}: {err.get('msg', '')}",
                         },
                         "request_id": request_id,
                     },
@@ -312,7 +317,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
     return JSONResponse(
         status_code=422,
-        content={"detail": exc.errors(), "request_id": request_id},
+        content={"detail": public_errors, "request_id": request_id},
     )
 
 
