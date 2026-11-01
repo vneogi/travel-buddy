@@ -33,6 +33,7 @@ from routers.notifications_router import router as notifications_router
 from routers.debug_router import router as debug_router
 from monitoring.error_log import error_log
 from monitoring.redact import redact_secrets
+from monitoring.spend_circuit import SPEND_CAPPED, SpendCapped
 from monitoring.payload_limits import PayloadLimitMiddleware
 from monitoring.rate_limit import RateLimitMiddleware
 from seed_data import seed_venues
@@ -207,6 +208,19 @@ async def request_context_middleware(request: Request, call_next):
     )
     response.headers["X-Request-ID"] = request_id
     return response
+
+
+@app.exception_handler(SpendCapped)
+async def spend_capped_handler(request: Request, exc: SpendCapped):
+    """SPEC-43 Gap 11: provider-spend cap reached. Stable code only."""
+    request_id = getattr(request.state, "request_id", "unknown")
+    logger.warning(
+        "Spend capped on %s %s request_id=%s", request.method, request.url.path, request_id
+    )
+    return JSONResponse(
+        status_code=503,
+        content={"detail": SPEND_CAPPED, "request_id": request_id},
+    )
 
 
 @app.exception_handler(Exception)

@@ -1133,11 +1133,13 @@ class TripStateMachine:
                         venues_found=venues,
                         routing_tier="heavy",
                         context=info_ctx,
+                        user_id=state.get("user_id"),
                     )
                 else:
                     base = await llm_service.generate_info_response(
                         state["message"],
                         context=info_ctx,
+                        user_id=state.get("user_id"),
                     )
                 state["response"] = base
             except Exception as exc:

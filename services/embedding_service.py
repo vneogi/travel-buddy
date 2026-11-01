@@ -10,12 +10,18 @@ import math
 from typing import List, Optional
 
 from config.settings import settings, configure_provider_keys
+from monitoring import spend_circuit as _spend
+from monitoring.spend_circuit import SpendCapped, SpendCircuit, normalize_identity
 
 
 class EmbeddingService:
     """Generates and manages text embeddings."""
 
-    def __init__(self, use_synthetic: Optional[bool] = None):
+    def __init__(
+        self, use_synthetic: Optional[bool] = None, circuit: Optional[SpendCircuit] = None
+    ):
+        # SPEC-43 Gap 11: provider-spend circuit; tests inject a private one.
+        self._circuit = circuit if circuit is not None else _spend.default_spend_circuit
         # Auto-detect: real embeddings when an OpenAI key exists, else synthetic.
         if use_synthetic is None:
             use_synthetic = not bool(settings.litellm_api_key)
@@ -24,10 +30,11 @@ class EmbeddingService:
         if not use_synthetic:
             configure_provider_keys()
 
-    def generate_embedding(self, text: str) -> List[float]:
+    def generate_embedding(self, text: str, user_id: Optional[str] = None) -> List[float]:
         if self.use_synthetic:
+            # Synthetic vectors are not provider spend: no circuit, no LiteLLM.
             return self._synthetic_embedding(text)
-        return self._api_embedding(text)
+        return self._api_embedding(text, user_id=user_id)
 
     def _synthetic_embedding(self, text: str) -> List[float]:
         """Deterministic SHA-256-based pseudo-embedding, unit-normalized.
@@ -46,13 +53,24 @@ class EmbeddingService:
             embedding = [x / magnitude for x in embedding]
         return embedding[: self.dimensions]
 
-    def _api_embedding(self, text: str) -> List[float]:
-        """Real embedding via OpenAI (through litellm)."""
+    def _api_embedding(self, text: str, user_id: Optional[str] = None) -> List[float]:
+        """Real embedding via OpenAI (through litellm).
+
+        SPEC-43 Gap 11: the spend circuit runs before litellm.embedding. A
+        spend reject raises SpendCapped; it never falls back to synthetic
+        (that would mix embedding spaces while a live key is configured).
+        """
+        identity = normalize_identity(user_id)
+        estimate = _spend.estimate_embedding_usd([text])
+        self._circuit.check(identity, estimate)
         try:
             import litellm
 
             response = litellm.embedding(model=settings.embedding_model, input=[text])
+            self._circuit.record(identity, estimate)
             return response.data[0]["embedding"]
+        except SpendCapped:
+            raise
         except Exception as e:
             # Safety net: never crash a request. (Mixing synthetic + real
             # vectors degrades similarity, so treat repeated failures as a

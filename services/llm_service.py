@@ -24,6 +24,8 @@ from typing import AsyncGenerator, Dict, List, Optional, Tuple
 
 from config.regions import get_region
 from config.settings import settings
+from monitoring import spend_circuit as _spend
+from monitoring.spend_circuit import SpendCapped, SpendCircuit, normalize_identity
 
 
 class LLMService:
@@ -42,7 +44,9 @@ class LLMService:
     HEAVY_FALLBACK = ["gpt-4o", "claude-3-5-sonnet-20241022", "gemini/gemini-1.5-pro"]
     LIGHT_FALLBACK = ["gpt-4o-mini"]
 
-    def __init__(self):
+    def __init__(self, circuit: Optional[SpendCircuit] = None):
+        # SPEC-43 Gap 11: provider-spend circuit; tests inject a private one.
+        self._circuit = circuit if circuit is not None else _spend.default_spend_circuit
         self.heavy_model = settings.heavy_model
         self.light_model = settings.light_model
         self.embedding_model = settings.embedding_model
@@ -62,8 +66,13 @@ class LLMService:
         temperature: float = 0.7,
         max_tokens: int = 1024,
         response_format: Optional[Dict] = None,
+        user_id: Optional[str] = None,
     ) -> Dict:
         """Generate a completion with automatic fallback.
+
+        SPEC-43 Gap 11: every attempt is checked against the spend circuit
+        before LiteLLM is called. SpendCapped is raised immediately and never
+        retried on the next model in the fallback chain.
 
         Returns:
             {
@@ -87,8 +96,17 @@ class LLMService:
         if model not in fallback_chain:
             fallback_chain = [model] + fallback_chain
 
+        identity = normalize_identity(user_id)
+        est_input = _spend.estimate_messages_tokens(messages)
+
         last_error = None
         for attempt_model in fallback_chain:
+            # Outside the try: a spend reject must not fall through to the
+            # next model.
+            reserved = self._calculate_cost(
+                attempt_model, {"input": est_input, "output": max_tokens}
+            )
+            self._circuit.check(identity, reserved)
             try:
                 start_time = time.time()
 
@@ -116,7 +134,8 @@ class LLMService:
                 # Calculate cost
                 cost = self._calculate_cost(attempt_model, tokens)
 
-                # Track
+                # Track (actual cost only; the reservation is not recorded)
+                self._circuit.record(identity, cost)
                 self._total_tokens_used += tokens["total"]
                 self._total_cost += cost
                 self._log_call(attempt_model, routing_tier, tokens, cost, latency_ms)
@@ -129,6 +148,8 @@ class LLMService:
                     "latency_ms": latency_ms,
                 }
 
+            except SpendCapped:
+                raise
             except Exception as e:
                 last_error = e
                 continue
@@ -139,7 +160,9 @@ class LLMService:
     # Specialized Methods
     # =========================================================================
 
-    async def classify_intent(self, user_message: str, event_type: str) -> Tuple[str, float]:
+    async def classify_intent(
+        self, user_message: str, event_type: str, user_id: Optional[str] = None
+    ) -> Tuple[str, float]:
         """Use LLM to classify intent when keyword matching is ambiguous.
 
         Returns: (routing_tier, confidence)
@@ -167,6 +190,7 @@ class LLMService:
             temperature=0.1,
             max_tokens=50,
             response_format={"type": "json_object"},
+            user_id=user_id,
         )
 
         try:
@@ -182,6 +206,7 @@ class LLMService:
         venues_found: List[Dict],
         routing_tier: str = "heavy",
         context: Optional[Dict] = None,
+        user_id: Optional[str] = None,
     ) -> str:
         """Generate a natural language response for itinerary changes.
 
@@ -225,6 +250,7 @@ class LLMService:
             routing_tier=routing_tier,
             temperature=0.8,
             max_tokens=256,
+            user_id=user_id,
         )
         return result["content"]
 
@@ -232,6 +258,7 @@ class LLMService:
         self,
         user_message: str,
         context: Optional[Dict] = None,
+        user_id: Optional[str] = None,
     ) -> str:
         """Generate a light response for info queries.
 
@@ -280,6 +307,7 @@ class LLMService:
             routing_tier="light",
             temperature=0.5,
             max_tokens=150,
+            user_id=user_id,
         )
         return result["content"]
 
@@ -287,24 +315,24 @@ class LLMService:
     # Embeddings
     # =========================================================================
 
-    async def generate_embedding(self, text: str) -> List[float]:
+    async def generate_embedding(self, text: str, user_id: Optional[str] = None) -> List[float]:
         """Generate a real embedding vector using the configured model."""
-        import litellm
+        return (await self.batch_embeddings([text], user_id=user_id))[0]
 
-        response = await litellm.aembedding(
-            model=self.embedding_model,
-            input=[text],
-        )
-        return response.data[0]["embedding"]
-
-    async def batch_embeddings(self, texts: List[str]) -> List[List[float]]:
+    async def batch_embeddings(
+        self, texts: List[str], user_id: Optional[str] = None
+    ) -> List[List[float]]:
         """Generate embeddings for multiple texts in one call."""
         import litellm
 
+        identity = normalize_identity(user_id)
+        estimate = _spend.estimate_embedding_usd(texts)
+        self._circuit.check(identity, estimate)
         response = await litellm.aembedding(
             model=self.embedding_model,
             input=texts,
         )
+        self._circuit.record(identity, estimate)
         return [item["embedding"] for item in response.data]
 
     # =========================================================================
@@ -315,18 +343,30 @@ class LLMService:
         self,
         messages: List[Dict[str, str]],
         routing_tier: str = "light",
+        user_id: Optional[str] = None,
+        max_tokens: int = 1024,
     ) -> AsyncGenerator[str, None]:
         """Stream a response token-by-token for the chat UI."""
         import litellm
 
         model = self.heavy_model if routing_tier == "heavy" else self.light_model
 
+        # SPEC-43 Gap 11: reserve the bounded completion before the call and
+        # record that reservation as the cost (streams carry no usage).
+        identity = normalize_identity(user_id)
+        reserved = self._calculate_cost(
+            model,
+            {"input": _spend.estimate_messages_tokens(messages), "output": max_tokens},
+        )
+        self._circuit.check(identity, reserved)
         response = await litellm.acompletion(
             model=model,
             messages=messages,
             stream=True,
             temperature=0.7,
+            max_tokens=max_tokens,
         )
+        self._circuit.record(identity, reserved)
 
         async for chunk in response:
             if chunk.choices[0].delta.content:
