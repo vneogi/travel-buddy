@@ -30,8 +30,8 @@ is on main. Gap 8 identity-scoped semantic cache `62927dd`
 main. Owner G0 APK is on the phone. Gap 9 derived metadata
 `4265403` (PR #125) is on main. Gap 11 rate `c70296c`
 (PR #128) is on main. Gap 11 spend `e7c89b5`
-(PR #131) is on main. No open Genie brief. Remainders:
-Armor/Play Integrity and `derived_feature` table.
+(PR #131) is on main. Next Genie is Gap 10 422
+stripping (`docs/briefs/GENIE_SPEC_43_G10_422.md`).
 Do not apply 0026 until `rolbypassrls` is confirmed.
 
 SPEC-44 Phase A application code merged as PR #67 (`9a7b9d9`). Planning
@@ -114,7 +114,8 @@ Gap 1 and the owner G0 APK are live. Leftover-open wipe
 (PR #122) is on main. Gap 9 derived metadata `4265403`
 (PR #125) is on main. Gap 11 rate `c70296c` (PR #128)
 is on main. Gap 11 spend `e7c89b5` (PR #131)
-is on main. No open Genie brief.
+is on main. Next Genie is Gap 10 422
+stripping (`docs/briefs/GENIE_SPEC_43_G10_422.md`).
 Remaining Gap 9
 `derived_feature` table,
 unknown-time excursions, and Laos decision-cell coverage stay later.
@@ -249,7 +250,8 @@ Resume in this order:
 5. Patch Laos spine and effective-choice gaps: Kuang Si, Pak Ou, Blue Lagoon
    2/3, Papao, and the Wat Xieng Thong packing failure. Measure coverage by
    common decision cell, not total POI count.
-6. Implement remaining SPEC-43 (Gap 11 Armor/Play Integrity;
+6. Implement remaining SPEC-43 (Gap 10 422 stripping is the
+   open Genie job; Gap 11 Armor/Play Integrity;
    `derived_feature` table; hosted 0026; Gap 12
    lock-screen waits on OS
    push) before any
@@ -278,16 +280,16 @@ separation live in the operating model; do not reconstruct them from chat.
 
 ## First job
 
-`origin/main` includes Gap 11 spend as `e7c89b5` (PR #131).
-Cloud Run `00014-sbm`. Owner APK SHA256
+`origin/main` includes Gap 11 spend as `e7c89b5` (PR #131)
+and docs `8262a23`. Cloud Run `00014-sbm`. Owner APK SHA256
 `76d7e9be3186a817a12664ed51b62e1db1ea8c946d5d5ac67b47912762036714`
 (built from `1aa405c`; rebuild from `1de6ff2` to drop `pm clear`).
 
-No open Genie brief. Remainders: Gap 11 gateway/Play Integrity;
-`derived_feature` table. Do not start production LLM, trip-less
-Ask, or unknown-time excursions without a brief. Do not apply 0026
-until `rolbypassrls` is confirmed for `postgres` and
-`service_role`.
+Open Genie job: `docs/briefs/GENIE_SPEC_43_G10_422.md`. Do not
+start Armor, Play Integrity, a `derived_feature` table, production
+LLM, trip-less Ask, or unknown-time excursions without a brief.
+Do not apply 0026 until `rolbypassrls` is confirmed for
+`postgres` and `service_role`.
 
 Historical context (do not treat as current work):
 
