@@ -83,7 +83,7 @@ not anonymous, and it is not safe to hand to a tester.
 | Private semantic-cache isolation | SPEC-43 gap 8 | Live in-memory identity isolation on main (`62927dd`). HMAC/canaries/SQL remainder |
 | Signal ownership and poisoning controls | SPEC-43 gap 9 | Ownership+place+GPS+derived metadata on main (`4265403`). Remainder: `derived_feature` table |
 | Redacted diagnostics; no production debug | SPEC-43 gap 10, SPEC-05 | Ring redaction + Cloud Run debug refuse on main (`fbe96f6`). Admin IAM remainder |
-| Abuse and provider-spend limits | SPEC-43 gap 11 | Body/depth `2077d8d` and in-process rate `c70296c` (PR #128) on main. Next Genie: spend circuit (`docs/briefs/GENIE_SPEC_43_G11_SPEND.md`). Remainders: gateway, Play Integrity |
+| Abuse and provider-spend limits | SPEC-43 gap 11 | Body/depth `2077d8d`, rate `c70296c`, spend `e7c89b5` (PR #131) on main. Remainders: gateway, Play Integrity |
 | Release HTTPS and identity-scoped caches | SPEC-43 gap 12 | HTTPS+cache+chat URLs+ATS+trip-route ownership on main (`f486079`); lock-screen waits on OS push. Hosted Gap 1 `00014-sbm`. Leftover-open `1de6ff2`. Gap 7 `e3eaa81`. Gap 8 `62927dd`. Gap 10 `fbe96f6`. Gap 11 body/depth `2077d8d`. Gap 11 rate `c70296c` |
 
 SPEC-24 (merge, aliases, sign-out) and SPEC-27 (rights, minimum client,
