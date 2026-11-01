@@ -34,6 +34,7 @@ from routers.debug_router import router as debug_router
 from monitoring.error_log import error_log
 from monitoring.redact import redact_secrets
 from monitoring.payload_limits import PayloadLimitMiddleware
+from monitoring.rate_limit import RateLimitMiddleware
 from seed_data import seed_venues
 
 # ==============================================================================
@@ -158,6 +159,8 @@ app.add_middleware(
 # Added before the request_context middleware so that one stays outermost
 # and the request_id is already set when this rejects.
 app.add_middleware(PayloadLimitMiddleware)
+# SPEC-43 Gap 11: per-identity and per-IP sliding window on mutating HTTP.
+app.add_middleware(RateLimitMiddleware)
 
 # Register routers
 app.include_router(trip_router)
