@@ -121,7 +121,8 @@ The immediate order after the field-test gate:
     `4265403` (PR #125) on main; Gap 11 rate
     `c70296c` (PR #128) on main; Gap 11 spend
     `e7c89b5` (PR #131) on main; Gap 10 422
-    `04169f9` (PR #134) on main;
+    `04169f9` (PR #134) on main; next is Gap 8 HMAC
+    (`docs/briefs/GENIE_SPEC_43_G8_HMAC.md`);
     unknown-time excursions stay later;
 12. implement SPEC-43 before any non-owner distribution, production LLM
    processing of personal trip data, or the planned December launch;
