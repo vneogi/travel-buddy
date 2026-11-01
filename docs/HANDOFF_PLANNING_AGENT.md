@@ -24,8 +24,9 @@ landed; lock-screen waits on OS push. Gap 5 backup
 are on main. Leftover-open wipe `1de6ff2` (PR #110) is on
 main. Gap 7 fail-closed optional ingest `e3eaa81` (PR #112)
 is on main. Gap 8 identity-scoped semantic cache `62927dd`
-(PR #114) is on main. Owner G0 APK is on the phone. Next:
-Gap 10 has no Genie brief yet.
+(PR #114) is on main. Owner G0 APK is on the phone. Next
+Genie is Gap 10 error-ring redaction
+(`docs/briefs/GENIE_SPEC_43_G10_LOGS.md`).
 Do not apply 0026 until `rolbypassrls` is confirmed.
 
 SPEC-44 Phase A application code merged as PR #67 (`9a7b9d9`). Planning
@@ -102,8 +103,8 @@ trip-route ownership (`f486079`) are on main. Gap 5 backup
 Gap 1 and the owner G0 APK are live. Leftover-open wipe
 `1de6ff2` is on main. Gap 7 fail-closed ingest `e3eaa81`
 (PR #112) is on main. Gap 8 identity-scoped semantic cache
-`62927dd` (PR #114) is on main. Next: Gap 10 has no Genie
-brief yet.
+`62927dd` (PR #114) is on main. Next Genie is Gap 10
+error-ring redaction (`docs/briefs/GENIE_SPEC_43_G10_LOGS.md`).
 Remaining Gap 9
 GPS/sample-size,
 unknown-time excursions, and Laos decision-cell coverage stay later.
@@ -238,11 +239,10 @@ Resume in this order:
 5. Patch Laos spine and effective-choice gaps: Kuang Si, Pak Ou, Blue Lagoon
    2/3, Papao, and the Wat Xieng Thong packing failure. Measure coverage by
    common decision cell, not total POI count.
-6. Implement remaining SPEC-43 (Gap 8 identity cache is on main;
-   next Genie is Gap 10 once a brief exists; hosted 0026; Gap 12
-   lock-screen waits on OS push) before any non-owner APK, hostel
-   QR, production LLM on personal trips, or contribution
-   collection.
+6. Implement remaining SPEC-43 (Gap 10 error-ring redaction is
+   the open Genie job; hosted 0026; Gap 12 lock-screen waits on
+   OS push) before any non-owner APK, hostel QR, production LLM
+   on personal trips, or contribution collection.
    Hosted 0026 waits on `rolbypassrls`. Owner G0 checkpoint APK
    is on the phone (`1aa405c` / `00014-sbm`) after `pm clear`.
    Rebuild from `1de6ff2` for overlay without `pm clear`.
@@ -271,7 +271,7 @@ separation live in the operating model; do not reconstruct them from chat.
 `76d7e9be3186a817a12664ed51b62e1db1ea8c946d5d5ac67b47912762036714`
 (built from `1aa405c`; rebuild from `1de6ff2` to drop `pm clear`).
 
-No Genie job is open. Next is Gap 10 once a brief exists. Do not
+Open Genie job: `docs/briefs/GENIE_SPEC_43_G10_LOGS.md`. Do not
 start remaining Gap 9 GPS/sample-size, production LLM, trip-less
 Ask, or unknown-time excursions without a brief. Do not apply 0026
 until `rolbypassrls` is confirmed for `postgres` and `service_role`.

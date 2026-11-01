@@ -59,7 +59,7 @@ The 2026-10-31 G0 APK (`76d7e9be...`) still needs `pm clear` if
 upgrading from pre-SQLCipher. Rebuild from `1de6ff2` for that
 upgrade path (owner APK, not Genie). Gap 7 fail-closed ingest is
 on main (`e3eaa81`, PR #112). Gap 8 identity cache is on main
-(`62927dd`, PR #114). Next: Gap 10 has no Genie brief yet. 0026
+(`62927dd`, PR #114). Next: Gap 10 error-ring redaction (`docs/briefs/GENIE_SPEC_43_G10_LOGS.md`). 0026
 not applied.
 
 ## Finding -- Oct 27 2026 -- SPEC-43 Gap 5 SQLCipher merged

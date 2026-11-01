@@ -82,9 +82,9 @@ not anonymous, and it is not safe to hand to a tester.
 | Versioned purpose consent; optional capture blocked | SPEC-43 gap 7 | Server fail-closed optional ingest on main (`e3eaa81`). Flutter outbox/UI remainder |
 | Private semantic-cache isolation | SPEC-43 gap 8 | Live in-memory identity isolation on main (`62927dd`). HMAC/canaries/SQL remainder |
 | Signal ownership and poisoning controls | SPEC-43 gap 9 | A supplied trip id is not a write primitive |
-| Redacted diagnostics; no production debug | SPEC-43 gap 10, SPEC-05 | Failures do not retain secrets |
+| Redacted diagnostics; no production debug | SPEC-43 gap 10, SPEC-05 | Next Genie: error-ring redaction (`docs/briefs/GENIE_SPEC_43_G10_LOGS.md`) |
 | Abuse and provider-spend limits | SPEC-43 gap 11 | A stolen APK cannot run unbounded Ask |
-| Release HTTPS and identity-scoped caches | SPEC-43 gap 12 | HTTPS+cache+chat URLs+ATS+trip-route ownership on main (`f486079`); lock-screen waits on OS push. Hosted Gap 1 `00014-sbm`. Leftover-open `1de6ff2`. Gap 7 `e3eaa81`. Gap 8 `62927dd`. Next: Gap 10 has no brief yet |
+| Release HTTPS and identity-scoped caches | SPEC-43 gap 12 | HTTPS+cache+chat URLs+ATS+trip-route ownership on main (`f486079`); lock-screen waits on OS push. Hosted Gap 1 `00014-sbm`. Leftover-open `1de6ff2`. Gap 7 `e3eaa81`. Gap 8 `62927dd`. Next Genie: Gap 10 (`docs/briefs/GENIE_SPEC_43_G10_LOGS.md`) |
 
 SPEC-24 (merge, aliases, sign-out) and SPEC-27 (rights, minimum client,
 push transport) are implementation dependencies inside this gate, not

@@ -12,7 +12,8 @@
 > Hosted Gap 1 live on `00014-sbm`. Owner G0 APK 2026-10-31.
 > Leftover-open wipe `1de6ff2` (PR #110). Gap 7 fail-closed
 > ingest `e3eaa81` (PR #112). Gap 8 identity cache `62927dd`
-> (PR #114). Next: Gap 10 has no Genie brief yet. Gap 12
+> (PR #114). Next Genie: Gap 10 error-ring redaction
+> (`docs/briefs/GENIE_SPEC_43_G10_LOGS.md`). Gap 12
 > lock-screen waits on OS push. Hosted apply of 0026 is not done.
 >
 > Sequence: start after the Laos reliability and build tranche is complete:
@@ -413,6 +414,10 @@ built.
 - Derived facts retain method version, sample size, and provenance.
 
 ### Gap 10: errors and provider failures can carry sensitive values
+
+**Status on main.** Not started. Brief:
+`docs/briefs/GENIE_SPEC_43_G10_LOGS.md` (ring redaction + Cloud
+Run debug refuse).
 
 **Current fact.** Validation details, exception text, and full tracebacks can
 enter logs or the in-memory ring. Debug mode exposes the ring without separate
