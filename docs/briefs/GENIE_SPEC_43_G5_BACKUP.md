@@ -2,8 +2,8 @@
 
 Landed on `main` as `1672759` (PR #105). Do not re-implement this slice.
 SQLCipher landed as `9cb2324` (PR #107). Next:
-`docs/briefs/GENIE_SPEC_43_G5_SQLCIPHER_OPEN_FAILED.md`. Do not
-start Gap 7, Gap 10, Gap 11, deploy, or an APK without a new brief.
+Gap 7 has no Genie brief yet. Do not start Gap 7, Gap 10, Gap 11,
+deploy, or an APK without a new brief.
 
 ## Goal
 

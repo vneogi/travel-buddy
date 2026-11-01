@@ -1,7 +1,8 @@
 # Genie brief: SPEC-43 Gap 5 -- treat SQLCipher open_failed as leftover DB
 
-Do not start Gap 7, masking, lock-screen, 0026, deploy, or an APK
-without a new brief.
+Landed on `main` as `1de6ff2` (PR #110). Do not re-implement this slice.
+Next: Gap 7 has no Genie brief yet. Do not start Gap 7, masking,
+lock-screen, 0026, deploy, or an APK without a new brief.
 
 ## Goal
 

@@ -30,11 +30,12 @@ Settled identity:
 - applicationId / namespace / MainActivity package: `com.vneogi.travelbuddy`
 - INTERNET on the main manifest
 - release minify and resource shrinking off
-- `main` `1aa405c` encrypts the Android/iOS offline DB with
-  SQLCipher and talks JWT to `00014-sbm`. A leftover plaintext
-  DB currently hangs splash (`open_failed`); `pm clear` unblocked
-  the 2026-10-31 owner APK. Pass `TB_SUPABASE_URL` and
-  `TB_SUPABASE_ANON_KEY` dart-defines on release.
+- `main` `1de6ff2` (PR #110) treats SQLCipher `open_failed` as a
+  leftover store and wipes it, then reopens with a password.
+  The 2026-10-31 owner APK is still `1aa405c`; rebuild from
+  `1de6ff2` for overlay without `pm clear`. Pass
+  `TB_SUPABASE_URL` and `TB_SUPABASE_ANON_KEY` dart-defines on
+  release. Talks JWT to `00014-sbm`.
 - If release minify is later turned on, add
   `-keep class net.sqlcipher.** { *; }` to ProGuard. Minify is
   off today, so that keep is not load-bearing yet.
