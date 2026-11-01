@@ -1,8 +1,10 @@
 # Genie brief: SPEC-43 Gap 9 -- derived facts keep method version and sample size
 
 Landed on `main` as `4265403` (PR #125). Do not re-implement this slice.
-No open Genie job. Remainder: `derived_feature` table. Do not start
-hosted 0026, Flutter, deploy, or an APK without a new brief.
+Next: Gap 11 per-identity/IP rate
+(`docs/briefs/GENIE_SPEC_43_G11_RATE.md`). Remainder:
+`derived_feature` table. Do not start hosted 0026, Flutter, deploy,
+or an APK without a new brief.
 
 ## Goal
 

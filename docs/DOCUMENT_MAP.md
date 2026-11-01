@@ -30,7 +30,8 @@ documents disagree, follow Precedence below and name the conflict in
   and SPEC-43 Gaps 1, 6, 2, 9 (ownership + closed schemas), and 12
   HTTPS, cache keys, chat URLs, ATS, and trip-route ownership are
   merged.
-- No open Genie job. Gap 9 derived metadata is on main
+- Next Genie: Gap 11 per-identity/IP rate
+  (`docs/briefs/GENIE_SPEC_43_G11_RATE.md`). Gap 9 derived metadata is on main
   (`4265403`, PR #125). Gap 9 GPS is on main (`08253cb`, PR #122).
   Gap 11 body/depth bounds is on main
   (`2077d8d`, PR #119). Gap 10 error-ring
@@ -131,6 +132,8 @@ trip-route ownership (`f486079`) are on main;
 Gap 11 body/depth (`2077d8d`, PR #119) is on main;
 Gap 9 GPS (`08253cb`, PR #122) is on main;
 Gap 9 derived metadata (`4265403`, PR #125) is on main;
+next is Gap 11 per-identity/IP rate
+(`docs/briefs/GENIE_SPEC_43_G11_RATE.md`);
 SPEC-42 unknown-time
 excursions stay later;
 trip-optional and production-LLM SPEC-25; SPEC-10 HITL reflow;
