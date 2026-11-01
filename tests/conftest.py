@@ -53,8 +53,28 @@ import pytest
 from fastapi.testclient import TestClient
 
 from main import app
+from monitoring.rate_limit import RateLimitMiddleware
 from services.database_service import db_service
 from services.cache_service import cache_service
+
+# Suite TestClients share one process IP and often one debug user. Production
+# caps (30/identity, 60/IP per minute) would 429 hundreds of existing tests.
+# Named Gap 11 rate tests use a private middleware instance, not this one.
+_SUITE_RATE_CAP = 1_000_000
+
+
+def _installed_rate_limiter() -> RateLimitMiddleware | None:
+    node = getattr(app, "middleware_stack", None)
+    if node is None:
+        node = app.build_middleware_stack()
+        app.middleware_stack = node
+    seen: set[int] = set()
+    while node is not None and id(node) not in seen:
+        seen.add(id(node))
+        if isinstance(node, RateLimitMiddleware):
+            return node
+        node = getattr(node, "app", None)
+    return None
 
 
 def auth(user_id: str = "test-user-001") -> dict:
@@ -104,6 +124,17 @@ def _seed_once():
     seed_venues()
 
 
+@pytest.fixture(scope="session", autouse=True)
+def _relax_app_rate_limits():
+    """Keep the installed limiter from starving the rest of the suite."""
+    mw = _installed_rate_limiter()
+    if mw is None:
+        raise RuntimeError("RateLimitMiddleware is not on the app stack")
+    mw.max_identity = _SUITE_RATE_CAP
+    mw.max_ip = _SUITE_RATE_CAP
+    mw._hits.clear()
+
+
 @pytest.fixture()
 def client():
     """Fresh test client per test."""
@@ -144,3 +175,8 @@ def _reset_state():
     db_service._trip_commands.clear()
     db_service._event_log.clear()
     cache_service.clear_all()
+    mw = _installed_rate_limiter()
+    if mw is not None:
+        mw.max_identity = _SUITE_RATE_CAP
+        mw.max_ip = _SUITE_RATE_CAP
+        mw._hits.clear()

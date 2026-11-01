@@ -7,8 +7,8 @@ webhooks are not counted. Coordinates and tokens are never logged.
 from __future__ import annotations
 
 import hashlib
-import time
 import json
+import time
 from typing import Any, Awaitable, Callable, Optional
 
 Scope = dict[str, Any]
