@@ -15,7 +15,8 @@ The derived signal:
   - trip_id: same as the visited_confirmed signal
   - signal_id: deterministic from source signal_id (idempotent re-derivation)
   - captured_at: same as the visited_confirmed signal
-  - provenance in value_json: {method: 'server_derived', source_signal_id: ...}
+  - provenance (and mirrored in value_json): {method: 'server_derived',
+    method_version, sample_size, source_signal_id} (SPEC-43 Gap 9)
 
 Design:
   - Never fails ingest of the source signal. If derivation fails (trip not
@@ -36,6 +37,13 @@ from services.db_provider import db_service
 from services.trip_ownership import get_owned_trip
 
 logger = logging.getLogger(__name__)
+
+# SPEC-43 Gap 9: derived facts carry method version and sample size so a
+# later aggregator can refuse n=1 poisoning.
+ARRIVAL_DELTA_METHOD = "server_derived"
+ARRIVAL_DELTA_METHOD_VERSION = 1
+# One visited_confirmed produces one arrival_delta.
+ARRIVAL_DELTA_SAMPLE_SIZE = 1
 
 
 def derive_arrival_delta(
@@ -87,7 +95,15 @@ def derive_arrival_delta(
         if captured_at.tzinfo is None:
             captured_at = captured_at.replace(tzinfo=timezone.utc)
 
-        # Persist the derived signal
+        derived_meta = {
+            "method": ARRIVAL_DELTA_METHOD,
+            "method_version": ARRIVAL_DELTA_METHOD_VERSION,
+            "sample_size": ARRIVAL_DELTA_SAMPLE_SIZE,
+            "source_signal_id": source_signal_id,
+        }
+
+        # Persist the derived signal. provenance is explicit: never the
+        # client_emit default.
         db_service.record_signal(
             user_id=user_id,
             signal_id=derived_signal_id,
@@ -96,12 +112,12 @@ def derive_arrival_delta(
             value_text=None,
             value_numeric=delta_minutes,
             value_json={
-                "method": "server_derived",
-                "source_signal_id": source_signal_id,
+                **derived_meta,
                 "scheduled_start": target_node.scheduled_start.isoformat(),
             },
             captured_at=captured_at,
             trip_id=trip_id,
+            provenance=dict(derived_meta),
         )
 
         logger.info(
