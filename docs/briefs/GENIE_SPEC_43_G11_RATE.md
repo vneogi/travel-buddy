@@ -1,8 +1,9 @@
 # Genie brief: SPEC-43 Gap 11 -- per-identity and per-IP request rate
 
-This is the open Gap 11 rate first slice. Implement it. Do not start
-Cloud Armor, spend breakers, Play Integrity, a `derived_feature`
-table, hosted 0026, Flutter, deploy, or an APK.
+Landed on `main` as `c70296c` (PR #128). Do not re-implement this slice.
+Remainders: gateway/Cloud Armor, spend circuit, Play Integrity.
+`derived_feature` table stays later. Do not start hosted 0026,
+Flutter, deploy, or an APK without a new brief. No open Genie brief.
 
 ## Goal
 
