@@ -60,8 +60,8 @@ upgrading from pre-SQLCipher. Rebuild from `1de6ff2` for that
 upgrade path (owner APK, not Genie). Gap 7 fail-closed ingest is
 on main (`e3eaa81`, PR #112). Gap 8 identity cache is on main
 (`62927dd`, PR #114). Gap 10 ring redaction is on main
-(`fbe96f6`, PR #117). Next Genie: Gap 11 body/depth bounds
-(`docs/briefs/GENIE_SPEC_43_G11_ABUSE.md`). 0026 not applied.
+(`fbe96f6`, PR #117). Gap 11 body/depth is on main
+(`2077d8d`, PR #119). No open Genie job. 0026 not applied.
 
 ## Finding -- Oct 27 2026 -- SPEC-43 Gap 5 SQLCipher merged
 
