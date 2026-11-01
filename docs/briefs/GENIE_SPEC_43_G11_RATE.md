@@ -1,9 +1,10 @@
 # Genie brief: SPEC-43 Gap 11 -- per-identity and per-IP request rate
 
 Landed on `main` as `c70296c` (PR #128). Do not re-implement this slice.
-Remainders: gateway/Cloud Armor, spend circuit, Play Integrity.
-`derived_feature` table stays later. Do not start hosted 0026,
-Flutter, deploy, or an APK without a new brief. No open Genie brief.
+Next: Gap 11 spend circuit
+(`docs/briefs/GENIE_SPEC_43_G11_SPEND.md`). Remainders: gateway,
+Play Integrity. `derived_feature` table stays later. Do not start
+hosted 0026, Flutter, deploy, or an APK without a new brief.
 
 ## Goal
 

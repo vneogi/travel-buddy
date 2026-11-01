@@ -64,7 +64,8 @@ on main (`e3eaa81`, PR #112). Gap 8 identity cache is on main
 (`2077d8d`, PR #119). Gap 9 GPS is on main (`08253cb`,
 PR #122). Gap 9 derived metadata is on main (`4265403`,
 PR #125). Gap 11 rate is on main (`c70296c`,
-PR #128). 0026 not applied.
+PR #128). Next Genie: Gap 11 spend
+(`docs/briefs/GENIE_SPEC_43_G11_SPEND.md`). 0026 not applied.
 
 ## Finding -- Oct 27 2026 -- SPEC-43 Gap 5 SQLCipher merged
 
