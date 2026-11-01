@@ -23,6 +23,7 @@ from pydantic import BaseModel, Field
 
 from security import get_current_user_id
 from services import consent
+from services.gps_plausibility import gps_error
 from services.db_provider import db_service
 from services.trip_ownership import (
     TRIP_OWNERSHIP_REJECT_REASON,
@@ -377,6 +378,15 @@ async def ingest_signals(
                 )
             )
             continue
+
+        # SPEC-43 Gap 9 GPS: optional coordinates must be a finite in-range
+        # pair; presence claims must be near the matched trip node. A retry
+        # of a stored signal_id stays on the duplicate path.
+        if db_service.get_signal(sig.signal_id) is None:
+            gps_reason = gps_error(sig.signal_type, sig.trip_id, sig.place_ref, sig.value_json)
+            if gps_reason:
+                rejected.append(RejectedSignal(signal_id=sig.signal_id, reason=gps_reason))
+                continue
 
         # SPEC-43 Gap 7: optional purposes fail closed per item. A retry of a
         # stored signal_id stays on the duplicate path.
