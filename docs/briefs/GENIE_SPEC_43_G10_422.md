@@ -1,8 +1,9 @@
 # Genie brief: SPEC-43 Gap 10 -- strip values from client 422 bodies
 
-This is the open Gap 10 422-stripping slice. Implement it. Do not start
-admin IAM, log retention, Armor, Play Integrity, a `derived_feature`
-table, hosted 0026, Flutter, deploy, or an APK.
+Landed on `main` as `04169f9` (PR #134). Do not re-implement this slice.
+Remainders: admin IAM, log retention. `derived_feature` table stays
+later. Do not start hosted 0026, Flutter, deploy, or an APK without
+a new brief. No open Genie brief.
 
 ## Goal
 

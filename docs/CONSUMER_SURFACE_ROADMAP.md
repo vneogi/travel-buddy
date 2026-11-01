@@ -120,8 +120,8 @@ The immediate order after the field-test gate:
     `08253cb` (PR #122) on main; Gap 9 derived metadata
     `4265403` (PR #125) on main; Gap 11 rate
     `c70296c` (PR #128) on main; Gap 11 spend
-    `e7c89b5` (PR #131) on main; next is Gap 10 422
-    (`docs/briefs/GENIE_SPEC_43_G10_422.md`);
+    `e7c89b5` (PR #131) on main; Gap 10 422
+    `04169f9` (PR #134) on main;
     unknown-time excursions stay later;
 12. implement SPEC-43 before any non-owner distribution, production LLM
    processing of personal trip data, or the planned December launch;
