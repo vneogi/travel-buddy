@@ -1,9 +1,10 @@
 # Genie brief: SPEC-43 Gap 10 -- strip values from client 422 bodies
 
 Landed on `main` as `04169f9` (PR #134). Do not re-implement this slice.
-Remainders: admin IAM, log retention. `derived_feature` table stays
-later. Do not start hosted 0026, Flutter, deploy, or an APK without
-a new brief. No open Genie brief.
+Next: Gap 8 HMAC of query
+(`docs/briefs/GENIE_SPEC_43_G8_HMAC.md`). Remainders: admin IAM,
+retention. Do not start hosted 0026, Flutter, deploy, or an APK
+without a new brief.
 
 ## Goal
 
