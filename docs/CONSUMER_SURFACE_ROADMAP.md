@@ -118,7 +118,8 @@ The immediate order after the field-test gate:
     main (`fb72545`); next is
     Gap 11 body/depth `2077d8d` (PR #119) on main; Gap 9 GPS
     `08253cb` (PR #122) on main; Gap 9 derived metadata
-    `4265403` (PR #125) on main;
+    `4265403` (PR #125) on main; next is Gap 11
+    per-identity/IP rate (`docs/briefs/GENIE_SPEC_43_G11_RATE.md`);
     unknown-time excursions stay later;
 12. implement SPEC-43 before any non-owner distribution, production LLM
    processing of personal trip data, or the planned December launch;
