@@ -11,8 +11,8 @@
 > `1672759` (PR #105). Gap 5 SQLCipher `9cb2324` (PR #107).
 > Hosted Gap 1 live on `00014-sbm`. Owner G0 APK 2026-10-31.
 > Leftover-open wipe `1de6ff2` (PR #110). Gap 7 fail-closed
-> ingest `e3eaa81` (PR #112). Next Genie: Gap 8 identity-scoped
-> semantic cache (`docs/briefs/GENIE_SPEC_43_G8_CACHE.md`). Gap 12
+> ingest `e3eaa81` (PR #112). Gap 8 identity cache `62927dd`
+> (PR #114). Next: Gap 10 has no Genie brief yet. Gap 12
 > lock-screen waits on OS push. Hosted apply of 0026 is not done.
 >
 > Sequence: start after the Laos reliability and build tranche is complete:
@@ -346,13 +346,16 @@ longer always passes. Signals can still stamp party age bands.
 
 ### Gap 8: semantic cache can cross user boundaries
 
-**Status on main.** Not started. Brief:
-`docs/briefs/GENIE_SPEC_43_G8_CACHE.md` (identity isolation on the
-live in-memory cache).
+**Status on main.** Live in-memory identity isolation `62927dd`
+(PR #114). Remainders: HMAC of query, restricted canaries,
+trip/date/source-version, active purge, unused Supabase
+`cached_responses` path.
 
-**Current fact.** The process-wide cache is scoped by semantic similarity,
-region, and current venue, not by identity, trip, date, source version, or a
-complete grounded context. The persistent cache schema is even more general.
+**Current fact (remaining).** Process-wide cache entries are keyed
+by identity, region, and venue. Empty/`anonymous` identities do
+not store or hit. Persistent `cached_responses` is still unscoped
+and unused on the live path. Trip, date, source version, and
+restricted-content canaries are not in the key.
 
 **Solution.**
 

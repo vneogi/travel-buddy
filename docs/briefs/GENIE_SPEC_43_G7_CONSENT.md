@@ -1,10 +1,10 @@
 # Genie brief: SPEC-43 Gap 7 -- fail-closed optional ingest
 
 Landed on `main` as `e3eaa81` (PR #112). Do not re-implement this slice.
-Next: Gap 8 identity-scoped semantic cache
-(`docs/briefs/GENIE_SPEC_43_G8_CACHE.md`). Do not start Gap 8,
-Gap 10, Gap 11, remaining Gap 9 GPS/`derived_feature`, hosted 0026,
-Flutter consent UI, deploy, or an APK without a new brief.
+Gap 8 landed as `62927dd` (PR #114). Next: Gap 10 has no
+Genie brief yet. Do not start Gap 10, Gap 11, remaining Gap 9
+GPS/`derived_feature`, hosted 0026, Flutter consent UI, deploy,
+or an APK without a new brief.
 
 ## What shipped
 

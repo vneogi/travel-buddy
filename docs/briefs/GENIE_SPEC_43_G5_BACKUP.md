@@ -2,7 +2,7 @@
 
 Landed on `main` as `1672759` (PR #105). Do not re-implement this slice.
 SQLCipher landed as `9cb2324` (PR #107). Next:
-Gap 8 identity-scoped semantic cache (`docs/briefs/GENIE_SPEC_43_G8_CACHE.md`). Do not start Gap 10, Gap 11,
+Gap 10 has no Genie brief yet. Do not start Gap 10, Gap 11,
 deploy, or an APK without a new brief.
 
 ## Goal
