@@ -57,7 +57,10 @@ Owner Windows on `feat/spec43-g5-sqlcipher-open-failed` at `56c7a0c`
 Overlay-install on a leftover plaintext store is not yet proven.
 The 2026-10-31 G0 APK (`76d7e9be...`) still needs `pm clear` if
 upgrading from pre-SQLCipher. Rebuild from `1de6ff2` for that
-upgrade path. Gap 7 has no brief yet. 0026 not applied.
+upgrade path (owner APK, not Genie). Gap 7 fail-closed ingest is
+on main (`e3eaa81`, PR #112). Next Genie: Gap 8 identity-scoped
+semantic cache (`docs/briefs/GENIE_SPEC_43_G8_CACHE.md`). 0026
+not applied.
 
 ## Finding -- Oct 27 2026 -- SPEC-43 Gap 5 SQLCipher merged
 

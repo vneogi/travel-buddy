@@ -2,7 +2,7 @@
 
 Landed on `main` as `14ce56d` (PR #89). Do not re-implement this slice.
 ATS `be89128`. Deep-link ownership `f486079`. Gap 9 schemas
-`fb72545`. Next: Gap 7 has no Genie brief yet.
+`fb72545`. Next: Gap 8 identity-scoped semantic cache (`docs/briefs/GENIE_SPEC_43_G8_CACHE.md`).
 
 ## Goal
 
