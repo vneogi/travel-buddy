@@ -15,8 +15,8 @@
 > (PR #114). Gap 10 error-ring redaction `fbe96f6` (PR #117).
 > Gap 11 body/depth `2077d8d` (PR #119). Gap 9 GPS
 > `08253cb` (PR #122). Gap 9 derived metadata `4265403`
-> (PR #125). Gap 11 rate `c70296c` (PR #128). Next Genie:
-> Gap 11 spend (`docs/briefs/GENIE_SPEC_43_G11_SPEND.md`). Gap 12
+> (PR #125). Gap 11 rate `c70296c` (PR #128). Gap 11 spend
+> `e7c89b5` (PR #131). Gap 12
 > lock-screen waits on OS push. Hosted apply of 0026 is not done.
 >
 > Sequence: start after the Laos reliability and build tranche is complete:
@@ -454,8 +454,7 @@ client, and provider keys may appear in request URLs.
 
 **Status on main.** Body/depth bounds landed as `2077d8d` (PR #119).
 In-process per-identity/IP rate landed as `c70296c` (PR #128).
-Next Genie: spend circuit
-(`docs/briefs/GENIE_SPEC_43_G11_SPEND.md`). Remainders:
+Spend circuit landed as `e7c89b5` (PR #131). Remainders:
 gateway, Play Integrity.
 
 **Current fact.** Reroutes have a quota, but the API has no visible general

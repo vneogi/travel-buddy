@@ -1,10 +1,10 @@
 # Genie brief: SPEC-43 Gap 11 -- bound request body size and JSON depth
 
 Landed on `main` as `2077d8d` (PR #119). Do not re-implement this slice.
-Gap 11 rate landed as `c70296c` (PR #128). Next: Gap 11 spend
-circuit (`docs/briefs/GENIE_SPEC_43_G11_SPEND.md`). Remainders:
-gateway, Play Integrity. Do not start a `derived_feature`
-table, hosted 0026, Flutter, deploy, or an APK without a new brief.
+Gap 11 rate landed as `c70296c` (PR #128). Gap 11 spend landed
+as `e7c89b5` (PR #131). Remainders: gateway, Play Integrity.
+Do not start a `derived_feature` table, hosted 0026, Flutter,
+deploy, or an APK without a new brief.
 
 ## Goal
 

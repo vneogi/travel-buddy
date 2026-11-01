@@ -23,15 +23,15 @@ documents disagree, follow Precedence below and name the conflict in
 
 ## Continuity state on 25 Oct 2026
 
-- GitHub `main` is through `c70296c`: SPEC-45 field trust hygiene,
+- GitHub `main` is through `e7c89b5`: SPEC-45 field trust hygiene,
   SPEC-25 field-priority intents, SPEC-25 Phase C durable device-local
   threads, SPEC-46 What Now Phase A, thin typed Ask-to-Add, thin
   typed Move, empty-day catalog Add, trip-private uncatalogued Add,
   and SPEC-43 Gaps 1, 6, 2, 9 (ownership + closed schemas), and 12
   HTTPS, cache keys, chat URLs, ATS, and trip-route ownership are
   merged.
-- Next Genie: Gap 11 spend circuit
-  (`docs/briefs/GENIE_SPEC_43_G11_SPEND.md`). Gap 11 rate is on main
+- No open Genie brief. Gap 11 spend is on main (`e7c89b5`, PR #131).
+  Gap 11 rate is on main
   (`c70296c`, PR #128).
   Gap 9 derived metadata is on main
   (`4265403`, PR #125). Gap 9 GPS is on main (`08253cb`, PR #122).
@@ -135,8 +135,7 @@ Gap 11 body/depth (`2077d8d`, PR #119) is on main;
 Gap 9 GPS (`08253cb`, PR #122) is on main;
 Gap 9 derived metadata (`4265403`, PR #125) is on main;
 Gap 11 rate (`c70296c`, PR #128) is on main;
-next is Gap 11 spend
-(`docs/briefs/GENIE_SPEC_43_G11_SPEND.md`);
+Gap 11 spend (`e7c89b5`, PR #131) is on main;
 SPEC-42 unknown-time
 excursions stay later;
 trip-optional and production-LLM SPEC-25; SPEC-10 HITL reflow;
