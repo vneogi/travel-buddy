@@ -3,7 +3,7 @@
 Landed on `main` as `6f1dab8` (PR #82). Do not re-implement this slice.
 Cache keys `290f821`. Chat URLs `14ce56d`. ATS `be89128`. Deep-link
 `f486079`. Gap 9 schemas `fb72545`. Next:
-next Genie is Gap 10 error-ring redaction (`docs/briefs/GENIE_SPEC_43_G10_LOGS.md`).
+next Genie is Gap 11 body/depth bounds (`docs/briefs/GENIE_SPEC_43_G11_ABUSE.md`).
 
 ## Goal
 
