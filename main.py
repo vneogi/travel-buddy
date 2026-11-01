@@ -33,6 +33,7 @@ from routers.notifications_router import router as notifications_router
 from routers.debug_router import router as debug_router
 from monitoring.error_log import error_log
 from monitoring.redact import redact_secrets
+from monitoring.payload_limits import PayloadLimitMiddleware
 from seed_data import seed_venues
 
 # ==============================================================================
@@ -152,6 +153,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# SPEC-43 Gap 11: bound body size and JSON depth before any route runs.
+# Added before the request_context middleware so that one stays outermost
+# and the request_id is already set when this rejects.
+app.add_middleware(PayloadLimitMiddleware)
 
 # Register routers
 app.include_router(trip_router)
