@@ -1,7 +1,7 @@
 # Genie brief: SPEC-43 Gap 8 -- identity-scope the semantic cache
 
 Landed on `main` as `62927dd` (PR #114). Do not re-implement this slice.
-Next: Gap 10 has no Genie brief yet. Do not start Gap 10, Gap 11,
+Next: Gap 10 error-ring redaction (`docs/briefs/GENIE_SPEC_43_G10_LOGS.md`). Do not start Gap 11,
 remaining Gap 9 GPS/`derived_feature`, hosted 0026, Flutter, deploy,
 or an APK without a new brief.
 

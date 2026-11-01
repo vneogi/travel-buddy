@@ -1,7 +1,7 @@
 # Genie brief: SPEC-43 Gap 9 -- closed signal value_json schemas
 
 Landed on `main` as `fb72545` (PR #98). Do not re-implement this slice.
-Next: Gap 10 has no Genie brief yet. Do not start
+Next: Gap 10 error-ring redaction (`docs/briefs/GENIE_SPEC_43_G10_LOGS.md`). Do not start
 Gap 5, Gap 7, Gap 10, Gap 11, deploy, or an APK without a new brief.
 
 ## Goal

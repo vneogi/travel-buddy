@@ -30,7 +30,8 @@ documents disagree, follow Precedence below and name the conflict in
   and SPEC-43 Gaps 1, 6, 2, 9 (ownership + closed schemas), and 12
   HTTPS, cache keys, chat URLs, ATS, and trip-route ownership are
   merged.
-- Next: Gap 10 has no Genie brief yet. Gap 8 identity-scoped
+- Next Genie: Gap 10 error-ring redaction
+  (`docs/briefs/GENIE_SPEC_43_G10_LOGS.md`). Gap 8 identity-scoped
   semantic cache is on main (`62927dd`, PR #114). Gap 7
   fail-closed ingest is on main (`e3eaa81`, PR #112). Gap 12
   lock-screen waits on OS push. Gap 5 leftover-open wipe is on
@@ -124,7 +125,8 @@ empty-day catalog Add (`b6ddecf`), and trip-private uncatalogued Add
 HTTPS (`6f1dab8`), and Gap 12 cache keys (`290f821`), Gap 12
 chat URLs (`14ce56d`), and Gap 12 ATS (`be89128`), and Gap 12
 trip-route ownership (`f486079`) are on main;
-next is Gap 10 (no brief yet);
+next is Gap 10 error-ring redaction
+(`docs/briefs/GENIE_SPEC_43_G10_LOGS.md`);
 SPEC-42 unknown-time
 excursions stay later;
 trip-optional and production-LLM SPEC-25; SPEC-10 HITL reflow;

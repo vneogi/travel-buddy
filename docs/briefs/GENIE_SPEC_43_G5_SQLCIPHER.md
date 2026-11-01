@@ -3,7 +3,7 @@
 Landed on `main` as `9cb2324` (PR #107). Do not re-implement this slice.
 Leftover-open wipe landed as `1de6ff2` (PR #110). Gap 7 landed
 as `e3eaa81` (PR #112). Gap 8 landed as `62927dd` (PR #114).
-Next: Gap 10 has no Genie brief yet. Do not start Gap 10,
+Next: Gap 10 error-ring redaction (`docs/briefs/GENIE_SPEC_43_G10_LOGS.md`). Do not start Gap 11,
 masking, lock-screen, deploy, or an APK without a new brief.
 
 ## Goal
