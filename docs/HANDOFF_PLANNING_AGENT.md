@@ -14,7 +14,7 @@ anonymous JWT, SPEC-43 Gap 6 sign-out, SPEC-43 Gap 2 RLS,
 SPEC-43 Gap 9 signal ownership and closed schemas, SPEC-43 Gap 12
 HTTPS fail-closed, and SPEC-43 Gap 12 identity-scoped caches, chat
 URLs, ATS, and trip-route ownership are on `main` through
-`1de6ff2`. Hosted 0025 is applied. Cloud Run
+`e3eaa81`. Hosted 0025 is applied. Cloud Run
 `travel-buddy-00014-sbm` is the live untagged revision (Gap 1 JWKS).
 SPEC-42 remains PARTIAL (unknown-time excursions later). Create-then-book
 HITL reflow remains. Trip-optional Ask remains. What Now Phase B GPS
@@ -22,8 +22,10 @@ remains blocked on remaining SPEC-43. Gap 12 navigation privacy is
 landed; lock-screen waits on OS push. Gap 5 backup
 `1672759` (PR #105) and SQLCipher `9cb2324` (PR #107)
 are on main. Leftover-open wipe `1de6ff2` (PR #110) is on
-main. Owner G0 APK is on the phone. Next: Gap 7 has no
-Genie brief yet.
+main. Gap 7 fail-closed optional ingest `e3eaa81` (PR #112)
+is on main. Owner G0 APK is on the phone. Next Genie is Gap 8
+identity-scoped semantic cache
+(`docs/briefs/GENIE_SPEC_43_G8_CACHE.md`).
 Do not apply 0026 until `rolbypassrls` is confirmed.
 
 SPEC-44 Phase A application code merged as PR #67 (`9a7b9d9`). Planning
@@ -98,7 +100,9 @@ URLs (`14ce56d`), and Gap 12 ATS (`be89128`), and Gap 12
 trip-route ownership (`f486079`) are on main. Gap 5 backup
 (`1672759`) and SQLCipher (`9cb2324`) are on main. Hosted
 Gap 1 and the owner G0 APK are live. Leftover-open wipe
-`1de6ff2` is on main. Next: Gap 7 has no Genie brief yet.
+`1de6ff2` is on main. Gap 7 fail-closed ingest `e3eaa81`
+(PR #112) is on main. Next Genie is Gap 8 identity-scoped
+semantic cache (`docs/briefs/GENIE_SPEC_43_G8_CACHE.md`).
 Remaining Gap 9
 GPS/sample-size,
 unknown-time excursions, and Laos decision-cell coverage stay later.
@@ -233,14 +237,13 @@ Resume in this order:
 5. Patch Laos spine and effective-choice gaps: Kuang Si, Pak Ou, Blue Lagoon
    2/3, Papao, and the Wat Xieng Thong packing failure. Measure coverage by
    common decision cell, not total POI count.
-6. Implement remaining SPEC-43 (Gap 5 leftover-open is on main;
-   next Genie is Gap 7 once a brief exists; hosted 0026; Gap 12
-   lock-screen waits on OS push) before any non-owner APK, hostel
-   QR, production LLM on personal trips, or contribution
-   collection. Hosted 0026 waits on `rolbypassrls`. Owner G0
-   checkpoint APK is on the phone (`1aa405c` / `00014-sbm`) after
-   `pm clear`. Rebuild from `1de6ff2` for overlay without
-   `pm clear`.
+6. Implement remaining SPEC-43 (Gap 8 identity-scoped semantic
+   cache is the open Genie job; hosted 0026; Gap 12 lock-screen
+   waits on OS push) before any non-owner APK, hostel QR,
+   production LLM on personal trips, or contribution collection.
+   Hosted 0026 waits on `rolbypassrls`. Owner G0 checkpoint APK
+   is on the phone (`1aa405c` / `00014-sbm`) after `pm clear`.
+   Rebuild from `1de6ff2` for overlay without `pm clear`.
 7. Implement SPEC-13 identity plus the minimum SPEC-17 claim/attribute
    registry, append-only observation lifecycle, and SPEC-44 decision capture.
    Keep learned influence at zero.
@@ -261,12 +264,12 @@ separation live in the operating model; do not reconstruct them from chat.
 
 ## First job
 
-`origin/main` includes SQLCipher leftover-open as `1de6ff2`
-(PR #110). Cloud Run `00014-sbm`. Owner APK SHA256
+`origin/main` includes Gap 7 fail-closed ingest as `e3eaa81`
+(PR #112). Cloud Run `00014-sbm`. Owner APK SHA256
 `76d7e9be3186a817a12664ed51b62e1db1ea8c946d5d5ac67b47912762036714`
 (built from `1aa405c`; rebuild from `1de6ff2` to drop `pm clear`).
 
-No Genie job is open. Next is Gap 7 once a brief exists. Do not
+Open Genie job: `docs/briefs/GENIE_SPEC_43_G8_CACHE.md`. Do not
 start remaining Gap 9 GPS/sample-size, production LLM, trip-less
 Ask, or unknown-time excursions without a brief. Do not apply 0026
 until `rolbypassrls` is confirmed for `postgres` and `service_role`.

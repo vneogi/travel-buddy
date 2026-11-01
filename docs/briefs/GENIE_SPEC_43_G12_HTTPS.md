@@ -3,7 +3,7 @@
 Landed on `main` as `6f1dab8` (PR #82). Do not re-implement this slice.
 Cache keys `290f821`. Chat URLs `14ce56d`. ATS `be89128`. Deep-link
 `f486079`. Gap 9 schemas `fb72545`. Next:
-Gap 7 has no Genie brief yet.
+Gap 8 identity-scoped semantic cache (`docs/briefs/GENIE_SPEC_43_G8_CACHE.md`).
 
 ## Goal
 

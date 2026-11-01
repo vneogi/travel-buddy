@@ -3,7 +3,7 @@
 Landed on `main` as `163a14c` (PR #81). Do not re-implement this slice.
 Gap 12 navigation privacy landed through `f486079`. Closed schemas
 landed as `fb72545`. Next:
-Gap 7 has no Genie brief yet.
+Gap 8 identity-scoped semantic cache (`docs/briefs/GENIE_SPEC_43_G8_CACHE.md`).
 
 ## Goal
 

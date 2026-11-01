@@ -116,7 +116,8 @@ The immediate order after the field-test gate:
     trip-private uncatalogued Add (PR #77, `05d917e`) are on main;
     SPEC-43 Gaps 1, 6, 2, 9 ownership+schemas, and 12 HTTPS are on
     main (`fb72545`); next is
-    Gap 7 has no Genie brief yet;
+    Gap 8 identity-scoped semantic cache
+    (`docs/briefs/GENIE_SPEC_43_G8_CACHE.md`);
     unknown-time excursions stay later;
 12. implement SPEC-43 before any non-owner distribution, production LLM
    processing of personal trip data, or the planned December launch;

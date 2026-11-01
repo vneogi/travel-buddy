@@ -79,12 +79,12 @@ not anonymous, and it is not safe to hand to a tester.
 | Export, deletion, retention, backup tombstones | SPEC-43 gap 4, SPEC-27 | A tester can leave and take or erase their data |
 | Encrypted offline store; backup exclusion | SPEC-43 gap 5, SPEC-04 | Backup `1672759` + SQLCipher `9cb2324` on main. Remainders: masking, FLAG_SECURE, iOS file protection, ProGuard if minify on |
 | Real sign-out and account-switch isolation | SPEC-43 gap 6, SPEC-24 | Shared-phone hostel use does not leak the last identity |
-| Versioned purpose consent; optional capture blocked | SPEC-43 gap 7 | No cohort analytics before a real choice |
+| Versioned purpose consent; optional capture blocked | SPEC-43 gap 7 | Server fail-closed optional ingest on main (`e3eaa81`). Flutter outbox/UI remainder |
 | Private semantic-cache isolation | SPEC-43 gap 8 | Ask cache cannot cross users |
 | Signal ownership and poisoning controls | SPEC-43 gap 9 | A supplied trip id is not a write primitive |
 | Redacted diagnostics; no production debug | SPEC-43 gap 10, SPEC-05 | Failures do not retain secrets |
 | Abuse and provider-spend limits | SPEC-43 gap 11 | A stolen APK cannot run unbounded Ask |
-| Release HTTPS and identity-scoped caches | SPEC-43 gap 12 | HTTPS+cache+chat URLs+ATS+trip-route ownership on main (`f486079`); lock-screen waits on OS push. Hosted Gap 1 `00014-sbm`. Leftover-open `1de6ff2`. Next: Gap 7 has no brief yet |
+| Release HTTPS and identity-scoped caches | SPEC-43 gap 12 | HTTPS+cache+chat URLs+ATS+trip-route ownership on main (`f486079`); lock-screen waits on OS push. Hosted Gap 1 `00014-sbm`. Leftover-open `1de6ff2`. Gap 7 `e3eaa81`. Next Genie: Gap 8 (`docs/briefs/GENIE_SPEC_43_G8_CACHE.md`) |
 
 SPEC-24 (merge, aliases, sign-out) and SPEC-27 (rights, minimum client,
 push transport) are implementation dependencies inside this gate, not

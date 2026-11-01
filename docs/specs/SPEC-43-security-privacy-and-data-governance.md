@@ -10,9 +10,10 @@
 > trip-route ownership `f486079` (PR #95). Gap 5 backup
 > `1672759` (PR #105). Gap 5 SQLCipher `9cb2324` (PR #107).
 > Hosted Gap 1 live on `00014-sbm`. Owner G0 APK 2026-10-31.
-> Leftover-open wipe `1de6ff2` (PR #110). Next: Gap 7 has no
-> Genie brief yet. Gap 12 lock-screen waits on OS push. Hosted
-> apply of 0026 is not done.
+> Leftover-open wipe `1de6ff2` (PR #110). Gap 7 fail-closed
+> ingest `e3eaa81` (PR #112). Next Genie: Gap 8 identity-scoped
+> semantic cache (`docs/briefs/GENIE_SPEC_43_G8_CACHE.md`). Gap 12
+> lock-screen waits on OS push. Hosted apply of 0026 is not done.
 >
 > Sequence: start after the Laos reliability and build tranche is complete:
 > SPEC-41 scheduling, SPEC-10 paste and flight/hotel scheduler, SPEC-25
@@ -310,8 +311,15 @@ synchronization, rotate identity, or wipe account-scoped local records.
 
 ### Gap 7: behavioral capture has a consent stub, not a policy
 
-**Current fact.** `require_consent()` always passes. Signals can describe
-visits, skips, loves, dishes, timestamps, and stamped party age bands.
+**Status on main.** Fail-closed optional ingest `e3eaa81` (PR #112).
+Remainders: Flutter outbox/UI, grant ledger, withdrawal, age-band
+destamp.
+
+**Current fact (remaining).** Server rejects optional personalization
+and analytics types without a grant. There is no grant ledger, so
+those types are always rejected. Flutter still enqueues loves.
+Necessary trip-operation types still ingest. `require_consent()` no
+longer always passes. Signals can still stamp party age bands.
 
 **Solution.**
 
@@ -337,6 +345,10 @@ visits, skips, loves, dishes, timestamps, and stamped party age bands.
 - No child-level signal or profile can be created.
 
 ### Gap 8: semantic cache can cross user boundaries
+
+**Status on main.** Not started. Brief:
+`docs/briefs/GENIE_SPEC_43_G8_CACHE.md` (identity isolation on the
+live in-memory cache).
 
 **Current fact.** The process-wide cache is scoped by semantic similarity,
 region, and current venue, not by identity, trip, date, source version, or a
