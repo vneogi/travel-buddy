@@ -117,6 +117,22 @@ def auth_headers():
 
 
 @pytest.fixture(autouse=True)
+def _suite_consent_grant(request, monkeypatch):
+    """SPEC-43 Gap 7: grant every purpose for the suite.
+
+    Production has_consent fails closed for optional purposes. Tests marked
+    ``real_consent`` skip this grant and exercise the production check.
+    """
+    if request.node.get_closest_marker("real_consent"):
+        yield
+        return
+    import services.consent as consent
+
+    monkeypatch.setattr(consent, "has_consent", lambda user_id, purpose: True)
+    yield
+
+
+@pytest.fixture(autouse=True)
 def _reset_state():
     """Reset in-memory state between tests."""
     yield
