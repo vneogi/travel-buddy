@@ -15,8 +15,7 @@
 > (PR #114). Gap 10 error-ring redaction `fbe96f6` (PR #117).
 > Gap 11 body/depth `2077d8d` (PR #119). Gap 9 GPS
 > `08253cb` (PR #122). Gap 9 derived metadata `4265403`
-> (PR #125). Next Genie: Gap 11 per-identity/IP rate
-> (`docs/briefs/GENIE_SPEC_43_G11_RATE.md`). Gap 12
+> (PR #125). Gap 11 rate `c70296c` (PR #128). Gap 12
 > lock-screen waits on OS push. Hosted apply of 0026 is not done.
 >
 > Sequence: start after the Laos reliability and build tranche is complete:
@@ -453,9 +452,8 @@ client, and provider keys may appear in request URLs.
 ### Gap 11: there is no general abuse or resource-consumption boundary
 
 **Status on main.** Body/depth bounds landed as `2077d8d` (PR #119).
-Next Genie: per-identity/IP rate
-(`docs/briefs/GENIE_SPEC_43_G11_RATE.md`). Remainders:
-gateway, spend circuit, Play Integrity.
+In-process per-identity/IP rate landed as `c70296c` (PR #128).
+Remainders: gateway, spend circuit, Play Integrity.
 
 **Current fact.** Reroutes have a quota, but the API has no visible general
 per-route rate limit, request-body limit, anonymous-account creation control,

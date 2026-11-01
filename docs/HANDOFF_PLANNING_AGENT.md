@@ -14,7 +14,7 @@ anonymous JWT, SPEC-43 Gap 6 sign-out, SPEC-43 Gap 2 RLS,
 SPEC-43 Gap 9 signal ownership and closed schemas, SPEC-43 Gap 12
 HTTPS fail-closed, and SPEC-43 Gap 12 identity-scoped caches, chat
 URLs, ATS, and trip-route ownership are on `main` through
-`4265403`. Hosted 0025 is applied. Cloud Run
+`c70296c`. Hosted 0025 is applied. Cloud Run
 `travel-buddy-00014-sbm` is the live untagged revision (Gap 1 JWKS).
 SPEC-42 remains PARTIAL (unknown-time excursions later). Create-then-book
 HITL reflow remains. Trip-optional Ask remains. What Now Phase B GPS
@@ -28,8 +28,9 @@ is on main. Gap 8 identity-scoped semantic cache `62927dd`
 (PR #117) is on main. Gap 11 body/depth bounds `2077d8d`
 (PR #119) is on main. Gap 9 GPS `08253cb` (PR #122) is on
 main. Owner G0 APK is on the phone. Gap 9 derived metadata
-`4265403` (PR #125) is on main. Next Genie is Gap 11
-per-identity/IP rate (`docs/briefs/GENIE_SPEC_43_G11_RATE.md`).
+`4265403` (PR #125) is on main. Gap 11 rate `c70296c`
+(PR #128) is on main. No open Genie brief. Remainders:
+Armor/spend/Play Integrity and `derived_feature` table.
 Do not apply 0026 until `rolbypassrls` is confirmed.
 
 SPEC-44 Phase A application code merged as PR #67 (`9a7b9d9`). Planning
@@ -110,8 +111,8 @@ Gap 1 and the owner G0 APK are live. Leftover-open wipe
 `fbe96f6` (PR #117) is on main. Gap 11 body/depth bounds
 `2077d8d` (PR #119) is on main. Gap 9 GPS `08253cb`
 (PR #122) is on main. Gap 9 derived metadata `4265403`
-(PR #125) is on main. Next Genie is Gap 11
-per-identity/IP rate (`docs/briefs/GENIE_SPEC_43_G11_RATE.md`).
+(PR #125) is on main. Gap 11 rate `c70296c` (PR #128)
+is on main. No open Genie brief.
 Remaining Gap 9
 `derived_feature` table,
 unknown-time excursions, and Laos decision-cell coverage stay later.
@@ -246,8 +247,8 @@ Resume in this order:
 5. Patch Laos spine and effective-choice gaps: Kuang Si, Pak Ou, Blue Lagoon
    2/3, Papao, and the Wat Xieng Thong packing failure. Measure coverage by
    common decision cell, not total POI count.
-6. Implement remaining SPEC-43 (Gap 11 per-identity/IP rate is the
-   open Genie job; `derived_feature` table; hosted 0026; Gap 12
+6. Implement remaining SPEC-43 (Gap 11 Armor/spend/Play Integrity;
+   `derived_feature` table; hosted 0026; Gap 12
    lock-screen waits on OS
    push) before any
    non-owner APK, hostel QR, production LLM on
@@ -275,13 +276,13 @@ separation live in the operating model; do not reconstruct them from chat.
 
 ## First job
 
-`origin/main` includes Gap 9 derived metadata as `4265403`
-(PR #125) and docs `c87b398`. Cloud Run `00014-sbm`. Owner APK SHA256
+`origin/main` includes Gap 11 rate as `c70296c` (PR #128).
+Cloud Run `00014-sbm`. Owner APK SHA256
 `76d7e9be3186a817a12664ed51b62e1db1ea8c946d5d5ac67b47912762036714`
 (built from `1aa405c`; rebuild from `1de6ff2` to drop `pm clear`).
 
-Open Genie job: `docs/briefs/GENIE_SPEC_43_G11_RATE.md`. Do not
-start a `derived_feature` table, production LLM, trip-less
+No open Genie brief. Remainders: Gap 11 gateway/spend/Play Integrity;
+`derived_feature` table. Do not start production LLM, trip-less
 Ask, or unknown-time excursions without a brief. Do not apply 0026
 until `rolbypassrls` is confirmed for `postgres` and `service_role`.
 
