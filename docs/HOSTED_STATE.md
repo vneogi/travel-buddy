@@ -71,8 +71,9 @@ remains on `travel-buddy-00009-qek` at 0% for rollback.
 
 Release posture: this is an owner-only field-test service, not a beta or public
 launch. SPEC-43 records twelve security/privacy gaps that must close after the
-Laos build and before another person receives an APK. The owner G0 APK now uses a Supabase anonymous JWT. Gap 11 still
-allows unlimited anon JWTs. Production LLM processing of personal
+Laos build and before another person receives an APK. The owner G0 APK now uses a Supabase anonymous JWT. Gap 11 body/depth
+is on main (`2077d8d`); unlimited anon JWTs and spend
+remainders stay. Production LLM processing of personal
 trip data remains disabled until the redacting egress and
 provider/region/retention controls pass.
 

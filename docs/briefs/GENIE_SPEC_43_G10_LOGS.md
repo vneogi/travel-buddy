@@ -1,10 +1,9 @@
 # Genie brief: SPEC-43 Gap 10 -- redact secrets in the error ring
 
 Landed on `main` as `fbe96f6` (PR #117). Do not re-implement this slice.
-Next: Gap 11 body/depth bounds
-(`docs/briefs/GENIE_SPEC_43_G11_ABUSE.md`). Do not start Gap 11
-remainders (gateway/rate/spend), remaining Gap 9 GPS, hosted 0026,
-Flutter, deploy, or an APK without a new brief.
+Gap 11 body/depth bounds landed as `2077d8d` (PR #119). Do not start
+Gap 11 remainders (gateway/rate/spend), remaining Gap 9 GPS, hosted
+0026, Flutter, deploy, or an APK without a new brief.
 
 ## Goal
 
