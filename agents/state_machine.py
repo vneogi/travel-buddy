@@ -399,6 +399,7 @@ class TripStateMachine:
                 cache_service.store_response(
                     state["message"],
                     state["response"],
+                    identity_scope=state["user_id"],
                     geo_region=geo,
                     venue_name=venue,
                 )
@@ -443,6 +444,7 @@ class TripStateMachine:
             venue = cn.venue_name if cn else ""
             cache_result = cache_service.check_cache(
                 state["message"],
+                identity_scope=state["user_id"],
                 geo_region=geo,
                 venue_name=venue,
             )

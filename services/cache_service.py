@@ -12,14 +12,29 @@ from config.settings import settings
 from services.embedding_service import embedding_service
 
 
+def normalize_identity_scope(identity_scope: object) -> Optional[str]:
+    """SPEC-43 Gap 8: usable cache identity, or None.
+
+    Empty, whitespace, and the literal 'anonymous' are not scopes: there is
+    no shared bucket for unidentified callers.
+    """
+    if identity_scope is None:
+        return None
+    scope = str(identity_scope).strip()
+    if not scope or scope == "anonymous":
+        return None
+    return scope
+
+
 class CacheEntry:
-    """A single cached query-response pair."""
+    """A single cached query-response pair, owned by one identity scope."""
 
     def __init__(
         self,
         query_text: str,
         response_text: str,
         embedding: List[float],
+        identity_scope: str,
         geo_lat: float = 25.1972,
         geo_lng: float = 55.2744,
         geo_region: str = "",
@@ -28,6 +43,7 @@ class CacheEntry:
         self.query_text = query_text
         self.response_text = response_text
         self.embedding = embedding
+        self.identity_scope = identity_scope
         self.geo_lat = geo_lat
         self.geo_lng = geo_lng
         self.geo_region = geo_region
@@ -57,6 +73,8 @@ class SemanticCacheService:
     def check_cache(
         self,
         query: str,
+        *,
+        identity_scope: str,
         geo_lat: float = 25.1972,
         geo_lng: float = 55.2744,
         geo_region: str = "",
@@ -64,12 +82,18 @@ class SemanticCacheService:
     ) -> Optional[Tuple[str, float]]:
         """Check if a semantically similar query exists in cache.
 
-        Cache entries are scoped by (geo_region, venue_name) so that
-        the same question text in different destinations never collides.
+        Cache entries are scoped by (identity_scope, geo_region, venue_name)
+        so the same question text from another traveller or in another
+        destination never collides (SPEC-43 Gap 8).
 
         Returns:
             Tuple of (cached_response, similarity_score) if hit, None if miss.
         """
+        scope = normalize_identity_scope(identity_scope)
+        if scope is None:
+            self.total_misses += 1
+            return None
+
         query_embedding = embedding_service.generate_embedding(query)
 
         best_match: Optional[CacheEntry] = None
@@ -77,6 +101,9 @@ class SemanticCacheService:
 
         for entry in self._cache:
             if entry.is_expired:
+                continue
+            # SPEC-43 Gap 8: same owner, exact match after strip.
+            if entry.identity_scope != scope:
                 continue
             # Scope: same region AND same venue context.
             if entry.geo_region != geo_region or entry.venue_name != venue_name:
@@ -100,6 +127,8 @@ class SemanticCacheService:
         self,
         query: str,
         response: str,
+        *,
+        identity_scope: str,
         geo_lat: float = 25.1972,
         geo_lng: float = 55.2744,
         geo_region: str = "",
@@ -107,15 +136,18 @@ class SemanticCacheService:
     ) -> None:
         """Store a query-response pair in the cache.
 
-        The entry is keyed by (geo_region, venue_name, semantic_embedding)
-        so identical question text scoped to different destinations produces
-        independent cache entries.
+        The entry is keyed by (identity_scope, geo_region, venue_name,
+        semantic_embedding). An unusable identity stores nothing.
         """
+        scope = normalize_identity_scope(identity_scope)
+        if scope is None:
+            return
         embedding = embedding_service.generate_embedding(query)
         entry = CacheEntry(
             query_text=query,
             response_text=response,
             embedding=embedding,
+            identity_scope=scope,
             geo_lat=geo_lat,
             geo_lng=geo_lng,
             geo_region=geo_region,

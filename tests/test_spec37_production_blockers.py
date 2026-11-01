@@ -183,6 +183,11 @@ async def test_heavy_llm_failure_returns_canned_response_not_500():
 # ------------------------------------------------------------------
 
 
+# SPEC-43 Gap 8: cache entries are identity-scoped; geo isolation is
+# exercised for one traveller.
+_CACHE_USER = "user-spec37-cache"
+
+
 def test_cache_dubai_answer_not_served_in_vientiane():
     """Cache a response for Dubai context, then query with the same
     text in Vientiane context -- the Dubai answer must NOT be returned."""
@@ -192,6 +197,7 @@ def test_cache_dubai_answer_not_served_in_vientiane():
     cache_service.store_response(
         "What temples should I visit?",
         "Visit the Jumeirah Mosque in Dubai.",
+        identity_scope=_CACHE_USER,
         geo_region="dubai_uae",
         venue_name="Burj Khalifa",
     )
@@ -199,6 +205,7 @@ def test_cache_dubai_answer_not_served_in_vientiane():
     # Same question text, different region
     hit = cache_service.check_cache(
         "What temples should I visit?",
+        identity_scope=_CACHE_USER,
         geo_region="vientiane_laos",
         venue_name="COPE Visitor Centre",
     )
@@ -207,6 +214,7 @@ def test_cache_dubai_answer_not_served_in_vientiane():
     # Same region + venue should hit
     hit = cache_service.check_cache(
         "What temples should I visit?",
+        identity_scope=_CACHE_USER,
         geo_region="dubai_uae",
         venue_name="Burj Khalifa",
     )
@@ -221,12 +229,14 @@ def test_cache_different_venue_same_region_misses():
     cache_service.store_response(
         "Is it open now?",
         "Burj Khalifa is open 24/7.",
+        identity_scope=_CACHE_USER,
         geo_region="dubai_uae",
         venue_name="Burj Khalifa",
     )
 
     hit = cache_service.check_cache(
         "Is it open now?",
+        identity_scope=_CACHE_USER,
         geo_region="dubai_uae",
         venue_name="Dubai Mall",
     )
