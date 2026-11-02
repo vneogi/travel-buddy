@@ -5,11 +5,23 @@ Before routing to an LLM, checks if a semantically similar query
 has been answered recently. Threshold: 0.92 cosine similarity.
 """
 
+import hashlib
+import hmac
+import secrets
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Tuple
 
 from config.settings import settings
 from services.embedding_service import embedding_service
+
+
+def hmac_query(query: str, key: bytes) -> str:
+    """SPEC-43 Gap 8: HMAC-SHA256 (hex) of the UTF-8 query bytes.
+
+    The cache stores this instead of the traveller's question. Matching
+    still uses the request-time embedding, never this digest.
+    """
+    return hmac.new(key, (query or "").encode("utf-8"), hashlib.sha256).hexdigest()
 
 
 def normalize_identity_scope(identity_scope: object) -> Optional[str]:
@@ -27,11 +39,14 @@ def normalize_identity_scope(identity_scope: object) -> Optional[str]:
 
 
 class CacheEntry:
-    """A single cached query-response pair, owned by one identity scope."""
+    """A single cached query-response pair, owned by one identity scope.
+
+    SPEC-43 Gap 8: holds query_hmac, never the raw question text.
+    """
 
     def __init__(
         self,
-        query_text: str,
+        query_hmac: str,
         response_text: str,
         embedding: List[float],
         identity_scope: str,
@@ -40,7 +55,7 @@ class CacheEntry:
         geo_region: str = "",
         venue_name: str = "",
     ):
-        self.query_text = query_text
+        self.query_hmac = query_hmac
         self.response_text = response_text
         self.embedding = embedding
         self.identity_scope = identity_scope
@@ -64,7 +79,10 @@ class SemanticCacheService:
     using pgvector's cosine similarity operator (<=>).
     """
 
-    def __init__(self):
+    def __init__(self, hmac_key: Optional[bytes] = None):
+        # SPEC-43 Gap 8: per-process key when none is injected (the in-memory
+        # cache already dies on restart). Never logged.
+        self._hmac_key: bytes = hmac_key if hmac_key is not None else secrets.token_bytes(32)
         self._cache: List[CacheEntry] = []
         self.threshold = settings.semantic_cache_threshold
         self.total_hits = 0
@@ -144,7 +162,7 @@ class SemanticCacheService:
             return
         embedding = embedding_service.generate_embedding(query)
         entry = CacheEntry(
-            query_text=query,
+            query_hmac=hmac_query(query, self._hmac_key),
             response_text=response,
             embedding=embedding,
             identity_scope=scope,
