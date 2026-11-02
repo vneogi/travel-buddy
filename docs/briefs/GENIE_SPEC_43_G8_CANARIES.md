@@ -1,9 +1,10 @@
 # Genie brief: SPEC-43 Gap 8 -- refuse restricted cache responses
 
-This is the open Gap 8 restricted-content canary slice. Implement
-it. Do not start trip/date/source-version hashing, active purge,
-admin IAM, Armor, Play Integrity, a `derived_feature` table,
-hosted 0026, Flutter, deploy, or an APK.
+Landed on `main` as `895045a` (PR #140). Do not re-implement this slice.
+Next: Gap 8 trip/date/source-version cache key
+(`docs/briefs/GENIE_SPEC_43_G8_CONTEXT.md`). Remainders: active
+purge, unused Supabase cache path. Do not start hosted 0026,
+Flutter, deploy, or an APK without a new brief.
 
 ## Goal
 
