@@ -1,8 +1,10 @@
 # Genie brief: SPEC-43 Gap 8 -- trip, date, and source version in the cache key
 
 Landed on `main` as `606626e` (PR #142). Do not re-implement this slice.
-Remainders: active purge, unused Supabase cache path. Do not
-start hosted 0026, Flutter, deploy, or an APK without a new brief.
+Next: Gap 8 active purge
+(`docs/briefs/GENIE_SPEC_43_G8_PURGE.md`). Remainder: unused
+Supabase cache path. Do not start hosted 0026, Flutter, deploy,
+or an APK without a new brief.
 
 ## Goal
 

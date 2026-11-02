@@ -14,7 +14,7 @@ anonymous JWT, SPEC-43 Gap 6 sign-out, SPEC-43 Gap 2 RLS,
 SPEC-43 Gap 9 signal ownership and closed schemas, SPEC-43 Gap 12
 HTTPS fail-closed, and SPEC-43 Gap 12 identity-scoped caches, chat
 URLs, ATS, and trip-route ownership are on `main` through
-`606626e`. Hosted 0025 is applied. Cloud Run
+`33d3995`. Hosted 0025 is applied. Cloud Run
 `travel-buddy-00014-sbm` is the live untagged revision (Gap 1 JWKS).
 SPEC-42 remains PARTIAL (unknown-time excursions later). Create-then-book
 HITL reflow remains. Trip-optional Ask remains. What Now Phase B GPS
@@ -34,7 +34,8 @@ main. Owner G0 APK is on the phone. Gap 9 derived metadata
 (PR #134) is on main. Gap 8 HMAC `5a9f684`
 (PR #137) is on main. Gap 8 canaries `895045a` (PR #140)
 is on main. Gap 8 trip/date/source-version `606626e`
-(PR #142) is on main. No open Genie brief.
+(PR #142) is on main. Next Genie is Gap 8 active purge
+(`docs/briefs/GENIE_SPEC_43_G8_PURGE.md`).
 Do not apply 0026 until `rolbypassrls` is confirmed.
 
 SPEC-44 Phase A application code merged as PR #67 (`9a7b9d9`). Planning
@@ -121,7 +122,8 @@ is on main. Gap 10 422 stripping `04169f9` (PR #134)
 is on main. Gap 8 HMAC `5a9f684` (PR #137)
 is on main. Gap 8 canaries `895045a` (PR #140) is on
 main. Gap 8 trip/date/source-version `606626e` (PR #142)
-is on main. No open Genie brief.
+is on main. Next Genie is Gap 8 active purge
+(`docs/briefs/GENIE_SPEC_43_G8_PURGE.md`).
 Remaining Gap 9
 `derived_feature` table,
 unknown-time excursions, and Laos decision-cell coverage stay later.
@@ -287,15 +289,15 @@ separation live in the operating model; do not reconstruct them from chat.
 ## First job
 
 `origin/main` includes Gap 8 trip/date/source-version as
-`606626e` (PR #142). Cloud Run `00014-sbm`. Owner APK SHA256
+`606626e` (PR #142) and docs `33d3995`. Cloud Run `00014-sbm`.
+Owner APK SHA256
 `76d7e9be3186a817a12664ed51b62e1db1ea8c946d5d5ac67b47912762036714`
 (built from `1aa405c`; rebuild from `1de6ff2` to drop `pm clear`).
 
-No open Genie job. Gap 8 in-memory cache now scopes identity,
-HMAC, restricted responses, trip, local date, and source version.
-Do not start Armor, Play Integrity, a `derived_feature` table,
-production LLM, trip-less Ask, or unknown-time excursions without
-a brief. Do not apply 0026 until `rolbypassrls` is confirmed for
+Open Genie job: `docs/briefs/GENIE_SPEC_43_G8_PURGE.md`. Do not
+start Armor, Play Integrity, a `derived_feature` table, production
+LLM, trip-less Ask, or unknown-time excursions without a brief.
+Do not apply 0026 until `rolbypassrls` is confirmed for
 `postgres` and `service_role`.
 
 Historical context (do not treat as current work):

@@ -23,14 +23,15 @@ documents disagree, follow Precedence below and name the conflict in
 
 ## Continuity state on 25 Oct 2026
 
-- GitHub `main` is through `606626e`: SPEC-45 field trust hygiene,
+- GitHub `main` is through `33d3995`: SPEC-45 field trust hygiene,
   SPEC-25 field-priority intents, SPEC-25 Phase C durable device-local
   threads, SPEC-46 What Now Phase A, thin typed Ask-to-Add, thin
   typed Move, empty-day catalog Add, trip-private uncatalogued Add,
   and SPEC-43 Gaps 1, 6, 2, 9 (ownership + closed schemas), and 12
   HTTPS, cache keys, chat URLs, ATS, and trip-route ownership are
   merged.
-- No open Genie brief. Gap 8 trip/date/source-version is on main
+- Next Genie: Gap 8 active purge
+  (`docs/briefs/GENIE_SPEC_43_G8_PURGE.md`). Gap 8 trip/date/source-version is on main
   (`606626e`, PR #142). Gap 8 canaries is on main
   (`895045a`, PR #140). Gap 8 HMAC is on main
   (`5a9f684`, PR #137). Gap 10 422 stripping is on main
@@ -145,6 +146,8 @@ Gap 10 422 stripping (`04169f9`, PR #134) is on main;
 Gap 8 HMAC (`5a9f684`, PR #137) is on main;
 Gap 8 canaries (`895045a`, PR #140) is on main;
 Gap 8 trip/date/source-version (`606626e`, PR #142) is on main;
+next is Gap 8 active purge
+(`docs/briefs/GENIE_SPEC_43_G8_PURGE.md`);
 SPEC-42 unknown-time
 excursions stay later;
 trip-optional and production-LLM SPEC-25; SPEC-10 HITL reflow;
