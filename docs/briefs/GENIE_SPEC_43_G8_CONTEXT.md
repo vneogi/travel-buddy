@@ -1,9 +1,8 @@
 # Genie brief: SPEC-43 Gap 8 -- trip, date, and source version in the cache key
 
-This is the open Gap 8 context-key slice. Implement it. Do not
-start an active expiry sweeper, admin IAM, Armor, Play Integrity,
-a `derived_feature` table, hosted 0026, Flutter, deploy, or an
-APK. Do not wire `supabase_service.check_cache` / `store_cache`.
+Landed on `main` as `606626e` (PR #142). Do not re-implement this slice.
+Remainders: active purge, unused Supabase cache path. Do not
+start hosted 0026, Flutter, deploy, or an APK without a new brief.
 
 ## Goal
 
