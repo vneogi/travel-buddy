@@ -2,8 +2,9 @@
 
 Landed on `main` as `62927dd` (PR #114). Do not re-implement this slice.
 Gap 8 HMAC, canaries, and trip/date/source-version are on main
-(`606626e`, PR #142). Remainders: active purge, unused SQL cache
-path. Do not start hosted 0026, Flutter, deploy, or an APK
+(`606626e`, PR #142). Next: Gap 8 active purge
+(`docs/briefs/GENIE_SPEC_43_G8_PURGE.md`). Remainder: unused SQL
+cache path. Do not start hosted 0026, Flutter, deploy, or an APK
 without a new brief.
 
 ## Goal
