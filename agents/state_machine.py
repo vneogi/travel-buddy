@@ -28,6 +28,7 @@ from models.schemas import (
 from services.db_provider import db_service
 from services.cache_service import cache_service
 from pydantic import ValidationError
+from services.ask_service import _CATALOG_VERSION
 from services.ask_service import (
     AskService,
     AskIntent,
@@ -418,6 +419,26 @@ class TripStateMachine:
         state["confidence"] = confidence
         return state
 
+    def _cache_scope(self, state: Dict) -> Dict[str, str]:
+        """Exact-match semantic-cache context shared by check and store.
+
+        SPEC-43 Gap 8: region + venue of the current-or-next node, plus the
+        trip, the destination-local date, and the source version
+        (itinerary version + catalog version). A change in any is a miss.
+        """
+        trip = state["trip_state"]
+        now_utc = state.get("now_utc") or datetime.now(timezone.utc)
+        cn = _current_or_next_pending(trip.nodes, now_utc)
+        geo = getattr(cn, "geo_region", None) or trip.geo_region or ""
+        venue = cn.venue_name if cn else ""
+        return {
+            "geo_region": geo,
+            "venue_name": venue,
+            "trip_id": str(trip.trip_id or ""),
+            "local_date": _local_date_of(now_utc, geo).isoformat(),
+            "source_version": f"{trip.version}:{_CATALOG_VERSION}",
+        }
+
     def _store_light_response(self, state: Dict) -> None:
         """Cache a LIGHT response for this identity / region / venue.
 
@@ -426,10 +447,6 @@ class TripStateMachine:
         stored.
         """
         trip = state["trip_state"]
-        now_utc = state.get("now_utc") or datetime.now(timezone.utc)
-        cn = _current_or_next_pending(trip.nodes, now_utc)
-        geo = getattr(cn, "geo_region", None) or trip.geo_region or ""
-        venue = cn.venue_name if cn else ""
         needles = [
             value
             for node in trip.nodes or []
@@ -443,9 +460,8 @@ class TripStateMachine:
             state["message"],
             state["response"],
             identity_scope=state["user_id"],
-            geo_region=geo,
-            venue_name=venue,
             restricted_needles=needles,
+            **self._cache_scope(state),
         )
 
     def _node_check_cache(self, state: Dict) -> Dict:
@@ -454,18 +470,12 @@ class TripStateMachine:
             state["routing_tier"] == RoutingTier.LIGHT
             and state["event_type"] not in STRUCTURAL_EDIT_EVENTS
         ):
-            # Resolve context for cache key so the same question
-            # in different regions never shares a cache entry.
-            trip = state["trip_state"]
-            now_utc = state.get("now_utc") or datetime.now(timezone.utc)
-            cn = _current_or_next_pending(trip.nodes, now_utc)
-            geo = getattr(cn, "geo_region", None) or trip.geo_region or ""
-            venue = cn.venue_name if cn else ""
+            # Resolve context for cache key so the same question in another
+            # region, venue, trip, local day, or source version never hits.
             cache_result = cache_service.check_cache(
                 state["message"],
                 identity_scope=state["user_id"],
-                geo_region=geo,
-                venue_name=venue,
+                **self._cache_scope(state),
             )
             if cache_result:
                 response_text, _ = cache_result
