@@ -1,9 +1,9 @@
 # Genie brief: SPEC-43 Gap 8 -- HMAC the in-memory cache query
 
-This is the open Gap 8 HMAC slice. Implement it. Do not start
-restricted-content canaries, trip/date/source-version hashing,
-active purge, admin IAM, Armor, Play Integrity, a
-`derived_feature` table, hosted 0026, Flutter, deploy, or an APK.
+Landed on `main` as `5a9f684` (PR #137). Do not re-implement this slice.
+Remainders: restricted canaries, trip/date/source-version, active
+purge, unused Supabase cache path. Do not start hosted 0026,
+Flutter, deploy, or an APK without a new brief.
 
 ## Goal
 

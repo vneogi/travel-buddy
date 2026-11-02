@@ -1,8 +1,7 @@
 # Genie brief: SPEC-43 Gap 8 -- identity-scope the semantic cache
 
 Landed on `main` as `62927dd` (PR #114). Do not re-implement this slice.
-Next: Gap 8 HMAC of query
-(`docs/briefs/GENIE_SPEC_43_G8_HMAC.md`). Remainders: canaries,
+Gap 8 HMAC landed as `5a9f684` (PR #137). Remainders: canaries,
 trip/date/source-version, active purge, unused SQL cache path.
 Do not start hosted 0026, Flutter, deploy, or an APK without a
 new brief.
