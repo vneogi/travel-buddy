@@ -66,8 +66,9 @@ PR #122). Gap 9 derived metadata is on main (`4265403`,
 PR #125). Gap 11 rate is on main (`c70296c`,
 PR #128). Gap 11 spend is on main (`e7c89b5`,
 PR #131). Gap 10 422 stripping is on main (`04169f9`,
-PR #134). Gap 8 HMAC `5a9f684` (PR #137).
-0026 not applied.
+PR #134). Gap 8 HMAC `5a9f684` (PR #137). Next Genie:
+Gap 8 restricted canaries
+(`docs/briefs/GENIE_SPEC_43_G8_CANARIES.md`). 0026 not applied.
 
 ## Finding -- Oct 27 2026 -- SPEC-43 Gap 5 SQLCipher merged
 

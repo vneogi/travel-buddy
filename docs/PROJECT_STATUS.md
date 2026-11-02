@@ -120,7 +120,7 @@
 | Guided Create Trip foundation (SPEC-40) | DONE (PR #61, `ebdea52`) | Five-step destination/date-range/party/interests/review flow backed by deterministic multi-day catalog selection. Post-merge CI and owner Flutter tests passed. Hosted deploy and phone acceptance are not yet repeated for this SHA |
 | Hours-aware scheduling and staged ranking (SPEC-41) | PHASE A COMPLETE (`d1fde14`, `7f25042`) | Create, corridor, and swap refuse known-closed or walking-unreachable target slots; day packing uses per-pair deterministic walking time and later opening windows; swap search/apply share reachability; locked non-hotel anchors remain reachable; cached `max_days` is guaranteed across weekdays and valid interest profiles |
 | Flexible trip span and sparse day editing (SPEC-42) | PARTIAL (`adc99d2`, merged `17e58ac`; Ask-to-Add `0344b4b`; Move `e51513e`; empty-day Add `b6ddecf`; uncatalogued `05d917e`) | Catalog-derived date caps removed; generation fills at most five starter days and empty dates render. Thin typed Ask-to-Add (PR #74), thin typed Move (PR #75), empty-day catalog Add (PR #76), and trip-private uncatalogued Add (PR #77) are on main. Unknown-time excursions remain later. Uncatalogued nodes cannot enter the shared catalog without review |
-| Security, privacy and data governance foundation (SPEC-43) | PARTIAL (Gaps 1, 6, 2, 9 ownership+schemas+GPS+derived metadata, 12 navigation privacy, 5 backup+SQLCipher, 7 fail-closed ingest, 8 identity cache+HMAC, 10 ring+422, 11 body/depth+rate+spend on main; hosted G1 live) | Gap 1 JWT `2460edf` hosted on `00014-sbm`. Gap 6 `c65261c`. Gap 2 0026 `0b8125f` (not hosted). Gap 9 ingest ownership `163a14c` (PR #81). Gap 9 closed schemas `fb72545` (PR #98). Gap 9 ranking isolation `9b49fd0` (PR #101). Gap 9 trip-place `cafba3c` (PR #103). Gap 12 HTTPS `6f1dab8` (PR #82). Gap 12 cache keys `290f821` (PR #85). Gap 12 chat URLs `14ce56d` (PR #89). Gap 12 ATS `be89128` (PR #92). Gap 12 trip-route ownership `f486079` (PR #95). Gap 5 backup `1672759` (PR #105). Gap 5 SQLCipher `9cb2324` (PR #107). Gap 5 leftover-open `1de6ff2` (PR #110). Gap 7 fail-closed ingest `e3eaa81` (PR #112). Gap 8 identity cache `62927dd` (PR #114). Gap 10 ring redaction `fbe96f6` (PR #117). Gap 11 body/depth `2077d8d` (PR #119). Gap 9 GPS `08253cb` (PR #122). Gap 9 derived metadata `4265403` (PR #125). Gap 11 rate `c70296c` (PR #128). Gap 11 spend `e7c89b5` (PR #131). Owner G0 APK `76d7e9be...` on `1aa405c` after `pm clear`. Gap 10 422 stripping `04169f9` (PR #134). Gap 8 HMAC `5a9f684` (PR #137). Remainders: Armor/Play Integrity; `derived_feature` table; Gap 8 canaries/SQL path. Hosted 0026 not applied |
+| Security, privacy and data governance foundation (SPEC-43) | PARTIAL (Gaps 1, 6, 2, 9 ownership+schemas+GPS+derived metadata, 12 navigation privacy, 5 backup+SQLCipher, 7 fail-closed ingest, 8 identity cache+HMAC, 10 ring+422, 11 body/depth+rate+spend on main; hosted G1 live) | Gap 1 JWT `2460edf` hosted on `00014-sbm`. Gap 6 `c65261c`. Gap 2 0026 `0b8125f` (not hosted). Gap 9 ingest ownership `163a14c` (PR #81). Gap 9 closed schemas `fb72545` (PR #98). Gap 9 ranking isolation `9b49fd0` (PR #101). Gap 9 trip-place `cafba3c` (PR #103). Gap 12 HTTPS `6f1dab8` (PR #82). Gap 12 cache keys `290f821` (PR #85). Gap 12 chat URLs `14ce56d` (PR #89). Gap 12 ATS `be89128` (PR #92). Gap 12 trip-route ownership `f486079` (PR #95). Gap 5 backup `1672759` (PR #105). Gap 5 SQLCipher `9cb2324` (PR #107). Gap 5 leftover-open `1de6ff2` (PR #110). Gap 7 fail-closed ingest `e3eaa81` (PR #112). Gap 8 identity cache `62927dd` (PR #114). Gap 10 ring redaction `fbe96f6` (PR #117). Gap 11 body/depth `2077d8d` (PR #119). Gap 9 GPS `08253cb` (PR #122). Gap 9 derived metadata `4265403` (PR #125). Gap 11 rate `c70296c` (PR #128). Gap 11 spend `e7c89b5` (PR #131). Owner G0 APK `76d7e9be...` on `1aa405c` after `pm clear`. Gap 10 422 stripping `04169f9` (PR #134). Gap 8 HMAC `5a9f684` (PR #137). Next Genie: Gap 8 restricted canaries (`docs/briefs/GENIE_SPEC_43_G8_CANARIES.md`). Remainders: Armor/Play Integrity; `derived_feature` table; Gap 8 trip/date/purge/SQL path. Hosted 0026 not applied |
 | Backend integrity and future-readiness foundation (SPEC-44) | PHASE A ON MAIN (PR #67, `9a7b9d9`) | Atomic trip/party/graph writes, optimistic version, durable command_id replay, typed conflicts, and hosted 0025. A4/A5, Flutter command queue, and SPEC-43 remain out of this slice |
 | On-trip visible surface (SPEC-45) | PHASE A + FIELD TRUST HYGIENE ON MAIN | Phase A chrome is on the field APK. Phase B field trust hygiene is on main through the post-field merge sequence: capped alerts, current-day/kind-specific outcomes, dead Review removal, and honest empty-swap refusal. Operational place detail, transfer cards, and Rescue remain later |
 | What Now foreground context (SPEC-46) | PHASE A ON MAIN (PR #73, `d1df944`) | Deterministic no-GPS What Now inside trip-scoped Ask: temporary time/energy/walking/intent, trip-position or region-anchor, shared `fits_next_lock`, inspectable reasons, named unknowns, display-only details. Owner Windows analyze infos-only; What Now widgets and full Flutter suite green. Hosted deploy, APK, and phone use not done. Phase B GPS only after SPEC-43 |
@@ -173,7 +173,9 @@ Current order:
    `4265403` (PR #125). Gap 11 rate `c70296c` (PR #128).
    Gap 11 spend `e7c89b5` (PR #131).
    Gap 10 422 stripping `04169f9` (PR #134).
-   Gap 8 HMAC `5a9f684` (PR #137). No open Genie brief.
+   Gap 8 HMAC `5a9f684` (PR #137). Next Genie: Gap 8
+   restricted canaries
+   (`docs/briefs/GENIE_SPEC_43_G8_CANARIES.md`).
    Unknown-time
    excursions stay later.
 4. Patch the Laos must-do/decision-cell data gaps. Target 3-5 feasible options
@@ -187,7 +189,9 @@ Current order:
    `4265403` (PR #125). Gap 11 rate `c70296c` (PR #128).
    Gap 11 spend `e7c89b5` (PR #131).
    Gap 10 422 stripping `04169f9` (PR #134).
-   Gap 8 HMAC `5a9f684` (PR #137). No open Genie brief.
+   Gap 8 HMAC `5a9f684` (PR #137). Next Genie: Gap 8
+   restricted canaries
+   (`docs/briefs/GENIE_SPEC_43_G8_CANARIES.md`).
 
 Defer Travelogue/Passport, maps/offline tiles, social, gamification, PDF,
 cross-trip memory, OTA promotion, and another city until this loop works.
@@ -388,7 +392,8 @@ Seed-shaped cohorts.
     (PR #128) is on main. Gap 11 spend `e7c89b5`
     (PR #131) is on main. Gap 10 422 stripping `04169f9`
     (PR #134) is on main. Gap 8 HMAC `5a9f684`
-    (PR #137) is on main. No open Genie brief.
+    (PR #137) is on main. Next Genie is Gap 8 restricted
+    canaries (`docs/briefs/GENIE_SPEC_43_G8_CANARIES.md`).
     Complete remaining
     gaps before any non-owner APK, production LLM processing of
     personal trip data, or the planned December public launch.
@@ -473,7 +478,7 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 | SPEC-43 gap 5: offline trip and booking data is plaintext and backup policy is implicit | Backup+SQLCipher+leftover-open on main | Backup `1672759`. SQLCipher `9cb2324`. Leftover `open_failed` wipe `1de6ff2` (PR #110). Overlay on a pre-SQLCipher store not yet phone-proven. Later: masking, FLAG_SECURE, iOS file protection |
 | SPEC-43 gap 6: sign-out does not revoke or clear the prior identity | Closed on main (`c65261c`, PR #79); hosted/phone not done | Halt sync, DELETE all local tables including outbox, GoTrue signOut, then mint a new anonymous JWT. Profile button keyed `profile_sign_out`. Access tokens may live until exp (no denylist). |
 | SPEC-43 gap 7: behavioral consent is a pass-through stub | Server fail-closed ingest on main (`e3eaa81`, PR #112) | Optional types reject without a grant. Remainders: Flutter outbox/UI, ledger, withdrawal, age-band destamp |
-| SPEC-43 gap 8: semantic cache can cross user boundaries | Identity+HMAC on live in-memory cache (`5a9f684`, PR #137) | Entries keyed by identity+region+venue. Stored query is HMAC-SHA256 hex, not plaintext. Remainders: canaries, trip/date/source version, active purge, unused Supabase cache path |
+| SPEC-43 gap 8: semantic cache can cross user boundaries | Identity+HMAC on live in-memory cache (`5a9f684`, PR #137); canaries next | Entries keyed by identity+region+venue. Stored query is HMAC-SHA256 hex, not plaintext. Next Genie: refuse restricted responses (`docs/briefs/GENIE_SPEC_43_G8_CANARIES.md`). Remainders: trip/date/source version, active purge, unused Supabase cache path |
 | SPEC-43 gap 9: trip-linked signals lack ownership and poisoning controls | Ownership+schemas+rate+place+GPS+derived metadata on main (`4265403` PR #125) | Ingest rejects foreign trip_id, unknown keys, per-place floods, off-itinerary place_ref, and impossible/far GPS on visit/skip. arrival_delta stamps server_derived method_version/sample_size. pack_day ignores loves. Remainder: `derived_feature` table |
 | SPEC-43 gap 10: errors and provider failures can retain sensitive values | Ring redaction + 422 strip on main (`04169f9`, PR #134) | Canaries become `REDACTED` in the ring. Client 422 keeps only type/loc/msg. Remainders: admin IAM, retention |
 | SPEC-43 gap 11: general request and provider-spend abuse controls are absent | Body/depth+rate+spend on main (`e7c89b5`, PR #131) | 256 KiB body cap, JSON depth 8, 30/identity plus 60/IP per minute, and in-process USD circuit ($5 process / $1 identity per day). Remainders: gateway, Play Integrity |

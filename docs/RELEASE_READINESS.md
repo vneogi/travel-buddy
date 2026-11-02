@@ -80,7 +80,7 @@ not anonymous, and it is not safe to hand to a tester.
 | Encrypted offline store; backup exclusion | SPEC-43 gap 5, SPEC-04 | Backup `1672759` + SQLCipher `9cb2324` on main. Remainders: masking, FLAG_SECURE, iOS file protection, ProGuard if minify on |
 | Real sign-out and account-switch isolation | SPEC-43 gap 6, SPEC-24 | Shared-phone hostel use does not leak the last identity |
 | Versioned purpose consent; optional capture blocked | SPEC-43 gap 7 | Server fail-closed optional ingest on main (`e3eaa81`). Flutter outbox/UI remainder |
-| Private semantic-cache isolation | SPEC-43 gap 8 | Live in-memory identity isolation (`62927dd`) and HMAC of query (`5a9f684`, PR #137) on main. Remainders: canaries, SQL path |
+| Private semantic-cache isolation | SPEC-43 gap 8 | Live in-memory identity isolation (`62927dd`) and HMAC of query (`5a9f684`, PR #137) on main. Next Genie: restricted canaries (`docs/briefs/GENIE_SPEC_43_G8_CANARIES.md`). Remainders: trip/date, SQL path |
 | Signal ownership and poisoning controls | SPEC-43 gap 9 | Ownership+place+GPS+derived metadata on main (`4265403`). Remainder: `derived_feature` table |
 | Redacted diagnostics; no production debug | SPEC-43 gap 10, SPEC-05 | Ring redaction `fbe96f6` and 422 stripping `04169f9` (PR #134) on main. Remainders: admin IAM, retention |
 | Abuse and provider-spend limits | SPEC-43 gap 11 | Body/depth `2077d8d`, rate `c70296c`, spend `e7c89b5` (PR #131) on main. Remainders: gateway, Play Integrity |
