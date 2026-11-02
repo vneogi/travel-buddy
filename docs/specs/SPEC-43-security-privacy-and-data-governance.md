@@ -17,9 +17,9 @@
 > `08253cb` (PR #122). Gap 9 derived metadata `4265403`
 > (PR #125). Gap 11 rate `c70296c` (PR #128). Gap 11 spend
 > `e7c89b5` (PR #131). Gap 10 422 stripping `04169f9`
-> (PR #134). Gap 8 HMAC `5a9f684` (PR #137). Next Genie:
-> Gap 8 restricted canaries
-> (`docs/briefs/GENIE_SPEC_43_G8_CANARIES.md`). Gap 12
+> (PR #134). Gap 8 HMAC `5a9f684` (PR #137). Gap 8 canaries
+> `895045a` (PR #140). Next Genie: Gap 8 trip/date/source-version
+> (`docs/briefs/GENIE_SPEC_43_G8_CONTEXT.md`). Gap 12
 > lock-screen waits on OS push. Hosted apply of 0026 is not done.
 >
 > Sequence: start after the Laos reliability and build tranche is complete:
@@ -354,18 +354,18 @@ longer always passes. Signals can still stamp party age bands.
 ### Gap 8: semantic cache can cross user boundaries
 
 **Status on main.** Live in-memory identity isolation `62927dd`
-(PR #114). HMAC of query `5a9f684` (PR #137). Next Genie:
-restricted canaries
-(`docs/briefs/GENIE_SPEC_43_G8_CANARIES.md`). Remainders:
-trip/date/source-version, active purge, unused Supabase
-`cached_responses` path.
+(PR #114). HMAC of query `5a9f684` (PR #137). Restricted
+canaries `895045a` (PR #140). Next Genie: trip/date/source-version
+(`docs/briefs/GENIE_SPEC_43_G8_CONTEXT.md`). Remainders: active
+purge, unused Supabase `cached_responses` path.
 
 **Current fact (remaining).** Process-wide cache entries are keyed
 by identity, region, and venue. Stored query is HMAC-SHA256 hex,
-not plaintext. Empty/`anonymous` identities do not store or hit.
-Persistent `cached_responses` is still unscoped and unused on the
-live path. Trip, date, source version, and restricted-content
-canaries are not in the key.
+not plaintext. Restricted responses (Gap 10 token patterns, trip
+`confirmation_code` / `booking_notes`) are not stored.
+Empty/`anonymous` identities do not store or hit. Persistent
+`cached_responses` is still unscoped and unused on the live path.
+Trip, date, and source version are not in the key.
 
 **Solution.**
 
