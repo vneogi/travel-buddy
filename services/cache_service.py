@@ -9,9 +9,10 @@ import hashlib
 import hmac
 import secrets
 from datetime import datetime, timedelta, timezone
-from typing import List, Optional, Tuple
+from typing import Iterable, List, Optional, Tuple
 
 from config.settings import settings
+from monitoring.redact import redact_secrets
 from services.embedding_service import embedding_service
 
 
@@ -22,6 +23,30 @@ def hmac_query(query: str, key: bytes) -> str:
     still uses the request-time embedding, never this digest.
     """
     return hmac.new(key, (query or "").encode("utf-8"), hashlib.sha256).hexdigest()
+
+
+# Same floor as Gap 10 literal redaction: shorter needles would match prose.
+MIN_RESTRICTED_NEEDLE_LEN = 6
+
+
+def response_is_restricted(response: str, extra_needles: Iterable[object] = ()) -> bool:
+    """SPEC-43 Gap 8: True if *response* must not be cached.
+
+    Restricted when Gap 10 token detection would change it (keys, Bearer
+    tokens, sk-/AIza-style values, configured secrets), or when any extra
+    needle (e.g. a trip node's confirmation_code / booking_notes) of at
+    least MIN_RESTRICTED_NEEDLE_LEN chars appears in it.
+    """
+    text = response or ""
+    if redact_secrets(text) != text:
+        return True
+    for needle in extra_needles or ():
+        if needle is None:
+            continue
+        value = str(needle).strip()
+        if len(value) >= MIN_RESTRICTED_NEEDLE_LEN and value in text:
+            return True
+    return False
 
 
 def normalize_identity_scope(identity_scope: object) -> Optional[str]:
@@ -151,14 +176,20 @@ class SemanticCacheService:
         geo_lng: float = 55.2744,
         geo_region: str = "",
         venue_name: str = "",
+        restricted_needles: Iterable[object] = (),
     ) -> None:
         """Store a query-response pair in the cache.
 
         The entry is keyed by (identity_scope, geo_region, venue_name,
-        semantic_embedding). An unusable identity stores nothing.
+        semantic_embedding). An unusable identity stores nothing. A
+        restricted response (SPEC-43 Gap 8) stores nothing: no
+        redact-and-store, and neither the response nor the needles are
+        logged.
         """
         scope = normalize_identity_scope(identity_scope)
         if scope is None:
+            return
+        if response_is_restricted(response, restricted_needles):
             return
         embedding = embedding_service.generate_embedding(query)
         entry = CacheEntry(

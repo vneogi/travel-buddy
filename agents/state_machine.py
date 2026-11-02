@@ -391,18 +391,7 @@ class TripStateMachine:
                 and state["routing_tier"] == RoutingTier.LIGHT
                 and state["event_type"] not in STRUCTURAL_EDIT_EVENTS
             ):
-                trip = state["trip_state"]
-                now_utc = state.get("now_utc") or datetime.now(timezone.utc)
-                cn = _current_or_next_pending(trip.nodes, now_utc)
-                geo = getattr(cn, "geo_region", None) or trip.geo_region or ""
-                venue = cn.venue_name if cn else ""
-                cache_service.store_response(
-                    state["message"],
-                    state["response"],
-                    identity_scope=state["user_id"],
-                    geo_region=geo,
-                    venue_name=venue,
-                )
+                self._store_light_response(state)
 
         # Bug #1: copy ask_response onto return dict
         result = {
@@ -428,6 +417,36 @@ class TripStateMachine:
         state["routing_tier"] = tier
         state["confidence"] = confidence
         return state
+
+    def _store_light_response(self, state: Dict) -> None:
+        """Cache a LIGHT response for this identity / region / venue.
+
+        SPEC-43 Gap 8: every node's confirmation_code and booking_notes are
+        passed as restricted needles, so a response that echoes them is not
+        stored.
+        """
+        trip = state["trip_state"]
+        now_utc = state.get("now_utc") or datetime.now(timezone.utc)
+        cn = _current_or_next_pending(trip.nodes, now_utc)
+        geo = getattr(cn, "geo_region", None) or trip.geo_region or ""
+        venue = cn.venue_name if cn else ""
+        needles = [
+            value
+            for node in trip.nodes or []
+            for value in (
+                getattr(node, "confirmation_code", None),
+                getattr(node, "booking_notes", None),
+            )
+            if value
+        ]
+        cache_service.store_response(
+            state["message"],
+            state["response"],
+            identity_scope=state["user_id"],
+            geo_region=geo,
+            venue_name=venue,
+            restricted_needles=needles,
+        )
 
     def _node_check_cache(self, state: Dict) -> Dict:
         """Light requests only \u2014 structural edits always need fresh processing."""
