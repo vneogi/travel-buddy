@@ -142,6 +142,9 @@ class SemanticCacheService:
         Returns:
             Tuple of (cached_response, similarity_score) if hit, None if miss.
         """
+        # SPEC-43 Gap 8: delete expired rows from memory (not just skip them),
+        # before the identity early-return so any request purges.
+        self.clear_expired()
         scope = normalize_identity_scope(identity_scope)
         if scope is None:
             self.total_misses += 1
@@ -207,6 +210,9 @@ class SemanticCacheService:
         redact-and-store, and neither the response nor the needles are
         logged.
         """
+        # SPEC-43 Gap 8: delete expired rows from memory (not just skip them),
+        # before the identity early-return so any request purges.
+        self.clear_expired()
         scope = normalize_identity_scope(identity_scope)
         if scope is None:
             return
