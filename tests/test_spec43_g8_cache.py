@@ -112,11 +112,8 @@ def _light_state(user_id: str) -> dict:
 
 def test_orchestrator_cache_node_scopes_by_state_user_id():
     state_a = _light_state(USER_A)
-    node = state_a["trip_state"].nodes[0]
-    geo = getattr(node, "geo_region", None) or REGION
-    cache_service.store_response(
-        QUERY, PROSE, identity_scope=USER_A, geo_region=geo, venue_name=VENUE
-    )
+    state_a["response"] = PROSE
+    state_machine._store_light_response(state_a)
 
     out_b = state_machine._node_check_cache(_light_state(USER_B))
     assert out_b["from_cache"] is False

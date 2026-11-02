@@ -79,6 +79,9 @@ class CacheEntry:
         geo_lng: float = 55.2744,
         geo_region: str = "",
         venue_name: str = "",
+        trip_id: str = "",
+        local_date: str = "",
+        source_version: str = "",
     ):
         self.query_hmac = query_hmac
         self.response_text = response_text
@@ -88,6 +91,10 @@ class CacheEntry:
         self.geo_lng = geo_lng
         self.geo_region = geo_region
         self.venue_name = venue_name
+        # SPEC-43 Gap 8: exact-match context (never hashed or embedded).
+        self.trip_id = trip_id
+        self.local_date = local_date
+        self.source_version = source_version
         self.created_at = datetime.now(tz=timezone.utc)
         self.hit_count = 0
         self.expires_at = self.created_at + timedelta(hours=settings.cache_ttl_hours)
@@ -122,6 +129,9 @@ class SemanticCacheService:
         geo_lng: float = 55.2744,
         geo_region: str = "",
         venue_name: str = "",
+        trip_id: str = "",
+        local_date: str = "",
+        source_version: str = "",
     ) -> Optional[Tuple[str, float]]:
         """Check if a semantically similar query exists in cache.
 
@@ -151,6 +161,14 @@ class SemanticCacheService:
             # Scope: same region AND same venue context.
             if entry.geo_region != geo_region or entry.venue_name != venue_name:
                 continue
+            # SPEC-43 Gap 8: same trip, destination-local day, and source
+            # version (itinerary version + catalog version). Empty hits empty.
+            if (
+                entry.trip_id != trip_id
+                or entry.local_date != local_date
+                or entry.source_version != source_version
+            ):
+                continue
 
             similarity = embedding_service.cosine_similarity(query_embedding, entry.embedding)
 
@@ -177,6 +195,9 @@ class SemanticCacheService:
         geo_region: str = "",
         venue_name: str = "",
         restricted_needles: Iterable[object] = (),
+        trip_id: str = "",
+        local_date: str = "",
+        source_version: str = "",
     ) -> None:
         """Store a query-response pair in the cache.
 
@@ -201,6 +222,9 @@ class SemanticCacheService:
             geo_lng=geo_lng,
             geo_region=geo_region,
             venue_name=venue_name,
+            trip_id=trip_id,
+            local_date=local_date,
+            source_version=source_version,
         )
         self._cache.append(entry)
 
