@@ -11,6 +11,7 @@ from typing import List, Optional
 
 from config.settings import settings, configure_provider_keys
 from monitoring import spend_circuit as _spend
+from monitoring.redact import redact_outbound_llm_text
 from monitoring.spend_circuit import SpendCapped, SpendCircuit, normalize_identity
 
 
@@ -53,7 +54,9 @@ class EmbeddingService:
             embedding = [x / magnitude for x in embedding]
         return embedding[: self.dimensions]
 
-    def _api_embedding(self, text: str, user_id: Optional[str] = None) -> List[float]:
+    def _api_embedding(
+        self, text: str, user_id: Optional[str] = None, restricted_needles=()
+    ) -> List[float]:
         """Real embedding via OpenAI (through litellm).
 
         SPEC-43 Gap 11: the spend circuit runs before litellm.embedding. A
@@ -66,7 +69,10 @@ class EmbeddingService:
         try:
             import litellm
 
-            response = litellm.embedding(model=settings.embedding_model, input=[text])
+            # SPEC-43 Gap 3: only the provider payload is redacted; the
+            # synthetic fallback below still hashes the original text.
+            outbound = redact_outbound_llm_text(text, restricted_needles)
+            response = litellm.embedding(model=settings.embedding_model, input=[outbound])
             self._circuit.record(identity, estimate)
             return response.data[0]["embedding"]
         except SpendCapped:

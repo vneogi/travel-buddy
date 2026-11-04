@@ -12,7 +12,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Iterable, List, Optional, Tuple
 
 from config.settings import settings
-from monitoring.redact import redact_secrets
+from monitoring.redact import MIN_RESTRICTED_NEEDLE_LEN, redact_secrets
 from services.embedding_service import embedding_service
 
 
@@ -23,10 +23,6 @@ def hmac_query(query: str, key: bytes) -> str:
     still uses the request-time embedding, never this digest.
     """
     return hmac.new(key, (query or "").encode("utf-8"), hashlib.sha256).hexdigest()
-
-
-# Same floor as Gap 10 literal redaction: shorter needles would match prose.
-MIN_RESTRICTED_NEEDLE_LEN = 6
 
 
 def response_is_restricted(response: str, extra_needles: Iterable[object] = ()) -> bool:

@@ -439,15 +439,11 @@ class TripStateMachine:
             "source_version": f"{trip.version}:{_CATALOG_VERSION}",
         }
 
-    def _store_light_response(self, state: Dict) -> None:
-        """Cache a LIGHT response for this identity / region / venue.
-
-        SPEC-43 Gap 8: every node's confirmation_code and booking_notes are
-        passed as restricted needles, so a response that echoes them is not
-        stored.
-        """
+    @staticmethod
+    def _restricted_needles(state: Dict) -> list:
+        """Every node's confirmation_code and booking_notes (SPEC-43 Gap 3/8)."""
         trip = state["trip_state"]
-        needles = [
+        return [
             value
             for node in trip.nodes or []
             for value in (
@@ -456,6 +452,15 @@ class TripStateMachine:
             )
             if value
         ]
+
+    def _store_light_response(self, state: Dict) -> None:
+        """Cache a LIGHT response for this identity / region / venue.
+
+        SPEC-43 Gap 8: every node's confirmation_code and booking_notes are
+        passed as restricted needles, so a response that echoes them is not
+        stored.
+        """
+        needles = self._restricted_needles(state)
         cache_service.store_response(
             state["message"],
             state["response"],
@@ -1169,6 +1174,7 @@ class TripStateMachine:
                         state["message"],
                         context=info_ctx,
                         user_id=state.get("user_id"),
+                        restricted_needles=self._restricted_needles(state),
                     )
                 state["response"] = base
             except Exception as exc:
