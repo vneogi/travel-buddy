@@ -35,7 +35,8 @@ main. Owner G0 APK is on the phone. Gap 9 derived metadata
 (PR #137) is on main. Gap 8 canaries `895045a` (PR #140)
 is on main. Gap 8 trip/date/source-version `606626e`
 (PR #142) is on main. Gap 8 active purge `8fab43b`
-(PR #145) is on main. No open Genie brief.
+(PR #145) is on main. Next Genie brief:
+`docs/briefs/GENIE_SPEC_43_G10_IAM.md`.
 Do not apply 0026 until `rolbypassrls` is confirmed.
 
 SPEC-44 Phase A application code merged as PR #67 (`9a7b9d9`). Planning
@@ -123,7 +124,8 @@ is on main. Gap 8 HMAC `5a9f684` (PR #137)
 is on main. Gap 8 canaries `895045a` (PR #140) is on
 main. Gap 8 trip/date/source-version `606626e` (PR #142)
 is on main. Gap 8 active purge `8fab43b` (PR #145)
-is on main. No open Genie brief.
+is on main. Next Genie brief:
+`docs/briefs/GENIE_SPEC_43_G10_IAM.md`.
 Remaining Gap 9
 `derived_feature` table,
 unknown-time excursions, and Laos decision-cell coverage stay later.
@@ -258,8 +260,8 @@ Resume in this order:
 5. Patch Laos spine and effective-choice gaps: Kuang Si, Pak Ou, Blue Lagoon
    2/3, Papao, and the Wat Xieng Thong packing failure. Measure coverage by
    common decision cell, not total POI count.
-6. Implement remaining SPEC-43 (Gap 8 HMAC is the open Genie
-   job; Gap 10 admin IAM; Gap 11 Armor/Play Integrity;
+6. Implement remaining SPEC-43 (Gap 10 admin IAM is the open
+   Genie job; Gap 11 Armor/Play Integrity;
    `derived_feature` table; hosted 0026; Gap 12
    lock-screen waits on OS
    push) before any
@@ -293,10 +295,12 @@ separation live in the operating model; do not reconstruct them from chat.
 `76d7e9be3186a817a12664ed51b62e1db1ea8c946d5d5ac67b47912762036714`
 (built from `1aa405c`; rebuild from `1de6ff2` to drop `pm clear`).
 
-No open Genie job. In-memory Gap 8 now scopes identity, HMAC,
-restricted responses, trip/date/source-version, and deletes
-expired rows. Remainder: unused SQL cache path. Do not start
-Armor, Play Integrity, a `derived_feature` table, production LLM,
+Next Genie job: `docs/briefs/GENIE_SPEC_43_G10_IAM.md`
+(Gap 10 debug-ring admin token). In-memory Gap 8 now scopes
+identity, HMAC, restricted responses, trip/date/source-version,
+and deletes expired rows. Remainder: unused SQL cache path. Do
+not start Armor, Play Integrity, a `derived_feature` table,
+production LLM,
 trip-less Ask, or unknown-time excursions without a brief. Do
 not apply 0026 until `rolbypassrls` is confirmed for `postgres`
 and `service_role`.

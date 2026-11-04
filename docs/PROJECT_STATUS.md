@@ -176,7 +176,8 @@ Current order:
    Gap 8 HMAC `5a9f684` (PR #137). Gap 8 canaries
    `895045a` (PR #140). Gap 8 trip/date/source-version
    `606626e` (PR #142). Gap 8 active purge `8fab43b`
-   (PR #145). No open Genie brief.
+   (PR #145). Next Genie brief:
+   `docs/briefs/GENIE_SPEC_43_G10_IAM.md`.
    Unknown-time
    excursions stay later.
 4. Patch the Laos must-do/decision-cell data gaps. Target 3-5 feasible options
@@ -193,7 +194,8 @@ Current order:
    Gap 8 HMAC `5a9f684` (PR #137). Gap 8 canaries
    `895045a` (PR #140). Gap 8 trip/date/source-version
    `606626e` (PR #142). Gap 8 active purge `8fab43b`
-   (PR #145). No open Genie brief.
+   (PR #145). Next Genie brief:
+   `docs/briefs/GENIE_SPEC_43_G10_IAM.md`.
 
 Defer Travelogue/Passport, maps/offline tiles, social, gamification, PDF,
 cross-trip memory, OTA promotion, and another city until this loop works.
@@ -397,7 +399,8 @@ Seed-shaped cohorts.
     (PR #137) is on main. Gap 8 canaries `895045a`
     (PR #140) is on main. Gap 8 trip/date/source-version
     `606626e` (PR #142) is on main. Gap 8 active purge
-    `8fab43b` (PR #145) is on main. No open Genie brief.
+    `8fab43b` (PR #145) is on main. Next Genie brief:
+    `docs/briefs/GENIE_SPEC_43_G10_IAM.md`.
     Complete remaining
     gaps before any non-owner APK, production LLM processing of
     personal trip data, or the planned December public launch.
