@@ -89,7 +89,9 @@ def test_validation_error_returns_422_with_entry():
 # ---------------------------------------------------------------------------
 
 
-def test_debug_errors_returns_200_when_debug_on():
+def test_debug_errors_returns_200_when_debug_on(monkeypatch):
+    # SPEC-43 Gap 10 part A: the ring needs a configured admin token.
+    monkeypatch.setattr(settings, "debug_admin_token", "g10-admin-canary-token")
     client = TestClient(app, raise_server_exceptions=False)
     # Trigger a crash first
     client.get("/api/v1/_test/crash")
