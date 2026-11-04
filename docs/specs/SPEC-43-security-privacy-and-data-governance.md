@@ -430,7 +430,8 @@ within 50 km of the matched node. Derived `arrival_delta` stamps
 
 **Status on main.** Ring redaction + Cloud Run debug refuse
 `fbe96f6` (PR #117). 422 value stripping `04169f9` (PR #134).
-Remainders: admin IAM, retention.
+IAM part A fail-closed unset token `56ebc00` (PR #148).
+Remainders: admin header (part B), retention.
 
 **Current fact.** Validation details, exception text, and full tracebacks can
 enter logs or the in-memory ring. Debug mode exposes the ring without separate
