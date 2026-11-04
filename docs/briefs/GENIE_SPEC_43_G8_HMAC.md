@@ -1,11 +1,9 @@
 # Genie brief: SPEC-43 Gap 8 -- HMAC the in-memory cache query
 
 Landed on `main` as `5a9f684` (PR #137). Do not re-implement this slice.
-Gap 8 canaries `895045a` (PR #140) and trip/date/source-version
-`606626e` (PR #142) are on main. Next: Gap 8 active purge
-(`docs/briefs/GENIE_SPEC_43_G8_PURGE.md`). Remainder: unused
-Supabase cache path. Do not start hosted 0026, Flutter, deploy,
-or an APK without a new brief.
+Gap 8 canaries, context, and purge are on main (`8fab43b`,
+PR #145). Remainder: unused Supabase cache path. Do not start
+hosted 0026, Flutter, deploy, or an APK without a new brief.
 
 ## Goal
 

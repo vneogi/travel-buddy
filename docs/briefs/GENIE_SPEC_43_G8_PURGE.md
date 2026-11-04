@@ -1,10 +1,8 @@
 # Genie brief: SPEC-43 Gap 8 -- purge expired in-memory cache entries
 
-This is the open Gap 8 active-purge slice. Implement it. Do not
-start admin IAM, Armor, Play Integrity, a `derived_feature` table,
-hosted 0026, Flutter, deploy, or an APK. Do not wire
-`supabase_service.check_cache` / `store_cache` /
-`clear_expired_cache`.
+Landed on `main` as `8fab43b` (PR #145). Do not re-implement this slice.
+Remainder: unused Supabase cache path. Do not start hosted 0026,
+Flutter, deploy, or an APK without a new brief.
 
 ## Goal
 

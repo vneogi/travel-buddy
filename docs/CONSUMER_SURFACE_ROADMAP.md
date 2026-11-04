@@ -124,8 +124,8 @@ The immediate order after the field-test gate:
     `04169f9` (PR #134) on main; Gap 8 HMAC
     `5a9f684` (PR #137) on main; Gap 8 canaries
     `895045a` (PR #140) on main; Gap 8 trip/date/source-version
-    `606626e` (PR #142) on main; next is Gap 8 active purge
-    (`docs/briefs/GENIE_SPEC_43_G8_PURGE.md`);
+    `606626e` (PR #142) on main; Gap 8 active purge
+    `8fab43b` (PR #145) on main;
     unknown-time excursions stay later;
 12. implement SPEC-43 before any non-owner distribution, production LLM
    processing of personal trip data, or the planned December launch;

@@ -68,8 +68,8 @@ PR #128). Gap 11 spend is on main (`e7c89b5`,
 PR #131). Gap 10 422 stripping is on main (`04169f9`,
 PR #134). Gap 8 HMAC `5a9f684` (PR #137). Gap 8
 canaries `895045a` (PR #140). Gap 8 trip/date/source-version
-`606626e` (PR #142). Next Genie: Gap 8 active purge
-(`docs/briefs/GENIE_SPEC_43_G8_PURGE.md`). 0026 not applied.
+`606626e` (PR #142). Gap 8 active purge `8fab43b`
+(PR #145). 0026 not applied.
 
 ## Finding -- Oct 27 2026 -- SPEC-43 Gap 5 SQLCipher merged
 

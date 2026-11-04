@@ -19,9 +19,8 @@
 > `e7c89b5` (PR #131). Gap 10 422 stripping `04169f9`
 > (PR #134). Gap 8 HMAC `5a9f684` (PR #137). Gap 8 canaries
 > `895045a` (PR #140). Gap 8 trip/date/source-version `606626e`
-> (PR #142). Next Genie: Gap 8 active purge
-> (`docs/briefs/GENIE_SPEC_43_G8_PURGE.md`). Gap 12 lock-screen
-> waits on OS push. Hosted apply of 0026 is not done.
+> (PR #142). Gap 8 active purge `8fab43b` (PR #145). Gap 12
+> lock-screen waits on OS push. Hosted apply of 0026 is not done.
 >
 > Sequence: start after the Laos reliability and build tranche is complete:
 > SPEC-41 scheduling, SPEC-10 paste and flight/hotel scheduler, SPEC-25
@@ -357,8 +356,7 @@ longer always passes. Signals can still stamp party age bands.
 **Status on main.** Live in-memory identity isolation `62927dd`
 (PR #114). HMAC of query `5a9f684` (PR #137). Restricted
 canaries `895045a` (PR #140). Trip/date/source-version `606626e`
-(PR #142). Next Genie: active purge
-(`docs/briefs/GENIE_SPEC_43_G8_PURGE.md`). Remainder: unused
+(PR #142). Active purge `8fab43b` (PR #145). Remainder: unused
 Supabase `cached_responses` path.
 
 **Current fact (remaining).** Process-wide cache entries are keyed
@@ -367,8 +365,8 @@ source_version (`trip.version` plus catalog version). Stored query
 is HMAC-SHA256 hex, not plaintext. Restricted responses (Gap 10
 token patterns, trip `confirmation_code` / `booking_notes`) are
 not stored. Empty/`anonymous` identities do not store or hit.
-Persistent `cached_responses` is still unscoped and unused on the
-live path. Expired rows are skipped at read time, not swept.
+Expired rows are deleted on check and store. Persistent
+`cached_responses` is still unscoped and unused on the live path.
 
 **Solution.**
 
