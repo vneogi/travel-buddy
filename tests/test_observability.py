@@ -95,8 +95,11 @@ def test_debug_errors_returns_200_when_debug_on(monkeypatch):
     client = TestClient(app, raise_server_exceptions=False)
     # Trigger a crash first
     client.get("/api/v1/_test/crash")
-    # Now check the debug endpoint
-    r = client.get("/api/v1/debug/errors")
+    # Now check the debug endpoint (part B: admin header required)
+    r = client.get(
+        "/api/v1/debug/errors",
+        headers={"X-Debug-Admin-Token": "g10-admin-canary-token"},
+    )
     assert r.status_code == 200
     body = r.json()
     assert body["count"] >= 1
