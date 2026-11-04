@@ -177,7 +177,8 @@ Current order:
    `895045a` (PR #140). Gap 8 trip/date/source-version
    `606626e` (PR #142). Gap 8 active purge `8fab43b`
    (PR #145). Gap 10 IAM part A `56ebc00` (PR #148).
-   Gap 10 IAM part B `17fb0e4` (PR #150). No open Genie brief.
+   Gap 10 IAM part B `17fb0e4` (PR #150). Next Genie brief:
+   `docs/briefs/GENIE_SPEC_43_G10_RETENTION.md`.
    Unknown-time
    excursions stay later.
 4. Patch the Laos must-do/decision-cell data gaps. Target 3-5 feasible options
@@ -195,7 +196,8 @@ Current order:
    `895045a` (PR #140). Gap 8 trip/date/source-version
    `606626e` (PR #142). Gap 8 active purge `8fab43b`
    (PR #145). Gap 10 IAM part A `56ebc00` (PR #148).
-   Gap 10 IAM part B `17fb0e4` (PR #150). No open Genie brief.
+   Gap 10 IAM part B `17fb0e4` (PR #150). Next Genie brief:
+   `docs/briefs/GENIE_SPEC_43_G10_RETENTION.md`.
 
 Defer Travelogue/Passport, maps/offline tiles, social, gamification, PDF,
 cross-trip memory, OTA promotion, and another city until this loop works.
@@ -401,7 +403,8 @@ Seed-shaped cohorts.
     `606626e` (PR #142) is on main. Gap 8 active purge
     `8fab43b` (PR #145) is on main. Gap 10 IAM part A
     `56ebc00` (PR #148) and part B `17fb0e4` (PR #150)
-    are on main. No open Genie brief.
+    are on main. Next Genie brief:
+    `docs/briefs/GENIE_SPEC_43_G10_RETENTION.md`.
     Complete remaining
     gaps before any non-owner APK, production LLM processing of
     personal trip data, or the planned December public launch.
