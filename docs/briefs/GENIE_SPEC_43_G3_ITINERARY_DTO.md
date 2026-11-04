@@ -1,6 +1,13 @@
 # Genie brief: SPEC-43 Gap 3 -- strip booking fields from the heavy LLM payload
 
-This is the open job. Roles, hard stops, and R17 ritual are in
+Landed on `main` as `dd0e6d3` (PR #156). Do not re-implement this
+slice. Remainders: embedding Ask-text canaries, HEAVY_FALLBACK
+provider matrix, `generate_info_response` question redaction.
+Do not enable personal-trip LLM. Do not start Armor, Play
+Integrity, SQL cache, `derived_feature`, hosted 0026, Flutter,
+deploy, or an APK without a new brief.
+
+Roles, hard stops, and R17 ritual are in
 `docs/briefs/GENIE_SPEC_43_G10_IAM_A.md` (Who you are, Who else
 is, How a slice moves, Hard stops). Do not re-read all of
 SPEC-43. Do not enable personal-trip LLM. Do not start the
