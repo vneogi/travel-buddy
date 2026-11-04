@@ -1,7 +1,7 @@
 # Genie brief: Gap 10 IAM part A -- how we work, then fail-closed unset token
 
 Landed on `main` as `56ebc00` (PR #148). Do not re-implement this
-slice. Next job: `docs/briefs/GENIE_SPEC_43_G10_IAM_B.md`.
+slice. Part B landed as `17fb0e4` (PR #150). Remainder: retention.
 Do not start SSO, retention, Armor, Play Integrity, SQL cache,
 `derived_feature`, hosted 0026, Flutter, deploy, or an APK.
 

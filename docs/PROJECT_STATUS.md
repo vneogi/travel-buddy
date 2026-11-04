@@ -177,7 +177,7 @@ Current order:
    `895045a` (PR #140). Gap 8 trip/date/source-version
    `606626e` (PR #142). Gap 8 active purge `8fab43b`
    (PR #145). Gap 10 IAM part A `56ebc00` (PR #148).
-   Next Genie brief: `docs/briefs/GENIE_SPEC_43_G10_IAM_B.md`.
+   Gap 10 IAM part B `17fb0e4` (PR #150). No open Genie brief.
    Unknown-time
    excursions stay later.
 4. Patch the Laos must-do/decision-cell data gaps. Target 3-5 feasible options
@@ -195,7 +195,7 @@ Current order:
    `895045a` (PR #140). Gap 8 trip/date/source-version
    `606626e` (PR #142). Gap 8 active purge `8fab43b`
    (PR #145). Gap 10 IAM part A `56ebc00` (PR #148).
-   Next Genie brief: `docs/briefs/GENIE_SPEC_43_G10_IAM_B.md`.
+   Gap 10 IAM part B `17fb0e4` (PR #150). No open Genie brief.
 
 Defer Travelogue/Passport, maps/offline tiles, social, gamification, PDF,
 cross-trip memory, OTA promotion, and another city until this loop works.
@@ -400,8 +400,8 @@ Seed-shaped cohorts.
     (PR #140) is on main. Gap 8 trip/date/source-version
     `606626e` (PR #142) is on main. Gap 8 active purge
     `8fab43b` (PR #145) is on main. Gap 10 IAM part A
-    `56ebc00` (PR #148) is on main. Next Genie brief:
-    `docs/briefs/GENIE_SPEC_43_G10_IAM_B.md`.
+    `56ebc00` (PR #148) and part B `17fb0e4` (PR #150)
+    are on main. No open Genie brief.
     Complete remaining
     gaps before any non-owner APK, production LLM processing of
     personal trip data, or the planned December public launch.
@@ -488,7 +488,7 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 | SPEC-43 gap 7: behavioral consent is a pass-through stub | Server fail-closed ingest on main (`e3eaa81`, PR #112) | Optional types reject without a grant. Remainders: Flutter outbox/UI, ledger, withdrawal, age-band destamp |
 | SPEC-43 gap 8: semantic cache can cross user boundaries | Identity+HMAC+canaries+context+purge on live in-memory cache (`8fab43b`, PR #145) | Entries keyed by identity+region+venue+trip+local date+source version. HMAC of query, not plaintext. Restricted responses refused. Expired rows deleted on check/store. Remainder: unused Supabase cache path |
 | SPEC-43 gap 9: trip-linked signals lack ownership and poisoning controls | Ownership+schemas+rate+place+GPS+derived metadata on main (`4265403` PR #125) | Ingest rejects foreign trip_id, unknown keys, per-place floods, off-itinerary place_ref, and impossible/far GPS on visit/skip. arrival_delta stamps server_derived method_version/sample_size. pack_day ignores loves. Remainder: `derived_feature` table |
-| SPEC-43 gap 10: errors and provider failures can retain sensitive values | Ring redaction + 422 strip + IAM part A on main (`56ebc00`, PR #148) | Canaries become `REDACTED` in the ring. Client 422 keeps only type/loc/msg. Unset admin token 404s the ring. Remainders: admin header (part B), retention |
+| SPEC-43 gap 10: errors and provider failures can retain sensitive values | Ring redaction + 422 strip + IAM A/B on main (`17fb0e4`, PR #150) | Canaries become `REDACTED` in the ring. Client 422 keeps only type/loc/msg. Unset admin token 404s the ring. Configured token requires `X-Debug-Admin-Token`. Remainder: retention |
 | SPEC-43 gap 11: general request and provider-spend abuse controls are absent | Body/depth+rate+spend on main (`e7c89b5`, PR #131) | 256 KiB body cap, JSON depth 8, 30/identity plus 60/IP per minute, and in-process USD circuit ($5 process / $1 identity per day). Remainders: gateway, Play Integrity |
 | SPEC-43 gap 12: release HTTPS and private mobile cache isolation are incomplete | HTTPS+cache+chat+ATS+deep-link on main (`f486079` PR #95); lock-screen remains | Release HTTPS fail-closed. Caches identity-scoped. Chat extra-only. ATS forbids release cleartext. Foreign trip routes redirect. Lock-screen waits on OS push |
 | Create conflates trip span with auto-fill capacity | Closed on main for span vs fill (`17e58ac`); catalog Add `b6ddecf`; uncatalogued `05d917e` | Wider spans are accepted; at most five starter days are generated; empty dates render and can take a catalog or trip-private Add. Unknown-time excursions remain later |

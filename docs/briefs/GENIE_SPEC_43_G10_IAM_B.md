@@ -1,8 +1,9 @@
 # Genie brief: Gap 10 IAM part B -- admin header (after part A)
 
-This is the open job. Part A is on `main` as `56ebc00` (PR #148).
-Same roles as part A: you implement and open a PR; you do not
-merge, deploy, or edit living docs.
+Landed on `main` as `17fb0e4` (PR #150). Do not re-implement this
+slice. Part A is `56ebc00` (PR #148). Remainder: log retention.
+Do not start Armor, Play Integrity, SQL cache, `derived_feature`,
+hosted 0026, Flutter, deploy, or an APK without a new brief.
 
 ## Read (only these)
 
