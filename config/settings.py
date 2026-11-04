@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     llm_debug: bool = (
         False  # TB_LLM_DEBUG: verbose LiteLLM/OpenAI/httpx logging (separate from TB_DEBUG)
     )
+    # SPEC-43 Gap 10: shared administrator token for /api/v1/debug/errors
+    # (TB_DEBUG_ADMIN_TOKEN). Unset / empty / < 16 chars is fail-closed (404).
+    debug_admin_token: Optional[str] = None
 
     # --- Database (Supabase / PostgreSQL) ---
     database_url: str = "postgresql://localhost:5432/travel_buddy"
