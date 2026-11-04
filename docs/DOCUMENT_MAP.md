@@ -30,7 +30,8 @@ documents disagree, follow Precedence below and name the conflict in
   and SPEC-43 Gaps 1, 6, 2, 9 (ownership + closed schemas), and 12
   HTTPS, cache keys, chat URLs, ATS, and trip-route ownership are
   merged.
-- No open Genie brief. Gap 10 error-ring TTL is on main
+- Next Genie brief: `docs/briefs/GENIE_SPEC_43_G3_ITINERARY_DTO.md`.
+  Gap 10 error-ring TTL is on main
   (`12588c2`, PR #153). Gap 10 IAM part B is on main
   (`17fb0e4`, PR #150). Gap 10 IAM part A is on main
   (`56ebc00`, PR #148). Gap 8 active purge is on main

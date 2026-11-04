@@ -38,7 +38,8 @@ is on main. Gap 8 trip/date/source-version `606626e`
 (PR #145) is on main. Gap 10 IAM part A `56ebc00`
 (PR #148) is on main. Gap 10 IAM part B `17fb0e4`
 (PR #150) is on main. Gap 10 error-ring TTL `12588c2`
-(PR #153) is on main. No open Genie brief.
+(PR #153) is on main. Next Genie brief:
+`docs/briefs/GENIE_SPEC_43_G3_ITINERARY_DTO.md`.
 Do not apply 0026 until `rolbypassrls` is confirmed.
 
 SPEC-44 Phase A application code merged as PR #67 (`9a7b9d9`). Planning
@@ -129,7 +130,8 @@ is on main. Gap 8 active purge `8fab43b` (PR #145)
 is on main. Gap 10 IAM part A `56ebc00` (PR #148)
 is on main. Gap 10 IAM part B `17fb0e4` (PR #150)
 is on main. Gap 10 error-ring TTL `12588c2` (PR #153)
-is on main. No open Genie brief.
+is on main. Next Genie brief:
+`docs/briefs/GENIE_SPEC_43_G3_ITINERARY_DTO.md`.
 Remaining Gap 9
 `derived_feature` table,
 unknown-time excursions, and Laos decision-cell coverage stay later.
@@ -264,8 +266,8 @@ Resume in this order:
 5. Patch Laos spine and effective-choice gaps: Kuang Si, Pak Ou, Blue Lagoon
    2/3, Papao, and the Wat Xieng Thong packing failure. Measure coverage by
    common decision cell, not total POI count.
-6. Implement remaining SPEC-43 (Gap 10 in-process ring is on
-   main; GCP log retention; Gap 11 Armor/Play Integrity;
+6. Implement remaining SPEC-43 (Gap 3 itinerary DTO is the open
+   Genie job; GCP log retention; Gap 11 Armor/Play Integrity;
    `derived_feature` table; hosted 0026; Gap 12
    lock-screen waits on OS
    push) before any
@@ -299,7 +301,8 @@ separation live in the operating model; do not reconstruct them from chat.
 `76d7e9be3186a817a12664ed51b62e1db1ea8c946d5d5ac67b47912762036714`
 (built from `1aa405c`; rebuild from `1de6ff2` to drop `pm clear`).
 
-No open Genie job. Error ring drops entries older than 24h.
+Next Genie job: `docs/briefs/GENIE_SPEC_43_G3_ITINERARY_DTO.md`
+(strip booking fields from the heavy LLM payload). Error ring drops entries older than 24h.
 Debug ring requires `X-Debug-Admin-Token` when
 `TB_DEBUG_ADMIN_TOKEN` is set; unset is 404. In-memory Gap 8 now scopes identity, HMAC,
 restricted responses, trip/date/source-version, and deletes
