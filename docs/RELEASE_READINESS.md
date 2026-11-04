@@ -82,7 +82,7 @@ not anonymous, and it is not safe to hand to a tester.
 | Versioned purpose consent; optional capture blocked | SPEC-43 gap 7 | Server fail-closed optional ingest on main (`e3eaa81`). Flutter outbox/UI remainder |
 | Private semantic-cache isolation | SPEC-43 gap 8 | Identity+HMAC+canaries+trip/date/source-version+purge on main (`8fab43b`, PR #145). Remainder: unused SQL path |
 | Signal ownership and poisoning controls | SPEC-43 gap 9 | Ownership+place+GPS+derived metadata on main (`4265403`). Remainder: `derived_feature` table |
-| Redacted diagnostics; no production debug | SPEC-43 gap 10, SPEC-05 | Ring redaction `fbe96f6`, 422 stripping `04169f9`, IAM A `56ebc00` (PR #148) and B `17fb0e4` (PR #150) on main. Remainder: retention |
+| Redacted diagnostics; no production debug | SPEC-43 gap 10, SPEC-05 | Ring redaction `fbe96f6`, 422 stripping `04169f9`, IAM A/B, 24h ring TTL `12588c2` (PR #153) on main. Remainder: GCP log-bucket retention |
 | Abuse and provider-spend limits | SPEC-43 gap 11 | Body/depth `2077d8d`, rate `c70296c`, spend `e7c89b5` (PR #131) on main. Remainders: gateway, Play Integrity |
 | Release HTTPS and identity-scoped caches | SPEC-43 gap 12 | HTTPS+cache+chat URLs+ATS+trip-route ownership on main (`f486079`); lock-screen waits on OS push. Hosted Gap 1 `00014-sbm`. Leftover-open `1de6ff2`. Gap 7 `e3eaa81`. Gap 8 `62927dd`. Gap 10 `fbe96f6`. Gap 11 body/depth `2077d8d`. Gap 11 rate `c70296c` |
 

@@ -431,13 +431,14 @@ within 50 km of the matched node. Derived `arrival_delta` stamps
 **Status on main.** Ring redaction + Cloud Run debug refuse
 `fbe96f6` (PR #117). 422 value stripping `04169f9` (PR #134).
 IAM part A fail-closed unset token `56ebc00` (PR #148).
-IAM part B admin header `17fb0e4` (PR #150). Remainder:
-retention.
+IAM part B admin header `17fb0e4` (PR #150). In-memory ring
+TTL `12588c2` (PR #153). Remainder: GCP log-bucket retention.
 
 **Current fact.** The in-memory debug ring requires
 `X-Debug-Admin-Token` when `TB_DEBUG_ADMIN_TOKEN` is configured,
-and 404s when that token is unset or debug is off. Cloud Run
-refuses to start with debug on. Retention for log buckets is
+and 404s when that token is unset or debug is off. Entries older
+than 24h are dropped on record/recent/count. Cloud Run refuses
+to start with debug on. Retention for hosted log buckets is
 not implemented. Some provider error strings may still reach
 clients on non-422 paths.
 

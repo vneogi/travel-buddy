@@ -1,6 +1,12 @@
 # Genie brief: SPEC-43 Gap 10 -- drop expired in-memory error-ring entries
 
-This is the open job. Roles, hard stops, and R17 ritual are in
+Landed on `main` as `12588c2` (PR #153). Do not re-implement this
+slice. Remainder: GCP log-bucket retention (owner), not more
+in-process ring work. Do not start Cloud Logging, Armor, Play
+Integrity, SQL cache, `derived_feature`, hosted 0026, Flutter,
+deploy, or an APK without a new brief.
+
+Roles, hard stops, and R17 ritual are in
 `docs/briefs/GENIE_SPEC_43_G10_IAM_A.md` (Who you are, Who else
 is, How a slice moves, Hard stops). Do not re-read all of
 SPEC-43. Do not start Cloud Logging, regional buckets, access
