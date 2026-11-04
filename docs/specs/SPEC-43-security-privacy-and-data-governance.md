@@ -185,16 +185,17 @@ including `user_tiers`, `trip_states`, `event_log`, `cached_responses`,
 ### Gap 3: personal itinerary data can cross the LLM boundary
 
 **Status on main.** Heavy itinerary allowlist DTO `dd0e6d3`
-(PR #156). Remainders: embedding Ask-text canaries,
-HEAVY_FALLBACK provider matrix, `generate_info_response`
-question redaction. Personal LLM stays off.
+(PR #156). Outbound light-complete and API-embedding redaction
+`d35895a` (PR #159). Remainders: HEAVY_FALLBACK provider
+matrix, cache-path embedding of the raw query, `_api_embedding`
+failure print. Personal LLM stays off.
 
-**Current fact.** The heavy response path used to JSON-dump raw
-itinerary nodes (booking reference, notes, coordinates). That
-dump is now an allowlisted DTO. Search or Ask text may still be
-sent for embeddings. The configured heavy fallback chain can
-still move a request among model providers. The light info path
-still sends the question text.
+**Current fact.** Heavy prompts send an allowlisted node/venue
+DTO. Light complete and API embeddings replace booking needles
+and secrets with REDACTED. Semantic-cache HMAC still keys the
+original question; cache still embeds that original string.
+The configured heavy fallback chain can still move a request
+among model providers.
 
 **Solution.**
 

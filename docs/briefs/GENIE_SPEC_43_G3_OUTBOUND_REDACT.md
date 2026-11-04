@@ -1,6 +1,13 @@
 # Genie brief: SPEC-43 Gap 3 -- redact booking canaries before light complete and embeddings
 
-This is the open job. Roles, hard stops, and R17 ritual are in
+Landed on `main` as `d35895a` (PR #159). Do not re-implement this
+slice. Remainders: HEAVY_FALLBACK provider matrix, cache-path
+embedding of the raw query, `_api_embedding` failure print.
+Do not enable personal-trip LLM. Do not start Armor, Play
+Integrity, SQL cache, `derived_feature`, hosted 0026, Flutter,
+deploy, or an APK without a new brief.
+
+Roles, hard stops, and R17 ritual are in
 `docs/briefs/GENIE_SPEC_43_G10_IAM_A.md`. Do not re-read all of
 SPEC-43. Do not enable personal-trip LLM. Do not start
 HEAVY_FALLBACK / provider-region matrix, Armor, Play Integrity,
