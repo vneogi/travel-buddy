@@ -26,6 +26,42 @@ from config.regions import get_region
 from config.settings import settings
 from monitoring import spend_circuit as _spend
 from monitoring.spend_circuit import SpendCapped, SpendCircuit, normalize_identity
+from monitoring.redact import redact_secrets
+
+# SPEC-43 Gap 3: outbound itinerary DTO. Only these node keys may reach a
+# model. Booking references, notes, coordinates and ids are never named.
+PUBLIC_NODE_KEYS = (
+    "venue_name",
+    "scheduled_start",
+    "duration_minutes",
+    "is_locked",
+    "status",
+    "node_kind",
+    "slot_name",
+    "geo_region",
+    "vibe_tags",
+    "micro_location",
+)
+PUBLIC_VENUE_KEYS = ("name", "micro_location", "vibe_tags")
+
+
+def _allowlist(items: list, keys: Tuple[str, ...]) -> List[Dict]:
+    out: List[Dict] = []
+    for item in items or []:
+        if not isinstance(item, dict):
+            continue
+        out.append({k: item[k] for k in keys if k in item})
+    return out
+
+
+def public_itinerary_nodes(nodes: list) -> List[Dict]:
+    """Allowlisted node dicts for LLM prompts. Non-dict input is skipped."""
+    return _allowlist(nodes, PUBLIC_NODE_KEYS)
+
+
+def public_replacement_venues(venues: list) -> List[Dict]:
+    """Allowlisted venue dicts (name, micro_location, vibe_tags) for prompts."""
+    return _allowlist(venues, PUBLIC_VENUE_KEYS)
 
 
 class LLMService:
@@ -234,10 +270,17 @@ class LLMService:
         if lang_hint:
             system_prompt += f"\n- Language tip: {lang_hint}"
 
+        # SPEC-43 Gap 3: allowlist first, then redact the serialized strings.
+        nodes_json = redact_secrets(
+            json.dumps(public_itinerary_nodes(trip_state.get("nodes", [])[:5]), default=str)
+        )
+        venues_json = redact_secrets(
+            json.dumps(public_replacement_venues(venues_found[:3]), default=str)
+        )
         user_context = (
             f"User request: {user_message}\n\n"
-            f"Current itinerary nodes: {json.dumps(trip_state.get('nodes', [])[:5], default=str)}\n\n"
-            f"Available replacement venues: {json.dumps(venues_found[:3], default=str)}"
+            f"Current itinerary nodes: {nodes_json}\n\n"
+            f"Available replacement venues: {venues_json}"
         )
 
         messages = [
