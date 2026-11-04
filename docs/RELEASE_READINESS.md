@@ -75,7 +75,7 @@ not anonymous, and it is not safe to hand to a tester.
 |------|---------------|--------|
 | Server-issued anonymous auth, rotation, revocation | SPEC-43 gap 1, SPEC-09, SPEC-24 | No self-issued replayable UUID as an account |
 | RLS and ownership on every personal table | SPEC-43 gap 2 | Two hosted JWTs cannot read each other's trips |
-| LLM egress allowlist; no booking secrets in prompts | SPEC-43 gap 3 | Personal LLM traffic stays off until this passes |
+| LLM egress allowlist; no booking secrets in prompts | SPEC-43 gap 3 | Heavy itinerary DTO `dd0e6d3` (PR #156). Remainders: embeddings, fallback matrix, info-path. Personal LLM stays off |
 | Export, deletion, retention, backup tombstones | SPEC-43 gap 4, SPEC-27 | A tester can leave and take or erase their data |
 | Encrypted offline store; backup exclusion | SPEC-43 gap 5, SPEC-04 | Backup `1672759` + SQLCipher `9cb2324` on main. Remainders: masking, FLAG_SECURE, iOS file protection, ProGuard if minify on |
 | Real sign-out and account-switch isolation | SPEC-43 gap 6, SPEC-24 | Shared-phone hostel use does not leak the last identity |
