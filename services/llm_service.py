@@ -26,7 +26,7 @@ from config.regions import get_region
 from config.settings import settings
 from monitoring import spend_circuit as _spend
 from monitoring.spend_circuit import SpendCapped, SpendCircuit, normalize_identity
-from monitoring.redact import redact_secrets
+from monitoring.redact import redact_outbound_llm_text, redact_secrets
 
 # SPEC-43 Gap 3: outbound itinerary DTO. Only these node keys may reach a
 # model. Booking references, notes, coordinates and ids are never named.
@@ -57,6 +57,19 @@ def _allowlist(items: list, keys: Tuple[str, ...]) -> List[Dict]:
 def public_itinerary_nodes(nodes: list) -> List[Dict]:
     """Allowlisted node dicts for LLM prompts. Non-dict input is skipped."""
     return _allowlist(nodes, PUBLIC_NODE_KEYS)
+
+
+def booking_needles(nodes: list) -> List[str]:
+    """confirmation_code / booking_notes values from node dicts (Gap 3)."""
+    out: List[str] = []
+    for node in nodes or []:
+        if not isinstance(node, dict):
+            continue
+        for key in ("confirmation_code", "booking_notes"):
+            value = node.get(key)
+            if value:
+                out.append(str(value))
+    return out
 
 
 def public_replacement_venues(venues: list) -> List[Dict]:
@@ -277,8 +290,12 @@ class LLMService:
         venues_json = redact_secrets(
             json.dumps(public_replacement_venues(venues_found[:3]), default=str)
         )
+        # SPEC-43 Gap 3: the question can echo a booking reference too.
+        safe_request = redact_outbound_llm_text(
+            user_message, booking_needles(trip_state.get("nodes", []))
+        )
         user_context = (
-            f"User request: {user_message}\n\n"
+            f"User request: {safe_request}\n\n"
             f"Current itinerary nodes: {nodes_json}\n\n"
             f"Available replacement venues: {venues_json}"
         )
@@ -302,6 +319,7 @@ class LLMService:
         user_message: str,
         context: Optional[Dict] = None,
         user_id: Optional[str] = None,
+        restricted_needles=(),
     ) -> str:
         """Generate a light response for info queries.
 
@@ -340,6 +358,9 @@ class LLMService:
                 parts.append(f"Next venue: {next_venue}")
             user_block = f"{user_message}\n\nContext: {'; '.join(parts)}"
 
+        # SPEC-43 Gap 3: secrets and booking needles never leave the process.
+        user_block = redact_outbound_llm_text(user_block, restricted_needles)
+
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_block},
@@ -358,16 +379,24 @@ class LLMService:
     # Embeddings
     # =========================================================================
 
-    async def generate_embedding(self, text: str, user_id: Optional[str] = None) -> List[float]:
+    async def generate_embedding(
+        self, text: str, user_id: Optional[str] = None, restricted_needles=()
+    ) -> List[float]:
         """Generate a real embedding vector using the configured model."""
-        return (await self.batch_embeddings([text], user_id=user_id))[0]
+        return (
+            await self.batch_embeddings(
+                [text], user_id=user_id, restricted_needles=restricted_needles
+            )
+        )[0]
 
     async def batch_embeddings(
-        self, texts: List[str], user_id: Optional[str] = None
+        self, texts: List[str], user_id: Optional[str] = None, restricted_needles=()
     ) -> List[List[float]]:
         """Generate embeddings for multiple texts in one call."""
         import litellm
 
+        # SPEC-43 Gap 3: redact each provider-bound string.
+        texts = [redact_outbound_llm_text(t, restricted_needles) for t in texts]
         identity = normalize_identity(user_id)
         estimate = _spend.estimate_embedding_usd(texts)
         self._circuit.check(identity, estimate)
