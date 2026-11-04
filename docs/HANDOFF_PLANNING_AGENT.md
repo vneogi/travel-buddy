@@ -36,7 +36,7 @@ main. Owner G0 APK is on the phone. Gap 9 derived metadata
 is on main. Gap 8 trip/date/source-version `606626e`
 (PR #142) is on main. Gap 8 active purge `8fab43b`
 (PR #145) is on main. Next Genie brief:
-`docs/briefs/GENIE_SPEC_43_G10_IAM.md`.
+`docs/briefs/GENIE_SPEC_43_G10_IAM_A.md`.
 Do not apply 0026 until `rolbypassrls` is confirmed.
 
 SPEC-44 Phase A application code merged as PR #67 (`9a7b9d9`). Planning
@@ -125,7 +125,7 @@ is on main. Gap 8 canaries `895045a` (PR #140) is on
 main. Gap 8 trip/date/source-version `606626e` (PR #142)
 is on main. Gap 8 active purge `8fab43b` (PR #145)
 is on main. Next Genie brief:
-`docs/briefs/GENIE_SPEC_43_G10_IAM.md`.
+`docs/briefs/GENIE_SPEC_43_G10_IAM_A.md`.
 Remaining Gap 9
 `derived_feature` table,
 unknown-time excursions, and Laos decision-cell coverage stay later.
@@ -295,8 +295,8 @@ separation live in the operating model; do not reconstruct them from chat.
 `76d7e9be3186a817a12664ed51b62e1db1ea8c946d5d5ac67b47912762036714`
 (built from `1aa405c`; rebuild from `1de6ff2` to drop `pm clear`).
 
-Next Genie job: `docs/briefs/GENIE_SPEC_43_G10_IAM.md`
-(Gap 10 debug-ring admin token). In-memory Gap 8 now scopes
+Next Genie job: `docs/briefs/GENIE_SPEC_43_G10_IAM_A.md`
+(Gap 10 IAM part A: roles + fail-closed unset token). In-memory Gap 8 now scopes
 identity, HMAC, restricted responses, trip/date/source-version,
 and deletes expired rows. Remainder: unused SQL cache path. Do
 not start Armor, Play Integrity, a `derived_feature` table,

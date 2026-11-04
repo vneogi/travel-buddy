@@ -30,7 +30,7 @@ documents disagree, follow Precedence below and name the conflict in
   and SPEC-43 Gaps 1, 6, 2, 9 (ownership + closed schemas), and 12
   HTTPS, cache keys, chat URLs, ATS, and trip-route ownership are
   merged.
-- Next Genie brief: `docs/briefs/GENIE_SPEC_43_G10_IAM.md`.
+- Next Genie brief: `docs/briefs/GENIE_SPEC_43_G10_IAM_A.md`.
   Gap 8 active purge is on main
   (`8fab43b`, PR #145). Gap 8 trip/date/source-version is on main
   (`606626e`, PR #142). Gap 8 canaries is on main
