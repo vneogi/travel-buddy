@@ -180,7 +180,8 @@ Current order:
    Gap 10 IAM part B `17fb0e4` (PR #150). Gap 10 error-ring
    TTL `12588c2` (PR #153). Gap 3 itinerary DTO `dd0e6d3`
    (PR #156). Gap 3 outbound redact `d35895a` (PR #159).
-   No open Genie brief.
+   Next Genie brief:
+   `docs/briefs/GENIE_SPEC_43_G3_CACHE_EMBED.md`.
    Unknown-time
    excursions stay later.
 4. Patch the Laos must-do/decision-cell data gaps. Target 3-5 feasible options
@@ -201,7 +202,8 @@ Current order:
    Gap 10 IAM part B `17fb0e4` (PR #150). Gap 10 error-ring
    TTL `12588c2` (PR #153). Gap 3 itinerary DTO `dd0e6d3`
    (PR #156). Gap 3 outbound redact `d35895a` (PR #159).
-   No open Genie brief.
+   Next Genie brief:
+   `docs/briefs/GENIE_SPEC_43_G3_CACHE_EMBED.md`.
 
 Defer Travelogue/Passport, maps/offline tiles, social, gamification, PDF,
 cross-trip memory, OTA promotion, and another city until this loop works.
@@ -410,7 +412,8 @@ Seed-shaped cohorts.
     are on main. Gap 10 error-ring TTL `12588c2`
     (PR #153) is on main. Gap 3 itinerary DTO `dd0e6d3`
     (PR #156) is on main. Gap 3 outbound redact `d35895a`
-    (PR #159) is on main. No open Genie brief.
+    (PR #159) is on main. Next Genie brief:
+    `docs/briefs/GENIE_SPEC_43_G3_CACHE_EMBED.md`.
     Complete remaining
     gaps before any non-owner APK, production LLM processing of
     personal trip data, or the planned December public launch.
