@@ -28,9 +28,16 @@ POST /api/v1/me/erase   body {"confirm": "erase-my-data"}
   zero rows and retries the Auth delete; an already-missing Auth user is
   success.
 
-Remainders, not handled here: a still-unexpired access token may verify at
-the API until exp (no denylist this slice; Gap 6 records it). No tombstone,
-cache/error-ring purge, export, retention job or Flutter flow.
+- Slice 8: after the row erase (and, for supabase, the Auth delete)
+  succeeds, the caller's user_id is denied in this process for
+  DENY_TTL_SECONDS, for every identity kind including debug.
+  resolve_identity then answers 401 for that id, so a still-unexpired
+  token cannot keep working or recreate a user_tiers row here. If the Auth
+  delete fails nothing is denied, so the traveller can retry.
+
+Remainders, not handled here: the denylist is not shared across Cloud Run
+instances and is not per-jti. No tombstone, cache/error-ring purge,
+export, retention job or Flutter flow.
 """
 
 import importlib
@@ -47,6 +54,7 @@ from services.data_rights_auth_delete import (
     NoOpAuthIdentityDeleter,
     SupabaseAuthIdentityDeleter,
 )
+from services.data_rights_token_deny import deny_identity
 from services.data_rights_erase import EraseBackend, execute_erase
 from services.data_rights_erase_supabase import SupabaseEraseBackend
 
@@ -106,6 +114,8 @@ async def erase_me(
         # Only after every row step succeeded. Debug identities never reach it.
         if identity.identity_kind == "supabase":
             auth_deleter.delete_auth_user(identity.user_id)
+        # Last: only after rows and (for supabase) Auth both succeeded.
+        deny_identity(identity.user_id)
     except Exception as exc:
         request_id = getattr(request.state, "request_id", "unknown")
         logger.warning("erase incomplete (%s) request_id=%s", type(exc).__name__, request_id)

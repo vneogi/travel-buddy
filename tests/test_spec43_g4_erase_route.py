@@ -20,6 +20,7 @@ from routers.me_router import get_auth_deleter, get_erase_backend
 from security import ResolvedIdentity, resolve_identity
 from services.data_rights_erase import ERASE_REQUIRED, ERASE_STEPS
 from services.data_rights_erase_supabase import SupabaseEraseBackend
+from services.data_rights_token_deny import is_denied, reset_denylist
 
 ERASE_PATH = "/api/v1/me/erase"
 CONFIRM = {"confirm": "erase-my-data"}
@@ -126,6 +127,14 @@ def _auth(user_id):
 
 
 # --- fixtures --------------------------------------------------------------
+
+
+@pytest.fixture(autouse=True)
+def _clean_denylist():
+    # Slice 8: a successful erase denies the caller process-wide.
+    reset_denylist()
+    yield
+    reset_denylist()
 
 
 @pytest.fixture
@@ -431,3 +440,51 @@ def test_auth_deleter_default_is_noop_without_supabase(monkeypatch):
     provider = importlib.import_module("services.db_provider")
     monkeypatch.setattr(provider, "IS_SUPABASE", False)
     assert type(get_auth_deleter()).__name__ == "NoOpAuthIdentityDeleter"
+
+
+# --- slice 8: deny the caller after a successful erase ---------------------
+
+
+def test_erase_route_denies_caller_after_success(http, fake):
+    assert (is_denied(USER_A), is_denied(USER_B)) == (False, False)
+    # A hostile client also names B; only the authenticated caller is denied.
+    resp = http.post(ERASE_PATH, json=CONFIRM, headers=_auth(USER_A), params={"user_id": USER_B})
+    assert resp.status_code == 200
+    assert (is_denied(USER_A), is_denied(USER_B)) == (True, False)
+    ops_after_erase = list(fake.ops)
+    again = http.post(ERASE_PATH, json=CONFIRM, headers=_auth(USER_A))
+    assert again.status_code == 401
+    assert again.json() == {"detail": "Access token has been revoked"}
+    assert USER_A not in again.text
+    assert fake.ops == ops_after_erase  # refused before any backend call
+    # B is unaffected and can still authenticate.
+    other = http.post(ERASE_PATH, json=CONFIRM, headers=_auth(USER_B))
+    assert other.status_code == 200
+
+
+def test_erase_route_does_not_deny_when_row_erase_fails(http, fake):
+    fake.fail_on_delete = "trip_party"
+    resp = http.post(ERASE_PATH, json=CONFIRM, headers=_auth(USER_A))
+    assert resp.status_code == 500
+    assert resp.json() == {"detail": "erase_incomplete"}
+    assert not is_denied(USER_A)
+
+
+def test_erase_route_does_not_deny_when_auth_delete_fails(http, fake, deleter, supabase_identity):
+    deleter.error = RuntimeError(AUTH_CANARY)
+    resp = http.post(ERASE_PATH, json=CONFIRM)
+    assert resp.status_code == 500
+    assert resp.json() == {"detail": "erase_incomplete"}
+    assert deleter.calls == [USER_A]
+    assert not is_denied(USER_A)
+    # Retry succeeds and only then denies.
+    deleter.error = None
+    assert http.post(ERASE_PATH, json=CONFIRM).status_code == 200
+    assert is_denied(USER_A)
+
+
+def test_erase_route_deny_ignores_client_supplied_user_id(http, fake):
+    resp = http.post(ERASE_PATH, json=CONFIRM, headers=_auth(USER_A), params={"user_id": USER_B})
+    assert resp.status_code == 200
+    assert is_denied(USER_A)
+    assert not is_denied(USER_B)
