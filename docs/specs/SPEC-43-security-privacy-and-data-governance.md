@@ -237,14 +237,16 @@ delete. Slice 6 erase route `2764280` (PR #180):
 identity delete `ea5c0b3` (PR #182): GoTrue admin
 delete after rows. Slice 8 erase token denylist
 `4f22d1d` (PR #184): process-local subject deny for 1h.
+Slice 9 in-process cache purge `004ed6a` (PR #186):
+semantic cache / cost events / Ask budget before deny.
 Open Genie brief:
-`docs/briefs/GENIE_SPEC_43_G4_CACHE_PURGE.md`.
+`docs/briefs/GENIE_SPEC_43_G4_EXPORT_PLAN.md`.
 
 **Current fact.** SPEC-27 specifies export and deletion. The
 inventory, ordered erase plan, injected executor, and an
-in-memory and Supabase backends, an HTTP erase route, Auth
-identity deletion, and a process-local erase denylist exist;
-in-process personal caches are not yet purged on erase.
+server erase (rows, Auth delete, process-local deny, in-process
+cache purge) exists; there is still no export document, no
+tombstone, and no retention job.
 Trips, signals, events, parties, and several local caches have
 no enforced retention lifecycle. A cache expiry predicate does
 not delete an expired row.
