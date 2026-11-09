@@ -32,6 +32,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from config.settings import settings
 from models.schemas import TripState
+from services.data_rights_token_deny import is_denied
 
 # auto_error=False lets us return clearer 401s and run the dev fallback below.
 _bearer = HTTPBearer(auto_error=False)
@@ -61,6 +62,14 @@ def _unauthorized(detail: str) -> HTTPException:
         detail=detail,
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+
+def _refuse_if_denied(user_id: str) -> str:
+    # SPEC-43 Gap 4 slice 8: an erased caller stays refused until the
+    # process-local deny TTL ends, even with a still-valid token.
+    if is_denied(user_id):
+        raise _unauthorized("Access token has been revoked")
+    return user_id
 
 
 def _is_anonymous_scheme(authorization: Optional[str]) -> bool:
@@ -191,12 +200,12 @@ async def resolve_identity(
 
     # --- Path 1: JWKS (asymmetric, rotatable) ---
     if settings.supabase_jwks_url:
-        user_id = _decode_jwks_jwt(_require_bearer(credentials))
+        user_id = _refuse_if_denied(_decode_jwks_jwt(_require_bearer(credentials)))
         return ResolvedIdentity(user_id=user_id, identity_kind="supabase")
 
     # --- Path 2: legacy HS256 secret ---
     if settings.supabase_jwt_secret:
-        user_id = _decode_supabase_jwt(_require_bearer(credentials))
+        user_id = _refuse_if_denied(_decode_supabase_jwt(_require_bearer(credentials)))
         return ResolvedIdentity(user_id=user_id, identity_kind="supabase")
 
     # --- Path 3: Debug fallback (in-memory pytest / local dev only) ---
@@ -209,7 +218,7 @@ async def resolve_identity(
                     "header, or set TB_SUPABASE_JWKS_URL to enable real auth."
                 ),
             )
-        return ResolvedIdentity(user_id=x_debug_user_id, identity_kind="debug")
+        return ResolvedIdentity(user_id=_refuse_if_denied(x_debug_user_id), identity_kind="debug")
 
     # --- Path 4: Misconfigured production ---
     raise HTTPException(
