@@ -161,6 +161,14 @@ class CostTracker:
     # Analytics
     # =========================================================================
 
+    def clear_user(self, user_id: str) -> int:
+        """SPEC-43 Gap 4: drop every cost event for one user. Returns count."""
+        if not isinstance(user_id, str) or not user_id.strip():
+            raise ValueError("user_id is required")
+        before_count = len(self._events)
+        self._events = [e for e in self._events if e.user_id != user_id]
+        return before_count - len(self._events)
+
     def get_daily_summary(self, target_date: datetime = None) -> Dict:
         """Get cost summary for a specific day."""
         if target_date is None:

@@ -957,6 +957,11 @@ _shared_cache = AskCache()
 _shared_budget = AskBudget()
 
 
+def reset_ask_budget(user_id: str) -> None:
+    """SPEC-43 Gap 4: forget one identity's Ask budget count (erase)."""
+    _shared_budget.reset(user_id)
+
+
 # ---------------------------------------------------------------------------
 # SPEC-46 What Now -- closed request context and deterministic handler
 # ---------------------------------------------------------------------------
