@@ -30,7 +30,8 @@ documents disagree, follow Precedence below and name the conflict in
   and SPEC-43 Gaps 1, 6, 2, 9 (ownership + closed schemas), and 12
   HTTPS, cache keys, chat URLs, ATS, and trip-route ownership are
   merged.
-- Next Genie brief: `docs/briefs/GENIE_SPEC_43_G4_ERASE_EXECUTE.md`.
+- Next Genie brief: `docs/briefs/GENIE_SPEC_43_G4_ERASE_MEMORY.md`.
+  Gap 4 slice 3 erase execute is on main (`4d85cd7`, PR #174).
   Gap 4 slice 2 erase plan is on main (`f387c55`, PR #172).
   Gap 4 slice 1 inventory is on main (`cd28bf3`, PR #170).
   Gap 3 is closed on main: fallback pin `8d8b28b` (PR #165) and
