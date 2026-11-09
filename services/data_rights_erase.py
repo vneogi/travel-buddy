@@ -5,13 +5,17 @@ erase step here, ordered dependents first so a trip-scoped row is removed
 while its trip_states parent still exists to resolve ownership. A new
 identity table without a step fails tests/test_spec43_g4_erase_plan.py.
 
-This is a plan only: no SQL, no connections, no files, no logging.
+Slice 3: execute_erase walks the plan against an injected EraseBackend in
+order and stops on the first backend error, so a partial erase is visible to
+the caller. There is still no SQL here and no concrete database backend.
+
+No SQL, no connections, no files, no logging.
 Standard library plus config.data_rights. ASCII only.
 """
 
 from __future__ import annotations
 
-from typing import Dict, FrozenSet, Iterable, List, Optional, Set, Tuple
+from typing import Dict, FrozenSet, Iterable, List, Optional, Protocol, Set, Tuple
 
 from config.data_rights import RIGHTS_MAP
 
@@ -77,3 +81,47 @@ def plan_erase(user_id: str) -> List[dict]:
     if user_id is None or not isinstance(user_id, str) or not user_id.strip():
         raise ValueError("user_id is required")
     return [dict(step, user_id=user_id) for step in ERASE_STEPS]
+
+
+class EraseBackend(Protocol):
+    """Deletes one table's rows for a user. Returns rows affected."""
+
+    def delete_where_user_id(self, user_id: str, table: str) -> int: ...
+
+    def delete_via_trip_states(self, user_id: str, table: str) -> int: ...
+
+    def delete_via_party(self, user_id: str, table: str) -> int: ...
+
+
+class UnknownEraseMethodError(ValueError):
+    """A step names a method that is not an EraseBackend method."""
+
+
+def execute_erase(
+    user_id: str, backend: EraseBackend, steps: Optional[Iterable[dict]] = None
+) -> List[dict]:
+    """Run each erase step on *backend*, in order.
+
+    The plan (and user_id) is validated before any backend call. If a backend
+    method raises, later steps are not called and the same exception is
+    re-raised; nothing is swallowed.
+    """
+    # plan_erase raises ValueError on a blank user_id before any backend call.
+    default_plan = plan_erase(user_id)
+    plan = default_plan if steps is None else list(steps)
+    for step in plan:
+        if step.get("method") not in ERASE_METHODS:
+            raise UnknownEraseMethodError("unknown erase method")
+    results: List[dict] = []
+    for step in plan:
+        method = getattr(backend, step["method"])
+        rows = method(user_id=user_id, table=step["table"])
+        results.append(
+            {
+                "table": step["table"],
+                "method": step["method"],
+                "via": step.get("via"),
+                "rows": int(rows),
+            }
+        )
+    return results
