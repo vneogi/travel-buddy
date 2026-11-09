@@ -30,7 +30,8 @@ documents disagree, follow Precedence below and name the conflict in
   and SPEC-43 Gaps 1, 6, 2, 9 (ownership + closed schemas), and 12
   HTTPS, cache keys, chat URLs, ATS, and trip-route ownership are
   merged.
-- Next Genie brief: `docs/briefs/GENIE_SPEC_43_G4_AUTH_DELETE.md`.
+- Next Genie brief: `docs/briefs/GENIE_SPEC_43_G4_TOKEN_DENY.md`.
+  Gap 4 slice 7 Auth identity delete is on main (`ea5c0b3`, PR #182).
   Gap 4 slice 6 erase route is on main (`2764280`, PR #180).
   Gap 4 slice 5 Supabase erase backend is on main (`54c3c8d`, PR #178).
   Gap 4 slice 4 in-memory wipe proof is on main (`7ceab2e`, PR #176).
