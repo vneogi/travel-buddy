@@ -128,6 +128,7 @@ class SemanticCacheService:
         trip_id: str = "",
         local_date: str = "",
         source_version: str = "",
+        restricted_needles: Iterable[object] = (),
     ) -> Optional[Tuple[str, float]]:
         """Check if a semantically similar query exists in cache.
 
@@ -146,7 +147,11 @@ class SemanticCacheService:
             self.total_misses += 1
             return None
 
-        query_embedding = embedding_service.generate_embedding(query)
+        # SPEC-43 Gap 3: booking needles are redacted from the provider
+        # payload only; the HMAC and matching still use the original query.
+        query_embedding = embedding_service.generate_embedding(
+            query, restricted_needles=restricted_needles
+        )
 
         best_match: Optional[CacheEntry] = None
         best_score: float = 0.0
@@ -214,7 +219,9 @@ class SemanticCacheService:
             return
         if response_is_restricted(response, restricted_needles):
             return
-        embedding = embedding_service.generate_embedding(query)
+        embedding = embedding_service.generate_embedding(
+            query, restricted_needles=restricted_needles
+        )
         entry = CacheEntry(
             query_hmac=hmac_query(query, self._hmac_key),
             response_text=response,
