@@ -31,11 +31,14 @@ class EmbeddingService:
         if not use_synthetic:
             configure_provider_keys()
 
-    def generate_embedding(self, text: str, user_id: Optional[str] = None) -> List[float]:
+    def generate_embedding(
+        self, text: str, user_id: Optional[str] = None, restricted_needles=()
+    ) -> List[float]:
         if self.use_synthetic:
             # Synthetic vectors are not provider spend: no circuit, no LiteLLM.
+            # Hashes the original text (SPEC-43 Gap 3: not a provider payload).
             return self._synthetic_embedding(text)
-        return self._api_embedding(text, user_id=user_id)
+        return self._api_embedding(text, user_id=user_id, restricted_needles=restricted_needles)
 
     def _synthetic_embedding(self, text: str) -> List[float]:
         """Deterministic SHA-256-based pseudo-embedding, unit-normalized.

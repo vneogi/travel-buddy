@@ -480,6 +480,7 @@ class TripStateMachine:
             cache_result = cache_service.check_cache(
                 state["message"],
                 identity_scope=state["user_id"],
+                restricted_needles=self._restricted_needles(state),
                 **self._cache_scope(state),
             )
             if cache_result:
