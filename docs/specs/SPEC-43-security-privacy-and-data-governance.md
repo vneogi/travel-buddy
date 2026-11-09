@@ -229,12 +229,14 @@ a provider failure does not retry another vendor.
 **Status on main.** Slice 1 inventory `cd28bf3` (PR #170).
 Slice 2 erase plan `f387c55` (PR #172). Slice 3 erase
 execute `4d85cd7` (PR #174): walks the plan against an
-injected backend, no SQL. Open Genie brief:
-`docs/briefs/GENIE_SPEC_43_G4_ERASE_MEMORY.md`.
+injected backend, no SQL. Slice 4 in-memory wipe `7ceab2e`
+(PR #176): two-user wipe proof. Open Genie brief:
+`docs/briefs/GENIE_SPEC_43_G4_ERASE_SUPABASE.md`.
 
 **Current fact.** SPEC-27 specifies export and deletion. The
-inventory, ordered erase plan, and injected executor exist;
-there is still no concrete backend, endpoint, or client flow.
+inventory, ordered erase plan, injected executor, and an
+in-memory backend exist; there is still no database backend,
+endpoint, or client flow.
 Trips, signals, events, parties, and several local caches have
 no enforced retention lifecycle. A cache expiry predicate does
 not delete an expired row.
