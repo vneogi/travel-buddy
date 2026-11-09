@@ -42,8 +42,8 @@ is on main. Gap 8 trip/date/source-version `606626e`
 (PR #156) is on main. Gap 3 outbound redact `d35895a`
 (PR #159) is on main. Gap 3 cache-embed `b59c50d`
 (PR #162) is on main. Gap 3 fallback pin `8d8b28b` (PR #165)
-is on main. Next Genie brief:
-`docs/briefs/GENIE_SPEC_43_G3_EMBED_PRINT.md`.
+and embedding log `704c503` (PR #168) are on main. Next Genie brief:
+`docs/briefs/GENIE_SPEC_43_G4_RIGHTS_INVENTORY.md`.
 Do not apply 0026 until `rolbypassrls` is confirmed.
 
 SPEC-44 Phase A application code merged as PR #67 (`9a7b9d9`). Planning
@@ -138,8 +138,8 @@ is on main. Gap 3 itinerary DTO `dd0e6d3` (PR #156)
 is on main. Gap 3 outbound redact `d35895a` (PR #159)
 is on main. Gap 3 cache-embed `b59c50d` (PR #162)
 is on main. Gap 3 fallback pin `8d8b28b` (PR #165)
-is on main. Next Genie brief:
-`docs/briefs/GENIE_SPEC_43_G3_EMBED_PRINT.md`.
+and embedding log `704c503` (PR #168) are on main. Next Genie brief:
+`docs/briefs/GENIE_SPEC_43_G4_RIGHTS_INVENTORY.md`.
 Remaining Gap 9
 `derived_feature` table,
 unknown-time excursions, and Laos decision-cell coverage stay later.
@@ -274,8 +274,7 @@ Resume in this order:
 5. Patch Laos spine and effective-choice gaps: Kuang Si, Pak Ou, Blue Lagoon
    2/3, Papao, and the Wat Xieng Thong packing failure. Measure coverage by
    common decision cell, not total POI count.
-6. Implement remaining SPEC-43 (Gap 3 embedding failure print,
-   briefed; GCP log retention;
+6. Implement remaining SPEC-43 (Gap 4 rights slices; GCP log retention;
    Gap 11 Armor/Play Integrity;
    `derived_feature` table; hosted 0026; Gap 12
    lock-screen waits on OS
@@ -310,7 +309,7 @@ separation live in the operating model; do not reconstruct them from chat.
 `76d7e9be3186a817a12664ed51b62e1db1ea8c946d5d5ac67b47912762036714`
 (built from `1aa405c`; rebuild from `1de6ff2` to drop `pm clear`).
 
-Next Genie job: `docs/briefs/GENIE_SPEC_43_G3_EMBED_PRINT.md`.
+Next Genie job: `docs/briefs/GENIE_SPEC_43_G4_RIGHTS_INVENTORY.md`.
 Gap 3 fallback pin `8d8b28b` (PR #165):
 completions use only the tier's configured model; no cross-vendor hop.
 Semantic-cache embeddings redact booking canaries. Light
