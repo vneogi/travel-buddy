@@ -488,3 +488,102 @@ def test_erase_route_deny_ignores_client_supplied_user_id(http, fake):
     assert resp.status_code == 200
     assert is_denied(USER_A)
     assert not is_denied(USER_B)
+
+
+# --- slice 9: purge in-process caches before deny ---------------------------
+
+PURGE_CANARY = "PURGE-CANARY-g4"
+
+
+@pytest.fixture
+def seeded_caches(monkeypatch):
+    """Seed the real singletons for A and B; monkeypatch restores them."""
+    from services.cache_service import CacheEntry
+
+    # importlib: package attributes shadow these submodules with singletons.
+    cost_mod = importlib.import_module("monitoring.cost_tracker")
+    cache_mod = importlib.import_module("services.cache_service")
+    ask = importlib.import_module("services.ask_service")
+    entries = [
+        CacheEntry(
+            query_hmac=f"h-{scope}-{i}",
+            response_text="cached",
+            embedding=[0.0, 1.0],
+            identity_scope=scope,
+        )
+        for scope, n in ((USER_A, 3), (USER_B, 2))
+        for i in range(n)
+    ]
+    monkeypatch.setattr(cache_mod.cache_service, "_cache", entries)
+    monkeypatch.setattr(cost_mod.cost_tracker, "_events", [])
+    for _ in range(4):
+        cost_mod.cost_tracker.record_cache_hit(USER_A)
+    cost_mod.cost_tracker.record_cache_hit(USER_B)
+    cost_mod.cost_tracker.record_api_call(USER_B, "places")
+    monkeypatch.setitem(ask._shared_budget._counts, USER_A, 2)
+    monkeypatch.setitem(ask._shared_budget._counts, USER_B, 1)
+
+    def counts(user_id):
+        return {
+            "semantic_cache": sum(
+                1 for e in cache_mod.cache_service._cache if e.identity_scope == user_id
+            ),
+            "cost_events": sum(1 for e in cost_mod.cost_tracker._events if e.user_id == user_id),
+            "ask_budget": ask._shared_budget._counts.get(user_id, 0),
+        }
+
+    return counts
+
+
+def test_erase_route_purges_caller_caches_before_deny(http, fake, seeded_caches, monkeypatch):
+    real_purge = me_router.purge_identity_caches
+    seen = []
+
+    def spy(user_id, **kwargs):
+        seen.append(("denied_at_purge", is_denied(user_id)))
+        out = real_purge(user_id, **kwargs)
+        seen.append(("purge", out))
+        return out
+
+    monkeypatch.setattr(me_router, "purge_identity_caches", spy)
+    before_a, before_b = seeded_caches(USER_A), seeded_caches(USER_B)
+    assert before_a == {"semantic_cache": 3, "cost_events": 4, "ask_budget": 2}
+    # A hostile client also names B; only the authenticated caller is purged.
+    resp = http.post(ERASE_PATH, json=CONFIRM, headers=_auth(USER_A), params={"user_id": USER_B})
+    assert resp.status_code == 200
+    assert set(resp.json()) == {"status", "tables"}
+    assert seeded_caches(USER_A) == {"semantic_cache": 0, "cost_events": 0, "ask_budget": 0}
+    assert seeded_caches(USER_B) == before_b
+    assert seen == [
+        ("denied_at_purge", False),
+        ("purge", {"semantic_cache": 3, "cost_events": 4, "ask_budget": True}),
+    ]
+    assert is_denied(USER_A) and not is_denied(USER_B)
+
+
+def test_erase_route_skips_deny_when_purge_raises(http, fake, monkeypatch, caplog, capsys):
+    def boom(user_id, **kwargs):
+        raise RuntimeError(PURGE_CANARY + " " + user_id)
+
+    monkeypatch.setattr(me_router, "purge_identity_caches", boom)
+    caplog.set_level(logging.DEBUG)
+    capsys.readouterr()
+    resp = http.post(ERASE_PATH, json=CONFIRM, headers=_auth(USER_A))
+    out = capsys.readouterr()
+    assert resp.status_code == 500
+    assert resp.json() == {"detail": "erase_incomplete"}
+    for needle in (PURGE_CANARY, USER_A):
+        assert needle not in resp.text, needle
+        assert needle not in caplog.text, needle
+        assert needle not in out.out and needle not in out.err, needle
+    assert not is_denied(USER_A)
+    # Rows were already erased (same partial-success shape as Auth failure).
+    assert _counts(fake, USER_A) == {t: 0 for t in ERASE_REQUIRED}
+
+
+def test_erase_route_purge_ignores_client_supplied_user_id(http, fake, seeded_caches):
+    before_b = seeded_caches(USER_B)
+    resp = http.post(ERASE_PATH, json=CONFIRM, headers=_auth(USER_A), params={"user_id": USER_B})
+    assert resp.status_code == 200
+    assert seeded_caches(USER_B) == before_b
+    assert seeded_caches(USER_A) == {"semantic_cache": 0, "cost_events": 0, "ask_budget": 0}

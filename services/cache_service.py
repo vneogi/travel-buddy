@@ -243,6 +243,20 @@ class SemanticCacheService:
         self._cache = [e for e in self._cache if not e.is_expired]
         return before_count - len(self._cache)
 
+    def clear_identity(self, identity_scope: str) -> int:
+        """SPEC-43 Gap 4: drop every entry owned by one identity scope.
+
+        An unusable scope (blank, "anonymous") removes nothing; this never
+        falls back to clear_all. Hit/miss totals are process totals and are
+        kept. The scope is not logged.
+        """
+        scope = normalize_identity_scope(identity_scope)
+        if scope is None:
+            return 0
+        before_count = len(self._cache)
+        self._cache = [e for e in self._cache if e.identity_scope != scope]
+        return before_count - len(self._cache)
+
     def get_stats(self) -> dict:
         """Return cache performance stats."""
         return {

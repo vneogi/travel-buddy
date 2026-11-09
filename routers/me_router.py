@@ -35,9 +35,15 @@ POST /api/v1/me/erase   body {"confirm": "erase-my-data"}
   token cannot keep working or recreate a user_tiers row here. If the Auth
   delete fails nothing is denied, so the traveller can retry.
 
-Remainders, not handled here: the denylist is not shared across Cloud Run
-instances and is not per-jti. No tombstone, cache/error-ring purge,
-export, retention job or Flutter flow.
+- Slice 9: before the deny step, the caller's in-process semantic-cache
+  entries, cost-tracker events and Ask budget counter are purged, for
+  every identity kind. If the purge raises, the generic 500 is returned
+  and the caller is not denied, so they can retry.
+
+Remainders, not handled here: error-ring purge by identity (entries carry
+no user id), the Ask exact-match public cache, cached_responses SQL rows,
+a denylist shared across Cloud Run instances (and per-jti), tombstones,
+export, retention jobs and the Flutter flow.
 """
 
 import importlib
@@ -54,6 +60,7 @@ from services.data_rights_auth_delete import (
     NoOpAuthIdentityDeleter,
     SupabaseAuthIdentityDeleter,
 )
+from services.data_rights_cache_purge import purge_identity_caches
 from services.data_rights_token_deny import deny_identity
 from services.data_rights_erase import EraseBackend, execute_erase
 from services.data_rights_erase_supabase import SupabaseEraseBackend
@@ -114,7 +121,9 @@ async def erase_me(
         # Only after every row step succeeded. Debug identities never reach it.
         if identity.identity_kind == "supabase":
             auth_deleter.delete_auth_user(identity.user_id)
-        # Last: only after rows and (for supabase) Auth both succeeded.
+        # In-process caches next, then deny last: only after rows, (for
+        # supabase) Auth and the purge all succeeded.
+        purge_identity_caches(identity.user_id)
         deny_identity(identity.user_id)
     except Exception as exc:
         request_id = getattr(request.state, "request_id", "unknown")
