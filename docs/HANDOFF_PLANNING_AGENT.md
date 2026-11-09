@@ -45,8 +45,9 @@ is on main. Gap 8 trip/date/source-version `606626e`
 and embedding log `704c503` (PR #168) are on main. Gap 4
 inventory `cd28bf3` (PR #170), erase plan `f387c55`
 (PR #172), erase execute `4d85cd7` (PR #174), and in-memory wipe
-`7ceab2e` (PR #176) are on main. Next Genie brief:
-`docs/briefs/GENIE_SPEC_43_G4_ERASE_SUPABASE.md`.
+`7ceab2e` (PR #176), and Supabase erase backend `54c3c8d`
+(PR #178) are on main. Next Genie brief:
+`docs/briefs/GENIE_SPEC_43_G4_ERASE_ROUTE.md`.
 Do not apply 0026 until `rolbypassrls` is confirmed.
 
 SPEC-44 Phase A application code merged as PR #67 (`9a7b9d9`). Planning
@@ -144,8 +145,9 @@ is on main. Gap 3 fallback pin `8d8b28b` (PR #165)
 and embedding log `704c503` (PR #168) are on main. Gap 4
 inventory `cd28bf3` (PR #170), erase plan `f387c55`
 (PR #172), erase execute `4d85cd7` (PR #174), and in-memory wipe
-`7ceab2e` (PR #176) are on main. Next Genie brief:
-`docs/briefs/GENIE_SPEC_43_G4_ERASE_SUPABASE.md`.
+`7ceab2e` (PR #176), and Supabase erase backend `54c3c8d`
+(PR #178) are on main. Next Genie brief:
+`docs/briefs/GENIE_SPEC_43_G4_ERASE_ROUTE.md`.
 Remaining Gap 9
 `derived_feature` table,
 unknown-time excursions, and Laos decision-cell coverage stay later.
@@ -315,10 +317,11 @@ separation live in the operating model; do not reconstruct them from chat.
 `76d7e9be3186a817a12664ed51b62e1db1ea8c946d5d5ac67b47912762036714`
 (built from `1aa405c`; rebuild from `1de6ff2` to drop `pm clear`).
 
-Next Genie job: `docs/briefs/GENIE_SPEC_43_G4_ERASE_SUPABASE.md`.
+Next Genie job: `docs/briefs/GENIE_SPEC_43_G4_ERASE_ROUTE.md`.
 Gap 4 inventory `cd28bf3` (PR #170), erase plan `f387c55`
-(PR #172), erase execute `4d85cd7` (PR #174), and in-memory
-wipe `7ceab2e` (PR #176) are on main.
+(PR #172), erase execute `4d85cd7` (PR #174), in-memory
+wipe `7ceab2e` (PR #176), and Supabase erase backend `54c3c8d`
+(PR #178) are on main.
 Gap 3 fallback pin `8d8b28b` (PR #165):
 completions use only the tier's configured model; no cross-vendor hop.
 Semantic-cache embeddings redact booking canaries. Light
