@@ -187,16 +187,15 @@ including `user_tiers`, `trip_states`, `event_log`, `cached_responses`,
 **Status on main.** Heavy itinerary allowlist DTO `dd0e6d3`
 (PR #156). Outbound light-complete and API-embedding redaction
 `d35895a` (PR #159). Cache-path embedding redaction `b59c50d`
-(PR #162). Open Genie brief:
-`docs/briefs/GENIE_SPEC_43_G3_FALLBACK.md`. Remainder:
-`_api_embedding` failure print. Personal LLM stays off.
+(PR #162). Fallback pin `8d8b28b` (PR #165):
+completions use only the tier's configured model. Remainder:
+`_api_embedding` failure print, not yet briefed. Personal LLM stays off.
 
 **Current fact.** Heavy prompts send an allowlisted node/venue
 DTO. Light complete, API embeddings, and semantic-cache
 embeddings replace booking needles and secrets with REDACTED.
-Semantic-cache HMAC still keys the original question. The
-configured heavy fallback chain can still move a request among
-model providers.
+Semantic-cache HMAC still keys the original question. Completions use only the tier's configured model (`8d8b28b`);
+a provider failure does not retry another vendor.
 
 **Solution.**
 
