@@ -18,11 +18,19 @@ POST /api/v1/me/erase   body {"confirm": "erase-my-data"}
   repeat run on a partly erased account completes the remaining steps.
 - The response carries only table names and row counts.
 - Does not create the user record (get_or_create_user is never called).
+- Slice 7: after the row erase succeeds, and only for
+  identity_kind == "supabase", the caller's Supabase Auth (GoTrue) identity
+  is deleted through get_auth_deleter. Rows first, Auth second, so a failed
+  row erase never leaves a traveller unable to sign in to retry. Debug
+  identities have no GoTrue user and never reach the deleter. An Auth
+  delete failure takes the same generic 500 path; the row erase is not
+  rolled back (no transaction spans PostgREST and GoTrue). A retry finds
+  zero rows and retries the Auth delete; an already-missing Auth user is
+  success.
 
-Remainders, not handled here: the Supabase Auth identity is not deleted, so
-the JWT still verifies until it expires and the next authenticated call
-re-creates a user_tiers row. No tombstone, cache/error-ring purge, export or
-client wipe.
+Remainders, not handled here: a still-unexpired access token may verify at
+the API until exp (no denylist this slice; Gap 6 records it). No tombstone,
+cache/error-ring purge, export, retention job or Flutter flow.
 """
 
 import importlib
@@ -34,6 +42,11 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict
 
 from security import ResolvedIdentity, resolve_identity
+from services.data_rights_auth_delete import (
+    AuthIdentityDeleter,
+    NoOpAuthIdentityDeleter,
+    SupabaseAuthIdentityDeleter,
+)
 from services.data_rights_erase import EraseBackend, execute_erase
 from services.data_rights_erase_supabase import SupabaseEraseBackend
 
@@ -71,16 +84,28 @@ def get_erase_backend() -> EraseBackend:
     return SupabaseEraseBackend(provider.db_service.client)
 
 
+def get_auth_deleter() -> AuthIdentityDeleter:
+    """GoTrue deleter when Supabase is configured, otherwise a no-op."""
+    provider = importlib.import_module("services.db_provider")
+    if not provider.IS_SUPABASE:
+        return NoOpAuthIdentityDeleter()
+    return SupabaseAuthIdentityDeleter(provider.db_service.client)
+
+
 @router.post("/me/erase", response_model=EraseResponse)
 async def erase_me(
     request: Request,
     body: EraseRequest,
     identity: ResolvedIdentity = Depends(resolve_identity),
     backend: EraseBackend = Depends(get_erase_backend),
+    auth_deleter: AuthIdentityDeleter = Depends(get_auth_deleter),
 ):
-    """Erase every server row owned by the authenticated caller."""
+    """Erase the caller's server rows, then their Auth identity."""
     try:
         results = execute_erase(identity.user_id, backend)
+        # Only after every row step succeeded. Debug identities never reach it.
+        if identity.identity_kind == "supabase":
+            auth_deleter.delete_auth_user(identity.user_id)
     except Exception as exc:
         request_id = getattr(request.state, "request_id", "unknown")
         logger.warning("erase incomplete (%s) request_id=%s", type(exc).__name__, request_id)

@@ -16,7 +16,8 @@ from fastapi.testclient import TestClient
 import monitoring.rate_limit as rate_limit
 import routers.me_router as me_router
 from main import app
-from routers.me_router import get_erase_backend
+from routers.me_router import get_auth_deleter, get_erase_backend
+from security import ResolvedIdentity, resolve_identity
 from services.data_rights_erase import ERASE_REQUIRED, ERASE_STEPS
 from services.data_rights_erase_supabase import SupabaseEraseBackend
 
@@ -293,3 +294,140 @@ def test_response_contains_no_identifiers(http, fake):
         assert isinstance(entry["rows"], int)
     for needle in {USER_A, *a_trips, *a_parties, "via", "trip_states.trip_id"}:
         assert needle not in resp.text, needle
+
+
+# --- slice 7: Auth identity delete after the row erase ---------------------
+
+AUTH_CANARY = "AUTH-CANARY-g4-delete"
+
+
+class RecordingDeleter:
+    """Records delete_auth_user calls, also into the fake client's op log."""
+
+    def __init__(self, fake, error=None):
+        self.calls = []
+        self.fake = fake
+        self.error = error
+
+    def delete_auth_user(self, user_id):
+        self.calls.append(user_id)
+        self.fake.ops.append(("auth.admin", "delete_user", ()))
+        if self.error is not None:
+            raise self.error
+
+
+@pytest.fixture
+def deleter(fake):
+    d = RecordingDeleter(fake)
+    app.dependency_overrides[get_auth_deleter] = lambda: d
+    try:
+        yield d
+    finally:
+        app.dependency_overrides.pop(get_auth_deleter, None)
+
+
+@pytest.fixture
+def supabase_identity():
+    app.dependency_overrides[resolve_identity] = lambda: ResolvedIdentity(USER_A, "supabase")
+    try:
+        yield
+    finally:
+        app.dependency_overrides.pop(resolve_identity, None)
+
+
+def test_erase_route_deletes_auth_after_rows_for_supabase_identity(
+    http, fake, deleter, supabase_identity
+):
+    before_b = _counts(fake, USER_B)
+    resp = http.post(ERASE_PATH, json=CONFIRM, params={"user_id": USER_B})
+    assert resp.status_code == 200, resp.text
+    assert set(resp.json()) == {"status", "tables"}
+    assert deleter.calls == [USER_A]
+    assert USER_B not in deleter.calls
+    # Auth delete is the last op, after every row delete.
+    ops = [(t, op) for t, op, _f in fake.ops]
+    assert ops[-1] == ("auth.admin", "delete_user")
+    row_deletes = [t for t, op in ops if op == "delete"]
+    assert row_deletes == [s["table"] for s in ERASE_STEPS]
+    assert ops.index(("auth.admin", "delete_user")) > ops.index(("user_tiers", "delete"))
+    assert _counts(fake, USER_A) == {t: 0 for t in ERASE_REQUIRED}
+    assert _counts(fake, USER_B) == before_b
+
+
+def test_erase_route_skips_auth_delete_for_debug_identity(http, fake, deleter):
+    resp = http.post(ERASE_PATH, json=CONFIRM, headers=_auth(USER_A))
+    assert resp.status_code == 200
+    assert deleter.calls == []
+    assert _counts(fake, USER_A) == {t: 0 for t in ERASE_REQUIRED}
+
+
+def test_erase_route_does_not_delete_auth_when_row_erase_fails(
+    http, fake, deleter, supabase_identity
+):
+    assert ERASE_STEPS[1]["table"] == "trip_party"
+    fake.fail_on_delete = "trip_party"
+    resp = http.post(ERASE_PATH, json=CONFIRM)
+    assert resp.status_code == 500
+    assert resp.json() == {"detail": "erase_incomplete"}
+    assert deleter.calls == []
+    assert ("auth.admin", "delete_user", ()) not in fake.ops
+
+
+def test_erase_route_auth_delete_failure_is_generic_and_leaks_nothing(
+    http, fake, deleter, supabase_identity, caplog, capsys
+):
+    deleter.error = RuntimeError(AUTH_CANARY + " " + USER_A)
+    caplog.set_level(logging.DEBUG)
+    capsys.readouterr()
+    resp = http.post(ERASE_PATH, json=CONFIRM)
+    out = capsys.readouterr()
+    assert resp.status_code == 500
+    assert resp.json() == {"detail": "erase_incomplete"}
+    for needle in (AUTH_CANARY, USER_A, "RuntimeError"):
+        assert needle not in resp.text, needle
+    for needle in (AUTH_CANARY, USER_A):
+        assert needle not in caplog.text, needle
+        assert needle not in out.out and needle not in out.err, needle
+    warnings = [
+        r
+        for r in caplog.records
+        if r.name == "travelbuddy" and r.getMessage().startswith("erase incomplete")
+    ]
+    assert len(warnings) == 1 and warnings[0].levelno == logging.WARNING
+    assert "RuntimeError" in warnings[0].getMessage()
+    assert deleter.calls == [USER_A]
+    # No rollback: A's rows are already gone.
+    assert _counts(fake, USER_A) == {t: 0 for t in ERASE_REQUIRED}
+
+
+def test_erase_route_auth_delete_retry_after_partial_success(
+    http, fake, deleter, supabase_identity
+):
+    before_b = _counts(fake, USER_B)
+    deleter.error = RuntimeError(AUTH_CANARY)
+    first = http.post(ERASE_PATH, json=CONFIRM)
+    assert first.status_code == 500
+    assert _counts(fake, USER_A) == {t: 0 for t in ERASE_REQUIRED}
+    deleter.error = None
+    second = http.post(ERASE_PATH, json=CONFIRM)
+    assert second.status_code == 200
+    assert all(t["rows"] == 0 for t in second.json()["tables"])
+    assert deleter.calls == [USER_A, USER_A]
+    assert _counts(fake, USER_A) == {t: 0 for t in ERASE_REQUIRED}
+    assert _counts(fake, USER_B) == before_b
+
+
+def test_erase_route_auth_delete_ignores_client_supplied_user_id(
+    http, fake, deleter, supabase_identity
+):
+    before_b = _counts(fake, USER_B)
+    resp = http.post(ERASE_PATH, json=CONFIRM, params={"user_id": USER_B})
+    assert resp.status_code == 200
+    assert deleter.calls == [USER_A]
+    assert _counts(fake, USER_B) == before_b
+
+
+def test_auth_deleter_default_is_noop_without_supabase(monkeypatch):
+    provider = importlib.import_module("services.db_provider")
+    monkeypatch.setattr(provider, "IS_SUPABASE", False)
+    assert type(get_auth_deleter()).__name__ == "NoOpAuthIdentityDeleter"
