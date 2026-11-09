@@ -41,8 +41,8 @@ is on main. Gap 8 trip/date/source-version `606626e`
 (PR #153) is on main. Gap 3 itinerary DTO `dd0e6d3`
 (PR #156) is on main. Gap 3 outbound redact `d35895a`
 (PR #159) is on main. Gap 3 cache-embed `b59c50d`
-(PR #162) is on main. Next Genie brief:
-`docs/briefs/GENIE_SPEC_43_G3_FALLBACK.md`.
+(PR #162) is on main. Gap 3 fallback pin `8d8b28b` (PR #165)
+is on main. No open Genie brief.
 Do not apply 0026 until `rolbypassrls` is confirmed.
 
 SPEC-44 Phase A application code merged as PR #67 (`9a7b9d9`). Planning
@@ -136,8 +136,8 @@ is on main. Gap 10 error-ring TTL `12588c2` (PR #153)
 is on main. Gap 3 itinerary DTO `dd0e6d3` (PR #156)
 is on main. Gap 3 outbound redact `d35895a` (PR #159)
 is on main. Gap 3 cache-embed `b59c50d` (PR #162)
-is on main. Next Genie brief:
-`docs/briefs/GENIE_SPEC_43_G3_FALLBACK.md`.
+is on main. Gap 3 fallback pin `8d8b28b` (PR #165)
+is on main. No open Genie brief.
 Remaining Gap 9
 `derived_feature` table,
 unknown-time excursions, and Laos decision-cell coverage stay later.
@@ -272,8 +272,8 @@ Resume in this order:
 5. Patch Laos spine and effective-choice gaps: Kuang Si, Pak Ou, Blue Lagoon
    2/3, Papao, and the Wat Xieng Thong packing failure. Measure coverage by
    common decision cell, not total POI count.
-6. Implement remaining SPEC-43 (Gap 3 fallback pin is the open
-   Genie job; embedding failure print; GCP log retention;
+6. Implement remaining SPEC-43 (Gap 3 embedding failure print,
+   not yet briefed; GCP log retention;
    Gap 11 Armor/Play Integrity;
    `derived_feature` table; hosted 0026; Gap 12
    lock-screen waits on OS
@@ -308,8 +308,8 @@ separation live in the operating model; do not reconstruct them from chat.
 `76d7e9be3186a817a12664ed51b62e1db1ea8c946d5d5ac67b47912762036714`
 (built from `1aa405c`; rebuild from `1de6ff2` to drop `pm clear`).
 
-Next Genie job: `docs/briefs/GENIE_SPEC_43_G3_FALLBACK.md`
-(pin completions to the configured model; no cross-vendor hop).
+No open Genie job. Gap 3 fallback pin `8d8b28b` (PR #165):
+completions use only the tier's configured model; no cross-vendor hop.
 Semantic-cache embeddings redact booking canaries. Light
 complete and API embeddings redact booking canaries. Heavy LLM
 prompts use an allowlisted node DTO. Error ring drops entries older than 24h.
