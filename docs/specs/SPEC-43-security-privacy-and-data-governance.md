@@ -240,13 +240,15 @@ delete after rows. Slice 8 erase token denylist
 Slice 9 in-process cache purge `004ed6a` (PR #186):
 semantic cache / cost events / Ask budget before deny.
 Slice 10 export plan `2fa9074` (PR #188): parent-first
-steps over identity tables. Open Genie brief:
-`docs/briefs/GENIE_SPEC_43_G4_EXPORT_EXECUTE.md`.
+steps over identity tables. Slice 11 export execute
+`fde1ae6` (PR #190): injected backend, detached copies.
+Open Genie brief:
+`docs/briefs/GENIE_SPEC_43_G4_EXPORT_MEMORY.md`.
 
 **Current fact.** SPEC-27 specifies export and deletion. The
 inventory, ordered erase plan, injected executor, and an
-server erase exists and an export plan exists; there is still
-no export executor, backend, document endpoint, tombstone, or
+server erase and an export executor exist; there is still no
+concrete export backend, document endpoint, tombstone, or
 retention job.
 Trips, signals, events, parties, and several local caches have
 no enforced retention lifecycle. A cache expiry predicate does

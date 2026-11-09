@@ -30,7 +30,8 @@ documents disagree, follow Precedence below and name the conflict in
   and SPEC-43 Gaps 1, 6, 2, 9 (ownership + closed schemas), and 12
   HTTPS, cache keys, chat URLs, ATS, and trip-route ownership are
   merged.
-- Next Genie brief: `docs/briefs/GENIE_SPEC_43_G4_EXPORT_EXECUTE.md`.
+- Next Genie brief: `docs/briefs/GENIE_SPEC_43_G4_EXPORT_MEMORY.md`.
+  Gap 4 slice 11 export execute is on main (`fde1ae6`, PR #190).
   Gap 4 slice 10 export plan is on main (`2fa9074`, PR #188).
   Gap 4 slice 9 in-process cache purge is on main (`004ed6a`, PR #186).
   Gap 4 slice 8 erase token denylist is on main (`4f22d1d`, PR #184).
