@@ -226,10 +226,15 @@ a provider failure does not retry another vendor.
 
 ### Gap 4: data rights and retention are not implemented
 
-**Current fact.** SPEC-27 specifies export and deletion, but there is no
-endpoint or client flow. Trips, signals, events, parties, and several local
-caches have no enforced retention lifecycle. A cache expiry predicate does not
-delete an expired row.
+**Status on main.** Slice 1 inventory `cd28bf3` (PR #170):
+every migration table is classified in `config/data_rights.py`.
+Open Genie brief: `docs/briefs/GENIE_SPEC_43_G4_ERASE_PLAN.md`.
+
+**Current fact.** SPEC-27 specifies export and deletion. The
+inventory and schema-walk guard exist; there is still no erase
+plan, endpoint, or client flow. Trips, signals, events, parties,
+and several local caches have no enforced retention lifecycle.
+A cache expiry predicate does not delete an expired row.
 
 **Solution.**
 
