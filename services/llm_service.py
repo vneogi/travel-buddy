@@ -77,6 +77,10 @@ def public_replacement_venues(venues: list) -> List[Dict]:
     return _allowlist(venues, PUBLIC_VENUE_KEYS)
 
 
+class UnapprovedModelError(ValueError):
+    """SPEC-43 Gap 3: model= is not the approved model for its routing tier."""
+
+
 class LLMService:
     """Unified LLM gateway with cost tracking and routing."""
 
@@ -89,10 +93,6 @@ class LLMService:
         "gemini/gemini-1.5-pro": {"input": 0.00125, "output": 0.005},
     }
 
-    # Fallback chains
-    HEAVY_FALLBACK = ["gpt-4o", "claude-3-5-sonnet-20241022", "gemini/gemini-1.5-pro"]
-    LIGHT_FALLBACK = ["gpt-4o-mini"]
-
     def __init__(self, circuit: Optional[SpendCircuit] = None):
         # SPEC-43 Gap 11: provider-spend circuit; tests inject a private one.
         self._circuit = circuit if circuit is not None else _spend.default_spend_circuit
@@ -102,6 +102,14 @@ class LLMService:
         self._total_tokens_used = 0
         self._total_cost = 0.0
         self._call_log: List[Dict] = []
+
+    def approved_models(self, routing_tier: str) -> Tuple[str, ...]:
+        """SPEC-43 Gap 3: the only model a tier may send a prompt to.
+
+        Heavy is settings.heavy_model, light is settings.light_model. There
+        is no cross-provider fallback chain.
+        """
+        return (self.heavy_model,) if routing_tier == "heavy" else (self.light_model,)
 
     # =========================================================================
     # Core Completion
@@ -117,11 +125,15 @@ class LLMService:
         response_format: Optional[Dict] = None,
         user_id: Optional[str] = None,
     ) -> Dict:
-        """Generate a completion with automatic fallback.
+        """Generate a completion on the approved model for *routing_tier*.
 
-        SPEC-43 Gap 11: every attempt is checked against the spend circuit
-        before LiteLLM is called. SpendCapped is raised immediately and never
-        retried on the next model in the fallback chain.
+        SPEC-43 Gap 3: the attempt list is exactly the tier's configured model.
+        An unapproved model= raises UnapprovedModelError before any LiteLLM
+        call, and a provider error is surfaced as RuntimeError; the prompt is
+        never re-sent to another vendor.
+
+        SPEC-43 Gap 11: the attempt is checked against the spend circuit
+        before LiteLLM is called. SpendCapped is raised immediately.
 
         Returns:
             {
@@ -134,76 +146,64 @@ class LLMService:
         """
         import litellm
 
-        # Determine model from tier if not explicitly set
+        approved = self.approved_models(routing_tier)
         if model is None:
-            model = self.heavy_model if routing_tier == "heavy" else self.light_model
-
-        # Get fallback chain
-        fallback_chain = self.HEAVY_FALLBACK if routing_tier == "heavy" else self.LIGHT_FALLBACK
-
-        # Ensure primary model is first in chain
-        if model not in fallback_chain:
-            fallback_chain = [model] + fallback_chain
+            model = approved[0]
+        if model not in approved:
+            raise UnapprovedModelError(f"model not approved for {routing_tier} tier")
 
         identity = normalize_identity(user_id)
         est_input = _spend.estimate_messages_tokens(messages)
 
-        last_error = None
-        for attempt_model in fallback_chain:
-            # Outside the try: a spend reject must not fall through to the
-            # next model.
-            reserved = self._calculate_cost(
-                attempt_model, {"input": est_input, "output": max_tokens}
-            )
-            self._circuit.check(identity, reserved)
-            try:
-                start_time = time.time()
+        # Outside the try: a spend reject is never treated as a provider error.
+        reserved = self._calculate_cost(model, {"input": est_input, "output": max_tokens})
+        self._circuit.check(identity, reserved)
+        try:
+            start_time = time.time()
 
-                kwargs = {
-                    "model": attempt_model,
-                    "messages": messages,
-                    "temperature": temperature,
-                    "max_tokens": max_tokens,
-                }
-                if response_format:
-                    kwargs["response_format"] = response_format
+            kwargs = {
+                "model": model,
+                "messages": messages,
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+            }
+            if response_format:
+                kwargs["response_format"] = response_format
 
-                response = await litellm.acompletion(**kwargs)
+            response = await litellm.acompletion(**kwargs)
 
-                latency_ms = int((time.time() - start_time) * 1000)
+            latency_ms = int((time.time() - start_time) * 1000)
 
-                # Extract usage
-                usage = response.usage
-                tokens = {
-                    "input": usage.prompt_tokens,
-                    "output": usage.completion_tokens,
-                    "total": usage.total_tokens,
-                }
+            # Extract usage
+            usage = response.usage
+            tokens = {
+                "input": usage.prompt_tokens,
+                "output": usage.completion_tokens,
+                "total": usage.total_tokens,
+            }
 
-                # Calculate cost
-                cost = self._calculate_cost(attempt_model, tokens)
+            # Calculate cost
+            cost = self._calculate_cost(model, tokens)
 
-                # Track (actual cost only; the reservation is not recorded)
-                self._circuit.record(identity, cost)
-                self._total_tokens_used += tokens["total"]
-                self._total_cost += cost
-                self._log_call(attempt_model, routing_tier, tokens, cost, latency_ms)
+            # Track (actual cost only; the reservation is not recorded)
+            self._circuit.record(identity, cost)
+            self._total_tokens_used += tokens["total"]
+            self._total_cost += cost
+            self._log_call(model, routing_tier, tokens, cost, latency_ms)
 
-                return {
-                    "content": response.choices[0].message.content,
-                    "model_used": attempt_model,
-                    "tokens": tokens,
-                    "cost_usd": cost,
-                    "latency_ms": latency_ms,
-                }
+            return {
+                "content": response.choices[0].message.content,
+                "model_used": model,
+                "tokens": tokens,
+                "cost_usd": cost,
+                "latency_ms": latency_ms,
+            }
 
-            except SpendCapped:
-                raise
-            except Exception as e:
-                last_error = e
-                continue
-
-        raise RuntimeError(f"All models failed for {routing_tier} tier. Last error: {last_error}")
+        except SpendCapped:
+            raise
+        except Exception as e:
+            # No second vendor: surface the approved model's failure.
+            raise RuntimeError(f"All models failed for {routing_tier} tier. Last error: {e}") from e
 
     # =========================================================================
     # Specialized Methods

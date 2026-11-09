@@ -32,6 +32,8 @@ from services.llm_service import LLMService
 PROMPT = "PROMPT-CANARY-g11 what temples are near me"
 MESSAGES = [{"role": "user", "content": PROMPT}]
 LIGHT = "gpt-4o-mini"
+# SPEC-43 Gap 3: the former cross-vendor heavy chain. Never approved.
+OTHER_VENDORS = ("claude-3-5-sonnet-20241022", "gemini/gemini-1.5-pro")
 USAGE_IN, USAGE_OUT = 1000, 1000
 MAX_TOKENS = 100
 
@@ -117,7 +119,9 @@ def test_spend_circuit_is_not_bypassed_by_new_identity(acompletion_calls):
 
 def test_fallback_chain_does_not_retry_next_model_on_spend_cap(acompletion_calls):
     probe = LLMService()
-    first, second, third = LLMService.HEAVY_FALLBACK
+    first = probe.heavy_model
+    second, third = OTHER_VENDORS
+    assert probe.approved_models("heavy") == (first,)
     r_first, r_third = _reserved(probe, first), _reserved(probe, third)
     assert r_third < r_first
     spent_first = _cost(probe, first)
@@ -136,8 +140,9 @@ def test_fallback_chain_does_not_retry_next_model_on_spend_cap(acompletion_calls
     assert second not in acompletion_calls and third not in acompletion_calls
 
 
-def test_provider_error_still_falls_back(monkeypatch):
-    first, second, _ = LLMService.HEAVY_FALLBACK
+def test_provider_error_does_not_fall_back_to_second_vendor(monkeypatch):
+    # SPEC-43 Gap 3 replaces the old hop to the next HEAVY_FALLBACK vendor.
+    first = LLMService().heavy_model
     calls: list[str] = []
 
     async def flaky(**kwargs):
@@ -148,9 +153,10 @@ def test_provider_error_still_falls_back(monkeypatch):
 
     monkeypatch.setattr(litellm, "acompletion", flaky)
     svc = LLMService(circuit=SpendCircuit(max_process_usd=1e9, max_identity_usd=1e9))
-    out = _complete(svc, "u", model=first, tier="heavy")
-    assert out["model_used"] == second
-    assert calls == [first, second]
+    with pytest.raises(RuntimeError):
+        _complete(svc, "u", model=first, tier="heavy")
+    assert calls == [first]
+    assert not set(calls) & set(OTHER_VENDORS)
 
 
 def test_reserved_cost_blocks_a_large_completion_before_any_spend(acompletion_calls):
