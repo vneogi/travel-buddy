@@ -76,7 +76,7 @@ not anonymous, and it is not safe to hand to a tester.
 | Server-issued anonymous auth, rotation, revocation | SPEC-43 gap 1, SPEC-09, SPEC-24 | No self-issued replayable UUID as an account |
 | RLS and ownership on every personal table | SPEC-43 gap 2 | Two hosted JWTs cannot read each other's trips |
 | LLM egress allowlist; no booking secrets in prompts | SPEC-43 gap 3 | DTO `dd0e6d3` + outbound `d35895a` + cache-embed `b59c50d` (PR #162). Fallback pin `8d8b28b` (PR #165). Embedding failure print `704c503` (PR #168). Gap 3 closed. Personal LLM stays off |
-| Export, deletion, retention, backup tombstones | SPEC-43 gap 4, SPEC-27 | Inventory+plan+execute+in-memory wipe+Supabase backend `54c3c8d` (PR #178); none of it is reachable over HTTP yet. Open: erase route brief. Remainders: route, GoTrue identity delete, export, tombstones, retention. A tester still cannot leave or erase |
+| Export, deletion, retention, backup tombstones | SPEC-43 gap 4, SPEC-27 | Inventory through HTTP erase route `2764280` (PR #180); Auth identity still not deleted, so a live token can recreate `user_tiers`. Open: Auth-delete brief. Remainders: GoTrue delete, denylist, export, tombstones, retention. A tester still cannot fully leave |
 | Encrypted offline store; backup exclusion | SPEC-43 gap 5, SPEC-04 | Backup `1672759` + SQLCipher `9cb2324` on main. Remainders: masking, FLAG_SECURE, iOS file protection, ProGuard if minify on |
 | Real sign-out and account-switch isolation | SPEC-43 gap 6, SPEC-24 | Shared-phone hostel use does not leak the last identity |
 | Versioned purpose consent; optional capture blocked | SPEC-43 gap 7 | Server fail-closed optional ingest on main (`e3eaa81`). Flutter outbox/UI remainder |
