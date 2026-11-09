@@ -6,14 +6,19 @@ parent-first (the inverse concern of erase) so a later document builder can
 nest trip children under their trip. A new identity table without a step
 fails tests/test_spec43_g4_export_plan.py.
 
-Pure data: no SQL, no backend, no route, no network, no logging, no print.
-Standard library plus config.data_rights. ASCII only. execute_export and an
-export backend are later slices; RIGHTS_MAP export stays "planned".
+Slice 11: execute_export walks the plan against an injected ExportBackend
+in order, collects flat per-table row lists (shallow copies, so the result
+never aliases the backend's store), and stops on the first backend error so
+a partial export is visible to the caller. Nothing is nested under trips.
+
+No SQL, no concrete backend, no route, no network, no logging, no print.
+Standard library plus config.data_rights. ASCII only. RIGHTS_MAP export
+stays "planned".
 """
 
 from __future__ import annotations
 
-from typing import Dict, FrozenSet, Iterable, List, Optional, Set, Tuple
+from typing import Dict, FrozenSet, Iterable, List, Optional, Protocol, Set, Tuple
 
 from config.data_rights import RIGHTS_MAP
 
@@ -79,3 +84,48 @@ def plan_export(user_id: str) -> List[dict]:
     if user_id is None or not isinstance(user_id, str) or not user_id.strip():
         raise ValueError("user_id is required")
     return [dict(step, user_id=user_id) for step in EXPORT_STEPS]
+
+
+class ExportBackend(Protocol):
+    """Fetches one table's rows for a user. Returns zero or more row dicts."""
+
+    def fetch_where_user_id(self, user_id: str, table: str) -> List[dict]: ...
+
+    def fetch_via_trip_states(self, user_id: str, table: str) -> List[dict]: ...
+
+    def fetch_via_party(self, user_id: str, table: str) -> List[dict]: ...
+
+
+class UnknownExportMethodError(ValueError):
+    """A step names a method that is not an ExportBackend method."""
+
+
+def execute_export(
+    user_id: str, backend: ExportBackend, steps: Optional[Iterable[dict]] = None
+) -> List[dict]:
+    """Run each export step on *backend*, in order.
+
+    The plan (and user_id) is validated before any backend call. If a backend
+    method raises, later steps are not called and the same exception is
+    re-raised; no partial result is returned. Each result's rows are a new
+    list of shallow-copied dicts.
+    """
+    # plan_export raises ValueError on a blank user_id before any backend call.
+    default_plan = plan_export(user_id)
+    plan = default_plan if steps is None else list(steps)
+    for step in plan:
+        if step.get("method") not in EXPORT_METHODS:
+            raise UnknownExportMethodError("unknown export method")
+    results: List[dict] = []
+    for step in plan:
+        method = getattr(backend, step["method"])
+        returned = method(user_id=user_id, table=step["table"])
+        results.append(
+            {
+                "table": step["table"],
+                "method": step["method"],
+                "via": step.get("via"),
+                "rows": [dict(r) for r in returned],
+            }
+        )
+    return results

@@ -122,4 +122,3 @@ def test_export_module_has_no_supabase_import():
     assert roots <= {"__future__", "typing", "config"}, roots
     assert not roots & {"supabase", "litellm", "httpx", "psycopg", "psycopg2", "logging"}
     assert "print(" not in source
-    assert not hasattr(export_module, "execute_export")
