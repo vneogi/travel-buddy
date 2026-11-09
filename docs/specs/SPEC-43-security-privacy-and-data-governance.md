@@ -232,13 +232,16 @@ execute `4d85cd7` (PR #174): walks the plan against an
 injected backend, no SQL. Slice 4 in-memory wipe `7ceab2e`
 (PR #176): two-user wipe proof. Slice 5 Supabase backend
 `54c3c8d` (PR #178): injected client, never an unfiltered
-delete, not wired to a route. Open Genie brief:
-`docs/briefs/GENIE_SPEC_43_G4_ERASE_ROUTE.md`.
+delete. Slice 6 erase route `2764280` (PR #180):
+`POST /api/v1/me/erase`, caller-only, Auth identity
+still remains. Open Genie brief:
+`docs/briefs/GENIE_SPEC_43_G4_AUTH_DELETE.md`.
 
 **Current fact.** SPEC-27 specifies export and deletion. The
 inventory, ordered erase plan, injected executor, and an
-in-memory and Supabase backends exist; there is still no
-endpoint or client flow, and the Auth identity is not deleted.
+in-memory and Supabase backends and an HTTP erase route
+exist; the Auth identity is still not deleted, so a live
+token can recreate `user_tiers` until it expires.
 Trips, signals, events, parties, and several local caches have
 no enforced retention lifecycle. A cache expiry predicate does
 not delete an expired row.
