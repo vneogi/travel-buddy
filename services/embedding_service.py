@@ -6,6 +6,7 @@ synthetic embeddings so the app runs key-free in dev.
 """
 
 import hashlib
+import logging
 import math
 from typing import List, Optional
 
@@ -13,6 +14,8 @@ from config.settings import settings, configure_provider_keys
 from monitoring import spend_circuit as _spend
 from monitoring.redact import redact_outbound_llm_text
 from monitoring.spend_circuit import SpendCapped, SpendCircuit, normalize_identity
+
+logger = logging.getLogger("travelbuddy")
 
 
 class EmbeddingService:
@@ -84,7 +87,11 @@ class EmbeddingService:
             # Safety net: never crash a request. (Mixing synthetic + real
             # vectors degrades similarity, so treat repeated failures as a
             # config problem to investigate, not a steady state.)
-            print(f"API embedding failed, falling back to synthetic: {e}")
+            # SPEC-43 Gap 3: provider text can echo the input, so only the
+            # exception class name is logged.
+            logger.warning(
+                "embedding provider failed; using synthetic fallback (%s)", type(e).__name__
+            )
             return self._synthetic_embedding(text)
 
     def cosine_similarity(self, vec_a: List[float], vec_b: List[float]) -> float:
