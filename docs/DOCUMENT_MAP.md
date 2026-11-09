@@ -30,7 +30,8 @@ documents disagree, follow Precedence below and name the conflict in
   and SPEC-43 Gaps 1, 6, 2, 9 (ownership + closed schemas), and 12
   HTTPS, cache keys, chat URLs, ATS, and trip-route ownership are
   merged.
-- Next Genie brief: `docs/briefs/GENIE_SPEC_43_G4_RIGHTS_INVENTORY.md`.
+- Next Genie brief: `docs/briefs/GENIE_SPEC_43_G4_ERASE_PLAN.md`.
+  Gap 4 slice 1 inventory is on main (`cd28bf3`, PR #170).
   Gap 3 is closed on main: fallback pin `8d8b28b` (PR #165) and
   embedding failure log `704c503` (PR #168). Gap 3 cache-embed is on main
   (`b59c50d`, PR #162). Gap 3 outbound redact is on main
