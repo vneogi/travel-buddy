@@ -227,15 +227,17 @@ a provider failure does not retry another vendor.
 ### Gap 4: data rights and retention are not implemented
 
 **Status on main.** Slice 1 inventory `cd28bf3` (PR #170).
-Slice 2 erase plan `f387c55` (PR #172): ordered steps for
-every identity table, no SQL. Open Genie brief:
-`docs/briefs/GENIE_SPEC_43_G4_ERASE_EXECUTE.md`.
+Slice 2 erase plan `f387c55` (PR #172). Slice 3 erase
+execute `4d85cd7` (PR #174): walks the plan against an
+injected backend, no SQL. Open Genie brief:
+`docs/briefs/GENIE_SPEC_43_G4_ERASE_MEMORY.md`.
 
 **Current fact.** SPEC-27 specifies export and deletion. The
-inventory and ordered erase plan exist; there is still no
-executor, endpoint, or client flow. Trips, signals, events,
-parties, and several local caches have no enforced retention
-lifecycle. A cache expiry predicate does not delete an expired row.
+inventory, ordered erase plan, and injected executor exist;
+there is still no concrete backend, endpoint, or client flow.
+Trips, signals, events, parties, and several local caches have
+no enforced retention lifecycle. A cache expiry predicate does
+not delete an expired row.
 
 **Solution.**
 
