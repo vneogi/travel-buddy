@@ -31,6 +31,7 @@ from routers.signal_router import router as signal_router
 from routers.alerts_router import router as alerts_router
 from routers.notifications_router import router as notifications_router
 from routers.debug_router import router as debug_router
+from routers.me_router import router as me_router
 from monitoring.error_log import error_log
 from monitoring.redact import redact_secrets
 from monitoring.validation_public import public_validation_errors
@@ -172,6 +173,7 @@ app.include_router(signal_router)
 app.include_router(alerts_router)
 app.include_router(notifications_router)
 app.include_router(debug_router)
+app.include_router(me_router)
 
 
 # ==============================================================================
