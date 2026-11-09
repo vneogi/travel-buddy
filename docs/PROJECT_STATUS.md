@@ -180,8 +180,7 @@ Current order:
    Gap 10 IAM part B `17fb0e4` (PR #150). Gap 10 error-ring
    TTL `12588c2` (PR #153). Gap 3 itinerary DTO `dd0e6d3`
    (PR #156). Gap 3 outbound redact `d35895a` (PR #159).
-   Next Genie brief:
-   `docs/briefs/GENIE_SPEC_43_G3_CACHE_EMBED.md`.
+   Gap 3 cache-embed `b59c50d` (PR #162). No open Genie brief.
    Unknown-time
    excursions stay later.
 4. Patch the Laos must-do/decision-cell data gaps. Target 3-5 feasible options
@@ -202,8 +201,7 @@ Current order:
    Gap 10 IAM part B `17fb0e4` (PR #150). Gap 10 error-ring
    TTL `12588c2` (PR #153). Gap 3 itinerary DTO `dd0e6d3`
    (PR #156). Gap 3 outbound redact `d35895a` (PR #159).
-   Next Genie brief:
-   `docs/briefs/GENIE_SPEC_43_G3_CACHE_EMBED.md`.
+   Gap 3 cache-embed `b59c50d` (PR #162). No open Genie brief.
 
 Defer Travelogue/Passport, maps/offline tiles, social, gamification, PDF,
 cross-trip memory, OTA promotion, and another city until this loop works.
@@ -412,8 +410,8 @@ Seed-shaped cohorts.
     are on main. Gap 10 error-ring TTL `12588c2`
     (PR #153) is on main. Gap 3 itinerary DTO `dd0e6d3`
     (PR #156) is on main. Gap 3 outbound redact `d35895a`
-    (PR #159) is on main. Next Genie brief:
-    `docs/briefs/GENIE_SPEC_43_G3_CACHE_EMBED.md`.
+    (PR #159) is on main. Gap 3 cache-embed `b59c50d`
+    (PR #162) is on main. No open Genie brief.
     Complete remaining
     gaps before any non-owner APK, production LLM processing of
     personal trip data, or the planned December public launch.
@@ -493,7 +491,7 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 | Thin typed Move | Closed on main (`e51513e`, PR #75); hosted/phone not done | One flexible node moves to an explicit date and named slot. Same node_id. Occupied slot, wrong type, lock, and cross-city dates refuse. Neighbours without coordinates can still succeed (walk skipped); that remainder is recorded, not this merge |
 | SPEC-43 gap 1: self-issued anonymous UUID is a replayable account credential | Closed on main (`2460edf`); hosted on `00014-sbm` | App and API reject `Anonymous <uuid>` and require a JWKS-verified Bearer JWT. Owner G0 APK 2026-10-31. Gap 11 still allows unlimited anon JWTs |
 | SPEC-43 gap 2: RLS and public grants are not comprehensive | Closed on main (`0b8125f`, PR #80); hosted 0026 not applied | 0026 FORCE RLS + revoke + service_role grant. Party WITH CHECK (true) replaced. FastAPI still uses service_role (BYPASSRLS). Confirm rolbypassrls before hosted apply. Two-JWT PostgREST proof after apply |
-| SPEC-43 gap 3: personal trip fields can cross the LLM boundary | DTO + outbound redact on main (`d35895a`, PR #159); production personal LLM still blocked | Allowlisted node/venue keys. Light complete and API embeddings redact booking needles. Remainders: HEAVY_FALLBACK matrix, cache-path raw query embed, embedding failure print |
+| SPEC-43 gap 3: personal trip fields can cross the LLM boundary | DTO + outbound + cache-embed on main (`b59c50d`, PR #162); production personal LLM still blocked | Allowlisted node/venue keys. Light complete, API embeddings, and semantic-cache embeddings redact booking needles. Remainders: HEAVY_FALLBACK matrix, embedding failure print |
 | SPEC-43 gap 4: export, deletion, and retention are unimplemented | High before public launch | SPEC-27 is specified only. Build self-service rights, schema-walking erasure, physical expiry, backup tombstones, and restore tests before non-owner distribution |
 | SPEC-43 gap 5: offline trip and booking data is plaintext and backup policy is implicit | Backup+SQLCipher+leftover-open on main | Backup `1672759`. SQLCipher `9cb2324`. Leftover `open_failed` wipe `1de6ff2` (PR #110). Overlay on a pre-SQLCipher store not yet phone-proven. Later: masking, FLAG_SECURE, iOS file protection |
 | SPEC-43 gap 6: sign-out does not revoke or clear the prior identity | Closed on main (`c65261c`, PR #79); hosted/phone not done | Halt sync, DELETE all local tables including outbox, GoTrue signOut, then mint a new anonymous JWT. Profile button keyed `profile_sign_out`. Access tokens may live until exp (no denylist). |

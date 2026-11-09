@@ -30,8 +30,8 @@ documents disagree, follow Precedence below and name the conflict in
   and SPEC-43 Gaps 1, 6, 2, 9 (ownership + closed schemas), and 12
   HTTPS, cache keys, chat URLs, ATS, and trip-route ownership are
   merged.
-- Next Genie brief: `docs/briefs/GENIE_SPEC_43_G3_CACHE_EMBED.md`.
-  Gap 3 outbound redact is on main
+- No open Genie brief. Gap 3 cache-embed is on main
+  (`b59c50d`, PR #162). Gap 3 outbound redact is on main
   (`d35895a`, PR #159). Gap 3 itinerary DTO is on main
   (`dd0e6d3`, PR #156). Gap 10 error-ring TTL is on main
   (`12588c2`, PR #153). Gap 10 IAM part B is on main

@@ -186,16 +186,16 @@ including `user_tiers`, `trip_states`, `event_log`, `cached_responses`,
 
 **Status on main.** Heavy itinerary allowlist DTO `dd0e6d3`
 (PR #156). Outbound light-complete and API-embedding redaction
-`d35895a` (PR #159). Remainders: HEAVY_FALLBACK provider
-matrix, cache-path embedding of the raw query, `_api_embedding`
-failure print. Personal LLM stays off.
+`d35895a` (PR #159). Cache-path embedding redaction `b59c50d`
+(PR #162). Remainders: HEAVY_FALLBACK provider matrix,
+`_api_embedding` failure print. Personal LLM stays off.
 
 **Current fact.** Heavy prompts send an allowlisted node/venue
-DTO. Light complete and API embeddings replace booking needles
-and secrets with REDACTED. Semantic-cache HMAC still keys the
-original question; cache still embeds that original string.
-The configured heavy fallback chain can still move a request
-among model providers.
+DTO. Light complete, API embeddings, and semantic-cache
+embeddings replace booking needles and secrets with REDACTED.
+Semantic-cache HMAC still keys the original question. The
+configured heavy fallback chain can still move a request among
+model providers.
 
 **Solution.**
 
