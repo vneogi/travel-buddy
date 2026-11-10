@@ -190,9 +190,9 @@ Current order:
    Gap 4 erase token denylist `4f22d1d` (PR #184).
    Gap 4 in-process cache purge `004ed6a` (PR #186).
    Gap 4 export plan `2fa9074` (PR #188).
-   Gap 4 export execute `fde1ae6` (PR #190).
+   Gap 4 export execute `fde1ae6` (PR #190); in-memory export backend `0026c76` (PR #192).
    Next Genie brief:
-   `docs/briefs/GENIE_SPEC_43_G4_EXPORT_MEMORY.md`.
+   `docs/briefs/GENIE_SPEC_43_G4_EXPORT_SUPABASE.md`.
    Unknown-time
    excursions stay later.
 4. Patch the Laos must-do/decision-cell data gaps. Target 3-5 feasible options
@@ -223,9 +223,9 @@ Current order:
    Gap 4 erase token denylist `4f22d1d` (PR #184).
    Gap 4 in-process cache purge `004ed6a` (PR #186).
    Gap 4 export plan `2fa9074` (PR #188).
-   Gap 4 export execute `fde1ae6` (PR #190).
+   Gap 4 export execute `fde1ae6` (PR #190); in-memory export backend `0026c76` (PR #192).
    Next Genie brief:
-   `docs/briefs/GENIE_SPEC_43_G4_EXPORT_MEMORY.md`.
+   `docs/briefs/GENIE_SPEC_43_G4_EXPORT_SUPABASE.md`.
 
 Defer Travelogue/Passport, maps/offline tiles, social, gamification, PDF,
 cross-trip memory, OTA promotion, and another city until this loop works.
@@ -445,9 +445,9 @@ Seed-shaped cohorts.
     Gap 4 erase token denylist `4f22d1d` (PR #184).
     Gap 4 in-process cache purge `004ed6a` (PR #186).
     Gap 4 export plan `2fa9074` (PR #188).
-    Gap 4 export execute `fde1ae6` (PR #190).
+    Gap 4 export execute `fde1ae6` (PR #190); in-memory export backend `0026c76` (PR #192).
     Next Genie brief:
-    `docs/briefs/GENIE_SPEC_43_G4_EXPORT_MEMORY.md`.
+    `docs/briefs/GENIE_SPEC_43_G4_EXPORT_SUPABASE.md`.
     Complete remaining
     gaps before any non-owner APK, production LLM processing of
     personal trip data, or the planned December public launch.
@@ -528,7 +528,7 @@ Full detail is in docs/AWAITING_VERIFICATION.md.
 | SPEC-43 gap 1: self-issued anonymous UUID is a replayable account credential | Closed on main (`2460edf`); hosted on `00014-sbm` | App and API reject `Anonymous <uuid>` and require a JWKS-verified Bearer JWT. Owner G0 APK 2026-10-31. Gap 11 still allows unlimited anon JWTs |
 | SPEC-43 gap 2: RLS and public grants are not comprehensive | Closed on main (`0b8125f`, PR #80); hosted 0026 not applied | 0026 FORCE RLS + revoke + service_role grant. Party WITH CHECK (true) replaced. FastAPI still uses service_role (BYPASSRLS). Confirm rolbypassrls before hosted apply. Two-JWT PostgREST proof after apply |
 | SPEC-43 gap 3: personal trip fields can cross the LLM boundary | DTO + outbound + cache-embed on main (`b59c50d`, PR #162); fallback pin on main (`8d8b28b`, PR #165) | Allowlisted node/venue keys. Light complete, API embeddings, and semantic-cache embeddings redact booking needles. Completions pinned to the tier's configured model. Embedding failure logs class name only `704c503` (PR #168). Gap 3 closed |
-| SPEC-43 gap 4: export, deletion, and retention are unimplemented | Inventory through export execute on main (`fde1ae6`, PR #190); in-memory export backend is the open Genie job | Slice 11: `execute_export` against injected backend, detached row copies, stop on error. Open: `GENIE_SPEC_43_G4_EXPORT_MEMORY.md`. Remainders: memory/Supabase backends, HTTP route, tombstones, retention, Flutter leave |
+| SPEC-43 gap 4: export, deletion, and retention are unimplemented | Inventory through in-memory export backend on main (`0026c76`, PR #192); Supabase export backend is the open Genie job | Slice 12: caller-only in-memory fetch proof, read-only store. Slice 11: `execute_export` against injected backend, detached row copies, stop on error. Open: `GENIE_SPEC_43_G4_EXPORT_SUPABASE.md`. Remainders: memory/Supabase backends, HTTP route, tombstones, retention, Flutter leave |
 | SPEC-43 gap 5: offline trip and booking data is plaintext and backup policy is implicit | Backup+SQLCipher+leftover-open on main | Backup `1672759`. SQLCipher `9cb2324`. Leftover `open_failed` wipe `1de6ff2` (PR #110). Overlay on a pre-SQLCipher store not yet phone-proven. Later: masking, FLAG_SECURE, iOS file protection |
 | SPEC-43 gap 6: sign-out does not revoke or clear the prior identity | Closed on main (`c65261c`, PR #79); hosted/phone not done | Halt sync, DELETE all local tables including outbox, GoTrue signOut, then mint a new anonymous JWT. Profile button keyed `profile_sign_out`. Access tokens may live until exp (no denylist). |
 | SPEC-43 gap 7: behavioral consent is a pass-through stub | Server fail-closed ingest on main (`e3eaa81`, PR #112) | Optional types reject without a grant. Remainders: Flutter outbox/UI, ledger, withdrawal, age-band destamp |

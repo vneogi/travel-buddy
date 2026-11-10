@@ -242,13 +242,14 @@ semantic cache / cost events / Ask budget before deny.
 Slice 10 export plan `2fa9074` (PR #188): parent-first
 steps over identity tables. Slice 11 export execute
 `fde1ae6` (PR #190): injected backend, detached copies.
+Slice 12 in-memory export backend `0026c76` (PR #192): caller-only fetch proof, read-only.
 Open Genie brief:
-`docs/briefs/GENIE_SPEC_43_G4_EXPORT_MEMORY.md`.
+`docs/briefs/GENIE_SPEC_43_G4_EXPORT_SUPABASE.md`.
 
 **Current fact.** SPEC-27 specifies export and deletion. The
 inventory, ordered erase plan, injected executor, and an
 server erase and an export executor exist; there is still no
-concrete export backend, document endpoint, tombstone, or
+hosted export backend, document endpoint, tombstone, or
 retention job.
 Trips, signals, events, parties, and several local caches have
 no enforced retention lifecycle. A cache expiry predicate does
