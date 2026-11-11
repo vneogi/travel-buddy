@@ -109,8 +109,10 @@ Structure (mirror the erase backend):
 ```python
 _METHOD_FOR_TABLE = {s["table"]: s["method"] for s in EXPORT_STEPS}
 
+
 def _data(result) -> list:
     return list(getattr(result, "data", None) or [])
+
 
 class SupabaseExportBackend:
     def __init__(self, client) -> None: ...
