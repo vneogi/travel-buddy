@@ -30,7 +30,8 @@ documents disagree, follow Precedence below and name the conflict in
   and SPEC-43 Gaps 1, 6, 2, 9 (ownership + closed schemas), and 12
   HTTPS, cache keys, chat URLs, ATS, and trip-route ownership are
   merged.
-- Next Genie brief: `docs/briefs/GENIE_SPEC_43_G4_EXPORT_SUPABASE.md`.
+- Next Genie brief: `docs/briefs/GENIE_SPEC_43_G4_EXPORT_ROUTE.md`.
+  Gap 4 slice 13 Supabase export backend `f7802ad` (PR #196) is on main.
   Gap 4 slice 12 in-memory export backend `0026c76` (PR #192) is on main.
   Gap 4 slice 11 export execute is on main (`fde1ae6`, PR #190).
   Gap 4 slice 10 export plan is on main (`2fa9074`, PR #188).

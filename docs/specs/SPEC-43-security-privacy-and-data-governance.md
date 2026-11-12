@@ -243,14 +243,16 @@ Slice 10 export plan `2fa9074` (PR #188): parent-first
 steps over identity tables. Slice 11 export execute
 `fde1ae6` (PR #190): injected backend, detached copies.
 Slice 12 in-memory export backend `0026c76` (PR #192): caller-only fetch proof, read-only.
+Slice 13 Supabase export backend `f7802ad` (PR #196):
+filter-safe reads, empty owned list sends no child read.
 Open Genie brief:
-`docs/briefs/GENIE_SPEC_43_G4_EXPORT_SUPABASE.md`.
+`docs/briefs/GENIE_SPEC_43_G4_EXPORT_ROUTE.md`.
 
 **Current fact.** SPEC-27 specifies export and deletion. The
-inventory, ordered erase plan, injected executor, and an
-server erase and an export executor exist; there is still no
-hosted export backend, document endpoint, tombstone, or
-retention job.
+inventory, ordered erase and export plans, injected
+executors, in-memory and Supabase backends for both, and the
+erase HTTP route exist; there is still no export HTTP route,
+document download, tombstone, or retention job.
 Trips, signals, events, parties, and several local caches have
 no enforced retention lifecycle. A cache expiry predicate does
 not delete an expired row.
