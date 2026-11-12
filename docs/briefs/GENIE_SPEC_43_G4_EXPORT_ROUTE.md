@@ -84,6 +84,8 @@ Nothing else. In particular do NOT change:
   `services/data_rights_cache_purge.py`
 - `security.py`, `main.py`, `config/data_rights.py`,
   `services/db_provider.py`, `services/supabase_service.py`
+- `monitoring/` (including `monitoring/rate_limit.py`) and
+  `tests/conftest.py`
 - any existing test file (do not edit, delete, or loosen a single line
   of an existing test; if one breaks, stop and report)
 - any doc, any brief, `PROJECT_STATUS`, `HANDOFF`, `DOCUMENT_MAP`
@@ -149,8 +151,9 @@ Constants (module level, next to the erase ones):
 - `EXPORT_INCOMPLETE = "export_incomplete"`
 
 Update the module docstring briefly to mention the export route and
-that nesting / document download / pagination remain out of scope.
-Leave the erase documentation intact.
+that nesting / document download / pagination remain out of scope, and
+that the Gap 11 limiter does not count GET, so export is not throttled
+yet (remainder). Leave the erase documentation intact.
 
 ## 6. The tests: `tests/test_spec43_g4_export_route.py`
 
@@ -205,11 +208,18 @@ Exact test names (each must exist; add more only if they add proof):
 8. `test_export_route_response_omits_method_and_via`
    Each table entry in the JSON has exactly the keys `table` and
    `rows` (no `method`, no `via`).
-9. `test_export_route_counts_toward_the_rate_limit`
-   Mirror the erase-route rate-limit assertion so export is not a
-   free unauthenticated-or-authenticated bypass of the limiter. If
-   the erase test's pattern for "counts toward the rate limit" needs
-   a specific helper, copy that pattern; do not weaken the limiter.
+9. `test_export_route_is_not_exempt_from_the_rate_limiter`
+   Assert the export path (trailing slash stripped, as the erase test
+   does) is not in `rate_limit._EXEMPT_PATHS`, and that
+   `(EXPORT_PATH, "GET")` is a registered app route. Do NOT assert
+   that GET is counted, and do NOT assert that GET is uncounted.
+   `monitoring/rate_limit.py` counts only POST/PUT/PATCH/DELETE by
+   Gap 11 design (see its module docstring: "GETs and payment webhooks
+   are not counted"), so a GET export is currently not throttled. That
+   is a recorded remainder (section 10), not part of this slice.
+   Pinning "uncounted" would break the future limiter slice, and
+   asserting "counted" is false today. Do not edit `monitoring/` or
+   `tests/conftest.py` to make a stronger assertion pass.
 10. `test_export_route_module_changes_are_ascii`
     The touched router file remains ASCII (read
     `routers/me_router.py` and assert `.isascii()`).
@@ -273,6 +283,10 @@ file you are not allowed to edit, stop and report; do not reformat it.
 - Pagination or PostgREST range headers
 - Wiring export for the in-memory `DatabaseService` path
 - Auth delete, denylist, or cache purge on the export path
+- Rate limiting the export route: the Gap 11 limiter counts only
+  POST/PUT/PATCH/DELETE by design, so GET export is unthrottled until a
+  separate limiter slice counts it for this path. Do not edit
+  `monitoring/rate_limit.py` here.
 - `cached_responses` SQL export (identity `none`, Gap 8 remainder)
 - Tombstones, retention jobs, Flutter leave / local wipe
 - Armor, Play Integrity, deploy, APK, hosted 0026
