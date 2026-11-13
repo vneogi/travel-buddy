@@ -19,6 +19,17 @@ LAOS_CATALOG_FILES = (
     DATA_DIR / "laos_vang_vieng.json",
     DATA_DIR / "laos_vientiane.json",
 )
+# Owner field-test exception: Zanzibar is seeded like the Laos catalogs.
+CATALOG_FILES = LAOS_CATALOG_FILES + (DATA_DIR / "zanzibar_tanzania.json",)
+
+# Local-name language per catalog region. Mirrors REGION_LANGUAGES in
+# scripts/load_venues.py (interim until SPEC-13); a test keeps them in step.
+CATALOG_LANGUAGES = {
+    "luang_prabang_laos": "lo",
+    "vang_vieng_laos": "lo",
+    "vientiane_laos": "lo",
+    "zanzibar_tanzania": "sw",
+}
 
 
 DUBAI_VENUES = [
@@ -229,8 +240,8 @@ def seed_venues() -> tuple:
         if not venue.geo_region:
             venue.geo_region = "dubai_uae"
         db_service.add_venue(venue)
-    laos_count = _seed_laos_catalogs()
-    return len(DUBAI_VENUES) + laos_count, "seeded in-memory"
+    catalog_count = _seed_laos_catalogs()
+    return len(DUBAI_VENUES) + catalog_count, "seeded in-memory"
 
 
 def _local_map(value, source: str | None, lang: str) -> dict | None:
@@ -240,10 +251,12 @@ def _local_map(value, source: str | None, lang: str) -> dict | None:
 
 
 def _seed_laos_catalogs() -> int:
+    """Seed every JSON catalog (Laos cities plus Zanzibar) into memory."""
     count = 0
-    for path in LAOS_CATALOG_FILES:
+    for path in CATALOG_FILES:
         payload = json.loads(path.read_text(encoding="utf-8"))
         geo_region = payload["geo_region"]
+        lang = CATALOG_LANGUAGES[geo_region]
         for row in payload.get("venues") or []:
             name = (row.get("name") or "").strip()
             if not name:
@@ -267,9 +280,9 @@ def _seed_laos_catalogs() -> int:
                 opening_hours=hours,
                 opening_hours_structured=structured,
                 geo_region=geo_region,
-                names_local=_local_map(row.get("name_local"), row.get("name_local_source"), "lo"),
+                names_local=_local_map(row.get("name_local"), row.get("name_local_source"), lang),
                 landmarks_local=(
-                    {"lo": row["nearest_landmark_local"]}
+                    {lang: row["nearest_landmark_local"]}
                     if row.get("nearest_landmark_local")
                     else None
                 ),

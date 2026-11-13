@@ -12,6 +12,7 @@ const _regionOffsets = <String, int>{
   'vientiane_laos': 7,    // ICT  UTC+7
   'luang_prabang_laos': 7,
   'vang_vieng_laos': 7,
+  'zanzibar_tanzania': 3, // EAT  UTC+3 (no DST)
 };
 
 /// The UTC offset (as a [Duration]) for a geo_region.

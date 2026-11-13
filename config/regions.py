@@ -67,6 +67,17 @@ REGIONS: Dict[str, Region] = {
         language_hint="Lao; French heritage; more English in expat areas",
         timezone="Asia/Vientiane",
     ),
+    # Owner field-test exception (end-Dec 2026), not the SPEC-13/20 factory.
+    "zanzibar_tanzania": Region(
+        code="zanzibar_tanzania",
+        display_name="Zanzibar",
+        country="Tanzania",
+        default_lat=-6.16590,
+        default_lng=39.19170,
+        currency="TZS",
+        language_hint=("Swahili; English common in Stone Town tourist areas, less outside them"),
+        timezone="Africa/Dar_es_Salaam",
+    ),
 }
 
 DEFAULT_REGION = "dubai_uae"

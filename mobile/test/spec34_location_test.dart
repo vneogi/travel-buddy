@@ -104,6 +104,16 @@ void main() {
       expect(coords.lng, closeTo(55.2744, 0.001));
     });
 
+    test('zanzibar_tanzania returns Stone Town coordinates', () {
+      final coords = RegionDefaults.coordsFor('zanzibar_tanzania');
+      expect(coords, isNotNull);
+      expect(coords!.lat, closeTo(-6.1659, 0.001));
+      expect(coords.lng, closeTo(39.1917, 0.001));
+      // Must NOT be Dubai (25.1972, 55.2744)
+      expect(coords.lat, isNot(closeTo(25.1972, 0.5)));
+      expect(coords.lng, isNot(closeTo(55.2744, 0.5)));
+    });
+
     test('unknown region returns null (no Dubai fallback)', () {
       // Sabotage S2: if this falls back to Dubai, the test fails.
       expect(RegionDefaults.coordsFor('unknown_region'), isNull);
