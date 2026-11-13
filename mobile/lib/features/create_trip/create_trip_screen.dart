@@ -373,6 +373,7 @@ const _displayNames = {
   'vang_vieng_laos': 'Vang Vieng',
   'vientiane_laos': 'Vientiane',
   'zanzibar_tanzania': 'Zanzibar',
+  'nungwi_tanzania': 'Nungwi (Zanzibar)',
 };
 
 class _DestinationStep extends StatelessWidget {

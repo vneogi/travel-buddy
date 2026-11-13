@@ -19,5 +19,6 @@ class RegionDefaults {
     'vang_vieng_laos': (lat: 18.9220, lng: 102.4474),
     'vientiane_laos': (lat: 17.9757, lng: 102.6331),
     'zanzibar_tanzania': (lat: -6.16590, lng: 39.19170),
+    'nungwi_tanzania': (lat: -5.72720, lng: 39.29920),
   };
 }

@@ -20,7 +20,10 @@ LAOS_CATALOG_FILES = (
     DATA_DIR / "laos_vientiane.json",
 )
 # Owner field-test exception: Zanzibar is seeded like the Laos catalogs.
-CATALOG_FILES = LAOS_CATALOG_FILES + (DATA_DIR / "zanzibar_tanzania.json",)
+CATALOG_FILES = LAOS_CATALOG_FILES + (
+    DATA_DIR / "zanzibar_tanzania.json",
+    DATA_DIR / "nungwi_tanzania.json",
+)
 
 # Local-name language per catalog region. Mirrors REGION_LANGUAGES in
 # scripts/load_venues.py (interim until SPEC-13); a test keeps them in step.
@@ -29,6 +32,7 @@ CATALOG_LANGUAGES = {
     "vang_vieng_laos": "lo",
     "vientiane_laos": "lo",
     "zanzibar_tanzania": "sw",
+    "nungwi_tanzania": "sw",
 }
 
 

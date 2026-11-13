@@ -114,6 +114,16 @@ void main() {
       expect(coords.lng, isNot(closeTo(55.2744, 0.5)));
     });
 
+    test('nungwi_tanzania returns Nungwi coordinates', () {
+      final coords = RegionDefaults.coordsFor('nungwi_tanzania');
+      expect(coords, isNotNull);
+      expect(coords!.lat, closeTo(-5.7272, 0.001));
+      expect(coords.lng, closeTo(39.2992, 0.001));
+      // Must NOT be Dubai (25.1972, 55.2744)
+      expect(coords.lat, isNot(closeTo(25.1972, 0.5)));
+      expect(coords.lng, isNot(closeTo(55.2744, 0.5)));
+    });
+
     test('unknown region returns null (no Dubai fallback)', () {
       // Sabotage S2: if this falls back to Dubai, the test fails.
       expect(RegionDefaults.coordsFor('unknown_region'), isNull);

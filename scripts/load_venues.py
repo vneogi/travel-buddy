@@ -228,6 +228,7 @@ REGION_CURRENCIES = {
     "vientiane_laos": "LAK",
     "dubai_uae": "AED",
     "zanzibar_tanzania": "TZS",
+    "nungwi_tanzania": "TZS",
 }
 
 REGION_LANGUAGES = {
@@ -236,6 +237,7 @@ REGION_LANGUAGES = {
     "vientiane_laos": "lo",
     "dubai_uae": "ar",
     "zanzibar_tanzania": "sw",
+    "nungwi_tanzania": "sw",
 }
 
 # Valid provenance values for names_local / landmarks_local entries.
@@ -388,6 +390,9 @@ TIME_RE = re.compile(r"^\d{2}:\d{2}$")
 # Unguja (Zanzibar island) box: generous, but excludes mainland Dar es Salaam.
 ZANZIBAR_LAT_MIN, ZANZIBAR_LAT_MAX = -6.50, -5.70
 ZANZIBAR_LNG_MIN, ZANZIBAR_LNG_MAX = 39.10, 39.60
+# Nungwi and Kendwa (north tip of Unguja); excludes Stone Town at about -6.17.
+NUNGWI_LAT_MIN, NUNGWI_LAT_MAX = -5.78, -5.70
+NUNGWI_LNG_MIN, NUNGWI_LNG_MAX = 39.27, 39.33
 
 
 def get_bounding_box(geo_region: str):
@@ -403,6 +408,8 @@ def get_bounding_box(geo_region: str):
         return LAOS_LAT_MIN, LAOS_LAT_MAX, LAOS_LNG_MIN, LAOS_LNG_MAX
     if geo_region == "zanzibar_tanzania":
         return ZANZIBAR_LAT_MIN, ZANZIBAR_LAT_MAX, ZANZIBAR_LNG_MIN, ZANZIBAR_LNG_MAX
+    if geo_region == "nungwi_tanzania":
+        return NUNGWI_LAT_MIN, NUNGWI_LAT_MAX, NUNGWI_LNG_MIN, NUNGWI_LNG_MAX
     raise ValueError(f"no bounding box for geo_region '{geo_region}'")
 
 
