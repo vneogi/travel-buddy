@@ -1,0 +1,1195 @@
+{
+  "geo_region": "zanzibar_tanzania",
+  "curated_at": "2026-11-13",
+  "curator_notes": "Owner field-test exception for end-Dec 2026, not the SPEC-13/20 factory. Built only from docs/briefs/inputs/zanzibar_candidates.json (38 venues). Data derives from OpenStreetMap, (c) OpenStreetMap contributors, ODbL 1.0, via an owner-only exception; SPEC-21 ODbL review is required before wider use. Closed micro_location vocabulary: stone_town, forodhani_waterfront, west_outskirts, offshore_islets. Coordinates are copied unchanged from the candidates file. name_local_ref is the Wikidata id when the candidate has one, otherwise the OSM ref; no name_local values are included (none verified). Opening hours, typical_dwell_minutes, indoor_outdoor, has_aircon, price_band, audience and vibe_tags are unverified planner estimates. opening_hours is set only where the OSM value was exactly one Mo-Su or Mo-Sa range; every other venue is null. No dishes are listed. There is no massage/spa venue because none could be verified; rest is served by quiet cafes. Catalog stays within about 10 km of Stone Town; north and east coast places are a recorded remainder.",
+  "venues": [
+    {
+      "name": "House of Wonders",
+      "name_local_source": "wikidata",
+      "name_local_ref": "Q2568900",
+      "category": "museum",
+      "micro_location": "forodhani_waterfront",
+      "lat": -6.16091,
+      "lng": 39.18963,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "indoor",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "historical",
+        "cultural"
+      ],
+      "description": "Beit al-Ajaib; large waterfront palace-turned-museum on Forodhani. Check whether the interior is open to visitors on the day.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Palace Museum (Sultan's Palace)",
+      "name_local_source": "wikidata",
+      "name_local_ref": "Q1960500",
+      "category": "museum",
+      "micro_location": "forodhani_waterfront",
+      "lat": -6.15997,
+      "lng": 39.19053,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "indoor",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "historical",
+        "cultural"
+      ],
+      "description": "Former sultan's palace on the waterfront, museum of the Zanzibar sultanate.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Old Slave Market and Slavery Memorial",
+      "name_local_source": "osm",
+      "name_local_ref": "way/355570249",
+      "category": "museum",
+      "micro_location": "stone_town",
+      "lat": -6.16337,
+      "lng": 39.1925,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "indoor",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "historical",
+        "cultural"
+      ],
+      "description": "Site of the former slave market and memorial; sober, guided visits are common.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Hamamni Persian Baths",
+      "name_local_source": "wikidata",
+      "name_local_ref": "Q3632906",
+      "category": "museum",
+      "micro_location": "stone_town",
+      "lat": -6.16256,
+      "lng": 39.19091,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "indoor",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "historical",
+        "cultural"
+      ],
+      "description": "Historic 19th-century bathhouse in Stone Town.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Peace Memorial Museum (Beit el Amani)",
+      "name_local_source": "wikidata",
+      "name_local_ref": "Q22677243",
+      "category": "museum",
+      "micro_location": "stone_town",
+      "lat": -6.16799,
+      "lng": 39.19132,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "indoor",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "historical",
+        "cultural"
+      ],
+      "description": "Museum on Creek Road.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Princess Salme Museum",
+      "name_local_source": "osm",
+      "name_local_ref": "node/3611613499",
+      "category": "museum",
+      "micro_location": "stone_town",
+      "lat": -6.16096,
+      "lng": 39.19112,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "indoor",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "historical",
+        "cultural"
+      ],
+      "description": "Museum in Stone Town about Sayyida Salme / Emily Ruete.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Freddie Mercury Museum (Mercury House)",
+      "name_local_source": "osm",
+      "name_local_ref": "node/4379274292",
+      "category": "museum",
+      "micro_location": "stone_town",
+      "lat": -6.16225,
+      "lng": 39.18776,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "indoor",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "historical",
+        "cultural"
+      ],
+      "description": "Museum at Mercury House in Stone Town. Mercury's Restaurant nearby is a separate venue.",
+      "opening_hours": {
+        "mon": [
+          [
+            "10:00",
+            "18:00"
+          ]
+        ],
+        "tue": [
+          [
+            "10:00",
+            "18:00"
+          ]
+        ],
+        "wed": [
+          [
+            "10:00",
+            "18:00"
+          ]
+        ],
+        "thu": [
+          [
+            "10:00",
+            "18:00"
+          ]
+        ],
+        "fri": [
+          [
+            "10:00",
+            "18:00"
+          ]
+        ],
+        "sat": [
+          [
+            "10:00",
+            "18:00"
+          ]
+        ],
+        "sun": [
+          [
+            "10:00",
+            "18:00"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Tippu Tip's House",
+      "name_local_source": "wikidata",
+      "name_local_ref": "Q17094038",
+      "category": "activity",
+      "micro_location": "stone_town",
+      "lat": -6.16402,
+      "lng": 39.18704,
+      "typical_dwell_minutes": 45,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "historical",
+        "cultural"
+      ],
+      "description": "Historic merchant house; treat as an exterior landmark stop unless entry is confirmed.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Old Fort (Ngome Kongwe)",
+      "name_local_source": "wikidata",
+      "name_local_ref": "Q3748659",
+      "category": "activity",
+      "micro_location": "forodhani_waterfront",
+      "lat": -6.16136,
+      "lng": 39.18905,
+      "typical_dwell_minutes": 45,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "historical",
+        "cultural"
+      ],
+      "description": "Old Fort next to Forodhani; courtyard with shops and amphitheatre.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Old Dispensary",
+      "name_local_source": "wikidata",
+      "name_local_ref": "Q4009183",
+      "category": "activity",
+      "micro_location": "forodhani_waterfront",
+      "lat": -6.15829,
+      "lng": 39.19263,
+      "typical_dwell_minutes": 45,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "historical",
+        "cultural"
+      ],
+      "description": "Restored waterfront building; short architecture stop.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Maruhubi Palace Ruins",
+      "name_local_source": "osm",
+      "name_local_ref": "way/737980146",
+      "category": "activity",
+      "micro_location": "west_outskirts",
+      "lat": -6.14477,
+      "lng": 39.20908,
+      "typical_dwell_minutes": 45,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "historical",
+        "cultural"
+      ],
+      "description": "Ruins of a 19th-century palace north of Stone Town (about 4 to 5 km).",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Mtoni Palace Ruins",
+      "name_local_source": "osm",
+      "name_local_ref": "node/929169141",
+      "category": "activity",
+      "micro_location": "west_outskirts",
+      "lat": -6.13554,
+      "lng": 39.2135,
+      "typical_dwell_minutes": 45,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "historical",
+        "cultural"
+      ],
+      "description": "Ruins of Mtoni Palace on the coast north of Stone Town (about 6 to 7 km).",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Lukmaan Restaurant",
+      "name_local_source": "osm",
+      "name_local_ref": "node/8282871110",
+      "category": "restaurant",
+      "micro_location": "stone_town",
+      "lat": -6.16342,
+      "lng": 39.19164,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "leisurely"
+      ],
+      "description": "Local Zanzibari restaurant in Stone Town.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Mercury's Restaurant",
+      "name_local_source": "osm",
+      "name_local_ref": "way/356211667",
+      "category": "restaurant",
+      "micro_location": "forodhani_waterfront",
+      "lat": -6.15838,
+      "lng": 39.19201,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "leisurely"
+      ],
+      "description": "Waterfront restaurant and bar near Forodhani.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Forodhani Night Food Market",
+      "name_local_source": "osm",
+      "name_local_ref": "node/12093062502",
+      "category": "street_food",
+      "micro_location": "forodhani_waterfront",
+      "lat": -6.16047,
+      "lng": 39.18885,
+      "typical_dwell_minutes": 45,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "leisurely"
+      ],
+      "description": "Evening street food market in Forodhani Gardens. Evening only; hours unverified.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Malindi Fish Market",
+      "name_local_source": "osm",
+      "name_local_ref": "node/957709345",
+      "category": "market",
+      "micro_location": "stone_town",
+      "lat": -6.1554,
+      "lng": 39.19486,
+      "typical_dwell_minutes": 45,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "leisurely"
+      ],
+      "description": "Fish market near the old port, most active in the mornings.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Passing Show",
+      "name_local_source": "osm",
+      "name_local_ref": "node/274950207",
+      "category": "restaurant",
+      "micro_location": "stone_town",
+      "lat": -6.15785,
+      "lng": 39.19464,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "leisurely"
+      ],
+      "description": "Restaurant in the Malindi area.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Livingstone's Beach Restaurant",
+      "name_local_source": "osm",
+      "name_local_ref": "node/929169150",
+      "category": "restaurant",
+      "micro_location": "forodhani_waterfront",
+      "lat": -6.16168,
+      "lng": 39.18755,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "leisurely"
+      ],
+      "description": "Beachfront restaurant and bar on the Stone Town shore.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Beach House Restaurant and Bar",
+      "name_local_source": "osm",
+      "name_local_ref": "node/6139154087",
+      "category": "restaurant",
+      "micro_location": "forodhani_waterfront",
+      "lat": -6.16418,
+      "lng": 39.18645,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "leisurely"
+      ],
+      "description": "Waterfront restaurant and bar.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Zanzibar Coffee House",
+      "name_local_source": "osm",
+      "name_local_ref": "node/1372275825",
+      "category": "cafe",
+      "micro_location": "stone_town",
+      "lat": -6.16142,
+      "lng": 39.19218,
+      "typical_dwell_minutes": 45,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "leisurely"
+      ],
+      "description": "Coffee house in Stone Town.",
+      "opening_hours": {
+        "mon": [
+          [
+            "08:30",
+            "18:00"
+          ]
+        ],
+        "tue": [
+          [
+            "08:30",
+            "18:00"
+          ]
+        ],
+        "wed": [
+          [
+            "08:30",
+            "18:00"
+          ]
+        ],
+        "thu": [
+          [
+            "08:30",
+            "18:00"
+          ]
+        ],
+        "fri": [
+          [
+            "08:30",
+            "18:00"
+          ]
+        ],
+        "sat": [
+          [
+            "08:30",
+            "18:00"
+          ]
+        ],
+        "sun": [
+          [
+            "08:30",
+            "18:00"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Karafuu Coffee House",
+      "name_local_source": "osm",
+      "name_local_ref": "node/9650357293",
+      "category": "cafe",
+      "micro_location": "stone_town",
+      "lat": -6.16181,
+      "lng": 39.18916,
+      "typical_dwell_minutes": 45,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "leisurely"
+      ],
+      "description": "Coffee house in Stone Town.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Lazuli",
+      "name_local_source": "osm",
+      "name_local_ref": "node/1961348621",
+      "category": "cafe",
+      "micro_location": "stone_town",
+      "lat": -6.16318,
+      "lng": 39.18783,
+      "typical_dwell_minutes": 45,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "leisurely"
+      ],
+      "description": "Cafe near the waterfront.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Archipelago Cafe and Restaurant",
+      "name_local_source": "osm",
+      "name_local_ref": "node/273240115",
+      "category": "restaurant",
+      "micro_location": "forodhani_waterfront",
+      "lat": -6.16162,
+      "lng": 39.18775,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "leisurely"
+      ],
+      "description": "Waterfront cafe and restaurant.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Urojo at Jitini",
+      "name_local_source": "osm",
+      "name_local_ref": "node/13161897501",
+      "category": "street_food",
+      "micro_location": "stone_town",
+      "lat": -6.159,
+      "lng": 39.19185,
+      "typical_dwell_minutes": 45,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "leisurely"
+      ],
+      "description": "Street food stop for urojo, a Zanzibari street soup.",
+      "opening_hours": {
+        "mon": [
+          [
+            "08:00",
+            "18:00"
+          ]
+        ],
+        "tue": [
+          [
+            "08:00",
+            "18:00"
+          ]
+        ],
+        "wed": [
+          [
+            "08:00",
+            "18:00"
+          ]
+        ],
+        "thu": [
+          [
+            "08:00",
+            "18:00"
+          ]
+        ],
+        "fri": [
+          [
+            "08:00",
+            "18:00"
+          ]
+        ],
+        "sat": [
+          [
+            "08:00",
+            "18:00"
+          ]
+        ],
+        "sun": [
+          [
+            "08:00",
+            "18:00"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Radha Vegetarian Restaurant",
+      "name_local_source": "osm",
+      "name_local_ref": "node/274949634",
+      "category": "restaurant",
+      "micro_location": "stone_town",
+      "lat": -6.16176,
+      "lng": 39.18805,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "leisurely"
+      ],
+      "description": "Vegetarian-only restaurant; useful for a non-meat option.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Stone Town Cafe",
+      "name_local_source": "osm",
+      "name_local_ref": "node/1961349158",
+      "category": "cafe",
+      "micro_location": "stone_town",
+      "lat": -6.16332,
+      "lng": 39.1878,
+      "typical_dwell_minutes": 45,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "leisurely"
+      ],
+      "description": "Cafe in Stone Town.",
+      "opening_hours": {
+        "mon": [
+          [
+            "07:00",
+            "22:00"
+          ]
+        ],
+        "tue": [
+          [
+            "07:00",
+            "22:00"
+          ]
+        ],
+        "wed": [
+          [
+            "07:00",
+            "22:00"
+          ]
+        ],
+        "thu": [
+          [
+            "07:00",
+            "22:00"
+          ]
+        ],
+        "fri": [
+          [
+            "07:00",
+            "22:00"
+          ]
+        ],
+        "sat": [
+          [
+            "07:00",
+            "22:00"
+          ]
+        ],
+        "sun": [
+          [
+            "07:00",
+            "22:00"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Zenji Garden Cafe",
+      "name_local_source": "osm",
+      "name_local_ref": "node/929169147",
+      "category": "cafe",
+      "micro_location": "forodhani_waterfront",
+      "lat": -6.16034,
+      "lng": 39.1888,
+      "typical_dwell_minutes": 45,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "quiet",
+        "leisurely"
+      ],
+      "description": "Garden cafe near Forodhani.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Tangawizi Bistro",
+      "name_local_source": "osm",
+      "name_local_ref": "node/3285205786",
+      "category": "cafe",
+      "micro_location": "stone_town",
+      "lat": -6.16374,
+      "lng": 39.19062,
+      "typical_dwell_minutes": 45,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "quiet",
+        "leisurely"
+      ],
+      "description": "Quiet bistro in Stone Town.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Cafe Miwa",
+      "name_local_source": "osm",
+      "name_local_ref": "node/4485277098",
+      "category": "cafe",
+      "micro_location": "stone_town",
+      "lat": -6.16282,
+      "lng": 39.18787,
+      "typical_dwell_minutes": 45,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "quiet",
+        "leisurely"
+      ],
+      "description": "Cafe in Stone Town with listed daily hours.",
+      "opening_hours": {
+        "mon": [
+          [
+            "10:00",
+            "22:00"
+          ]
+        ],
+        "tue": [
+          [
+            "10:00",
+            "22:00"
+          ]
+        ],
+        "wed": [
+          [
+            "10:00",
+            "22:00"
+          ]
+        ],
+        "thu": [
+          [
+            "10:00",
+            "22:00"
+          ]
+        ],
+        "fri": [
+          [
+            "10:00",
+            "22:00"
+          ]
+        ],
+        "sat": [
+          [
+            "10:00",
+            "22:00"
+          ]
+        ],
+        "sun": [
+          [
+            "10:00",
+            "22:00"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Puzzle Coffee Shop",
+      "name_local_source": "osm",
+      "name_local_ref": "node/5887772287",
+      "category": "cafe",
+      "micro_location": "stone_town",
+      "lat": -6.16386,
+      "lng": 39.1871,
+      "typical_dwell_minutes": 45,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "quiet",
+        "leisurely"
+      ],
+      "description": "Coffee shop in Stone Town, closed Sundays.",
+      "opening_hours": {
+        "mon": [
+          [
+            "08:30",
+            "18:00"
+          ]
+        ],
+        "tue": [
+          [
+            "08:30",
+            "18:00"
+          ]
+        ],
+        "wed": [
+          [
+            "08:30",
+            "18:00"
+          ]
+        ],
+        "thu": [
+          [
+            "08:30",
+            "18:00"
+          ]
+        ],
+        "fri": [
+          [
+            "08:30",
+            "18:00"
+          ]
+        ],
+        "sat": [
+          [
+            "08:30",
+            "18:00"
+          ]
+        ],
+        "sun": []
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Forodhani Gardens",
+      "name_local_source": "osm",
+      "name_local_ref": "way/1380038636",
+      "category": "walking_area",
+      "micro_location": "forodhani_waterfront",
+      "lat": -6.16055,
+      "lng": 39.18877,
+      "typical_dwell_minutes": 45,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "outdoor",
+        "scenic"
+      ],
+      "description": "Waterfront park; hosts the night food market.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Jamhuri Gardens",
+      "name_local_source": "osm",
+      "name_local_ref": "way/355486731",
+      "category": "walking_area",
+      "micro_location": "stone_town",
+      "lat": -6.16529,
+      "lng": 39.19359,
+      "typical_dwell_minutes": 45,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "outdoor",
+        "scenic"
+      ],
+      "description": "Public gardens near the Karume Monument.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Victoria Gardens",
+      "name_local_source": "osm",
+      "name_local_ref": "way/356255644",
+      "category": "walking_area",
+      "micro_location": "stone_town",
+      "lat": -6.16661,
+      "lng": 39.18986,
+      "typical_dwell_minutes": 45,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "outdoor",
+        "scenic"
+      ],
+      "description": "Public gardens in the south of Stone Town.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Forodhani Sunset Place",
+      "name_local_source": "osm",
+      "name_local_ref": "node/5575365924",
+      "category": "viewpoint",
+      "micro_location": "forodhani_waterfront",
+      "lat": -6.16074,
+      "lng": 39.18804,
+      "typical_dwell_minutes": 30,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "outdoor",
+        "scenic"
+      ],
+      "description": "Sunset viewing spot on the Forodhani seafront.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Changuu (Prison Island) Tortoise Sanctuary",
+      "name_local_source": "osm",
+      "name_local_ref": "way/82247206",
+      "category": "activity",
+      "micro_location": "offshore_islets",
+      "lat": -6.12041,
+      "lng": 39.16781,
+      "typical_dwell_minutes": 180,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "outdoor",
+        "scenic"
+      ],
+      "description": "Boat trip from Stone Town; giant tortoises and old prison ruins. Confirm boat timing locally.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Nakupenda Sandbank",
+      "name_local_source": "osm",
+      "name_local_ref": "node/8158499817",
+      "category": "nature",
+      "micro_location": "offshore_islets",
+      "lat": -6.18619,
+      "lng": 39.16273,
+      "typical_dwell_minutes": 180,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "outdoor",
+        "scenic"
+      ],
+      "description": "Boat trip to a sandbank off Stone Town.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Kidichi Spice Farm",
+      "name_local_source": "osm",
+      "name_local_ref": "node/5873678885",
+      "category": "activity",
+      "micro_location": "west_outskirts",
+      "lat": -6.08964,
+      "lng": 39.24133,
+      "typical_dwell_minutes": 90,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "outdoor",
+        "scenic"
+      ],
+      "description": "Spice farm tour about 10 km from Stone Town.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Africa House Terrace",
+      "name_local_source": "osm",
+      "name_local_ref": "way/355717471",
+      "category": "bar",
+      "micro_location": "forodhani_waterfront",
+      "lat": -6.16439,
+      "lng": 39.1872,
+      "typical_dwell_minutes": 45,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "leisurely"
+      ],
+      "description": "Hotel terrace bar at the Africa House Hotel; alcohol served (to verify on site).",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    }
+  ]
+}

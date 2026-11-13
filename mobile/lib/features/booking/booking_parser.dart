@@ -537,6 +537,8 @@ String? _inferGeoRegion(String lower) {
   if (lower.contains('luang prabang')) return 'luang_prabang_laos';
   if (lower.contains('vientiane')) return 'vientiane_laos';
   if (lower.contains('dubai')) return 'dubai_uae';
+  if (lower.contains('stone town')) return 'zanzibar_tanzania';
+  if (lower.contains('zanzibar')) return 'zanzibar_tanzania';
   return null;
 }
 

@@ -13,6 +13,10 @@ void main() {
       expect(destinationOffset('dubai_uae'), const Duration(hours: 4));
     });
 
+    test('Zanzibar is UTC+3', () {
+      expect(destinationOffset('zanzibar_tanzania'), const Duration(hours: 3));
+    });
+
     test('unknown region returns null', () {
       expect(destinationOffset('atlantis'), isNull);
       expect(destinationOffset(null), isNull);
@@ -30,6 +34,13 @@ void main() {
     test('Dubai 05:00Z renders 09:00 local', () {
       final utc = DateTime.utc(2026, 9, 15, 5, 0);
       final local = toDestinationLocal(utc, 'dubai_uae');
+      expect(local.hour, 9);
+      expect(local.minute, 0);
+    });
+
+    test('Zanzibar 06:00Z renders 09:00 local', () {
+      final utc = DateTime.utc(2026, 12, 28, 6, 0);
+      final local = toDestinationLocal(utc, 'zanzibar_tanzania');
       expect(local.hour, 9);
       expect(local.minute, 0);
     });

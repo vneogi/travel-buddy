@@ -638,6 +638,7 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
       'vang_vieng_laos': 'Vang Vieng',
       'luang_prabang_laos': 'Luang Prabang',
       'dubai_uae': 'Dubai',
+      'zanzibar_tanzania': 'Zanzibar',
     };
     if (names.containsKey(code)) return names[code]!;
     return code

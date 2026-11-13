@@ -227,6 +227,7 @@ REGION_CURRENCIES = {
     "vang_vieng_laos": "LAK",
     "vientiane_laos": "LAK",
     "dubai_uae": "AED",
+    "zanzibar_tanzania": "TZS",
 }
 
 REGION_LANGUAGES = {
@@ -234,6 +235,7 @@ REGION_LANGUAGES = {
     "vang_vieng_laos": "lo",
     "vientiane_laos": "lo",
     "dubai_uae": "ar",
+    "zanzibar_tanzania": "sw",
 }
 
 # Valid provenance values for names_local / landmarks_local entries.
@@ -383,12 +385,25 @@ TIME_RE = re.compile(r"^\d{2}:\d{2}$")
 # ===========================================================================
 
 
+# Unguja (Zanzibar island) box: generous, but excludes mainland Dar es Salaam.
+ZANZIBAR_LAT_MIN, ZANZIBAR_LAT_MAX = -6.50, -5.70
+ZANZIBAR_LNG_MIN, ZANZIBAR_LNG_MAX = 39.10, 39.60
+
+
 def get_bounding_box(geo_region: str):
-    """Return (lat_min, lat_max, lng_min, lng_max) for a region."""
+    """Return (lat_min, lat_max, lng_min, lng_max) for a region.
+
+    Unknown regions raise ValueError: a region without its own box must never
+    be checked against the Laos (or any other) box by default.
+    """
     if "dubai" in geo_region:
         return DUBAI_LAT_MIN, DUBAI_LAT_MAX, DUBAI_LNG_MIN, DUBAI_LNG_MAX
-    # All Laos regions share the Laos bounding box
-    return LAOS_LAT_MIN, LAOS_LAT_MAX, LAOS_LNG_MIN, LAOS_LNG_MAX
+    if geo_region.endswith("_laos"):
+        # All Laos regions share the Laos bounding box
+        return LAOS_LAT_MIN, LAOS_LAT_MAX, LAOS_LNG_MIN, LAOS_LNG_MAX
+    if geo_region == "zanzibar_tanzania":
+        return ZANZIBAR_LAT_MIN, ZANZIBAR_LAT_MAX, ZANZIBAR_LNG_MIN, ZANZIBAR_LNG_MAX
+    raise ValueError(f"no bounding box for geo_region '{geo_region}'")
 
 
 def validate_time(t: str) -> bool:
@@ -474,11 +489,15 @@ def validate_venue(
     lat = lat_raw if isinstance(lat_raw, (int, float)) else None
     lng = lng_raw if isinstance(lng_raw, (int, float)) else None
     if lat is not None and lng is not None:
-        lat_min, lat_max, lng_min, lng_max = get_bounding_box(v_region)
-        if not (lat_min <= lat <= lat_max):
-            errors.append(f"{prefix}: lat {lat} outside bounds [{lat_min}, {lat_max}]")
-        if not (lng_min <= lng <= lng_max):
-            errors.append(f"{prefix}: lng {lng} outside bounds [{lng_min}, {lng_max}]")
+        try:
+            lat_min, lat_max, lng_min, lng_max = get_bounding_box(v_region)
+        except ValueError:
+            errors.append(f"{prefix}: no bounding box for geo_region '{v_region}'")
+        else:
+            if not (lat_min <= lat <= lat_max):
+                errors.append(f"{prefix}: lat {lat} outside bounds [{lat_min}, {lat_max}]")
+            if not (lng_min <= lng <= lng_max):
+                errors.append(f"{prefix}: lng {lng} outside bounds [{lng_min}, {lng_max}]")
 
     # Opening hours validation
     hours = venue.get("opening_hours_structured")
