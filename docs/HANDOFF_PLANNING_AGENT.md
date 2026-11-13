@@ -50,9 +50,9 @@ inventory `cd28bf3` (PR #170), erase plan `f387c55`
 identity delete `ea5c0b3` (PR #182), and erase token
 denylist `4f22d1d` (PR #184), and in-process cache purge
 `004ed6a` (PR #186), export plan `2fa9074` (PR #188), and
-export execute `fde1ae6` (PR #190), and in-memory export backend `0026c76` (PR #192), and Supabase export backend `f7802ad` (PR #196) are on main. Next Genie
+export execute `fde1ae6` (PR #190), and in-memory export backend `0026c76` (PR #192), and Supabase export backend `f7802ad` (PR #196), and HTTP export route `16945be` (PR #199) are on main. Next Genie
 brief:
-`docs/briefs/GENIE_SPEC_43_G4_EXPORT_ROUTE.md`.
+`docs/briefs/GENIE_ZANZIBAR_FIELD_TEST_PACK.md`.
 Do not apply 0026 until `rolbypassrls` is confirmed.
 
 SPEC-44 Phase A application code merged as PR #67 (`9a7b9d9`). Planning
@@ -155,9 +155,9 @@ inventory `cd28bf3` (PR #170), erase plan `f387c55`
 identity delete `ea5c0b3` (PR #182), and erase token
 denylist `4f22d1d` (PR #184), and in-process cache purge
 `004ed6a` (PR #186), export plan `2fa9074` (PR #188), and
-export execute `fde1ae6` (PR #190), and in-memory export backend `0026c76` (PR #192), and Supabase export backend `f7802ad` (PR #196) are on main. Next Genie
+export execute `fde1ae6` (PR #190), and in-memory export backend `0026c76` (PR #192), and Supabase export backend `f7802ad` (PR #196), and HTTP export route `16945be` (PR #199) are on main. Next Genie
 brief:
-`docs/briefs/GENIE_SPEC_43_G4_EXPORT_ROUTE.md`.
+`docs/briefs/GENIE_ZANZIBAR_FIELD_TEST_PACK.md`.
 Remaining Gap 9
 `derived_feature` table,
 unknown-time excursions, and Laos decision-cell coverage stay later.
@@ -327,7 +327,7 @@ separation live in the operating model; do not reconstruct them from chat.
 `76d7e9be3186a817a12664ed51b62e1db1ea8c946d5d5ac67b47912762036714`
 (built from `1aa405c`; rebuild from `1de6ff2` to drop `pm clear`).
 
-Next Genie job: `docs/briefs/GENIE_SPEC_43_G4_EXPORT_ROUTE.md`.
+Next Genie job: `docs/briefs/GENIE_ZANZIBAR_FIELD_TEST_PACK.md`.
 Gap 4 inventory `cd28bf3` (PR #170), erase plan `f387c55`
 (PR #172), erase execute `4d85cd7` (PR #174), in-memory
 wipe `7ceab2e` (PR #176), Supabase erase backend `54c3c8d`
@@ -335,7 +335,7 @@ wipe `7ceab2e` (PR #176), Supabase erase backend `54c3c8d`
 delete `ea5c0b3` (PR #182), erase token denylist
 `4f22d1d` (PR #184), in-process cache purge `004ed6a`
 (PR #186), export plan `2fa9074` (PR #188), and export
-execute `fde1ae6` (PR #190), and in-memory export backend `0026c76` (PR #192), and Supabase export backend `f7802ad` (PR #196) are on main.
+execute `fde1ae6` (PR #190), and in-memory export backend `0026c76` (PR #192), and Supabase export backend `f7802ad` (PR #196), and HTTP export route `16945be` (PR #199) are on main.
 Gap 3 fallback pin `8d8b28b` (PR #165):
 completions use only the tier's configured model; no cross-vendor hop.
 Semantic-cache embeddings redact booking canaries. Light

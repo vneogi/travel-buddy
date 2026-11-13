@@ -245,14 +245,17 @@ steps over identity tables. Slice 11 export execute
 Slice 12 in-memory export backend `0026c76` (PR #192): caller-only fetch proof, read-only.
 Slice 13 Supabase export backend `f7802ad` (PR #196):
 filter-safe reads, empty owned list sends no child read.
-Open Genie brief:
-`docs/briefs/GENIE_SPEC_43_G4_EXPORT_ROUTE.md`.
+Slice 14 HTTP export route `16945be` (PR #199):
+`GET /api/v1/me/export`, caller-only, flat tables/rows.
+Open Genie brief (product exception, not Gap 4):
+`docs/briefs/GENIE_ZANZIBAR_FIELD_TEST_PACK.md`.
 
 **Current fact.** SPEC-27 specifies export and deletion. The
 inventory, ordered erase and export plans, injected
 executors, in-memory and Supabase backends for both, and the
-erase HTTP route exist; there is still no export HTTP route,
-document download, tombstone, or retention job.
+erase and flat export HTTP routes exist; there is still no
+nested/downloadable export document, tombstone, or retention
+job. Next owner field-test exception: Zanzibar city pack.
 Trips, signals, events, parties, and several local caches have
 no enforced retention lifecycle. A cache expiry predicate does
 not delete an expired row.
