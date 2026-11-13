@@ -175,6 +175,7 @@ const regionDisplayNames = {
   'vang_vieng_laos': 'Vang Vieng',
   'vientiane_laos': 'Vientiane',
   'zanzibar_tanzania': 'Zanzibar',
+  'nungwi_tanzania': 'Nungwi (Zanzibar)',
 };
 
 /// SPEC-36: Group corridor nodes by city segment, then by date within each.

@@ -1,0 +1,961 @@
+{
+  "geo_region": "nungwi_tanzania",
+  "curated_at": "2026-11-13",
+  "curator_notes": "Owner field-test exception for end-Dec 2026 (Nungwi home base), not the SPEC-13/20 factory. Kept separate from the Stone Town catalog (zanzibar_tanzania) because the day picker has no geographic clustering. Built only from docs/briefs/inputs/nungwi_candidates.json (34 venues). Data derives from OpenStreetMap, (c) OpenStreetMap contributors, ODbL 1.0, owner-only; SPEC-21 ODbL review is required before wider use. Closed micro_location vocabulary: nungwi_north_tip, nungwi_village, nungwi_beachfront, kendwa_south. Coordinates are copied unchanged from the candidates file. name_local_ref is the OSM ref (no candidate has a Wikidata id); no name_local values are included. Planner estimates, unverified: typical_dwell_minutes (all at or below 120), indoor_outdoor, has_aircon, price_band, audience and vibe_tags. opening_hours is set only where the OSM value was exactly one Mo-Su or Mo-Sa range; every other venue is null. No dishes are listed. Per-venue quality signals and OSM cuisine hints are kept in docs/briefs/inputs/nungwi_candidates.json, not in this file.",
+  "venues": [
+    {
+      "name": "Nungwi Lighthouse",
+      "name_local_source": "osm",
+      "name_local_ref": "node/8420174617",
+      "category": "viewpoint",
+      "micro_location": "nungwi_north_tip",
+      "lat": -5.72231,
+      "lng": 39.30331,
+      "typical_dwell_minutes": 45,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "historical",
+        "scenic"
+      ],
+      "description": "Lighthouse landmark at the northern tip of Nungwi.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Mnarani Marine Turtles Conservation Pond",
+      "name_local_source": "osm",
+      "name_local_ref": "node/8420172817",
+      "category": "activity",
+      "micro_location": "nungwi_north_tip",
+      "lat": -5.72249,
+      "lng": 39.30271,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "outdoor"
+      ],
+      "description": "Turtle conservation ponds at Mnarani. Confirm entry and hours on site.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Baraka Natural Aquarium",
+      "name_local_source": "osm",
+      "name_local_ref": "node/7976012905",
+      "category": "activity",
+      "micro_location": "nungwi_north_tip",
+      "lat": -5.72422,
+      "lng": 39.30344,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "outdoor"
+      ],
+      "description": "Natural aquarium and rock pools near the north tip.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Mama Sele Local Food",
+      "name_local_source": "osm",
+      "name_local_ref": "node/7976849918",
+      "category": "restaurant",
+      "micro_location": "nungwi_village",
+      "lat": -5.72715,
+      "lng": 39.29245,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "leisurely",
+        "local_favourite"
+      ],
+      "description": "Village canteen-style local cooking in Nungwi.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Mabungo Cafe and Restaurant",
+      "name_local_source": "osm",
+      "name_local_ref": "node/7976780210",
+      "category": "restaurant",
+      "micro_location": "nungwi_village",
+      "lat": -5.72723,
+      "lng": 39.29587,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "leisurely",
+        "local_favourite"
+      ],
+      "description": "Small local cafe and restaurant in Nungwi village.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Africana Local Food and Drinks",
+      "name_local_source": "osm",
+      "name_local_ref": "node/8566962218",
+      "category": "restaurant",
+      "micro_location": "nungwi_beachfront",
+      "lat": -5.72762,
+      "lng": 39.29237,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "leisurely"
+      ],
+      "description": "Local plates near the beach strip.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Waves Local Food",
+      "name_local_source": "osm",
+      "name_local_ref": "node/7187049385",
+      "category": "cafe",
+      "micro_location": "nungwi_beachfront",
+      "lat": -5.72763,
+      "lng": 39.29276,
+      "typical_dwell_minutes": 45,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "leisurely"
+      ],
+      "description": "Local food near the Nungwi beach strip.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Mama Ntilie",
+      "name_local_source": "osm",
+      "name_local_ref": "node/7977110253",
+      "category": "cafe",
+      "micro_location": "nungwi_village",
+      "lat": -5.73441,
+      "lng": 39.29841,
+      "typical_dwell_minutes": 45,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "leisurely"
+      ],
+      "description": "Village mgahawa (local eatery).",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Hamza Mgahawa",
+      "name_local_source": "osm",
+      "name_local_ref": "node/7976653995",
+      "category": "cafe",
+      "micro_location": "nungwi_village",
+      "lat": -5.73181,
+      "lng": 39.29793,
+      "typical_dwell_minutes": 45,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "leisurely"
+      ],
+      "description": "Village mgahawa (local eatery).",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Food for Locals",
+      "name_local_source": "osm",
+      "name_local_ref": "node/8212736717",
+      "category": "cafe",
+      "micro_location": "kendwa_south",
+      "lat": -5.74997,
+      "lng": 39.29281,
+      "typical_dwell_minutes": 45,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "leisurely"
+      ],
+      "description": "Eatery south of Nungwi toward Kendwa.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Kibanda",
+      "name_local_source": "osm",
+      "name_local_ref": "node/7976630565",
+      "category": "restaurant",
+      "micro_location": "nungwi_village",
+      "lat": -5.73009,
+      "lng": 39.29299,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "leisurely"
+      ],
+      "description": "Small local restaurant.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Munira Cafe",
+      "name_local_source": "osm",
+      "name_local_ref": "node/2555658278",
+      "category": "restaurant",
+      "micro_location": "nungwi_village",
+      "lat": -5.72758,
+      "lng": 39.29366,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "leisurely"
+      ],
+      "description": "Quiet local cafe away from the main beach strip.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Secret Garden Cafe",
+      "name_local_source": "osm",
+      "name_local_ref": "node/12087709969",
+      "category": "cafe",
+      "micro_location": "nungwi_village",
+      "lat": -5.72815,
+      "lng": 39.29401,
+      "typical_dwell_minutes": 45,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "leisurely"
+      ],
+      "description": "Garden cafe off the beach strip.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Badolina Secret Garden",
+      "name_local_source": "osm",
+      "name_local_ref": "node/7976849916",
+      "category": "restaurant",
+      "micro_location": "nungwi_beachfront",
+      "lat": -5.72702,
+      "lng": 39.29242,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "leisurely"
+      ],
+      "description": "Secret-garden restaurant near the beach strip.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Cholo's Beach by Bento",
+      "name_local_source": "osm",
+      "name_local_ref": "node/7976849919",
+      "category": "bar",
+      "micro_location": "nungwi_beachfront",
+      "lat": -5.72779,
+      "lng": 39.29206,
+      "typical_dwell_minutes": 75,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "leisurely"
+      ],
+      "description": "Beach bar and restaurant.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Cinnamon",
+      "name_local_source": "osm",
+      "name_local_ref": "node/8420155817",
+      "category": "restaurant",
+      "micro_location": "nungwi_beachfront",
+      "lat": -5.73044,
+      "lng": 39.29133,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "leisurely"
+      ],
+      "description": "Beach and rooftop restaurant on the Nungwi strip.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Fat Fish Grill Bar and Lounge",
+      "name_local_source": "osm",
+      "name_local_ref": "node/5918613470",
+      "category": "restaurant",
+      "micro_location": "nungwi_beachfront",
+      "lat": -5.72953,
+      "lng": 39.29136,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "leisurely"
+      ],
+      "description": "Beachside grill.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Cafe Marhaba",
+      "name_local_source": "osm",
+      "name_local_ref": "node/31567771",
+      "category": "restaurant",
+      "micro_location": "nungwi_beachfront",
+      "lat": -5.72865,
+      "lng": 39.2914,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "leisurely"
+      ],
+      "description": "Beach restaurant on the Nungwi strip.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Dhow Restaurant",
+      "name_local_source": "osm",
+      "name_local_ref": "node/31567745",
+      "category": "restaurant",
+      "micro_location": "nungwi_beachfront",
+      "lat": -5.72377,
+      "lng": 39.29587,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "leisurely"
+      ],
+      "description": "Beach restaurant near Gerrys Bar.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Le Macis",
+      "name_local_source": "osm",
+      "name_local_ref": "node/5471072822",
+      "category": "restaurant",
+      "micro_location": "nungwi_beachfront",
+      "lat": -5.72974,
+      "lng": 39.29238,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "leisurely"
+      ],
+      "description": "Restaurant tagged as French in OSM.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Origin Zanzibar",
+      "name_local_source": "osm",
+      "name_local_ref": "node/2555577223",
+      "category": "restaurant",
+      "micro_location": "nungwi_beachfront",
+      "lat": -5.72929,
+      "lng": 39.29133,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "leisurely"
+      ],
+      "description": "International restaurant; listed hours look breakfast-only and are unverified.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "RestOtalia Swahili Restaurant",
+      "name_local_source": "osm",
+      "name_local_ref": "node/14333443885",
+      "category": "restaurant",
+      "micro_location": "nungwi_village",
+      "lat": -5.7241,
+      "lng": 39.29809,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "leisurely"
+      ],
+      "description": "Restaurant with a Swahili and international menu.",
+      "opening_hours": {
+        "mon": [
+          [
+            "07:00",
+            "23:00"
+          ]
+        ],
+        "tue": [
+          [
+            "07:00",
+            "23:00"
+          ]
+        ],
+        "wed": [
+          [
+            "07:00",
+            "23:00"
+          ]
+        ],
+        "thu": [
+          [
+            "07:00",
+            "23:00"
+          ]
+        ],
+        "fri": [
+          [
+            "07:00",
+            "23:00"
+          ]
+        ],
+        "sat": [
+          [
+            "07:00",
+            "23:00"
+          ]
+        ],
+        "sun": [
+          [
+            "07:00",
+            "23:00"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Kendwa Rocks Restaurant",
+      "name_local_source": "osm",
+      "name_local_ref": "node/31567807",
+      "category": "restaurant",
+      "micro_location": "kendwa_south",
+      "lat": -5.7524,
+      "lng": 39.28787,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "leisurely"
+      ],
+      "description": "Restaurant at Kendwa Rocks, south of Nungwi; reach it by bajaji or along the beach at low tide, depending on conditions.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Essence Restaurant",
+      "name_local_source": "osm",
+      "name_local_ref": "node/5451273525",
+      "category": "restaurant",
+      "micro_location": "kendwa_south",
+      "lat": -5.75458,
+      "lng": 39.28778,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "leisurely"
+      ],
+      "description": "Restaurant in Kendwa.",
+      "opening_hours": {
+        "mon": [
+          [
+            "11:00",
+            "23:30"
+          ]
+        ],
+        "tue": [
+          [
+            "11:00",
+            "23:30"
+          ]
+        ],
+        "wed": [
+          [
+            "11:00",
+            "23:30"
+          ]
+        ],
+        "thu": [
+          [
+            "11:00",
+            "23:30"
+          ]
+        ],
+        "fri": [
+          [
+            "11:00",
+            "23:30"
+          ]
+        ],
+        "sat": [
+          [
+            "11:00",
+            "23:30"
+          ]
+        ],
+        "sun": [
+          [
+            "11:00",
+            "23:30"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "The Fisherman Restaurant",
+      "name_local_source": "osm",
+      "name_local_ref": "node/2357510516",
+      "category": "restaurant",
+      "micro_location": "kendwa_south",
+      "lat": -5.75438,
+      "lng": 39.291,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "mixed",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "leisurely"
+      ],
+      "description": "Seafood restaurant in Kendwa.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Gerrys Bar",
+      "name_local_source": "osm",
+      "name_local_ref": "node/5717310323",
+      "category": "bar",
+      "micro_location": "nungwi_beachfront",
+      "lat": -5.72388,
+      "lng": 39.29585,
+      "typical_dwell_minutes": 75,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "leisurely"
+      ],
+      "description": "Beach bar near Dhow Restaurant.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Pole Pole",
+      "name_local_source": "osm",
+      "name_local_ref": "node/2575705183",
+      "category": "bar",
+      "micro_location": "nungwi_beachfront",
+      "lat": -5.72727,
+      "lng": 39.29224,
+      "typical_dwell_minutes": 75,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "leisurely"
+      ],
+      "description": "Beach bar on the Nungwi strip.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Kendwa Beach",
+      "name_local_source": "osm",
+      "name_local_ref": "node/8866174817",
+      "category": "nature",
+      "micro_location": "kendwa_south",
+      "lat": -5.7538,
+      "lng": 39.28674,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "outdoor",
+        "scenic"
+      ],
+      "description": "Beach area south of Nungwi.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Sunrise View",
+      "name_local_source": "osm",
+      "name_local_ref": "node/9958377618",
+      "category": "viewpoint",
+      "micro_location": "nungwi_north_tip",
+      "lat": -5.72663,
+      "lng": 39.30975,
+      "typical_dwell_minutes": 30,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "outdoor",
+        "scenic"
+      ],
+      "description": "Sunrise viewpoint on the east side of the north tip.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Happy Life Rock",
+      "name_local_source": "osm",
+      "name_local_ref": "node/12087169470",
+      "category": "viewpoint",
+      "micro_location": "nungwi_north_tip",
+      "lat": -5.72193,
+      "lng": 39.30276,
+      "typical_dwell_minutes": 30,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "outdoor",
+        "scenic"
+      ],
+      "description": "Coastal rock viewpoint near the lighthouse.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Nungwi Massage and Wellness Center",
+      "name_local_source": "osm",
+      "name_local_ref": "node/5919143005",
+      "category": "massage_spa",
+      "micro_location": "nungwi_beachfront",
+      "lat": -5.72967,
+      "lng": 39.29153,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "indoor",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "quiet",
+        "leisurely"
+      ],
+      "description": "Massage and wellness centre.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "The Rocks Spa",
+      "name_local_source": "osm",
+      "name_local_ref": "node/10848455997",
+      "category": "massage_spa",
+      "micro_location": "kendwa_south",
+      "lat": -5.75242,
+      "lng": 39.28809,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "indoor",
+      "has_aircon": false,
+      "price_band": "mid",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "quiet",
+        "leisurely"
+      ],
+      "description": "Spa at Kendwa Rocks.",
+      "opening_hours": {
+        "mon": [
+          [
+            "09:00",
+            "20:00"
+          ]
+        ],
+        "tue": [
+          [
+            "09:00",
+            "20:00"
+          ]
+        ],
+        "wed": [
+          [
+            "09:00",
+            "20:00"
+          ]
+        ],
+        "thu": [
+          [
+            "09:00",
+            "20:00"
+          ]
+        ],
+        "fri": [
+          [
+            "09:00",
+            "20:00"
+          ]
+        ],
+        "sat": [
+          [
+            "09:00",
+            "20:00"
+          ]
+        ],
+        "sun": [
+          [
+            "09:00",
+            "20:00"
+          ]
+        ]
+      },
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Zanzibar Reef Walking Tour",
+      "name_local_source": "osm",
+      "name_local_ref": "node/12089263869",
+      "category": "activity",
+      "micro_location": "nungwi_north_tip",
+      "lat": -5.72299,
+      "lng": 39.2986,
+      "typical_dwell_minutes": 90,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "outdoor",
+        "scenic"
+      ],
+      "description": "Guided reef walk near the north tip. Tide-dependent; confirm locally.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    },
+    {
+      "name": "Kilosa Conservation Zoo",
+      "name_local_source": "osm",
+      "name_local_ref": "node/8420169117",
+      "category": "activity",
+      "micro_location": "nungwi_north_tip",
+      "lat": -5.72445,
+      "lng": 39.30492,
+      "typical_dwell_minutes": 60,
+      "indoor_outdoor": "outdoor",
+      "has_aircon": false,
+      "price_band": "budget",
+      "audience": [
+        "couple",
+        "solo"
+      ],
+      "vibe_tags": [
+        "outdoor"
+      ],
+      "description": "Conservation zoo at the north tip of Nungwi.",
+      "opening_hours": null,
+      "is_sponsored": false,
+      "bid_weight": 0.0
+    }
+  ]
+}

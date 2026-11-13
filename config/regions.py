@@ -78,6 +78,20 @@ REGIONS: Dict[str, Region] = {
         language_hint=("Swahili; English common in Stone Town tourist areas, less outside them"),
         timezone="Africa/Dar_es_Salaam",
     ),
+    # Owner field-test exception (end-Dec 2026), not the SPEC-13/20 factory.
+    # Separate from zanzibar_tanzania: the day picker has no geographic clustering.
+    "nungwi_tanzania": Region(
+        code="nungwi_tanzania",
+        display_name="Nungwi (Zanzibar)",
+        country="Tanzania",
+        default_lat=-5.72720,
+        default_lng=39.29920,
+        currency="TZS",
+        language_hint=(
+            "Swahili; English common at beach restaurants and hotels, less in the village"
+        ),
+        timezone="Africa/Dar_es_Salaam",
+    ),
 }
 
 DEFAULT_REGION = "dubai_uae"

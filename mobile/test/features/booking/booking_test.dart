@@ -75,6 +75,28 @@ Laos, Vang Vieng, 42 Thanon Luang, Vang Vieng, Laos
       expect(result.geoRegion, equals('vang_vieng_laos'));
     });
 
+    test('maps a Nungwi, Zanzibar hotel to nungwi_tanzania', () {
+      const email = '''
+Your booking at Kilima Beach Lodge is confirmed.
+Check-in  Monday, 28 December 2026 (14:00 - 00:00)
+Check-out Friday, 1 January 2027 (until 11:00)
+Location
+Nungwi, Zanzibar, Tanzania
+''';
+      expect(extractBookingFromText(email).geoRegion, equals('nungwi_tanzania'));
+    });
+
+    test('maps a Stone Town, Zanzibar hotel to zanzibar_tanzania', () {
+      const email = '''
+Your booking at Kilima Town House is confirmed.
+Check-in  Monday, 28 December 2026 (14:00 - 00:00)
+Check-out Tuesday, 29 December 2026 (until 11:00)
+Location
+Stone Town, Zanzibar, Tanzania
+''';
+      expect(extractBookingFromText(email).geoRegion, equals('zanzibar_tanzania'));
+    });
+
     test('does not treat Reservation details as a confirmation code', () {
       const email = '''
 Thanks Alex Rivera! Your booking in Vang Vieng is confirmed.

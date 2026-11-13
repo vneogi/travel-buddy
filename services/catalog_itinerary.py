@@ -511,6 +511,7 @@ def advertised_regions(list_venues) -> List[str]:
         "vang_vieng_laos",
         "vientiane_laos",
         "zanzibar_tanzania",
+        "nungwi_tanzania",
     ]
     ready = []
     for code in preferred:

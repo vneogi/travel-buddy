@@ -17,6 +17,10 @@ void main() {
       expect(destinationOffset('zanzibar_tanzania'), const Duration(hours: 3));
     });
 
+    test('Nungwi is UTC+3', () {
+      expect(destinationOffset('nungwi_tanzania'), const Duration(hours: 3));
+    });
+
     test('unknown region returns null', () {
       expect(destinationOffset('atlantis'), isNull);
       expect(destinationOffset(null), isNull);
