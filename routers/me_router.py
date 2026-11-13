@@ -1,6 +1,7 @@
 """SPEC-43 Gap 4 slice 6: authenticated self-service erase.
 
 POST /api/v1/me/erase   body {"confirm": "erase-my-data"}
+GET  /api/v1/me/export  (slice 14, see the export notes below)
 
 - Erases only the authenticated caller (resolve_identity). No user id is
   read from the path, query or body; extra body fields are 422.
@@ -44,6 +45,19 @@ Remainders, not handled here: error-ring purge by identity (entries carry
 no user id), the Ask exact-match public cache, cached_responses SQL rows,
 a denylist shared across Cloud Run instances (and per-jti), tombstones,
 export, retention jobs and the Flutter flow.
+
+Slice 14, export: GET /api/v1/me/export returns the authenticated caller's
+identity rows as the flat per-table result of execute_export (table name
+plus row list, in EXPORT_STEPS order; method and via are not returned). The
+user id comes only from resolve_identity, never from the path, query or
+body. The backend comes from get_export_backend: SupabaseExportBackend when
+IS_SUPABASE, otherwise 501 export_unavailable, with no fallback store. Any
+failure returns 500 {"detail": "export_incomplete"} and logs one WARNING
+with the exception class name and request id only. Export never deletes
+Auth, denies or purges caches, and never creates the user record.
+Remainders: nesting under trips, a human-readable or downloadable document,
+pagination, and rate limiting (the Gap 11 limiter does not count GET, so
+export is not throttled yet).
 """
 
 import importlib
@@ -64,6 +78,8 @@ from services.data_rights_cache_purge import purge_identity_caches
 from services.data_rights_token_deny import deny_identity
 from services.data_rights_erase import EraseBackend, execute_erase
 from services.data_rights_erase_supabase import SupabaseEraseBackend
+from services.data_rights_export import ExportBackend, execute_export
+from services.data_rights_export_supabase import SupabaseExportBackend
 
 logger = logging.getLogger("travelbuddy")
 
@@ -72,6 +88,8 @@ router = APIRouter(prefix="/api/v1", tags=["me"])
 ERASE_CONFIRMATION = "erase-my-data"
 ERASE_UNAVAILABLE = "erase_unavailable"
 ERASE_INCOMPLETE = "erase_incomplete"
+EXPORT_UNAVAILABLE = "export_unavailable"
+EXPORT_INCOMPLETE = "export_incomplete"
 
 
 class EraseRequest(BaseModel):
@@ -134,5 +152,53 @@ async def erase_me(
         )
     return {
         "status": "erased",
+        "tables": [{"table": r["table"], "rows": r["rows"]} for r in results],
+    }
+
+
+# --- slice 14: export -------------------------------------------------------
+
+
+class ExportedTable(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    table: str
+    rows: List[dict]
+
+
+class ExportResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: Literal["exported"]
+    tables: List[ExportedTable]
+
+
+def get_export_backend() -> ExportBackend:
+    """Supabase export backend, or 501 when Supabase is not configured."""
+    # importlib: the services package attribute may shadow the submodule.
+    provider = importlib.import_module("services.db_provider")
+    if not provider.IS_SUPABASE:
+        raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail=EXPORT_UNAVAILABLE)
+    return SupabaseExportBackend(provider.db_service.client)
+
+
+@router.get("/me/export", response_model=ExportResponse)
+async def export_me(
+    request: Request,
+    identity: ResolvedIdentity = Depends(resolve_identity),
+    backend: ExportBackend = Depends(get_export_backend),
+):
+    """Export the caller's identity rows, flat per table."""
+    try:
+        results = execute_export(identity.user_id, backend)
+    except Exception as exc:
+        request_id = getattr(request.state, "request_id", "unknown")
+        logger.warning("export incomplete (%s) request_id=%s", type(exc).__name__, request_id)
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"detail": EXPORT_INCOMPLETE},
+        )
+    return {
+        "status": "exported",
         "tables": [{"table": r["table"], "rows": r["rows"]} for r in results],
     }
