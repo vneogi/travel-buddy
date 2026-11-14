@@ -10,14 +10,16 @@ successful test of a named variable.
 
 ## Current verified state
 
-Last verified: 2026-10-31. Hosted Gap 1 is live. Cloud Run
-`travel-buddy-00014-sbm` (100% LATEST) serves untagged traffic from
-`main` `1aa405c`. JWKS URL, issuer, and audience env names are set.
-Owner laptop: health healthy; Anonymous header 401; Bearer
-anonymous JWT 200. Owner signed APK SHA256
-`76d7e9be3186a817a12664ed51b62e1db1ea8c946d5d5ac67b47912762036714`
-after `pm clear` (SQLCipher leftover-plaintext hang; see
-`AWAITING_VERIFICATION.md`). Migration 0025 remains applied; 0026
+Last verified: 2026-11-14. Hosted Gap 1 is live. Cloud Run
+`travel-buddy-00015-x8d` (100% LATEST) serves untagged traffic from
+`main` `206122a` with Tanzania packs loaded (`venues_loaded` 146).
+JWKS URL, issuer, and audience env names are set. Owner laptop: health
+healthy; Anonymous header 401; Bearer anonymous JWT 200. Owner device
+APK SHA256
+`c7f212497b75ab8b82fe29fb0ef434d994d7928ef517bd105aea3cddf84868ce`
+(rebuilt 2026-11-14 from `206122a`; replaces the earlier bad
+`TB_SUPABASE_URL=v` build). Prior G0 APK `76d7e9be...` remains the
+SQLCipher leftover-open reference. Migration 0025 remains applied; 0026
 is not. SPEC-38 phone pass remains 2026-09-14 against `00004-62g`.
 
 ### Hosted Supabase
