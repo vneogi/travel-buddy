@@ -327,12 +327,13 @@ separation live in the operating model; do not reconstruct them from chat.
 `76d7e9be3186a817a12664ed51b62e1db1ea8c946d5d5ac67b47912762036714`
 (built from `1aa405c`; rebuild from `1de6ff2` to drop `pm clear`).
 
-Next Genie job: none queued. Owner completed on 2026-11-14: hosted
-`load_venues.py` for `zanzibar_tanzania` (38) and `nungwi_tanzania` (34),
-Cloud Run redeploy (`00015-x8d`), APK rebuild from `206122a`, and device
-checks (installed APK SHA256 `c7f212497b75ab8b82fe29fb0ef434d994d7928ef517bd105aea3cddf84868ce`, built 2026-11-14 13:38 from `206122a`). Owner UX findings F1-F4 are in `UX_BACKLOG.md`. Open: `test_erase_route_counts_toward_the_rate_limit`
-and `test_export_route_is_not_exempt_from_the_rate_limiter` fail on main CI
-(since at least `16945be`).
+Next Genie job: Gap 4 slice 15 -- fix erase/export rate-limit route
+tests. Brief: `docs/briefs/GENIE_SPEC_43_G4_RATE_LIMIT_ROUTE_TESTS.md`.
+Root cause is FastAPI route-tree shape under unpinned CI; product limiter
+unchanged. Frontend F1-F4 deferred. Owner completed on 2026-11-14: hosted
+load (38+34), Cloud Run `00015-x8d`, APK SHA256
+`c7f212497b75ab8b82fe29fb0ef434d994d7928ef517bd105aea3cddf84868ce` from
+`206122a`. Open until slice 15 lands: those two rate-limit route tests.
 Gap 4 inventory `cd28bf3` (PR #170), erase plan `f387c55`
 (PR #172), erase execute `4d85cd7` (PR #174), in-memory
 wipe `7ceab2e` (PR #176), Supabase erase backend `54c3c8d`
