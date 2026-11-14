@@ -282,12 +282,25 @@ def test_erase_route_does_not_create_a_user_record(http, fake, monkeypatch):
     assert not [r for r in fake.store["user_tiers"] if r["user_id"] == USER_A]
 
 
+def _registered_http_routes(application) -> set[tuple[str, str]]:
+    """Return {(path, METHOD), ...} via OpenAPI, not app.routes shape."""
+    paths = application.openapi().get("paths") or {}
+    out: set[tuple[str, str]] = set()
+    for path, item in paths.items():
+        if not isinstance(item, dict):
+            continue
+        for method in item:
+            m = str(method).upper()
+            if m in {"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"}:
+                out.add((path, m))
+    return out
+
+
 def test_erase_route_counts_toward_the_rate_limit():
     exempt = {p.rstrip("/") for p in rate_limit._EXEMPT_PATHS}
     assert ERASE_PATH.rstrip("/") not in exempt
     assert "POST" in rate_limit._COUNTED_METHODS
-    routes = {(r.path, m) for r in app.routes for m in getattr(r, "methods", set())}
-    assert (ERASE_PATH, "POST") in routes
+    assert (ERASE_PATH, "POST") in _registered_http_routes(app)
 
 
 def test_response_contains_no_identifiers(http, fake):

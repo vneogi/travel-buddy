@@ -268,11 +268,24 @@ def test_export_route_response_omits_method_and_via(http, fake):
     assert '"method"' not in resp.text and '"via"' not in resp.text
 
 
+def _registered_http_routes(application) -> set[tuple[str, str]]:
+    """Return {(path, METHOD), ...} via OpenAPI, not app.routes shape."""
+    paths = application.openapi().get("paths") or {}
+    out: set[tuple[str, str]] = set()
+    for path, item in paths.items():
+        if not isinstance(item, dict):
+            continue
+        for method in item:
+            m = str(method).upper()
+            if m in {"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"}:
+                out.add((path, m))
+    return out
+
+
 def test_export_route_is_not_exempt_from_the_rate_limiter():
     exempt = {p.rstrip("/") for p in rate_limit._EXEMPT_PATHS}
     assert EXPORT_PATH.rstrip("/") not in exempt
-    routes = {(r.path, m) for r in app.routes for m in getattr(r, "methods", set())}
-    assert (EXPORT_PATH, "GET") in routes
+    assert (EXPORT_PATH, "GET") in _registered_http_routes(app)
 
 
 def test_export_route_module_changes_are_ascii():
