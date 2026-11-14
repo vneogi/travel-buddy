@@ -97,6 +97,9 @@ Swahili landmarks, Dart mirror.
 
 ### F3 -- Existing trips shown as markers in the date picker
 
+Status 2026-11-15: closed on main (`1cb9318`, PR #238). Markers use the
+activity span from TripSummary (create-form dates remain a remainder).
+
 Observed: when creating a second trip, the date picker shows no trace of the
 first trip.
 
