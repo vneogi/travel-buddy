@@ -19,6 +19,118 @@ The map-first shell, Travelogue/Passport, social features, gamification,
 offline tiles, and cross-trip memory are deferred. Drag/reorder/add and maps are
 competitive table stakes; they are not the moat.
 
+## Nov 14 2026 owner device findings (Zanzibar and Nungwi packs)
+
+Context: the Stone Town (38 venues) and Nungwi/Kendwa (34 venues) catalogs are
+loaded into hosted Supabase, Cloud Run is on revision `travel-buddy-00015-x8d`,
+and the owner installed an APK rebuilt from main `206122a`. Device checks:
+
+- The destination list offers Zanzibar and Nungwi (Zanzibar).
+- A Nungwi trip (29 Dec 2026 to 2 Jan 2027, solo) seeded day 1 from Nungwi
+  catalog venues only: Cholo's Beach by Bento, Kibanda, Nungwi Lighthouse,
+  Le Macis.
+- A Zanzibar trip (26 to 28 Dec 2026, friends of 6) seeded day 1 from Stone
+  Town venues only: Malindi Fish Market, Mercury's Restaurant, Africa House
+  Terrace, Passing Show.
+
+None of the findings below blocks the December trip. They are product changes
+to schedule when build time allows. Each needs an owning spec or spec amendment
+before a Genie brief.
+
+### F1 -- One "Create a trip" entry for single and multi-city trips
+
+Observed: home shows a separate "Vientiane to Luang Prabang / Multi-city Laos
+corridor" card above "Create a trip". Owner expectation: one create flow where a
+trip is one city or several.
+
+Direction: fold the corridor into the create flow. The destination step lets the
+traveller pick one or more destinations in order, then dates per city (reuse the
+per-segment ranges in `CorridorDateForm`). The Laos corridor becomes a preset
+inside that flow, not a card on home. SPEC-36 rules stand: no synthetic
+transfers or stays, and no relabeling one city's venues. The corridor stays
+driven by the backend `supportedCorridors` list.
+
+Out of scope here: combining non-corridor regions (for example Stone Town plus
+Nungwi). They are separate regions on purpose because day plans do not cluster
+across them. That needs geographic day clustering and its own spec.
+
+Owners: SPEC-36 amendment plus SPEC-26 home snapshot. Dart-led; update
+`spec36_corridor_test.dart` and the home tests.
+
+### F2 -- Driver card in the local language for Tanzania
+
+Observed: the Driver Card for a Tanzania venue is not in Swahili.
+
+Root cause, verified on main `206122a`:
+
+1. `languagePriority` in `mobile/lib/features/driver_card/driver_card_helpers.dart`
+   handles Laos (`lo`, `th`, `en`) and Dubai (`ar`, `en`) only. Every other
+   region falls back to `['en']`.
+2. Neither `data/zanzibar_tanzania.json` nor `data/nungwi_tanzania.json` carries
+   `name_local` or any landmark text, so the seed writes no `names_local` or
+   `landmarks_local`. The card shows "Local name not available" and the English
+   name.
+3. The card chrome strings are English.
+
+The seed side already maps both Tanzania regions to `sw`
+(`CATALOG_LANGUAGES`, `REGION_LANGUAGES`). The client mirror is missing.
+
+Direction:
+
+- Add `sw` then `en` for the Tanzania regions in `languagePriority`, and add a
+  test that the client priority agrees with the loader language map.
+- Swahili uses Latin script, so the venue name is often the same as the roman
+  name. The useful local content is the landmark and direction text a driver
+  reads. Add per-venue Swahili landmark text with provenance per SPEC-12
+  decisions 2 and 3: `generated` entries render as unconfirmed with the confirm
+  affordance and never as the confident headline; only `field_verified`
+  promotes. Never label unverified Swahili as verified.
+- The owner can verify names and landmarks with locals during the trip, which
+  feeds the `field_verified` moat data.
+
+Owners: SPEC-12 amendment (region language priority table), data pass for
+Swahili landmarks, Dart mirror.
+
+### F3 -- Existing trips shown as markers in the date picker
+
+Observed: when creating a second trip, the date picker shows no trace of the
+first trip.
+
+Wanted: like meeting invites in a calendar. Days already covered by another trip
+are visibly marked. The marker never blocks creating an overlapping trip.
+
+Direction: `showDateRangePicker` cannot decorate individual days, so wrap or
+replace it with a range-select calendar that draws a marker (and optionally a
+short trip label) on days covered by existing trips. Read from the local trips
+list so it works offline and needs no new endpoint. Compare trip dates as
+destination-local calendar dates (date-only, no time zone shift). Optionally show
+a non-blocking note on the review screen ("Overlaps with <trip> on <dates>").
+Apply to create trip and the corridor date form first.
+
+Owners: SPEC-31 amendment (date scope) or a new small spec. Dart-only; widget
+tests for marker rendering and for overlap not blocking create.
+
+### F4 -- Catalog data notes from the same session
+
+- Cholo's Beach by Bento is a beach bar. The planner placed it in the morning
+  slot on a Nungwi day. Review its category and slot eligibility; consider an
+  evening-leaning bucket for bars where opening hours are unknown. Owner field
+  verification of hours is the durable fix.
+- The stops seen carry mostly the generic `leisurely` tag. Check whether the
+  catalog `vibe_tags` are too generic to drive ranking and swap reasons. Not
+  verified as a defect.
+
+### Proposed order (planner)
+
+1. F2 first: it affects the in-trip card and feeds verified-name data. Client
+   priority plus tests are small; the Swahili landmark data pass is the larger
+   part and needs owner verification on site.
+2. F3: Dart-only, self-contained, no backend.
+3. F1: needs the SPEC-36 and SPEC-26 amendment first.
+4. F4: fold into the next catalog edit after field verification.
+
+---
+
 ## 0. Architecture decisions NOT changing (read first)
 The source doc proposed a from-scratch stack. Our stack is built, tested, and staying. Do **not**
 migrate these — the cost is rewriting proven code for no product benefit:

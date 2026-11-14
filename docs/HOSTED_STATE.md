@@ -63,7 +63,7 @@ remains on `travel-buddy-00009-qek` at 0% for rollback.
 
 | Field | Value |
 |---|---|
-| Revision | `travel-buddy-00014-sbm` (100% LATEST). Tag `g0fix0924` still names `00009-qek` at 0%. Prior field revision `00012-8wv` is not serving. |
+| Revision | `travel-buddy-00015-x8d` (100% LATEST, deployed 2026-11-14 from `main` `206122a`; health `healthy`, `venues_loaded` 146). Previous `00014-sbm`. Tag `g0fix0924` still names `00009-qek` at 0%. Prior field revision `00012-8wv` is not serving. |
 | URL | `https://travel-buddy-196190001420.asia-south1.run.app` |
 | Health | HTTP 200 `GET /api/v1/health` (`status=healthy`) on 2026-10-31. Health does not encode git SHA. |
 | Auth smoke | Anonymous header 401. Bearer anonymous JWT 200 on `/api/v1/user/status`. |
