@@ -65,7 +65,7 @@ remains on `travel-buddy-00009-qek` at 0% for rollback.
 
 | Field | Value |
 |---|---|
-| Revision | `travel-buddy-00015-x8d` (100% LATEST, deployed 2026-11-14 from `main` `206122a`; health `healthy`, `venues_loaded` 146). Previous `00014-sbm`. Tag `g0fix0924` still names `00009-qek` at 0%. Prior field revision `00012-8wv` is not serving. |
+| Revision | `travel-buddy-00016-hbx` (100% LATEST, deployed 2026-11-15 from `main` `74fa028` by owner Windows; health `healthy`, `venues_loaded` 146; includes SPEC-41 bar afternoon-only `668bb6f`). Previous `00015-x8d` (`206122a`). Tag `g0fix0924` still names `00009-qek` at 0%. Env names unchanged (`TB_DEBUG`, `TB_ALLOW_ANONYMOUS`, `TB_SUPABASE_URL`, `TB_SUPABASE_KEY`, `TB_GOOGLE_MAPS_API_KEY`, `TB_OPENWEATHER_API_KEY`, `TB_SUPABASE_JWKS_URL`, `TB_SUPABASE_JWT_ISS`, `TB_JWT_AUDIENCE`). Phone bar-check pending. |
 | URL | `https://travel-buddy-196190001420.asia-south1.run.app` |
 | Health | HTTP 200 `GET /api/v1/health` (`status=healthy`) on 2026-10-31. Health does not encode git SHA. |
 | Auth smoke | Anonymous header 401. Bearer anonymous JWT 200 on `/api/v1/user/status`. |
