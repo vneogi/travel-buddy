@@ -1,5 +1,11 @@
 # Genie brief: F3 -- existing-trip markers on the create-trip date picker
 
+> Amendment 2026-11-15: activity-span markers only (node min/max on
+> `TripSummary`), destination-local date-only via `toDestinationLocal`.
+> If you started from an older copy of this brief, re-fetch `origin/main`
+> and re-read this file before writing more code.
+
+
 Read this whole file before touching anything. It is the complete job.
 If something here conflicts with your memory of an earlier brief, this
 file wins. If something here is unclear, stop and ask; do not guess and
@@ -17,6 +23,15 @@ adds a small custom range calendar and wires it into guided create
 local trips list already on `HomeSnapshot` / the offline trip-list
 cache -- no new endpoint.
 
+Important data fact (do not "fix" in this slice): `TripSummary.startsAt`
+and `endsAt` are the min/max of scheduled node times from
+`_summarize_trip` in `routers/trip_router.py`, not the traveller's
+chosen create dates. Sparse generation only fills a starter set of
+days, so a longer trip can under-mark empty days. Product decision for
+F3: mark the **activity span** the list already exposes. Honest and
+offline. Widening `TripSummary` with create-date fields is a later
+remainder (SPEC-26 projection), not this slice.
+
 ## 1. Goal and the properties that matter
 
 1. On the create-trip dates step, the picker shows a month grid. Days
@@ -28,13 +43,16 @@ cache -- no new endpoint.
    chosen range overlaps an existing trip (for example
    `Overlaps with an existing trip on <dates>`). The Create button
    stays enabled.
-4. Date comparison is date-only: use each `TripSummary.startsAt` /
-   `endsAt` calendar day (`DateUtils.dateOnly` / year-month-day of the
-   stored `DateTime`). Do not apply an extra timezone conversion that
-   would shift the day.
-5. Trips with a null `startsAt` or null `endsAt` contribute no markers.
+4. Date comparison is destination-local date-only: for each trip,
+   convert `startsAt` / `endsAt` with the existing
+   `toDestinationLocal(utc, trip.geoRegion)` helper, then take
+   `DateUtils.dateOnly`. Do not use raw UTC calendar days (an evening
+   node can cross local midnight).
+5. Trips with a null `startsAt` or null `endsAt` contribute no markers
+   (including empty-node trips). That is expected under the activity-
+   span decision above; do not invent dates.
 6. No new Flutter packages. Material only. No backend, catalog, or
-   CI changes.
+   CI changes. Do not widen `TripSummary` or edit `_summarize_trip`.
 
 ## 2. Preflight (do this first, stop if any check fails)
 
@@ -110,10 +128,12 @@ Public API (exact names):
 Rules for `occupiedDaysFromTrips`:
 
 - Skip a trip when `startsAt` or `endsAt` is null.
-- For each kept trip, walk every calendar day from
-  `DateUtils.dateOnly(startsAt)` through `DateUtils.dateOnly(endsAt)`
-  inclusive (handle reversed start/end by swapping).
-- Store days as `DateUtils.dateOnly` values.
+- For each kept trip, convert both bounds with
+  `toDestinationLocal(..., trip.geoRegion)`, then `DateUtils.dateOnly`.
+- Walk every calendar day from local start through local end inclusive
+  (swap if reversed). Store days as `DateUtils.dateOnly` values.
+- Document in the helper file comment that these are activity-span days
+  from the list projection, not create-form dates.
 
 `overlapReviewNote` when overlapping: a single sentence starting with
 `Overlaps with an existing trip` and including a compact date span of
@@ -234,6 +254,8 @@ Stop and report instead of improvising if:
 - any preflight check fails;
 - you need a new package, a backend change, or a file outside section 4;
 - you are about to disable overlapping days or block Create on overlap;
+- you are about to invent create dates, edit `_summarize_trip`, or widen
+  `TripSummary`;
 - you are about to implement F1 or edit SPEC files;
 - an existing test fails for a reason related to this change and the
   fix would require editing that existing test -- stop and report.
@@ -252,11 +274,14 @@ Python files are ASCII. Do not run Flutter (no SDK).
 
 ## 10. Out of scope
 
+- Widening `TripSummary` / `_summarize_trip` with create-date fields
+  (remainder after F3; needed for true booking-span markers on sparse
+  multi-week trips)
 - F1 single create entry / folding the corridor card into create
 - Swahili catalog data (F2 data pass)
 - Blocking overlaps, colour legends, multi-trip labels per day
 - iOS / web polish beyond Material defaults
-- Deploy, APK, backend
+- Deploy, APK, any other backend change
 
 ## 11. Delivery
 
