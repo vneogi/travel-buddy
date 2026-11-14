@@ -193,7 +193,7 @@ Current order:
    Gap 4 export execute `fde1ae6` (PR #190); in-memory export backend `0026c76` (PR #192); Supabase export backend `f7802ad` (PR #196); HTTP export route `16945be` (PR #199).
    Zanzibar owner packs: Stone Town `c147290` (PR #203), Nungwi `f39e41f` (PR #206).
    Owner hosted load (38 Stone Town + 34 Nungwi venues), Cloud Run `00015-x8d`,
-   and APK rebuild from `206122a` done 2026-11-14; device checks passed.
+   and APK rebuild from `206122a` done 2026-11-14 (SHA256 `c7f212497b75ab8b82fe29fb0ef434d994d7928ef517bd105aea3cddf84868ce`); device checks passed.
    Three owner UX findings (single create entry, Swahili driver card, trip
    markers in the date picker) are recorded in `UX_BACKLOG.md`.
    No Genie brief queued.
@@ -230,7 +230,7 @@ Current order:
    Gap 4 export execute `fde1ae6` (PR #190); in-memory export backend `0026c76` (PR #192); Supabase export backend `f7802ad` (PR #196); HTTP export route `16945be` (PR #199).
    Zanzibar owner packs: Stone Town `c147290` (PR #203), Nungwi `f39e41f` (PR #206).
    Owner hosted load (38 Stone Town + 34 Nungwi venues), Cloud Run `00015-x8d`,
-   and APK rebuild from `206122a` done 2026-11-14; device checks passed.
+   and APK rebuild from `206122a` done 2026-11-14 (SHA256 `c7f212497b75ab8b82fe29fb0ef434d994d7928ef517bd105aea3cddf84868ce`); device checks passed.
    Three owner UX findings (single create entry, Swahili driver card, trip
    markers in the date picker) are recorded in `UX_BACKLOG.md`.
    No Genie brief queued.
@@ -456,7 +456,7 @@ Seed-shaped cohorts.
     Gap 4 export execute `fde1ae6` (PR #190); in-memory export backend `0026c76` (PR #192); Supabase export backend `f7802ad` (PR #196); HTTP export route `16945be` (PR #199).
     Zanzibar owner packs: Stone Town `c147290` (PR #203), Nungwi `f39e41f` (PR #206).
     Owner hosted load (38 Stone Town + 34 Nungwi venues), Cloud Run `00015-x8d`,
-    and APK rebuild from `206122a` done 2026-11-14; device checks passed.
+    and APK rebuild from `206122a` done 2026-11-14 (SHA256 `c7f212497b75ab8b82fe29fb0ef434d994d7928ef517bd105aea3cddf84868ce`); device checks passed.
     Three owner UX findings (single create entry, Swahili driver card, trip
     markers in the date picker) are recorded in `UX_BACKLOG.md`.
     No Genie brief queued.
