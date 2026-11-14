@@ -327,12 +327,12 @@ separation live in the operating model; do not reconstruct them from chat.
 `76d7e9be3186a817a12664ed51b62e1db1ea8c946d5d5ac67b47912762036714`
 (built from `1aa405c`; rebuild from `1de6ff2` to drop `pm clear`).
 
-Next Genie job: none queued. Gap 4 slice 15 landed as `108c815` (PR #211):
-erase/export rate-limit route tests use OpenAPI enumeration. Frontend
-F1-F4 deferred. Owner completed on 2026-11-14: hosted load (38+34),
-Cloud Run `00015-x8d`, APK SHA256
+Next Genie job: Gap 4 slice 16 -- rate-limit GET /api/v1/me/export
+(`docs/briefs/GENIE_SPEC_43_G4_EXPORT_GET_RATE_LIMIT.md`). Slice 15 landed
+as `108c815` (PR #211). Frontend F1-F4 deferred. Owner completed on
+2026-11-14: hosted load (38+34), Cloud Run `00015-x8d`, APK SHA256
 `c7f212497b75ab8b82fe29fb0ef434d994d7928ef517bd105aea3cddf84868ce` from
-`206122a`. Next backend candidate: GET export rate-limit (Gap 4 remainder).
+`206122a`.
 Gap 4 inventory `cd28bf3` (PR #170), erase plan `f387c55`
 (PR #172), erase execute `4d85cd7` (PR #174), in-memory
 wipe `7ceab2e` (PR #176), Supabase erase backend `54c3c8d`
