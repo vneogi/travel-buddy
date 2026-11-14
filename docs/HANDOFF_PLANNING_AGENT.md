@@ -327,13 +327,11 @@ separation live in the operating model; do not reconstruct them from chat.
 `76d7e9be3186a817a12664ed51b62e1db1ea8c946d5d5ac67b47912762036714`
 (built from `1aa405c`; rebuild from `1de6ff2` to drop `pm clear`).
 
-Next Genie job: Gap 4 slice 18 -- nested export document builder
-(`docs/briefs/GENIE_SPEC_43_G4_EXPORT_DOCUMENT.md`). Slice 17 landed as
-`ff954bf` (PR #217). Durable tombstone table is blocked: a new migration
-table must also be classified in `tests/test_spec43_g2_rls.py` (0026), and
-hosted SQL waits on the `rolbypassrls` confirmation. Frontend F1-F4
-deferred. Owner completed on 2026-11-14: hosted load (38+34), Cloud Run
-`00015-x8d`, APK SHA256
+Next Genie job: Gap 4 slice 19 -- wire nested document into GET /api/v1/me/export
+(`docs/briefs/GENIE_SPEC_43_G4_EXPORT_ROUTE_DOCUMENT.md`). Slice 18 landed as
+`9956111` (PR #220). Durable tombstone blocked (0026 + rolbypassrls). Frontend
+F1-F4 deferred. Owner completed on 2026-11-14: hosted load (38+34), Cloud
+Run `00015-x8d`, APK SHA256
 `c7f212497b75ab8b82fe29fb0ef434d994d7928ef517bd105aea3cddf84868ce` from
 `206122a`.
 Gap 4 inventory `cd28bf3` (PR #170), erase plan `f387c55`
@@ -347,6 +345,7 @@ execute `fde1ae6` (PR #190), and in-memory export backend `0026c76` (PR #192), a
 Gap 4 rate-limit route tests `108c815` (PR #211) are on main.
 Gap 4 GET export rate-limit `039ea70` (PR #214) is on main.
 Gap 4 in-memory tombstone `ff954bf` (PR #217) is on main.
+Gap 4 nested export document `9956111` (PR #220) is on main.
 Gap 3 fallback pin `8d8b28b` (PR #165):
 completions use only the tier's configured model; no cross-vendor hop.
 Semantic-cache embeddings redact booking canaries. Light
