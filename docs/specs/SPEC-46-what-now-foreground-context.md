@@ -130,6 +130,15 @@ a deliberately narrow contract.
 
 SPEC-43 must prove those properties before Phase B reaches another person.
 
+## Penciled: network reachability enrichment
+
+Owner decision 2026-11-15 (`docs/decisions/NETWORK_REACHABILITY.md`):
+optional Google Isochrones enrichment for "within N minutes" and
+`keeps_next_booking_reachable`, with Haversine fallback and a named
+source. Origins stay catalog or booking stops until Phase B. Trial
+brief: `docs/briefs/GENIE_ISOCHRONE_TRIAL.md`. Not implemented. Does
+not change Phase A determinism.
+
 ## Trustworthy recommendation reasons
 
 Reasons are closed codes computed by the same deterministic helpers used to

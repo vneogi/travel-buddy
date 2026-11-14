@@ -178,6 +178,14 @@ create-then-book reflow; SPEC-25 trip-optional Ask; SPEC-46 Phase B
 (after SPEC-43); SPEC-45 place detail and transfer cards; optional bar
 start-time floor.
 
+Penciled after F2/F3 (not trip-critical; owner 2026-11-15): network
+reachability via Google Isochrones as an optional enrichment on
+Haversine for in-trip usability and return visits. Decision:
+`docs/decisions/NETWORK_REACHABILITY.md`. Next Genie job after F3:
+trial harness `docs/briefs/GENIE_ISOCHRONE_TRIAL.md` (fixtures + owner
+live compare on Stone Town / Nungwi / Luang Prabang). Not a paid
+feature. Does not replace SPEC-41 packing.
+
 Hosted/ops: Cloud Run behind `main` (bar rule; Gap 4 slices 15-19, not
 trip-relevant). 0026 not applied. CI Postgres image is third-party
 `valazj/postgis_pgvector:0.1.1`; an in-repo image would remove that
