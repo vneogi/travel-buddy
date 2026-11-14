@@ -7,6 +7,9 @@ The default full in-city day has four named slots in order:
 Breakfast is not a default generated slot.  Locked bookings (flights,
 trains, hotels, tours) keep exact destination-local timestamps; the slot
 names here are for flexible catalog-packed nodes only.
+
+A bar (category ``bar``) may fill only ``afternoon_evening_tour``: never the
+morning tour or a meal slot (owner field test, 2026-11-14).
 """
 
 from __future__ import annotations
@@ -31,6 +34,11 @@ _ACTIVITY_SLOTS: Tuple[str, ...] = ("morning_tour", "afternoon_evening_tour")
 
 # Categories that map to a food slot.
 _FOOD_CATEGORIES: frozenset = frozenset({"cafe", "restaurant", "street_food"})
+
+# Categories that only make sense in the afternoon/evening slot. A bar at
+# 08:00 is a planner defect (owner field test, 2026-11-14).
+_AFTERNOON_ONLY_CATEGORIES: frozenset = frozenset({"bar"})
+_AFTERNOON_SLOT = "afternoon_evening_tour"
 
 # Vibe tags that identify a whole-day excursion.
 # A whole-day excursion occupies morning + lunch + afternoon simultaneously;
@@ -78,6 +86,11 @@ def is_food_venue(venue: dict) -> bool:
     return (venue.get("category") or "experience").lower() in _FOOD_CATEGORIES
 
 
+def is_afternoon_only_venue(venue: dict) -> bool:
+    """True if the venue may only fill the afternoon/evening slot."""
+    return (venue.get("category") or "").lower() in _AFTERNOON_ONLY_CATEGORIES
+
+
 def is_whole_day_excursion(venue: dict) -> bool:
     """True if the venue is a whole-day trip (canyoneering, island-hopping, etc.)."""
     tags = frozenset(t.lower() for t in (venue.get("vibe_tags") or []))
@@ -92,6 +105,8 @@ def has_matching_slot(venue: dict, remaining_slots: List[str]) -> bool:
     """
     if is_whole_day_excursion(venue):
         return all(s in remaining_slots for s in _WHOLE_DAY_CONSUMED)
+    if is_afternoon_only_venue(venue):
+        return _AFTERNOON_SLOT in remaining_slots
     if is_food_venue(venue):
         return any(s in remaining_slots for s in _FOOD_SLOTS)
     return any(s in remaining_slots for s in _ACTIVITY_SLOTS)
@@ -117,6 +132,13 @@ def assign_slot(
         new_remaining = [s for s in remaining_slots if s not in _WHOLE_DAY_CONSUMED]
         return slot, new_remaining
 
+    if is_afternoon_only_venue(venue):
+        if _AFTERNOON_SLOT not in remaining_slots:
+            raise ValueError("No afternoon slot available")
+        new_remaining = list(remaining_slots)
+        new_remaining.remove(_AFTERNOON_SLOT)
+        return _AFTERNOON_SLOT, new_remaining
+
     if is_food_venue(venue):
         for s in _FOOD_SLOTS:
             if s in remaining_slots:
@@ -139,6 +161,7 @@ def venue_fits_slot(venue: dict, target_slot: str, remaining_slots: List[str]) -
 
     - Whole-day excursion: only when target is ``morning_tour`` and all
       consumed slots (morning, lunch, afternoon) are still available.
+    - Bar (afternoon-only): target must be ``afternoon_evening_tour``.
     - Food venue (cafe/restaurant/street_food): target must be a food slot.
     - Activity venue: target must be an activity slot.
     """
@@ -146,6 +169,8 @@ def venue_fits_slot(venue: dict, target_slot: str, remaining_slots: List[str]) -
         return target_slot == "morning_tour" and all(
             s in remaining_slots for s in _WHOLE_DAY_CONSUMED
         )
+    if is_afternoon_only_venue(venue):
+        return target_slot == _AFTERNOON_SLOT
     if is_food_venue(venue):
         return target_slot in _FOOD_SLOTS
     return target_slot in _ACTIVITY_SLOTS
