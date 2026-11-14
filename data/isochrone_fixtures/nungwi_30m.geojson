@@ -1,0 +1,42 @@
+{
+ "type": "Feature",
+ "properties": {
+  "region": "nungwi_tanzania",
+  "origin": "Nungwi Lighthouse",
+  "origin_lat": -5.72231,
+  "origin_lng": 39.30331,
+  "minutes": 30,
+  "travel_mode": "WALK",
+  "source": "hand-simplified",
+  "note": "CI logic fixture, not a live Isochrones response"
+ },
+ "geometry": {
+  "type": "MultiPolygon",
+  "coordinates": [
+   [
+    [
+     [
+      39.287,
+      -5.737
+     ],
+     [
+      39.3065,
+      -5.737
+     ],
+     [
+      39.3065,
+      -5.718
+     ],
+     [
+      39.287,
+      -5.718
+     ],
+     [
+      39.287,
+      -5.737
+     ]
+    ]
+   ]
+  ]
+ }
+}
