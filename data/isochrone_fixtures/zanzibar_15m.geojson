@@ -1,0 +1,42 @@
+{
+ "type": "Feature",
+ "properties": {
+  "region": "zanzibar_tanzania",
+  "origin": "House of Wonders",
+  "origin_lat": -6.16091,
+  "origin_lng": 39.18963,
+  "minutes": 15,
+  "travel_mode": "WALK",
+  "source": "hand-simplified",
+  "note": "CI logic fixture, not a live Isochrones response"
+ },
+ "geometry": {
+  "type": "MultiPolygon",
+  "coordinates": [
+   [
+    [
+     [
+      39.1865,
+      -6.164
+     ],
+     [
+      39.1935,
+      -6.164
+     ],
+     [
+      39.1935,
+      -6.158
+     ],
+     [
+      39.1865,
+      -6.158
+     ],
+     [
+      39.1865,
+      -6.164
+     ]
+    ]
+   ]
+  ]
+ }
+}
