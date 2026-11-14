@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgis/postgis:16-3.4
+        image: valazj/postgis_pgvector:0.1.1
         env:
           POSTGRES_DB: spec44_test
           POSTGRES_USER: postgres
@@ -50,11 +50,13 @@ jobs:
           pip install -r requirements.txt -r requirements-dev.txt
           pip install psycopg2-binary
 
-      - name: Install pgvector into service container
+      # The service image ships PostGIS and pgvector together. The previous
+      # approach (apt-get install pgvector inside the stock postgis image)
+      # broke when apt.postgresql.org dropped the bullseye-pgdg release.
+      - name: Install psql client on the runner
         run: |
-          container_id=$(docker ps -q --filter "ancestor=postgis/postgis:16-3.4")
-          docker exec "$container_id" sh -c \
-            "apt-get update -qq && apt-get install -y -qq postgresql-16-pgvector >/dev/null 2>&1"
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client
 
       - name: Enable required extensions
         run: |
