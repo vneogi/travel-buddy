@@ -1,7 +1,8 @@
 """SPEC-43 Gap 11: in-process per-identity and per-IP request rate.
 
-Counts POST/PUT/PATCH/DELETE in a sliding window. GETs and payment
-webhooks are not counted. Coordinates and tokens are never logged.
+Counts POST/PUT/PATCH/DELETE in a sliding window. GETs are not counted
+except GET /api/v1/me/export (Gap 4 slice 16), and payment webhooks are not
+counted. Coordinates and tokens are never logged.
 """
 
 from __future__ import annotations
@@ -23,6 +24,8 @@ MAX_REQUESTS_PER_IP = 60
 RATE_LIMITED = "rate_limited"
 
 _COUNTED_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
+# Gap 4 slice 16: the one GET that is counted (exact match after rstrip("/")).
+_COUNTED_GET_PATHS = frozenset({"/api/v1/me/export"})
 _EXEMPT_PATHS = frozenset(
     {
         "/api/v1/payment/webhook/stripe",
@@ -47,6 +50,13 @@ def identity_key(scope: Scope) -> str:
     if auth:
         return hashlib.sha256(auth).hexdigest()[:16]
     return "anonymous"
+
+
+def _is_counted(method: str, path: str) -> bool:
+    """True for POST/PUT/PATCH/DELETE, or GET on a _COUNTED_GET_PATHS path."""
+    if method in _COUNTED_METHODS:
+        return True
+    return method == "GET" and path.rstrip("/") in {p.rstrip("/") for p in _COUNTED_GET_PATHS}
 
 
 def ip_key(scope: Scope) -> str:
@@ -106,11 +116,11 @@ class RateLimitMiddleware:
             return
 
         method = scope.get("method") or ""
-        if method not in _COUNTED_METHODS:
+        path = scope.get("path") or ""
+        if not _is_counted(method, path):
             await self.app(scope, receive, send)
             return
 
-        path = scope.get("path") or ""
         if path.rstrip("/") in {p.rstrip("/") for p in _EXEMPT_PATHS}:
             await self.app(scope, receive, send)
             return
