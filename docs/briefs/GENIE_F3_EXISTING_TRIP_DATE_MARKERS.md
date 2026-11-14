@@ -4,6 +4,11 @@
 > `TripSummary`), destination-local date-only via `toDestinationLocal`.
 > If you started from an older copy of this brief, re-fetch `origin/main`
 > and re-read this file before writing more code.
+>
+> Amendment 2 (2026-11-15): F2 is NOT required on main (independent
+> files). `home_screen.dart` is allowed for the one-argument
+> `existingTrips: snapshot.trips` change only. Dart R17 is observed on
+> the owner's Windows run, not on Genie compute.
 
 
 Read this whole file before touching anything. It is the complete job.
@@ -58,9 +63,9 @@ remainder (SPEC-26 projection), not this slice.
 
 1. `git fetch origin`. Work from the `origin/main` SHA in the message
    that sent you this brief. If main has moved past it, continue from
-   the newer main only if every file in step 2 is still present and
-   F2 (`languagePriority` Tanzania rule) is on that main; otherwise
-   stop.
+   the newer main only if every file in step 2 is still present;
+   otherwise stop. F2 does not need to be on main (it touches only the
+   driver card).
 2. Confirm these exist: this brief,
    `mobile/lib/features/create_trip/create_trip_screen.dart`,
    `mobile/lib/widgets/corridor_date_form.dart`,
@@ -94,14 +99,17 @@ remainder (SPEC-26 projection), not this slice.
 - `mobile/lib/widgets/existing_trip_date_range_picker.dart` (new)
 - `mobile/lib/features/create_trip/create_trip_screen.dart`
 - `mobile/lib/widgets/corridor_date_form.dart`
+- `mobile/lib/features/home/home_screen.dart` (only: pass
+  `existingTrips: snapshot.trips` into the existing
+  `CorridorDateForm(...)` call in `_showCorridorDateForm`; no other line)
 - `mobile/test/features/create_trip/existing_trip_dates_test.dart` (new)
 - `mobile/test/widgets/existing_trip_date_range_picker_test.dart` (new)
 - `mobile/test/features/create_trip/create_trip_overlap_note_test.dart`
   (new; only if the review-note proof does not fit cleanly elsewhere)
 
 Nothing else. Do NOT change: backend, catalogs, `pubspec.yaml`,
-existing tests except by adding new files, home screen layout beyond
-passing trips into the form if required, SPEC docs, briefs.
+existing tests except by adding new files, any other line of
+`home_screen.dart`, SPEC docs, briefs.
 
 Do not implement F1 (fold corridor into create). Do not block overlaps.
 
@@ -244,8 +252,11 @@ Throwaway in-memory plugins or temp copies are fine when in-place edits
 are blocked. No repo file may keep the sabotage. Report hashes of the
 helper file before A and after the last restore.
 
-Dart tests cannot run on your machine (no Flutter SDK). Say so; the
-owner runs them on Windows. You still write them.
+Dart tests cannot run on your machine (no Flutter SDK). Write the
+sabotage steps and the expected failing test names in the report, mark
+them "not observed on Genie compute", and list the exact Windows
+commands the owner runs to observe A and B. That counts as complete for
+this slice; do not stop for it.
 
 ## 8. Stop rules
 
