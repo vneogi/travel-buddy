@@ -109,7 +109,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       segments = await showModalBottomSheet<List<TripSegment>>(
         context: context,
         isScrollControlled: true,
-        builder: (_) => CorridorDateForm(corridor: corridor),
+        builder: (_) => CorridorDateForm(corridor: corridor, existingTrips: snapshot.trips),
       );
     } finally {
       _formOpen = false;
