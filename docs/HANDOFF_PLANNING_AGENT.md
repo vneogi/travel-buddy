@@ -333,22 +333,24 @@ separation live in the operating model; do not reconstruct them from chat.
 
 ## First job
 
-`origin/main` tip after 2026-11-14: bar slot `668bb6f` (PR #225), CI
-postgres-proof `d0abb2f` (PR #227), clock hygiene `1ee63e2` (PR #228).
-Cloud Run `00015-x8d` with Tanzania packs. Device APK SHA256
+`origin/main` tip after F2 merge 2026-11-15: `982bb48` (PR #231). Bar
+slot `668bb6f`, CI postgres-proof `d0abb2f`, clock hygiene `1ee63e2`.
+Cloud Run `00016-hbx` from `74fa028` (bar rule live). Device APK SHA256
 `c7f212497b75ab8b82fe29fb0ef434d994d7928ef517bd105aea3cddf84868ce`
-from `206122a`. Default pytest and `postgres-proof` are green.
+from `206122a` (rebuild after F2/F3 for Swahili priority). Default
+pytest and `postgres-proof` are green.
 
-Next Genie job: F2 (in flight / review), then F3 date-picker markers
-(amended brief on main). After F3: Isochrones trial
+Next Genie job: F3 date-picker markers
+(`docs/briefs/GENIE_F3_EXISTING_TRIP_DATE_MARKERS.md`, amendment 2 on
+main). After F3: Isochrones trial
 (`docs/briefs/GENIE_ISOCHRONE_TRIAL.md`; decision
 `docs/decisions/NETWORK_REACHABILITY.md`) -- penciled for in-trip
-reachability and returnability; not trip-critical. Owner: redeploy
-Cloud Run from `main` so the bar rule is live; F2 Flutter tests on
-Windows. The single open-items list for 2026-11-15 to 2026-12-04 is in
-`PROJECT_STATUS.md` under "What is Next". F1 waits on a SPEC-36/26
-amendment. F4 bar morning-slot planner defect is closed; catalog hours
-and vibe_tags remain. Next Gap 4 remainders: durable tombstone /
+reachability and returnability; not trip-critical. Owner: rebuild APK
+after F2/F3; on-site Swahili landmark data pass. The single open-items
+list for 2026-11-15 to 2026-12-04 is in `PROJECT_STATUS.md` under
+"What is Next". F1 waits on a SPEC-36/26 amendment. F2 client priority
+closed; F4 bar morning-slot planner defect is closed; catalog hours and
+vibe_tags remain. Next Gap 4 remainders: durable tombstone /
 erase-route hook (blocked on 0026 + `rolbypassrls`), retention, zip/PDF
 download. Do not apply 0026 until `rolbypassrls` is confirmed.
 Gap 4 inventory `cd28bf3` (PR #170), erase plan `f387c55`
