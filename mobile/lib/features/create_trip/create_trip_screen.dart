@@ -7,7 +7,9 @@ import '../../routing/trip_route_auth.dart';
 import '../../data/models.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
+import '../../widgets/existing_trip_date_range_picker.dart';
 import '../home/home_controller.dart';
+import 'existing_trip_dates.dart';
 
 /// Signature matching [showDateRangePicker] for test injection.
 typedef DateRangePickerBuilder = Future<DateTimeRange?> Function({
@@ -23,7 +25,8 @@ typedef DateRangePickerBuilder = Future<DateTimeRange?> Function({
 /// Steps: destination, dates, party, interests, review.
 /// Back preserves entered values. Success opens the fetched itinerary.
 class CreateTripScreen extends ConsumerStatefulWidget {
-  /// Optional override for date picker. Defaults to [showDateRangePicker].
+  /// Optional override for date picker. Defaults to
+  /// [showExistingTripDateRangePicker] (F3 existing-trip markers).
   final DateRangePickerBuilder? datePickerBuilder;
 
   const CreateTripScreen({super.key, this.datePickerBuilder});
@@ -239,6 +242,7 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
     final regions = home.supportedRegions;
     final partyOptions = opts?.partyTypes ?? const [];
     final interestOptions = opts?.interests ?? const [];
+    final occupiedDays = occupiedDaysFromTrips(home.trips);
 
     return Scaffold(
       appBar: AppBar(
@@ -268,6 +272,7 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
                   opts: opts,
                   partyOptions: partyOptions,
                   interestOptions: interestOptions,
+                  occupiedDays: occupiedDays,
                 ),
               ),
             ),
@@ -309,6 +314,7 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
     required CreateTripOptions? opts,
     required List<PartyOption> partyOptions,
     required List<InterestOption> interestOptions,
+    required Set<DateTime> occupiedDays,
   }) {
     switch (_step) {
       case 0:
@@ -323,6 +329,7 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
           dateRange: _dateRange,
           onChanged: (r) => setState(() => _dateRange = r),
           pickerBuilder: widget.datePickerBuilder,
+          occupiedDays: occupiedDays,
         );
       case 2:
         return _PartyStep(
@@ -356,6 +363,7 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
           partyOptions: partyOptions,
           interestOptions: interestOptions,
           maxAutoPopulatedDays: opts?.maxAutoPopulatedDays ?? 5,
+          occupiedDays: occupiedDays,
         );
       default:
         return const SizedBox.shrink();
@@ -422,11 +430,13 @@ class _DatesStep extends StatelessWidget {
   final DateTimeRange? dateRange;
   final ValueChanged<DateTimeRange?> onChanged;
   final DateRangePickerBuilder? pickerBuilder;
+  final Set<DateTime> occupiedDays;
   const _DatesStep({
     required this.sanityDays,
     required this.dateRange,
     required this.onChanged,
     this.pickerBuilder,
+    this.occupiedDays = const {},
   });
 
   @override
@@ -460,13 +470,24 @@ class _DatesStep extends StatelessWidget {
 
   Future<void> _pick(BuildContext context) async {
     final now = DateUtils.dateOnly(DateTime.now());
-    final picker = pickerBuilder ?? showDateRangePicker;
-    final picked = await picker(
-      context: context,
-      firstDate: now,
-      lastDate: DateTime(now.year + 1, now.month, now.day),
-      initialDateRange: dateRange,
-    );
+    final lastDate = DateTime(now.year + 1, now.month, now.day);
+    // Injected test pickers bypass the F3 calendar; the default marks
+    // days already covered by other trips (never blocks an overlap).
+    final injected = pickerBuilder;
+    final picked = injected != null
+        ? await injected(
+            context: context,
+            firstDate: now,
+            lastDate: lastDate,
+            initialDateRange: dateRange,
+          )
+        : await showExistingTripDateRangePicker(
+            context: context,
+            firstDate: now,
+            lastDate: lastDate,
+            initialDateRange: dateRange,
+            occupiedDays: occupiedDays,
+          );
     if (picked == null) return;
     final days = _CreateTripScreenState._calendarDays(picked);
     if (days > sanityDays) {
@@ -589,6 +610,7 @@ class _ReviewStep extends StatelessWidget {
   final List<PartyOption> partyOptions;
   final List<InterestOption> interestOptions;
   final int maxAutoPopulatedDays;
+  final Set<DateTime> occupiedDays;
   const _ReviewStep({
     required this.region,
     required this.dateRange,
@@ -598,6 +620,7 @@ class _ReviewStep extends StatelessWidget {
     required this.partyOptions,
     required this.interestOptions,
     this.maxAutoPopulatedDays = 5,
+    this.occupiedDays = const {},
   });
 
   @override
@@ -622,6 +645,17 @@ class _ReviewStep extends StatelessWidget {
           _row('Dates',
               '${_fmtDate(dateRange!.start)} - ${_fmtDate(dateRange!.end)}'
               ' (${_CreateTripScreenState._calendarDays(dateRange!)} days)'),
+        if (dateRange != null && rangeOverlapsOccupied(dateRange!, occupiedDays))
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.md),
+            child: Text(
+              overlapReviewNote(dateRange!, occupiedDays),
+              key: const Key('create_trip_overlap_note'),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.muted,
+                  ),
+            ),
+          ),
         _row('Party', '$partyLabel ($partySize)'),
         _row('Interests',
             interestLabels.isEmpty ? 'Balanced' : interestLabels.join(', ')),

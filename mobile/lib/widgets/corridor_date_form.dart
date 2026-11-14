@@ -2,9 +2,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../data/models.dart';
+import '../features/create_trip/existing_trip_dates.dart';
 import '../features/itinerary/date_scope.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
+import 'existing_trip_date_range_picker.dart';
 
 /// SPEC-36: Independent date-range form for each corridor city.
 ///
@@ -13,9 +15,17 @@ import '../theme/typography.dart';
 ///  - Total days across all segments: <= [maxDays].
 ///  - Segments must not overlap: each starts strictly after the prior ends.
 ///  - Chronological order: start_i+1 > end_i.
+///
+/// F3: the range picker marks days already covered by [existingTrips]
+/// (informational only; segment rules above are unchanged).
 class CorridorDateForm extends StatefulWidget {
   final SupportedCorridor corridor;
-  const CorridorDateForm({super.key, required this.corridor});
+  final List<TripSummary> existingTrips;
+  const CorridorDateForm({
+    super.key,
+    required this.corridor,
+    this.existingTrips = const [],
+  });
 
   @override
   State<CorridorDateForm> createState() => CorridorDateFormState();
@@ -23,6 +33,7 @@ class CorridorDateForm extends StatefulWidget {
 
 class CorridorDateFormState extends State<CorridorDateForm> {
   late final List<DateTimeRange> _ranges;
+  late final Set<DateTime> _occupiedDays;
   bool _submitting = false;
 
   /// Test-only: replace date ranges and rebuild.
@@ -37,6 +48,7 @@ class CorridorDateFormState extends State<CorridorDateForm> {
   @override
   void initState() {
     super.initState();
+    _occupiedDays = occupiedDaysFromTrips(widget.existingTrips);
     // Seed with valid non-overlapping 1-day defaults starting tomorrow.
     final tomorrow = DateUtils.dateOnly(
       DateTime.now().add(const Duration(days: 1)),
@@ -77,11 +89,12 @@ class CorridorDateFormState extends State<CorridorDateForm> {
 
   Future<void> _pickRange(int index) async {
     final initial = _ranges[index];
-    final picked = await showDateRangePicker(
+    final picked = await showExistingTripDateRangePicker(
       context: context,
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
       initialDateRange: initial,
+      occupiedDays: _occupiedDays,
     );
     if (picked != null && mounted) {
       setState(() => _ranges[index] = picked);
