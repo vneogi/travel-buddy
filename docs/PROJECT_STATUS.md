@@ -168,8 +168,10 @@ Trip-critical (before 26 Dec):
 
 Owner-only:
 
-- Confirm `rolbypassrls` for `postgres` and `service_role` (gates 0026,
-  which gates the durable tombstone / erase-route hook).
+- DONE 2026-11-15: `rolbypassrls` confirmed true for `postgres` and
+  `service_role` on the travel-buddy Supabase project (read-only
+  `pg_roles` check). Gate for 0026 is cleared; hosted apply is a separate
+  owner decision.
 - Non-owner testers (G1) are not in this window; SPEC-43 plus SPEC-24/27
   remain.
 

@@ -20,7 +20,10 @@ APK SHA256
 (rebuilt 2026-11-14 from `206122a`; replaces the earlier bad
 `TB_SUPABASE_URL=v` build). Prior G0 APK `76d7e9be...` remains the
 SQLCipher leftover-open reference. Migration 0025 remains applied; 0026
-is not. SPEC-38 phone pass remains 2026-09-14 against `00004-62g`.
+is not. `rolbypassrls` confirmed 2026-11-15 (read-only check: `postgres`
+and `service_role` true; `anon`, `authenticated`, `authenticator` false)
+on project `travel-buddy`. SPEC-38 phone pass remains 2026-09-14 against
+`00004-62g`.
 
 ### Hosted Supabase
 
