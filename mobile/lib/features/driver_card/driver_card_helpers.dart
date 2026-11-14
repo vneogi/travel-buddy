@@ -4,10 +4,12 @@ import '../../data/models.dart';
 import '../../render/fact_envelope.dart';
 
 /// SPEC-12 Decision 4: ordered language preference per region.
+/// Mirrors REGION_LANGUAGES in scripts/load_venues.py; a Python test keeps them in step.
 List<String> languagePriority(String? geoRegion) {
   final region = (geoRegion ?? '').toLowerCase();
   if (region.contains('laos')) return const ['lo', 'th', 'en'];
   if (region.contains('dubai')) return const ['ar', 'en'];
+  if (region.contains('tanzania')) return const ['sw', 'en'];
   return const ['en'];
 }
 
