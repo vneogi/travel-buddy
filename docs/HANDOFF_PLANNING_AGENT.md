@@ -327,9 +327,10 @@ separation live in the operating model; do not reconstruct them from chat.
 `76d7e9be3186a817a12664ed51b62e1db1ea8c946d5d5ac67b47912762036714`
 (built from `1aa405c`; rebuild from `1de6ff2` to drop `pm clear`).
 
-Next Genie job: none queued. Owner: hosted `load_venues.py` for
-`zanzibar_tanzania` and `nungwi_tanzania`, Cloud Run redeploy, APK
-rebuild from main. Open: `test_erase_route_counts_toward_the_rate_limit`
+Next Genie job: none queued. Owner completed on 2026-11-14: hosted
+`load_venues.py` for `zanzibar_tanzania` (38) and `nungwi_tanzania` (34),
+Cloud Run redeploy (`00015-x8d`), APK rebuild from `206122a`, and device
+checks. Owner UX findings F1-F4 are in `UX_BACKLOG.md`. Open: `test_erase_route_counts_toward_the_rate_limit`
 and `test_export_route_is_not_exempt_from_the_rate_limiter` fail on main CI
 (since at least `16945be`).
 Gap 4 inventory `cd28bf3` (PR #170), erase plan `f387c55`
