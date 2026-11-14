@@ -430,9 +430,13 @@ class TestHTTPTodayTonight:
         from services.destination_tz import to_destination_local
 
         self.client = TestClient(app)
-        # Schedule node 30 min from real now -- still pending and same ICT date
+        # Schedule the node at real now: it is in progress (starts now, ends one
+        # hour later), so format_today_tonight counts it as remaining, and since
+        # it starts at the same instant as now it always shares now's Luang
+        # Prabang date. Only remaining window: the milliseconds between this
+        # fixture and the request crossing Luang Prabang midnight.
         real_now = datetime.now(tz=timezone.utc)
-        node_start = real_now + timedelta(minutes=30)
+        node_start = real_now
         # Verify same ICT date (precondition)
         now_ict = to_destination_local(real_now, "luang_prabang_laos")
         node_ict = to_destination_local(node_start, "luang_prabang_laos")

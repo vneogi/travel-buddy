@@ -602,10 +602,11 @@ class TestAPIAtomicity:
                 for i in range(7)
             ]
         )
+        trip_day = datetime.now(ZoneInfo(REGIONS[GEO].timezone)).date() + timedelta(days=7)
         with mock_patch.object(db_mod.db_service, "list_venues_for_region", return_value=rows):
             body = {
-                "start_date": date(2026, 11, 2).isoformat(),
-                "end_date": date(2026, 11, 2).isoformat(),
+                "start_date": trip_day.isoformat(),
+                "end_date": trip_day.isoformat(),
                 "geo_region": GEO,
                 "party": {"party_type": "friends", "size": 3, "members": []},
             }
