@@ -197,8 +197,9 @@ Current order:
    Three owner UX findings (single create entry, Swahili driver card, trip
    markers in the date picker) are recorded in `UX_BACKLOG.md`.
    Gap 4 rate-limit route tests `108c815` (PR #211).
-   Next Genie: Gap 4 slice 16 GET export rate-limit
-   (`docs/briefs/GENIE_SPEC_43_G4_EXPORT_GET_RATE_LIMIT.md`).
+   Gap 4 GET export rate-limit `039ea70` (PR #214).
+   No Genie brief queued. Next Gap 4 remainders: nested/document export,
+   tombstones, retention.
    Unknown-time
    excursions stay later.
 4. Patch the Laos must-do/decision-cell data gaps. Target 3-5 feasible options
@@ -236,8 +237,9 @@ Current order:
    Three owner UX findings (single create entry, Swahili driver card, trip
    markers in the date picker) are recorded in `UX_BACKLOG.md`.
    Gap 4 rate-limit route tests `108c815` (PR #211).
-   Next Genie: Gap 4 slice 16 GET export rate-limit
-   (`docs/briefs/GENIE_SPEC_43_G4_EXPORT_GET_RATE_LIMIT.md`).
+   Gap 4 GET export rate-limit `039ea70` (PR #214).
+   No Genie brief queued. Next Gap 4 remainders: nested/document export,
+   tombstones, retention.
 
 Defer Travelogue/Passport, maps/offline tiles, social, gamification, PDF,
 cross-trip memory, OTA promotion, and another city until this loop works.
@@ -464,8 +466,9 @@ Seed-shaped cohorts.
     Three owner UX findings (single create entry, Swahili driver card, trip
     markers in the date picker) are recorded in `UX_BACKLOG.md`.
     Gap 4 rate-limit route tests `108c815` (PR #211).
-   Next Genie: Gap 4 slice 16 GET export rate-limit
-   (`docs/briefs/GENIE_SPEC_43_G4_EXPORT_GET_RATE_LIMIT.md`).
+   Gap 4 GET export rate-limit `039ea70` (PR #214).
+   No Genie brief queued. Next Gap 4 remainders: nested/document export,
+   tombstones, retention.
     Complete remaining
     gaps before any non-owner APK, production LLM processing of
     personal trip data, or the planned December public launch.
