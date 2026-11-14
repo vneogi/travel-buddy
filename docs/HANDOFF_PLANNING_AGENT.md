@@ -333,26 +333,25 @@ separation live in the operating model; do not reconstruct them from chat.
 
 ## First job
 
-`origin/main` tip after F2 merge 2026-11-15: `982bb48` (PR #231). Bar
-slot `668bb6f`, CI postgres-proof `d0abb2f`, clock hygiene `1ee63e2`.
-Cloud Run `00016-hbx` from `74fa028` (bar rule live). Device APK SHA256
-`c7f212497b75ab8b82fe29fb0ef434d994d7928ef517bd105aea3cddf84868ce`
-from `206122a` (rebuild after F2/F3 for Swahili priority). Default
-pytest and `postgres-proof` are green.
+`origin/main` tip after F3 merge 2026-11-15: `1cb9318` (PR #238). F2
+`982bb48` (PR #231). Bar slot `668bb6f`, CI postgres-proof `d0abb2f`,
+clock hygiene `1ee63e2`. Cloud Run `00016-hbx` from `74fa028` (bar rule
+live). Device APK still from `206122a` -- rebuild from `main` for F2
+Swahili priority and F3 date markers. Default pytest and
+`postgres-proof` are green (R16 doc hygiene fixed with this tip).
 
-Next Genie job: F3 date-picker markers
-(`docs/briefs/GENIE_F3_EXISTING_TRIP_DATE_MARKERS.md`, amendment 2 on
-main). After F3: Isochrones trial
+Next Genie job: Isochrones trial
 (`docs/briefs/GENIE_ISOCHRONE_TRIAL.md`; decision
 `docs/decisions/NETWORK_REACHABILITY.md`) -- penciled for in-trip
 reachability and returnability; not trip-critical. Owner: rebuild APK
-after F2/F3; on-site Swahili landmark data pass. The single open-items
-list for 2026-11-15 to 2026-12-04 is in `PROJECT_STATUS.md` under
-"What is Next". F1 waits on a SPEC-36/26 amendment. F2 client priority
-closed; F4 bar morning-slot planner defect is closed; catalog hours and
-vibe_tags remain. Next Gap 4 remainders: durable tombstone /
-erase-route hook (blocked on 0026 + `rolbypassrls`), retention, zip/PDF
-download. Do not apply 0026 until `rolbypassrls` is confirmed.
+from `main` and smoke F2/F3 on phone; on-site Swahili landmark data
+pass. The single open-items list for 2026-11-15 to 2026-12-04 is in
+`PROJECT_STATUS.md` under "What is Next". F1 waits on a SPEC-36/26
+amendment. F2 and F3 client work closed; F4 bar morning-slot planner
+defect is closed; catalog hours and vibe_tags remain. Next Gap 4
+remainders: durable tombstone / erase-route hook (blocked on 0026 +
+`rolbypassrls`), retention, zip/PDF download. Do not apply 0026 until
+`rolbypassrls` is confirmed.
 Gap 4 inventory `cd28bf3` (PR #170), erase plan `f387c55`
 (PR #172), erase execute `4d85cd7` (PR #174), in-memory
 wipe `7ceab2e` (PR #176), Supabase erase backend `54c3c8d`

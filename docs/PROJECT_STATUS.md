@@ -153,12 +153,15 @@ Trip-critical (before 26 Dec):
    correctly scoped.
 3. DONE 2026-11-15: F2 Swahili driver-card client priority on main
    (`982bb48`, PR #231). Tanzania regions prefer `sw` then `en`. Owner
-   Windows Flutter: tanzania 5 passed, driver_card 16 passed, analyze
-   infos only. Swahili landmark data pass remains owner on-site (item 6).
-4. F3 existing-trip markers in the date picker (Dart; amended brief
-   `docs/briefs/GENIE_F3_EXISTING_TRIP_DATE_MARKERS.md` on main).
-5. New owner APK after F2 (and F3 when landed); install and smoke
-   Swahili priority on a Tanzania driver card.
+   Windows Flutter for the F2 suite was green (analyze infos only).
+   Swahili landmark data pass remains owner on-site (item 6).
+4. DONE 2026-11-15: F3 existing-trip date markers on main (`1cb9318`,
+   PR #238). Create-trip and corridor pickers mark occupied days without
+   blocking overlaps; Review shows a non-blocking note. Owner Windows
+   Flutter for the F3 and related suites was green; R17 sabotage failed
+   as expected. Activity-span remainder remains (TripSummary not widened).
+5. OPEN (owner): rebuild APK from `main` (includes F2 + F3); install and
+   smoke Swahili-first driver card and date-picker markers on phone.
 6. Owner on site: verify bar and key-venue opening hours, and Swahili
    names/landmarks (F2 data pass, SPEC-12 provenance). Can be done during
    the trip.
