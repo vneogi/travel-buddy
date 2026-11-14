@@ -33,7 +33,7 @@ documents disagree, follow Precedence below and name the conflict in
 - Next Genie brief: none queued. Open: two Gap 4 rate-limit tests fail on main CI.
   Gap 4 slice 14 HTTP export route `16945be` (PR #199) is on main.
   Gap 4 slice 13 Supabase export backend `f7802ad` (PR #196) is on main.
-  Stone Town (`c147290`, PR #203) and Nungwi (`f39e41f`, PR #206) packs on main. Next Genie brief: `briefs/GENIE_SPEC_43_G4_RATE_LIMIT_ROUTE_TESTS.md` (slice 15).
+  Stone Town (`c147290`, PR #203) and Nungwi (`f39e41f`, PR #206) packs on main. Gap 4 slice 15 landed `108c815` (PR #211).
   Owner: hosted venue load, Cloud Run redeploy, APK rebuild.
   Gap 4 slice 12 in-memory export backend `0026c76` (PR #192) is on main.
   Gap 4 slice 11 export execute is on main (`fde1ae6`, PR #190).

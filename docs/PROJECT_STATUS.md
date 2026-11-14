@@ -196,8 +196,8 @@ Current order:
    and APK rebuild from `206122a` done 2026-11-14 (SHA256 `c7f212497b75ab8b82fe29fb0ef434d994d7928ef517bd105aea3cddf84868ce`); device checks passed.
    Three owner UX findings (single create entry, Swahili driver card, trip
    markers in the date picker) are recorded in `UX_BACKLOG.md`.
-   Next Genie: Gap 4 slice 15 rate-limit route tests
-   (`docs/briefs/GENIE_SPEC_43_G4_RATE_LIMIT_ROUTE_TESTS.md`).
+   Gap 4 rate-limit route tests `108c815` (PR #211).
+   No Genie brief queued. Next backend candidate: GET export rate-limit.
    Unknown-time
    excursions stay later.
 4. Patch the Laos must-do/decision-cell data gaps. Target 3-5 feasible options
@@ -234,8 +234,8 @@ Current order:
    and APK rebuild from `206122a` done 2026-11-14 (SHA256 `c7f212497b75ab8b82fe29fb0ef434d994d7928ef517bd105aea3cddf84868ce`); device checks passed.
    Three owner UX findings (single create entry, Swahili driver card, trip
    markers in the date picker) are recorded in `UX_BACKLOG.md`.
-   Next Genie: Gap 4 slice 15 rate-limit route tests
-   (`docs/briefs/GENIE_SPEC_43_G4_RATE_LIMIT_ROUTE_TESTS.md`).
+   Gap 4 rate-limit route tests `108c815` (PR #211).
+   No Genie brief queued. Next backend candidate: GET export rate-limit.
 
 Defer Travelogue/Passport, maps/offline tiles, social, gamification, PDF,
 cross-trip memory, OTA promotion, and another city until this loop works.
@@ -461,8 +461,8 @@ Seed-shaped cohorts.
     and APK rebuild from `206122a` done 2026-11-14 (SHA256 `c7f212497b75ab8b82fe29fb0ef434d994d7928ef517bd105aea3cddf84868ce`); device checks passed.
     Three owner UX findings (single create entry, Swahili driver card, trip
     markers in the date picker) are recorded in `UX_BACKLOG.md`.
-    Next Genie: Gap 4 slice 15 rate-limit route tests
-   (`docs/briefs/GENIE_SPEC_43_G4_RATE_LIMIT_ROUTE_TESTS.md`).
+    Gap 4 rate-limit route tests `108c815` (PR #211).
+   No Genie brief queued. Next backend candidate: GET export rate-limit.
     Complete remaining
     gaps before any non-owner APK, production LLM processing of
     personal trip data, or the planned December public launch.
