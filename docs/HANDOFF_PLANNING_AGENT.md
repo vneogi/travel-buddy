@@ -15,7 +15,7 @@ SPEC-43 Gap 9 signal ownership and closed schemas, SPEC-43 Gap 12
 HTTPS fail-closed, and SPEC-43 Gap 12 identity-scoped caches, chat
 URLs, ATS, and trip-route ownership are on `main` through
 `8fab43b`. Hosted 0025 is applied. Cloud Run
-`travel-buddy-00014-sbm` is the live untagged revision (Gap 1 JWKS).
+`travel-buddy-00015-x8d` is the live untagged revision (Gap 1 JWKS; Tanzania packs loaded).
 SPEC-42 remains PARTIAL (unknown-time excursions later). Create-then-book
 HITL reflow remains. Trip-optional Ask remains. What Now Phase B GPS
 remains blocked on remaining SPEC-43. Gap 12 navigation privacy is
@@ -50,10 +50,21 @@ inventory `cd28bf3` (PR #170), erase plan `f387c55`
 identity delete `ea5c0b3` (PR #182), and erase token
 denylist `4f22d1d` (PR #184), and in-process cache purge
 `004ed6a` (PR #186), export plan `2fa9074` (PR #188), and
-export execute `fde1ae6` (PR #190), and in-memory export backend `0026c76` (PR #192), and Supabase export backend `f7802ad` (PR #196), and HTTP export route `16945be` (PR #199) are on main. Zanzibar owner packs: Stone
-Town `c147290` (PR #203), Nungwi `f39e41f` (PR #206).
-No Genie brief queued.
-Do not apply 0026 until `rolbypassrls` is confirmed.
+export execute `fde1ae6` (PR #190), and in-memory export backend `0026c76` (PR #192), and Supabase export backend `f7802ad` (PR #196), and HTTP export route `16945be` (PR #199), Gap 4 rate-limit route tests
+`108c815` (PR #211), GET export rate-limit `039ea70` (PR #214),
+in-memory tombstone `ff954bf` (PR #217), nested export document
+`9956111` (PR #220), and export route document `290a7ca` (PR #222)
+are on main. Zanzibar owner packs: Stone Town `c147290` (PR #203),
+Nungwi `f39e41f` (PR #206). Owner hosted load (38+34 venues), Cloud Run
+`travel-buddy-00015-x8d`, and device APK SHA256 `c7f212...` verified
+2026-11-14. SPEC-41 bar afternoon-only rule `668bb6f` (PR #225),
+test clock hygiene `1ee63e2` (PR #228), and postgres-proof CI image
+`d0abb2f` (PR #227) are on main. Full pytest suite is green with no
+known failures; `postgres-proof` is green. Frontend findings F1-F4 in
+`UX_BACKLOG.md` are deferred (owner: frontend after Tanzania core).
+No Genie brief queued. Next Gap 4 remainders: durable tombstone /
+erase-route hook (blocked on 0026 + `rolbypassrls`), retention,
+zip/PDF download. Do not apply 0026 until `rolbypassrls` is confirmed.
 
 SPEC-44 Phase A application code merged as PR #67 (`9a7b9d9`). Planning
 reviews; Genie implements. SPEC-43 is the release foundation before any
@@ -322,19 +333,17 @@ separation live in the operating model; do not reconstruct them from chat.
 
 ## First job
 
-`origin/main` includes Gap 3 cache-embed as `b59c50d`
-(PR #162). Cloud Run `00014-sbm`. Owner APK SHA256
-`76d7e9be3186a817a12664ed51b62e1db1ea8c946d5d5ac67b47912762036714`
-(built from `1aa405c`; rebuild from `1de6ff2` to drop `pm clear`).
+`origin/main` tip after 2026-11-14: bar slot `668bb6f` (PR #225), CI
+postgres-proof `d0abb2f` (PR #227), clock hygiene `1ee63e2` (PR #228).
+Cloud Run `00015-x8d` with Tanzania packs. Device APK SHA256
+`c7f212497b75ab8b82fe29fb0ef434d994d7928ef517bd105aea3cddf84868ce`
+from `206122a`. Default pytest and `postgres-proof` are green.
 
-Next Genie job: none queued. Gap 4 slice 19 landed as `290a7ca` (PR #222):
-`GET /api/v1/me/export?format=document` returns the nested document; default
-stays flat tables. Slices 15-18 also on main. Durable tombstone blocked
-(0026 + rolbypassrls). Frontend F1-F4 deferred. Owner completed on
-2026-11-14: hosted load (38+34), Cloud Run `00015-x8d`, APK SHA256
-`c7f212497b75ab8b82fe29fb0ef434d994d7928ef517bd105aea3cddf84868ce` from
-`206122a`. Next Gap 4 remainders: durable tombstone / erase-route hook,
-retention, zip/PDF download.
+Next Genie job: none queued. Frontend F1-F3 deferred (owner after
+Tanzania core). F4 bar morning-slot planner defect is closed; catalog
+hours and vibe_tags remain. Next Gap 4 remainders: durable tombstone /
+erase-route hook (blocked on 0026 + `rolbypassrls`), retention, zip/PDF
+download. Do not apply 0026 until `rolbypassrls` is confirmed.
 Gap 4 inventory `cd28bf3` (PR #170), erase plan `f387c55`
 (PR #172), erase execute `4d85cd7` (PR #174), in-memory
 wipe `7ceab2e` (PR #176), Supabase erase backend `54c3c8d`

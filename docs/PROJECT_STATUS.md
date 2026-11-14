@@ -31,9 +31,10 @@
   evidence used the deterministic router fallback. Grounded deterministic
   trip Ask and its field-priority intents are on main. Live LLM-backed Ask is
   not verified or enabled for personal trip processing.
-- Data as last loaded: 74 venues (16 Dubai, 23 Luang Prabang, 15 Vang Vieng,
-  20 Vientiane), 44 venue dishes, 30 dish-glossary entries. Confirm with a
-  count query against venues_rag rather than trusting these numbers.
+- Data as last loaded (hosted 2026-11-14): 146 venues including 38 Stone Town
+  (`zanzibar_tanzania`) and 34 Nungwi (`nungwi_tanzania`), plus Dubai and the
+  three Laos cities. Confirm with a count query against venues_rag rather than
+  trusting these numbers.
 - Signals: the registry in models/signal_types.py is the source of truth for
   which types exist. A drift guard test enforces it.
 - Flutter: offline-first with a SQLite outbox, sync engine, and typed exception
@@ -51,8 +52,10 @@
   scripts/format_venue_json.py to get a readable copy for curation and to
   re-escape on the way back in.
 - Test health: run `pytest -q -ra`. Counts are deliberately not recorded here
-  (R16). The live-database tests in tests/test_supabase_integration.py skip
-  when TB_SUPABASE_URL is unset; with credentials they ran green on device day
+  (R16). As of 2026-11-14 the default suite has no known failures (clock-hygiene
+  PR #228), and the `postgres-proof` CI job is green (PR #227). The
+  live-database tests in tests/test_supabase_integration.py skip when
+  TB_SUPABASE_URL is unset; with credentials they ran green on device day
   2026-08-17. Any unexpected skip is a finding, not a pass (R8).
 
 ## Component Status
@@ -201,8 +204,13 @@ Current order:
    Gap 4 in-memory tombstone `ff954bf` (PR #217).
    Gap 4 nested export document `9956111` (PR #220).
    Gap 4 export route document `290a7ca` (PR #222).
-   No Genie brief queued. Next Gap 4 remainders: durable tombstone /
-   erase-route hook, retention, zip/PDF download.
+   SPEC-41 bar afternoon-only `668bb6f` (PR #225).
+   Test clock hygiene `1ee63e2` (PR #228).
+   CI postgres-proof image `d0abb2f` (PR #227).
+   Full pytest green; no known failures. `postgres-proof` green.
+   No Genie brief queued. Frontend F1-F4 deferred. Next Gap 4
+   remainders: durable tombstone / erase-route hook (blocked on 0026
+   + `rolbypassrls`), retention, zip/PDF download.
    Unknown-time
    excursions stay later.
 4. Patch the Laos must-do/decision-cell data gaps. Target 3-5 feasible options
@@ -244,8 +252,13 @@ Current order:
    Gap 4 in-memory tombstone `ff954bf` (PR #217).
    Gap 4 nested export document `9956111` (PR #220).
    Gap 4 export route document `290a7ca` (PR #222).
-   No Genie brief queued. Next Gap 4 remainders: durable tombstone /
-   erase-route hook, retention, zip/PDF download.
+   SPEC-41 bar afternoon-only `668bb6f` (PR #225).
+   Test clock hygiene `1ee63e2` (PR #228).
+   CI postgres-proof image `d0abb2f` (PR #227).
+   Full pytest green; no known failures. `postgres-proof` green.
+   No Genie brief queued. Frontend F1-F4 deferred. Next Gap 4
+   remainders: durable tombstone / erase-route hook (blocked on 0026
+   + `rolbypassrls`), retention, zip/PDF download.
 
 Defer Travelogue/Passport, maps/offline tiles, social, gamification, PDF,
 cross-trip memory, OTA promotion, and another city until this loop works.
@@ -476,8 +489,13 @@ Seed-shaped cohorts.
    Gap 4 in-memory tombstone `ff954bf` (PR #217).
    Gap 4 nested export document `9956111` (PR #220).
    Gap 4 export route document `290a7ca` (PR #222).
-   No Genie brief queued. Next Gap 4 remainders: durable tombstone /
-   erase-route hook, retention, zip/PDF download.
+   SPEC-41 bar afternoon-only `668bb6f` (PR #225).
+   Test clock hygiene `1ee63e2` (PR #228).
+   CI postgres-proof image `d0abb2f` (PR #227).
+   Full pytest green; no known failures. `postgres-proof` green.
+   No Genie brief queued. Frontend F1-F4 deferred. Next Gap 4
+   remainders: durable tombstone / erase-route hook (blocked on 0026
+   + `rolbypassrls`), retention, zip/PDF download.
     Complete remaining
     gaps before any non-owner APK, production LLM processing of
     personal trip data, or the planned December public launch.

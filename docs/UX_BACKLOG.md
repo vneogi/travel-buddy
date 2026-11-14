@@ -113,21 +113,27 @@ tests for marker rendering and for overlap not blocking create.
 ### F4 -- Catalog data notes from the same session
 
 - Cholo's Beach by Bento is a beach bar. The planner placed it in the morning
-  slot on a Nungwi day. Review its category and slot eligibility; consider an
-  evening-leaning bucket for bars where opening hours are unknown. Owner field
-  verification of hours is the durable fix.
+  slot on a Nungwi day. **Planner fix on main** (`668bb6f`, PR #225): a venue
+  with `category == bar` may only fill `afternoon_evening_tour`, enforced in
+  the shared slot helpers used by generation and swap. Owner field verification
+  of opening hours remains the durable catalog fix. A later bar start-time
+  floor (for example not before 16:00) is still optional and not landed.
 - The stops seen carry mostly the generic `leisurely` tag. Check whether the
   catalog `vibe_tags` are too generic to drive ranking and swap reasons. Not
   verified as a defect.
 
 ### Proposed order (planner)
 
+Owner deferral 2026-11-14: frontend F1-F3 after Tanzania core; none of them
+blocks the December trip.
+
 1. F2 first: it affects the in-trip card and feeds verified-name data. Client
    priority plus tests are small; the Swahili landmark data pass is the larger
    part and needs owner verification on site.
 2. F3: Dart-only, self-contained, no backend.
 3. F1: needs the SPEC-36 and SPEC-26 amendment first.
-4. F4: fold into the next catalog edit after field verification.
+4. F4 remainder: catalog hours and vibe_tags on the next catalog edit after
+   field verification (bar morning-slot planner defect is closed).
 
 ---
 
