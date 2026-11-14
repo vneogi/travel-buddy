@@ -12,7 +12,7 @@ table below. Never paste or commit the API key.
 - [ ] Enable the Isochrones API (Preview) under APIs and Services.
 - [ ] Confirm the current generate endpoint and request fields in the Google
       Isochrones docs. The script default is
-      `https://isochrones.googleapis.com/v1:generate`; if the docs differ,
+      `https://isochrones.googleapis.com/v1/isochrones:generate`; if the docs differ,
       pass `--endpoint <url>` (and `--field-mask <mask>` if needed).
 - [ ] Restrict the key: API restriction to the Isochrones API only;
       application restriction to your IP for the run if possible.

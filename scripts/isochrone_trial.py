@@ -41,9 +41,9 @@ CATALOGS: Dict[str, Path] = {
 }
 
 KEY_ENV = "TB_GOOGLE_MAPS_API_KEY"
-# Isochrones (Preview) generate method. Verify against the current Google
-# docs before the live run; --endpoint overrides it without a code change.
-DEFAULT_ENDPOINT = "https://isochrones.googleapis.com/v1:generate"
+# Isochrones generate method (Google docs 2026-10-20).
+# --endpoint / --field-mask still override without a code change.
+DEFAULT_ENDPOINT = "https://isochrones.googleapis.com/v1/isochrones:generate"
 DEFAULT_FIELD_MASK = "*"
 LIVE_TIMEOUT_SECONDS = 30
 
@@ -192,11 +192,15 @@ def fetch_isochrone(
     lat: float, lng: float, minutes: int, api_key: str, endpoint: str, field_mask: str
 ) -> dict:
     """POST one walk isochrone request. The key goes in a header only."""
+    # Request shape per Google Isochrones generate docs (2026-10-20):
+    # POST .../v1/isochrones:generate with top-level location LatLng.
     body = {
-        "origin": {"location": {"latLng": {"latitude": lat, "longitude": lng}}},
+        "location": {"latitude": lat, "longitude": lng},
         "travelMode": "WALK",
         "travelDuration": f"{int(minutes) * 60}s",
         "travelDirection": "FROM",
+        "routingPreference": "TRAFFIC_UNAWARE",
+        "enableSmoothing": False,
     }
     request = urllib.request.Request(
         endpoint,
