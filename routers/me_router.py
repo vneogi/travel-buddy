@@ -55,16 +55,23 @@ IS_SUPABASE, otherwise 501 export_unavailable, with no fallback store. Any
 failure returns 500 {"detail": "export_incomplete"} and logs one WARNING
 with the exception class name and request id only. Export never deletes
 Auth, denies or purges caches, and never creates the user record.
-Remainders: nesting under trips, a human-readable or downloadable document,
-pagination, and rate limiting (the Gap 11 limiter does not count GET, so
-export is not throttled yet).
+GET /api/v1/me/export is rate limited: Gap 4 slice 16 counts this GET in
+the Gap 11 limiter (other GETs stay uncounted).
+
+Slice 19: GET /api/v1/me/export?format=document returns
+{"status": "exported", "document": <nested>}, where the document is
+build_export_document (slice 18) over the same caller-only export. The
+default (no format, or format=tables) is still the flat {status, tables}
+body. Any other format value is 422. A builder failure takes the same
+generic 500 export_incomplete path. Remainders: zip, PDF, a downloadable
+file, pagination, and making the nested document the default.
 """
 
 import importlib
 import logging
-from typing import List, Literal
+from typing import List, Literal, Union
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict
 
@@ -79,6 +86,7 @@ from services.data_rights_token_deny import deny_identity
 from services.data_rights_erase import EraseBackend, execute_erase
 from services.data_rights_erase_supabase import SupabaseEraseBackend
 from services.data_rights_export import ExportBackend, execute_export
+from services.data_rights_export_document import build_export_document
 from services.data_rights_export_supabase import SupabaseExportBackend
 
 logger = logging.getLogger("travelbuddy")
@@ -173,6 +181,13 @@ class ExportResponse(BaseModel):
     tables: List[ExportedTable]
 
 
+class ExportDocumentResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: Literal["exported"]
+    document: dict
+
+
 def get_export_backend() -> ExportBackend:
     """Supabase export backend, or 501 when Supabase is not configured."""
     # importlib: the services package attribute may shadow the submodule.
@@ -182,15 +197,17 @@ def get_export_backend() -> ExportBackend:
     return SupabaseExportBackend(provider.db_service.client)
 
 
-@router.get("/me/export", response_model=ExportResponse)
+@router.get("/me/export", response_model=Union[ExportResponse, ExportDocumentResponse])
 async def export_me(
     request: Request,
     identity: ResolvedIdentity = Depends(resolve_identity),
     backend: ExportBackend = Depends(get_export_backend),
+    export_format: Literal["tables", "document"] = Query("tables", alias="format"),
 ):
-    """Export the caller's identity rows, flat per table."""
+    """Export the caller's identity rows: flat per table, or nested (format=document)."""
     try:
         results = execute_export(identity.user_id, backend)
+        document = build_export_document(results) if export_format == "document" else None
     except Exception as exc:
         request_id = getattr(request.state, "request_id", "unknown")
         logger.warning("export incomplete (%s) request_id=%s", type(exc).__name__, request_id)
@@ -198,6 +215,8 @@ async def export_me(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={"detail": EXPORT_INCOMPLETE},
         )
+    if document is not None:
+        return {"status": "exported", "document": document}
     return {
         "status": "exported",
         "tables": [{"table": r["table"], "rows": r["rows"]} for r in results],
