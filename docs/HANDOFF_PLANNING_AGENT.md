@@ -327,12 +327,13 @@ separation live in the operating model; do not reconstruct them from chat.
 `76d7e9be3186a817a12664ed51b62e1db1ea8c946d5d5ac67b47912762036714`
 (built from `1aa405c`; rebuild from `1de6ff2` to drop `pm clear`).
 
-Next Genie job: Gap 4 slice 17 -- in-memory deletion tombstone and restore
-proof (`docs/briefs/GENIE_SPEC_43_G4_TOMBSTONE_MEMORY.md`). Slice 16 landed
-as `039ea70` (PR #214). Frontend F1-F4 deferred. Owner completed on
+Next Genie job: none queued. Gap 4 slice 17 landed as `ff954bf` (PR #217):
+in-memory deletion tombstone and restore-does-not-reactivate proof.
+Slices 15-16 also on main. Frontend F1-F4 deferred. Owner completed on
 2026-11-14: hosted load (38+34), Cloud Run `00015-x8d`, APK SHA256
 `c7f212497b75ab8b82fe29fb0ef434d994d7928ef517bd105aea3cddf84868ce` from
-`206122a`.
+`206122a`. Next Gap 4 remainders: durable tombstone table / erase-route
+hook, nested/document export, retention.
 Gap 4 inventory `cd28bf3` (PR #170), erase plan `f387c55`
 (PR #172), erase execute `4d85cd7` (PR #174), in-memory
 wipe `7ceab2e` (PR #176), Supabase erase backend `54c3c8d`
@@ -343,6 +344,7 @@ delete `ea5c0b3` (PR #182), erase token denylist
 execute `fde1ae6` (PR #190), and in-memory export backend `0026c76` (PR #192), and Supabase export backend `f7802ad` (PR #196), and HTTP export route `16945be` (PR #199) are on main.
 Gap 4 rate-limit route tests `108c815` (PR #211) are on main.
 Gap 4 GET export rate-limit `039ea70` (PR #214) is on main.
+Gap 4 in-memory tombstone `ff954bf` (PR #217) is on main.
 Gap 3 fallback pin `8d8b28b` (PR #165):
 completions use only the tier's configured model; no cross-vendor hop.
 Semantic-cache embeddings redact booking canaries. Light
