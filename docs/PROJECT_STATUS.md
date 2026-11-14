@@ -143,12 +143,13 @@ the only open-items list; other docs point here.
 
 Trip-critical (before 26 Dec):
 
-1. Redeploy Cloud Run from `main` (owner). Live `00015-x8d` is built from
-   `206122a` and lacks the SPEC-41 bar afternoon-only rule (`668bb6f`,
-   PR #225). Steps: `docs/CLOUD_RUN_DEPLOY.md` section 3, source-only, no
-   `--set-env-vars`. Record the new revision in `HOSTED_STATE.md`.
-2. Re-create a Nungwi and a Zanzibar trip on the phone against the new
-   revision; confirm no bar in a morning slot.
+1. DONE 2026-11-15: Cloud Run redeployed from `main` `74fa028` as
+   `travel-buddy-00016-hbx` (100% LATEST, health healthy, 146 venues).
+   Includes the SPEC-41 bar afternoon-only rule (`668bb6f`, PR #225).
+   Recorded in `HOSTED_STATE.md`.
+2. OPEN (owner): re-create a Nungwi and a Zanzibar trip on the phone
+   against `00016-hbx`; confirm no bar in a morning slot. No new APK needed
+   (the bar rule is server-side).
 3. F2 Swahili driver-card priority (Genie brief
    `docs/briefs/GENIE_F2_DRIVER_CARD_SWAHILI.md`; owner runs Flutter
    tests on Windows).
