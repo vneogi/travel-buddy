@@ -135,6 +135,54 @@ numbers were taken by other work while they sat unimplemented.
 
 ## What is Next (Priority Order)
 
+### Open items, 2026-11-15 to 2026-12-04 (single list)
+
+Trip dates: Zanzibar (Stone Town) 26-28 Dec 2026, Nungwi 29 Dec 2026 to
+2 Jan 2027. This window ends about three weeks before departure. This is
+the only open-items list; other docs point here.
+
+Trip-critical (before 26 Dec):
+
+1. Redeploy Cloud Run from `main` (owner). Live `00015-x8d` is built from
+   `206122a` and lacks the SPEC-41 bar afternoon-only rule (`668bb6f`,
+   PR #225). Steps: `docs/CLOUD_RUN_DEPLOY.md` section 3, source-only, no
+   `--set-env-vars`. Record the new revision in `HOSTED_STATE.md`.
+2. Re-create a Nungwi and a Zanzibar trip on the phone against the new
+   revision; confirm no bar in a morning slot.
+3. F2 Swahili driver-card priority (Genie brief
+   `docs/briefs/GENIE_F2_DRIVER_CARD_SWAHILI.md`; owner runs Flutter
+   tests on Windows).
+4. F3 existing-trip markers in the date picker (Dart; brief after F2).
+5. New owner APK after F2/F3 land; install and smoke on the phone.
+6. Owner on site: verify bar and key-venue opening hours, and Swahili
+   names/landmarks (F2 data pass, SPEC-12 provenance). Can be done during
+   the trip.
+
+Owner-only:
+
+- Confirm `rolbypassrls` for `postgres` and `service_role` (gates 0026,
+  which gates the durable tombstone / erase-route hook).
+- Non-owner testers (G1) are not in this window; SPEC-43 plus SPEC-24/27
+  remain.
+
+Frontend, after the trip core: F1 single create entry (needs SPEC-36 and
+SPEC-26 amendment first); SPEC-07 dish UI; SPEC-22 font/ARB/screen
+migration; SPEC-43 client remainders (Gap 5 masking/FLAG_SECURE/iOS/
+ProGuard, Gap 7 consent outbox/UI, Gap 4 Flutter leave).
+
+Backend, open but not trip-critical: Gap 4 durable tombstone (blocked),
+retention, zip/PDF; Gap 9 `derived_feature`; Gap 8 unused SQL cache path;
+Gap 10 log-bucket retention; Gap 11 gateway and Play Integrity; SPEC-27
+and SPEC-24 (G1 dependencies); SPEC-42 unknown-time excursions; SPEC-10
+create-then-book reflow; SPEC-25 trip-optional Ask; SPEC-46 Phase B
+(after SPEC-43); SPEC-45 place detail and transfer cards; optional bar
+start-time floor.
+
+Hosted/ops: Cloud Run behind `main` (bar rule; Gap 4 slices 15-19, not
+trip-relevant). 0026 not applied. CI Postgres image is third-party
+`valazj/postgis_pgvector:0.1.1`; an in-repo image would remove that
+dependency later.
+
 ### Post-field reset (evidence recorded Oct 11)
 
 Interim R5 relocate of VALID_DISH_CONTAINS landed in PR #15 (d061222). Device

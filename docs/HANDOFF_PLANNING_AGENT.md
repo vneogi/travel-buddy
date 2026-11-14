@@ -339,9 +339,13 @@ Cloud Run `00015-x8d` with Tanzania packs. Device APK SHA256
 `c7f212497b75ab8b82fe29fb0ef434d994d7928ef517bd105aea3cddf84868ce`
 from `206122a`. Default pytest and `postgres-proof` are green.
 
-Next Genie job: none queued. Frontend F1-F3 deferred (owner after
-Tanzania core). F4 bar morning-slot planner defect is closed; catalog
-hours and vibe_tags remain. Next Gap 4 remainders: durable tombstone /
+Next Genie job: F2 driver-card Swahili priority
+(`docs/briefs/GENIE_F2_DRIVER_CARD_SWAHILI.md`). Then F3 date-picker
+markers. Owner: redeploy Cloud Run from `main` so the bar rule is live.
+The single open-items list for 2026-11-15 to 2026-12-04 is in
+`PROJECT_STATUS.md` under "What is Next". F1 waits on a SPEC-36/26
+amendment. F4 bar morning-slot planner defect is closed; catalog hours
+and vibe_tags remain. Next Gap 4 remainders: durable tombstone /
 erase-route hook (blocked on 0026 + `rolbypassrls`), retention, zip/PDF
 download. Do not apply 0026 until `rolbypassrls` is confirmed.
 Gap 4 inventory `cd28bf3` (PR #170), erase plan `f387c55`
