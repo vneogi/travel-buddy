@@ -147,14 +147,18 @@ Trip-critical (before 26 Dec):
    `travel-buddy-00016-hbx` (100% LATEST, health healthy, 146 venues).
    Includes the SPEC-41 bar afternoon-only rule (`668bb6f`, PR #225).
    Recorded in `HOSTED_STATE.md`.
-2. OPEN (owner): re-create a Nungwi and a Zanzibar trip on the phone
-   against `00016-hbx`; confirm no bar in a morning slot. No new APK needed
-   (the bar rule is server-side).
-3. F2 Swahili driver-card priority (Genie brief
-   `docs/briefs/GENIE_F2_DRIVER_CARD_SWAHILI.md`; owner runs Flutter
-   tests on Windows).
-4. F3 existing-trip markers in the date picker (Dart; brief after F2).
-5. New owner APK after F2/F3 land; install and smoke on the phone.
+2. DONE 2026-11-15 (owner phone): Nungwi and Zanzibar trips recreated
+   against `00016-hbx`. Day screens show no bar in Morning (Cholo's Beach
+   by Bento on 31 Dec is Afternoon). Stone Town / Nungwi venues look
+   correctly scoped.
+3. DONE 2026-11-15: F2 Swahili driver-card client priority on main
+   (`982bb48`, PR #231). Tanzania regions prefer `sw` then `en`. Owner
+   Windows Flutter: tanzania 5 passed, driver_card 16 passed, analyze
+   infos only. Swahili landmark data pass remains owner on-site (item 6).
+4. F3 existing-trip markers in the date picker (Dart; amended brief
+   `docs/briefs/GENIE_F3_EXISTING_TRIP_DATE_MARKERS.md` on main).
+5. New owner APK after F2 (and F3 when landed); install and smoke
+   Swahili priority on a Tanzania driver card.
 6. Owner on site: verify bar and key-venue opening hours, and Swahili
    names/landmarks (F2 data pass, SPEC-12 provenance). Can be done during
    the trip.

@@ -59,6 +59,10 @@ Owners: SPEC-36 amendment plus SPEC-26 home snapshot. Dart-led; update
 
 ### F2 -- Driver card in the local language for Tanzania
 
+Status 2026-11-15: client `languagePriority` closed on main (`982bb48`,
+PR #231). Swahili landmark / `names_local` data pass remains owner
+on-site (SPEC-12 provenance).
+
 Observed: the Driver Card for a Tanzania venue is not in Swahili.
 
 Root cause, verified on main `206122a`:
