@@ -148,3 +148,16 @@ Prior field APK 2026-09-27 (owner Windows, `main` `9a7b9d9`, pre-JWT):
 | Build command | `flutter build apk --release --dart-define=TB_API_BASE_URL=https://travel-buddy-196190001420.asia-south1.run.app` |
 | APK SHA-256 | `bd935bf2654b17be17f27acedc5ad449e8ce5f67d390a4b35e4e4d68c1df0e2b` |
 | Device | `49261FDKD001JM` (`pm clear` then `adb install -r`) |
+
+Field APK used 2026-11-15 (owner Windows, `main` `5a4be12`, F2 + F3):
+
+| Field | Value |
+|---|---|
+| Source commit SHA | `5a4be12792551143695eeb1514ae70cbcd1a6049` |
+| Platform | Android |
+| Artifact | Release APK (`flutter build apk --release`, `TB_API_BASE_URL` dart-define; installed with `adb install -r`) |
+| Hosted API hostname | `travel-buddy-196190001420.asia-south1.run.app` |
+| Cloud Run revision | `travel-buddy-00016-hbx` |
+| APK SHA-256 | `aa0021c2d7b2b94c383c9ec9ae4b3303717ad70df1215e23188ccd2adee77dbd` |
+| Device | `RZ8NA06XPCH` (`adb install -r`: Success) |
+| Includes | F2 Swahili driver-card priority (PR #231); F3 existing-trip date markers (PR #238) |
