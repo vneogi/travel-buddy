@@ -200,8 +200,9 @@ Current order:
    Gap 4 GET export rate-limit `039ea70` (PR #214).
    Gap 4 in-memory tombstone `ff954bf` (PR #217).
    Gap 4 nested export document `9956111` (PR #220).
-   Next Genie: Gap 4 slice 19 wire document into export route
-   (`docs/briefs/GENIE_SPEC_43_G4_EXPORT_ROUTE_DOCUMENT.md`).
+   Gap 4 export route document `290a7ca` (PR #222).
+   No Genie brief queued. Next Gap 4 remainders: durable tombstone /
+   erase-route hook, retention, zip/PDF download.
    Unknown-time
    excursions stay later.
 4. Patch the Laos must-do/decision-cell data gaps. Target 3-5 feasible options
@@ -242,8 +243,9 @@ Current order:
    Gap 4 GET export rate-limit `039ea70` (PR #214).
    Gap 4 in-memory tombstone `ff954bf` (PR #217).
    Gap 4 nested export document `9956111` (PR #220).
-   Next Genie: Gap 4 slice 19 wire document into export route
-   (`docs/briefs/GENIE_SPEC_43_G4_EXPORT_ROUTE_DOCUMENT.md`).
+   Gap 4 export route document `290a7ca` (PR #222).
+   No Genie brief queued. Next Gap 4 remainders: durable tombstone /
+   erase-route hook, retention, zip/PDF download.
 
 Defer Travelogue/Passport, maps/offline tiles, social, gamification, PDF,
 cross-trip memory, OTA promotion, and another city until this loop works.
@@ -473,8 +475,9 @@ Seed-shaped cohorts.
    Gap 4 GET export rate-limit `039ea70` (PR #214).
    Gap 4 in-memory tombstone `ff954bf` (PR #217).
    Gap 4 nested export document `9956111` (PR #220).
-   Next Genie: Gap 4 slice 19 wire document into export route
-   (`docs/briefs/GENIE_SPEC_43_G4_EXPORT_ROUTE_DOCUMENT.md`).
+   Gap 4 export route document `290a7ca` (PR #222).
+   No Genie brief queued. Next Gap 4 remainders: durable tombstone /
+   erase-route hook, retention, zip/PDF download.
     Complete remaining
     gaps before any non-owner APK, production LLM processing of
     personal trip data, or the planned December public launch.
