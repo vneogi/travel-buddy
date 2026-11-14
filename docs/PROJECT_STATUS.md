@@ -169,9 +169,9 @@ Trip-critical (before 26 Dec):
 Owner-only:
 
 - DONE 2026-11-15: `rolbypassrls` confirmed true for `postgres` and
-  `service_role` on the travel-buddy Supabase project (read-only
-  `pg_roles` check). Gate for 0026 is cleared; hosted apply is a separate
-  owner decision.
+  `service_role`. Hosted 0026 (`spec43_g2_rls`) applied the same day
+  (MCP history `20261114204050`); FORCE RLS verified; Cloud Run health
+  still healthy. Durable tombstone / erase-route hook can proceed.
 - Non-owner testers (G1) are not in this window; SPEC-43 plus SPEC-24/27
   remain.
 
@@ -180,7 +180,7 @@ SPEC-26 amendment first); SPEC-07 dish UI; SPEC-22 font/ARB/screen
 migration; SPEC-43 client remainders (Gap 5 masking/FLAG_SECURE/iOS/
 ProGuard, Gap 7 consent outbox/UI, Gap 4 Flutter leave).
 
-Backend, open but not trip-critical: Gap 4 durable tombstone (blocked),
+Backend, open but not trip-critical: Gap 4 durable tombstone (0026 applied; hook next),
 retention, zip/PDF; Gap 9 `derived_feature`; Gap 8 unused SQL cache path;
 Gap 10 log-bucket retention; Gap 11 gateway and Play Integrity; SPEC-27
 and SPEC-24 (G1 dependencies); SPEC-42 unknown-time excursions; SPEC-10

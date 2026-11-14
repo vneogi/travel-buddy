@@ -351,8 +351,8 @@ amendment. F2 and F3 client work closed; F4 bar morning-slot planner
 defect is closed; catalog hours and vibe_tags remain. Next Gap 4
 remainders: durable tombstone / erase-route hook (blocked on 0026 +
 `rolbypassrls`), retention, zip/PDF download. `rolbypassrls` confirmed
-2026-11-15 for `postgres` and `service_role`; 0026 apply is still a
-separate owner decision.
+2026-11-15; hosted 0026 applied the same day (`spec43_g2_rls`, history
+`20261114204050`). Durable tombstone / erase-route hook is unblocked.
 Gap 4 inventory `cd28bf3` (PR #170), erase plan `f387c55`
 (PR #172), erase execute `4d85cd7` (PR #174), in-memory
 wipe `7ceab2e` (PR #176), Supabase erase backend `54c3c8d`

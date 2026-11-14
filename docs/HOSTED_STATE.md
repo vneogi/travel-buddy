@@ -19,11 +19,16 @@ APK SHA256
 `c7f212497b75ab8b82fe29fb0ef434d994d7928ef517bd105aea3cddf84868ce`
 (rebuilt 2026-11-14 from `206122a`; replaces the earlier bad
 `TB_SUPABASE_URL=v` build). Prior G0 APK `76d7e9be...` remains the
-SQLCipher leftover-open reference. Migration 0025 remains applied; 0026
-is not. `rolbypassrls` confirmed 2026-11-15 (read-only check: `postgres`
-and `service_role` true; `anon`, `authenticated`, `authenticator` false)
-on project `travel-buddy`. SPEC-38 phone pass remains 2026-09-14 against
-`00004-62g`.
+SQLCipher leftover-open reference. Migration 0025 remains applied.
+Migration 0026 (`spec43_g2_rls`) applied 2026-11-15 via Supabase MCP
+`apply_migration` on project `travel-buddy` (history version
+`20261114204050`). Personal tables: ENABLE + FORCE RLS; privileges
+revoked from PUBLIC/anon/authenticated; GRANT ALL to service_role.
+Catalog tables: RLS + SELECT for anon/authenticated. Verified:
+force_rls true on all ten personal tables; only service_role remains
+on those grants. Cloud Run health after apply: healthy, 146 venues.
+`rolbypassrls` confirmed 2026-11-15 (postgres and service_role true).
+SPEC-38 phone pass remains 2026-09-14 against `00004-62g`.
 
 ### Hosted Supabase
 
@@ -38,6 +43,7 @@ on project `travel-buddy`. SPEC-38 phone pass remains 2026-09-14 against
 | 0023 | Applied | Live `hybrid_venue_search` has seventh argument `filter_geo_region text` on 2026-09-06 |
 | 0024 | Applied | `signal_type.session_start` present on 2026-09-06 |
 | 0025 | Applied | Owner SQL Editor 2026-09-27: `trip_states.version`, `trip_command`, and `commit_trip_command` present; bounded-input call raised `22023` |
+| 0026 | Applied | 2026-11-15 MCP apply_migration `spec43_g2_rls` (history `20261114204050`); FORCE RLS on personal tables; catalog SELECT-only; Cloud Run health OK |
 
 The project applies SQL manually and does not have a trustworthy migration
 history table. "Applied" above means the expected live schema sentinel was
@@ -68,7 +74,7 @@ remains on `travel-buddy-00009-qek` at 0% for rollback.
 
 | Field | Value |
 |---|---|
-| Revision | `travel-buddy-00016-hbx` (100% LATEST, deployed 2026-11-15 from `main` `74fa028` by owner Windows; health `healthy`, `venues_loaded` 146; includes SPEC-41 bar afternoon-only `668bb6f`). Previous `00015-x8d` (`206122a`). Tag `g0fix0924` still names `00009-qek` at 0%. Env names unchanged (`TB_DEBUG`, `TB_ALLOW_ANONYMOUS`, `TB_SUPABASE_URL`, `TB_SUPABASE_KEY`, `TB_GOOGLE_MAPS_API_KEY`, `TB_OPENWEATHER_API_KEY`, `TB_SUPABASE_JWKS_URL`, `TB_SUPABASE_JWT_ISS`, `TB_JWT_AUDIENCE`). Phone bar-check pending. |
+| Revision | `travel-buddy-00016-hbx` (100% LATEST, deployed 2026-11-15 from `main` `74fa028` by owner Windows; health `healthy`, `venues_loaded` 146; includes SPEC-41 bar afternoon-only `668bb6f`). Previous `00015-x8d` (`206122a`). Tag `g0fix0924` still names `00009-qek` at 0%. Env names unchanged (`TB_DEBUG`, `TB_ALLOW_ANONYMOUS`, `TB_SUPABASE_URL`, `TB_SUPABASE_KEY`, `TB_GOOGLE_MAPS_API_KEY`, `TB_OPENWEATHER_API_KEY`, `TB_SUPABASE_JWKS_URL`, `TB_SUPABASE_JWT_ISS`, `TB_JWT_AUDIENCE`). Phone bar-check done 2026-11-15. |
 | URL | `https://travel-buddy-196190001420.asia-south1.run.app` |
 | Health | HTTP 200 `GET /api/v1/health` (`status=healthy`) on 2026-10-31. Health does not encode git SHA. |
 | Auth smoke | Anonymous header 401. Bearer anonymous JWT 200 on `/api/v1/user/status`. |
