@@ -22,11 +22,15 @@ import time
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict
 
+from services.geo_polygon import point_in_multipolygon
 from services.opening_hours import is_valid_structured_hours as _validate_structured_hours
+
+if TYPE_CHECKING:
+    from services.reachability_provider import ReachabilityProvider
 
 logger = logging.getLogger("ask_service")
 
@@ -1309,12 +1313,53 @@ def _violates_hotel_boundary(
     return False
 
 
+async def fetch_what_now_reachability(
+    request: WhatNowRequest,
+    trip_nodes: List[Dict[str, Any]],
+    now_utc,
+    geo_region: str,
+    provider: Optional["ReachabilityProvider"],
+    identity: object,
+) -> Optional[tuple]:
+    """Optional network walking area for What Now (decision NETWORK_REACHABILITY).
+
+    Origin is the resolved context trip node's lat/lng (the node Haversine
+    uses), never preferences or device fields. Returns None, without a
+    provider call, when there is no provider, the context is a region anchor
+    or unresolved, or the node has no finite coordinates. Any provider failure
+    returns None so What Now falls back to Haversine only.
+    """
+    import math
+
+    if provider is None:
+        return None
+    ctx = _resolve_what_now_context(request, trip_nodes, now_utc, geo_region)
+    if ctx is None or ctx.get("location_source") != "trip_position":
+        return None
+    node = ctx.get("node") or {}
+    lat, lng = node.get("lat"), node.get("lng")
+    try:
+        lat_f, lng_f = float(lat), float(lng)
+    except (TypeError, ValueError):
+        return None
+    if not (math.isfinite(lat_f) and math.isfinite(lng_f)):
+        return None
+    minutes = _WALKING_CAPS[request.walking]
+    try:
+        result = await provider.walk_isochrone(lat_f, lng_f, minutes, identity)
+    except Exception:  # ReachabilityError or anything else: never fail What Now
+        return None
+    return result.polygons
+
+
 def handle_what_now(
     request: "WhatNowRequest",
     trip_nodes: List[Dict[str, Any]],
     now_utc,
     geo_region: str,
     db: Any,
+    *,
+    reach_polygons: Optional[tuple] = None,
 ) -> "AskResponse":
     """Deterministic What Now handler. No LLM calls."""
     from datetime import timedelta
@@ -1384,6 +1429,12 @@ def handle_what_now(
             walk_min = _compute_walking_minutes(context_node, venue)
         if walk_min is not None and walk_min > walking_cap:
             continue
+        # Network enrichment only removes candidates Haversine keeps.
+        if reach_polygons is not None and location_source == "trip_position":
+            v_lat, v_lng = venue.get("lat"), venue.get("lng")
+            if v_lat is not None and v_lng is not None:
+                if not point_in_multipolygon(v_lng, v_lat, reach_polygons):
+                    continue
 
         dwell = venue.get("typical_dwell_minutes")
         if dwell is not None and dwell > energy_dwell_cap:
@@ -1472,10 +1523,17 @@ def handle_what_now(
             intent=AskIntent.WHAT_NOW,
         )
 
+    if location_source == "region_anchor":
+        reachability_source = "not_applicable"
+    elif reach_polygons is not None:
+        reachability_source = "network_isochrone"
+    else:
+        reachability_source = "haversine_estimate"
     what_now_result = {
         "location_source": location_source,
         "context_label": context_label,
         "candidates": result_candidates,
+        "reachability_source": reachability_source,
     }
     count = len(result_candidates)
     names_str = ", ".join(c["name"] for c in result_candidates[:3])
