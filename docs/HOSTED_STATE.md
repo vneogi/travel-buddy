@@ -80,6 +80,14 @@ remains on `travel-buddy-00009-qek` at 0% for rollback.
 | Auth smoke | Anonymous header 401. Bearer anonymous JWT 200 on `/api/v1/user/status`. |
 | Flags | Last recorded names: `TB_DEBUG`, `TB_ALLOW_ANONYMOUS`, `TB_SUPABASE_URL`, `TB_SUPABASE_KEY`, `TB_GOOGLE_MAPS_API_KEY`, `TB_OPENWEATHER_API_KEY`, `TB_SUPABASE_JWKS_URL`, `TB_SUPABASE_JWT_ISS`, `TB_JWT_AUDIENCE`. Values are not recorded. `TB_ALLOW_ANONYMOUS` remains a no-op for the UUID header. |
 
+Google Maps keys (owner 2026-11-16): Isochrones API (Preview) is enabled
+on the Cloud project. The owner keeps the Cloud key named
+`New GMaps_API_Key` with Isochrones in its API restrictions; that key
+ran the live trial. Not yet recorded: which key backs Cloud Run
+`TB_GOOGLE_MAPS_API_KEY`. Before setting `TB_REACHABILITY_PROVIDER`
+(`docs/briefs/GENIE_ISOCHRONE_PROVIDER.md`), confirm the hosted key's
+restrictions include Isochrones. Key values are never recorded here.
+
 Release posture: this is an owner-only field-test service, not a beta or public
 launch. SPEC-43 records twelve security/privacy gaps that must close after the
 Laos build and before another person receives an APK. The owner G0 APK now uses a Supabase anonymous JWT. Gap 11 body/depth

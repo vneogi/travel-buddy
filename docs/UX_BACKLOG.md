@@ -12,15 +12,15 @@ direction. These are proposals, not landed specs. Open owning SPEC files
 
 | Draft | Status | Notes |
 |---|---|---|
-| SPEC-48 glanceable timeline | Penciled | After Isochrones decision if connectors need network times |
-| SPEC-49 driver handoff + TZ language | Partial | F2 `sw`/`en` on main; remainder: Show-to-driver mode + landmarks |
-| SPEC-50 swap comparison | Penciled | Evidence contract before new fields |
-| SPEC-51 unified create | Penciled | Owns F1; needs SPEC-36/26 amendment |
-| SPEC-52 date markers | Partial | F3 on main; TripSummary activity-span remainder |
-| SPEC-53 situation chips | Penciled | Reuse Ask/What Now; no silent mutations |
-| SPEC-54 temporary party/energy | Penciled | Client-local first; SPEC-43 before server |
-| SPEC-55 inter-city transfer | Penciled | Booking-confirmed only |
-| SPEC-56 offline readiness | Penciled | Honest cache status; no fake full pack |
+| UX-48 glanceable timeline | Penciled | After Isochrones decision if connectors need network times |
+| UX-49 driver handoff + TZ language | Partial | F2 `sw`/`en` on main; remainder: Show-to-driver mode + landmarks |
+| UX-50 swap comparison | Penciled | Evidence contract before new fields |
+| UX-51 unified create | Penciled | Owns F1; needs SPEC-36/26 amendment |
+| UX-52 date markers | Partial | F3 on main; TripSummary activity-span remainder |
+| UX-53 situation chips | Penciled | Reuse Ask/What Now; no silent mutations |
+| UX-54 temporary party/energy | Penciled | Client-local first; SPEC-43 before server |
+| UX-55 inter-city transfer | Penciled | Booking-confirmed only |
+| UX-56 offline readiness | Penciled | Honest cache status; no fake full pack |
 
 Sequence in the draft: verify 49/52 remainders, then 48 + 53 prototypes,
 evidence contracts for 50/54, then 51, then 55/56.
