@@ -340,7 +340,9 @@ live). Device APK still from `206122a` -- rebuild from `main` for F2
 Swahili priority and F3 date markers. Default pytest and
 `postgres-proof` are green (R16 doc hygiene fixed with this tip).
 
-Next Genie job: Isochrones trial
+After Isochrones trial: penciled UI/UX package SPEC-48..SPEC-56
+(`docs/briefs/UI_UX_IMPLEMENTATION_SPECS_2026-11-15.md`); write owning
+specs before Genie briefs. Next Genie job: Isochrones trial
 (`docs/briefs/GENIE_ISOCHRONE_TRIAL.md`; decision
 `docs/decisions/NETWORK_REACHABILITY.md`) -- penciled for in-trip
 reachability and returnability; not trip-critical. Owner: rebuild APK
