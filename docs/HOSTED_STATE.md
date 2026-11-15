@@ -74,7 +74,7 @@ remains on `travel-buddy-00009-qek` at 0% for rollback.
 
 | Field | Value |
 |---|---|
-| Revision | `travel-buddy-00016-hbx` (100% LATEST, deployed 2026-11-15 from `main` `74fa028` by owner Windows; health `healthy`, `venues_loaded` 146; includes SPEC-41 bar afternoon-only `668bb6f`). Previous `00015-x8d` (`206122a`). Tag `g0fix0924` still names `00009-qek` at 0%. Env names unchanged (`TB_DEBUG`, `TB_ALLOW_ANONYMOUS`, `TB_SUPABASE_URL`, `TB_SUPABASE_KEY`, `TB_GOOGLE_MAPS_API_KEY`, `TB_OPENWEATHER_API_KEY`, `TB_SUPABASE_JWKS_URL`, `TB_SUPABASE_JWT_ISS`, `TB_JWT_AUDIENCE`). Phone bar-check done 2026-11-15. |
+| Revision | `travel-buddy-00018-kjh` (100% LATEST, deployed 2026-11-16 by owner Windows from `main` `90b2fb5`; health `healthy`, `venues_loaded` 146). Flag `TB_REACHABILITY_PROVIDER=google_isochrones` set on the same service (revision `00018-kjh`, ready 02:47 IST). Previous `00017-k4k` (`90b2fb5`, flag off, same code). Earlier `00016-hbx` (`74fa028`, includes SPEC-41 bar afternoon-only `668bb6f`). Prior revision `00015-x8d` (`206122a`). Tag `g0fix0924` still names `00009-qek` at 0%. Env names unchanged (`TB_DEBUG`, `TB_ALLOW_ANONYMOUS`, `TB_SUPABASE_URL`, `TB_SUPABASE_KEY`, `TB_GOOGLE_MAPS_API_KEY`, `TB_OPENWEATHER_API_KEY`, `TB_SUPABASE_JWKS_URL`, `TB_SUPABASE_JWT_ISS`, `TB_JWT_AUDIENCE`). Phone bar-check done 2026-11-15. |
 | URL | `https://travel-buddy-196190001420.asia-south1.run.app` |
 | Health | HTTP 200 `GET /api/v1/health` (`status=healthy`) on 2026-10-31. Health does not encode git SHA. |
 | Auth smoke | Anonymous header 401. Bearer anonymous JWT 200 on `/api/v1/user/status`. |
@@ -83,10 +83,16 @@ remains on `travel-buddy-00009-qek` at 0% for rollback.
 Google Maps keys (owner 2026-11-16): Isochrones API (Preview) is enabled
 on the Cloud project. The owner keeps the Cloud key named
 `New GMaps_API_Key` with Isochrones in its API restrictions; that key
-ran the live trial. Not yet recorded: which key backs Cloud Run
-`TB_GOOGLE_MAPS_API_KEY`. Before setting `TB_REACHABILITY_PROVIDER`
-(`docs/briefs/GENIE_ISOCHRONE_PROVIDER.md`), confirm the hosted key's
-restrictions include Isochrones. Key values are never recorded here.
+ran the live trial. Hosted evidence (owner, 2026-11-16): on `00018-kjh`
+with the flag on, Cloud Run logs show `reachability provider=google_isochrones
+outcome=ok` for three What Now calls (02:51, 02:52 and 03:07 IST). So the
+hosted `TB_GOOGLE_MAPS_API_KEY` is authorized for Isochrones. Logs show
+the outcome only, not a Haversine comparison. Key values are never
+recorded here.
+
+Open: two typed `What now?` sends at about 02:52 IST showed the generic
+client error. No provider log line matches them. Owner to check Cloud Run
+logs at severity ERROR for that window (about 21:22 UTC on 2026-11-15).
 
 Release posture: this is an owner-only field-test service, not a beta or public
 launch. SPEC-43 records twelve security/privacy gaps that must close after the
