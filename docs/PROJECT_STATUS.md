@@ -187,7 +187,7 @@ SPEC-26 amendment first); SPEC-07 dish UI; SPEC-22 font/ARB/screen
 migration; SPEC-43 client remainders (Gap 5 masking/FLAG_SECURE/iOS/
 ProGuard, Gap 7 consent outbox/UI, Gap 4 Flutter leave).
 
-Backend, open but not trip-critical: Gap 4 durable tombstone (0026 applied; hook next),
+Backend, open but not trip-critical: Gap 4 durable tombstone code on main (#254; 0027 not applied on hosted),
 retention, zip/PDF; Gap 9 `derived_feature`; Gap 8 unused SQL cache path;
 Gap 10 log-bucket retention; Gap 11 gateway and Play Integrity; SPEC-27
 and SPEC-24 (G1 dependencies); SPEC-42 unknown-time excursions; SPEC-10
