@@ -160,8 +160,10 @@ Trip-critical (before 26 Dec):
    blocking overlaps; Review shows a non-blocking note. Owner Windows
    Flutter for the F3 and related suites was green; R17 sabotage failed
    as expected. Activity-span remainder remains (TripSummary not widened).
-5. OPEN (owner): rebuild APK from `main` (includes F2 + F3); install and
-   smoke Swahili-first driver card and date-picker markers on phone.
+5. DONE 2026-11-15: field APK from `main` `5a4be12` installed on
+   `RZ8NA06XPCH` (SHA256 `aa0021c2...`; ledger in `ANDROID_BUILD.md`).
+   F3 date markers confirmed on phone. Driver card still shows "Local
+   name not available" until Swahili landmark data (item 6).
 6. Owner on site: verify bar and key-venue opening hours, and Swahili
    names/landmarks (F2 data pass, SPEC-12 provenance). Can be done during
    the trip.
@@ -196,8 +198,36 @@ trial harness `docs/briefs/GENIE_ISOCHRONE_TRIAL.md` (fixtures + owner
 live compare on Stone Town / Nungwi / Luang Prabang). Not a paid
 feature. Does not replace SPEC-41 packing.
 
+
+Penciled UI/UX package (owner 2026-11-15; love the recommendations; not
+trip-critical). Full draft:
+`docs/briefs/UI_UX_IMPLEMENTATION_SPECS_2026-11-15.md` (SPEC-48..SPEC-56).
+Suggested order after the Isochrones trial decision:
+
+1. SPEC-48 glanceable timeline + connectors (only with provenanced
+   transit; after Isochrones earn-the-slice if connectors need network
+   times).
+2. SPEC-53 situation chips on Ask/What Now (reuse SPEC-25/46 contracts).
+3. SPEC-50 inspectable swap comparison (client-first; evidence contract
+   before new backend fields).
+4. SPEC-51 unified create entry (owns F1; needs SPEC-36/26 amendment).
+5. SPEC-49 remainder: "Show to driver" presentation mode + on-site
+   Swahili landmarks (client `sw`/`en` priority already on main).
+6. SPEC-52 remainder: activity-span vs create-form dates on TripSummary
+   (markers already on main as F3).
+7. SPEC-54 temporary party/energy (client-local first; SPEC-43 before
+   any server persistence).
+8. SPEC-55 inter-city transfer card (booking-confirmed only; no invented
+   trains).
+9. SPEC-56 offline readiness indicator (report real cache state; no
+   "100% offline pack" claim).
+
+Do not open Genie briefs for these until the owning SPEC file or
+amendment is written. Guiding constraints in the draft match the product
+thesis (server-authoritative mutations, sourced claims, SPEC-43 gates).
+
 Hosted/ops: Cloud Run behind `main` (bar rule; Gap 4 slices 15-19, not
-trip-relevant). 0026 not applied. CI Postgres image is third-party
+trip-relevant). 0026 applied 2026-11-15. CI Postgres image is third-party
 `valazj/postgis_pgvector:0.1.1`; an in-repo image would remove that
 dependency later.
 
