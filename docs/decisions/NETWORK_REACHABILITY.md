@@ -78,3 +78,8 @@ disagreement in Stone Town and Nungwi; `isochrone_only` was zero in every
 cell. Decision: earn the optional Isochrones enrichment slice. Keep
 Haversine as offline/Preview fallback. Do not claim waterfront venues
 reachable when the network polygon excludes them.
+
+Implementation slice 1: `docs/briefs/GENIE_ISOCHRONE_PROVIDER.md`.
+Provider, 1 h cache, dedicated spend circuit, What Now walking filter
+as an intersection with the Haversine cap. `TB_REACHABILITY_PROVIDER`
+defaults to off. Booking-return reachability is slice 2.
