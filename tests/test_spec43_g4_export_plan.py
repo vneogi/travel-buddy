@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from config.data_rights import RIGHTS_MAP
+from config.data_rights import NON_SUBJECT_IDENTITIES, RIGHTS_MAP
 from services import data_rights_export as export_module
 from services.data_rights_erase import ERASE_REQUIRED
 from services.data_rights_export import (
@@ -29,7 +29,9 @@ def _order():
 def test_export_required_matches_erase_required():
     assert EXPORT_REQUIRED == ERASE_REQUIRED
     assert set(_order()) == set(ERASE_REQUIRED)
-    assert EXPORT_REQUIRED == frozenset(t for t, e in RIGHTS_MAP.items() if e["identity"] != "none")
+    assert EXPORT_REQUIRED == frozenset(
+        t for t, e in RIGHTS_MAP.items() if e["identity"] not in NON_SUBJECT_IDENTITIES
+    )
 
 
 def test_every_identity_table_has_an_export_step():

@@ -69,7 +69,7 @@ file, pagination, and making the nested document the default.
 
 import importlib
 import logging
-from typing import List, Literal, Union
+from typing import List, Literal, Optional, Union
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import JSONResponse
@@ -88,6 +88,8 @@ from services.data_rights_erase_supabase import SupabaseEraseBackend
 from services.data_rights_export import ExportBackend, execute_export
 from services.data_rights_export_document import build_export_document
 from services.data_rights_export_supabase import SupabaseExportBackend
+from services.data_rights_tombstone import TombstoneStore, record_tombstone_durable
+from services.data_rights_tombstone_supabase import SupabaseTombstoneStore
 
 logger = logging.getLogger("travelbuddy")
 
@@ -125,6 +127,18 @@ def get_erase_backend() -> EraseBackend:
     return SupabaseEraseBackend(provider.db_service.client)
 
 
+def get_tombstone_store() -> Optional[TombstoneStore]:
+    """Durable tombstone store over the same Supabase client as erase, or None.
+
+    The in-memory dev/test DatabaseService is not wired for erase, so there is
+    no durable store there and the route does not call one.
+    """
+    provider = importlib.import_module("services.db_provider")
+    if not provider.IS_SUPABASE:
+        return None
+    return SupabaseTombstoneStore(provider.db_service.client)
+
+
 def get_auth_deleter() -> AuthIdentityDeleter:
     """GoTrue deleter when Supabase is configured, otherwise a no-op."""
     provider = importlib.import_module("services.db_provider")
@@ -140,10 +154,17 @@ async def erase_me(
     identity: ResolvedIdentity = Depends(resolve_identity),
     backend: EraseBackend = Depends(get_erase_backend),
     auth_deleter: AuthIdentityDeleter = Depends(get_auth_deleter),
+    tombstone_store: Optional[TombstoneStore] = Depends(get_tombstone_store),
 ):
     """Erase the caller's server rows, then their Auth identity."""
     try:
         results = execute_erase(identity.user_id, backend)
+        # Durable tombstone after the rows and before Auth: a store failure
+        # (TombstoneStoreError) takes the generic 500 below, so Auth, purge
+        # and deny do not run and the whole erase can be retried. No store
+        # (in-memory dev backend) means nothing is recorded durably.
+        if tombstone_store is not None:
+            record_tombstone_durable(identity.user_id, tombstone_store)
         # Only after every row step succeeded. Debug identities never reach it.
         if identity.identity_kind == "supabase":
             auth_deleter.delete_auth_user(identity.user_id)

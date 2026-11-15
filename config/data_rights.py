@@ -21,7 +21,13 @@ PathLike = Union[str, Path]
 # Columns that make a table identity-bearing (shared with the tests).
 IDENTITY_COLUMNS: Tuple[str, ...] = ("user_id", "party_id", "identity_id", "owner_id")
 
-IDENTITY_VALUES = frozenset({"direct_user_id", "via_trip_states", "via_party", "none"})
+IDENTITY_VALUES = frozenset(
+    {"direct_user_id", "via_trip_states", "via_party", "none", "erase_exempt"}
+)
+# Identities that are not a data subject's rows: erase and export skip them.
+NON_SUBJECT_IDENTITIES = frozenset({"none", "erase_exempt"})
+# Closed allowlist for erase_exempt (suppression records only).
+ERASE_EXEMPT_TABLES = frozenset({"data_rights_tombstone"})
 SLICE_ONE_EXPORT = frozenset({"planned"})
 SLICE_ONE_DELETE = frozenset({"planned"})
 RETENTION_VALUES = frozenset({"planned", "not_applicable"})
@@ -156,6 +162,15 @@ def stale(created: Set[str], rights: Dict[str, dict]) -> Set[str]:
     return set(rights) - set(created)
 
 
+def erase_exempt_violations(rights: Dict[str, dict]) -> Set[str]:
+    """Tables classified erase_exempt that are not in ERASE_EXEMPT_TABLES."""
+    return {
+        t
+        for t, entry in rights.items()
+        if entry.get("identity") == "erase_exempt" and t not in ERASE_EXEMPT_TABLES
+    }
+
+
 def _entry(identity: str, retention: str, note: str) -> dict:
     return {
         "identity": identity,
@@ -211,6 +226,12 @@ RIGHTS_MAP: Dict[str, dict] = {
         "none",
         "planned",
         "No owner column (0026 denies authenticated); holds query_text and responses.",
+    ),
+    # --- Suppression record: erase_exempt (allowlisted) ---
+    "data_rights_tombstone": _entry(
+        "erase_exempt",
+        "planned",
+        "Suppression record kept so a restore can be re-erased; never erased or exported.",
     ),
     # --- Catalog / reference: no traveller identity ---
     "venues_rag": _entry("none", "not_applicable", "Venue catalog; no traveller column."),

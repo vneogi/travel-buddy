@@ -40,6 +40,8 @@ CATALOG_TABLES = (
 
 TRIP_SCOPED_TABLES = ("trip_node", "trip_edge", "trip_command", "trip_party", "party_member")
 
+SERVICE_ROLE_ONLY_TABLES = ("data_rights_tombstone",)
+
 
 def _strip_sql_comments(sql: str) -> str:
     sql = re.sub(r"/\*.*?\*/", "", sql, flags=re.DOTALL)
@@ -184,8 +186,10 @@ def test_every_migration_table_is_classified() -> None:
                 r"create\s+table\s+(?:if\s+not\s+exists\s+)?(\w+)", text, flags=re.IGNORECASE
             )
         }
-    unclassified = created - set(PERSONAL_TABLES) - set(CATALOG_TABLES)
-    assert not unclassified, f"tables not covered by 0026: {sorted(unclassified)}"
+    unclassified = (
+        created - set(PERSONAL_TABLES) - set(CATALOG_TABLES) - set(SERVICE_ROLE_ONLY_TABLES)
+    )
+    assert not unclassified, f"tables not classified: {sorted(unclassified)}"
 
 
 def test_0007_not_edited_in_place() -> None:
