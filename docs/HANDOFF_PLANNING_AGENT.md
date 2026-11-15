@@ -347,7 +347,14 @@ the network-reachability slice (`docs/decisions/NETWORK_REACHABILITY.md`).
 Owner scheduled that slice 2026-11-16 and keeps `New GMaps_API_Key`
 with Isochrones. Next Genie job: `docs/briefs/GENIE_ISOCHRONE_PROVIDER.md`
 (flag default off). After it: booking-return reachability, Gap 4
-durable tombstone, or UX-48/53 owning specs. Not trip-critical. Owner: rebuild APK
+durable tombstone, or UX-48/53 owning specs.
+
+Pending rename (owner 2026-11-16): switch the penciled UI/UX items back
+from UX-NN to the team's SPEC numbers 48 through 56 ONLY after the current
+Genie work is finished and merged to main. Do not switch while Genie is
+in flight. Precondition: each number needs its owning spec file in
+`docs/specs/` first, because `tests/test_docs_hygiene.py` fails any
+SPEC-NN reference without one and would turn main red. Not trip-critical. Owner: rebuild APK
 from `main` and smoke F2/F3 on phone; on-site Swahili landmark data
 pass. The single open-items list for 2026-11-15 to 2026-12-04 is in
 `PROJECT_STATUS.md` under "What is Next". F1 waits on a SPEC-36/26
