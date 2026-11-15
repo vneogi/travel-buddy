@@ -1,6 +1,7 @@
 """SPEC-43 Gap 4 slice 10: ordered export plan over the data-rights inventory.
 
-Every table whose RIGHTS_MAP identity is not "none" has exactly one export
+Every table whose RIGHTS_MAP identity is not in NON_SUBJECT_IDENTITIES
+("none", "erase_exempt") has exactly one export
 step here, the same required set as the erase plan. The order is
 parent-first (the inverse concern of erase) so a later document builder can
 nest trip children under their trip. A new identity table without a step
@@ -20,7 +21,7 @@ from __future__ import annotations
 
 from typing import Dict, FrozenSet, Iterable, List, Optional, Protocol, Set, Tuple
 
-from config.data_rights import RIGHTS_MAP
+from config.data_rights import NON_SUBJECT_IDENTITIES, RIGHTS_MAP
 
 # RIGHTS_MAP identity -> (export fetch method, via join).
 METHOD_FOR_IDENTITY: Dict[str, Tuple[str, Optional[str]]] = {
@@ -33,8 +34,10 @@ STEP_KEYS: FrozenSet[str] = frozenset({"table", "method", "via", "note"})
 
 
 def required_tables(rights: Dict[str, dict] = RIGHTS_MAP) -> FrozenSet[str]:
-    """Tables whose identity is not "none"."""
-    return frozenset(t for t, entry in rights.items() if entry.get("identity") != "none")
+    """Tables whose identity is not in NON_SUBJECT_IDENTITIES ("none", "erase_exempt")."""
+    return frozenset(
+        t for t, entry in rights.items() if entry.get("identity") not in NON_SUBJECT_IDENTITIES
+    )
 
 
 EXPORT_REQUIRED: FrozenSet[str] = required_tables(RIGHTS_MAP)

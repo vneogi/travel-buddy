@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from config.data_rights import RIGHTS_MAP
+from config.data_rights import NON_SUBJECT_IDENTITIES, RIGHTS_MAP
 from services import data_rights_erase as erase_module
 from services.data_rights_erase import (
     ERASE_METHODS,
@@ -34,7 +34,7 @@ def _order():
 
 
 def test_erase_required_is_derived_from_rights_map():
-    expected = {t for t, e in RIGHTS_MAP.items() if e["identity"] != "none"}
+    expected = {t for t, e in RIGHTS_MAP.items() if e["identity"] not in NON_SUBJECT_IDENTITIES}
     assert ERASE_REQUIRED == frozenset(expected)
     assert "trip_states" in ERASE_REQUIRED
 
