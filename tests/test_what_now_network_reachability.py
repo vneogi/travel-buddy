@@ -283,6 +283,40 @@ def test_state_machine_what_now_flag_off_makes_no_provider_call(ctx_node, now_ut
     assert {"Inside Temple", "Across Water Cafe"} <= {c["name"] for c in what_now["candidates"]}
 
 
+def test_trip_event_response_keeps_reachability_source():
+    """FastAPI response_model=TripEventResponse must not drop the field."""
+    from models.schemas import TripEventResponse
+
+    resp = TripEventResponse(
+        trip_id="t1",
+        status="ok",
+        message="ok",
+        ask_response={
+            "answer": "Found 1 option within reach: Inside Temple.",
+            "tier": "hedge",
+            "path": "grounded_deterministic",
+            "intent": "what_now",
+            "source_ids": ["in"],
+            "source_class": "curated_catalog",
+            "what_now": {
+                "location_source": "trip_position",
+                "context_label": "Using your trip position",
+                "candidates": [
+                    {
+                        "candidate_id": "what_now:in",
+                        "venue_id": "in",
+                        "name": "Inside Temple",
+                    }
+                ],
+                "reachability_source": "network_isochrone",
+            },
+        },
+    )
+    assert resp.ask_response.what_now.reachability_source == "network_isochrone"
+    dumped = resp.model_dump()
+    assert dumped["ask_response"]["what_now"]["reachability_source"] == "network_isochrone"
+
+
 def test_touched_files_are_ascii():
     for rel in (
         "services/geo_polygon.py",
@@ -290,6 +324,7 @@ def test_touched_files_are_ascii():
         "services/ask_service.py",
         "agents/state_machine.py",
         "config/settings.py",
+        "models/schemas.py",
         "tests/test_reachability_provider.py",
         "tests/test_what_now_network_reachability.py",
     ):
