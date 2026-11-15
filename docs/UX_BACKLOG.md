@@ -21,9 +21,34 @@ direction. These are proposals, not landed specs. Open owning SPEC files
 | UX-54 temporary party/energy | Penciled | Client-local first; SPEC-43 before server |
 | UX-55 inter-city transfer | Penciled | Booking-confirmed only |
 | UX-56 offline readiness | Penciled | Honest cache status; no fake full pack |
+| UX-57 design themes and tokens | Penciled | Semantic tokens, dark, manual High-Visibility; audit first (Phase A) |
+| UX-58 local-food Pointing Card | Penciled | Curated glossary only; missing text or allergens shown as unavailable |
 
 Sequence in the draft: verify 49/52 remainders, then 48 + 53 prototypes,
 evidence contracts for 50/54, then 51, then 55/56.
+
+Nov 16 2026 addition: design themes draft
+`docs/briefs/UI_DESIGN_THEMES_2026-11-16.md` (owner). New items are UX-57
+and UX-58 above. The rest maps onto existing items, not new numbers:
+
+- Timeline as an instrument (rail, active and next stop) -> UX-48.
+- Decision Compass (situation choices) -> UX-53. Choices must match What
+  Now intents the engine can honour today.
+- Driver handoff presentation and in-app Driver Card shortcut -> UX-49.
+  OS tiles, lock screen and brightness override stay out until a privacy
+  review.
+- Haptics and motion vocabulary -> part of UX-57.
+- Route Passport -> stays deferred (post-trip; see the Oct 11 list).
+
+UX-57 order: Phase A audit and a theme preview screen first, with no
+palette change until contrast and text-scale checks pass. Destination
+accents never recolour status, provenance, booking-lock or sponsored
+styling.
+
+Open owner decisions (do not infer): whether destination accents are
+automatic per trip or limited to trip headers; whether High-Visibility is
+a settings toggle only or also an in-trip control; which signature
+experience to prototype first.
 
 ## Oct 11 2026 field reprioritization
 
