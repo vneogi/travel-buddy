@@ -36,6 +36,7 @@ from services.ask_service import (
     AskResponse,
     TrustTier,
     WhatNowRequest,
+    fetch_what_now_reachability,
     handle_ask_to_add,
     handle_what_now,
     load_dish_glossary,
@@ -1297,12 +1298,23 @@ class TripStateMachine:
                 )
             else:
                 _now = state.get("now_utc") or _dt.now(tz=_tz.utc)
+                from services.reachability_provider import get_reachability_provider
+
+                reach = await fetch_what_now_reachability(
+                    request=wn_req,
+                    trip_nodes=trip_nodes_dicts,
+                    now_utc=_now,
+                    geo_region=geo_region,
+                    provider=get_reachability_provider(),
+                    identity=user_id,
+                )
                 ask_resp = handle_what_now(
                     request=wn_req,
                     trip_nodes=trip_nodes_dicts,
                     now_utc=_now,
                     geo_region=geo_region,
                     db=db_service,
+                    reach_polygons=reach,
                 )
         else:
             ask_resp = await ask_svc.handle_ask(
