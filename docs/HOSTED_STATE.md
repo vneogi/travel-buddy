@@ -90,9 +90,15 @@ hosted `TB_GOOGLE_MAPS_API_KEY` is authorized for Isochrones. Logs show
 the outcome only, not a Haversine comparison. Key values are never
 recorded here.
 
-Open: two typed `What now?` sends at about 02:52 IST showed the generic
-client error. No provider log line matches them. Owner to check Cloud Run
-logs at severity ERROR for that window (about 21:22 UTC on 2026-11-15).
+Two What Now form sends at about 02:51 and 02:52 IST (owner 2026-11-16)
+showed the generic client error even though Cloud Run returned HTTP 200
+with a normal-sized body and no ERROR logs. Both overlapped a
+`GET /api/v1/trip/{id}` and neither was followed by the
+`GET /api/v1/user/status` that a successful send triggers. Working
+theory: the autoDispose itinerary controller was torn down and rebuilt
+mid-request, so `applyEvent` returned null after the response. This is a
+client bug, not the reachability flag and not the filter selection.
+Unproven; fix pending (Flutter).
 
 Release posture: this is an owner-only field-test service, not a beta or public
 launch. SPEC-43 records twelve security/privacy gaps that must close after the

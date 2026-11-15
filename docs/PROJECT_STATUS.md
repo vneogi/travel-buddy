@@ -177,6 +177,11 @@ Owner-only:
 - Non-owner testers (G1) are not in this window; SPEC-43 plus SPEC-24/27
   remain.
 
+Client bug, open (2026-11-16 hosted logs): a What Now form send can show
+"I could not complete that request" after the server returned 200,
+when the autoDispose itinerary controller is rebuilt mid-request
+(`applyEvent` returns null on `!mounted`). Retry works. Fix pending.
+
 Frontend, after the trip core: F1 single create entry (needs SPEC-36 and
 SPEC-26 amendment first); SPEC-07 dish UI; SPEC-22 font/ARB/screen
 migration; SPEC-43 client remainders (Gap 5 masking/FLAG_SECURE/iOS/
