@@ -8,6 +8,80 @@ do not widen scope.
 Start only when the planning agent (or owner) sends this brief with a
 real base SHA.
 
+## Amendment 1 (2026-11-16): classification of the tombstone table
+
+Genie stopped correctly on the first attempt: a new table with a
+`user_id` column fails three existing inventory and RLS tests, and an
+ordinary identity classification would make erase delete the tombstone
+it just wrote. Planning decision, which overrides anything below that
+conflicts:
+
+Decision: keep the column name `user_id` (honest; the column scan
+should see it). Add one explicit identity class, `erase_exempt`,
+allowed only for tables in a closed allowlist that contains exactly
+`data_rights_tombstone`. Erase and export skip `erase_exempt` tables,
+exactly as they skip `none` tables. Do not rename the column to dodge
+the scan, and do not classify the table as `none`.
+
+A1. `config/data_rights.py`:
+- add `"erase_exempt"` to `IDENTITY_VALUES`;
+- add `NON_SUBJECT_IDENTITIES = frozenset({"none", "erase_exempt"})`;
+- add `ERASE_EXEMPT_TABLES = frozenset({"data_rights_tombstone"})`;
+- add `erase_exempt_violations(rights) -> Set[str]`: tables whose
+  identity is `erase_exempt` but are not in `ERASE_EXEMPT_TABLES`;
+- add the `RIGHTS_MAP` entry for `data_rights_tombstone` with identity
+  `erase_exempt`, export `planned`, delete `planned` (the existing
+  slice-one test requires those two literal values for every entry),
+  retention `planned`, and a one-line ASCII note saying it is a
+  suppression record kept so a restore can be re-erased, never erased
+  or exported.
+
+A2. `services/data_rights_erase.py` and `services/data_rights_export.py`:
+change only `required_tables` (and its docstring and the module
+docstring sentence that says "not none") so it excludes identities in
+`NON_SUBJECT_IDENTITIES`. No other line changes in either file.
+
+A3. Existing tests: these exact edits are approved, nothing else:
+- `tests/test_spec43_g4_erase_plan.py`,
+  `test_erase_required_is_derived_from_rights_map`: the expected set
+  becomes identity `not in NON_SUBJECT_IDENTITIES` (import it).
+- `tests/test_spec43_g4_export_plan.py`,
+  `test_export_required_matches_erase_required`: same change to the
+  third assertion.
+- `tests/test_spec43_g2_rls.py`: add
+  `SERVICE_ROLE_ONLY_TABLES = ("data_rights_tombstone",)` and subtract
+  it in `test_every_migration_table_is_classified`, renaming that
+  assertion message to "tables not classified". Do not add the table to
+  `PERSONAL_TABLES` (those tests read 0026 text, and 0027 is a separate
+  file). Its RLS is proved by test 1 in the new file.
+
+A4. Extra tests in `tests/test_spec43_g4_durable_tombstone.py`, exact
+names, in addition to the 14 in section 6:
+
+15. `test_tombstone_table_is_erase_exempt`: `RIGHTS_MAP` identity is
+    `erase_exempt`, and the table is in `identity_tables(...)` (the scan
+    still sees `user_id`).
+16. `test_erase_and_export_plans_skip_tombstone_table`: not in
+    `ERASE_REQUIRED`, `EXPORT_REQUIRED`, `ERASE_STEPS` or `EXPORT_STEPS`.
+17. `test_erase_exempt_is_allowlisted`: `erase_exempt_violations` is
+    empty for `RIGHTS_MAP`, and returns `{"synthetic"}` for a copy with
+    `synthetic` classified `erase_exempt`.
+18. `test_supabase_erase_backend_refuses_tombstone_table`: the existing
+    Supabase erase backend's table guard rejects `data_rights_tombstone`
+    (use the fake client pattern from `tests/test_spec43_g4_erase_supabase.py`).
+
+A5. Extra R17 check:
+D. Change the tombstone's `RIGHTS_MAP` identity to `direct_user_id`:
+   `test_tombstone_table_is_erase_exempt` fails (and the erase-plan
+   step guard fails too). Restore.
+
+A6. Files you may touch now = section 4 plus `config/data_rights.py`,
+`services/data_rights_erase.py`, `services/data_rights_export.py`,
+`tests/test_spec43_g2_rls.py`, `tests/test_spec43_g4_erase_plan.py`,
+`tests/test_spec43_g4_export_plan.py`, limited to the edits above. The
+section 8 stop rule on changing existing assertions still applies to
+every other test.
+
 ## 0. Context
 
 Gap 4 erase is live: `POST /api/v1/me/erase` (`routers/me_router.py`)
