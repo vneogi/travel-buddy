@@ -271,9 +271,9 @@ class WhatNowResult(BaseModel):
     location_source: Literal["trip_position", "region_anchor"]
     context_label: str
     candidates: List[WhatNowCandidate] = []
-    reachability_source: Literal[
-        "network_isochrone", "haversine_estimate", "not_applicable"
-    ] = "haversine_estimate"
+    reachability_source: Literal["network_isochrone", "haversine_estimate", "not_applicable"] = (
+        "haversine_estimate"
+    )
 
 
 class AskResponseEnvelope(BaseModel):
