@@ -53,15 +53,28 @@ never falls back to fixtures. Each success prints one `counts:` line.
 
 | Region | Minutes | both | haversine_only | isochrone_only |
 | --- | --- | --- | --- | --- |
-| zanzibar_tanzania | 15 | | | |
-| zanzibar_tanzania | 30 | | | |
-| zanzibar_tanzania | 45 | | | |
-| nungwi_tanzania | 15 | | | |
-| nungwi_tanzania | 30 | | | |
-| nungwi_tanzania | 45 | | | |
-| luang_prabang_laos | 15 | | | |
-| luang_prabang_laos | 30 | | | |
-| luang_prabang_laos | 45 | | | |
+| zanzibar_tanzania | 15 | 19 | 13 | 0 |
+| zanzibar_tanzania | 30 | 23 | 9 | 0 |
+| zanzibar_tanzania | 45 | 23 | 10 | 0 |
+| nungwi_tanzania | 15 | 3 | 10 | 0 |
+| nungwi_tanzania | 30 | 14 | 13 | 0 |
+| nungwi_tanzania | 45 | 19 | 10 | 0 |
+| luang_prabang_laos | 15 | 13 | 6 | 0 |
+| luang_prabang_laos | 30 | 17 | 4 | 0 |
+| luang_prabang_laos | 45 | 20 | 2 | 0 |
 
-Decision rule (from the decision record): if disagreement is material,
-especially in Stone Town, network reachability earns an implementation slice.
+Owner live run 2026-11-16 on `dacfc77` / branch tip `5f9af14`, key
+`GMaps_API_Key` with Distance Matrix + Isochrones. Nine GeoJSON files saved
+under `%TEMP%\iso_*.geojson` (not committed). Sanity check on
+`iso_zanzibar_15m.geojson`: 1 polygon with a hole; origin House of Wonders
+inside=True; Forodhani Gardens (about 100 m) inside=False. Parser and
+point-in-polygon are trusted.
+
+Decision: disagreement is material, especially Stone Town and Nungwi.
+Network reachability earns an implementation slice (see
+`docs/decisions/NETWORK_REACHABILITY.md`). Caveat: some Stone Town
+`haversine_only` venues sit on or near the waterfront and stay excluded
+even at 45 minutes (Forodhani Gardens, Forodhani Sunset Place, Zanzibar
+Coffee House, Lukmaan Restaurant). Treat those as possible walk-network
+gaps or catalog pin quality issues when designing the product rule; do
+not invent reachability.

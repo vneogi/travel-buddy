@@ -67,3 +67,14 @@ is GeoJSON. Ferries and water crossings are out of scope for the API.
 - SPEC-41: packing stays Haversine; enrichment is out of packing.
 - SPEC-43 Gap 11: provider spend; Gap 9/12: no raw GPS in logs/URLs.
 - `docs/HOSTED_STATE.md`: record when the API is enabled on the project.
+
+
+## Owner live trial 2026-11-16
+
+Nine live WALK isochrones (15/30/45 min) from House of Wonders, Nungwi
+Lighthouse, and Royal Palace Museum. Counts in
+`docs/briefs/ISOCHRONE_TRIAL_OWNER_RUN.md`. Material `haversine_only`
+disagreement in Stone Town and Nungwi; `isochrone_only` was zero in every
+cell. Decision: earn the optional Isochrones enrichment slice. Keep
+Haversine as offline/Preview fallback. Do not claim waterfront venues
+reachable when the network polygon excludes them.
