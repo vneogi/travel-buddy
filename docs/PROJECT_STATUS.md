@@ -190,13 +190,13 @@ create-then-book reflow; SPEC-25 trip-optional Ask; SPEC-46 Phase B
 (after SPEC-43); SPEC-45 place detail and transfer cards; optional bar
 start-time floor.
 
-Penciled after F2/F3 (not trip-critical; owner 2026-11-15): network
-reachability via Google Isochrones as an optional enrichment on
-Haversine for in-trip usability and return visits. Decision:
-`docs/decisions/NETWORK_REACHABILITY.md`. Next Genie job after F3:
-trial harness `docs/briefs/GENIE_ISOCHRONE_TRIAL.md` (fixtures + owner
-live compare on Stone Town / Nungwi / Luang Prabang). Not a paid
-feature. Does not replace SPEC-41 packing.
+DONE 2026-11-16: Isochrones trial on main (`dacfc77`, PR #243). Owner
+live nine-call compare recorded in
+`docs/briefs/ISOCHRONE_TRIAL_OWNER_RUN.md`. Material disagreement in
+Stone Town and Nungwi; network reachability earns an implementation
+slice (`docs/decisions/NETWORK_REACHABILITY.md`). Optional enrichment on
+Haversine; offline/Preview fallback stays Haversine. Not trip-critical
+for December; product provider/cache/spend still not started.
 
 
 Penciled UI/UX package (owner 2026-11-15; love the recommendations; not

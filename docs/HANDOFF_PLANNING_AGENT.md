@@ -342,10 +342,11 @@ Swahili priority and F3 date markers. Default pytest and
 
 After Isochrones trial: penciled UI/UX package SPEC-48..SPEC-56
 (`docs/briefs/UI_UX_IMPLEMENTATION_SPECS_2026-11-15.md`); write owning
-specs before Genie briefs. Next Genie job: Isochrones trial
-(`docs/briefs/GENIE_ISOCHRONE_TRIAL.md`; decision
-`docs/decisions/NETWORK_REACHABILITY.md`) -- penciled for in-trip
-reachability and returnability; not trip-critical. Owner: rebuild APK
+specs before Genie briefs. Isochrones trial DONE 2026-11-16 (`dacfc77`); live compare earned
+the network-reachability slice (`docs/decisions/NETWORK_REACHABILITY.md`).
+Next Genie job: write the owning provider brief only when the owner
+schedules that slice; otherwise continue Gap 4 durable tombstone or
+SPEC-48/53 owning specs. Not trip-critical. Owner: rebuild APK
 from `main` and smoke F2/F3 on phone; on-site Swahili landmark data
 pass. The single open-items list for 2026-11-15 to 2026-12-04 is in
 `PROJECT_STATUS.md` under "What is Next". F1 waits on a SPEC-36/26
