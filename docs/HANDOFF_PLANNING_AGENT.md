@@ -349,12 +349,13 @@ with Isochrones. Next Genie job: `docs/briefs/GENIE_ISOCHRONE_PROVIDER.md`
 (flag default off). After it: booking-return reachability, Gap 4
 durable tombstone, or UX-48/53 owning specs.
 
-Pending Flutter brief (owner 2026-11-16): after Gap 4 durable tombstone
-is merged, write a Genie brief for the What Now client race recorded in
-`docs/HOSTED_STATE.md`. The cause is unproven, so the brief must first
+Pending Flutter brief (owner 2026-11-16): Gap 4 durable tombstone is on
+main (#254). Write the Genie brief for the What Now client race next
+(recorded in `docs/HOSTED_STATE.md`). Cause unproven: the brief must first
 reproduce it in a widget or notifier test (controller disposed or rebuilt
 while `applyEvent` awaits) and only then fix it, with the existing chat
-and itinerary tests unchanged.
+and itinerary tests unchanged. Owner: after Gap 4 merge; do not start
+until the planning agent lands the brief.
 
 Pending rename (owner 2026-11-16): switch the penciled UI/UX items back
 from UX-NN to the team's SPEC numbers 48 through 56 ONLY after the current

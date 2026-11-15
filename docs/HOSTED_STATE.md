@@ -30,6 +30,15 @@ on those grants. Cloud Run health after apply: healthy, 146 venues.
 `rolbypassrls` confirmed 2026-11-15 (postgres and service_role true).
 SPEC-38 phone pass remains 2026-09-14 against `00004-62g`.
 
+Gap 4 durable tombstone code is on main (`5c5c2b3`, #254). Until 0027 is
+applied, do not deploy that revision to Cloud Run if `/me/erase` must keep
+working: the route writes the durable tombstone after the row erase and a
+missing table yields `500 erase_incomplete`. Restore drill caveat: the
+tombstone table lives in the same database a backup restore rolls back; save
+tombstone ids before restore and re-apply them afterwards, or the drill
+cannot re-erase.
+
+
 ### Hosted Supabase
 
 | Migration | State | Evidence |
@@ -44,6 +53,7 @@ SPEC-38 phone pass remains 2026-09-14 against `00004-62g`.
 | 0024 | Applied | `signal_type.session_start` present on 2026-09-06 |
 | 0025 | Applied | Owner SQL Editor 2026-09-27: `trip_states.version`, `trip_command`, and `commit_trip_command` present; bounded-input call raised `22023` |
 | 0026 | Applied | 2026-11-15 MCP apply_migration `spec43_g2_rls` (history `20261114204050`); FORCE RLS on personal tables; catalog SELECT-only; Cloud Run health OK |
+| 0027 | Not applied | File on main (`5c5c2b3`, #254). Owner-gated. Apply before or with the Cloud Run deploy that includes the erase-route tombstone write; never after, or `/me/erase` returns `erase_incomplete`. |
 
 The project applies SQL manually and does not have a trustworthy migration
 history table. "Applied" above means the expected live schema sentinel was
