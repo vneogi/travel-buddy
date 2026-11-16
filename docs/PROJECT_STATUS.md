@@ -226,7 +226,8 @@ PASSED 2026-11-16.
 Genie queue while the phone is away (CI-gated; no phone required):
 
 1. SPEC-49 slice 1: Show-to-driver mode (Flutter; landmarks data wait).
-2. SPEC-48 slice 1: NOW / UP NEXT labels (Flutter; connectors still wait).
+2. SPEC-48 slice 1: NOW / UP NEXT strip on the itinerary (Flutter;
+   brief `docs/briefs/GENIE_SPEC48_NOW_NEXT_STRIP.md`; connectors wait).
 3. SPEC-50 slice 1: inspectable swap comparison (Flutter; evidence only).
 4. GENIE_ISOCHRONE_PROVIDER.md (server; flag default off; live flag-on
    smoke waits for owner return + Cloud Run).
