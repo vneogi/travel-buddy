@@ -349,19 +349,18 @@ with Isochrones. Next Genie job: `docs/briefs/GENIE_ISOCHRONE_PROVIDER.md`
 (flag default off). After it: booking-return reachability, Gap 4
 durable tombstone, or UX-48/53 owning specs.
 
-Flutter brief landed (2026-11-16): `docs/briefs/GENIE_CHAT_CONTROLLER_LIFETIME.md`
-for the What Now client error recorded in `docs/HOSTED_STATE.md`. Likely
-cause: chat opened from Home's trip-card chat icon has no itinerary
-screen underneath, so the autoDispose itinerary controller is disposed
-mid-request. The brief is reproduce-first: Genie stops if the widget
-tests do not fail on the base.
+Flutter chat-controller lifetime fix is on main (PR #260, `2031480`).
+Owner: rebuild the APK from main and run the device check in the brief
+(Home chat icon, then itinerary Ask bar). No Cloud Run deploy needed.
+Next docs work (unblocked): land the outline for numbers 48 through 56 as owning
+spec files, then switch UX-NN back to the team's SPEC numbers.
 
-Pending rename (owner 2026-11-16): switch the penciled UI/UX items back
-from UX-NN to the team's SPEC numbers 48 through 56 ONLY after the current
-Genie work is finished and merged to main. Do not switch while Genie is
-in flight. Precondition: each number needs its owning spec file in
-`docs/specs/` first, because `tests/test_docs_hygiene.py` fails any
-SPEC-NN reference without one and would turn main red. Not trip-critical. Owner: rebuild APK
+Pending rename (owner 2026-11-16): Genie's chat fix is on main, so the
+in-flight wait is over. Switch the penciled UI/UX items back from UX-NN
+to the team's numbers 48 through 56 once each has its owning
+spec file in `docs/specs/`. Outline draft decisions are recorded; write
+the nine files next. Without those files, `tests/test_docs_hygiene.py`
+fails any SPEC-NN reference and would turn main red. Not trip-critical. Owner: rebuild APK
 from `main` and smoke F2/F3 on phone; on-site Swahili landmark data
 pass. The single open-items list for 2026-11-15 to 2026-12-04 is in
 `PROJECT_STATUS.md` under "What is Next". F1 waits on a SPEC-36/26

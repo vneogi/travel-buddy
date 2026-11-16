@@ -101,14 +101,13 @@ the outcome only, not a Haversine comparison. Key values are never
 recorded here.
 
 Two What Now form sends at about 02:51 and 02:52 IST (owner 2026-11-16)
-showed the generic client error even though Cloud Run returned HTTP 200
-with a normal-sized body and no ERROR logs. Both overlapped a
-`GET /api/v1/trip/{id}` and neither was followed by the
-`GET /api/v1/user/status` that a successful send triggers. Working
-theory: the autoDispose itinerary controller was torn down and rebuilt
-mid-request, so `applyEvent` returned null after the response. This is a
-client bug, not the reachability flag and not the filter selection.
-Unproven; fix pending (Flutter).
+showed the generic client error even though Cloud Run returned HTTP 200.
+Fixed on main by PR #260 (`2031480`): ChatScreen holds a listenManual on
+the autoDispose itinerary controller while chat is open. CI proved the
+guards fail without the fix (tests 4, 5, 7). Flutter-only; Cloud Run
+revision unchanged (`00019-nl7`). Owner device check after APK rebuild:
+Home, trip-card chat icon, What Now submit, then the same from the
+itinerary Ask bar.
 
 Release posture: this is an owner-only field-test service, not a beta or public
 launch. SPEC-43 records twelve security/privacy gaps that must close after the
