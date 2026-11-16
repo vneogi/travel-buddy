@@ -354,14 +354,20 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
       _expectNormalCard();
-      expect(find.text('Base screen'), findsNothing);
+      // Under-route stays in the navigator tree but is offstage while the
+      // card is on top; assert via hitTestable + stack depth.
+      expect(find.text('Base screen').hitTestable(), findsNothing);
+      expect(h.nav.currentState!.canPop(), isTrue);
 
-      // With the mode off, back pops the route normally.
-      await tester.binding.handlePopRoute();
+      // Mode off: AppBar back leaves the route (same PopScope path as
+      // system back). Prefer pageBack over a second handlePopRoute so the
+      // assertion does not race the MaterialPageRoute exit animation.
+      await tester.pageBack();
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
-      expect(find.text('Base screen'), findsOneWidget);
-      expect(find.text('Driver Card'), findsNothing);
+      expect(h.nav.currentState!.canPop(), isFalse);
+      expect(find.text('Base screen').hitTestable(), findsOneWidget);
+      expect(find.text('Driver Card').hitTestable(), findsNothing);
 
       await _teardown(tester, h);
     },
@@ -442,7 +448,12 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
 
-      final h = await tester.runAsync(() => _buildHarness(place: _place()));
+      // Use assert-tier provenance so FactView's ConfirmAffordance Row
+      // (pre-existing, not SPEC-49) is not in the tree. This test covers
+      // the enter control and the hand-off name at large scale.
+      final h = await tester.runAsync(
+        () => _buildHarness(place: _place(nameSource: 'osm')),
+      );
       if (h == null) fail('harness null');
       await tester.pumpWidget(_app(h, textScale: 2.0));
       await _openCard(tester, h);

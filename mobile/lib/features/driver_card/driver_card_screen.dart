@@ -284,10 +284,14 @@ class _DriverCardScreenState extends ConsumerState<DriverCardScreen> {
           Text(data.venueName, style: AppTypography.h1),
           if (mapsUri != null) ...[
             const SizedBox(height: AppSpacing.sm),
-            OutlinedButton.icon(
-              onPressed: () => _openMaps(mapsUri, mapsFallbackUri),
-              icon: const Icon(Icons.map_outlined),
-              label: const Text('Open in Maps'),
+            // Full-width so the label wraps at large text scale (same
+            // overflow trap as the Show-to-driver enter control).
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () => _openMaps(mapsUri, mapsFallbackUri),
+                child: const Text('Open in Maps', textAlign: TextAlign.center),
+              ),
             ),
           ],
           if (hasCoords) ...[
