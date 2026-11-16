@@ -51,6 +51,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   @override
   void initState() {
     super.initState();
+    // Hold the autoDispose itinerary controller for as long as chat is open,
+    // so sends from chat (including when chat was opened from Home with no
+    // itinerary screen underneath) always reach a live controller. Riverpod
+    // closes listenManual subscriptions when this widget unmounts.
+    ref.listenManual(
+      itineraryControllerProvider(widget.tripId),
+      (_, __) {},
+    );
     _connectivity = widget.connectivityOverride ?? ConnectivityHelper();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await _loadThread();
