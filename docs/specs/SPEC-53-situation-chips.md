@@ -1,7 +1,7 @@
 # SPEC-53: Situation Chips (Decision Compass)
 
-> Status: PENCILED (owning spec written 2026-11-16). Not implemented.
-> Owner chose this as the first signature prototype (2026-11-16).
+> Status: SLICE 1 ON MAIN (PR #266, `15ab8fe`). Owner device check
+> PASSED 2026-11-16. Owner chose this as the first signature prototype.
 > Amends SPEC-46 (What Now) and SPEC-25 (trip Ask thread). Reuses their
 > contracts; no new endpoint.
 

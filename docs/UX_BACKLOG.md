@@ -19,7 +19,7 @@ The rest waits until after the Tanzania trip.
 | SPEC-50 swap comparison | Penciled | Evidence contract before new fields |
 | SPEC-51 unified create | Penciled | Owns F1; needs SPEC-36/26 amendment |
 | SPEC-52 date markers | Partial | F3 on main; TripSummary activity-span remainder |
-| SPEC-53 situation chips | Penciled | Reuse Ask/What Now; no silent mutations |
+| SPEC-53 situation chips | Slice 1 done | PR #266; device check 2026-11-16; Head back later |
 | SPEC-54 temporary party/energy | Penciled | Client-local first; SPEC-43 before server |
 | SPEC-55 inter-city transfer | Penciled | Booking-confirmed only; also between two own trips (owner) |
 | SPEC-56 offline readiness | Penciled | Honest cache status; no fake full pack |
