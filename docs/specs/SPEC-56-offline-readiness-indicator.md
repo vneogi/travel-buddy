@@ -1,6 +1,7 @@
 # SPEC-56: Offline Readiness Indicator
 
 > Status: PENCILED (owning spec written 2026-11-16). Not implemented.
+> Slice 1 brief: `docs/briefs/GENIE_SPEC56_OFFLINE_READINESS.md`.
 > Amends SPEC-04 (offline vault), using SPEC-02 cache metadata.
 
 ## Goal
@@ -12,10 +13,11 @@ is lost, without promising a full offline pack.
 
 - A compact status from existing cache metadata, for example "Saved on
   this device" with a timestamp, or "Offline; showing saved trip".
-- A detail sheet lists only verifiable items: itinerary snapshot, cached
-  place cards and last successful sync time.
-- Pending outbox count is diagnostic and shown separately in plain
-  language; it is not a readiness measure.
+- A detail sheet lists only verifiable items: itinerary snapshot time and
+  how many of the trip's stops have a saved driver card.
+- The outbox holds analytics signals, not traveller edits, and has no
+  identity scope, so its count is not shown here; it stays in Profile >
+  Sync Status (decision 2026-11-16).
 - Manual refresh where appropriate. No background download prompts.
 
 ## Constraints
