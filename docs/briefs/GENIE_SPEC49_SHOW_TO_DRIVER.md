@@ -22,8 +22,9 @@ Verified on `main` (re-verify in preflight):
 1. `DriverCardScreen` in
    `mobile/lib/features/driver_card/driver_card_screen.dart` loads only
    from `db.getCachedPlace(nodeId, identityScope: ...)`. Zero network
-   calls. Route: `/trip/:tripId/node/:nodeId/driver` in
-   `app_router.dart`. Opened from the activity-card overflow menu
+   calls. Route: `/trip/:tripId/card/:nodeId` in
+   `app_router.dart` (the card id is `node.venueId ?? node.venueName`;
+   corrected 2026-11-16, an earlier draft had a stale route). Opened from the activity-card overflow menu
    (`value: 'driver'`).
 2. The screen shows: AppBar with Back and title "Driver Card"; local
    name via `FactView` (confirm/dismiss when tier is ask); landmark
@@ -52,7 +53,10 @@ While Show-to-driver is ON, show only:
 - Landmark text, only when `_buildLandmarkSection` already has a
   resolved value today. Label it `Landmark`. If there is no landmark,
   show nothing in its place (do not invent text, do not show "Local
-  landmark not available" as a claim).
+  landmark not available" as a claim). Do NOT show the English
+  `nearestLandmark` string in hand-off mode (decided 2026-11-16: it is
+  unverified English the driver may not read; the normal card keeps
+  showing it unchanged).
 - One full-width exit control, key `Key('show_to_driver_exit')`, label
   exact: `Done -- return to card`. Min height 48dp.
 
