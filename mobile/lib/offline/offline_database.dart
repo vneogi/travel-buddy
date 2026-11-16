@@ -454,6 +454,44 @@ class OfflineDatabase {
     return rows.isEmpty ? null : rows.first['data_json'] as String;
   }
 
+  /// SPEC-56: read-only status of what is saved for one trip and identity.
+  /// Null when the scope is unusable or the trip row is absent. Reads only
+  /// cache_trip.cached_at and counts this identity's cache_place rows for
+  /// the de-duplicated [placeRefs] (IN list chunked at 500).
+  Future<({DateTime cachedAt, int placesCached})?> getTripCacheStatus(
+    String tripId, {
+    required String identityScope,
+    required List<String> placeRefs,
+  }) async {
+    if (!isUsableIdentityScope(identityScope)) return null;
+    final database = await db;
+    final rows = await database.query(
+      'cache_trip',
+      columns: ['cached_at'],
+      where: 'identity_scope = ? AND trip_id = ?',
+      whereArgs: [identityScope, tripId],
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    final cachedAt = DateTime.parse(rows.first['cached_at'] as String).toUtc();
+    final refs = placeRefs.toSet().toList();
+    var placesCached = 0;
+    const chunkSize = 500;
+    for (var start = 0; start < refs.length; start += chunkSize) {
+      final end =
+          start + chunkSize < refs.length ? start + chunkSize : refs.length;
+      final chunk = refs.sublist(start, end);
+      final marks = List.filled(chunk.length, '?').join(', ');
+      final counted = await database.rawQuery(
+        'SELECT COUNT(*) AS n FROM cache_place '
+        'WHERE identity_scope = ? AND place_ref IN ($marks)',
+        [identityScope, ...chunk],
+      );
+      placesCached += Sqflite.firstIntValue(counted) ?? 0;
+    }
+    return (cachedAt: cachedAt, placesCached: placesCached);
+  }
+
   /// Durable heart storage (identity-scoped, per-trip).
   Future<void> _createLovedPlacesTable(Database db) async {
     await db.execute(

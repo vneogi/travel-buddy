@@ -242,7 +242,7 @@ void main() {
       expect(c.state.loading, isFalse);
       expect(c.state.nodes, hasLength(1));
       expect(c.state.nodes.first.venueName, equals('Cached Hotel'));
-      expect(c.state.banner, contains('Offline'));
+      expect(c.state.showingSaved, isTrue);
     });
 
     test('successful load caches trip to SQLite cache_trip', () async {
