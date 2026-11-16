@@ -121,6 +121,14 @@ the catalog has a fit; Low energy can honestly return retrieval_miss;
 airplane mode shows "Not available offline" and queues nothing. Flutter
 only; Cloud Run unchanged.
 
+SPEC-56 slice 1 on main (PR #270, `c31fc22`). Owner device check PASSED
+2026-11-16: online row `Saved on this device (just now)`; sheet shows
+itinerary time and `Driver cards: 13 of 13 stops saved`; airplane mode
+shows `Offline: showing saved trip (saved <age>)`; old dismissible
+banner gone; offline Driver Card still opens. Sync Status may show
+permanent outbox failures; that is analytics, not readiness, and is out
+of this slice. Flutter only; Cloud Run unchanged.
+
 Release posture: this is an owner-only field-test service, not a beta or public
 launch. SPEC-43 records twelve security/privacy gaps that must close after the
 Laos build and before another person receives an APK. The owner G0 APK now uses a Supabase anonymous JWT. Gap 11 body/depth

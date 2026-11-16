@@ -355,16 +355,16 @@ What Now returns options; Food intent returns food/cafes. Accepted UX:
 itinerary Ask bar opens chat and needs a second "What now?" press; do
 not open a Genie brief for that. No Cloud Run deploy needed.
 SPEC-53 slice 1 on main (PR #266, `15ab8fe`); owner device check PASSED
-2026-11-16. SPEC-56 on main (PR #270, `c31fc22`); device check pending
-tonight if the owner still has the phone. Owner device window then
-pauses about four days: Genie work continues behind CI; phone checks
-batch on return.
+2026-11-16. SPEC-56 on main (PR #270, `c31fc22`); owner device check
+PASSED 2026-11-16. Owner device window pauses about four days: Genie
+work continues behind CI; phone checks batch on return.
 
 Genie queue during the pause: SPEC-49 slice 1 (Show-to-driver), then
 SPEC-48 slice 1 (NOW/UP NEXT), then SPEC-50 swap comparison, then
 `GENIE_ISOCHRONE_PROVIDER.md` (flag off), then SPEC-52 verification.
 Parked: SPEC-51, 54, 55 (needs design answers), UX-57/58, connectors,
-landmarks. Next brief to write: SPEC-49 Show-to-driver.
+landmarks. Next brief ready:
+`docs/briefs/GENIE_SPEC49_SHOW_TO_DRIVER.md`.
 
 Rename done (2026-11-16): the penciled UI/UX items use SPEC-48..SPEC-56
 again, each with an owning file in `docs/specs/`. UX-57 (themes) and

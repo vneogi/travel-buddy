@@ -185,8 +185,9 @@ to food/cafes. Accepted UX note: itinerary Ask bar still needs a second
 "What now?" press inside chat; not a fix brief for now.
 
 SPEC-53 slice 1 on main (PR #266, `15ab8fe`); owner device check PASSED
-2026-11-16 (chip labels, food filter, honest empty for Low energy,
-offline refuse). Next trip-first item: SPEC-56 offline readiness.
+2026-11-16. SPEC-56 slice 1 on main (PR #270, `c31fc22`); owner device
+check PASSED 2026-11-16 (saved row, offline row, 13/13 driver cards,
+offline Driver Card). Next Genie brief: SPEC-49 Show-to-driver.
 
 Frontend, after the trip core: F1 single create entry (needs SPEC-36 and
 SPEC-26 amendment first); SPEC-07 dish UI; SPEC-22 font/ARB/screen
@@ -219,8 +220,8 @@ files SPEC-48..SPEC-56 are in `docs/specs/` (2026-11-16).
 
 Owner device window closes 2026-11-16 night for about four days.
 Resequence (2026-11-16): land Genie work behind CI now; batch phone
-checks when the owner returns. SPEC-53 done. SPEC-56 on main, device
-check pending tonight if possible.
+checks when the owner returns. SPEC-53 and SPEC-56 device checks both
+PASSED 2026-11-16.
 
 Genie queue while the phone is away (CI-gated; no phone required):
 
@@ -242,8 +243,7 @@ Park until after the trip or until design answers exist:
 - SPEC-49 landmarks (needs on-site owner data).
 
 Device-check batch when the phone returns (one APK from then-current
-main): SPEC-56 if not done tonight, then 49, 48, 50; Isochrones flag-on
-smoke only after deploy.
+main): SPEC-49, 48, 50; Isochrones flag-on smoke only after deploy.
 
 Earlier draft order from the package (superseded by the queue above for
 the pause):
