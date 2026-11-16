@@ -184,6 +184,10 @@ listenManual on the itinerary controller. Device check PASSED 2026-11-16
 to food/cafes. Accepted UX note: itinerary Ask bar still needs a second
 "What now?" press inside chat; not a fix brief for now.
 
+SPEC-53 slice 1 on main (PR #266, `15ab8fe`); owner device check PASSED
+2026-11-16 (chip labels, food filter, honest empty for Low energy,
+offline refuse). Next trip-first item: SPEC-56 offline readiness.
+
 Frontend, after the trip core: F1 single create entry (needs SPEC-36 and
 SPEC-26 amendment first); SPEC-07 dish UI; SPEC-22 font/ARB/screen
 migration; SPEC-43 client remainders (Gap 5 masking/FLAG_SECURE/iOS/
@@ -218,7 +222,7 @@ trip. Draft order from the package:
 1. SPEC-48 glanceable timeline + connectors (only with provenanced
    transit; after Isochrones earn-the-slice if connectors need network
    times).
-2. SPEC-53 situation chips on Ask/What Now (reuse SPEC-25/46 contracts).
+2. SPEC-53 situation chips -- DONE slice 1 (PR #266, device check 2026-11-16).
 3. SPEC-50 inspectable swap comparison (client-first; evidence contract
    before new backend fields).
 4. SPEC-51 unified create entry (owns F1; needs SPEC-36/26 amendment).

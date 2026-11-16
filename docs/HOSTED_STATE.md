@@ -114,6 +114,13 @@ itinerary Ask bar opens chat with "What Now ?" and needs a second press
 of the chat "What now?" chip before results appear. The Home trip-card
 chat path and the What Now preference form both produce results.
 
+SPEC-53 slice 1 on main (PR #266, `15ab8fe`). Owner device check PASSED
+2026-11-16: chips send with the chip label as the user bubble; Something
+to eat returns food/cafes; Indoors and Quick break return options when
+the catalog has a fit; Low energy can honestly return retrieval_miss;
+airplane mode shows "Not available offline" and queues nothing. Flutter
+only; Cloud Run unchanged.
+
 Release posture: this is an owner-only field-test service, not a beta or public
 launch. SPEC-43 records twelve security/privacy gaps that must close after the
 Laos build and before another person receives an APK. The owner G0 APK now uses a Supabase anonymous JWT. Gap 11 body/depth
