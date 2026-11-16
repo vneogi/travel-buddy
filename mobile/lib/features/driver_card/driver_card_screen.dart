@@ -143,12 +143,19 @@ class _DriverCardScreenState extends ConsumerState<DriverCardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // SPEC-49: while the hand-off view is on, back exits the view and keeps
-    // this screen; otherwise back pops normally.
+    // SPEC-49: intercept every pop. While hand-off is on, exit the mode and
+    // stay on this screen; otherwise leave the route. canPop is always false
+    // so AppBar back and system back take the same path (force-pop when mode
+    // is off).
     return PopScope<Object?>(
-      canPop: !_showToDriver,
+      canPop: false,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && _showToDriver) _setShowToDriver(false);
+        if (didPop) return;
+        if (_showToDriver) {
+          _setShowToDriver(false);
+        } else {
+          Navigator.of(context).pop();
+        }
       },
       child: Scaffold(
         backgroundColor: AppColors.card,
@@ -260,13 +267,16 @@ class _DriverCardScreenState extends ConsumerState<DriverCardScreen> {
         children: [
           _buildNameSection(),
           const SizedBox(height: AppSpacing.base),
-          // SPEC-49: enter the hand-to-driver view.
-          OutlinedButton.icon(
-            key: const Key('show_to_driver_enter'),
-            style: OutlinedButton.styleFrom(minimumSize: const Size(0, 44)),
-            onPressed: () => _setShowToDriver(true),
-            icon: const Icon(Icons.badge_outlined),
-            label: const Text('Show to driver'),
+          // SPEC-49: enter the hand-to-driver view. Full-width so the label
+          // wraps at large text scale instead of overflowing a Row.
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              key: const Key('show_to_driver_enter'),
+              style: OutlinedButton.styleFrom(minimumSize: const Size(0, 44)),
+              onPressed: () => _setShowToDriver(true),
+              child: const Text('Show to driver', textAlign: TextAlign.center),
+            ),
           ),
           const SizedBox(height: AppSpacing.lg),
           _buildLandmarkSection(data),
