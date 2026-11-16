@@ -39,7 +39,7 @@ const List<SituationChip> kSituationChips = [
   SituationChip(
     id: 'quick_break',
     label: 'Quick break',
-    availableMinutes: 45,
+    availableMinutes: 90,
     energy: 'low',
     walking: 'short',
     intent: 'anything',
@@ -58,7 +58,7 @@ const List<SituationChip> kSituationChips = [
     availableMinutes: 90,
     energy: 'normal',
     walking: 'short',
-    intent: 'indoors',
+    intent: 'shelter',
   ),
   SituationChip(
     id: 'food',

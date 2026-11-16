@@ -347,12 +347,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ),
           // SPEC-53: one-tap situation chips, second scrollable line.
           SituationChipRow(
-            enabled: !_isThinking,
+            enabled: true,
             onSelected: (chip) => _sendWhatNow(
               chip.preferences(
                 contextNodeId: _defaultWhatNowContextNode()?.nodeId,
               ),
-              text: chip.label,
             ),
           ),
           _InputBar(
