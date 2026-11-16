@@ -199,6 +199,9 @@ void main() {
   );
 
   // 2. Chat opened as the app root (no itinerary underneath).
+  // End-to-end regression check. The widget test binding's fake clock does not
+  // reproduce the autoDispose race, so this passes on the base too; the guards
+  // that fail without the fix are tests 4, 5 and 7. Test 1 shows the mechanism.
   // The Completer is completed AFTER fake time advances so Riverpod's
   // autoDispose has run on the base (no listener). With the fix, the
   // listener keeps the controller alive and the answer appears.
@@ -356,6 +359,9 @@ void main() {
       ));
       await _flush(tester, until: find.byType(TextField));
 
+      // Held while chat is mounted (fails without the listener in chat).
+      expect(h.container.exists(itineraryControllerProvider(_tripId)), isTrue);
+
       key.currentState!.pushReplacement(
         MaterialPageRoute<void>(builder: (_) => const Scaffold()),
       );
@@ -369,6 +375,33 @@ void main() {
 
       h.container.dispose();
       await tester.runAsync(() => h.db.close());
+    },
+  );
+
+  // 7. Deterministic guard for the fix: chat itself holds the controller from
+  // the moment it opens, before any send. Without the listener nothing has
+  // created the autoDispose controller yet, so this fails on the base.
+  testWidgets(
+    'chat holds a live itinerary controller from the moment it opens',
+    timeout: const Timeout(Duration(seconds: 30)),
+    (tester) async {
+      final h = await tester.runAsync(() => _buildHarness());
+      if (h == null) fail('harness null');
+
+      expect(h.container.exists(itineraryControllerProvider(_tripId)), isFalse);
+
+      await tester.pumpWidget(UncontrolledProviderScope(
+        container: h.container,
+        child: MaterialApp(
+          home: ChatScreen(tripId: _tripId, connectivityOverride: _FakeConnectivity()),
+        ),
+      ));
+      await _flush(tester, until: find.byType(TextField));
+      await _flush(tester);
+
+      expect(h.container.exists(itineraryControllerProvider(_tripId)), isTrue);
+
+      await _teardown(tester, h);
     },
   );
 

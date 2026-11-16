@@ -40,7 +40,6 @@ class ChatScreen extends ConsumerStatefulWidget {
 
 class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _controller = TextEditingController();
-  ProviderSubscription<ItineraryState>? _itinerarySub;
   final _messages = <_ChatEntry>[];
   bool _isThinking = false;
   late final ConnectivityHelper _connectivity;
@@ -52,7 +51,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    _itinerarySub = ref.listenManual(
+    // Hold the autoDispose itinerary controller for as long as chat is open,
+    // so sends from chat (including when chat was opened from Home with no
+    // itinerary screen underneath) always reach a live controller. Riverpod
+    // closes listenManual subscriptions when this widget unmounts.
+    ref.listenManual(
       itineraryControllerProvider(widget.tripId),
       (_, __) {},
     );
@@ -65,12 +68,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         _send(initial);
       }
     });
-  }
-
-  @override
-  void dispose() {
-    _itinerarySub?.close();
-    super.dispose();
   }
 
   /// Load the specified thread or the most recent one for this trip.
