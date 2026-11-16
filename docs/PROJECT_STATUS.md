@@ -177,12 +177,10 @@ Owner-only:
 - Non-owner testers (G1) are not in this window; SPEC-43 plus SPEC-24/27
   remain.
 
-Client bug, open (2026-11-16 hosted logs): a What Now form send can show
-"I could not complete that request" after the server returned 200,
-when the autoDispose itinerary controller is rebuilt mid-request
-(`applyEvent` returns null on `!mounted`). Retry works. Likely trigger:
-chat opened from Home's trip-card chat icon. Fix brief:
-`docs/briefs/GENIE_CHAT_CONTROLLER_LIFETIME.md`.
+Client bug, closed (2026-11-16): What Now / Ask generic error when chat
+was opened from Home. Fixed in PR #260 (`2031480`): ChatScreen holds a
+listenManual on the itinerary controller. Device check pending after
+APK rebuild.
 
 Frontend, after the trip core: F1 single create entry (needs SPEC-36 and
 SPEC-26 amendment first); SPEC-07 dish UI; SPEC-22 font/ARB/screen
