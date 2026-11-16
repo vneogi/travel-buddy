@@ -350,10 +350,12 @@ with Isochrones. Next Genie job: `docs/briefs/GENIE_ISOCHRONE_PROVIDER.md`
 durable tombstone, or SPEC-48/53 owning specs (now written).
 
 Flutter chat-controller lifetime fix is on main (PR #260, `2031480`).
-Owner: rebuild the APK from main and run the device check in the brief
-(Home chat icon, then itinerary Ask bar). No Cloud Run deploy needed.
+Owner device check PASSED 2026-11-16 (APK SHA256 `464f1479...c9f388`):
+What Now returns options; Food intent returns food/cafes. Accepted UX:
+itinerary Ask bar opens chat and needs a second "What now?" press; do
+not open a Genie brief for that. No Cloud Run deploy needed.
 Owning spec files SPEC-48..SPEC-56 landed 2026-11-16; next brief
-candidate is SPEC-53 (Decision Compass) after the device check passes.
+candidate is SPEC-53 (Decision Compass).
 
 Rename done (2026-11-16): the penciled UI/UX items use SPEC-48..SPEC-56
 again, each with an owning file in `docs/specs/`. UX-57 (themes) and

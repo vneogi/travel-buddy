@@ -105,9 +105,14 @@ showed the generic client error even though Cloud Run returned HTTP 200.
 Fixed on main by PR #260 (`2031480`): ChatScreen holds a listenManual on
 the autoDispose itinerary controller while chat is open. CI proved the
 guards fail without the fix (tests 4, 5, 7). Flutter-only; Cloud Run
-revision unchanged (`00019-nl7`). Owner device check after APK rebuild:
-Home, trip-card chat icon, What Now submit, then the same from the
-itinerary Ask bar.
+revision unchanged (`00019-nl7`). Owner device check PASSED 2026-11-16 on
+APK SHA256
+`464f1479331f3a71f49da6783b57b7aaabb1f5be47c3776a0ae30ba1a6c9f388`
+(release install on RZ8NA06XPCH). What Now returns options; Food intent
+returns food/cafes only. Known UX (accepted, not a follow-up now): the
+itinerary Ask bar opens chat with "What Now ?" and needs a second press
+of the chat "What now?" chip before results appear. The Home trip-card
+chat path and the What Now preference form both produce results.
 
 Release posture: this is an owner-only field-test service, not a beta or public
 launch. SPEC-43 records twelve security/privacy gaps that must close after the
