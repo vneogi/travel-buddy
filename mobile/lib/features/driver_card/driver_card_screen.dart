@@ -35,6 +35,8 @@ class _DriverCardScreenState extends ConsumerState<DriverCardScreen> {
   String? _resolvedLang;
   String? _resolvedValue;
   String? _resolvedSource;
+  // SPEC-49: hand-to-driver view. Starts off on every open; never persisted.
+  bool _showToDriver = false;
 
   @override
   void initState() {
@@ -134,26 +136,114 @@ class _DriverCardScreenState extends ConsumerState<DriverCardScreen> {
     _resolvedSource = newSource;
   }
 
+  void _setShowToDriver(bool on) {
+    if (_showToDriver == on) return;
+    setState(() => _showToDriver = on);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.card,
-      appBar: AppBar(
+    // SPEC-49: while the hand-off view is on, back exits the view and keeps
+    // this screen; otherwise back pops normally.
+    return PopScope<Object?>(
+      canPop: !_showToDriver,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && _showToDriver) _setShowToDriver(false);
+      },
+      child: Scaffold(
         backgroundColor: AppColors.card,
-        elevation: 0,
-        leading: const BackButton(),
-        title: Text('Driver Card', style: AppTypography.h2),
+        appBar: _showToDriver
+            ? null
+            : AppBar(
+                backgroundColor: AppColors.card,
+                elevation: 0,
+                leading: const BackButton(),
+                title: Text('Driver Card', style: AppTypography.h2),
+              ),
+        body: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : _data == null
+                ? Center(
+                    child: Text(
+                      'Place not cached',
+                      style:
+                          AppTypography.body.copyWith(color: AppColors.muted),
+                    ),
+                  )
+                : _showToDriver
+                    ? _buildHandoff()
+                    : _buildCard(),
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _data == null
-              ? Center(
-                  child: Text(
-                    'Place not cached',
-                    style: AppTypography.body.copyWith(color: AppColors.muted),
+    );
+  }
+
+  /// SPEC-49: destination name at arm's-length size, the resolved local
+  /// landmark when one exists, and one exit control. Nothing else.
+  Widget _buildHandoff() {
+    final data = _data!;
+    final showLocal = _currentTier != FactTier.refuse && _resolvedValue != null;
+    final name = showLocal ? _resolvedValue! : data.venueName;
+    final nameStyle = showLocal
+        ? AppTypography.localScript(_resolvedLang)
+        : AppTypography.display;
+    final landmarkEntry = resolvePreferredLocalEntry(
+      localizedMap: data.landmarksLocal,
+      geoRegion: data.geoRegion,
+    );
+    final landmark = landmarkEntry?.value['value'] as String?;
+
+    return SafeArea(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    key: const Key('show_to_driver_name'),
+                    softWrap: true,
+                    style: nameStyle,
                   ),
-                )
-              : _buildCard(),
+                  if (landmark != null && landmark.isNotEmpty) ...[
+                    const SizedBox(height: AppSpacing.xl),
+                    Text('Landmark', style: AppTypography.label),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      landmark,
+                      key: const Key('show_to_driver_landmark'),
+                      softWrap: true,
+                      style: AppTypography.h1,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              0,
+              AppSpacing.lg,
+              AppSpacing.lg,
+            ),
+            child: FilledButton(
+              key: const Key('show_to_driver_exit'),
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+              ),
+              onPressed: () => _setShowToDriver(false),
+              child: const Text(
+                'Done -- return to card',
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -169,6 +259,15 @@ class _DriverCardScreenState extends ConsumerState<DriverCardScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildNameSection(),
+          const SizedBox(height: AppSpacing.base),
+          // SPEC-49: enter the hand-to-driver view.
+          OutlinedButton.icon(
+            key: const Key('show_to_driver_enter'),
+            style: OutlinedButton.styleFrom(minimumSize: const Size(0, 44)),
+            onPressed: () => _setShowToDriver(true),
+            icon: const Icon(Icons.badge_outlined),
+            label: const Text('Show to driver'),
+          ),
           const SizedBox(height: AppSpacing.lg),
           _buildLandmarkSection(data),
           const SizedBox(height: AppSpacing.lg),
