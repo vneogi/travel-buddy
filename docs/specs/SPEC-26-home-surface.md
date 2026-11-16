@@ -1,5 +1,7 @@
 # SPEC-26: Home Surface and Trip Creation
 
+> Amended by SPEC-51 (unified trip creation), 2026-11-16.
+
 > Status: PARTIAL. The authenticated trip-list/home thin slice is implemented;
 > the richer active-trip aggregate and full SPEC-22 migration remain.
 >

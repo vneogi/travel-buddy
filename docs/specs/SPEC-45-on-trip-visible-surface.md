@@ -1,5 +1,7 @@
 # SPEC-45: On-Trip Visible Surface
 
+> Amended by SPEC-48 (glanceable timeline), 2026-11-16.
+
 > Status: PHASE A AND PHASE B IMPLEMENTED on main (`7939565`,
 > `5bf6aa9`). Owner phone evidence 2026-09-27 on APK `bd935bf2...`
 > against Cloud Run `00012-8wv` showed tappable cards, one Ask composer,

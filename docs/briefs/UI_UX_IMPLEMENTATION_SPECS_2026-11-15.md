@@ -4,14 +4,12 @@
 **Scope:** the recommendations from the repository review, aligned to the existing Flutter + FastAPI architecture and current specs. These are proposals, not landed features.
 
 
-> Repo status 2026-11-15: penciled proposals for UX-48 through UX-56.
-> Not yet owning specs on disk. Sequence and open-items live in
-> `docs/PROJECT_STATUS.md` and `docs/UX_BACKLOG.md`. UX-49 client
-> language priority (F2) and UX-52 date markers (F3) are already on
-> main; remaining work under those numbers is noted in the backlog.
-> The team draft used SPEC numbers 48 to 56; they are written UX-NN
-> here until each owning spec file exists in `docs/specs/` (docs
-> hygiene rejects SPEC references with no spec file).
+> Repo status 2026-11-16: owning spec files SPEC-48 through SPEC-56
+> now exist in `docs/specs/` and carry the owner decisions and first
+> slices. This draft is background; the spec files win where they
+> differ. Sequence and open items live in `docs/PROJECT_STATUS.md`
+> and `docs/UX_BACKLOG.md`. SPEC-49 client language priority (F2)
+> and SPEC-52 date markers (F3) are already on main.
 
 ## Guiding constraints
 
@@ -22,7 +20,7 @@
 - Treat SPEC-43 privacy/security gates as prerequisites for non-owner release and production processing of personal trip data.
 - Keep mobile state offline-first; use existing SQLite caches and outbox contracts rather than creating a second sync system.
 
-## UX-48 -- On-trip glanceability and connective timeline
+## SPEC-48 -- On-trip glanceability and connective timeline
 
 **Goal:** Let a traveler quickly see what is happening now, what follows, and whether there is enough time to get there.
 
@@ -47,7 +45,7 @@
 - Existing itinerary reflow, booking locks, corridor grouping, and offline tests remain green.
 - Long venue names and 200% text scaling do not cause horizontal overflow.
 
-## UX-49 -- Driver card handoff ergonomics and Tanzania language support
+## SPEC-49 -- Driver card handoff ergonomics and Tanzania language support
 
 **Goal:** Make the existing offline Driver Card easier to show to a local driver, and close the documented Tanzania language gap.
 
@@ -69,7 +67,7 @@
 - Tanzania follows `sw` then `en`; missing or unverified data is labeled accurately.
 - Tests cover locale priority, provenance display, cache-only rendering, and cleanup on disposal.
 
-## UX-50 -- Inspectable swap comparison
+## SPEC-50 -- Inspectable swap comparison
 
 **Goal:** Help a trip captain compare a proposed replacement with the current stop before confirming a swap.
 
@@ -91,7 +89,7 @@
 - Candidate browsing never mutates; a confirmed swap uses the existing authoritative command path and preserves anchors.
 - Unit/widget tests cover locked stops, missing dimensions, and confirmation/dismissal.
 
-## UX-51 -- Unified single-/multi-destination trip creation
+## SPEC-51 -- Unified single-/multi-destination trip creation
 
 **Goal:** Present one "Create a trip" entry point while keeping supported corridor boundaries explicit.
 
@@ -113,7 +111,7 @@
 - Corridor sequence/date validation remains backend-authoritative; no synthetic stays or transfers are inserted.
 - Tests cover preset selection, date validation, back navigation, and existing trip creation regressions.
 
-## UX-52 -- Existing-trip date markers
+## SPEC-52 -- Existing-trip date markers
 
 **Goal:** Give non-blocking awareness of date overlap while creating another trip.
 
@@ -133,7 +131,7 @@
 - Overlap remains allowed; no creation request is blocked.
 - Tests cover trip start/end boundaries, multi-day spans, timezones, offline cache, and multiple overlapping trips.
 
-## UX-53 -- Situation chips in the existing Ask/What Now thread
+## SPEC-53 -- Situation chips in the existing Ask/What Now thread
 
 **Goal:** Reduce typing when the traveler needs quick recovery while preserving the existing grounded trip-scoped Ask architecture.
 
@@ -155,7 +153,7 @@
 - No result claims live weather/traffic or indoor/AC status without evidence.
 - No itinerary mutation occurs until explicit confirmation; offline behavior is clear and safe.
 
-## UX-54 -- Temporary party context and energy constraints
+## SPEC-54 -- Temporary party context and energy constraints
 
 **Goal:** Let the trip captain temporarily explain a group's current needs without rewriting persistent party identity or altering locked commitments.
 
@@ -176,7 +174,7 @@
 - Locked bookings and existing itinerary remain unchanged.
 - UI explains when a constraint cannot be honored due to missing data.
 
-## UX-55 -- Inter-city transfer information
+## SPEC-55 -- Inter-city transfer information
 
 **Goal:** Make known travel between corridor destinations visible without inventing transport arrangements.
 
@@ -197,7 +195,7 @@
 - Adding/editing/deleting a transfer follows existing confirmation, ownership, and anchor rules.
 - Corridor and single-city timelines remain compatible.
 
-## UX-56 -- Offline readiness indicator
+## SPEC-56 -- Offline readiness indicator
 
 **Goal:** Tell travelers what is actually saved locally before connectivity is lost, without promising a complete offline city pack unless one exists.
 
@@ -220,11 +218,11 @@
 
 ## Suggested sequencing
 
-1. Verify completed backlog work first: UX-49 Tanzania language-priority client fix and UX-52 overlap markers are reported as landed in `docs/UX_BACKLOG.md`.
-2. Prototype UX-48 and UX-53 as client changes using data/contracts already available.
-3. Define evidence contracts before UX-50's comparison metrics or UX-54's recommendation filters.
-4. Unify creation under UX-51 after aligning with SPEC-26/SPEC-36 status and the current supported corridor registry.
-5. Add UX-55 only for traveler-entered/confirmed transfers; UX-56 should initially report existing cache status, not imply a full downloadable pack.
+1. Verify completed backlog work first: SPEC-49 Tanzania language-priority client fix and SPEC-52 overlap markers are reported as landed in `docs/UX_BACKLOG.md`.
+2. Prototype SPEC-48 and SPEC-53 as client changes using data/contracts already available.
+3. Define evidence contracts before SPEC-50's comparison metrics or SPEC-54's recommendation filters.
+4. Unify creation under SPEC-51 after aligning with SPEC-26/SPEC-36 status and the current supported corridor registry.
+5. Add SPEC-55 only for traveler-entered/confirmed transfers; SPEC-56 should initially report existing cache status, not imply a full downloadable pack.
 
 ## Definition of done for each spec
 

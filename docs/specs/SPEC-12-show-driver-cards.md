@@ -1,5 +1,7 @@
 # SPEC-12: Show Driver Cards (Offline)
 
+> Amended by SPEC-49 (driver handoff and Tanzania language), 2026-11-16.
+
 > Status: DONE (October slice) in PR #19 (`a2da64a`) with later hardening in
 > PR #23 (`dab16c0`). Full fare/source expansion remains deferred.
 >
