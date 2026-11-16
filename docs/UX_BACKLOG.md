@@ -23,7 +23,7 @@ until after the trip or design answers: 51, 54, 55, UX-57/58.
 | SPEC-53 situation chips | Slice 1 done | PR #266; device check 2026-11-16; Head back later |
 | SPEC-54 temporary party/energy | Penciled | Client-local first; SPEC-43 before server |
 | SPEC-55 inter-city transfer | Penciled | Booking-confirmed only; also between two own trips (owner) |
-| SPEC-56 offline readiness | Penciled | Honest cache status; no fake full pack |
+| SPEC-56 offline readiness | Slice 1 done | PR #270; device check 2026-11-16 |
 | UX-57 design themes and tokens | Penciled | Semantic tokens, dark, manual High-Visibility; audit first (Phase A) |
 | UX-58 local-food Pointing Card | Penciled | Curated glossary only; missing text or allergens shown as unavailable |
 

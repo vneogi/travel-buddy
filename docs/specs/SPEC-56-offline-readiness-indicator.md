@@ -1,7 +1,8 @@
 # SPEC-56: Offline Readiness Indicator
 
-> Status: PENCILED (owning spec written 2026-11-16). Not implemented.
-> Slice 1 brief: `docs/briefs/GENIE_SPEC56_OFFLINE_READINESS.md`.
+> Status: SLICE 1 ON MAIN (PR #270, `c31fc22`). Owner device check
+> PASSED 2026-11-16. Slice 1 brief:
+> `docs/briefs/GENIE_SPEC56_OFFLINE_READINESS.md`.
 > Amends SPEC-04 (offline vault), using SPEC-02 cache metadata.
 
 ## Goal

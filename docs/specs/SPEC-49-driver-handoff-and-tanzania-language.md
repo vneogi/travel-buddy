@@ -2,7 +2,8 @@
 
 > Status: PARTIAL (owning spec written 2026-11-16). Swahili-then-English
 > language priority for Tanzania regions is on main (finding F2 in
-> `docs/UX_BACKLOG.md`). Show-to-driver mode, the in-app shortcut and
+> `docs/UX_BACKLOG.md`). Show-to-driver slice 1 brief:
+> `docs/briefs/GENIE_SPEC49_SHOW_TO_DRIVER.md`. In-app shortcut and
 > field-verified Swahili landmarks are not implemented.
 > Amends SPEC-12 (Driver Card), with SPEC-13 for language order.
 
