@@ -355,7 +355,8 @@ What Now returns options; Food intent returns food/cafes. Accepted UX:
 itinerary Ask bar opens chat and needs a second "What now?" press; do
 not open a Genie brief for that. No Cloud Run deploy needed.
 Owning spec files SPEC-48..SPEC-56 landed 2026-11-16; next brief
-candidate is SPEC-53 (Decision Compass).
+candidate is SPEC-53 (Decision Compass). Brief written 2026-11-16:
+`docs/briefs/GENIE_SPEC53_SITUATION_CHIPS.md` (Flutter only; four chips).
 
 Rename done (2026-11-16): the penciled UI/UX items use SPEC-48..SPEC-56
 again, each with an owning file in `docs/specs/`. UX-57 (themes) and
