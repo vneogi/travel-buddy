@@ -340,27 +340,24 @@ live). Device APK still from `206122a` -- rebuild from `main` for F2
 Swahili priority and F3 date markers. Default pytest and
 `postgres-proof` are green (R16 doc hygiene fixed with this tip).
 
-After Isochrones trial: penciled UI/UX package UX-48..UX-56
+After Isochrones trial: penciled UI/UX package SPEC-48..SPEC-56
 (`docs/briefs/UI_UX_IMPLEMENTATION_SPECS_2026-11-15.md`); write owning
 specs before Genie briefs. Isochrones trial DONE 2026-11-16 (`dacfc77`); live compare earned
 the network-reachability slice (`docs/decisions/NETWORK_REACHABILITY.md`).
 Owner scheduled that slice 2026-11-16 and keeps `New GMaps_API_Key`
 with Isochrones. Next Genie job: `docs/briefs/GENIE_ISOCHRONE_PROVIDER.md`
 (flag default off). After it: booking-return reachability, Gap 4
-durable tombstone, or UX-48/53 owning specs.
+durable tombstone, or SPEC-48/53 owning specs (now written).
 
 Flutter chat-controller lifetime fix is on main (PR #260, `2031480`).
 Owner: rebuild the APK from main and run the device check in the brief
 (Home chat icon, then itinerary Ask bar). No Cloud Run deploy needed.
-Next docs work (unblocked): land the outline for numbers 48 through 56 as owning
-spec files, then switch UX-NN back to the team's SPEC numbers.
+Owning spec files SPEC-48..SPEC-56 landed 2026-11-16; next brief
+candidate is SPEC-53 (Decision Compass) after the device check passes.
 
-Pending rename (owner 2026-11-16): Genie's chat fix is on main, so the
-in-flight wait is over. Switch the penciled UI/UX items back from UX-NN
-to the team's numbers 48 through 56 once each has its owning
-spec file in `docs/specs/`. Outline draft decisions are recorded; write
-the nine files next. Without those files, `tests/test_docs_hygiene.py`
-fails any SPEC-NN reference and would turn main red. Not trip-critical. Owner: rebuild APK
+Rename done (2026-11-16): the penciled UI/UX items use SPEC-48..SPEC-56
+again, each with an owning file in `docs/specs/`. UX-57 (themes) and
+UX-58 (Pointing Card) stay backlog items until they get spec files. Owner: rebuild APK
 from `main` and smoke F2/F3 on phone; on-site Swahili landmark data
 pass. The single open-items list for 2026-11-15 to 2026-12-04 is in
 `PROJECT_STATUS.md` under "What is Next". F1 waits on a SPEC-36/26

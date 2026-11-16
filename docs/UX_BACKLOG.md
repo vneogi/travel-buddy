@@ -7,20 +7,22 @@ we are already building — NOT re-architecture. Ideas are merged into our exist
 
 Source: product/UI team draft
 `docs/briefs/UI_UX_IMPLEMENTATION_SPECS_2026-11-15.md`. Owner accepted the
-direction. These are proposals, not landed specs. Open owning SPEC files
-(or amend SPEC-36/26/12/45/46) before Genie briefs.
+direction. Owning spec files SPEC-48 through SPEC-56 landed 2026-11-16
+in `docs/specs/`; each names the parent spec it amends and its first
+slice. Trip-first order: SPEC-53, SPEC-56, SPEC-49, SPEC-48 (slice 1).
+The rest waits until after the Tanzania trip.
 
 | Draft | Status | Notes |
 |---|---|---|
-| UX-48 glanceable timeline | Penciled | After Isochrones decision if connectors need network times |
-| UX-49 driver handoff + TZ language | Partial | F2 `sw`/`en` on main; remainder: Show-to-driver mode + landmarks |
-| UX-50 swap comparison | Penciled | Evidence contract before new fields |
-| UX-51 unified create | Penciled | Owns F1; needs SPEC-36/26 amendment |
-| UX-52 date markers | Partial | F3 on main; TripSummary activity-span remainder |
-| UX-53 situation chips | Penciled | Reuse Ask/What Now; no silent mutations |
-| UX-54 temporary party/energy | Penciled | Client-local first; SPEC-43 before server |
-| UX-55 inter-city transfer | Penciled | Booking-confirmed only |
-| UX-56 offline readiness | Penciled | Honest cache status; no fake full pack |
+| SPEC-48 glanceable timeline | Penciled | Slice 1 NOW/UP NEXT client-only; connectors wait for a trusted duration source |
+| SPEC-49 driver handoff + TZ language | Partial | F2 `sw`/`en` on main; remainder: Show-to-driver mode + landmarks |
+| SPEC-50 swap comparison | Penciled | Evidence contract before new fields |
+| SPEC-51 unified create | Penciled | Owns F1; needs SPEC-36/26 amendment |
+| SPEC-52 date markers | Partial | F3 on main; TripSummary activity-span remainder |
+| SPEC-53 situation chips | Penciled | Reuse Ask/What Now; no silent mutations |
+| SPEC-54 temporary party/energy | Penciled | Client-local first; SPEC-43 before server |
+| SPEC-55 inter-city transfer | Penciled | Booking-confirmed only; also between two own trips (owner) |
+| SPEC-56 offline readiness | Penciled | Honest cache status; no fake full pack |
 | UX-57 design themes and tokens | Penciled | Semantic tokens, dark, manual High-Visibility; audit first (Phase A) |
 | UX-58 local-food Pointing Card | Penciled | Curated glossary only; missing text or allergens shown as unavailable |
 
@@ -31,10 +33,10 @@ Nov 16 2026 addition: design themes draft
 `docs/briefs/UI_DESIGN_THEMES_2026-11-16.md` (owner). New items are UX-57
 and UX-58 above. The rest maps onto existing items, not new numbers:
 
-- Timeline as an instrument (rail, active and next stop) -> UX-48.
-- Decision Compass (situation choices) -> UX-53. Choices must match What
+- Timeline as an instrument (rail, active and next stop) -> SPEC-48.
+- Decision Compass (situation choices) -> SPEC-53. Choices must match What
   Now intents the engine can honour today.
-- Driver handoff presentation and in-app Driver Card shortcut -> UX-49.
+- Driver handoff presentation and in-app Driver Card shortcut -> SPEC-49.
   OS tiles, lock screen and brightness override stay out until a privacy
   review.
 - Haptics and motion vocabulary -> part of UX-57.
@@ -51,9 +53,9 @@ Owner decisions (2026-11-16):
   palette in every destination.
 - High-Visibility is a settings toggle only. No in-trip control and no
   ambient-light or GPS sensing.
-- First signature prototype: Decision Compass (UX-53), after the What Now
+- First signature prototype: Decision Compass (SPEC-53), after the What Now
   client-lifetime fix. It reuses live What Now intents. Pointing Card
-  (UX-58) and Driver Card remainder (UX-49) wait. Route Passport stays
+  (UX-58) and Driver Card remainder (SPEC-49) wait. Route Passport stays
   deferred.
 
 ## Oct 11 2026 field reprioritization

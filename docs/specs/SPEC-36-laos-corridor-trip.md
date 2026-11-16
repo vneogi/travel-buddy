@@ -1,5 +1,7 @@
 # SPEC-36: Laos Corridor Trip
 
+> Amended by SPEC-51 (unified trip creation) and SPEC-55 (transfer between destinations), 2026-11-16.
+
 > Status: IMPLEMENTED ON MAIN (PR #55, merge `1f2c43d`, head `f44cdc6`).
 >
 > Owner Windows verified three-city Oct 2-8 create and later-city swap on

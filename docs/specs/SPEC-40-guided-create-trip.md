@@ -1,5 +1,7 @@
 # SPEC-40: Guided Create Trip Foundation
 
+> Amended by SPEC-51 (unified trip creation) and SPEC-52 (date markers), 2026-11-16.
+
 > Status: DONE. PR #61 squash-merged as `ebdea52`.
 >
 > SPEC-39 PDF intake remains deferred. This spec deliberately stops before

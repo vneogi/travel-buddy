@@ -1,5 +1,7 @@
 # SPEC-17: Trust and Verification Contract
 
+> Amended by SPEC-50 (inspectable swap comparison), 2026-11-16.
+
 > Status: PARTIAL. Sponsored-placement disclosure is implemented in the
 > SwapSheet slice; the claims registry, source/staleness system, and full
 > envelope backend remain unimplemented.

@@ -1,5 +1,7 @@
 # SPEC-25: The Ask Anything Surface
 
+> Amended by SPEC-53 (situation chips), 2026-11-16.
+
 > Status: PARTIAL. Grounded trip-scoped Ask, the field-priority intents, and
 > durable identity-scoped device-local threads are on main through SPEC-25
 > Phase C (`7d825c0`, PR #72). Owner Windows Flutter analysis and the full

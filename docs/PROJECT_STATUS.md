@@ -208,29 +208,30 @@ cache, spend circuit, What Now walking filter; flag default off).
 
 Penciled UI/UX package (owner 2026-11-15; love the recommendations; not
 trip-critical). Full draft:
-`docs/briefs/UI_UX_IMPLEMENTATION_SPECS_2026-11-15.md` (UX-48..UX-56).
-Suggested order after the Isochrones trial decision:
+`docs/briefs/UI_UX_IMPLEMENTATION_SPECS_2026-11-15.md`. Owning spec
+files SPEC-48..SPEC-56 are in `docs/specs/` (2026-11-16). Trip-first
+order: SPEC-53, SPEC-56, SPEC-49, SPEC-48 slice 1; the rest after the
+trip. Draft order from the package:
 
-1. UX-48 glanceable timeline + connectors (only with provenanced
+1. SPEC-48 glanceable timeline + connectors (only with provenanced
    transit; after Isochrones earn-the-slice if connectors need network
    times).
-2. UX-53 situation chips on Ask/What Now (reuse SPEC-25/46 contracts).
-3. UX-50 inspectable swap comparison (client-first; evidence contract
+2. SPEC-53 situation chips on Ask/What Now (reuse SPEC-25/46 contracts).
+3. SPEC-50 inspectable swap comparison (client-first; evidence contract
    before new backend fields).
-4. UX-51 unified create entry (owns F1; needs SPEC-36/26 amendment).
-5. UX-49 remainder: "Show to driver" presentation mode + on-site
+4. SPEC-51 unified create entry (owns F1; needs SPEC-36/26 amendment).
+5. SPEC-49 remainder: "Show to driver" presentation mode + on-site
    Swahili landmarks (client `sw`/`en` priority already on main).
-6. UX-52 remainder: activity-span vs create-form dates on TripSummary
+6. SPEC-52 remainder: activity-span vs create-form dates on TripSummary
    (markers already on main as F3).
-7. UX-54 temporary party/energy (client-local first; SPEC-43 before
+7. SPEC-54 temporary party/energy (client-local first; SPEC-43 before
    any server persistence).
-8. UX-55 inter-city transfer card (booking-confirmed only; no invented
+8. SPEC-55 inter-city transfer card (booking-confirmed only; no invented
    trains).
-9. UX-56 offline readiness indicator (report real cache state; no
+9. SPEC-56 offline readiness indicator (report real cache state; no
    "100% offline pack" claim).
 
-Do not open Genie briefs for these until the owning SPEC file or
-amendment is written. Guiding constraints in the draft match the product
+Genie briefs cite the owning spec file and its first slice. Guiding constraints in the draft match the product
 thesis (server-authoritative mutations, sourced claims, SPEC-43 gates).
 
 Hosted/ops: Cloud Run behind `main` (bar rule; Gap 4 slices 15-19, not

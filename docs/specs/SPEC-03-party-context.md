@@ -1,4 +1,7 @@
 # SPEC-03 — Trip party & party_context stamping
+
+> Amended by SPEC-54 (temporary party context), 2026-11-16.
+
 *Implements DATA_MODEL §16.1/§16.5. MUST ship before Oct 2 (Laos): party context cannot be
 backfilled — signals captured without it are unsegmentable forever.*
 

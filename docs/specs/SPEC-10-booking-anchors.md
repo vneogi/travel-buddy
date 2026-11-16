@@ -1,5 +1,7 @@
 # SPEC-10: Manual Booking Anchors
 
+> Amended by SPEC-55 (transfer between destinations), 2026-11-16.
+
 > Status: PARTIAL. Create/edit/delete on main (PR #20, PR #37). Provider-aware
 > paste on main (`fc6926b`). Flight cutoff and hotel origin/return on main
 > (`e7a0457`). Destination-local booking wall times on main (`933c705`, from

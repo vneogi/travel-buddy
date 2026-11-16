@@ -1,4 +1,7 @@
 # SPEC-04 — Offline Vault / Rescue Pack
+
+> Amended by SPEC-56 (offline readiness indicator), 2026-11-16.
+
 *Implements VISION capability #7 (calm in the unexpected). P1 per docs/UX_BACKLOG.md.*
 *Depends on: SPEC-02 offline cache (`cache_trip`, `cache_place`). No new architecture.*
 
