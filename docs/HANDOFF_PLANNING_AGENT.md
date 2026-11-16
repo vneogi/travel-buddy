@@ -362,7 +362,11 @@ work continues behind CI; phone checks batch on return.
 Genie queue during the pause: SPEC-49 slice 1 (Show-to-driver), then
 SPEC-48 slice 1 (NOW/UP NEXT), then SPEC-50 swap comparison, then
 `GENIE_ISOCHRONE_PROVIDER.md` (flag off), then SPEC-52 verification.
-Parked: SPEC-51, 54, 55 (needs design answers), UX-57/58, connectors,
+Parked (design now answered 2026-11-16, see the three specs): SPEC-51
+(Home keeps only the Create a trip entry; corridor as preset), SPEC-54
+(phone-only, end-of-day expiry, energy and indoors), SPEC-55 (departing
+trip owns the record; full booking fields; free-text on existing type).
+Still parked for build until after the trip: UX-57/58, connectors,
 landmarks. Next brief ready:
 `docs/briefs/GENIE_SPEC49_SHOW_TO_DRIVER.md`.
 

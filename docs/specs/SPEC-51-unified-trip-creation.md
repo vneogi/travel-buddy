@@ -20,6 +20,14 @@ that flow, not a separate competing home card.
   the per-segment date form.
 - A review step shows destinations in order, dates per segment and party.
 
+## Owner decisions (2026-11-16)
+
+- The separate Vientiane to Luang Prabang corridor card on Home goes.
+  The corridor is a preset inside the single Create a trip flow only. No
+  shortcut card is kept.
+- Still parked until after the Tanzania trip. Brief not to be written
+  before then.
+
 ## Constraints
 
 SPEC-36 rules stand: no synthetic transfers or stays, and no relabelling

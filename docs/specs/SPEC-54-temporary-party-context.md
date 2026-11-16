@@ -27,6 +27,18 @@ slice.
   never existing nodes, bookings or the schedule.
 - Explains when a constraint cannot be honoured because data is missing.
 
+## Owner decisions (2026-11-16)
+
+- Storage: on this phone only, cleared on sign-out. No server
+  persistence in this spec; SPEC-43 consent is needed before any change.
+- Expiry: end of the current local day at the destination. Not a fixed
+  number of hours. Not "until cleared" by default (the visible clear
+  control still exists).
+- Scope of slice 1: energy and indoors preference only. Walking distance
+  is a later slice. Party size or children is out of scope until a SPEC-43
+  review.
+- Still parked until after the Tanzania trip; the design is now decided.
+
 ## Constraints
 
 Server persistence needs SPEC-43 consent, retention, ownership and data
