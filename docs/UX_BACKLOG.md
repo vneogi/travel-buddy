@@ -45,10 +45,16 @@ palette change until contrast and text-scale checks pass. Destination
 accents never recolour status, provenance, booking-lock or sponsored
 styling.
 
-Open owner decisions (do not infer): whether destination accents are
-automatic per trip or limited to trip headers; whether High-Visibility is
-a settings toggle only or also an in-trip control; which signature
-experience to prototype first.
+Owner decisions (2026-11-16):
+- Destination accents apply automatically from the active trip. Semantic
+  status, provenance, booking-lock and sponsored colours stay the base
+  palette in every destination.
+- High-Visibility is a settings toggle only. No in-trip control and no
+  ambient-light or GPS sensing.
+- First signature prototype: Decision Compass (UX-53), after the What Now
+  client-lifetime fix. It reuses live What Now intents. Pointing Card
+  (UX-58) and Driver Card remainder (UX-49) wait. Route Passport stays
+  deferred.
 
 ## Oct 11 2026 field reprioritization
 
