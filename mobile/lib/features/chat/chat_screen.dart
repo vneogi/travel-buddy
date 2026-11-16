@@ -10,6 +10,7 @@ import '../../data/models.dart';
 import '../../offline/offline_database.dart';
 import '../../render/offline_state.dart';
 import 'ask_bubble.dart';
+import 'situation_chips.dart';
 import 'what_now_bubble.dart';
 import '../../theme/colors.dart';
 import '../../theme/typography.dart';
@@ -161,9 +162,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     await _sendWhatNow(prefs);
   }
 
-  Future<void> _sendWhatNow(Map<String, dynamic> preferences) async {
+  Future<void> _sendWhatNow(
+    Map<String, dynamic> preferences, {
+    String text = 'What now?',
+  }) async {
     if (_isThinking) return;
-    const text = 'What now?';
 
     // Capture provider locals before any await so persist can finish
     // even after the widget / container is disposed (same as _send).
@@ -173,7 +176,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final tripId = widget.tripId;
 
     setState(() {
-      _messages.add(const _ChatEntry.user(text));
+      _messages.add(_ChatEntry.user(text));
       _isThinking = true;
     });
 
@@ -341,6 +344,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           _WhatNowEntryBar(
             enabled: !_isThinking,
             onTap: _openWhatNowSheet,
+          ),
+          // SPEC-53: one-tap situation chips, second scrollable line.
+          SituationChipRow(
+            enabled: !_isThinking,
+            onSelected: (chip) => _sendWhatNow(
+              chip.preferences(
+                contextNodeId: _defaultWhatNowContextNode()?.nodeId,
+              ),
+              text: chip.label,
+            ),
           ),
           _InputBar(
             controller: _controller,
