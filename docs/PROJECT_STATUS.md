@@ -179,8 +179,10 @@ Owner-only:
 
 Client bug, closed (2026-11-16): What Now / Ask generic error when chat
 was opened from Home. Fixed in PR #260 (`2031480`): ChatScreen holds a
-listenManual on the itinerary controller. Device check pending after
-APK rebuild.
+listenManual on the itinerary controller. Device check PASSED 2026-11-16
+(APK SHA256 `464f1479...c9f388`): options returned; Food intent filtered
+to food/cafes. Accepted UX note: itinerary Ask bar still needs a second
+"What now?" press inside chat; not a fix brief for now.
 
 Frontend, after the trip core: F1 single create entry (needs SPEC-36 and
 SPEC-26 amendment first); SPEC-07 dish UI; SPEC-22 font/ARB/screen
