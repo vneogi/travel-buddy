@@ -477,8 +477,9 @@ final itineraryControllerProvider = StateNotifierProvider.autoDispose
 
 /// Compat shim so chat_screen keeps working unchanged. Routes chat-sent events
 /// through the SAME controller instance → chat-triggered structural changes
-/// animate the timeline underneath. (Itinerary stays mounted under the pushed
-/// chat screen, so autoDispose keeps the instance alive.)
+/// animate the timeline underneath. Chat holds its own listener
+/// (listenManual in initState); Home can open chat with no itinerary
+/// underneath, and the listener keeps autoDispose alive for the send.
 final tripEventProvider = Provider<TripEventService>((ref) => TripEventService(ref));
 
 class TripEventService {
