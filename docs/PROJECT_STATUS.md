@@ -215,19 +215,45 @@ cache, spend circuit, What Now walking filter; flag default off).
 Penciled UI/UX package (owner 2026-11-15; love the recommendations; not
 trip-critical). Full draft:
 `docs/briefs/UI_UX_IMPLEMENTATION_SPECS_2026-11-15.md`. Owning spec
-files SPEC-48..SPEC-56 are in `docs/specs/` (2026-11-16). Trip-first
-order: SPEC-53, SPEC-56, SPEC-49, SPEC-48 slice 1; the rest after the
-trip. Draft order from the package:
+files SPEC-48..SPEC-56 are in `docs/specs/` (2026-11-16).
 
-1. SPEC-48 glanceable timeline + connectors (only with provenanced
-   transit; after Isochrones earn-the-slice if connectors need network
-   times).
+Owner device window closes 2026-11-16 night for about four days.
+Resequence (2026-11-16): land Genie work behind CI now; batch phone
+checks when the owner returns. SPEC-53 done. SPEC-56 on main, device
+check pending tonight if possible.
+
+Genie queue while the phone is away (CI-gated; no phone required):
+
+1. SPEC-49 slice 1: Show-to-driver mode (Flutter; landmarks data wait).
+2. SPEC-48 slice 1: NOW / UP NEXT labels (Flutter; connectors still wait).
+3. SPEC-50 slice 1: inspectable swap comparison (Flutter; evidence only).
+4. GENIE_ISOCHRONE_PROVIDER.md (server; flag default off; live flag-on
+   smoke waits for owner return + Cloud Run).
+5. SPEC-52 remainder: verification checklist / TripSummary activity span
+   (small; planning agent may do it).
+
+Park until after the trip or until design answers exist:
+
+- SPEC-51 unified create (low trip relevance; both Tanzania trips exist).
+- SPEC-54 temporary party/energy (overlaps SPEC-53; optional later).
+- SPEC-55 inter-city transfer (five design questions still open).
+- UX-57 / UX-58 (need owning specs first).
+- SPEC-48 connectors (no trusted per-leg duration source yet).
+- SPEC-49 landmarks (needs on-site owner data).
+
+Device-check batch when the phone returns (one APK from then-current
+main): SPEC-56 if not done tonight, then 49, 48, 50; Isochrones flag-on
+smoke only after deploy.
+
+Earlier draft order from the package (superseded by the queue above for
+the pause):
+
+1. SPEC-48 glanceable timeline + connectors (connectors wait).
 2. SPEC-53 situation chips -- DONE slice 1 (PR #266, device check 2026-11-16).
-3. SPEC-50 inspectable swap comparison (client-first; evidence contract
-   before new backend fields).
+3. SPEC-50 inspectable swap comparison (client-first).
 4. SPEC-51 unified create entry (owns F1; needs SPEC-36/26 amendment).
-5. SPEC-49 remainder: "Show to driver" presentation mode + on-site
-   Swahili landmarks (client `sw`/`en` priority already on main).
+5. SPEC-49 remainder: "Show to driver" + on-site Swahili landmarks
+   (client `sw`/`en` priority already on main).
 6. SPEC-52 remainder: activity-span vs create-form dates on TripSummary
    (markers already on main as F3).
 7. SPEC-54 temporary party/energy (client-local first; SPEC-43 before
