@@ -27,6 +27,8 @@ class ItineraryState {
   final List<String> scheduleWarnings;
   // SPEC-42: full trip span for empty-day rendering.
   final CreationContext? creationContext;
+  // SPEC-56: true when nodes came from the saved copy after a failed load.
+  final bool showingSaved;
 
   const ItineraryState({
     this.nodes = const [],
@@ -41,6 +43,7 @@ class ItineraryState {
     this.outcomeRecordingNodeIds = const {},
     this.scheduleWarnings = const [],
     this.creationContext,
+    this.showingSaved = false,
   });
 
   static const _keep = Object();
@@ -57,6 +60,7 @@ class ItineraryState {
     Set<String>? outcomeRecordingNodeIds,
     List<String>? scheduleWarnings,
     Object? creationContext = _keep,
+    bool? showingSaved,
   }) =>
       ItineraryState(
         nodes: nodes ?? this.nodes,
@@ -74,6 +78,7 @@ class ItineraryState {
         creationContext: identical(creationContext, _keep)
             ? this.creationContext
             : creationContext as CreationContext?,
+        showingSaved: showingSaved ?? this.showingSaved,
       );
 }
 
@@ -151,7 +156,7 @@ class ItineraryController extends StateNotifier<ItineraryState> {
             nodes: cachedTrip.nodes,
             segments: cachedTrip.segments,
             loading: false,
-            banner: 'Offline: showing saved itinerary',
+            showingSaved: true,
             lovedPlaceRefs: merged,
             nodeOutcomes: {...restoredOutcomes, ...priorOutcomes},
             outcomeRecordingNodeIds: priorRecording,
