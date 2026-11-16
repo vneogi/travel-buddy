@@ -355,7 +355,8 @@ What Now returns options; Food intent returns food/cafes. Accepted UX:
 itinerary Ask bar opens chat and needs a second "What now?" press; do
 not open a Genie brief for that. No Cloud Run deploy needed.
 SPEC-53 slice 1 on main (PR #266, `15ab8fe`); owner device check PASSED
-2026-11-16. Next trip-first brief candidate: SPEC-56 offline readiness.
+2026-11-16. Next trip-first brief: SPEC-56 offline readiness,
+`docs/briefs/GENIE_SPEC56_OFFLINE_READINESS.md` (Flutter only).
 
 Rename done (2026-11-16): the penciled UI/UX items use SPEC-48..SPEC-56
 again, each with an owning file in `docs/specs/`. UX-57 (themes) and
