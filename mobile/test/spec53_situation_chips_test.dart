@@ -250,10 +250,18 @@ int _textOutsideChips(String text) {
   return all - inChips;
 }
 
+/// Tall viewport so the reverse ListView builds every bubble (the What Now
+/// result is tall enough to push the user bubble out of the lazy list).
+void _tallSurface(WidgetTester tester) {
+  tester.view.physicalSize = const Size(800, 3000);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.reset);
+}
+
+/// Same teardown order as spec46_what_now_test.dart: close the harness
+/// listener while chat is still mounted, then dispose the container.
 Future<void> _dispose(WidgetTester tester, _Harness h) async {
   await _flushFfi(tester, maxRounds: 4); // drain persist
-  await tester.pumpWidget(const MaterialApp(home: SizedBox()));
-  await tester.pump();
   h.closeSubscription();
   h.container.dispose();
   await tester.runAsync(() => h.realDb.close());
@@ -342,6 +350,7 @@ void main() {
     (tester) async {
       final h = await tester.runAsync(() => _buildHarness());
       if (h == null) fail('harness null');
+      _tallSurface(tester);
 
       await tester.pumpWidget(_app(h));
       await _flushFfi(tester, until: _chip('quick_break'));
@@ -600,6 +609,7 @@ void main() {
     (tester) async {
       final h = await tester.runAsync(() => _buildHarness());
       if (h == null) fail('harness null');
+      _tallSurface(tester);
 
       // First session: send a chip.
       await tester.pumpWidget(_app(h));
