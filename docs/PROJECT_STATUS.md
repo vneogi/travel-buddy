@@ -229,7 +229,7 @@ strip on main (PR #278, `91f8220`); phone checks wait for owner return.
 Genie queue while the phone is away (CI-gated; no phone required):
 
 1. SPEC-50 slice 1: inspectable swap comparison (Flutter; evidence only;
-   brief not written yet).
+   brief `docs/briefs/GENIE_SPEC50_SWAP_COMPARISON.md`).
 2. GENIE_ISOCHRONE_PROVIDER.md (server; flag default off; live flag-on
    smoke waits for owner return + Cloud Run).
 3. SPEC-52 remainder: verification checklist / TripSummary activity span
