@@ -1,7 +1,9 @@
 # SPEC-57: Arrival Armor (thin slice)
 
-> Status: SPECIFIED. Slice 1 brief:
-> `docs/briefs/GENIE_SPEC57_ARRIVAL_ARMOR.md`. Not implemented.
+> Status: SLICE 1 ON MAIN (PR #292, `b8a6ac3`), 2026-11-17. Brief:
+> `docs/briefs/GENIE_SPEC57_ARRIVAL_ARMOR.md`. Device check waits for the
+> owner-return APK. Seed hubs have no fares or scam notes yet (owner
+> on-site data). Slice 1b (brightness) not started.
 > Amends SPEC-12 (Driver Card) and SPEC-49 (Show-to-driver) for the
 > captain-facing arrival surface only. Uses SPEC-10 booking anchors as
 > the open trigger. Fare and scam text follow SPEC-17 provenance:

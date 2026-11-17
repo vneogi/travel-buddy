@@ -138,7 +138,7 @@
 | Temporary party context (SPEC-54) | PARKED (design answered 2026-11-16) | Phone-only, cleared on sign-out, expires end of the destination-local day; slice 1 energy and indoors only |
 | Transfer between destinations (SPEC-55) | PARKED (design answered 2026-11-16) | Departing trip owns the record; free text on an existing booking type, no migration |
 | Offline readiness indicator (SPEC-56) | SLICE 1 ON MAIN (PR #270, `c31fc22`) | Honest "saved on this phone" row and sheet from real cache state. Device check PASSED 2026-11-16 |
-| Arrival Armor (SPEC-57) | SPECIFIED (2026-11-17) | Thin captain HUD; slice 1 brief `GENIE_SPEC57_ARRIVAL_ARMOR.md`; fares empty until owner on-site notes |
+| Arrival Armor (SPEC-57) | SLICE 1 ON MAIN (PR #292, `b8a6ac3`) | Booking-tap captain HUD from bundled `arrival_hubs.json`; next-hotel Driver Card link; fares and scam notes empty until owner on-site notes. Device check pending |
 
 Migration numbers are assigned when a spec is implemented, not when it is
 written. SPEC-11, SPEC-13, SPEC-14 and SPEC-15 each claimed a number, and the
@@ -162,7 +162,7 @@ unless a step fails and a fix brief is written.
    time allows, with its hard stops. Write a dated finding in
    `docs/AWAITING_VERIFICATION.md`. Recommended before the APK: `main` has
    moved past the 2026-11-15 field APK (`5a4be12`), including SPEC-48, 50,
-   52 and the booking-return slice (PR #288).
+   52, 57 and the booking-return slice (PR #288).
 2. Field APK, owner (Windows): follow `docs/ANDROID_BUILD.md` sections 1
    to 5 from `main`. Dart-defines are `TB_API_BASE_URL`,
    `TB_SUPABASE_URL` and `TB_SUPABASE_ANON_KEY`. Use the anon key only,
@@ -186,6 +186,11 @@ unless a step fails and a fix brief is written.
      booking has no Swap, largest font size still scrolls.
    - SPEC-52 date markers: TalkBack or VoiceOver reads "covered by another
      trip" on an occupied day; the markers still show in airplane mode.
+   - SPEC-57 Arrival armor: on a Zanzibar trip with a flight booking,
+     the flight's menu shows "Arrival armor"; the screen opens in airplane
+     mode, shows "No verified fare or tip sheet for this hub yet.", and
+     "Open driver card for hotel" opens the next hotel's card. A hotel
+     booking has no Arrival armor item.
    - SPEC-53 and SPEC-56 device checks were recorded as OK on 16 Nov.
      Re-check only if this APK changes those screens.
 5. Isochrones booking return, owner (hosted; only when you choose):
@@ -312,12 +317,14 @@ owner return.
 Isochrones slice 2 on main (PR #288, `7f82f78`); flag off until owner
 deploy + `--update-env-vars`.
 
+SPEC-57 Arrival Armor slice 1 on main (PR #292, `b8a6ac3`); phone check
+waits for owner return. Fare and scam content waits for owner on-site data.
+
 Genie queue while the phone is away (CI-gated; no phone required):
 
-1. SPEC-57 Arrival Armor slice 1 -- brief ready
-   (`docs/briefs/GENIE_SPEC57_ARRIVAL_ARMOR.md`). Flutter-only; no phone
-   required to implement. Phone check after the owner-return APK.
-2. Parked items stay parked until after the trip or an owner decision.
+1. None right now. SPEC-57 slice 1 landed (PR #292, `b8a6ac3`); phone
+   check waits for the owner-return APK. Parked items stay parked until
+   after the trip or an owner decision.
 
 Park until after the trip or until design answers exist:
 

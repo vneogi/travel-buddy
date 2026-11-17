@@ -11,7 +11,7 @@ direction. Owning spec files SPEC-48 through SPEC-56 landed 2026-11-16
 in `docs/specs/`; each names the parent spec it amends and its first
 slice. SPEC-57 (Arrival Armor) added 2026-11-17 from the moonshot triage.
 Device pause (2026-11-16, ~4 days): phone batch on return includes
-SPEC-49, 48, 50, 52. Next Genie brief ready: SPEC-57 slice 1. Parked
+SPEC-49, 48, 50, 52, 57. SPEC-57 slice 1 on main (PR #292). Parked
 until after the trip or design answers: 51, 54, 55, UX-57/58.
 
 | Draft | Status | Notes |
@@ -27,7 +27,7 @@ until after the trip or design answers: 51, 54, 55, UX-57/58.
 | SPEC-56 offline readiness | Slice 1 done | PR #270; device check 2026-11-16 |
 | UX-57 design themes and tokens | Penciled | Semantic tokens, dark, manual High-Visibility; audit first (Phase A) |
 | UX-58 local-food Pointing Card | Penciled | Curated glossary only; missing text or allergens shown as unavailable |
-| SPEC-57 Arrival Armor (thin) | Specced | Slice 1 brief ready; Flutter-only captain HUD; fares null until owner on-site |
+| SPEC-57 Arrival Armor (thin) | Slice 1 done | PR #292; device check pending; fares null until owner on-site |
 
 Sequence in the draft: verify 49/52 remainders, then 48 + 53 prototypes,
 evidence contracts for 50/54, then 51, then 55/56.

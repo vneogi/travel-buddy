@@ -381,8 +381,8 @@ strip on main (PR #278, `91f8220`); SPEC-50 swap comparison on main
 (PR #282, `7c1f62c`); device checks wait until the phone returns. Genie
 SPEC-52 slice 1 on main (PR #285, `fdc3ffa`); device check waits. Genie
 Isochrones slice 2 on main (PR #288, `7f82f78`); flag off until owner
-deploy. Genie queue during the pause: SPEC-57 Arrival Armor slice 1
-brief ready (`docs/briefs/GENIE_SPEC57_ARRIVAL_ARMOR.md`); Flutter-only.
+deploy. Genie SPEC-57 Arrival Armor slice 1 on main (PR #292,
+`b8a6ac3`); device check waits. Genie queue during the pause: empty.
 Owner return checklist (pending, ordered): `PROJECT_STATUS.md`, "Owner return
 checklist". Do not restate it here.
 Moonshot triage (2026-11-17, owner accepted): VISION section 32 and
