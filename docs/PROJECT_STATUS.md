@@ -131,7 +131,7 @@
 | Data operations workbench (SPEC-47) | SPECIFIED; AFTER SPEC-43 + SPEC-17 | Protected internal observation review, conflicts, freshness, and versioned release manifests. Contribution prompts stay off until this exists. Operating model: `docs/DATA_FLYWHEEL_OPERATING_MODEL.md` |
 | Glanceable timeline (SPEC-48) | SLICE 1 ON MAIN (PR #278, `91f8220`) | NOW / UP NEXT strip under the offline row; client-only and offline-safe; a hotel stay is never NOW. Device check pending (owner device pause). Connectors wait for a trusted per-leg duration source |
 | Driver handoff and Tanzania language (SPEC-49) | PARTIAL | F2 `sw`-then-`en` priority (`982bb48`, PR #231). Show-to-driver mode on main (PR #276, `ff37439`); device check pending. Swahili landmark data waits for the owner on site |
-| Inspectable swap comparison (SPEC-50) | BRIEF READY | `docs/briefs/GENIE_SPEC50_SWAP_COMPARISON.md`: client-only comparison using fields the swap response already sends; Next option never mutates |
+| Inspectable swap comparison (SPEC-50) | SLICE 1 ON MAIN (PR #282, `7c1f62c`) | Client-only Now/Option/Area/Vibes/Checks panel; Next option never mutates; pinned outside the panel scroll. Device check pending (owner device pause) |
 | Unified trip creation (SPEC-51) | PARKED (design answered 2026-11-16) | One Create a trip flow; corridor becomes a preset inside it. After the December trip |
 | Existing-trip date markers (SPEC-52) | PARTIAL | F3 markers on main (`1cb9318`, PR #238). TripSummary activity-span remainder open |
 | Situation chips (SPEC-53) | SLICE 1 ON MAIN (PR #266, `15ab8fe`) | Four What Now presets in chat. Device check PASSED 2026-11-16 |
@@ -234,15 +234,17 @@ checks when the owner returns. SPEC-53 and SPEC-56 device checks both
 PASSED 2026-11-16.
 
 SPEC-49 Show-to-driver on main (PR #276, `ff37439`); SPEC-48 NOW/UP NEXT
-strip on main (PR #278, `91f8220`); phone checks wait for owner return.
+strip on main (PR #278, `91f8220`); SPEC-50 swap comparison on main
+(PR #282, `7c1f62c`); phone checks wait for owner return.
+
+SPEC-50 slice 1 on main (PR #282, `7c1f62c`); phone check waits for
+owner return.
 
 Genie queue while the phone is away (CI-gated; no phone required):
 
-1. SPEC-50 slice 1: inspectable swap comparison (Flutter; evidence only;
-   brief `docs/briefs/GENIE_SPEC50_SWAP_COMPARISON.md`).
-2. GENIE_ISOCHRONE_PROVIDER.md (server; flag default off; live flag-on
+1. GENIE_ISOCHRONE_PROVIDER.md (server; flag default off; live flag-on
    smoke waits for owner return + Cloud Run).
-3. SPEC-52 remainder: verification checklist / TripSummary activity span
+2. SPEC-52 remainder: verification checklist / TripSummary activity span
    (small; planning agent may do it).
 
 Park until after the trip or until design answers exist:
