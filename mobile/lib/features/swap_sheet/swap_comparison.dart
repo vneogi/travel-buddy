@@ -104,56 +104,71 @@ class SwapComparisonPanel extends StatelessWidget {
           border: Border.all(color: AppColors.divider),
           borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
         ),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: maxHeight),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.md,
-              AppSpacing.sm,
-              AppSpacing.md,
-              0,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (final row in rows)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-                    child: Text.rich(
-                      TextSpan(
-                        children: [
-                          if (row.label != null)
-                            TextSpan(text: '${row.label}  ', style: muted),
-                          TextSpan(
-                            text: row.text,
-                            style: row.label == null
-                                ? muted
-                                : (row.id == 'now' || row.id == 'option'
-                                    ? AppTypography.label
-                                    : AppTypography.caption),
-                          ),
-                        ],
-                      ),
-                      key: Key('swap_comparison_${row.id}'),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    key: const Key('swap_next_option'),
-                    style: TextButton.styleFrom(
-                      minimumSize: const Size(0, 44),
-                    ),
-                    onPressed: onNextOption,
-                    child: const Text('Next option'),
-                  ),
+        // Rows may scroll under the height cap; Next stays pinned below
+        // so it stays tappable when Checks or Ranking wrap tall.
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: (maxHeight - 48).clamp(48.0, maxHeight),
+              ),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.md,
+                  AppSpacing.sm,
+                  AppSpacing.md,
+                  0,
                 ),
-              ],
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (final row in rows)
+                      Padding(
+                        padding:
+                            const EdgeInsets.only(bottom: AppSpacing.xs),
+                        child: Text.rich(
+                          TextSpan(
+                            children: [
+                              if (row.label != null)
+                                TextSpan(
+                                  text: '${row.label}  ',
+                                  style: muted,
+                                ),
+                              TextSpan(
+                                text: row.text,
+                                style: row.label == null
+                                    ? muted
+                                    : (row.id == 'now' ||
+                                            row.id == 'option'
+                                        ? AppTypography.label
+                                        : AppTypography.caption),
+                              ),
+                            ],
+                          ),
+                          key: Key('swap_comparison_${row.id}'),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             ),
-          ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                key: const Key('swap_next_option'),
+                style: TextButton.styleFrom(
+                  minimumSize: const Size(0, 44),
+                ),
+                onPressed: onNextOption,
+                child: const Text('Next option'),
+              ),
+            ),
+          ],
         ),
       ),
     );

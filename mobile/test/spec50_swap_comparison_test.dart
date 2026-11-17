@@ -127,6 +127,8 @@ Future<void> _tapText(WidgetTester tester, String text) async {
 }
 
 Future<void> _tapNext(WidgetTester tester) async {
+  await tester.ensureVisible(find.byKey(_next));
+  await tester.pumpAndSettle();
   await tester.tap(find.byKey(_next));
   await tester.pumpAndSettle();
 }
