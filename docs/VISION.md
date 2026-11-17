@@ -889,7 +889,8 @@ scam warnings are only a product when sourced per city, never invented.
 
 Promotion gate: field-test evidence that the cached itinerary and driver
 card were actually used offline. Offline map tiles and on-device routing
-graphs remain P3 in the UX backlog.
+graphs remain P3 in the UX backlog. Thin productization of this moment is
+SPEC-57 (Arrival Armor); see section 32.
 
 ### Fatigue-aware micro-offers (sachet commerce)
 
@@ -924,3 +925,40 @@ promise a claim that we cannot pay.
 - Not permission to add background location, a second database, or a
   second offline store.
 - Not a Seed narrative that the trap index or memory graph already exists.
+
+## 32. Moonshot UI/UX triage (Nov 2026)
+
+**Status:** owner-accepted triage, 2026-11-17. Source draft:
+`spec_moonshot_capabilities.md` (product/UI head + owner). This section
+records the phase call so the ideas are not lost in chat. It does not
+commit architecture, vendors, background telemetry, or a new ICP.
+
+Test applied: does it feed the section 4 decision flywheel, help on-trip
+retention, and ship without heavy backend work or breaking an existing
+rule (SPEC-14, SPEC-17, SPEC-43)?
+
+| Idea | Phase | Moat / UX verdict |
+|---|---|---|
+| Arrival Armor (thin) | Near term -> SPEC-57 | Yes: sourced fares and scam notes extend section 21 and the last-mile hypothesis in section 31. Builds on SPEC-12 / SPEC-49. |
+| Expedition Passport (recap from existing signals) | Phase 2, after real trips | Yes as Travelogue consent exchange (section 14). No GPS/gallery in the first cut. |
+| Whisper Mode (foreground read-aloud of existing alerts) | Phase 2 | UX only; reuses SPEC-35 text. No geofence TTS co-pilot. |
+| Route Deviation Sentinel | Phase 3 | No moat; needs background GPS and an expected route. False alarms hurt trust. |
+| Point & Settle (camera) | Mostly do not build | Dietary "safe for party" tags contradict SPEC-14. Menu OCR is commodity (Google Lens). Banknote ML is high risk, low moat. |
+| Party Tether (BLE mesh) | Do not build | RSSI is not a compass; iOS background BLE is hostile; Find My / AirTags own the job; every companion would need the app. |
+
+### Near-term shape (SPEC-57)
+
+- Trigger from a flight booking tap (SPEC-10 anchors), not a geofence.
+- Captain HUD shows fare and scam notes only when the offline asset has
+  a source; otherwise omit. Never invent amounts (SPEC-17).
+- Fare stays on the captain screen. Driver Card / Show-to-driver never
+  show a price (driver respect).
+- Static `arrival_hubs.json` in the Flutter bundle. No backend change
+  for slice 1. Brightness boost is slice 1b after the HUD lands.
+- Owner on-site notes at Zanzibar Airport and the Stone Town ferry fill
+  the first sourced rows. A later "fare I paid" signal is Phase 2.
+
+### Explicitly not near-term
+
+Background location, BLE mesh, on-device vision models, fake emergency
+calls, nod gestures, 3D route replay, and any dietary suitability claim.

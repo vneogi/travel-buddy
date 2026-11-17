@@ -272,6 +272,22 @@ Reject or keep deferred (do not start from this memo):
   until a monetization spec exists.
 - Hostel QR or non-owner APK before remaining SPEC-43.
 
+## Moonshot UI/UX draft -- 17 Nov 2026 -- already adjudicated
+
+External draft `spec_moonshot_capabilities.md` (product/UI head). Owner
+accepted the triage in VISION section 32. Do not re-litigate in the first
+week:
+
+- Build thin Arrival Armor only (SPEC-57): booking-tap, offline asset,
+  sourced-or-silent fares, Driver Card link without price on the
+  driver-facing surface.
+- Do not build Party Tether (BLE). Do not build camera "safe for party"
+  dietary tags (SPEC-14). Do not add geofenced auto-HUD or background
+  GPS for Arrival Armor.
+- Whisper (foreground TTS of existing alerts) and Expedition Passport
+  (recap from existing signals) wait for Phase 2. Route Deviation is
+  Phase 3.
+
 ## Durable post-Laos plan -- do not lose at handoff
 
 The 24 Sep moat review is accepted, not pending advice. Its canonical record is
@@ -365,9 +381,13 @@ strip on main (PR #278, `91f8220`); SPEC-50 swap comparison on main
 (PR #282, `7c1f62c`); device checks wait until the phone returns. Genie
 SPEC-52 slice 1 on main (PR #285, `fdc3ffa`); device check waits. Genie
 Isochrones slice 2 on main (PR #288, `7f82f78`); flag off until owner
-deploy. Genie queue during the pause: empty.
+deploy. Genie queue during the pause: SPEC-57 Arrival Armor slice 1
+brief ready (`docs/briefs/GENIE_SPEC57_ARRIVAL_ARMOR.md`); Flutter-only.
 Owner return checklist (pending, ordered): `PROJECT_STATUS.md`, "Owner return
 checklist". Do not restate it here.
+Moonshot triage (2026-11-17, owner accepted): VISION section 32 and
+UX_BACKLOG "Nov 17 2026 moonshot triage". Do not reopen Party Tether,
+camera dietary claims, or geofenced Arrival Armor as near-term work.
 Parked (design now answered 2026-11-16, see the three specs): SPEC-51
 (Home keeps only the Create a trip entry; corridor as preset), SPEC-54
 (phone-only, end-of-day expiry, energy and indoors), SPEC-55 (departing
@@ -376,7 +396,8 @@ Still parked for build until after the trip: UX-57/58, connectors,
 landmarks.
 
 Rename done (2026-11-16): the penciled UI/UX items use SPEC-48..SPEC-56
-again, each with an owning file in `docs/specs/`. UX-57 (themes) and
+again, each with an owning file in `docs/specs/`. SPEC-57 Arrival Armor
+added 2026-11-17. UX-57 (themes) and
 UX-58 (Pointing Card) stay backlog items until they get spec files. Owner: rebuild APK
 from `main` and smoke F2/F3 on phone; on-site Swahili landmark data
 pass. The single open-items list for 2026-11-15 to 2026-12-04 is in
