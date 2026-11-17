@@ -222,7 +222,7 @@ for December. Owner keeps `New GMaps_API_Key` with Isochrones.
 DONE (slice 1): provider, cache, spend circuit and What Now walking filter
 on main (PR #248, `90b2fb5`). Hosted flag on from `00018-kjh`, carried into
 `00019-nl7` (`docs/HOSTED_STATE.md`). Slice 2 (booking-return reachability)
-has no brief yet.
+brief: `docs/briefs/GENIE_ISOCHRONE_BOOKING_RETURN.md`.
 
 
 Penciled UI/UX package (owner 2026-11-15; love the recommendations; not
@@ -247,9 +247,11 @@ owner return.
 
 Genie queue while the phone is away (CI-gated; no phone required):
 
-1. None right now. Booking-return reachability (Isochrones slice 2) has
-   no brief yet. Parked items stay parked until after the trip or an
-   owner decision.
+1. Isochrones slice 2, booking return for What Now:
+   `docs/briefs/GENIE_ISOCHRONE_BOOKING_RETURN.md` (server; second flag
+   `TB_REACHABILITY_BOOKING_RETURN` default off; owner enables after
+   deploy). Parked items stay parked until after the trip or an owner
+   decision.
 
 Park until after the trip or until design answers exist:
 
