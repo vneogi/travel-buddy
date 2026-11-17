@@ -133,7 +133,7 @@
 | Driver handoff and Tanzania language (SPEC-49) | PARTIAL | F2 `sw`-then-`en` priority (`982bb48`, PR #231). Show-to-driver mode on main (PR #276, `ff37439`); device check pending. Swahili landmark data waits for the owner on site |
 | Inspectable swap comparison (SPEC-50) | SLICE 1 ON MAIN (PR #282, `7c1f62c`) | Client-only Now/Option/Area/Vibes/Checks panel; Next option never mutates; pinned outside the panel scroll. Device check pending (owner device pause) |
 | Unified trip creation (SPEC-51) | PARKED (design answered 2026-11-16) | One Create a trip flow; corridor becomes a preset inside it. After the December trip |
-| Existing-trip date markers (SPEC-52) | PARTIAL | F3 markers on main (`1cb9318`, PR #238). TripSummary activity-span remainder open |
+| Existing-trip date markers (SPEC-52) | PARTIAL | F3 markers on main (`1cb9318`, PR #238). Slice 1 verification brief ready (`docs/briefs/GENIE_SPEC52_DATE_MARKER_VERIFY.md`): accessible label, boundary and cached-list tests. Activity span versus create-form dates is an owner decision, not Genie's |
 | Situation chips (SPEC-53) | SLICE 1 ON MAIN (PR #266, `15ab8fe`) | Four What Now presets in chat. Device check PASSED 2026-11-16 |
 | Temporary party context (SPEC-54) | PARKED (design answered 2026-11-16) | Phone-only, cleared on sign-out, expires end of the destination-local day; slice 1 energy and indoors only |
 | Transfer between destinations (SPEC-55) | PARKED (design answered 2026-11-16) | Departing trip owns the record; free text on an existing booking type, no migration |
@@ -219,8 +219,10 @@ Stone Town and Nungwi; network reachability earns an implementation
 slice (`docs/decisions/NETWORK_REACHABILITY.md`). Optional enrichment on
 Haversine; offline/Preview fallback stays Haversine. Not trip-critical
 for December. Owner keeps `New GMaps_API_Key` with Isochrones.
-Next Genie slice: `docs/briefs/GENIE_ISOCHRONE_PROVIDER.md` (provider,
-cache, spend circuit, What Now walking filter; flag default off).
+DONE (slice 1): provider, cache, spend circuit and What Now walking filter
+on main (PR #248, `90b2fb5`). Hosted flag on from `00018-kjh`, carried into
+`00019-nl7` (`docs/HOSTED_STATE.md`). Slice 2 (booking-return reachability)
+has no brief yet.
 
 
 Penciled UI/UX package (owner 2026-11-15; love the recommendations; not
@@ -242,10 +244,9 @@ owner return.
 
 Genie queue while the phone is away (CI-gated; no phone required):
 
-1. GENIE_ISOCHRONE_PROVIDER.md (server; flag default off; live flag-on
-   smoke waits for owner return + Cloud Run).
-2. SPEC-52 remainder: verification checklist / TripSummary activity span
-   (small; planning agent may do it).
+1. SPEC-52 slice 1: `docs/briefs/GENIE_SPEC52_DATE_MARKER_VERIFY.md`
+   (accessible label on occupied days, boundary and cached-list tests;
+   no TripSummary change).
 
 Park until after the trip or until design answers exist:
 
