@@ -223,17 +223,16 @@ Resequence (2026-11-16): land Genie work behind CI now; batch phone
 checks when the owner returns. SPEC-53 and SPEC-56 device checks both
 PASSED 2026-11-16.
 
-SPEC-49 Show-to-driver on main (PR #276, `ff37439`); phone check waits
-for owner return.
+SPEC-49 Show-to-driver on main (PR #276, `ff37439`); SPEC-48 NOW/UP NEXT
+strip on main (PR #278, `91f8220`); phone checks wait for owner return.
 
 Genie queue while the phone is away (CI-gated; no phone required):
 
-1. SPEC-48 slice 1: NOW / UP NEXT strip on the itinerary (Flutter;
-   brief `docs/briefs/GENIE_SPEC48_NOW_NEXT_STRIP.md`; connectors wait).
-2. SPEC-50 slice 1: inspectable swap comparison (Flutter; evidence only).
-3. GENIE_ISOCHRONE_PROVIDER.md (server; flag default off; live flag-on
+1. SPEC-50 slice 1: inspectable swap comparison (Flutter; evidence only;
+   brief not written yet).
+2. GENIE_ISOCHRONE_PROVIDER.md (server; flag default off; live flag-on
    smoke waits for owner return + Cloud Run).
-4. SPEC-52 remainder: verification checklist / TripSummary activity span
+3. SPEC-52 remainder: verification checklist / TripSummary activity span
    (small; planning agent may do it).
 
 Park until after the trip or until design answers exist:
