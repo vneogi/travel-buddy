@@ -106,4 +106,55 @@ void main() {
       'Overlaps with an existing trip on 2026-12-11.',
     );
   });
+
+  // SPEC-52 acceptance: boundaries and overlaps.
+  test('multiple_overlapping_trips_mark_each_day_once', () {
+    final days = occupiedDaysFromTrips([
+      _trip('t1', DateTime.utc(2026, 12, 10, 2), DateTime.utc(2026, 12, 12, 10)),
+      _trip('t2', DateTime.utc(2026, 12, 11, 2), DateTime.utc(2026, 12, 14, 10)),
+    ]);
+    expect(days, {
+      DateTime(2026, 12, 10),
+      DateTime(2026, 12, 11),
+      DateTime(2026, 12, 12),
+      DateTime(2026, 12, 13),
+      DateTime(2026, 12, 14),
+    });
+    expect(days.length, 5);
+  });
+
+  test('local_midnight_end_counts_the_local_day', () {
+    // Luang Prabang is UTC+7: 16:59 UTC is 23:59 local on Dec 12.
+    final before = occupiedDaysFromTrips([
+      _trip('t1', DateTime.utc(2026, 12, 10, 2), DateTime.utc(2026, 12, 12, 16, 59)),
+    ]);
+    expect(before, contains(DateTime(2026, 12, 12)));
+    expect(before, isNot(contains(DateTime(2026, 12, 13))));
+    // 17:00 UTC is 00:00 local on Dec 13.
+    final after = occupiedDaysFromTrips([
+      _trip('t1', DateTime.utc(2026, 12, 10, 2), DateTime.utc(2026, 12, 12, 17)),
+    ]);
+    expect(after, contains(DateTime(2026, 12, 13)));
+  });
+
+  test('local_midnight_start_counts_the_local_day_tanzania', () {
+    // Zanzibar is UTC+3: 21:00 UTC Dec 26 is 00:00 local on Dec 27.
+    final days = occupiedDaysFromTrips([
+      _trip(
+        't1',
+        DateTime.utc(2026, 12, 26, 21),
+        DateTime.utc(2026, 12, 27, 15),
+        region: 'zanzibar_tanzania',
+      ),
+    ]);
+    expect(days, isNot(contains(DateTime(2026, 12, 26))));
+    expect(days, contains(DateTime(2026, 12, 27)));
+  });
+
+  test('single_day_trip_marks_one_day', () {
+    final days = occupiedDaysFromTrips([
+      _trip('t1', DateTime.utc(2026, 12, 15, 2), DateTime.utc(2026, 12, 15, 10)),
+    ]);
+    expect(days, {DateTime(2026, 12, 15)});
+  });
 }
