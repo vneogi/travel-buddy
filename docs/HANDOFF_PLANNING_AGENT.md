@@ -346,8 +346,8 @@ specs before Genie briefs. Isochrones trial DONE 2026-11-16 (`dacfc77`); live co
 the network-reachability slice (`docs/decisions/NETWORK_REACHABILITY.md`).
 Owner scheduled that slice 2026-11-16 and keeps `New GMaps_API_Key`
 with Isochrones. Provider slice 1 is on main (PR #248, `90b2fb5`; hosted flag
-on since `00018-kjh`). Next: booking-return reachability (slice 2, brief
-`GENIE_ISOCHRONE_BOOKING_RETURN.md`), Gap 4
+on since `00018-kjh`). Slice 2 booking return on main (PR #288, `7f82f78`;
+flag off until deploy). Next: Gap 4
 durable tombstone, or SPEC-48/53 owning specs (now written).
 
 Flutter chat-controller lifetime fix is on main (PR #260, `2031480`).
@@ -364,8 +364,8 @@ SPEC-49 Show-to-driver on main (PR #276, `ff37439`); SPEC-48 NOW/UP NEXT
 strip on main (PR #278, `91f8220`); SPEC-50 swap comparison on main
 (PR #282, `7c1f62c`); device checks wait until the phone returns. Genie
 SPEC-52 slice 1 on main (PR #285, `fdc3ffa`); device check waits. Genie
-queue during the pause: Isochrones slice 2 booking return
-(`GENIE_ISOCHRONE_BOOKING_RETURN.md`, second flag default off).
+Isochrones slice 2 on main (PR #288, `7f82f78`); flag off until owner
+deploy. Genie queue during the pause: empty.
 Parked (design now answered 2026-11-16, see the three specs): SPEC-51
 (Home keeps only the Create a trip entry; corridor as preset), SPEC-54
 (phone-only, end-of-day expiry, energy and indoors), SPEC-55 (departing
