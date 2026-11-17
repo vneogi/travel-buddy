@@ -25,6 +25,15 @@
 > corridor. Dubai rows stay demo/catalog, not the design centre.
 > Calm-editorial chrome is surface debt, not a second app. Do not
 > split engineering into survival-kit vs concierge.
+>
+> 17 Nov 2026 amendment: the target user is unchanged -- one ICP, the
+> independent trip captain; backpackers seed; Indian outbound remains the
+> monetization hypothesis. The owner's December Tanzania trip (Stone Town
+> and Nungwi, hand-loaded packs) is a second engine field test like Laos,
+> not a market entry. It does not add Tanzania to the corridor, does not
+> count as the SPEC-20 factory proof, and does not move Bangkok-first or
+> the Banana Pancake order. The plain-language product summary for
+> newcomers is `docs/VISION.md` section 0.
 
 ## The decision
 

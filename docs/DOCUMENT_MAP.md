@@ -21,72 +21,31 @@ Do not start with a full-repo archaeology, a canvas, or a transcript. If two
 documents disagree, follow Precedence below and name the conflict in
 `PROJECT_STATUS.md` until the owning document is updated.
 
-## Continuity state on 25 Oct 2026
+## Continuity state on 17 Nov 2026
 
-- GitHub `main` is through `8fab43b`: SPEC-45 field trust hygiene,
-  SPEC-25 field-priority intents, SPEC-25 Phase C durable device-local
-  threads, SPEC-46 What Now Phase A, thin typed Ask-to-Add, thin
-  typed Move, empty-day catalog Add, trip-private uncatalogued Add,
-  and SPEC-43 Gaps 1, 6, 2, 9 (ownership + closed schemas), and 12
-  HTTPS, cache keys, chat URLs, ATS, and trip-route ownership are
-  merged.
-- Next Genie brief: none queued. Open: two Gap 4 rate-limit tests fail on main CI.
-  Gap 4 slice 14 HTTP export route `16945be` (PR #199) is on main.
-  Gap 4 slice 13 Supabase export backend `f7802ad` (PR #196) is on main.
-  Stone Town (`c147290`, PR #203) and Nungwi (`f39e41f`, PR #206) packs on main. Gap 4 slice 15 landed `108c815` (PR #211); slice 16 GET export rate-limit `039ea70` (PR #214); slice 17 in-memory tombstone `ff954bf` (PR #217); slice 18 nested export document `9956111` (PR #220); slice 19 route document `290a7ca` (PR #222).
-  Owner: hosted venue load, Cloud Run redeploy, APK rebuild.
-  Gap 4 slice 12 in-memory export backend `0026c76` (PR #192) is on main.
-  Gap 4 slice 11 export execute is on main (`fde1ae6`, PR #190).
-  Gap 4 slice 10 export plan is on main (`2fa9074`, PR #188).
-  Gap 4 slice 9 in-process cache purge is on main (`004ed6a`, PR #186).
-  Gap 4 slice 8 erase token denylist is on main (`4f22d1d`, PR #184).
-  Gap 4 slice 7 Auth identity delete is on main (`ea5c0b3`, PR #182).
-  Gap 4 slice 6 erase route is on main (`2764280`, PR #180).
-  Gap 4 slice 5 Supabase erase backend is on main (`54c3c8d`, PR #178).
-  Gap 4 slice 4 in-memory wipe proof is on main (`7ceab2e`, PR #176).
-  Gap 4 slice 3 erase execute is on main (`4d85cd7`, PR #174).
-  Gap 4 slice 2 erase plan is on main (`f387c55`, PR #172).
-  Gap 4 slice 1 inventory is on main (`cd28bf3`, PR #170).
-  Gap 3 is closed on main: fallback pin `8d8b28b` (PR #165) and
-  embedding failure log `704c503` (PR #168). Gap 3 cache-embed is on main
-  (`b59c50d`, PR #162). Gap 3 outbound redact is on main
-  (`d35895a`, PR #159). Gap 3 itinerary DTO is on main
-  (`dd0e6d3`, PR #156). Gap 10 error-ring TTL is on main
-  (`12588c2`, PR #153). Gap 10 IAM part B is on main
-  (`17fb0e4`, PR #150). Gap 10 IAM part A is on main
-  (`56ebc00`, PR #148). Gap 8 active purge is on main
-  (`8fab43b`, PR #145). Gap 8 trip/date/source-version is on main
-  (`606626e`, PR #142). Gap 8 canaries is on main
-  (`895045a`, PR #140). Gap 8 HMAC is on main
-  (`5a9f684`, PR #137). Gap 10 422 stripping is on main
-  (`04169f9`, PR #134). Gap 11 spend is on main
-  (`e7c89b5`, PR #131).
-  Gap 11 rate is on main
-  (`c70296c`, PR #128).
-  Gap 9 derived metadata is on main
-  (`4265403`, PR #125). Gap 9 GPS is on main (`08253cb`, PR #122).
-  Gap 11 body/depth bounds is on main
-  (`2077d8d`, PR #119). Gap 10 error-ring
-  redaction is on main (`fbe96f6`, PR #117). Gap 8 identity-scoped
-  semantic cache is on main (`62927dd`, PR #114). Gap 7
-  fail-closed ingest is on main (`e3eaa81`, PR #112). Gap 12
-  lock-screen waits on OS push. Gap 5 leftover-open wipe is on
-  main (`1de6ff2`); rebuild the APK from that SHA to overlay
-  leftover plaintext without `pm clear`. Hosted Gap 1 and the
-  owner G0 APK are live (`00014-sbm`). Hosted apply of 0026
-  waits on `rolbypassrls`. Remaining Gap 9 `derived_feature` table, Laos
-  decision-cell coverage, and unknown-time excursions stay later.
-- Hosted: migrations through 0025; Cloud Run `travel-buddy-00014-sbm`.
-- Owner Laos field use is complete. The dated 26 observations and cross-trip
-  review of 65 Laos plus 73 China Gemini turns are in
-  `AWAITING_VERIFICATION.md`.
-- Accepted reset: sparse trip spine plus one broad, persistent, grounded
-  trip-scoped Ask surface. What Now/Rescue/Hungry are structured Ask modes.
-  Catalog Ask-to-Add, typed Move, empty-day catalog Add, and trip-private
-  uncatalogued Add are on main. No silent auto-reflow.
-- P0 is trust hygiene. SPEC-43 still gates all non-owner distribution.
-  Travelogue/Passport, maps/offline tiles, social, gamification, PDF,
-  cross-trip memory, OTA promotion, and another city are deferred.
+- New to the repo? Read `README.md`, then `VISION.md` section 0 (what the
+  app is, who it serves, what it does today, why it is different).
+- GitHub `main` was at `a147acf` (PR #280) when this was written; check
+  `git log` for newer work.
+- Landed since 25 Oct: SPEC-43 Gap 4 erase / export slices and the durable
+  tombstone; Stone Town and Nungwi packs (hosted); F2 Swahili-first driver
+  card order; F3 existing-trip date markers; the What Now chat fix
+  (PR #260); SPEC-53 situation chips; SPEC-56 offline readiness row;
+  SPEC-49 Show-to-driver; SPEC-48 NOW / UP NEXT strip; the Isochrones
+  trial (provider slice next, flag off).
+- Hosted: migrations through 0027; Cloud Run revision and env names in
+  `HOSTED_STATE.md`.
+- Owner focus: the Tanzania trip (Stone Town 26-28 Dec 2026, Nungwi 29 Dec
+  2026 to 2 Jan 2027). Owner device pause from 16 Nov for about four days;
+  phone checks for SPEC-49, SPEC-48 and SPEC-50 are batched for the return.
+- Genie queue and the single open-items list: `PROJECT_STATUS.md`
+  "Open items, 2026-11-15 to 2026-12-04".
+- Unchanged guardrails: the traveller confirms every mutation; SPEC-43
+  gates non-owner distribution; live LLM processing of personal trips is
+  not enabled; no new city outside the SPEC-13 / SPEC-20 factory.
+
+The 25 Oct checkpoint (Gap-by-Gap SHA ledger) is superseded; that history is
+in `PROJECT_STATUS.md`, `RELEASE_READINESS.md` and `git log`.
 
 Refresh this section at the next continuity checkpoint. Do not let it become
 a second PROJECT_STATUS.
@@ -118,6 +77,7 @@ there. VISION Part III is not committed.
 | How agents, owner, and evidence work | `WAYS_OF_WORKING.md` |
 | Rules earned from defects | `ENGINEERING_RULES.md` |
 | What the product is and is not; moat thesis; deferred ideas | `VISION.md` |
+| Plain-language product summary: capabilities, users, USPs | `VISION.md` section 0 (README carries the short version) |
 | Which traveller, which cities, Banana Pancake order | `MARKET_STRATEGY.md` |
 | Owner-only vs non-owner vs store | `RELEASE_READINESS.md` |
 | How consented evidence becomes reviewed claims | `DATA_FLYWHEEL_OPERATING_MODEL.md` |
@@ -176,6 +136,12 @@ excursions stay later;
 trip-optional and production-LLM SPEC-25; SPEC-10 HITL reflow;
 SPEC-29 weather-day detail; SPEC-44 A4/A5 and Flutter command queue.
 SPEC-46 Phase B GPS waits for SPEC-43.
+
+**November UI/UX package (Nov 2026).** SPEC-48 through SPEC-56, from
+`docs/briefs/UI_UX_IMPLEMENTATION_SPECS_2026-11-15.md`. Slices on main:
+SPEC-53, SPEC-56, SPEC-49 Show-to-driver, SPEC-48 strip; SPEC-52 markers
+(as F3). SPEC-50 brief ready. SPEC-51, SPEC-54, SPEC-55 designed and parked
+until after the December trip.
 
 **Release and non-owner gates.** SPEC-43, then SPEC-09 remainder / SPEC-24 /
 SPEC-27 as called by SPEC-43 and RELEASE_READINESS.

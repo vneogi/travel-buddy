@@ -1,5 +1,83 @@
 # Travel Buddy — Product Vision & Strategy
-*Last updated: Sep 2026. Owner: Vikrant. This is the "why" and "for whom." Technical spec lives in MASTER_BRD.md.*
+*Last updated: Nov 2026 (section 0 added 17 Nov). Owner: Vikrant. This is the "why" and "for whom." Technical spec lives in MASTER_BRD.md.*
+
+## 0. Product at a glance (Nov 2026)
+
+Read this first if you are new to the repo. It summarises what the app is,
+who it serves, what it can do today and why it is different. Build status
+and evidence live in `docs/PROJECT_STATUS.md`; this section does not
+replace it.
+
+**What it is.** An on-trip companion for the independent trip captain. The
+traveller keeps a sparse trip spine (bookings, hotels, must-dos, deliberate
+gaps). When the day changes, Travel Buddy helps decide the next step, proposes
+a feasible change, explains it, and applies it only after the traveller
+confirms.
+
+**Who it is for.** The independent trip captain -- solo, paired or
+coordinating a family -- in emerging and non-Western destinations (section 3).
+Seeded through South-East Asian backpackers; the Indian outbound corridor is
+the monetization hypothesis (`docs/MARKET_STRATEGY.md`).
+
+**Capabilities on `main` today**, grouped by the traveller's job:
+
+- *Plan the spine:* guided Create Trip from a curated catalog (single city or
+  the Laos corridor); bookings as locked anchors with paste import;
+  flexible spans with empty days; typed Add, Move and Swap that the server
+  checks against hours, walking reachability and locks (SPEC-10, SPEC-32,
+  SPEC-36, SPEC-40, SPEC-41, SPEC-42).
+- *Decide on the day:* date-scoped itinerary with a NOW / UP NEXT strip and
+  a Home "Now / Up next" card; one persistent trip-scoped Ask; What Now with
+  time, energy, walking and intent plus one-tap situation chips; honest
+  refusal reasons when nothing fits; outcome capture (SPEC-25, SPEC-26,
+  SPEC-31, SPEC-45, SPEC-46, SPEC-48, SPEC-53).
+- *Get there:* offline Driver Card with local-script names and provenance
+  tiers, Show-to-driver mode, Maps hand-off; Swahili-first ordering for
+  Tanzania (SPEC-12, SPEC-49).
+- *Stay informed without being nagged:* weather and departure alerts that
+  never mutate the plan (SPEC-29, SPEC-35).
+- *Keep working offline:* cached itinerary and driver cards, an honest
+  "saved on this phone" row, and a signal outbox (SPEC-02, SPEC-04, SPEC-56).
+- *Trust and privacy:* no dietary suitability claims, labelled sponsored
+  results, anonymous JWT identity, encrypted local store, ownership checks,
+  erase and export (SPEC-14, SPEC-17, SPEC-43).
+
+**Next, behind CI:** inspectable swap comparison (SPEC-50) and a
+network-reachability provider with the flag off by default
+(`docs/decisions/NETWORK_REACHABILITY.md`). Designed and parked until after
+the December trip: unified create (SPEC-51), temporary party context
+(SPEC-54), transfers between destinations (SPEC-55).
+
+**Why it is different (USPs), and what earns each claim:**
+
+1. *On-trip, not pre-trip.* Planners and OTAs stop at booking (section 2).
+   Earned by on-trip reopen and recovery actions, not by itineraries
+   generated.
+2. *Feasible by construction.* Deterministic hours, reachability and lock
+   rules decide what is possible; models only interpret and explain
+   (sections 4 and 24). Earned by broken-lock and infeasible-mutation rates
+   staying at zero.
+3. *The traveller confirms every change.* No silent reflow; every proposal
+   shows what changes and why. Earned by accept / reject records with their
+   reasons.
+4. *Offline as a feature.* The trip, driver cards and status keep working
+   without signal (section 5). Earned by device airplane-mode checks, which
+   are part of every phone acceptance.
+5. *Sourced facts, named uncertainty.* Local names carry provenance; missing
+   data says "not available" rather than guessing (R6, SPEC-12, SPEC-17).
+6. *A governed decision flywheel* (section 4). Today these are foundations;
+   it becomes a moat only with retained, consented real-world use.
+
+**Where it runs.** Curated catalogs for Laos (Luang Prabang, Vang Vieng,
+Vientiane), Tanzania (Stone Town, Nungwi) and Dubai (demo). Laos (Oct 2026)
+was the first owner field trip. Tanzania (Stone Town 26-28 Dec 2026, Nungwi
+29 Dec 2026 to 2 Jan 2027) is the second. Both are field tests of the
+engine, not market entries; the city factory (SPEC-13, SPEC-20) and the
+Bangkok-first order in `docs/MARKET_STRATEGY.md` are unchanged.
+
+**What it deliberately is not:** a pre-trip itinerary generator, a booking
+funnel, an autonomous agent that edits your trip, a city-count race, or a
+social network (sections 6 and 30).
 
 ## 1. The one-line thesis
 
@@ -44,7 +122,9 @@ holding the bookings and making the next decision when the day changes.
 - We have real distribution into it: a network of trusted early testers across Azerbaijan, Singapore, the Philippines, Cambodia, Thailand, Kazakhstan, Kyrgyzstan.
 
 **Beachhead cities:** Dubai (polished demo) + the founder's field routes
-(Laos/SE-Asia). We go **deep in a few**, not wide. (See S6.)
+(Laos/SE-Asia). We go **deep in a few**, not wide. (See S6.) Nov 2026: the
+owner's December Tanzania trip (Stone Town, Nungwi) is a second engine field
+test with hand-loaded packs, not a new beachhead.
 
 **Beachhead traveller and the acquisition wedge (Aug 2026).** The umbrella above
 is unchanged. Within it, the segment we seed *first* is the solo or paired budget
