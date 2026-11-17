@@ -83,3 +83,11 @@ Implementation slice 1: `docs/briefs/GENIE_ISOCHRONE_PROVIDER.md`.
 Provider, 1 h cache, dedicated spend circuit, What Now walking filter
 as an intersection with the Haversine cap. `TB_REACHABILITY_PROVIDER`
 defaults to off. Booking-return reachability is slice 2.
+
+Slice 1 on main (PR #248, `90b2fb5`); hosted flag on since `00018-kjh`.
+Slice 2 brief: `docs/briefs/GENIE_ISOCHRONE_BOOKING_RETURN.md`. One
+reverse (`TO`) walking isochrone around the next same-day non-flight
+booking, band rounded up from the time left, so a candidate outside the
+area provably misses the booking. Intersection only. Behind a second
+flag, `TB_REACHABILITY_BOOKING_RETURN`, default off, because the slice 1
+flag is already on in production.
