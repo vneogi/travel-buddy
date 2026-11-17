@@ -221,8 +221,10 @@ Haversine; offline/Preview fallback stays Haversine. Not trip-critical
 for December. Owner keeps `New GMaps_API_Key` with Isochrones.
 DONE (slice 1): provider, cache, spend circuit and What Now walking filter
 on main (PR #248, `90b2fb5`). Hosted flag on from `00018-kjh`, carried into
-`00019-nl7` (`docs/HOSTED_STATE.md`). Slice 2 (booking-return reachability)
-brief: `docs/briefs/GENIE_ISOCHRONE_BOOKING_RETURN.md`.
+`00019-nl7` (`docs/HOSTED_STATE.md`). DONE (slice 2): booking-return check for What Now on main (PR #288,
+`7f82f78`); second flag `TB_REACHABILITY_BOOKING_RETURN` defaults to off.
+Not yet on Cloud Run (`00019-nl7`); owner enables after deploy with
+`--update-env-vars`.
 
 
 Penciled UI/UX package (owner 2026-11-15; love the recommendations; not
@@ -245,13 +247,13 @@ owner return.
 SPEC-52 slice 1 on main (PR #285, `fdc3ffa`); phone check waits for
 owner return.
 
+Isochrones slice 2 on main (PR #288, `7f82f78`); flag off until owner
+deploy + `--update-env-vars`.
+
 Genie queue while the phone is away (CI-gated; no phone required):
 
-1. Isochrones slice 2, booking return for What Now:
-   `docs/briefs/GENIE_ISOCHRONE_BOOKING_RETURN.md` (server; second flag
-   `TB_REACHABILITY_BOOKING_RETURN` default off; owner enables after
-   deploy). Parked items stay parked until after the trip or an owner
-   decision.
+1. None right now. Parked items stay parked until after the trip or an
+   owner decision.
 
 Park until after the trip or until design answers exist:
 
@@ -263,7 +265,7 @@ Park until after the trip or until design answers exist:
 - SPEC-49 landmarks (needs on-site owner data).
 
 Device-check batch when the phone returns (one APK from then-current
-main): SPEC-49, 48, 50; Isochrones flag-on smoke only after deploy.
+main): SPEC-49, 48, 50, 52; Isochrones slice 1 already on; slice 2 flag-on smoke only after deploy + TB_REACHABILITY_BOOKING_RETURN=on.
 
 Earlier draft order from the package (superseded by the queue above for
 the pause):
