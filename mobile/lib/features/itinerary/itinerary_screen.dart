@@ -82,6 +82,7 @@ class ItineraryScreen extends ConsumerWidget {
       tripId: tripId,
       targetNodeId: node.nodeId,
       tripState: tripState,
+      currentNode: node,
     );
 
     final venue = await showModalBottomSheet<VenueSearchResult>(

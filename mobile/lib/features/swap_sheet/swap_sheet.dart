@@ -7,6 +7,7 @@ import '../../theme/colors.dart';
 import '../../theme/typography.dart';
 import '../../theme/spacing.dart';
 import '../../widgets/shimmer_card.dart';
+import 'swap_comparison.dart';
 
 /// SPEC-07: Bottom sheet with RAG venue suggestions for swapping an activity.
 ///
@@ -22,6 +23,10 @@ class SwapSheet extends ConsumerStatefulWidget {
   final String targetNodeId;
   final TripState tripState;
 
+  /// SPEC-50: the stop being replaced. When given (and not locked), a
+  /// comparison panel shows after a candidate is selected.
+  final TripNode? currentNode;
+
   /// Populated by initState after venue search completes. Read by the
   /// caller for the reroute_rejected payload.
   final List<String> offeredVenueIds = [];
@@ -31,6 +36,7 @@ class SwapSheet extends ConsumerStatefulWidget {
     required this.tripId,
     required this.targetNodeId,
     required this.tripState,
+    this.currentNode,
   });
 
   @override
@@ -152,6 +158,14 @@ class SwapSheetState extends ConsumerState<SwapSheet> {
               ),
             if (!_loading && _availableVibes.isNotEmpty)
               const SizedBox(height: AppSpacing.base),
+            if (_comparisonNode != null && _selectedVenue != null)
+              SwapComparisonPanel(
+                current: _comparisonNode!,
+                option: _selectedVenue!,
+                onNextOption: _nextVisibleVenue == null
+                    ? null
+                    : () => setState(() => _selectedVenue = _nextVisibleVenue),
+              ),
             Expanded(child: _buildContent(scrollController)),
           ],
         ),
@@ -293,6 +307,25 @@ class SwapSheetState extends ConsumerState<SwapSheet> {
         .toList()
       ..sort();
     return values.take(8).toList();
+  }
+
+  /// SPEC-50: the stop to compare against, or null when the panel must not
+  /// show (no node passed, locked stop, or still loading).
+  TripNode? get _comparisonNode {
+    final node = widget.currentNode;
+    if (node == null || node.isLocked || _loading) return null;
+    return node;
+  }
+
+  /// SPEC-50: the visible candidate after the selected one; no wrap.
+  /// Null when there is none or the selection is filtered out.
+  VenueSearchResult? get _nextVisibleVenue {
+    final selected = _selectedVenue;
+    if (selected == null) return null;
+    final visible = _visibleVenues;
+    final index = visible.indexWhere((v) => v.venueId == selected.venueId);
+    if (index < 0 || index + 1 >= visible.length) return null;
+    return visible[index + 1];
   }
 
   List<VenueSearchResult> get _visibleVenues {
