@@ -25,6 +25,7 @@ import 'date_scope.dart';
 import '../../widgets/city_section.dart';
 import 'itinerary_notifier.dart';
 import 'offline_readiness.dart';
+import 'now_next_strip.dart';
 import '../activity_detail/activity_detail_screen.dart';
 import 'replacement_ref.dart';
 import '../alerts/alerts_notifier.dart';
@@ -384,6 +385,12 @@ class ItineraryScreen extends ConsumerWidget {
               children: [
                 // SPEC-56: what is saved on this phone for this trip.
                 OfflineStatusRow(tripId: tripId),
+                NowNextStrip(
+                  nodes: state.nodes,
+                  onFocusNode: (nodeId) => context.go(
+                    '/trip/$tripId?focus=${Uri.encodeQueryComponent(nodeId)}',
+                  ),
+                ),
                 // Slim progress bar while an event is in flight (heavy calls).
                 if (state.processing)
                   const LinearProgressIndicator(minHeight: 2),
