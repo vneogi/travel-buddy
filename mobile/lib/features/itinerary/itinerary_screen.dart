@@ -24,6 +24,7 @@ import '../../core/destination_tz.dart';
 import 'date_scope.dart';
 import '../../widgets/city_section.dart';
 import 'itinerary_notifier.dart';
+import '../arrival_armor/arrival_hubs.dart';
 import 'offline_readiness.dart';
 import 'now_next_strip.dart';
 import '../activity_detail/activity_detail_screen.dart';
@@ -328,6 +329,9 @@ class ItineraryScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // SPEC-57: bundled arrival hubs (asset only); empty until loaded.
+    final arrivalHubs =
+        ref.watch(arrivalHubsProvider).valueOrNull ?? const <ArrivalHub>[];
     // Reroute-limit → push upgrade once, then clear the flag.
     ref.listen<ItineraryState>(itineraryControllerProvider(tripId), (
       prev,
@@ -451,6 +455,7 @@ class ItineraryScreen extends ConsumerWidget {
                               onSwap: (node) => _swap(context, ref, node),
                               onCancel: (node) => _cancel(context, ref, node),
                               onMove: (node) => _move(context, ref, node),
+                              arrivalHubs: arrivalHubs,
                               onAddToDate: (date) => _addToDate(context, ref, date),
                               onOutcome: (node, {isLastHotelNight = false}) =>
                                   _showOutcomePicker(context, ref, node, isLastHotelNight: isLastHotelNight),
@@ -493,6 +498,7 @@ class ItineraryScreen extends ConsumerWidget {
                               onSwap: (node) => _swap(context, ref, node),
                               onCancel: (node) => _cancel(context, ref, node),
                               onMove: (node) => _move(context, ref, node),
+                              arrivalHubs: arrivalHubs,
                               onAddToDate: (date) => _addToDate(context, ref, date),
                               onOutcome: (node, {isLastHotelNight = false}) =>
                                   _showOutcomePicker(context, ref, node, isLastHotelNight: isLastHotelNight),
@@ -540,6 +546,7 @@ class _CorridorTimeline extends StatefulWidget {
   final void Function(TripNode) onSwap;
   final void Function(TripNode) onCancel;
   final void Function(TripNode)? onMove;
+  final List<ArrivalHub> arrivalHubs; // SPEC-57
   final void Function(DateTime)? onAddToDate;
   final void Function(TripNode, {bool isLastHotelNight}) onOutcome;
   final void Function(TripNode) onLoved;
@@ -555,6 +562,7 @@ class _CorridorTimeline extends StatefulWidget {
     required this.onSwap,
     required this.onCancel,
     this.onMove,
+    this.arrivalHubs = const [],
     this.onAddToDate,
     required this.onOutcome,
     required this.onLoved,
@@ -664,6 +672,7 @@ class _CorridorTimelineState extends State<_CorridorTimeline> {
         onSwap: widget.onSwap,
         onCancel: widget.onCancel,
         onMove: widget.onMove,
+        arrivalHubs: widget.arrivalHubs,
         onAddToDate: widget.onAddToDate,
         onOutcome: widget.onOutcome,
         onLoved: widget.onLoved,
@@ -687,6 +696,7 @@ class _FocusedDateScopedTimeline extends StatefulWidget {
   final void Function(TripNode) onSwap;
   final void Function(TripNode) onCancel;
   final void Function(TripNode)? onMove;
+  final List<ArrivalHub> arrivalHubs; // SPEC-57
   final void Function(DateTime)? onAddToDate;
   final void Function(TripNode, {bool isLastHotelNight}) onOutcome;
   final void Function(TripNode) onLoved;
@@ -702,6 +712,7 @@ class _FocusedDateScopedTimeline extends StatefulWidget {
     required this.onSwap,
     required this.onCancel,
     this.onMove,
+    this.arrivalHubs = const [],
     this.onAddToDate,
     required this.onOutcome,
     required this.onLoved,
@@ -770,6 +781,7 @@ class _FocusedDateScopedTimelineState
         onSwap: widget.onSwap,
         onCancel: widget.onCancel,
         onMove: widget.onMove,
+        arrivalHubs: widget.arrivalHubs,
         onAddToDate: widget.onAddToDate,
         onOutcome: widget.onOutcome,
         onLoved: widget.onLoved,
@@ -787,6 +799,7 @@ class _DateScopedTimeline extends StatelessWidget {
   final void Function(TripNode) onSwap;
   final void Function(TripNode) onCancel;
   final void Function(TripNode)? onMove;
+  final List<ArrivalHub> arrivalHubs; // SPEC-57
   final void Function(DateTime)? onAddToDate;
   final void Function(TripNode, {bool isLastHotelNight}) onOutcome;
   final void Function(TripNode) onLoved;
@@ -805,6 +818,7 @@ class _DateScopedTimeline extends StatelessWidget {
     required this.onSwap,
     required this.onCancel,
     this.onMove,
+    this.arrivalHubs = const [],
     this.onAddToDate,
     required this.onOutcome,
     required this.onLoved,
@@ -931,6 +945,8 @@ class _DateScopedTimeline extends StatelessWidget {
                   && node.nodeKind == 'booking'
                   && node.bookingType == 'hotel',
               isLastHotelNight: isLastHotelNight,
+              arrivalHubs: arrivalHubs,
+              tripNodes: state.nodes,
               restrictOutcomeToToday: currentHeaderDate != null && (() {
                 final nowLocal = toDestinationLocal(nowUtc, node.geoRegion);
                 final hdr = currentHeaderDate!;

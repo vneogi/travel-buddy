@@ -1,0 +1,32 @@
+{
+  "hubs": [
+    {
+      "id": "znz_airport",
+      "label": "Zanzibar Airport (ZNZ)",
+      "geo_regions": ["zanzibar_tanzania", "nungwi_tanzania"],
+      "booking_types": ["flight"],
+      "currency": "TZS",
+      "fare_band_low": null,
+      "fare_band_high": null,
+      "hard_ceiling": null,
+      "official_option": null,
+      "scam_notes": [],
+      "surveyed_on": null,
+      "source": null
+    },
+    {
+      "id": "stone_town_ferry",
+      "label": "Stone Town ferry terminal",
+      "geo_regions": ["zanzibar_tanzania", "nungwi_tanzania"],
+      "booking_types": ["train"],
+      "currency": "TZS",
+      "fare_band_low": null,
+      "fare_band_high": null,
+      "hard_ceiling": null,
+      "official_option": null,
+      "scam_notes": [],
+      "surveyed_on": null,
+      "source": null
+    }
+  ]
+}

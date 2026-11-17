@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'dart:math' as math;
 import '../core/destination_tz.dart';
 import '../data/models.dart';
+import '../features/arrival_armor/arrival_hubs.dart';
 import '../features/itinerary/current_window.dart';
 import '../features/itinerary/micro_location_label.dart';
 import '../offline/offline_database.dart';
@@ -102,6 +103,9 @@ class ActivityCard extends StatelessWidget {
   final bool isLastHotelNight; // true for checkout-day hotel coverage
   final bool restrictOutcomeToToday; // true under today's header
   final DateTime? now; // injectable for tests
+  // SPEC-57: bundled arrival hubs and the trip's nodes (for the next hotel).
+  final List<ArrivalHub> arrivalHubs;
+  final List<TripNode> tripNodes;
 
   const ActivityCard({
     super.key,
@@ -122,6 +126,8 @@ class ActivityCard extends StatelessWidget {
     this.isLastHotelNight = false,
     this.restrictOutcomeToToday = false,
     this.now,
+    this.arrivalHubs = const [],
+    this.tripNodes = const [],
   });
 
   @override
@@ -522,6 +528,26 @@ class ActivityCard extends StatelessWidget {
       ),
     ));
 
+    // SPEC-57: Arrival armor for a booking that matches a bundled hub.
+    final arrivalHub = node.nodeKind == 'booking'
+        ? hubForBooking(
+            geoRegion: node.geoRegion,
+            bookingType: node.bookingType,
+            hubs: arrivalHubs,
+          )
+        : null;
+    if (arrivalHub != null) {
+      items.add(const PopupMenuItem(
+        value: 'arrival_armor',
+        child: ListTile(
+          leading: Icon(Icons.flight_land_outlined, size: 20),
+          title: Text('Arrival armor'),
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+        ),
+      ));
+    }
+
     if (items.isEmpty) return const SizedBox.shrink();
 
     return SizedBox(
@@ -545,6 +571,20 @@ class ActivityCard extends StatelessWidget {
                   GoRouterState.of(context).pathParameters['tripId'] ?? '';
               context.push(
                 '/trip/$tripId/card/${node.venueId ?? node.venueName}',
+              );
+            case 'arrival_armor':
+              if (arrivalHub == null) return;
+              final tripId =
+                  GoRouterState.of(context).pathParameters['tripId'] ?? '';
+              final hotel = nextHotelDestination(from: node, nodes: tripNodes);
+              final hotelRef = hotel == null
+                  ? ''
+                  : (hotel.venueId ?? hotel.venueName);
+              context.push(
+                hotelRef.isEmpty
+                    ? '/trip/$tripId/arrival/${arrivalHub.id}'
+                    : '/trip/$tripId/arrival/${arrivalHub.id}'
+                        '?hotel=${Uri.encodeQueryComponent(hotelRef)}',
               );
           }
         },

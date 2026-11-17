@@ -11,6 +11,7 @@ import '../features/profile/profile_screen.dart';
 import '../features/upgrade/upgrade_screen.dart';
 import '../features/debug/sync_status_screen.dart';
 import '../features/create_trip/create_trip_screen.dart';
+import '../features/arrival_armor/arrival_armor_screen.dart';
 import '../features/driver_card/driver_card_screen.dart';
 import 'redirect_for_auth.dart';
 import 'trip_route_auth.dart';
@@ -50,6 +51,15 @@ final appRouter = GoRouter(
       builder: (_, state) => DriverCardScreen(
         tripId: state.pathParameters['tripId']!,
         nodeId: state.pathParameters['nodeId']!,
+      ),
+    ),
+    // SPEC-57: Arrival armor captain view (bundled asset only).
+    GoRoute(
+      path: '/trip/:tripId/arrival/:hubId',
+      builder: (_, state) => ArrivalArmorScreen(
+        tripId: state.pathParameters['tripId']!,
+        hubId: state.pathParameters['hubId']!,
+        hotelRef: state.uri.queryParameters['hotel'],
       ),
     ),
     GoRoute(
