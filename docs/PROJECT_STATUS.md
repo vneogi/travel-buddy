@@ -42,10 +42,11 @@
   Hearts persist across process death (verified Aug 30 on Windows).
   `session_start` emits from the app lifecycle (SPEC-30, `f8349a8`).
   Sync Status now awaits `syncOnce()` before reading counts.
-- Migrations 0001 to 0025 are applied on the hosted database. Migrations
+- Migrations 0001 to 0027 are applied on the hosted database. Migrations
   0011-0018 were verified on device day 2026-08-17; 0019-0024 were verified
   from live schema sentinels on 2026-09-06; 0025 was verified in the SQL
-  Editor on 2026-09-27. Migration 0023 includes the live
+  Editor on 2026-09-27; 0026 and 0027 were applied via MCP on 2026-11-15.
+  Migration 0023 includes the live
   `filter_geo_region` RPC argument. 0015/0017 CHECKs remain NOT VALID until a
   deliberate VALIDATE after distinct-value review. See docs/HOSTED_STATE.md.
 - Every file under data/ is ASCII-escaped, and a guard enforces it. Use
@@ -128,6 +129,15 @@
 | On-trip visible surface (SPEC-45) | PHASE A + FIELD TRUST HYGIENE ON MAIN | Phase A chrome is on the field APK. Phase B field trust hygiene is on main through the post-field merge sequence: capped alerts, current-day/kind-specific outcomes, dead Review removal, and honest empty-swap refusal. Operational place detail, transfer cards, and Rescue remain later |
 | What Now foreground context (SPEC-46) | PHASE A ON MAIN (PR #73, `d1df944`) | Deterministic no-GPS What Now inside trip-scoped Ask: temporary time/energy/walking/intent, trip-position or region-anchor, shared `fits_next_lock`, inspectable reasons, named unknowns, display-only details. Owner Windows analyze infos-only; What Now widgets and full Flutter suite green. Hosted deploy, APK, and phone use not done. Phase B GPS only after SPEC-43 |
 | Data operations workbench (SPEC-47) | SPECIFIED; AFTER SPEC-43 + SPEC-17 | Protected internal observation review, conflicts, freshness, and versioned release manifests. Contribution prompts stay off until this exists. Operating model: `docs/DATA_FLYWHEEL_OPERATING_MODEL.md` |
+| Glanceable timeline (SPEC-48) | SLICE 1 ON MAIN (PR #278, `91f8220`) | NOW / UP NEXT strip under the offline row; client-only and offline-safe; a hotel stay is never NOW. Device check pending (owner device pause). Connectors wait for a trusted per-leg duration source |
+| Driver handoff and Tanzania language (SPEC-49) | PARTIAL | F2 `sw`-then-`en` priority (`982bb48`, PR #231). Show-to-driver mode on main (PR #276, `ff37439`); device check pending. Swahili landmark data waits for the owner on site |
+| Inspectable swap comparison (SPEC-50) | BRIEF READY | `docs/briefs/GENIE_SPEC50_SWAP_COMPARISON.md`: client-only comparison using fields the swap response already sends; Next option never mutates |
+| Unified trip creation (SPEC-51) | PARKED (design answered 2026-11-16) | One Create a trip flow; corridor becomes a preset inside it. After the December trip |
+| Existing-trip date markers (SPEC-52) | PARTIAL | F3 markers on main (`1cb9318`, PR #238). TripSummary activity-span remainder open |
+| Situation chips (SPEC-53) | SLICE 1 ON MAIN (PR #266, `15ab8fe`) | Four What Now presets in chat. Device check PASSED 2026-11-16 |
+| Temporary party context (SPEC-54) | PARKED (design answered 2026-11-16) | Phone-only, cleared on sign-out, expires end of the destination-local day; slice 1 energy and indoors only |
+| Transfer between destinations (SPEC-55) | PARKED (design answered 2026-11-16) | Departing trip owns the record; free text on an existing booking type, no migration |
+| Offline readiness indicator (SPEC-56) | SLICE 1 ON MAIN (PR #270, `c31fc22`) | Honest "saved on this phone" row and sheet from real cache state. Device check PASSED 2026-11-16 |
 
 Migration numbers are assigned when a spec is implemented, not when it is
 written. SPEC-11, SPEC-13, SPEC-14 and SPEC-15 each claimed a number, and the
@@ -237,9 +247,9 @@ Genie queue while the phone is away (CI-gated; no phone required):
 
 Park until after the trip or until design answers exist:
 
-- SPEC-51 unified create (low trip relevance; both Tanzania trips exist).
-- SPEC-54 temporary party/energy (overlaps SPEC-53; optional later).
-- SPEC-55 inter-city transfer (five design questions still open).
+- SPEC-51 unified create (design answered 2026-11-16; low trip relevance).
+- SPEC-54 temporary party/energy (design answered 2026-11-16; after the trip).
+- SPEC-55 inter-city transfer (design answered 2026-11-16; build after the trip).
 - UX-57 / UX-58 (need owning specs first).
 - SPEC-48 connectors (no trusted per-leg duration source yet).
 - SPEC-49 landmarks (needs on-site owner data).

@@ -1,14 +1,87 @@
 # Travel Buddy
 
-An AI travel companion: a FastAPI backend and a Flutter client that together
-maintain a continuous, self-correcting itinerary. The traveller interrupts the
-plan ("too tired for the gallery walk, find me a quiet cafe"), the system
-replaces the affected activity using curated local venue knowledge (RAG), and
-reschedules everything downstream without moving locked reservations.
+Travel Buddy is an on-trip companion for the **independent trip captain**: the
+person holding the bookings and deciding what happens next when the day
+changes. It keeps one trip spine (bookings, hotels, must-dos and deliberate
+gaps) and helps in the moment: what to do now, how to recover when a stop falls
+through, how to get a driver to the right place, and what still works without
+signal. Every change to the plan is proposed, explained and confirmed by the
+traveller. Nothing reflows silently.
 
-Two regions are loaded: Dubai (16 synthetic venues) and Laos (58 hand-curated
-venues across Luang Prabang, Vang Vieng and Vientiane) for a field test on
-Oct 2 2026.
+A FastAPI backend (Cloud Run, Supabase Postgres with pgvector) and a Flutter
+Android client. Product detail lives in `docs/VISION.md` section 0; build
+status lives in `docs/PROJECT_STATUS.md`.
+
+## Who it is for
+
+- **Primary user:** the independent trip captain -- solo, paired, or
+  coordinating a family -- in emerging and non-Western destinations.
+- **Seeding beachhead:** budget backpackers on the South-East Asian overland
+  corridor, where distribution and on-trip signal are dense.
+- **Monetization hypothesis:** the Indian outbound traveller corridor (Dubai,
+  Bangkok, Singapore, Baku, Tbilisi, Almaty). Under-evidenced; revisited with
+  field data.
+
+Owner documents: `docs/MARKET_STRATEGY.md` and `docs/VISION.md` section 3.
+
+## What it does today (on `main`)
+
+**Plan the spine**
+- Guided Create Trip (destination, dates, party, interests) from a curated
+  catalog, including a multi-city Laos corridor.
+- Bookings as locked anchors (flight, hotel, tour), with provider-aware paste
+  import and destination-local times.
+- Flexible trip spans with empty days; typed Add, Move and Swap, each checked
+  server-side against opening hours, walking reachability and locked bookings.
+
+**Decide on the day**
+- Date-scoped itinerary with a NOW / UP NEXT strip, and a Home "Now / Up next"
+  card.
+- One persistent, trip-scoped Ask. What Now returns feasible options for the
+  time, energy, walking and intent you choose, with reasons and named unknowns;
+  one-tap situation chips (quick break, low energy, indoors, something to eat).
+- Swap with honest refusal reasons when nothing fits; visited / skipped
+  outcomes; weather and departure alerts that never change the plan on their
+  own.
+
+**Get there**
+- Offline Driver Card with local-script names and provenance tiers (sourced,
+  ask to confirm, or refused), a full-screen Show-to-driver mode, and a Maps
+  hand-off.
+
+**Keep working offline**
+- Cached itinerary and driver cards, an honest "saved on this phone" status
+  row, and a signal outbox that syncs when the network returns.
+
+**Trust and privacy**
+- No dietary suitability claims; sponsored results are always labelled.
+- Anonymous JWT identity, encrypted on-device database, server-side ownership
+  checks, and erase / export routes (SPEC-43 foundation).
+
+In progress behind CI: inspectable swap comparison (SPEC-50) and a
+network-reachability provider (flag off by default).
+
+## Where it works
+
+Curated catalogs are loaded for Laos (Luang Prabang, Vang Vieng, Vientiane),
+Tanzania (Stone Town and Nungwi) and Dubai (demo). Adding a city is still a
+code and data change until the region registry and city kit exist
+(SPEC-13, SPEC-20).
+
+## What makes it different
+
+- **On-trip, not pre-trip.** It owns the moment the plan breaks, not
+  inspiration or booking.
+- **Feasibility first.** Deterministic rules for hours, reachability and
+  locked bookings decide what is possible; models may explain, never decide.
+- **The traveller confirms every change.** No silent autonomous reflow.
+- **Offline is a feature.** The trip, driver cards and status work with no
+  signal.
+- **Sourced facts and named uncertainty.** "Not available" instead of a
+  guess; local names carry their source.
+- **Decision-outcome data as the long-run moat.** Foundations are built; it
+  becomes a moat only with retained real-world use (`docs/VISION.md`
+  section 4).
 
 | Read this | For |
 |-----------|-----|
@@ -16,7 +89,7 @@ Oct 2 2026.
 | `docs/PROJECT_STATUS.md` | What is built, what is next, known risks |
 | `docs/HOSTED_STATE.md` | Hosted migrations and credential-backed provider verification |
 | `docs/ENGINEERING_RULES.md` | Rules earned from real bugs. Read before contributing |
-| `docs/VISION.md` | Product strategy and the data moat thesis |
+| `docs/VISION.md` | Product at a glance (section 0), strategy and the data moat thesis |
 | `docs/MARKET_STRATEGY.md` | Which traveller, which cities, Banana Pancake seeding order |
 | `docs/RELEASE_READINESS.md` | Owner field test vs first non-owner vs public store |
 | `docs/AWAITING_VERIFICATION.md` | Dated log of what is not yet verified on device |
@@ -45,7 +118,7 @@ Oct 2 2026.
       monitoring/error_log.py     request IDs and traceback capture
 
     Supabase (PostgreSQL + pgvector)
-      supabase/migrations/0001 .. 0025 (hosted state in docs/HOSTED_STATE.md)
+      supabase/migrations/0001 .. 0027 (hosted state in docs/HOSTED_STATE.md)
 
 The orchestrator is **not** LangGraph, despite what older revisions of this file
 and the BRD claimed. `langgraph` is commented out in `requirements.txt` and the
@@ -77,7 +150,7 @@ in-memory proves nothing about the Supabase path (R4).
 | 2 | Semantic cache | Cosine similarity above 0.92 serves a cached response at zero LLM cost |
 | 3 | Circuit breaker | At most 3 internal transitions before falling back |
 | 4 | Asymmetric router | Light model for info queries, heavy model for restructuring |
-| 5 | Ad-injection boost | Sponsored venues receive a score boost in RAG results |
+| 5 | Ad-injection boost | Sponsored venues receive a score boost in RAG results; the UI always labels boosted results (SPEC-17) |
 
 All five levers are configured in `config/settings.py`.
 
