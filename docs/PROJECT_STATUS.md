@@ -138,6 +138,7 @@
 | Temporary party context (SPEC-54) | PARKED (design answered 2026-11-16) | Phone-only, cleared on sign-out, expires end of the destination-local day; slice 1 energy and indoors only |
 | Transfer between destinations (SPEC-55) | PARKED (design answered 2026-11-16) | Departing trip owns the record; free text on an existing booking type, no migration |
 | Offline readiness indicator (SPEC-56) | SLICE 1 ON MAIN (PR #270, `c31fc22`) | Honest "saved on this phone" row and sheet from real cache state. Device check PASSED 2026-11-16 |
+| Arrival Armor (SPEC-57) | SPECIFIED (2026-11-17) | Thin captain HUD; slice 1 brief `GENIE_SPEC57_ARRIVAL_ARMOR.md`; fares empty until owner on-site notes |
 
 Migration numbers are assigned when a spec is implemented, not when it is
 written. SPEC-11, SPEC-13, SPEC-14 and SPEC-15 each claimed a number, and the
@@ -204,8 +205,11 @@ unless a step fails and a fix brief is written.
 6. Owner decision, not Genie's: keep the trip summary on activity span
    (current F3 choice), or switch to create-form dates (needs
    `TripSummary` and server projection changes). Default is no change.
-7. Owner on site, during the trip (unchanged from trip-critical item 6):
+7. Owner on site, during the trip (extends trip-critical item 6):
    verify bar and key-venue hours, and Swahili names and landmarks.
+   Also record sourced curb fares and 2-3 scam notes for Zanzibar
+   Airport and the Stone Town ferry (date + source) so SPEC-57
+   `arrival_hubs.json` can be filled without invented amounts.
 8. Parked until after the trip (unchanged): SPEC-51, SPEC-54, SPEC-55,
    UX-57 and UX-58, SPEC-48 connectors, SPEC-49 landmarks.
 
@@ -288,7 +292,7 @@ Not yet on Cloud Run (`00019-nl7`); owner enables after deploy with
 Penciled UI/UX package (owner 2026-11-15; love the recommendations; not
 trip-critical). Full draft:
 `docs/briefs/UI_UX_IMPLEMENTATION_SPECS_2026-11-15.md`. Owning spec
-files SPEC-48..SPEC-56 are in `docs/specs/` (2026-11-16).
+files SPEC-48..SPEC-57 are in `docs/specs/` (SPEC-57 on 2026-11-17).
 
 Owner device window closes 2026-11-16 night for about four days.
 Resequence (2026-11-16): land Genie work behind CI now; batch phone
@@ -310,8 +314,10 @@ deploy + `--update-env-vars`.
 
 Genie queue while the phone is away (CI-gated; no phone required):
 
-1. None right now. Parked items stay parked until after the trip or an
-   owner decision.
+1. SPEC-57 Arrival Armor slice 1 -- brief ready
+   (`docs/briefs/GENIE_SPEC57_ARRIVAL_ARMOR.md`). Flutter-only; no phone
+   required to implement. Phone check after the owner-return APK.
+2. Parked items stay parked until after the trip or an owner decision.
 
 Park until after the trip or until design answers exist:
 

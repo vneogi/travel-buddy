@@ -140,8 +140,11 @@ SPEC-46 Phase B GPS waits for SPEC-43.
 **November UI/UX package (Nov 2026).** SPEC-48 through SPEC-56, from
 `docs/briefs/UI_UX_IMPLEMENTATION_SPECS_2026-11-15.md`. Slices on main:
 SPEC-53, SPEC-56, SPEC-49 Show-to-driver, SPEC-48 strip; SPEC-52 markers
-(as F3). SPEC-50 brief ready. SPEC-51, SPEC-54, SPEC-55 designed and parked
-until after the December trip.
+(as F3); SPEC-50. SPEC-51, SPEC-54, SPEC-55 designed and parked until
+after the December trip. **Moonshot triage (2026-11-17):** VISION
+section 32; thin Arrival Armor is SPEC-57 (slice 1 brief ready); Party
+Tether declined; Point & Settle mostly declined; Whisper and Passport
+Phase 2; Route Deviation Phase 3.
 
 **Release and non-owner gates.** SPEC-43, then SPEC-09 remainder / SPEC-24 /
 SPEC-27 as called by SPEC-43 and RELEASE_READINESS.
@@ -159,7 +162,9 @@ deferred. SPEC-14 dietary claims are retired.
 
 **Declined or shrunk in the owner documents, not in chat.** Full Offline Vault
 and Hotel Rescue shortcut (SPEC-04 / UX_BACKLOG); Gmail OAuth; Isar; HealthKit;
-LangGraph as product; graph DB / extra vector DB / microservices for the moat.
+LangGraph as product; graph DB / extra vector DB / microservices for the moat;
+Party Tether BLE mesh and camera dietary "safe for party" claims (VISION
+section 32 / UX_BACKLOG Nov 17 moonshot triage).
 
 ## What a brainstorming session is allowed to become
 

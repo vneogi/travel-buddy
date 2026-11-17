@@ -9,8 +9,10 @@ Source: product/UI team draft
 `docs/briefs/UI_UX_IMPLEMENTATION_SPECS_2026-11-15.md`. Owner accepted the
 direction. Owning spec files SPEC-48 through SPEC-56 landed 2026-11-16
 in `docs/specs/`; each names the parent spec it amends and its first
-slice. Device pause (2026-11-16, ~4 days): Genie queue empty
-(Isochrones slice 2 on main, flag off until deploy). Phone batch on return includes SPEC-49, 48, 50, 52. Parked until after the trip or design answers: 51, 54, 55, UX-57/58.
+slice. SPEC-57 (Arrival Armor) added 2026-11-17 from the moonshot triage.
+Device pause (2026-11-16, ~4 days): phone batch on return includes
+SPEC-49, 48, 50, 52. Next Genie brief ready: SPEC-57 slice 1. Parked
+until after the trip or design answers: 51, 54, 55, UX-57/58.
 
 | Draft | Status | Notes |
 |---|---|---|
@@ -25,6 +27,7 @@ slice. Device pause (2026-11-16, ~4 days): Genie queue empty
 | SPEC-56 offline readiness | Slice 1 done | PR #270; device check 2026-11-16 |
 | UX-57 design themes and tokens | Penciled | Semantic tokens, dark, manual High-Visibility; audit first (Phase A) |
 | UX-58 local-food Pointing Card | Penciled | Curated glossary only; missing text or allergens shown as unavailable |
+| SPEC-57 Arrival Armor (thin) | Specced | Slice 1 brief ready; Flutter-only captain HUD; fares null until owner on-site |
 
 Sequence in the draft: verify 49/52 remainders, then 48 + 53 prototypes,
 evidence contracts for 50/54, then 51, then 55/56.
@@ -57,6 +60,27 @@ Owner decisions (2026-11-16):
   client-lifetime fix. It reuses live What Now intents. Pointing Card
   (UX-58) and Driver Card remainder (SPEC-49) wait. Route Passport stays
   deferred.
+
+## Nov 17 2026 moonshot triage (owner accepted)
+
+Source draft: external `spec_moonshot_capabilities.md` (product/UI head).
+Owner accepted the planning-agent triage. Full table and rationale:
+`VISION.md` section 32.
+
+| Draft idea | Call | Notes |
+|---|---|---|
+| Arrival Armor | Near term -> SPEC-57 | Booking-tap HUD; sourced fares or silence; builds on SPEC-12/49. No geofence. |
+| Expedition Passport (signal recap) | Phase 2 | Travelogue from visit/skip already on device; no GPS/gallery first. |
+| Whisper Mode (foreground TTS) | Phase 2 | Read existing SPEC-35 alerts only. |
+| Route Deviation Sentinel | Phase 3 | Background GPS; false-alarm risk. |
+| Point & Settle camera | Mostly no | SPEC-14 forbids dietary suitability claims; Lens already does OCR. |
+| Party Tether BLE | No | Not a compass; platform + product mismatch; AirTags exist. |
+
+UX-58 Pointing Card stays a curated glossary without allergen claims; it
+is not permission to build camera "safe for party" tags.
+
+Route Passport / Expedition Passport stay deferred post-trip (same as
+the Oct 11 and Nov 16 notes).
 
 ## Oct 11 2026 field reprioritization
 
