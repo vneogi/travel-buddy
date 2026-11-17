@@ -75,6 +75,7 @@ class Settings(BaseSettings):
     # --- External APIs ---
     google_maps_api_key: Optional[str] = None
     reachability_provider: str = "off"  # TB_REACHABILITY_PROVIDER: off | google_isochrones
+    reachability_booking_return: str = "off"  # TB_REACHABILITY_BOOKING_RETURN: off | on
     google_places_api_key: Optional[str] = None
     openweather_api_key: Optional[str] = None
 
