@@ -46,6 +46,30 @@ Future<_Result> _open(WidgetTester t) async {
 
 Finder _day(String iso) => find.byKey(Key('day-$iso'));
 
+/// Open the picker with custom occupied days (SPEC-52 tests).
+Future<void> _openWith(WidgetTester t, Set<DateTime> occupied) async {
+  await t.pumpWidget(MaterialApp(
+    home: Builder(
+      builder: (context) => Scaffold(
+        body: Center(
+          child: ElevatedButton(
+            onPressed: () => showExistingTripDateRangePicker(
+              context: context,
+              firstDate: _firstDate,
+              lastDate: _lastDate,
+              occupiedDays: occupied,
+            ),
+            child: const Text('open'),
+          ),
+        ),
+      ),
+    ),
+  ));
+  await t.tap(find.text('open'));
+  await t.pumpAndSettle();
+  expect(find.text('December 2026'), findsOneWidget);
+}
+
 void main() {
   testWidgets('occupied_day_shows_a_marker', (t) async {
     await _open(t);
@@ -96,5 +120,46 @@ void main() {
     await t.pumpAndSettle();
     expect(result.closed, isTrue);
     expect(result.range, isNull);
+  });
+
+  // SPEC-52 acceptance: semantics, date-only input, selectable overlap.
+  testWidgets('occupied_day_has_accessible_label', (t) async {
+    final handle = t.ensureSemantics();
+    await _open(t);
+    expect(
+      t.getSemantics(_day('2026-12-10')).label,
+      contains('covered by another trip'),
+    );
+    expect(
+      t.getSemantics(_day('2026-12-12')).label,
+      isNot(contains('covered by another trip')),
+    );
+    expect(
+      find.bySemanticsLabel(RegExp('covered by another trip')),
+      findsNWidgets(_occupied.length),
+    );
+    handle.dispose();
+  });
+
+  testWidgets('occupied_day_with_time_of_day_still_marks_the_date',
+      (t) async {
+    await _openWith(t, {DateTime(2026, 12, 10, 15, 30)});
+    expect(find.byKey(const Key('marker-2026-12-10')), findsOneWidget);
+  });
+
+  testWidgets('overlapping_day_remains_selectable_and_range_returns',
+      (t) async {
+    final result = await _open(t);
+    await t.tap(_day('2026-12-09'));
+    await t.pump();
+    await t.tap(_day('2026-12-11'));
+    await t.pump();
+    await t.tap(find.byKey(const Key('picker-confirm')));
+    await t.pumpAndSettle();
+    expect(result.closed, isTrue);
+    expect(
+      result.range,
+      DateTimeRange(start: DateTime(2026, 12, 9), end: DateTime(2026, 12, 11)),
+    );
   });
 }

@@ -194,7 +194,7 @@ class _RangeSheetState extends State<_RangeSheet> {
         : isEndpoint
             ? scheme.onPrimary
             : scheme.onSurface;
-    return InkWell(
+    final cell = InkWell(
       key: Key('day-${_iso(day)}'),
       onTap: selectable ? () => _tap(day) : null,
       customBorder: const CircleBorder(),
@@ -231,6 +231,15 @@ class _RangeSheetState extends State<_RangeSheet> {
           ),
         ),
       ),
+    );
+    if (!occupied) return cell;
+    // SPEC-52: a screen reader must tell a covered day from a free one.
+    // The day stays selectable; only the label is added.
+    return Semantics(
+      container: true,
+      label: '${day.day} ${_monthNames[day.month - 1]} ${day.year}, '
+          'covered by another trip',
+      child: cell,
     );
   }
 }
