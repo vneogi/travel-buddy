@@ -31,13 +31,14 @@ documents disagree, follow Precedence below and name the conflict in
   tombstone; Stone Town and Nungwi packs (hosted); F2 Swahili-first driver
   card order; F3 existing-trip date markers; the What Now chat fix
   (PR #260); SPEC-53 situation chips; SPEC-56 offline readiness row;
-  SPEC-49 Show-to-driver; SPEC-48 NOW / UP NEXT strip; the Isochrones
-  trial (provider slice next, flag off).
+  SPEC-49 Show-to-driver; SPEC-48 NOW / UP NEXT strip; SPEC-50 swap
+  comparison; SPEC-52 markers; the Isochrones provider (slice 2 flag off);
+  SPEC-57 Arrival Armor slice 1.
 - Hosted: migrations through 0027; Cloud Run revision and env names in
   `HOSTED_STATE.md`.
 - Owner focus: the Tanzania trip (Stone Town 26-28 Dec 2026, Nungwi 29 Dec
   2026 to 2 Jan 2027). Owner device pause from 16 Nov for about four days;
-  phone checks for SPEC-49, SPEC-48 and SPEC-50 are batched for the return.
+  phone checks for SPEC-49, 48, 50, 52 and 57 are batched for the return.
 - Genie queue and the single open-items list: `PROJECT_STATUS.md`
   "Open items, 2026-11-15 to 2026-12-04".
 - Unchanged guardrails: the traveller confirms every mutation; SPEC-43
@@ -142,7 +143,7 @@ SPEC-46 Phase B GPS waits for SPEC-43.
 SPEC-53, SPEC-56, SPEC-49 Show-to-driver, SPEC-48 strip; SPEC-52 markers
 (as F3); SPEC-50. SPEC-51, SPEC-54, SPEC-55 designed and parked until
 after the December trip. **Moonshot triage (2026-11-17):** VISION
-section 32; thin Arrival Armor is SPEC-57 (slice 1 brief ready); Party
+section 32; thin Arrival Armor is SPEC-57 (slice 1 on main, PR #292); Party
 Tether declined; Point & Settle mostly declined; Whisper and Passport
 Phase 2; Route Deviation Phase 3.
 
