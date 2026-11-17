@@ -366,6 +366,8 @@ strip on main (PR #278, `91f8220`); SPEC-50 swap comparison on main
 SPEC-52 slice 1 on main (PR #285, `fdc3ffa`); device check waits. Genie
 Isochrones slice 2 on main (PR #288, `7f82f78`); flag off until owner
 deploy. Genie queue during the pause: empty.
+Owner return checklist (pending, ordered): `PROJECT_STATUS.md`, "Owner return
+checklist". Do not restate it here.
 Parked (design now answered 2026-11-16, see the three specs): SPEC-51
 (Home keeps only the Create a trip entry; corridor as preset), SPEC-54
 (phone-only, end-of-day expiry, energy and indoors), SPEC-55 (departing
