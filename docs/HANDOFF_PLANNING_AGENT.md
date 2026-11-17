@@ -360,10 +360,10 @@ PASSED 2026-11-16. Owner device window pauses about four days: Genie
 work continues behind CI; phone checks batch on return.
 
 SPEC-49 Show-to-driver on main (PR #276, `ff37439`); SPEC-48 NOW/UP NEXT
-strip on main (PR #278, `91f8220`); device checks wait until the phone
-returns. Genie queue during the pause: SPEC-50 slice 1 swap comparison
-(brief `docs/briefs/GENIE_SPEC50_SWAP_COMPARISON.md`), then
-`GENIE_ISOCHRONE_PROVIDER.md` (flag off), then SPEC-52 verification.
+strip on main (PR #278, `91f8220`); SPEC-50 swap comparison on main
+(PR #282, `7c1f62c`); device checks wait until the phone returns. Genie
+queue during the pause: `GENIE_ISOCHRONE_PROVIDER.md` (flag off), then
+SPEC-52 verification.
 Parked (design now answered 2026-11-16, see the three specs): SPEC-51
 (Home keeps only the Create a trip entry; corridor as preset), SPEC-54
 (phone-only, end-of-day expiry, energy and indoors), SPEC-55 (departing

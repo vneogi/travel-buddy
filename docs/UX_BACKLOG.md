@@ -9,15 +9,15 @@ Source: product/UI team draft
 `docs/briefs/UI_UX_IMPLEMENTATION_SPECS_2026-11-15.md`. Owner accepted the
 direction. Owning spec files SPEC-48 through SPEC-56 landed 2026-11-16
 in `docs/specs/`; each names the parent spec it amends and its first
-slice. Device pause (2026-11-16, ~4 days): Genie queue SPEC-50,
-50, Isochrones (flag off), then SPEC-52. Phone batch on return. Parked
-until after the trip or design answers: 51, 54, 55, UX-57/58.
+slice. Device pause (2026-11-16, ~4 days): Genie queue Isochrones
+(flag off), then SPEC-52. Phone batch on return includes SPEC-49, 48,
+50. Parked until after the trip or design answers: 51, 54, 55, UX-57/58.
 
 | Draft | Status | Notes |
 |---|---|---|
 | SPEC-48 glanceable timeline | Partial | Slice 1 NOW/UP NEXT strip on main (PR #278); connectors wait |
 | SPEC-49 driver handoff + TZ language | Partial | F2 + Show-to-driver on main (PR #276); landmarks + device check wait |
-| SPEC-50 swap comparison | Penciled | Evidence contract before new fields |
+| SPEC-50 swap comparison | Slice 1 done | PR #282; device check pending |
 | SPEC-51 unified create | Penciled | Owns F1; needs SPEC-36/26 amendment |
 | SPEC-52 date markers | Partial | F3 on main; TripSummary activity-span remainder |
 | SPEC-53 situation chips | Slice 1 done | PR #266; device check 2026-11-16; Head back later |
