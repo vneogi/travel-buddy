@@ -36,6 +36,7 @@ from services.ask_service import (
     AskResponse,
     TrustTier,
     WhatNowRequest,
+    fetch_booking_return_reachability,
     fetch_what_now_reachability,
     handle_ask_to_add,
     handle_what_now,
@@ -1298,16 +1299,42 @@ class TripStateMachine:
                 )
             else:
                 _now = state.get("now_utc") or _dt.now(tz=_tz.utc)
-                from services.reachability_provider import get_reachability_provider
-
-                reach = await fetch_what_now_reachability(
-                    request=wn_req,
-                    trip_nodes=trip_nodes_dicts,
-                    now_utc=_now,
-                    geo_region=geo_region,
-                    provider=get_reachability_provider(),
-                    identity=user_id,
+                from services.reachability_provider import (
+                    booking_return_enabled,
+                    get_reachability_provider,
                 )
+
+                _provider = get_reachability_provider()
+                booking_reach = None
+                if booking_return_enabled():
+                    import asyncio
+
+                    reach, booking_reach = await asyncio.gather(
+                        fetch_what_now_reachability(
+                            request=wn_req,
+                            trip_nodes=trip_nodes_dicts,
+                            now_utc=_now,
+                            geo_region=geo_region,
+                            provider=_provider,
+                            identity=user_id,
+                        ),
+                        fetch_booking_return_reachability(
+                            trip_nodes=trip_nodes_dicts,
+                            now_utc=_now,
+                            geo_region=geo_region,
+                            provider=_provider,
+                            identity=user_id,
+                        ),
+                    )
+                else:
+                    reach = await fetch_what_now_reachability(
+                        request=wn_req,
+                        trip_nodes=trip_nodes_dicts,
+                        now_utc=_now,
+                        geo_region=geo_region,
+                        provider=_provider,
+                        identity=user_id,
+                    )
                 ask_resp = handle_what_now(
                     request=wn_req,
                     trip_nodes=trip_nodes_dicts,
@@ -1315,6 +1342,7 @@ class TripStateMachine:
                     geo_region=geo_region,
                     db=db_service,
                     reach_polygons=reach,
+                    booking_reach=booking_reach,
                 )
         else:
             ask_resp = await ask_svc.handle_ask(

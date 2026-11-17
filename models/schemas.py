@@ -274,6 +274,9 @@ class WhatNowResult(BaseModel):
     reachability_source: Literal["network_isochrone", "haversine_estimate", "not_applicable"] = (
         "haversine_estimate"
     )
+    booking_reachability_source: Literal[
+        "network_isochrone", "haversine_estimate", "not_applicable"
+    ] = "not_applicable"
 
 
 class AskResponseEnvelope(BaseModel):

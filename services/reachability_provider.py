@@ -89,6 +89,16 @@ class ReachabilityProvider(ABC):
     ) -> IsochroneResult:
         """Return the walking area from (lat, lng). Raises ReachabilityError."""
 
+    async def walk_isochrone_to(
+        self, lat: float, lng: float, minutes: int, identity: object
+    ) -> IsochroneResult:
+        """Return the area from which (lat, lng) is reachable on foot.
+
+        Concrete default so providers that only implement walk_isochrone keep
+        working; they report not_configured for the reverse direction.
+        """
+        raise ReachabilityError("not_configured")
+
 
 def _valid_input(lat, lng, minutes) -> bool:
     if isinstance(lat, bool) or isinstance(lng, bool) or isinstance(minutes, bool):
@@ -144,32 +154,47 @@ class GoogleIsochronesProvider(ReachabilityProvider):
         while len(self._cache) > CACHE_MAX_ENTRIES:
             self._cache.popitem(last=False)  # oldest insert
 
-    def _fail(self, code: str) -> ReachabilityError:
-        logger.info("reachability provider=%s outcome=%s", PROVIDER_NAME, code)
+    def _fail(self, code: str, direction: str = "FROM") -> ReachabilityError:
+        if direction == "TO":
+            logger.info("reachability provider=%s direction=to outcome=%s", PROVIDER_NAME, code)
+        else:
+            logger.info("reachability provider=%s outcome=%s", PROVIDER_NAME, code)
         return ReachabilityError(code)
 
     async def walk_isochrone(
         self, lat: float, lng: float, minutes: int, identity: object
     ) -> IsochroneResult:
+        return await self._walk(lat, lng, minutes, identity, "FROM")
+
+    async def walk_isochrone_to(
+        self, lat: float, lng: float, minutes: int, identity: object
+    ) -> IsochroneResult:
+        return await self._walk(lat, lng, minutes, identity, "TO")
+
+    async def _walk(
+        self, lat: float, lng: float, minutes: int, identity: object, direction: str
+    ) -> IsochroneResult:
         if not self._api_key:
-            raise self._fail("not_configured")
+            raise self._fail("not_configured", direction)
         if not _valid_input(lat, lng, minutes):
-            raise self._fail("invalid_input")
+            raise self._fail("invalid_input", direction)
         lat, lng = float(lat), float(lng)
 
         key = self._cache_key(lat, lng, minutes)
+        if direction == "TO":
+            key = f"{key}:to"
         cached = self._cache_get(key)
         if cached is not None:
             return cached
 
         if not self._circuit.allow(identity, ISOCHRONE_EST_USD_PER_CALL):
-            raise self._fail("spend_capped")
+            raise self._fail("spend_capped", direction)
 
         body = {
             "location": {"latitude": lat, "longitude": lng},
             "travelDuration": f"{minutes * 60}s",
             "travelMode": "WALK",
-            "travelDirection": "FROM",
+            "travelDirection": direction,
             "routingPreference": "TRAFFIC_UNAWARE",
             "enableSmoothing": False,
         }
@@ -184,24 +209,24 @@ class GoogleIsochronesProvider(ReachabilityProvider):
             ) as client:
                 response = await client.post(ISOCHRONES_URL, json=body, headers=headers)
         except httpx.TimeoutException:
-            raise self._fail("timeout") from None
+            raise self._fail("timeout", direction) from None
         except httpx.HTTPError:
-            raise self._fail("http_error") from None
+            raise self._fail("http_error", direction) from None
         if not 200 <= response.status_code < 300:
-            raise self._fail("http_error")
+            raise self._fail("http_error", direction)
 
         try:
             polygons = polygons_from_geojson(response.json())
         except (ValueError, GeoJSONError, KeyError, TypeError, AttributeError, IndexError):
-            raise self._fail("parse_error") from None
+            raise self._fail("parse_error", direction) from None
         if not polygons:
-            raise self._fail("parse_error")
+            raise self._fail("parse_error", direction)
         try:
             contains_origin = point_in_multipolygon(lng, lat, polygons)
         except (TypeError, IndexError, ZeroDivisionError):
-            raise self._fail("parse_error") from None
+            raise self._fail("parse_error", direction) from None
         if not contains_origin:
-            raise self._fail("origin_outside")
+            raise self._fail("origin_outside", direction)
 
         result = IsochroneResult(
             polygons=_freeze(polygons),
@@ -212,7 +237,10 @@ class GoogleIsochronesProvider(ReachabilityProvider):
         )
         self._circuit.record(identity, ISOCHRONE_EST_USD_PER_CALL)
         self._cache_put(key, result)
-        logger.info("reachability provider=%s outcome=ok", PROVIDER_NAME)
+        if direction == "TO":
+            logger.info("reachability provider=%s direction=to outcome=ok", PROVIDER_NAME)
+        else:
+            logger.info("reachability provider=%s outcome=ok", PROVIDER_NAME)
         return result
 
 
@@ -232,6 +260,16 @@ def get_reachability_provider() -> Optional[ReachabilityProvider]:
     if _provider is None:
         _provider = GoogleIsochronesProvider(api_key)
     return _provider
+
+
+def booking_return_enabled() -> bool:
+    """True only when TB_REACHABILITY_BOOKING_RETURN is exactly "on".
+
+    Callers still need get_reachability_provider() to return a provider.
+    """
+    from config.settings import settings
+
+    return getattr(settings, "reachability_booking_return", "off") == "on"
 
 
 def _reset_for_tests() -> None:

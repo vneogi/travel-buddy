@@ -979,6 +979,8 @@ _WHAT_NOW_INTENT_MAP: Dict[str, set] = {
 }
 
 _WALKING_CAPS: Dict[str, int] = {"short": 15, "normal": 25, "longer": 45}
+# Reverse walking isochrone bands for the next-booking check (minutes).
+_BOOKING_RETURN_BANDS = (15, 30, 45, 60, 90, 120)
 _ENERGY_DWELL_CAPS: Dict[str, int] = {"low": 60, "normal": 120, "high": 180}
 
 
@@ -1313,6 +1315,85 @@ def _violates_hotel_boundary(
     return False
 
 
+def _booking_return_band(
+    booking: Optional[Dict[str, Any]], now_utc, geo_region: str
+) -> Optional[int]:
+    """Band (minutes) for the reverse isochrone around [booking], or None.
+
+    Pure applicability rule shared by fetch_booking_return_reachability and
+    handle_what_now so they cannot drift. None when there is no booking, it
+    is a flight (flights use the 150-minute cutoff), it is in another region,
+    it is on another destination-local day, it has no finite coordinates, or
+    the gap (minutes to its start, rounded up) is under 1 or over 120. The
+    band rounds UP so a candidate outside the area provably misses the
+    booking.
+    """
+    import math
+    from datetime import datetime as _dt
+
+    from services.booking_constraints import _ensure_aware, _local_date_of
+
+    if booking is None:
+        return None
+    if booking.get("booking_type") == "flight":
+        return None
+    region = booking.get("geo_region")
+    if region and region != geo_region:
+        return None
+    try:
+        lat_f, lng_f = float(booking.get("lat")), float(booking.get("lng"))
+    except (TypeError, ValueError):
+        return None
+    if not (math.isfinite(lat_f) and math.isfinite(lng_f)):
+        return None
+    raw = booking.get("scheduled_start")
+    if isinstance(raw, str):
+        try:
+            start = _dt.fromisoformat(raw.replace("Z", "+00:00"))
+        except (ValueError, TypeError):
+            return None
+    elif raw is None:
+        return None
+    else:
+        start = raw
+    start = _ensure_aware(start)
+    now = _ensure_aware(now_utc)
+    if _local_date_of(start, geo_region) != _local_date_of(now, geo_region):
+        return None
+    gap = math.ceil((start - now).total_seconds() / 60.0)
+    if gap < 1 or gap > _BOOKING_RETURN_BANDS[-1]:
+        return None
+    return next(band for band in _BOOKING_RETURN_BANDS if band >= gap)
+
+
+async def fetch_booking_return_reachability(
+    trip_nodes: List[Dict[str, Any]],
+    now_utc,
+    geo_region: str,
+    provider: Optional["ReachabilityProvider"],
+    identity: object,
+) -> Optional[tuple]:
+    """Reverse walking area around the next locked non-hotel booking.
+
+    Returns (booking_node_id, band_minutes, polygons) or None. Origin is the
+    booking node's own lat/lng from trip_nodes, never preferences or device
+    fields. No provider call unless _booking_return_band applies. Any
+    provider failure returns None so What Now keeps the Haversine check.
+    """
+    if provider is None:
+        return None
+    booking = _find_next_locked_non_hotel(trip_nodes, now_utc)
+    band = _booking_return_band(booking, now_utc, geo_region)
+    if band is None:
+        return None
+    lat_f, lng_f = float(booking["lat"]), float(booking["lng"])
+    try:
+        result = await provider.walk_isochrone_to(lat_f, lng_f, band, identity)
+    except Exception:  # ReachabilityError or anything else: never fail What Now
+        return None
+    return (booking.get("node_id"), band, result.polygons)
+
+
 async def fetch_what_now_reachability(
     request: WhatNowRequest,
     trip_nodes: List[Dict[str, Any]],
@@ -1360,6 +1441,7 @@ def handle_what_now(
     db: Any,
     *,
     reach_polygons: Optional[tuple] = None,
+    booking_reach: Optional[tuple] = None,
 ) -> "AskResponse":
     """Deterministic What Now handler. No LLM calls."""
     from datetime import timedelta
@@ -1469,6 +1551,12 @@ def handle_what_now(
                 resolved_region,
             ):
                 continue
+            # Reverse isochrone only removes candidates Haversine keeps.
+            if booking_reach is not None and booking_reach[0] == next_locked_booking.get("node_id"):
+                v_lat, v_lng = venue.get("lat"), venue.get("lng")
+                if v_lat is not None and v_lng is not None:
+                    if not point_in_multipolygon(v_lng, v_lat, booking_reach[2]):
+                        continue
             has_next_booking = True
 
         # Hotel return boundary (SPEC-10)
@@ -1529,11 +1617,18 @@ def handle_what_now(
         reachability_source = "network_isochrone"
     else:
         reachability_source = "haversine_estimate"
+    if booking_reach is not None:
+        booking_reachability_source = "network_isochrone"
+    elif _booking_return_band(next_locked_booking, now_utc, geo_region) is not None:
+        booking_reachability_source = "haversine_estimate"
+    else:
+        booking_reachability_source = "not_applicable"
     what_now_result = {
         "location_source": location_source,
         "context_label": context_label,
         "candidates": result_candidates,
         "reachability_source": reachability_source,
+        "booking_reachability_source": booking_reachability_source,
     }
     count = len(result_candidates)
     names_str = ", ".join(c["name"] for c in result_candidates[:3])

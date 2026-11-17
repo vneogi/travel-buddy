@@ -129,6 +129,7 @@ def test_no_polygons_candidates_identical_to_baseline(ctx_node, now_utc):
         "context_label",
         "candidates",
         "reachability_source",
+        "booking_reachability_source",
     }
 
 
