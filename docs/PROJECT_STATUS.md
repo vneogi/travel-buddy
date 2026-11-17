@@ -151,6 +151,64 @@ Trip dates: Zanzibar (Stone Town) 26-28 Dec 2026, Nungwi 29 Dec 2026 to
 2 Jan 2027. This window ends about three weeks before departure. This is
 the only open-items list; other docs point here.
 
+Owner return checklist (PENDING, in order). Written 2026-11-17 for the
+owner's device and laptop pause (about four days from 16 Nov). Each step
+names its owner. The Genie queue is empty; nothing here is Genie work
+unless a step fails and a fix brief is written.
+
+1. Laptop, owner (Windows, PowerShell 5.1): `git pull` `main` to at least
+   `ca4fc9e`. Run `docs/briefs/LAPTOP_VERIFY.md` steps 0 to 8 as far as
+   time allows, with its hard stops. Write a dated finding in
+   `docs/AWAITING_VERIFICATION.md`. Recommended before the APK: `main` has
+   moved past the 2026-11-15 field APK (`5a4be12`), including SPEC-48, 50,
+   52 and the booking-return slice (PR #288).
+2. Field APK, owner (Windows): follow `docs/ANDROID_BUILD.md` sections 1
+   to 5 from `main`. Dart-defines are `TB_API_BASE_URL`,
+   `TB_SUPABASE_URL` and `TB_SUPABASE_ANON_KEY`. Use the anon key only,
+   never the service_role key. Reuse the keystore from the earlier field
+   APKs so upgrades keep the same signing key. Do not create a new one. Record the commit
+   SHA and APK SHA-256 in a new table in `ANDROID_BUILD.md`, in the same
+   format as the 2026-11-15 entry (planning agent lands the docs PR).
+3. Install, owner (phone): `adb install -r`, then disconnect USB. The
+   phone already runs `5a4be12` (2026-11-15), which is newer than
+   `1de6ff2`, so no `pm clear` is needed for an upgrade. Only if an older
+   build was installed: `adb shell pm clear com.vneogi.travelbuddy` first.
+   That also clears the local anonymous identity, so check that the Nungwi
+   and Zanzibar trips still show, and recreate them if they do not.
+   Profile > API Host must show the Cloud Run hostname.
+4. Phone checks, owner, one APK (each result goes in
+   `AWAITING_VERIFICATION.md`, dated, with commit and APK SHA):
+   - SPEC-49 Show to driver: enter, exit back to the card, Open in Maps.
+   - SPEC-48 NOW / UP NEXT strip on the itinerary. A hotel stay is never NOW.
+   - SPEC-50 swap comparison: pick an unlocked stop, Swap, pick an option,
+     Next option moves on, Confirm and Cancel behave as before, a locked
+     booking has no Swap, largest font size still scrolls.
+   - SPEC-52 date markers: TalkBack or VoiceOver reads "covered by another
+     trip" on an occupied day; the markers still show in airplane mode.
+   - SPEC-53 and SPEC-56 device checks were recorded as OK on 16 Nov.
+     Re-check only if this APK changes those screens.
+5. Isochrones booking return, owner (hosted; only when you choose):
+   deploy from `main` with `--update-env-vars` (never `--set-env-vars`)
+   and keep every env name. Check health, then record the new revision in
+   `docs/HOSTED_STATE.md`. Hosted is `00019-nl7` today (2026-11-16, from
+   `bbf8872`), so this deploy is the first to carry PR #288. The flag still
+   defaults to off in code. Then set `TB_REACHABILITY_BOOKING_RETURN=on`
+   with `--update-env-vars`, run
+   What Now on a Zanzibar trip with a locked non-hotel booking later the
+   same day (within two hours), and look for
+   `reachability provider=google_isochrones direction=to outcome=ok` in
+   the Cloud Run logs. Set it back to `off` with `--update-env-vars` if
+   anything looks wrong. The Isochrones provider slice 1 is already live
+   (hosted since `00018-kjh`, carried into `00019-nl7`); this step only adds
+   the booking return.
+6. Owner decision, not Genie's: keep the trip summary on activity span
+   (current F3 choice), or switch to create-form dates (needs
+   `TripSummary` and server projection changes). Default is no change.
+7. Owner on site, during the trip (unchanged from trip-critical item 6):
+   verify bar and key-venue hours, and Swahili names and landmarks.
+8. Parked until after the trip (unchanged): SPEC-51, SPEC-54, SPEC-55,
+   UX-57 and UX-58, SPEC-48 connectors, SPEC-49 landmarks.
+
 Trip-critical (before 26 Dec):
 
 1. DONE 2026-11-15: Cloud Run redeployed from `main` `74fa028` as

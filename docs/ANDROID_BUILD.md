@@ -121,6 +121,11 @@ adb install build\app\outputs\flutter-apk\app-release.apk
 Then disconnect USB, close any `adb reverse` or local tunnel, and launch from
 the phone home screen. Profile > API Host must show the Cloud Run hostname.
 
+Pending: the next field APK is built from `main` after the owner returns
+(see `PROJECT_STATUS.md`, "Owner return checklist", items 1 to 4). When it
+is built, add a table in the same format as the 2026-11-15 entry below.
+The 2026-10-31 and 2026-11-15 tables are historical records.
+
 ## What to record in the PR (no secrets)
 
 Field APK used 2026-10-31 (owner Windows, `main` `1aa405c`):

@@ -90,6 +90,12 @@ remains on `travel-buddy-00009-qek` at 0% for rollback.
 | Auth smoke | Anonymous header 401. Bearer anonymous JWT 200 on `/api/v1/user/status`. |
 | Flags | Last recorded names: `TB_DEBUG`, `TB_ALLOW_ANONYMOUS`, `TB_SUPABASE_URL`, `TB_SUPABASE_KEY`, `TB_GOOGLE_MAPS_API_KEY`, `TB_OPENWEATHER_API_KEY`, `TB_SUPABASE_JWKS_URL`, `TB_SUPABASE_JWT_ISS`, `TB_JWT_AUDIENCE`. Values are not recorded. `TB_ALLOW_ANONYMOUS` remains a no-op for the UUID header. |
 
+Pending, not done: deploy from `main` carrying the booking-return slice
+(PR #288, `7f82f78`) with `--update-env-vars`. The flag
+`TB_REACHABILITY_BOOKING_RETURN` stays off until the owner sets it. Steps
+are in `PROJECT_STATUS.md`, "Owner return checklist", item 5. Until then
+hosted runs `00019-nl7` without this code.
+
 Google Maps keys (owner 2026-11-16): Isochrones API (Preview) is enabled
 on the Cloud project. The owner keeps the Cloud key named
 `New GMaps_API_Key` with Isochrones in its API restrictions; that key
