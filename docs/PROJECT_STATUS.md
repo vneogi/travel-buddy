@@ -322,9 +322,12 @@ waits for owner return. Fare and scam content waits for owner on-site data.
 
 Genie queue while the phone is away (CI-gated; no phone required):
 
-1. None right now. SPEC-57 slice 1 landed (PR #292, `b8a6ac3`); phone
-   check waits for the owner-return APK. Parked items stay parked until
-   after the trip or an owner decision.
+1. SPEC-43 Gap 4 retention slice R1 -- brief ready
+   (`docs/briefs/GENIE_SPEC43_G4_RETENTION.md`). Backend only, dry-run
+   first, in-memory backend; no migration, scheduler, or hosted run.
+   Windows (365-day signals, 24-hour cache) are proposals subject to
+   counsel. Hosted enablement is owner-only.
+2. Parked items stay parked until after the trip or an owner decision.
 
 Park until after the trip or until design answers exist:
 
