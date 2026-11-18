@@ -120,10 +120,10 @@ or docs. Do not add a new dependency.
 ```python
 @dataclass(frozen=True)
 class RetentionPolicy:
-    table: str            # "cached_responses" or "signal"
-    time_column: str      # "expires_at" or "captured_at"
-    window: timedelta | None   # None means "delete when time_column <= now"
-    expiry_column: bool   # True for expires_at semantics
+    table: str  # "cached_responses" or "signal"
+    time_column: str  # "expires_at" or "captured_at"
+    window: timedelta | None  # None means "delete when time_column <= now"
+    expiry_column: bool  # True for expires_at semantics
 ```
 
 - `POLICIES` is a module-level tuple with exactly the two entries in
