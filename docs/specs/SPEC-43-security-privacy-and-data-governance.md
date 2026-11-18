@@ -247,6 +247,13 @@ Slice 13 Supabase export backend `f7802ad` (PR #196):
 filter-safe reads, empty owned list sends no child read.
 Slice 14 HTTP export route `16945be` (PR #199):
 `GET /api/v1/me/export`, caller-only, flat tables/rows.
+Retention R1 `c566e09` (PR #295): pure planner for two windows
+(expired `cached_responses`; `signal` older than 365 days), a
+dry-run-first bounded executor, and an in-memory backend. The
+tombstone is rejected at policy build and again in the executor.
+No route, migration, scheduler, Supabase backend, or hosted run.
+Windows are proposals subject to counsel; hosted enablement is
+owner-only.
 Open Genie brief (product exception, not Gap 4):
 `docs/briefs/GENIE_ZANZIBAR_FIELD_TEST_PACK.md`.
 
@@ -256,6 +263,7 @@ executors, in-memory and Supabase backends for both, and the
 erase and flat export HTTP routes exist; there is still no
 nested/downloadable export document, tombstone, or retention
 job. Next owner field-test exception: Zanzibar city pack.
+(Retention R1 is on main as a planner only; no hosted job runs.)
 Trips, signals, events, parties, and several local caches have
 no enforced retention lifecycle. A cache expiry predicate does
 not delete an expired row.

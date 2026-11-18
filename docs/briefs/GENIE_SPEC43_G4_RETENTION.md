@@ -170,6 +170,14 @@ def run_retention(backend, *, now, dry_run=True, batch_limit=500,
   raises.
 - Every `POLICIES` entry's table must appear in `RIGHTS_MAP` with identity
   other than `none` and `erase_exempt`. Add a test that asserts this.
+
+**Amendment 1 (planning agent, 2026-11-19; applied in R1).** `cached_responses`
+is classified identity `none` in `RIGHTS_MAP`, so "deletable identity" cannot
+be the rule. The rule is: the table is in `RIGHTS_MAP`, is not in
+`ERASE_EXEMPT_TABLES`, has identity other than `erase_exempt`, and has
+retention other than `not_applicable`. Test 14 is renamed to
+`every POLICIES table is classified in RIGHTS_MAP as retention-eligible`.
+Test 13 is unchanged.
 - A missing or non-datetime time value on a row is skipped and counted as
   `skipped_invalid`, never deleted.
 - `now` in the future is accepted, but a test shows nothing is deleted when
@@ -192,7 +200,8 @@ def run_retention(backend, *, now, dry_run=True, batch_limit=500,
 11. `invalid time value is skipped and counted, never deleted`
 12. `report carries no user ids or row ids`
 13. `policy on data_rights_tombstone is rejected`
-14. `every POLICIES table is classified in RIGHTS_MAP with a deletable identity`
+14. `every POLICIES table is classified in RIGHTS_MAP as retention-eligible`
+    (Amendment 1 rule; see section 5.4)
 15. `executor calls only count_expired and delete_expired on the backend`
     (use a spy backend that raises on any other attribute access)
 16. `hosted-safe: module does not import supabase or network libraries`

@@ -272,7 +272,7 @@ migration; SPEC-43 client remainders (Gap 5 masking/FLAG_SECURE/iOS/
 ProGuard, Gap 7 consent outbox/UI, Gap 4 Flutter leave).
 
 Backend, open but not trip-critical: Gap 4 durable tombstone on main (#254; 0027 applied on hosted 2026-11-15),
-retention, zip/PDF; Gap 9 `derived_feature`; Gap 8 unused SQL cache path;
+retention R1 on main (#295; R2 Supabase backend and any hosted run await owner decisions), zip/PDF; Gap 9 `derived_feature`; Gap 8 unused SQL cache path;
 Gap 10 log-bucket retention; Gap 11 gateway and Play Integrity; SPEC-27
 and SPEC-24 (G1 dependencies); SPEC-42 unknown-time excursions; SPEC-10
 create-then-book reflow; SPEC-25 trip-optional Ask; SPEC-46 Phase B
@@ -320,14 +320,13 @@ deploy + `--update-env-vars`.
 SPEC-57 Arrival Armor slice 1 on main (PR #292, `b8a6ac3`); phone check
 waits for owner return. Fare and scam content waits for owner on-site data.
 
-Genie queue while the phone is away (CI-gated; no phone required):
-
-1. SPEC-43 Gap 4 retention slice R1 -- brief ready
-   (`docs/briefs/GENIE_SPEC43_G4_RETENTION.md`). Backend only, dry-run
-   first, in-memory backend; no migration, scheduler, or hosted run.
-   Windows (365-day signals, 24-hour cache) are proposals subject to
-   counsel. Hosted enablement is owner-only.
-2. Parked items stay parked until after the trip or an owner decision.
+Genie queue while the phone is away (CI-gated; no phone required): empty.
+SPEC-43 Gap 4 retention R1 is on main (PR #295, `c566e09`): planner,
+dry-run-first bounded executor, in-memory backend; no migration, route,
+scheduler, or hosted run. Windows (365-day signals, 24-hour cache) are
+proposals subject to counsel. Next retention slice (R2, Supabase backend)
+needs an owner decision on windows and hosted run before a brief.
+Parked items stay parked until after the trip or an owner decision.
 
 Park until after the trip or until design answers exist:
 
