@@ -323,9 +323,11 @@ waits for owner return. Fare and scam content waits for owner on-site data.
 Genie queue while the phone is away (CI-gated; no phone required): empty.
 SPEC-43 Gap 4 retention R1 is on main (PR #295, `c566e09`): planner,
 dry-run-first bounded executor, in-memory backend; no migration, route,
-scheduler, or hosted run. Windows (365-day signals, 24-hour cache) are
-proposals subject to counsel. Next retention slice (R2, Supabase backend)
-needs an owner decision on windows and hosted run before a brief.
+scheduler, or hosted run. Owner approved the windows on 2026-11-19
+(365-day signals, 24-hour cache). Owner decided the hosted-run question
+is deferred: it must be decided before production, mass user exposure, or
+a Play/App Store listing (SPEC-43 launch gate). Next retention slice (R2,
+Supabase backend, dry-run only) is unblocked for a brief when the owner asks.
 Parked items stay parked until after the trip or an owner decision.
 
 Park until after the trip or until design answers exist:
