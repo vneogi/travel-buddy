@@ -252,8 +252,11 @@ Retention R1 `c566e09` (PR #295): pure planner for two windows
 dry-run-first bounded executor, and an in-memory backend. The
 tombstone is rejected at policy build and again in the executor.
 No route, migration, scheduler, Supabase backend, or hosted run.
-Windows are proposals subject to counsel; hosted enablement is
-owner-only.
+Owner approved the two windows on 2026-11-19 (365-day `signal`, 24-hour
+`cached_responses`); counsel review remains part of the launch gate.
+Decision on any hosted retention run is deferred to before production,
+mass user exposure, or a Play/App Store listing. Until then hosted
+enablement is owner-only and nothing runs on the live database.
 Open Genie brief (product exception, not Gap 4):
 `docs/briefs/GENIE_ZANZIBAR_FIELD_TEST_PACK.md`.
 
@@ -738,6 +741,7 @@ fallback behavior.
 - [ ] Production readiness refuses debug, HTTP, missing auth, missing database,
       and unapplied security migration states.
 - [ ] Incident exercise meets the shortest applicable notification clock.
+- [ ] Retention: decide whether any hosted retention run happens (owner decision, 2026-11-19: deferred to this gate); counsel review of the 365-day and 24-hour windows
 - [ ] Public notice, processor register, retention schedule, child position,
       AI label, sponsorship disclosure, and app-store declarations match the
       observed product.
