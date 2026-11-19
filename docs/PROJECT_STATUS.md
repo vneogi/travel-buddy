@@ -320,14 +320,19 @@ deploy + `--update-env-vars`.
 SPEC-57 Arrival Armor slice 1 on main (PR #292, `b8a6ac3`); phone check
 waits for owner return. Fare and scam content waits for owner on-site data.
 
-Genie queue while the phone is away (CI-gated; no phone required): empty.
+Genie queue (CI-gated; no phone required): one item, below.
 SPEC-43 Gap 4 retention R1 is on main (PR #295, `c566e09`): planner,
 dry-run-first bounded executor, in-memory backend; no migration, route,
 scheduler, or hosted run. Owner approved the windows on 2026-11-19
 (365-day signals, 24-hour cache). Owner decided the hosted-run question
 is deferred: it must be decided before production, mass user exposure, or
-a Play/App Store listing (SPEC-43 launch gate). Next retention slice (R2,
-Supabase backend, dry-run only) is unblocked for a brief when the owner asks.
+a Play/App Store listing (SPEC-43 launch gate).
+
+1. SPEC-43 Gap 4 retention slice R2 -- brief ready
+   (`docs/briefs/GENIE_SPEC43_G4_RETENTION_R2.md`). Supabase retention
+   backend over an injected client, parity with the in-memory backend;
+   not wired to any route, scheduler, CLI, or flag; no migration or index.
+
 Parked items stay parked until after the trip or an owner decision.
 
 Park until after the trip or until design answers exist:
