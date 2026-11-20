@@ -12,7 +12,7 @@ pydantic>=2.9.0
 pydantic-settings>=2.5.0
 httpx>=0.27.0
 python-dotenv>=1.0.1
-PyJWT>=2.9.0
+PyJWT>=2.15.1
 stripe>=10.10.0
 
 # AI/ML (imported by services -- needed for test collection even if mocked)
