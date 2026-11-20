@@ -25,9 +25,9 @@ documents disagree, follow Precedence below and name the conflict in
 
 - New to the repo? Read `README.md`, then `VISION.md` section 0 (what the
   app is, who it serves, what it does today, why it is different).
-- GitHub `main` was at `a147acf` (PR #280) when this was written; check
+- GitHub `main` was at `332e3db` (PR #303) when this was written; check
   `git log` for newer work.
-- Landed since 25 Oct: SPEC-43 Gap 4 erase / export slices, retention R1 planner (PR #295), and the durable
+- Landed since 25 Oct: SPEC-43 Gap 4 erase / export slices, retention R1 planner (PR #295) and R2 Supabase backend (PR #299), and the durable
   tombstone; Stone Town and Nungwi packs (hosted); F2 Swahili-first driver
   card order; F3 existing-trip date markers; the What Now chat fix
   (PR #260); SPEC-53 situation chips; SPEC-56 offline readiness row;

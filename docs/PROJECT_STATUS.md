@@ -162,7 +162,9 @@ unless a step fails and a fix brief is written.
    time allows, with its hard stops. Write a dated finding in
    `docs/AWAITING_VERIFICATION.md`. Recommended before the APK: `main` has
    moved past the 2026-11-15 field APK (`5a4be12`), including SPEC-48, 50,
-   52, 57 and the booking-return slice (PR #288).
+   52, 57 and the booking-return slice (PR #288). Progress 2026-11-21:
+   step 3 (backend pytest) is green on Windows after test fixes PR #301,
+   #302 and #303; see the dated finding. Other steps not yet reported.
 2. Field APK, owner (Windows): follow `docs/ANDROID_BUILD.md` sections 1
    to 5 from `main`. Dart-defines are `TB_API_BASE_URL`,
    `TB_SUPABASE_URL` and `TB_SUPABASE_ANON_KEY`. Use the anon key only,
@@ -330,6 +332,11 @@ signals, 24-hour cache). The hosted-run question is deferred: it must be
 decided before production, mass user exposure, or a Play/App Store listing
 (SPEC-43 launch gate). Next retention step (owner-gated): any admin or
 scheduled entry point, and indexes for a hosted run.
+
+Test fixes from the owner Windows run are on main: loopback-only socket
+guard (PR #301, `a569470`), PyJWT floor 2.15.1 for the JWKS unknown-kid
+cooldown (PR #302, `0e0c1c4`), and route fixtures that skip the app
+lifespan so venues are not re-seeded per test (PR #303, `332e3db`).
 
 Parked items stay parked until after the trip or an owner decision.
 

@@ -69,6 +69,10 @@ flag). Owner approved the windows 2026-11-19; the hosted-run decision is a
 gate before production or a store listing. Next Gap 4 remainders: zip/PDF
 download; retention entry point and indexes only after the owner gate. Durable tombstone is on main (#254; 0027 on hosted).
 Do not apply 0026 until `rolbypassrls` is confirmed.
+Owner Windows backend pytest is green after test fixes PR #301 (`a569470`,
+loopback-only socket guard), PR #302 (`0e0c1c4`, PyJWT >= 2.15.1 for the
+JWKS cooldown) and PR #303 (`332e3db`, route fixtures skip the app
+lifespan); see `AWAITING_VERIFICATION.md` (Nov 21).
 
 SPEC-44 Phase A application code merged as PR #67 (`9a7b9d9`). Planning
 reviews; Genie implements. SPEC-43 is the release foundation before any

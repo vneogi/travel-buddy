@@ -15,6 +15,40 @@ other.
 Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 `#85` and so on; those numbers cannot be reconciled against `git log`.
 
+## Finding -- Nov 21 2026 -- owner Windows backend pytest green after test fixes
+
+Owner Windows laptop (PowerShell 5.1, Python 3.12), live Supabase `.env`
+(LAPTOP_VERIFY step 3).
+
+First full run (Nov 20, `main` before PR #301): failures and errors,
+interrupted at 38 minutes. Two causes:
+
+- The socket guards in four test files blocked every `connect`, including
+  the loopback connect that asyncio's Windows ProactorEventLoop makes for
+  its self-pipe (the `socket.socketpair` fallback). Linux and macOS use
+  AF_UNIX socketpairs, so CI never saw it. Fixed by PR #301 (`a569470`):
+  shared `tests/net_guard.py` allows loopback only, proven by
+  `tests/test_net_guard.py`.
+- The JWKS unknown-kid flood test failed because the laptop had PyJWT
+  2.13.0, which has no `cooldown_duration`, so `get_jwks_client` ran
+  without a cooldown. PyJWT 2.15.1 has it. PR #302 (`0e0c1c4`) raised the
+  floor to 2.15.1 in both requirements files and corrected the
+  `security.py` comment.
+
+Full rerun on `0e0c1c4` with PyJWT 2.15.1: no failures, no errors. Skips
+were only the SPEC-44 PostgreSQL proofs (`TB_SPEC44_PG_DSN` and
+`TB_RUN_SPEC44_POSTGRES` unset). The live Supabase integration tests ran.
+Wall time 55 minutes.
+
+Slowness: `--durations` showed the erase and export route fixtures entering
+`TestClient(app)` as a context manager, which runs the app lifespan and
+re-seeds venues on every test (about 197 s per entry on this laptop). PR
+#303 (`332e3db`) builds those clients without the context manager. On the
+PR branch the four route files took 54.5 s, nearly all of it one-time
+session setup. Full-suite wall time after #303 is not yet measured.
+
+Not reported in this session: LAPTOP_VERIFY steps 2 and 4 to 8.
+
 ## Finding -- Oct 31 2026 -- owner G0 APK on hosted Gap 1
 
 Owner Windows built `main` `1aa405c` (SQLCipher `9cb2324` plus
