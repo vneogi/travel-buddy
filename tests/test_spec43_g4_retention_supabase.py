@@ -396,6 +396,7 @@ def test_invalid_limit_naive_cutoff_or_unknown_policy_makes_no_client_call():
 
 def test_client_failure_raises_a_closed_code_with_no_row_data_in_the_message(monkeypatch):
     rows = {"signal": [_signal("secret-row-9f2c", NOW - timedelta(days=400))]}
+
     def _count(b):
         return b.count_expired(SIGNAL, SIGNAL_CUTOFF)
 
