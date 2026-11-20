@@ -9,7 +9,6 @@ import asyncio
 import importlib
 import json
 import logging
-import socket
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -27,6 +26,7 @@ from services.ask_service import (
 )
 from services.reachability_provider import IsochroneResult, ReachabilityError
 from tests.test_spec46_what_now import FakeDb, _v
+from tests.net_guard import block_external_sockets
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 REGION = "vientiane_laos"
@@ -160,12 +160,7 @@ class _ListHandler(logging.Handler):
 
 @pytest.fixture(autouse=True)
 def _no_sockets(monkeypatch):
-    def _blocked(*args, **kwargs):
-        raise AssertionError("real network access attempted in a test")
-
-    monkeypatch.setattr(socket, "create_connection", _blocked)
-    monkeypatch.setattr(socket, "getaddrinfo", _blocked)
-    monkeypatch.setattr(socket.socket, "connect", _blocked)
+    block_external_sockets(monkeypatch)
     rp._reset_for_tests()
     yield
     rp._reset_for_tests()
