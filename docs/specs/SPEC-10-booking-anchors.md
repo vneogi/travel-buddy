@@ -320,6 +320,11 @@ does not want a clock picker for hotels yet.
 - Non-hotel bookings (flight, train, tour) keep the date and time picker,
   because the time matters for the day. A new one starts at 12:00 on the
   default date, not at the current clock time.
+- Default date: a new booking opens the calendar on the trip's first day
+  (selected), in the trip's month, not on today. The traveller can pick any
+  other day. First day = the creation start date, else the earliest corridor
+  segment start, else the earliest node's destination-local date, else
+  tomorrow.
 - Early check-in and late check-out are not modelled. A hotel that allows a
   different time is a later field, not this slice.
 

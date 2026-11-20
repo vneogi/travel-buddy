@@ -57,6 +57,11 @@ show. No pass or fail is recorded here: the owner has not given one.
   coordinates (none stored for the hotel).
 - Overflow menu on the hotel card: "Love this place" and "Driver card".
 
+- Add Booking calendar: it opened on today's month (November) with the
+  next day selected. Owner decision: open on the trip's first day, in the
+  trip's month, with that day selected and changeable (SPEC-10, "Decision:
+  default hotel times"; same brief).
+
 Open for the owner: the SPEC-49, 48, 50, 52 and 57 pass or fail calls, and
 whether the phone runs the APK recorded in `ANDROID_BUILD.md`. The two
 issues above are fixed by the brief, not by this APK: re-check both on the

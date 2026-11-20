@@ -327,7 +327,8 @@ waits for owner return. Fare and scam content waits for owner on-site data.
 Genie queue (CI-gated; no phone required): one brief, written 2026-11-21 from
 the owner phone test: `docs/briefs/GENIE_BOOKING_DEFAULT_TIMES_AND_OFFSPAN_CARDS.md`
 (hotel default times 12:00 check-in and 11:00 check-out with no clock picker;
-a booking dated outside the trip span renders as a card). Owner decisions are
+a booking dated outside the trip span renders as a card; new bookings open the
+calendar on the trip's first day). Owner decisions are
 in SPEC-10 and SPEC-42. Not yet sent to Genie.
 SPEC-43 Gap 4 retention R1 is on main (PR #295, `c566e09`): planner,
 dry-run-first bounded executor, in-memory backend. R2 is on main (PR #299,
