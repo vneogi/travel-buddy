@@ -121,7 +121,8 @@ Rules (all in `add_booking_sheet.dart`; the parser is not touched):
     first listed);
     (c) the calendar date of the earliest node's `scheduledStart` converted with
     `toDestinationLocal(node.scheduledStart, node.geoRegion)`;
-    (d) none, in which case use tomorrow as today. Put this in a small pure
+    (d) none, in which case fall back to tomorrow's date, as the code does
+    today. Put this in a small pure
     function (for example `tripFirstLocalDate`) in `date_scope.dart` so it can
     be unit-tested; it returns a date-only `DateTime?` and does no I/O. Read the
     state with `ref.read` in `initState`. The existing
@@ -165,7 +166,9 @@ Change `spanAwareDayGroups` in `date_scope.dart`:
 New file `mobile/test/booking_default_times_and_offspan_test.dart`. Reuse the
 helpers and mocking patterns in `spec_g0_booking_city_test.dart` (sheet),
 `spec42_uncap_trip_span_test.dart` (grouping) and `spec31_widget_test.dart`
-(timeline). Each test below must fail on current `main` for the reason named.
+(timeline). Tests that say "Fails on `main`" must fail on current `main` for the
+reason named. The others are regression guards that already pass on `main`;
+each must still be able to fail if the behaviour it guards breaks (R17).
 
 Part A, sheet:
 
@@ -272,6 +275,7 @@ in the PR description.
 
 Branch `feat/booking-default-times-offspan-cards` from the base SHA you were
 sent. One PR, two commits. Do not merge. In the PR description list: the
-parts (A: default date and times, B: cards outside the span), the test -> production-line table, the R17 evidence, and any existing
-test you had to touch. The owner re-checks both issues on the phone with the
-next field APK built after this merges.
+parts (A: default date and times, B: cards outside the span), the
+test -> production-line table, the R17 evidence, and any existing test you had
+to touch. The owner re-checks all three issues on the phone with the next field
+APK built after this merges.
