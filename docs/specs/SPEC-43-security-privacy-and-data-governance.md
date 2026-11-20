@@ -251,7 +251,11 @@ Retention R1 `c566e09` (PR #295): pure planner for two windows
 (expired `cached_responses`; `signal` older than 365 days), a
 dry-run-first bounded executor, and an in-memory backend. The
 tombstone is rejected at policy build and again in the executor.
-No route, migration, scheduler, Supabase backend, or hosted run.
+No route, migration, scheduler, or hosted run.
+Retention R2 `9fe69ac` (PR #299): Supabase backend over an injected
+client for the same two policies, parity with the in-memory backend,
+filter-safe chunked deletes, closed error codes. Not wired to any route,
+scheduler, CLI, or flag.
 Owner approved the two windows on 2026-11-19 (365-day `signal`, 24-hour
 `cached_responses`); counsel review remains part of the launch gate.
 Decision on any hosted retention run is deferred to before production,

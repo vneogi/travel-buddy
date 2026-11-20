@@ -63,10 +63,11 @@ test clock hygiene `1ee63e2` (PR #228), and postgres-proof CI image
 known failures; `postgres-proof` is green. Frontend findings F1-F4 in
 `UX_BACKLOG.md` are deferred (owner: frontend after Tanzania core).
 No Genie brief queued. Gap 4 retention R1 is on main (PR #295, `c566e09`:
-planner, dry-run-first bounded executor, in-memory backend; no route,
-migration, scheduler, or hosted run). Next Gap 4 remainders: retention R2
-(Supabase backend; needs owner decisions on windows and any hosted run),
-zip/PDF download. Durable tombstone is on main (#254; 0027 on hosted).
+planner, dry-run-first bounded executor, in-memory backend). R2 is on main
+(PR #299, `9fe69ac`: Supabase backend, not wired to any route, scheduler or
+flag). Owner approved the windows 2026-11-19; the hosted-run decision is a
+gate before production or a store listing. Next Gap 4 remainders: zip/PDF
+download; retention entry point and indexes only after the owner gate. Durable tombstone is on main (#254; 0027 on hosted).
 Do not apply 0026 until `rolbypassrls` is confirmed.
 
 SPEC-44 Phase A application code merged as PR #67 (`9a7b9d9`). Planning
