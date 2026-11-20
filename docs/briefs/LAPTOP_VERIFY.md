@@ -25,8 +25,8 @@ Prove, on the Windows machine, in this order:
 
 1. Repo SHA and tools on `main`
 2. Hosted migration sentinels still match `docs/HOSTED_STATE.md` (read-only)
-3. Backend pytest with live Supabase URL (all 292 tests pass, including live Supabase integration tests)
-4. Flutter analyze + test (all 92 unit and widget tests pass with 0 warnings)
+3. Backend pytest with live Supabase URL (no failures or errors, including live Supabase integration tests)
+4. Flutter analyze + test (all unit and widget tests pass with 0 warnings)
 5. Sabotage proofs (R17) -- break, watch the named test fail,
    restore, do not commit the break
 6. Local API + `smoke-test.ps1`
@@ -51,7 +51,7 @@ Stop and write the failure down if a step fails. Do not "fix forward" past a har
 
 - `git pull` fails or working directory has uncommitted regressions
 - Any hosted migration sentinel in `docs/HOSTED_STATE.md` returns false
-- `pytest -q -ra` with `TB_SUPABASE_URL` set shows any failure (all 292 tests must pass)
+- `pytest -q -ra` with `TB_SUPABASE_URL` set shows any failure or error
 - `flutter analyze` or `flutter test` non-zero
 - uvicorn starts with `supabase_configured` false while you intended live
   mode (R11 -- you are on in-memory)
@@ -72,9 +72,10 @@ Branch: main
 
 Step 0 flutter doctor:
 Step 2 Hosted migration sentinels all true? yes/no:
-Step 3 pytest -ra skip/pass status (confirm 292 passed, 5 Supabase tests included):
+Step 3 PyJWT version and cooldown check (expect >= 2.15.1 True):
+Step 3 pytest -ra summary line and SKIPPED reasons (Supabase integration tests ran, not skipped):
 Step 4 flutter analyze exit (expect 0 errors, 0 warnings):
-Step 4 flutter test exit (expect 92 passed):
+Step 4 flutter test exit (expect all passed):
 Step 5 sabotage proofs (named tests failed when broken, passed after restore):
 Step 6 smoke-test.ps1 pass/fail counts:
 Step 7 Anonymous curl HTTP codes (v4 / v1 / flag-off):
@@ -180,12 +181,19 @@ With the hosted sentinels confirmed, run the full test suite against your live
 Supabase project:
 
 ```powershell
+python -c "import jwt,inspect;print(jwt.__version__, 'cooldown_duration' in inspect.signature(jwt.PyJWKClient.__init__).parameters)"
 if (-not $env:TB_SUPABASE_URL) { throw "URL missing -- reload .env" }
 $env:TB_DEBUG = 'true'
 pytest -q -ra
 ```
 
-Expect: **all 292 tests passed** (including the five live integration tests in `tests/test_supabase_integration.py`).
+Expect: the PyJWT line prints 2.15.1 or newer and `True` (older PyJWT has no
+unknown-kid cooldown and the JWKS flood test fails; rerun
+`pip install -r requirements-dev.txt`). pytest reports no failures and no
+errors. The five live integration tests in `tests/test_supabase_integration.py`
+run, not skip; they write test users, trips and quota rows to the live
+project. Expected skips are only the SPEC-44 PostgreSQL proofs
+(`TB_SPEC44_PG_DSN` and `TB_RUN_SPEC44_POSTGRES` unset).
 
 ---
 
@@ -204,7 +212,7 @@ if ($LASTEXITCODE -ne 0) { throw "flutter test failed" }
 cd ..
 ```
 
-Expect: `flutter analyze` exit 0 (0 errors, 0 warnings); `flutter test` exit 0 (all 92 tests passed).
+Expect: `flutter analyze` exit 0 (0 errors, 0 warnings); `flutter test` exit 0 (all tests passed).
 
 ---
 
