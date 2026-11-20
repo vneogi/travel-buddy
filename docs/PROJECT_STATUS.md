@@ -154,8 +154,8 @@ the only open-items list; other docs point here.
 
 Owner return checklist (PENDING, in order). Written 2026-11-17 for the
 owner's device and laptop pause (about four days from 16 Nov). Each step
-names its owner. The Genie queue is empty; nothing here is Genie work
-unless a step fails and a fix brief is written.
+names its owner. Nothing here is Genie work unless a step fails and a fix
+brief is written. The Genie queue holds one brief, listed below.
 
 1. Laptop, owner (Windows, PowerShell 5.1): `git pull` `main` to at least
    `ca4fc9e`. Run `docs/briefs/LAPTOP_VERIFY.md` steps 0 to 8 as far as
@@ -166,7 +166,9 @@ unless a step fails and a fix brief is written.
    step 3 (backend pytest) is green on Windows after test fixes PR #301,
    #302 and #303; see the dated finding. Other steps not yet reported.
 2. Field APK, owner (Windows): follow `docs/ANDROID_BUILD.md` sections 1
-   to 5 from `main`. Dart-defines are `TB_API_BASE_URL`,
+   to 5 from `main`. Built 2026-11-21 from `30f38a0` (SHA-256 `79ac36dc...`);
+   the table in `ANDROID_BUILD.md` still needs the owner's hosted, keystore
+   and device fields. Original instructions follow. Dart-defines are `TB_API_BASE_URL`,
    `TB_SUPABASE_URL` and `TB_SUPABASE_ANON_KEY`. Use the anon key only,
    never the service_role key. Reuse the keystore from the earlier field
    APKs so upgrades keep the same signing key. Do not create a new one. Record the commit
@@ -322,7 +324,11 @@ deploy + `--update-env-vars`.
 SPEC-57 Arrival Armor slice 1 on main (PR #292, `b8a6ac3`); phone check
 waits for owner return. Fare and scam content waits for owner on-site data.
 
-Genie queue (CI-gated; no phone required): empty.
+Genie queue (CI-gated; no phone required): one brief, written 2026-11-21 from
+the owner phone test: `docs/briefs/GENIE_BOOKING_DEFAULT_TIMES_AND_OFFSPAN_CARDS.md`
+(hotel default times 12:00 check-in and 11:00 check-out with no clock picker;
+a booking dated outside the trip span renders as a card). Owner decisions are
+in SPEC-10 and SPEC-42. Not yet sent to Genie.
 SPEC-43 Gap 4 retention R1 is on main (PR #295, `c566e09`): planner,
 dry-run-first bounded executor, in-memory backend. R2 is on main (PR #299,
 `9fe69ac`): Supabase retention backend over an injected client, parity with

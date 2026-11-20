@@ -95,6 +95,25 @@ reflow against stale data. The cached itinerary stays authoritative until the
 server accepts the command; a conflict becomes an explicit reconciliation
 item.
 
+### Decision: nodes outside the span (owner, 2026-11-21)
+
+A traveller may book a flight the day before the first trip date (a late
+arrival, time at the airport, hotel check-in the next day). Phone test: that
+flight showed in the UP NEXT strip but had no card, because the date list is
+built only from the span start to the span end.
+
+- A node whose destination-local date is before the span start, or after the
+  span end, renders as a normal card under its own date header. Pre-span
+  dates appear before the first span date, in date order; post-span dates
+  appear after the last span date, in date order.
+- Only dates that have a node are added outside the span. Empty dates outside
+  the span are not invented, so a booking ten days early adds one extra
+  header, not ten.
+- The span itself does not change. The UP NEXT strip is unchanged.
+- A multi-night hotel keeps appearing on every covered date, including any
+  that fall outside the span.
+- This applies to the single-city path and to each corridor segment.
+
 ### Direct add
 
 `Add activity` starts from the selected local date. The traveller may choose a
@@ -196,6 +215,8 @@ reachability, lock, region, or trip-boundary constraints.
   exist;
 - distribution is deterministic for the same inputs;
 - unpopulated dates contain no synthetic nodes and render `Add activity`;
+- a node dated before the span start or after the span end renders as a card
+  under its own date, and no empty dates are invented outside the span;
 - insufficient content leaves additional days empty rather than returning
   `over_capacity`;
 - direct add searches and applies against the selected local date and slot;
@@ -213,6 +234,8 @@ reachability, lock, region, or trip-boundary constraints.
 - [ ] Destination cards and the date picker show no catalog-derived day maximum
 - [ ] Initial generation populates no more than five deterministic dates
 - [ ] Every date in the inclusive span renders, including empty days
+- [ ] A booking dated outside the span renders as a card (brief
+      `GENIE_BOOKING_DEFAULT_TIMES_AND_OFFSPAN_CARDS.md`)
 - [x] Empty days provide a direct Add activity action (`b6ddecf`, catalog path)
 - [ ] Flexible activities can move across dates without changing `node_id`
 - [ ] Locked bookings remain immovable

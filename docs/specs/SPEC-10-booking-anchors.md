@@ -301,6 +301,28 @@ plus dinner. An early-evening landing leaves dinner only. A whole-day booked
 tour leaves dinner only. Conservative defaults apply until HITL intent restores
 a remaining slot.
 
+## Decision: default hotel times (owner, 2026-11-21)
+
+Phone test: the booking sheet defaulted check-in and check-out to the phone
+clock (about 02:00), because the time picker started from "now". The owner
+does not want a clock picker for hotels yet.
+
+- A hotel check-in is the chosen date at 12:00 and a hotel check-out is the
+  chosen date at 11:00, as destination-local wall time (same convention as
+  above). The sheet shows the two dates only; no time picker opens for a
+  hotel.
+- A new hotel defaults to check-in at 12:00 on the starting date and
+  check-out at 11:00 on the next day.
+- Editing an existing hotel keeps its stored times until the traveller picks
+  a new date for that endpoint; the new date then gets the default time.
+- A pasted confirmation that carries explicit times keeps those times. The
+  defaults apply to manual entry only.
+- Non-hotel bookings (flight, train, tour) keep the date and time picker,
+  because the time matters for the day. A new one starts at 12:00 on the
+  default date, not at the current clock time.
+- Early check-in and late check-out are not modelled. A hotel that allows a
+  different time is a later field, not this slice.
+
 ## Remainder: stay interval semantics and post-arrival intent
 
 Naive booking ISO without an offset is destination-local wall time on main
