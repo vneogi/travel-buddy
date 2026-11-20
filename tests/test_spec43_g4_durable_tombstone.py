@@ -8,7 +8,6 @@ store and Auth deleter, and an autouse guard fails any connect or DNS lookup.
 import copy
 import logging
 import re
-import socket
 from pathlib import Path
 
 import pytest
@@ -34,6 +33,7 @@ from services.data_rights_tombstone_supabase import (
     SupabaseTombstoneStore,
     TombstoneStoreError,
 )
+from tests.net_guard import block_external_sockets
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 MIGRATIONS_DIR = REPO_ROOT / "supabase" / "migrations"
@@ -148,12 +148,7 @@ class RecordingDeleter:
 
 @pytest.fixture(autouse=True)
 def _isolation(monkeypatch):
-    def _blocked(*args, **kwargs):
-        raise AssertionError("real network access attempted in a test")
-
-    monkeypatch.setattr(socket, "create_connection", _blocked)
-    monkeypatch.setattr(socket, "getaddrinfo", _blocked)
-    monkeypatch.setattr(socket.socket, "connect", _blocked)
+    block_external_sockets(monkeypatch)
     tomb.reset_tombstones()
     reset_denylist()
     yield

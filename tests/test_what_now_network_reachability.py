@@ -8,7 +8,6 @@ an autouse guard fails any connect or DNS lookup.
 
 import asyncio
 import importlib
-import socket
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -23,6 +22,7 @@ from services.ask_service import (
 )
 from services.reachability_provider import IsochroneResult, ReachabilityError
 from tests.test_spec46_what_now import FakeDb, _make_trip, _v
+from tests.net_guard import block_external_sockets
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 REGION = "vientiane_laos"
@@ -91,12 +91,7 @@ def ctx_node(now_utc):
 
 @pytest.fixture(autouse=True)
 def _no_sockets(monkeypatch):
-    def _blocked(*args, **kwargs):
-        raise AssertionError("real network access attempted in a test")
-
-    monkeypatch.setattr(socket, "create_connection", _blocked)
-    monkeypatch.setattr(socket, "getaddrinfo", _blocked)
-    monkeypatch.setattr(socket.socket, "connect", _blocked)
+    block_external_sockets(monkeypatch)
     rp._reset_for_tests()
     yield
     rp._reset_for_tests()
