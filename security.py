@@ -42,8 +42,9 @@ _ASYMMETRIC_ALGS = frozenset(
     {"RS256", "RS384", "RS512", "PS256", "PS384", "PS512", "ES256", "ES384", "ES512", "EdDSA"}
 )
 JWKS_CACHE_SECONDS = 600
-# Unknown-kid refetch cooldown (PyJWT >= 2.13). Bounds JWKS fetches caused by
-# junk kids; a genuinely rotated key is picked up within this window.
+# Unknown-kid refetch cooldown (PyJWT >= 2.15.1 has the cooldown_duration option;
+# requirements pin that floor). Bounds JWKS fetches caused by junk kids; a
+# genuinely rotated key is picked up within this window.
 JWKS_REFRESH_COOLDOWN_SECONDS = 30
 
 _jwks_clients: Dict[str, "jwt.PyJWKClient"] = {}
