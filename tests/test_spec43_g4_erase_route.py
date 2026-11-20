@@ -149,8 +149,9 @@ def fake():
 def http(fake):
     app.dependency_overrides[get_erase_backend] = lambda: SupabaseEraseBackend(fake)
     try:
-        with TestClient(app, raise_server_exceptions=False) as client:
-            yield client
+        # No `with`: entering TestClient runs the app lifespan, which re-seeds venues per test.
+        client = TestClient(app, raise_server_exceptions=False)
+        yield client
     finally:
         app.dependency_overrides.pop(get_erase_backend, None)
 
@@ -263,8 +264,9 @@ def test_erase_route_returns_501_when_no_supabase_backend(monkeypatch):
     built = []
     monkeypatch.setattr(me_router, "SupabaseEraseBackend", lambda client: built.append(client))
     app.dependency_overrides.pop(get_erase_backend, None)
-    with TestClient(app, raise_server_exceptions=False) as client:
-        resp = client.post(ERASE_PATH, json=CONFIRM, headers=_auth(USER_A))
+    # No `with`: entering TestClient runs the app lifespan, which re-seeds venues per test.
+    client = TestClient(app, raise_server_exceptions=False)
+    resp = client.post(ERASE_PATH, json=CONFIRM, headers=_auth(USER_A))
     assert resp.status_code == 501
     assert resp.json() == {"detail": "erase_unavailable"}
     assert built == []

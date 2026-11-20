@@ -152,8 +152,9 @@ def fake():
 def http(fake):
     app.dependency_overrides[get_export_backend] = lambda: SupabaseExportBackend(fake)
     try:
-        with TestClient(app, raise_server_exceptions=False) as client:
-            yield client
+        # No `with`: entering TestClient runs the app lifespan, which re-seeds venues per test.
+        client = TestClient(app, raise_server_exceptions=False)
+        yield client
     finally:
         app.dependency_overrides.pop(get_export_backend, None)
 
@@ -230,8 +231,9 @@ def test_export_route_returns_501_when_no_supabase_backend(monkeypatch):
     built = []
     monkeypatch.setattr(me_router, "SupabaseExportBackend", lambda client: built.append(client))
     app.dependency_overrides.pop(get_export_backend, None)
-    with TestClient(app, raise_server_exceptions=False) as client:
-        resp = client.get(EXPORT_PATH, headers=_auth(USER_A))
+    # No `with`: entering TestClient runs the app lifespan, which re-seeds venues per test.
+    client = TestClient(app, raise_server_exceptions=False)
+    resp = client.get(EXPORT_PATH, headers=_auth(USER_A))
     assert resp.status_code == 501
     assert resp.json() == {"detail": "export_unavailable"}
     assert built == []

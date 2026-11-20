@@ -295,8 +295,9 @@ def route():
     app.dependency_overrides[get_auth_deleter] = lambda: state["deleter"]
     app.dependency_overrides[resolve_identity] = lambda: ResolvedIdentity(USER, "supabase")
     try:
-        with TestClient(app, raise_server_exceptions=False) as client:
-            yield client, ops, state
+        # No `with`: entering TestClient runs the app lifespan, which re-seeds venues per test.
+        client = TestClient(app, raise_server_exceptions=False)
+        yield client, ops, state
     finally:
         for dep in (get_erase_backend, get_tombstone_store, get_auth_deleter, resolve_identity):
             app.dependency_overrides.pop(dep, None)
