@@ -166,9 +166,9 @@ brief is written. The Genie queue holds one brief, listed below.
    step 3 (backend pytest) is green on Windows after test fixes PR #301,
    #302 and #303; see the dated finding. Other steps not yet reported.
 2. Field APK, owner (Windows): follow `docs/ANDROID_BUILD.md` sections 1
-   to 5 from `main`. Built 2026-11-21 from `30f38a0` (SHA-256 `79ac36dc...`);
-   the table in `ANDROID_BUILD.md` still needs the owner's hosted, keystore
-   and device fields. Original instructions follow. Dart-defines are `TB_API_BASE_URL`,
+   to 5 from `main`. Built 2026-11-21 from `30f38a0` (SHA-256 `79ac36dc...`),
+   installed on `RZ8NA06XPCH` (adb install -r: Success). The Cloud Run
+   revision is still open in `ANDROID_BUILD.md`. Original instructions follow. Dart-defines are `TB_API_BASE_URL`,
    `TB_SUPABASE_URL` and `TB_SUPABASE_ANON_KEY`. Use the anon key only,
    never the service_role key. Reuse the keystore from the earlier field
    APKs so upgrades keep the same signing key. Do not create a new one. Record the commit

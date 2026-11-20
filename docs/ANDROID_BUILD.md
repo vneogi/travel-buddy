@@ -156,21 +156,21 @@ Prior field APK 2026-09-27 (owner Windows, `main` `9a7b9d9`, pre-JWT):
 
 Field APK built 2026-11-21 (owner Windows, `main` `30f38a0`, SPEC-57
 slice 1, SPEC-49, SPEC-48, SPEC-50 and the test fixes PR #301 to #304).
-Built with `flutter build apk --release` (`assembleRelease`, 79.0 MB).
-Fields marked "owner to confirm" were not in the build report and must be
-filled from the owner before this entry counts as a field record:
+Owner ran `flutter build apk --release` with the three dart-defines below
+and installed with `adb install -r` (Success). The anon key value is not
+recorded here. The Cloud Run revision is still "owner to confirm".
 
 | Field | Value |
 |---|---|
 | Source commit SHA | `30f38a0db52f5324f6f54c502ce787aab50432b5` |
 | Platform | Android |
-| Artifact | Signed release APK (`app-release.apk`) |
-| Hosted API hostname | owner to confirm (expected `travel-buddy-196190001420.asia-south1.run.app`) |
+| Artifact | Signed release APK (`app-release.apk`, 79.0 MB) |
+| Hosted API hostname | `travel-buddy-196190001420.asia-south1.run.app` (Profile > API Host, 2026-11-21 screenshot) |
 | Cloud Run revision | owner to confirm (last recorded hosted revision `00019-nl7`) |
-| Build command | `flutter build apk --release`; dart-defines `TB_API_BASE_URL`, `TB_SUPABASE_URL`, `TB_SUPABASE_ANON_KEY` (anon key only): owner to confirm |
-| Signing keystore | owner to confirm it is the same keystore as the earlier field APKs |
+| Build command | `flutter build apk --release` with `TB_API_BASE_URL`, `TB_SUPABASE_URL` and `TB_SUPABASE_ANON_KEY` dart-defines (anon key only; value not recorded) |
+| Signing keystore | `adb install -r` succeeded over the app already on the device, which Android allows only when the signing key matches; treated as the same keystore as the earlier field APKs |
 | APK SHA-256 | `79ac36dc13afc13dd25899c253189c47871a9a8b63b595a02533497b36fd780e` |
-| Device | owner to confirm serial and that `adb install -r` succeeded |
+| Device | `RZ8NA06XPCH` (`adb install -r`: Success) |
 
 Field APK used 2026-11-15 (owner Windows, `main` `5a4be12`, F2 + F3):
 
