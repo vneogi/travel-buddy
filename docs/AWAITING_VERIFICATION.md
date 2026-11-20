@@ -15,6 +15,53 @@ other.
 Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 `#85` and so on; those numbers cannot be reconciled against `git log`.
 
+## Finding -- Nov 21 2026 -- owner phone screenshots on the Nov 21 field APK
+
+APK built on `main` `30f38a0` (SHA-256 `79ac36dc...`, see the table in
+`ANDROID_BUILD.md`). Owner sent ten phone screenshots (Samsung, Android
+navigation bar, about 01:59 to 02:12 local). Recorded as what the screenshots
+show. No pass or fail is recorded here: the owner has not given one.
+
+- Trip list: "Saved on this device (just now)" line and the UP NEXT chip
+  with the next item's date and time. Cards show swap (SPEC-50) and
+  overflow menus; a locked booking card shows the lock icon and a type
+  tag (Flight, Hotel).
+- Booking cards: Flight "Booking Confirmed" (Sat 26 Dec, 02:09) and Hotel
+  "Coccobella Nungwi" (check-in Fri 25 Dec 02:02, check-out Tue 29 Dec
+  02:02, "4 nights - checkout 29 Dec"). Owner confirmed the times were
+  not chosen: the booking sheet defaults to the phone clock (about 02:00
+  local at the time). Owner decision: hotels use a fixed 12:00 check-in and
+  11:00 check-out on the chosen dates, with no clock picker (SPEC-10,
+  "Decision: default hotel times").
+- Day-before booking: a flight booked for Thu 24 Dec (the day before the
+  trip's first day, Fri 25 Dec) appeared in the UP NEXT strip ("Booking
+  Confirmed Zanzi", Thu 24 Dec, 19:06) but no card appeared in the
+  timeline. Cause on `main` (read from source, not reproduced on device):
+  `spanAwareDayGroups` in `mobile/lib/features/itinerary/date_scope.dart`
+  emits only dates from the span start to the span end, so a node dated
+  outside the span is grouped and then dropped; the UP NEXT strip reads the
+  raw node list. Owner decision: such a booking must show as a card (SPEC-42,
+  "Decision: nodes outside the span"). Brief:
+  `docs/briefs/GENIE_BOOKING_DEFAULT_TIMES_AND_OFFSPAN_CARDS.md`.
+- Arrival armor from the flight card: screen title "Arrival armor", hub
+  "Zanzibar Airport (ZNZ)", message "No verified fare or tip sheet for
+  this hub yet." Shown again in airplane mode (airplane icon in the status
+  bar), so the empty state works offline. Fare and tip content is still
+  waiting for on-site data.
+- Driver card (SPEC-12) for "Old Slave Market and Slavery Memorial": "Local
+  name not available", "Show to driver", "Open in Maps", coordinates
+  -6.16337, 39.19250, and the offline-aid and menu-change notice.
+- Show to driver (SPEC-49) full screen: venue name in large type and a
+  "Done -- return to card" button.
+- Driver card for the hotel: same layout without "Open in Maps" or
+  coordinates (none stored for the hotel).
+- Overflow menu on the hotel card: "Love this place" and "Driver card".
+
+Open for the owner: the SPEC-49, 48, 50, 52 and 57 pass or fail calls, and
+whether the phone runs the APK recorded in `ANDROID_BUILD.md`. The two
+issues above are fixed by the brief, not by this APK: re-check both on the
+next field APK built after that brief lands.
+
 ## Finding -- Nov 21 2026 -- owner Windows backend pytest green after test fixes
 
 Owner Windows laptop (PowerShell 5.1, Python 3.12), live Supabase `.env`
