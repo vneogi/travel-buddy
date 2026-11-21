@@ -5,17 +5,24 @@
 //
 // Written without a local Flutter SDK; CI is the first compile and run.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 
+import 'package:travel_buddy/core/api_client.dart';
 import 'package:travel_buddy/core/providers.dart';
 import 'package:travel_buddy/data/models.dart';
+import 'package:travel_buddy/data/repositories.dart';
 import 'package:travel_buddy/features/booking/add_booking_sheet.dart';
 import 'package:travel_buddy/features/itinerary/date_scope.dart';
 import 'package:travel_buddy/features/itinerary/itinerary_notifier.dart';
+import 'package:travel_buddy/features/itinerary/itinerary_screen.dart';
 import 'package:travel_buddy/offline/offline_database.dart';
 import 'package:travel_buddy/services/signal_service.dart';
+import 'package:travel_buddy/widgets/activity_card.dart';
 
 // ---------------------------------------------------------------------------
 // Sheet fakes (pattern from spec_g0_booking_city_test.dart)
@@ -157,6 +164,136 @@ Finder _tileText(String tile, String text) => find.descendant(
       of: find.widgetWithText(ListTile, tile),
       matching: find.textContaining(text),
     );
+
+// ---------------------------------------------------------------------------
+// Timeline harness (pattern from spec31_widget_test.dart)
+// ---------------------------------------------------------------------------
+
+class _MockTripRepository extends Mock implements TripRepository {}
+
+class _MockApiClient extends Mock implements ApiClient {}
+
+class _MockOfflineDatabase extends Mock implements OfflineDatabase {}
+
+class _MockSignalService extends Mock implements SignalService {}
+
+void _stubDatabase(_MockOfflineDatabase database) {
+  when(() => database.getLovedPlaceRefs(
+        identityScope: any(named: 'identityScope'),
+        tripId: any(named: 'tripId'),
+      )).thenAnswer((_) async => <String>{});
+  when(() => database.getNodeOutcomes(
+        identityScope: any(named: 'identityScope'),
+        tripId: any(named: 'tripId'),
+      )).thenAnswer((_) async => <String, NodeOutcome>{});
+  when(() => database.cachePlace(any(), any(), identityScope: any(named: 'identityScope')))
+      .thenAnswer((_) async {});
+  when(() => database.cacheTrip(any(), any(), identityScope: any(named: 'identityScope')))
+      .thenAnswer((_) async {});
+  when(() => database.getCachedTrip(any(), identityScope: any(named: 'identityScope')))
+      .thenAnswer((_) async => null);
+  when(() => database.pruneAlertData()).thenAnswer((_) async {});
+  when(() => database.getDismissedAlertIds(
+        identityScope: any(named: 'identityScope'),
+      )).thenAnswer((_) async => <String>{});
+}
+
+class _TimelineHarness {
+  final ProviderContainer container;
+  final void Function() closeSubscription;
+
+  _TimelineHarness._(this.container, this.closeSubscription);
+
+  static Future<_TimelineHarness> create(TripState trip) async {
+    final database = _MockOfflineDatabase();
+    final repository = _MockTripRepository();
+    final api = _MockApiClient();
+    _stubDatabase(database);
+    when(() => repository.getTrip(trip.tripId)).thenAnswer((_) async => trip);
+    when(() => api.get(any(), query: any(named: 'query'))).thenAnswer(
+      (invocation) async {
+        final path = invocation.positionalArguments.first as String;
+        if (path.endsWith('/alerts')) {
+          return {
+            'trip_id': trip.tripId,
+            'status': 'unconfigured',
+            'alerts': <Object>[],
+            'refreshed_at': '2026-08-31T12:00:00.000Z',
+          };
+        }
+        return {
+          'user_id': 'user-1',
+          'tier': 'free',
+          'daily_reroutes_used': 0,
+          'daily_reroutes_remaining': 3,
+          'max_daily_reroutes': 3,
+        };
+      },
+    );
+    final container = ProviderContainer(
+      overrides: [
+        tripRepoProvider.overrideWithValue(repository),
+        apiClientProvider.overrideWithValue(api),
+        offlineDatabaseProvider.overrideWithValue(database),
+        identityCacheScopeProvider.overrideWithValue('account:user-1'),
+        signalServiceProvider.overrideWithValue(_MockSignalService()),
+      ],
+    );
+    final loaded = Completer<void>();
+    final subscription = container.listen(
+      itineraryControllerProvider(trip.tripId),
+      (_, next) {
+        if (!next.loading && !loaded.isCompleted) loaded.complete();
+      },
+      fireImmediately: true,
+    );
+    await loaded.future;
+    return _TimelineHarness._(container, subscription.close);
+  }
+
+  Future<void> pump(WidgetTester tester, String tripId) async {
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(home: ItineraryScreen(tripId: tripId)),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+  }
+
+  void dispose() {
+    closeSubscription();
+    container.dispose();
+  }
+}
+
+/// Node with no geoRegion: toDestinationLocal falls back to device-local, so
+/// local DateTime inputs group on their own calendar date on any machine.
+TripNode _spanNode(
+  String id,
+  DateTime start, {
+  String kind = 'activity',
+  String? bookingType,
+  int minutes = 60,
+  String? region,
+}) =>
+    TripNode(
+      nodeId: id,
+      venueName: id,
+      venueId: '$id-ref',
+      scheduledStart: start,
+      durationMinutes: minutes,
+      isLocked: kind == 'booking',
+      status: NodeStatus.pending,
+      vibeTags: const [],
+      nodeKind: kind,
+      bookingType: bookingType,
+      geoRegion: region,
+    );
+
+List<DateTime> _dates(List<ItineraryDayGroup> groups) =>
+    groups.map((g) => g.date).toList();
 
 void main() {
   // -------------------------------------------------------------------------
@@ -464,5 +601,159 @@ void main() {
       final picker = tester.widget<TimePickerDialog>(find.byType(TimePickerDialog));
       expect(picker.initialTime, const TimeOfDay(hour: 9, minute: 9));
     });
+  });
+
+  // -------------------------------------------------------------------------
+  // Part B: cards for dates outside the span
+  // -------------------------------------------------------------------------
+  group('Part B: spanAwareDayGroups outside the span', () {
+    final spanStart = DateTime(2026, 12, 25);
+    final spanEnd = DateTime(2026, 12, 27);
+
+    test('node before the span start gets its own earlier group', () {
+      final groups = spanAwareDayGroups(
+        nodes: [
+          _spanNode('flight', DateTime(2026, 12, 24, 19, 6), kind: 'booking', bookingType: 'flight'),
+          _spanNode('museum', DateTime(2026, 12, 25, 10)),
+        ],
+        startLocal: spanStart,
+        endLocal: spanEnd,
+      );
+      expect(_dates(groups), [
+        DateTime(2026, 12, 24),
+        DateTime(2026, 12, 25),
+        DateTime(2026, 12, 26),
+        DateTime(2026, 12, 27),
+      ]);
+      expect(groups.first.nodes.single.nodeId, 'flight');
+    });
+
+    test('node after the span end gets its own later group', () {
+      final groups = spanAwareDayGroups(
+        nodes: [
+          _spanNode('museum', DateTime(2026, 12, 25, 10)),
+          _spanNode('tour', DateTime(2026, 12, 29, 9), kind: 'booking', bookingType: 'tour'),
+        ],
+        startLocal: spanStart,
+        endLocal: spanEnd,
+      );
+      expect(_dates(groups), [
+        DateTime(2026, 12, 25),
+        DateTime(2026, 12, 26),
+        DateTime(2026, 12, 27),
+        DateTime(2026, 12, 29),
+      ]);
+      expect(groups.last.nodes.single.nodeId, 'tour');
+    });
+
+    test('no empty dates are invented outside the span', () {
+      final groups = spanAwareDayGroups(
+        nodes: [
+          _spanNode('flight', DateTime(2026, 12, 20, 8), kind: 'booking', bookingType: 'flight'),
+        ],
+        startLocal: spanStart,
+        endLocal: spanEnd,
+      );
+      expect(_dates(groups), [
+        DateTime(2026, 12, 20),
+        DateTime(2026, 12, 25),
+        DateTime(2026, 12, 26),
+        DateTime(2026, 12, 27),
+      ]);
+      expect(groups.skip(1).every((g) => g.nodes.isEmpty), isTrue);
+    });
+
+    test('nodes inside the span behave as before', () {
+      final groups = spanAwareDayGroups(
+        nodes: [
+          _spanNode('a', DateTime(2026, 12, 25, 9)),
+          _spanNode('b', DateTime(2026, 12, 27, 18)),
+        ],
+        startLocal: spanStart,
+        endLocal: spanEnd,
+      );
+      expect(_dates(groups), [
+        DateTime(2026, 12, 25),
+        DateTime(2026, 12, 26),
+        DateTime(2026, 12, 27),
+      ]);
+      expect(groups[0].nodes.single.nodeId, 'a');
+      expect(groups[1].nodes, isEmpty);
+      expect(groups[2].nodes.single.nodeId, 'b');
+    });
+
+    test('corridor segment includes a matching node dated before its start', () {
+      // Zanzibar (UTC+3): 16:06Z on Dec 24 is 19:06 local, 07:00Z is 10:00.
+      final cityGroups = spanAwareCorridorGroups(
+        nodes: [
+          _spanNode('flight', DateTime.parse('2026-12-24T16:06:00Z'),
+              kind: 'booking', bookingType: 'flight', region: 'zanzibar_tanzania'),
+          _spanNode('museum', DateTime.parse('2026-12-25T07:00:00Z'),
+              region: 'zanzibar_tanzania'),
+        ],
+        segments: const [
+          TripSegment(geoRegion: 'zanzibar_tanzania', startsOn: '2026-12-25', endsOn: '2026-12-27'),
+        ],
+      );
+      expect(cityGroups, hasLength(1));
+      final dayGroups = cityGroups.single.dayGroups;
+      expect(_dates(dayGroups), [
+        DateTime(2026, 12, 24),
+        DateTime(2026, 12, 25),
+        DateTime(2026, 12, 26),
+        DateTime(2026, 12, 27),
+      ]);
+      expect(dayGroups.first.nodes.single.nodeId, 'flight');
+    });
+
+    test('hotel stay that starts before the span shows on each covered date', () {
+      // Check-in Dec 23 12:00, check-out Dec 26 11:00: nights of 23, 24, 25.
+      final hotel = _spanNode('hotel', DateTime(2026, 12, 23, 12),
+          kind: 'booking', bookingType: 'hotel', minutes: 3 * 1440 - 60);
+      final groups = spanAwareDayGroups(
+        nodes: [hotel],
+        startLocal: spanStart,
+        endLocal: spanEnd,
+      );
+      expect(_dates(groups), [
+        DateTime(2026, 12, 23),
+        DateTime(2026, 12, 24),
+        DateTime(2026, 12, 25),
+        DateTime(2026, 12, 26),
+        DateTime(2026, 12, 27),
+      ]);
+      for (final g in groups.take(3)) {
+        expect(g.nodes.single.nodeId, 'hotel', reason: '${g.date}');
+      }
+      expect(groups[3].nodes, isEmpty);
+      expect(groups[4].nodes, isEmpty);
+    });
+  });
+
+  group('Part B: timeline', () {
+    testWidgets('timeline renders a card for a booking the day before the trip',
+        (tester) async {
+      final harness = await _TimelineHarness.create(TripState(
+        tripId: 'trip-1',
+        userId: 'user-1',
+        creationContext: const CreationContext(
+          startDateLocal: '2026-12-25',
+          endDateLocal: '2026-12-27',
+        ),
+        nodes: [
+          _spanNode('Arrival Flight', DateTime(2026, 12, 24, 19, 6),
+              kind: 'booking', bookingType: 'flight'),
+          _spanNode('Stone Town Walk', DateTime(2026, 12, 25, 10)),
+        ],
+      ));
+      addTearDown(harness.dispose);
+      await harness.pump(tester, 'trip-1');
+
+      expect(find.text('Thursday, 24 December 2026'), findsOneWidget);
+      expect(
+        find.descendant(of: find.byType(ActivityCard), matching: find.text('Arrival Flight')),
+        findsOneWidget,
+      );
+    }, timeout: const Timeout(Duration(seconds: 20)));
   });
 }
