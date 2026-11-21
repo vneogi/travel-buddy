@@ -156,7 +156,7 @@ class _BookingReflowSheetState extends State<BookingReflowSheet> {
 
   Future<void> _confirm() async {
     setState(() => _sending = true);
-    await widget.onConfirm(_intent);
+    await widget.onConfirm(widget.reflow.defaultIntent); // R17b sabotage
     if (mounted) Navigator.of(context).pop();
   }
 

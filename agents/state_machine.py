@@ -887,7 +887,7 @@ class TripStateMachine:
         # SPEC-10 HITL reflow: confirmed intent skips flexible nodes in place
         # (same status flip as unlocked cancel), then reschedules.
         if event_type == EventType.CONFIRM_BOOKING_REFLOW.value:
-            intent = (state.get("preferences") or {}).get("intent")
+            intent = "conservative"  # R17b sabotage: ignore the chosen intent
             skipped = apply_booking_reflow(
                 trip_state.nodes, state.get("target_node_id"), intent, trip_state.geo_region
             )
