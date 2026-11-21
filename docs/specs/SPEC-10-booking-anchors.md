@@ -325,6 +325,9 @@ does not want a clock picker for hotels yet.
   other day. First day = the creation start date, else the earliest corridor
   segment start, else the earliest node's destination-local date, else
   tomorrow.
+- Editing a booking shows and saves destination-local wall time, the same
+  time the card shows. The Edit sheet must not show UTC clock times (phone
+  test: card 25 Dec 02:02, Edit sheet 24/12 23:02).
 - Early check-in and late check-out are not modelled. A hotel that allows a
   different time is a later field, not this slice.
 

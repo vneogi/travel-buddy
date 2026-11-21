@@ -29,9 +29,15 @@ approval.
    tomorrow selected. The owner wants it to open on the trip's month with the
    trip's first day already selected; the traveller can pick any other day.
 
-Three small fixes. One PR, two commits: commit 1 is Part A (the booking sheet:
-default date and default times), commit 2 is Part B (cards outside the
-span).
+4. The Edit Booking sheet showed booking times in UTC: the hotel card said
+   check-in 25 Dec 02:02 (Zanzibar), but the Edit sheet said 24/12/2026 23:02.
+   Changing a date in edit mode can then save the time three hours off. Added
+   by the owner on 2026-11-21 as Part A rule 13.
+
+Four small fixes. One PR, two commits: commit 1 is Part A (the booking sheet:
+default date, default times, edit-mode wall time), commit 2 is Part B (cards
+outside the span). See "Amendment 1" at the end for the planning agent's
+decisions after Genie's preflight.
 
 ### Verified facts on `main` (re-verify in preflight; line numbers drift)
 
@@ -61,6 +67,15 @@ Part A, `mobile/lib/features/booking/add_booking_sheet.dart`:
   `ItineraryState.segments` (`TripSegment.startsOn`, a date string) for
   corridor trips, and `ItineraryState.nodes` (each with `scheduledStart` and
   `geoRegion`). `core/destination_tz.dart` has `toDestinationLocal`.
+- Edit mode reads `edit.scheduledStart`, a `DateTime` parsed from the server
+  ISO string (UTC). `_formatDate` prints `dt.hour` and `dt.minute` of whatever
+  `DateTime` it is given, and the time pickers start from
+  `TimeOfDay.fromDateTime(_scheduledStart)`. So the sheet shows UTC clock
+  times, while cards use `toDestinationLocal(node.scheduledStart,
+  node.geoRegion)`. `toDestinationLocal` returns a UTC-flagged `DateTime`, so
+  saving it as is would write a `Z` and move the instant. Owner phone evidence:
+  hotel card 25 Dec 02:02 and 29 Dec 02:02; Edit sheet 24/12/2026 23:02 and
+  28/12/2026 23:02.
 - `scheduled_start` is sent as `_scheduledStart.toIso8601String()`. A naive
   ISO string is destination-local wall time (SPEC-10, `933c705`). Do not
   change that convention.
@@ -74,7 +89,8 @@ Part B, `mobile/lib/features/itinerary/date_scope.dart`:
 - `spanAwareCorridorGroups` calls `spanAwareDayGroups` per segment with the
   segment dates, so a node that matches the segment region but is dated
   outside the segment dates is dropped the same way.
-- `resolveDayGroups` (single-city path) also calls `spanAwareDayGroups`.
+- `resolveTimelineGroups` (single-city path; this brief first called it
+  `resolveDayGroups`) also calls `spanAwareDayGroups`.
 - The UP NEXT strip (`now_next_strip.dart`) reads the raw node list, which is
   why the flight showed there.
 
@@ -136,6 +152,27 @@ Rules (all in `add_booking_sheet.dart`; the parser is not touched):
     `firstDate: _scheduledStart` and its existing `lastDate`.
 12. The default date never changes the time rules above: non-hotel starts at
     12:00, hotel check-in 12:00, hotel check-out 11:00 the next day.
+13. Edit mode shows and edits destination-local wall time (owner decision,
+    2026-11-21), the same value the card shows:
+    (a) In `initState`'s edit branch, set `_scheduledStart` to the
+    destination-local wall time of `edit.scheduledStart` and `_checkoutDate`
+    to the destination-local wall time of `edit.scheduledStart` plus
+    `durationMinutes`. Use `toDestinationLocal(instant, edit.geoRegion)`, then
+    rebuild it as a plain non-UTC `DateTime(year, month, day, hour, minute,
+    second, millisecond)` so `toIso8601String()` has no `Z` and the server reads
+    it as destination-local (SPEC-10 convention). Keep seconds and
+    milliseconds.
+    (b) Saving an edit without touching any date or time must leave the stored
+    instant unchanged. The payload `scheduled_start` is the naive
+    destination-local string, and `duration_minutes` is unchanged.
+    (c) The Check-in and Check-out tiles, the Date & Time tile and the time
+    picker's `initialTime` in edit mode all use these wall-time values.
+    (d) For a node with no `geoRegion` (or an unknown one), use whatever
+    `toDestinationLocal` returns for it, so the sheet always matches the card.
+    (e) Applies to every booking type in edit mode (flight, train, tour,
+    hotel). Rule 4 (existing hotel keeps its stored times until a date is
+    picked) now means the destination-local wall times of the stored instants.
+    (f) Add mode is unchanged by this rule.
 
 ## 2. Part B: cards for dates outside the span
 
@@ -151,7 +188,7 @@ Change `spanAwareDayGroups` in `date_scope.dart`:
    before the span adds one extra group, not ten.
 5. A multi-night hotel already appears on every covered date through
    `groupNodesByCalendarDateWithHotelStays`; nothing else changes for hotels.
-6. `spanAwareCorridorGroups` and `resolveDayGroups` need no logic change if
+6. `spanAwareCorridorGroups` and `resolveTimelineGroups` need no logic change if
    they only call `spanAwareDayGroups`. Verify that. Do not change the corridor
    `dateRange` label or `_effectiveSegmentEndDate`.
 7. Do not change the UP NEXT strip, `groupNodesByCalendarDate`, the trip span
@@ -183,8 +220,10 @@ Part A, sheet:
 4. `hotel tiles show the fixed times`: the Check-in tile text contains `12:00`
    and the Check-out tile contains `11:00`.
 5. `editing a hotel keeps stored times until a date is picked`: edit a node
-   with check-in 15:00 and check-out 10:00; save without picks and expect
-   15:00 and 10:00; then pick a new check-in date and expect 12:00.
+   in `zanzibar_tanzania` whose stored UTC instants are 12:00Z check-in and
+   07:00Z check-out (Zanzibar wall time 15:00 and 10:00); save without picks
+   and expect 15:00 and 10:00 in the payload; then pick a new check-in date and
+   expect 12:00.
 6. `new flight starts at 12:00 not the clock`: flight type, no override, save
    with no picks. Saved start has hour 12, minute 0, second 0, millisecond 0.
    Fails on `main` because seconds and milliseconds are non-zero.
@@ -232,17 +271,31 @@ Part A, default date and calendar month:
 24. `calendar does not assert when the trip started in the past`: trip first
     day in 2020; the picker opens with no exception and `initialDate` is that
     day. This test passes on current `main` (no default date yet), so it guards
-    rule 11 only: in the R17 sabotage commit, remove the bound widening and
+    rule 11 only: the `r17b` sabotage branch removes the bound widening and must
     show this test fails.
 25. `picking a different day overrides the default and keeps the time rule`.
 26. `no trip dates falls back to tomorrow at 12:00`: assert the saved start's
     date is after today's date and the time is 12:00:00.000.
 
-R17 proof (a guard that cannot fail is not a guard): after CI is green, push
-one temporary commit that reverts only the production hunks (not the tests),
-show that the tests named above fail in the `flutter` job, then revert that
-commit so the branch ends with the real change. List test -> production line
-in the PR description.
+Part A, edit-mode wall time (rule 13):
+
+27. `edit sheet shows destination-local time, not UTC`: hotel node in
+    `zanzibar_tanzania`, check-in `2026-12-24T23:02:00Z`, 4 nights; the
+    Check-in tile reads `25/12/2026 02:02` and the Check-out tile reads
+    `29/12/2026 02:02`. Fails on `main` (it shows 24/12 23:02 and 28/12 23:02).
+28. `edit save without changes keeps the same instant`: same node; save with no
+    picks; payload `scheduled_start` is `2026-12-25T02:02:00.000` (no `Z`),
+    `duration_minutes` is unchanged, and the payload read as Zanzibar wall time
+    equals the original instant.
+29. `edit flight time picker opens on destination-local time`: flight node in
+    `zanzibar_tanzania` at `2026-12-26T06:09:00Z` (Zanzibar 09:09); tap Date &
+    Time, choose a date; the `TimePickerDialog` `initialTime` is 09:09, not
+    06:09. Fails on `main`.
+
+R17 proof (a guard that cannot fail is not a guard): see Amendment 1, item 3
+(two sabotage branches, run as draft PRs by the planning agent). The PR branch
+itself stays at two commits. List test -> production line in the PR
+description.
 
 ## 4. Stop rules
 
@@ -254,6 +307,9 @@ in the PR description.
   Part B rule 8).
 - Stop if the trip's first day cannot be read from `ItineraryState` as
   described (field names or types differ). Report what you found.
+- Stop if `edit.scheduledStart` is not a UTC `DateTime` on some path (for
+  example the offline cached trip), or if rule 13 needs a change outside
+  `add_booking_sheet.dart` and the tests. Report what you found.
 - Stop if making the calendar open on the trip's month needs a change outside
   `add_booking_sheet.dart`, `date_scope.dart` and the tests.
 - Do not touch `booking_parser.dart`, the Python backend, migrations, SPEC
@@ -274,8 +330,38 @@ in the PR description.
 ## 6. PR
 
 Branch `feat/booking-default-times-offspan-cards` from the base SHA you were
-sent. One PR, two commits. Do not merge. In the PR description list: the
-parts (A: default date and times, B: cards outside the span), the
+sent. One PR, two commits. Do not merge. Push the branch and send the
+planning agent the PR description; the planning agent opens the PR (there is no
+`gh` on Genie compute). In the PR description list: the
+parts (A: default date, times and edit-mode wall time; B: cards outside the
+span), the
 test -> production-line table, the R17 evidence, and any existing test you had
-to touch. The owner re-checks all three issues on the phone with the next field
+to touch. The owner re-checks all four issues on the phone with the next field
 APK built after this merges.
+
+## Amendment 1 (planning agent, 2026-11-21, after Genie's preflight)
+
+1. Existing test conflict. `add-mode date outside corridor auto-selects no
+   city` in `spec_g0_booking_city_test.dart` relied on the old default date
+   (now + 24 hours). Under rule 10 the default becomes the first segment's day,
+   so a city is selected. Decision: setup change only. Pass
+   `initialScheduledDate: DateTime(2026, 10, 15, 12, 0)` (outside the corridor),
+   keep every assertion unchanged, and update the stale comment. Add a new test,
+   `add-mode default date picks the first segment's city`: no override, same fake
+   segments (first starts 2026-10-02); expect Vientiane to show. Changing the
+   expected value of the old test is not approved. List the touched test in the
+   PR description.
+2. PR opening. Genie pushes the branch and sends the PR description; the
+   planning agent opens the PR.
+3. R17 proof. The PR branch stays at two commits. CI runs only on pull requests
+   to `main` (and pushes to `main` and `develop`), not on plain branch pushes.
+   So push two extra branches, each the PR branch plus one commit, and the
+   planning agent opens each as a draft PR, reads the failing test names from
+   the `flutter` job, then closes it unmerged and deletes the branch:
+   - `feat/booking-default-times-offspan-cards-r17a`: reverts only the
+     production hunks (Part A and Part B); tests untouched.
+   - `feat/booking-default-times-offspan-cards-r17b`: keeps the default date but
+     removes only the rule 11 picker-bound widening (guards test 24).
+4. Naming. `resolveDayGroups` in this brief means `resolveTimelineGroups`.
+5. Rule 13 and tests 27 to 29 were added by the owner's decision on
+   2026-11-21 (the Edit sheet showed UTC).
