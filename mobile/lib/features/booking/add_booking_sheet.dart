@@ -176,21 +176,18 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
     return DateTime(now.year, now.month, now.day + 1);
   }
 
+  // ignore: unused_element
   static DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 
   /// Earlier of today and [initial] (date only), so a trip that started in
   /// the past never trips the date picker's initialDate assertion.
   static DateTime _pickerFirstDate(DateTime initial) {
-    final today = _dateOnly(DateTime.now());
-    final init = _dateOnly(initial);
-    return init.isBefore(today) ? init : today;
+    return DateTime.now(); // R17b sabotage: no widening
   }
 
   /// Later of today + 365 days and [initial] + 365 days (date only).
   static DateTime _pickerLastDate(DateTime initial) {
-    final fromToday = _dateOnly(DateTime.now()).add(const Duration(days: 365));
-    final fromInitial = _dateOnly(initial).add(const Duration(days: 365));
-    return fromInitial.isAfter(fromToday) ? fromInitial : fromToday;
+    return DateTime.now().add(const Duration(days: 365)); // R17b sabotage
   }
 
   @override
