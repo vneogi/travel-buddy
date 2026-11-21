@@ -13,7 +13,8 @@ enum EventType {
   addBooking('add_booking'),
   editBooking('edit_booking'),
   deleteBooking('delete_booking'),
-  moveActivity('move_activity');
+  moveActivity('move_activity'),
+  confirmBookingReflow('confirm_booking_reflow'); // SPEC-10 HITL reflow
 
   final String wire;
   const EventType(this.wire);
@@ -746,6 +747,51 @@ class AskResponse {
       };
 }
 
+/// SPEC-10 HITL reflow: one affected local day of a booking proposal.
+class BookingReflowDay {
+  final String localDate; // YYYY-MM-DD, destination-local
+  final List<String> conservativeSlots;
+  final List<String> extraNodeIds;
+
+  const BookingReflowDay({
+    required this.localDate,
+    required this.conservativeSlots,
+    required this.extraNodeIds,
+  });
+
+  factory BookingReflowDay.fromJson(Map<String, dynamic> j) => BookingReflowDay(
+        localDate: j['local_date'] as String? ?? '',
+        conservativeSlots:
+            ((j['conservative_slots'] as List?) ?? const []).cast<String>(),
+        extraNodeIds: ((j['extra_node_ids'] as List?) ?? const []).cast<String>(),
+      );
+}
+
+/// SPEC-10 HITL reflow proposal returned after add/edit booking. Mirrors the
+/// server DTO 1:1; nothing is skipped until confirm_booking_reflow.
+class BookingReflow {
+  final String bookingNodeId;
+  final List<String> intents;
+  final String defaultIntent;
+  final List<BookingReflowDay> days;
+
+  const BookingReflow({
+    required this.bookingNodeId,
+    required this.intents,
+    required this.defaultIntent,
+    required this.days,
+  });
+
+  factory BookingReflow.fromJson(Map<String, dynamic> j) => BookingReflow(
+        bookingNodeId: j['booking_node_id'] as String? ?? '',
+        intents: ((j['intents'] as List?) ?? const []).cast<String>(),
+        defaultIntent: j['default_intent'] as String? ?? 'conservative',
+        days: ((j['days'] as List?) ?? const [])
+            .map((d) => BookingReflowDay.fromJson((d as Map).cast<String, dynamic>()))
+            .toList(),
+      );
+}
+
 class TripEventResult {
   /// May include a "Heads up: ..." scheduler note at the end.
   final String message;
@@ -757,6 +803,8 @@ class TripEventResult {
   final List<String> scheduleWarnings;
   /// SPEC-25: Typed Ask envelope (present only for ask_info events).
   final AskResponse? askResponse;
+  /// SPEC-10 HITL reflow proposal (add/edit booking only; null otherwise).
+  final BookingReflow? bookingReflow;
 
   const TripEventResult({
     required this.message,
@@ -766,10 +814,12 @@ class TripEventResult {
     this.reroutesRemaining,
     this.scheduleWarnings = const [],
     this.askResponse,
+    this.bookingReflow,
   });
 
   factory TripEventResult.fromJson(Map<String, dynamic> j) {
     final askJson = j['ask_response'] as Map?;
+    final reflowJson = j['booking_reflow'] as Map?;
     return TripEventResult(
       message: j['message'] as String? ?? '',
       updatedNodes: ((j['updated_nodes'] as List?) ?? const [])
@@ -783,6 +833,9 @@ class TripEventResult {
       askResponse: askJson == null
           ? null
           : AskResponse.fromJson(askJson.cast<String, dynamic>()),
+      bookingReflow: reflowJson == null
+          ? null
+          : BookingReflow.fromJson(reflowJson.cast<String, dynamic>()),
     );
   }
 }
