@@ -15,6 +15,46 @@ other.
 Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 `#85` and so on; those numbers cannot be reconciled against `git log`.
 
+## Finding -- Nov 21 2026 -- booking fixes on the 831724f APK (PR #309)
+
+Owner Windows checkout at `831724f` (`git rev-parse HEAD` confirmed).
+Gates run by the owner before the APK build:
+
+- focused `flutter test test/booking_default_times_and_offspan_test.dart`: all passed
+- focused `flutter test test/spec_ask_to_add_test.dart`: all passed on rerun
+- `flutter analyze --no-fatal-infos`: informational findings only
+
+One earlier full `flutter test` run on the same checkout failed six tests in
+`spec_ask_to_add_test.dart` (a 30 second timeout in the first test, then
+"Guarded function conflict" in the rest). The focused rerun passed, so this
+is recorded as a Windows test flake to watch, not a booking regression. The
+Linux `flutter` CI job on PR #309 was green.
+
+APK built from `831724f` (SHA-256 `f39afc43...`, see `ANDROID_BUILD.md`),
+installed on `RZ8NA06XPCH` (adb install -r: Success). Six phone screenshots,
+about 19:45 to 19:49 local, Samsung navigation bar:
+
+- Add Booking, Hotel: check-in `29/12/2026 12:00`, check-out `30/12/2026 11:00`,
+  fields shown with no clock picker.
+- Hotel card "zanzi hotel": check-in Tue 29 Dec 12:00, check-out Sat 2 Jan
+  11:00, "4 nights - checkout 2 Jan".
+- Edit Booking for that hotel: check-in `29/12/2026 12:00` and check-out
+  `2/1/2027 11:00`, the same clock times as the card (no UTC hour). Confirmation
+  code "Testing 4321" saved; Save Changes returned the card with the same times.
+- Flight "Booking Confirmed Zanzi" booked for Thu 24 Dec 19:06, the day before
+  the first trip date: shown as a card in the timeline and as the UP NEXT item.
+  This is the off-span card fix.
+- Trip list: "Saved on this device (just now)" line, UP NEXT chip, locked flight
+  cards at 12:00 (Mon 28 Dec) and 09:00 (Tue 29 Dec).
+
+Owner message with the screenshots: "All checks and updates look great."
+Recorded as the owner's statement about the booking checks.
+
+Not in this screenshot set (still open): calendar opening on the trip's first
+day for a new booking; NOW badge (SPEC-48); Show to driver offline and at the
+largest font (SPEC-49); swap cancel and confirm (SPEC-50); date markers
+(SPEC-52); Arrival Armor Driver Card after a later hotel (SPEC-57).
+
 ## Finding -- Nov 21 2026 -- owner phone spec checks (second screenshot set)
 
 Fourteen screenshots, about 09:25 to 09:37 local, same APK (`30f38a0`). Owner:

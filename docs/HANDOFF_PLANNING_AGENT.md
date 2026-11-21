@@ -62,8 +62,10 @@ test clock hygiene `1ee63e2` (PR #228), and postgres-proof CI image
 `d0abb2f` (PR #227) are on main. Full pytest suite is green with no
 known failures; `postgres-proof` is green. Frontend findings F1-F4 in
 `UX_BACKLOG.md` are deferred (owner: frontend after Tanzania core).
-One Genie brief is queued but not yet sent: `docs/briefs/GENIE_BOOKING_DEFAULT_TIMES_AND_OFFSPAN_CARDS.md`
-(from the 2026-11-21 phone test). Gap 4 retention R1 is on main (PR #295, `c566e09`:
+The 2026-11-21 booking-defaults brief landed as PR #309 (`831724f`):
+`docs/briefs/GENIE_BOOKING_DEFAULT_TIMES_AND_OFFSPAN_CARDS.md`. The Genie
+queue is empty. Owner phone screenshots on the 831724f APK passed the
+booking checks (hotel times, Edit wall time, day-before flight card). Gap 4 retention R1 is on main (PR #295, `c566e09`:
 planner, dry-run-first bounded executor, in-memory backend). R2 is on main
 (PR #299, `9fe69ac`: Supabase backend, not wired to any route, scheduler or
 flag). Owner approved the windows 2026-11-19; the hosted-run decision is a
