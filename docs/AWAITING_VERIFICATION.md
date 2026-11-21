@@ -15,6 +15,32 @@ other.
 Commits are identified by SHA only. Earlier revisions numbered work as `#84`,
 `#85` and so on; those numbers cannot be reconciled against `git log`.
 
+## Finding -- Nov 21 2026 -- owner phone spec checks (second screenshot set)
+
+Fourteen screenshots, about 09:25 to 09:37 local, same APK (`30f38a0`). Owner:
+"rest looks good" for the checks sent. Recorded as what the screenshots show.
+
+- SPEC-57: the flight overflow menu offers "Arrival armor"; the hub screen
+  shows the no-verified-content message; it opens in airplane mode. Hotel
+  overflow offers "Driver card". Not yet captured: the Driver Card button on the
+  armor page after a hotel exists after the flight (a hotel for 27 Dec was added
+  after the armor screenshots).
+- SPEC-49: driver card shows "Local name not available"; Show to driver
+  full-screen view and "Done -- return to card" shown. At the largest font the
+  driver card breaks "Memorial" mid-word ("Memoria" and "l"). Not yet captured:
+  Show to driver offline, and the full-screen view at the largest font.
+- SPEC-48: UP NEXT chip and the offline "saved trip" banner shown. No NOW badge
+  captured; the NOW test flight is dated outside the trip and has no card until
+  the off-span fix lands.
+- SPEC-50: swap comparison shows Now, Option, Area, Vibes and "Next option";
+  "Confirm swap" is disabled before a choice and enabled after. Booking cards
+  have no swap icon. The Area row shows the raw code `stone_town`. Not yet
+  captured: Cancel leaves the itinerary unchanged, and a confirmed swap.
+- SPEC-52: not captured.
+- New issue: the Edit Booking sheet shows UTC (hotel check-in 24/12/2026 23:02)
+  while the card shows Zanzibar time (25 Dec 02:02). Added to the brief as Part A
+  rule 13 (SPEC-10, "Decision: default hotel times").
+
 ## Finding -- Nov 21 2026 -- owner phone screenshots on the Nov 21 field APK
 
 APK built on `main` `30f38a0` (SHA-256 `79ac36dc...`, see the table in
