@@ -110,6 +110,53 @@ List<int> _coveredDateKeys(TripNode node) {
   return keys;
 }
 
+/// SPEC-10: the trip's first destination-local calendar date (date only), or
+/// null when the trip has no dates and no nodes. In this order:
+/// the creation context start date, the earliest segment start (over all
+/// segments, not the first listed), then the earliest node's scheduledStart
+/// converted with [toDestinationLocal]. Pure; no I/O.
+DateTime? tripFirstLocalDate({
+  CreationContext? creationContext,
+  List<TripSegment> segments = const [],
+  List<TripNode> nodes = const [],
+}) {
+  final fromContext = _parseLocalDate(creationContext?.startDateLocal);
+  if (fromContext != null) return fromContext;
+
+  DateTime? earliestSegment;
+  for (final seg in segments) {
+    final d = _parseLocalDate(seg.startsOn);
+    if (d != null && (earliestSegment == null || d.isBefore(earliestSegment))) {
+      earliestSegment = d;
+    }
+  }
+  if (earliestSegment != null) return earliestSegment;
+
+  TripNode? earliestNode;
+  for (final node in nodes) {
+    if (earliestNode == null ||
+        node.scheduledStart.isBefore(earliestNode.scheduledStart)) {
+      earliestNode = node;
+    }
+  }
+  if (earliestNode == null) return null;
+  final local =
+      toDestinationLocal(earliestNode.scheduledStart, earliestNode.geoRegion);
+  return DateTime(local.year, local.month, local.day);
+}
+
+/// Parse a yyyy-mm-dd prefix as a local calendar date; null if malformed.
+DateTime? _parseLocalDate(String? raw) {
+  if (raw == null) return null;
+  final m = RegExp(r'^(\d{4})-(\d{2})-(\d{2})').firstMatch(raw.trim());
+  if (m == null) return null;
+  return DateTime(
+    int.parse(m.group(1)!),
+    int.parse(m.group(2)!),
+    int.parse(m.group(3)!),
+  );
+}
+
 // ---- private helpers ----
 
 int _dateKey(DateTime dt) => dt.year * 10000 + dt.month * 100 + dt.day;
