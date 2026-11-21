@@ -172,6 +172,23 @@ recorded here. The Cloud Run revision is still "owner to confirm".
 | APK SHA-256 | `79ac36dc13afc13dd25899c253189c47871a9a8b63b595a02533497b36fd780e` |
 | Device | `RZ8NA06XPCH` (`adb install -r`: Success) |
 
+Field APK built 2026-11-21 from `main` `831724f` (owner Windows; PR #309
+booking defaults, edit wall time and off-span cards). Owner ran
+`flutter build apk --release` with the three dart-defines below, verified
+`git rev-parse HEAD`, then `adb install -r` (Success). The anon key value is
+not recorded here. The Cloud Run revision is still "owner to confirm".
+
+| Field | Value |
+|---|---|
+| Source commit SHA | `831724f85562c7b07b3b2aaf5d26844f40771e98` |
+| Platform | Android |
+| Artifact | Signed release APK (`app-release.apk`, 79.1 MB) |
+| Hosted API hostname | `travel-buddy-196190001420.asia-south1.run.app` |
+| Cloud Run revision | owner to confirm (last recorded hosted revision `00019-nl7`) |
+| Build command | `flutter build apk --release` with `TB_API_BASE_URL`, `TB_SUPABASE_URL` and `TB_SUPABASE_ANON_KEY` dart-defines (anon key only; value not recorded) |
+| APK SHA-256 | `f39afc434878770e27764c32bf603a142707b8a41a81a1a0b399fb3d5d8146f6` |
+| Device | `RZ8NA06XPCH` (`adb install -r`: Success) |
+
 Field APK used 2026-11-15 (owner Windows, `main` `5a4be12`, F2 + F3):
 
 | Field | Value |

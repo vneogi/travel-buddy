@@ -93,7 +93,7 @@
 | Offline vault (SPEC-04) | CACHE FLOOR DONE; RESCUE REMOVED | PR #22 (`b7e10c3`) + PR #23 (`dab16c0`) shipped offline itinerary fallback and cached driver cards. Sep 5 owner decision retired the duplicate Hotel Rescue AppBar shortcut; driver-card action on hotel bookings remains. Offline maps are a post-Bangkok-factory measured prototype with an optional versioned artifact manifest, not a current vendor commitment |
 | Anonymous identity (SPEC-09) | DONE (client + server); Gap 1 JWT on main | Device UUID remains a diagnostic id in secure storage. API credential is a Supabase anonymous JWT (`2460edf`, PR #78). Hosted Cloud Run still accepts the old Anonymous header until Gap 1 is deployed |
 | Itinerary normalisation (SPEC-16) | IMPLEMENTED | Decompose and compose land in services/itinerary_normaliser.py, dual-write in both backends, round-trip equality asserted, wire format unchanged. node_id is stable across reschedules via state_json and now comes from models/ids.py. SPEC-30 (`f8349a8`) writes `trip_edge.observed_duration_minutes` from consecutive arrivals |
-| Booking anchors (SPEC-10) | PARTIAL | Create/edit/delete on main (PR #20, PR #37). Provider-aware paste on main (`fc6926b`). Flight cutoff and hotel origin/return on main (`e7a0457`). Naive wall times are destination-local on main (`933c705`). Hotel stay display on main (`7b62818`). Named slots on create/corridor (`9173b23`). G0 field-fix on main (`2ab8d57`): slot-order packing, `GET /trip/{id}/swap_candidates/{node_id}`, one hotel card per night plus checkout copy. Create-then-book HITL reflow and server-side document consent remain |
+| Booking anchors (SPEC-10) | PARTIAL | Default hotel times, trip-first-day default date, and destination-local Edit wall time on main (PR #309, `831724f`); owner phone screenshots pass on the 831724f APK. Create/edit/delete on main (PR #20, PR #37). Provider-aware paste on main (`fc6926b`). Flight cutoff and hotel origin/return on main (`e7a0457`). Naive wall times are destination-local on main (`933c705`). Hotel stay display on main (`7b62818`). Named slots on create/corridor (`9173b23`). G0 field-fix on main (`2ab8d57`): slot-order packing, `GET /trip/{id}/swap_candidates/{node_id}`, one hotel card per night plus checkout copy. Create-then-book HITL reflow and server-side document consent remain |
 | Forced-choice preferences (SPEC-11) | SPECIFIED | Not implemented. Cold-start preference capture remains after field evidence; SPEC-40 interests are trip constraints, not a durable preference profile |
 | Show driver cards (SPEC-12) | DONE (October slice) | Full-screen offline card from SQLite cache_place, FactView assert/ask/refuse tiers, geoRegion-threaded native script, driver_card_shown/name_confirmed signals. Laos card render passed Sep 5. Native `geo:` remains first choice; Windows falls back to an OpenStreetMap HTTPS hand-off, with visible coordinates last. No Fair Fare until sourced |
 | Region and locale registry (SPEC-13) | SPECIFIED | Not implemented. Rising in priority: a city-onboarding pipeline needs it for bounding box, languages, currency and fare bands. Makes adding a city a row rather than a code change |
@@ -123,7 +123,7 @@
 | PDF itinerary intake (SPEC-39) | DEFERRED | No implementation brief. PDF/OCR, Day Sheet, and print-pack work remain outside the current sequence |
 | Guided Create Trip foundation (SPEC-40) | DONE (PR #61, `ebdea52`) | Five-step destination/date-range/party/interests/review flow backed by deterministic multi-day catalog selection. Post-merge CI and owner Flutter tests passed. Hosted deploy and phone acceptance are not yet repeated for this SHA |
 | Hours-aware scheduling and staged ranking (SPEC-41) | PHASE A COMPLETE (`d1fde14`, `7f25042`) | Create, corridor, and swap refuse known-closed or walking-unreachable target slots; day packing uses per-pair deterministic walking time and later opening windows; swap search/apply share reachability; locked non-hotel anchors remain reachable; cached `max_days` is guaranteed across weekdays and valid interest profiles |
-| Flexible trip span and sparse day editing (SPEC-42) | PARTIAL (`adc99d2`, merged `17e58ac`; Ask-to-Add `0344b4b`; Move `e51513e`; empty-day Add `b6ddecf`; uncatalogued `05d917e`) | Catalog-derived date caps removed; generation fills at most five starter days and empty dates render. Thin typed Ask-to-Add (PR #74), thin typed Move (PR #75), empty-day catalog Add (PR #76), and trip-private uncatalogued Add (PR #77) are on main. Unknown-time excursions remain later. Uncatalogued nodes cannot enter the shared catalog without review |
+| Flexible trip span and sparse day editing (SPEC-42) | PARTIAL (`adc99d2`, merged `17e58ac`; Ask-to-Add `0344b4b`; Move `e51513e`; empty-day Add `b6ddecf`; uncatalogued `05d917e`; off-span cards PR #309 `831724f`) | Catalog-derived date caps removed; generation fills at most five starter days and empty dates render. Thin typed Ask-to-Add (PR #74), thin typed Move (PR #75), empty-day catalog Add (PR #76), and trip-private uncatalogued Add (PR #77) are on main. Unknown-time excursions remain later. Uncatalogued nodes cannot enter the shared catalog without review |
 | Security, privacy and data governance foundation (SPEC-43) | PARTIAL (Gaps 1, 6, 2, 9 ownership+schemas+GPS+derived metadata, 12 navigation privacy, 5 backup+SQLCipher, 7 fail-closed ingest, 8 identity cache+HMAC+canaries+context+purge, 10 ring+422, 11 body/depth+rate+spend on main; hosted G1 live) | Gap 1 JWT `2460edf` hosted on `00014-sbm`. Gap 6 `c65261c`. Gap 2 0026 `0b8125f` (not hosted). Gap 9 ingest ownership `163a14c` (PR #81). Gap 9 closed schemas `fb72545` (PR #98). Gap 9 ranking isolation `9b49fd0` (PR #101). Gap 9 trip-place `cafba3c` (PR #103). Gap 12 HTTPS `6f1dab8` (PR #82). Gap 12 cache keys `290f821` (PR #85). Gap 12 chat URLs `14ce56d` (PR #89). Gap 12 ATS `be89128` (PR #92). Gap 12 trip-route ownership `f486079` (PR #95). Gap 5 backup `1672759` (PR #105). Gap 5 SQLCipher `9cb2324` (PR #107). Gap 5 leftover-open `1de6ff2` (PR #110). Gap 7 fail-closed ingest `e3eaa81` (PR #112). Gap 8 identity cache `62927dd` (PR #114). Gap 10 ring redaction `fbe96f6` (PR #117). Gap 11 body/depth `2077d8d` (PR #119). Gap 9 GPS `08253cb` (PR #122). Gap 9 derived metadata `4265403` (PR #125). Gap 11 rate `c70296c` (PR #128). Gap 11 spend `e7c89b5` (PR #131). Owner G0 APK `76d7e9be...` on `1aa405c` after `pm clear`. Gap 10 422 stripping `04169f9` (PR #134). Gap 8 HMAC `5a9f684` (PR #137). Gap 8 canaries `895045a` (PR #140). Gap 8 trip/date/source-version `606626e` (PR #142). Gap 8 active purge `8fab43b` (PR #145). Remainders: Armor/Play Integrity; `derived_feature` table; Gap 8 SQL path. Hosted 0026 not applied |
 | Backend integrity and future-readiness foundation (SPEC-44) | PHASE A ON MAIN (PR #67, `9a7b9d9`) | Atomic trip/party/graph writes, optimistic version, durable command_id replay, typed conflicts, and hosted 0025. A4/A5, Flutter command queue, and SPEC-43 remain out of this slice |
 | On-trip visible surface (SPEC-45) | PHASE A + FIELD TRUST HYGIENE ON MAIN | Phase A chrome is on the field APK. Phase B field trust hygiene is on main through the post-field merge sequence: capped alerts, current-day/kind-specific outcomes, dead Review removal, and honest empty-swap refusal. Operational place detail, transfer cards, and Rescue remain later |
@@ -155,7 +155,8 @@ the only open-items list; other docs point here.
 Owner return checklist (PENDING, in order). Written 2026-11-17 for the
 owner's device and laptop pause (about four days from 16 Nov). Each step
 names its owner. Nothing here is Genie work unless a step fails and a fix
-brief is written. The Genie queue holds one brief, listed below.
+brief is written. The Genie queue is empty: the 2026-11-21 booking brief
+landed as PR #309 (`831724f`).
 
 1. Laptop, owner (Windows, PowerShell 5.1): `git pull` `main` to at least
    `ca4fc9e`. Run `docs/briefs/LAPTOP_VERIFY.md` steps 0 to 8 as far as
@@ -166,8 +167,9 @@ brief is written. The Genie queue holds one brief, listed below.
    step 3 (backend pytest) is green on Windows after test fixes PR #301,
    #302 and #303; see the dated finding. Other steps not yet reported.
 2. Field APK, owner (Windows): follow `docs/ANDROID_BUILD.md` sections 1
-   to 5 from `main`. Built 2026-11-21 from `30f38a0` (SHA-256 `79ac36dc...`),
-   installed on `RZ8NA06XPCH` (adb install -r: Success). The Cloud Run
+   to 5 from `main`. Built 2026-11-21 from `30f38a0` (SHA-256 `79ac36dc...`)
+   and again from `831724f` (SHA-256 `f39afc43...`, PR #309), both installed
+   on `RZ8NA06XPCH` (adb install -r: Success). The Cloud Run
    revision is still open in `ANDROID_BUILD.md`. Original instructions follow. Dart-defines are `TB_API_BASE_URL`,
    `TB_SUPABASE_URL` and `TB_SUPABASE_ANON_KEY`. Use the anon key only,
    never the service_role key. Reuse the keystore from the earlier field
@@ -324,12 +326,13 @@ deploy + `--update-env-vars`.
 SPEC-57 Arrival Armor slice 1 on main (PR #292, `b8a6ac3`); phone check
 waits for owner return. Fare and scam content waits for owner on-site data.
 
-Genie queue (CI-gated; no phone required): one brief, written 2026-11-21 from
-the owner phone test: `docs/briefs/GENIE_BOOKING_DEFAULT_TIMES_AND_OFFSPAN_CARDS.md`
-(hotel default times 12:00 check-in and 11:00 check-out with no clock picker;
-a booking dated outside the trip span renders as a card; new bookings open the
-calendar on the trip's first day; the Edit sheet shows destination-local time). Owner decisions are
-in SPEC-10 and SPEC-42. Not yet sent to Genie.
+Booking defaults and off-span cards on main (PR #309, `831724f`; brief
+`docs/briefs/GENIE_BOOKING_DEFAULT_TIMES_AND_OFFSPAN_CARDS.md`): hotel
+12:00 check-in and 11:00 check-out with no clock picker; bookings outside
+the trip span render as cards; new bookings open on the trip's first day;
+the Edit sheet shows destination-local time. Owner phone screenshots on the
+831724f APK are recorded in `AWAITING_VERIFICATION.md` (Nov 21, booking
+fixes). Genie queue: empty.
 SPEC-43 Gap 4 retention R1 is on main (PR #295, `c566e09`): planner,
 dry-run-first bounded executor, in-memory backend. R2 is on main (PR #299,
 `9fe69ac`): Supabase retention backend over an injected client, parity with
