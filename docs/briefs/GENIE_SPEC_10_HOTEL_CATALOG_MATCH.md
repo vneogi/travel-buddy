@@ -166,3 +166,65 @@ agent opens the PR.
 The PR description must include: the preflight answers from section 2
 (title-edit path, the December hotel rows), a test-to-production table, R17
 expected failures, any existing test touched, and "no APK in this slice".
+
+## Amendment 1 (planning agent, 2026-11-22, after Genie's preflight)
+
+Preflight facts that change the slice:
+
+- The base is `273fa7c` (`origin/main`, the commit that landed this brief).
+- Section 2 was wrong about the edit path. Rule B7 in
+  `agents/state_machine.py` already re-resolves on `_city_changed or
+  _title_changed`, using the exact match, and it clears `lat` and `lng`
+  first, including coordinates the traveller supplied. That clearing is the
+  real bug.
+- The catalog has no lodging rows. `data/zanzibar_tanzania.json` and
+  `data/nungwi_tanzania.json` carry categories cafe, museum, activity,
+  restaurant, walking_area, street_food, market, viewpoint, nature, bar,
+  massage_spa only. No December hotel can match, exact or normalised.
+
+Decisions:
+
+1. Drop the normalised-name widening (section 3 items 1 and 2, tests 1 to 5)
+   from this slice. A cafe or restaurant pin under a hotel is worse than no
+   pin, a lodging filter has no rows to act on, and dormant code that real
+   data cannot exercise is not worth carrying. It stays parked until hotel
+   rows exist in the catalog. `catalog_coords_for_name` is unchanged.
+2. Keep and fix the edit path (section 3 item 4). Title-only hotel edit:
+   keep re-resolving with the exact match, but clear only catalog-filled
+   coordinates. "Catalog-filled" means the stored lat/lng equal the row the
+   old name matched. If the old name matched no row, or the stored lat/lng
+   differ from that row, the coordinates are the traveller's or the
+   parser's: keep them, whatever the new name matches. If the traveller
+   supplied explicit `lat`/`lng` in the same edit, those win.
+3. City change stays as it is: B7 clears old-city coordinates, then
+   re-resolves. `test_edit_city_change_clears_old_coords` in
+   `tests/test_g0_field_fix_proofs.py` is unchanged.
+4. Replacement tests (`tests/test_spec10_hotel_catalog_match.py`), driven
+   through `POST /api/v1/trip/event`:
+   1. Title-only edit, supplied coords, old name matches no catalog row:
+      coords kept. Fails on main.
+   2. Title-only edit, supplied coords that differ from the row the old name
+      matched: coords kept. Fails on main.
+   3. Title-only edit, catalog-filled hotel, new name has an exact row:
+      re-resolved to the new row.
+   4. Title-only edit, catalog-filled hotel, new name misses: coords
+      cleared.
+   5. City change still clears and re-resolves (existing test stays green;
+      add a pointer, do not duplicate it).
+   6. A flight title edit never gains or loses coordinates.
+   7. Catalog error during an edit: no exception, coordinates unchanged.
+   8. No-network guard: the edit path makes no HTTP call.
+5. R17 (replaces section 4's):
+   - `-r17a`: restore the unconditional clear on title-only edit. Expected
+     failures: 1 and 2.
+   - `-r17b`: treat stored coordinates as catalog-filled whenever the old
+     name matched a row, with no lat/lng comparison. Expected failures: 2
+     only.
+6. Existing tests: setup-only changes allowed, no expected-value edits. If a
+   test needs an expected-value edit, stop and report.
+7. Everything else in sections 1, 5, 6, 7 and 8 stands. "No new network
+   call" now also means no geocoding on the December hotels.
+
+December hotel coordinates are a data problem, not a code problem. They need
+either hotel rows added to the catalog or owner-supplied pins. That waits on
+owner on-site data and is not Genie work in this slice.
