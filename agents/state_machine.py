@@ -844,9 +844,8 @@ class TripStateMachine:
 
                     _old_lat, _old_lng = catalog_coords_for_name(_original_name, new_region)
                     _no_coords = node.lat is None and node.lng is None
-                    _catalog_filled = (
-                        _old_lat is not None and node.lat == _old_lat and node.lng == _old_lng
-                    )
+                    # R17b sabotage: no lat/lng comparison with the old row.
+                    _catalog_filled = _old_lat is not None
                     if _no_coords or _catalog_filled:
                         _cat_lat, _cat_lng = catalog_coords_for_name(_bk_name, new_region)
                         node.lat = _cat_lat
