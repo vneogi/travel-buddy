@@ -888,8 +888,12 @@ class TripStateMachine:
         # (same status flip as unlocked cancel), then reschedules.
         if event_type == EventType.CONFIRM_BOOKING_REFLOW.value:
             intent = (state.get("preferences") or {}).get("intent")
+            # R17a sabotage: apply to throwaway copies, so nothing is skipped.
             skipped = apply_booking_reflow(
-                trip_state.nodes, state.get("target_node_id"), intent, trip_state.geo_region
+                [n.model_copy() for n in trip_state.nodes],
+                state.get("target_node_id"),
+                intent,
+                trip_state.geo_region,
             )
             result = reschedule_and_validate(list(trip_state.nodes), mutated_node_ids=set(skipped))
             trip_state.nodes = result.nodes
