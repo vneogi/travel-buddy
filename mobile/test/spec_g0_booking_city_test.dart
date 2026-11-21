@@ -227,11 +227,13 @@ void main() {
 
     testWidgets('add-mode date outside corridor auto-selects no city',
         (tester) async {
-      // Default scheduledStart is now + 24h (outside Oct 2026 corridor).
+      // Oct 15 is outside the Oct 2026 corridor. Setup passes it explicitly
+      // because the default date is now the trip's first day.
       await tester.pumpWidget(_wrapSheet(
         controller: controller,
         signalService: signalService,
         database: database,
+        initialScheduledDate: DateTime(2026, 10, 15, 12, 0),
       ));
       await tester.pumpAndSettle();
 
@@ -240,6 +242,21 @@ void main() {
       expect(find.text('Vientiane'), findsNothing);
       expect(find.text('Vang Vieng'), findsNothing);
       expect(find.text('Luang Prabang'), findsNothing);
+    });
+
+    testWidgets("add-mode default date picks the first segment's city",
+        (tester) async {
+      // No override: the default date is the earliest segment start
+      // (2026-10-02, Vientiane), so the city control selects Vientiane.
+      await tester.pumpWidget(_wrapSheet(
+        controller: controller,
+        signalService: signalService,
+        database: database,
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('booking_city_control')), findsOneWidget);
+      expect(find.text('Vientiane'), findsOneWidget);
     });
 
     // F1: Segments arrive after the initial post-frame callback.
