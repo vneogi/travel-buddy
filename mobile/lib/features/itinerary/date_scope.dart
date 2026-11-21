@@ -286,10 +286,6 @@ List<CorridorCityGroup> groupNodesByCorridor({
 /// This ensures the UI renders date headers for all dates in the span.
 /// Uses [groupNodesByCalendarDateWithHotelStays] so multi-night hotels
 /// appear on every covered date.
-///
-/// SPEC-42 "nodes outside the span": populated dates before [startLocal]
-/// or after [endLocal] keep their own groups (ascending) before and after
-/// the span. No empty groups are created outside the span.
 List<ItineraryDayGroup> spanAwareDayGroups({
   required List<TripNode> nodes,
   required DateTime startLocal,
@@ -304,25 +300,13 @@ List<ItineraryDayGroup> spanAwareDayGroups({
   final result = <ItineraryDayGroup>[];
   var cursor = DateTime(startLocal.year, startLocal.month, startLocal.day);
   final end = DateTime(endLocal.year, endLocal.month, endLocal.day);
-  final startKey = _dateKey(cursor);
-  final endKey = _dateKey(end);
   while (!cursor.isAfter(end)) {
     final key = _dateKey(cursor);
     result.add(byKey[key] ??
         ItineraryDayGroup(date: cursor, nodes: const []));
     cursor = cursor.add(const Duration(days: 1));
   }
-
-  final before = <ItineraryDayGroup>[];
-  final after = <ItineraryDayGroup>[];
-  for (final key in byKey.keys.toList()..sort()) {
-    if (key < startKey) {
-      before.add(byKey[key]!);
-    } else if (key > endKey) {
-      after.add(byKey[key]!);
-    }
-  }
-  return [...before, ...result, ...after];
+  return result;
 }
 
 

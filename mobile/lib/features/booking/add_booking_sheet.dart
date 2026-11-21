@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/destination_tz.dart' show toDestinationLocal;
 import '../../core/providers.dart';
-import '../itinerary/date_scope.dart' show tripFirstLocalDate;
 import '../itinerary/itinerary_notifier.dart';
 import '../../data/models.dart';
 import '../../theme/spacing.dart';
@@ -41,8 +39,7 @@ class AddBookingSheet extends ConsumerStatefulWidget {
   final TripNode? editNode;
   final DateTime? initialScheduledDate;
 
-  /// [initialScheduledDate] overrides the default start (the trip's first
-  /// day at 12:00) and is used exactly as given.
+  /// [initialScheduledDate] overrides the default (now + 24h) for testing.
   const AddBookingSheet({
     super.key,
     required this.tripId,
@@ -82,6 +79,8 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
   @override
   void initState() {
     super.initState();
+    _scheduledStart =
+        widget.initialScheduledDate ?? DateTime.now().add(const Duration(hours: 24));
     final edit = widget.editNode;
     if (edit != null) {
       _bookingType = edit.bookingType ?? 'flight';
@@ -90,13 +89,11 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
       _titleController.text = edit.venueName;
       _codeController.text = edit.confirmationCode ?? '';
       _notesController.text = edit.bookingNotes ?? '';
-      // SPEC-10 rule 13: edit destination-local wall time, as the card shows.
-      _scheduledStart = _wallTime(edit.scheduledStart, edit.geoRegion);
+      _scheduledStart = edit.scheduledStart;
       _durationMinutes = edit.durationMinutes;
       if (edit.bookingType == 'hotel') {
-        _checkoutDate = _wallTime(
-          edit.scheduledStart.add(Duration(minutes: edit.durationMinutes)),
-          edit.geoRegion,
+        _checkoutDate = edit.scheduledStart.add(
+          Duration(minutes: edit.durationMinutes),
         );
       }
       _importSource = edit.importSource ?? 'manual';
@@ -105,19 +102,10 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
     } else {
       _bookingType = widget.initialBookingType;
       _durationMinutes = _defaultDurations[_bookingType] ?? 180;
-      final override = widget.initialScheduledDate;
-      if (override != null) {
-        // Used exactly as given (callers and tests depend on it).
-        _scheduledStart = override;
-        if (_bookingType == 'hotel') {
-          _checkoutDate = _scheduledStart.add(const Duration(hours: 24));
-        }
-      } else {
-        // SPEC-10: the trip's first day at 12:00, never the phone clock.
-        _scheduledStart = _atHour(_defaultBookingDay(), _kCheckinHour);
-        if (_bookingType == 'hotel') {
-          _checkoutDate = _hotelCheckoutAfter(_scheduledStart);
-        }
+      if (_bookingType == 'hotel') {
+        _checkoutDate = _scheduledStart.add(
+          const Duration(hours: 24),
+        );
       }
     }
     // B2: set city default from date after first frame (ref not yet ready).
@@ -141,57 +129,6 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
     'train': 120,
     'tour': 90,
   };
-
-  // SPEC-10 owner decision: hotel check-in 12:00, check-out 11:00, and a new
-  // non-hotel booking starts at 12:00.
-  static const _kCheckinHour = 12;
-  static const _kCheckoutHour = 11;
-
-  static DateTime _atHour(DateTime day, int hour) =>
-      DateTime(day.year, day.month, day.day, hour);
-
-  /// Check-out at 11:00 on the day after [checkin].
-  static DateTime _hotelCheckoutAfter(DateTime checkin) =>
-      _atHour(DateTime(checkin.year, checkin.month, checkin.day + 1),
-          _kCheckoutHour);
-
-  /// Destination-local wall time of [instant] as a plain (non-UTC) DateTime,
-  /// so toIso8601String() has no Z and the server reads it as local time.
-  static DateTime _wallTime(DateTime instant, String? geoRegion) {
-    final local = toDestinationLocal(instant, geoRegion);
-    return DateTime(local.year, local.month, local.day, local.hour,
-        local.minute, local.second, local.millisecond);
-  }
-
-  /// The trip's first day, or tomorrow when the trip has no dates.
-  DateTime _defaultBookingDay() {
-    final state = ref.read(itineraryControllerProvider(widget.tripId));
-    final first = tripFirstLocalDate(
-      creationContext: state.creationContext,
-      segments: state.segments,
-      nodes: state.nodes,
-    );
-    if (first != null) return first;
-    final now = DateTime.now();
-    return DateTime(now.year, now.month, now.day + 1);
-  }
-
-  static DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
-
-  /// Earlier of today and [initial] (date only), so a trip that started in
-  /// the past never trips the date picker's initialDate assertion.
-  static DateTime _pickerFirstDate(DateTime initial) {
-    final today = _dateOnly(DateTime.now());
-    final init = _dateOnly(initial);
-    return init.isBefore(today) ? init : today;
-  }
-
-  /// Later of today + 365 days and [initial] + 365 days (date only).
-  static DateTime _pickerLastDate(DateTime initial) {
-    final fromToday = _dateOnly(DateTime.now()).add(const Duration(days: 365));
-    final fromInitial = _dateOnly(initial).add(const Duration(days: 365));
-    return fromInitial.isAfter(fromToday) ? fromInitial : fromToday;
-  }
 
   @override
   void dispose() {
@@ -241,8 +178,12 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
     final date = await showDatePicker(
       context: context,
       initialDate: _scheduledStart,
-      firstDate: _pickerFirstDate(_scheduledStart),
-      lastDate: _pickerLastDate(_scheduledStart),
+      firstDate: _isEditMode
+          ? _scheduledStart.isBefore(DateTime.now())
+              ? _scheduledStart
+              : DateTime.now()
+          : DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
     );
     if (date == null || !mounted) return;
     final time = await showTimePicker(
@@ -266,24 +207,38 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
     final date = await showDatePicker(
       context: context,
       initialDate: _scheduledStart,
-      firstDate: _pickerFirstDate(_scheduledStart),
-      lastDate: _pickerLastDate(_scheduledStart),
+      firstDate: _isEditMode
+          ? _scheduledStart.isBefore(DateTime.now())
+              ? _scheduledStart
+              : DateTime.now()
+          : DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
     );
     if (date == null || !mounted) return;
-    // SPEC-10: hotel check-in is the chosen date at 12:00; no time picker.
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(_scheduledStart),
+    );
+    if (!mounted) return;
     setState(() {
-      _scheduledStart = _atHour(date, _kCheckinHour);
+      final hour = time?.hour ?? 15;
+      final minute = time?.minute ?? 0;
+      _scheduledStart = DateTime(
+        date.year, date.month, date.day, hour, minute,
+      );
       // Push checkout forward if it is on or before new check-in.
       if (_checkoutDate != null &&
           !_checkoutDate!.isAfter(_scheduledStart)) {
-        _checkoutDate = _hotelCheckoutAfter(_scheduledStart);
+        _checkoutDate = _scheduledStart.add(const Duration(hours: 24));
       }
     });
     _recomputeCityDefault();
   }
 
   Future<void> _pickCheckoutDate() async {
-    final initial = _checkoutDate ?? _hotelCheckoutAfter(_scheduledStart);
+    final initial = _checkoutDate ?? _scheduledStart.add(
+      const Duration(hours: 24),
+    );
     final date = await showDatePicker(
       context: context,
       initialDate: initial,
@@ -291,9 +246,19 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
       lastDate: _scheduledStart.add(const Duration(days: 365)),
     );
     if (date == null || !mounted) return;
-    // SPEC-10: hotel check-out is the chosen date at 11:00; no time picker.
+    final time = await showTimePicker(
+      context: context,
+      initialTime: _checkoutDate != null
+          ? TimeOfDay.fromDateTime(_checkoutDate!)
+          : const TimeOfDay(hour: 12, minute: 0),
+    );
+    if (!mounted) return;
     setState(() {
-      _checkoutDate = _atHour(date, _kCheckoutHour);
+      final hour = time?.hour ?? 12;
+      final minute = time?.minute ?? 0;
+      _checkoutDate = DateTime(
+        date.year, date.month, date.day, hour, minute,
+      );
     });
   }
 
@@ -503,10 +468,9 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
                     _durationMinutes =
                         _defaultDurations[e.key] ?? 90;
                     if (e.key == 'hotel' && _checkoutDate == null) {
-                      // SPEC-10: same fixed pair as a new hotel.
-                      _scheduledStart =
-                          _atHour(_scheduledStart, _kCheckinHour);
-                      _checkoutDate = _hotelCheckoutAfter(_scheduledStart);
+                      _checkoutDate = _scheduledStart.add(
+                        const Duration(hours: 24),
+                      );
                     } else if (e.key != 'hotel') {
                       _checkoutDate = null;
                     }
