@@ -399,6 +399,7 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
     // sends no event; Confirm sends one confirm_booking_reflow.
     final reflow = result.bookingReflow;
     if (reflow != null && mounted) {
+      setState(() => _saving = false);
       await showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
