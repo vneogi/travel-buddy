@@ -334,8 +334,9 @@ the trip span render as cards; new bookings open on the trip's first day;
 the Edit sheet shows destination-local time. Owner phone screenshots on the
 831724f APK are recorded in `AWAITING_VERIFICATION.md` (Nov 21, booking
 fixes). Genie queue: `docs/briefs/GENIE_SPEC_10_HOTEL_CATALOG_MATCH.md` (SPEC-10
-hotel coordinates from the catalog, slice 2; catalog only, no geocoding API,
-no APK). SPEC-10 slice 1 (HITL reflow) is on main (PR #314, `5052d15`).
+hotel coordinates, slice 2, narrowed by Amendment 1: a title-only hotel edit no
+longer wipes traveller-supplied coordinates; no geocoding API, no APK). The
+catalog has no lodging rows, so December hotel coordinates wait on owner data. SPEC-10 slice 1 (HITL reflow) is on main (PR #314, `5052d15`).
 SPEC-43 Gap 4 retention R1 is on main (PR #295, `c566e09`): planner,
 dry-run-first bounded executor, in-memory backend. R2 is on main (PR #299,
 `9fe69ac`): Supabase retention backend over an injected client, parity with
