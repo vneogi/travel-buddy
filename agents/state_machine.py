@@ -817,17 +817,17 @@ class TripStateMachine:
             if "micro_location" in prefs:
                 node.micro_location = prefs["micro_location"]
 
-            # B7: coords handling -- clear when city or title changes
-            # unless exact catalog match resolves in the new region.
+            # B7: coords handling -- clear when the city changes unless an
+            # exact catalog match resolves in the new region.
             _city_changed = "geo_region" in prefs and new_region != node.geo_region
             _title_changed = "venue_name" in prefs and prefs["venue_name"] != _original_name
-            if _city_changed or _title_changed:
+            _bk_type = prefs.get("booking_type", node.booking_type)
+            _bk_name = prefs.get("venue_name", node.venue_name)
+            if _city_changed:
                 # Clear old-city coords.
                 node.lat = None
                 node.lng = None
                 # Attempt exact catalog re-resolve for hotels only.
-                _bk_type = prefs.get("booking_type", node.booking_type)
-                _bk_name = prefs.get("venue_name", node.venue_name)
                 if _bk_type == "hotel" and new_region:
                     from services.catalog_name_match import catalog_coords_for_name
 
@@ -835,6 +835,27 @@ class TripStateMachine:
                     if _cat_lat is not None and _cat_lng is not None:
                         node.lat = _cat_lat
                         node.lng = _cat_lng
+            elif _title_changed:
+                # SPEC-10 slice 2: a title-only edit replaces only coordinates
+                # the catalog filled (stored lat/lng equal the old name's row).
+                # Supplied coordinates stay, whatever the new name matches.
+                if _bk_type == "hotel" and new_region:
+                    from services.catalog_name_match import catalog_coords_for_name
+
+                    _old_lat, _old_lng = catalog_coords_for_name(_original_name, new_region)
+                    _no_coords = node.lat is None and node.lng is None
+                    _catalog_filled = (
+                        _old_lat is not None and node.lat == _old_lat and node.lng == _old_lng
+                    )
+                    if _no_coords or _catalog_filled:
+                        _cat_lat, _cat_lng = catalog_coords_for_name(_bk_name, new_region)
+                        node.lat = _cat_lat
+                        node.lng = _cat_lng
+                # Explicit coords in the same edit win.
+                if "lat" in prefs:
+                    node.lat = prefs["lat"]
+                if "lng" in prefs:
+                    node.lng = prefs["lng"]
             else:
                 # No city/title change: apply explicit coords from prefs.
                 if "lat" in prefs:
