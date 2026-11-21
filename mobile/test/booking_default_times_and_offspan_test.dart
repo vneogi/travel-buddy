@@ -80,7 +80,10 @@ Widget _sheet(
   TripNode? editNode,
   DateTime? initial,
 }) {
+  // A fresh tree per call: Save pops the only route, so a second pumpWidget
+  // in the same test must not reuse the emptied MaterialApp navigator.
   return ProviderScope(
+    key: UniqueKey(),
     overrides: [
       signalServiceProvider.overrideWithValue(_FakeSignalService()),
       offlineDatabaseProvider.overrideWithValue(_FakeOfflineDatabase()),
