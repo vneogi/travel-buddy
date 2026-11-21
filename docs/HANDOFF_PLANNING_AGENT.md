@@ -63,9 +63,11 @@ test clock hygiene `1ee63e2` (PR #228), and postgres-proof CI image
 known failures; `postgres-proof` is green. Frontend findings F1-F4 in
 `UX_BACKLOG.md` are deferred (owner: frontend after Tanzania core).
 The 2026-11-21 booking-defaults brief landed as PR #309 (`831724f`):
-`docs/briefs/GENIE_BOOKING_DEFAULT_TIMES_AND_OFFSPAN_CARDS.md`. The Genie
-queue is empty. Owner phone screenshots on the 831724f APK passed the
-booking checks (hotel times, Edit wall time, day-before flight card). Gap 4 retention R1 is on main (PR #295, `c566e09`:
+`docs/briefs/GENIE_BOOKING_DEFAULT_TIMES_AND_OFFSPAN_CARDS.md`. Next Genie
+brief: `docs/briefs/GENIE_SPEC_10_BOOKING_HITL_REFLOW.md` (SPEC-10
+create-then-book HITL reflow, slice 1; CI and Windows tests, no APK).
+Owner phone screenshots on the 831724f APK passed the booking checks
+(hotel times, Edit wall time, day-before flight card). Gap 4 retention R1 is on main (PR #295, `c566e09`:
 planner, dry-run-first bounded executor, in-memory backend). R2 is on main
 (PR #299, `9fe69ac`: Supabase backend, not wired to any route, scheduler or
 flag). Owner approved the windows 2026-11-19; the hosted-run decision is a

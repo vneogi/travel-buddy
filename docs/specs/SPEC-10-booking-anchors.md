@@ -366,6 +366,16 @@ Acceptance for this remainder includes:
 - the traveller can choose recovery/departure intent and preview the reflow;
 - dismissing the proposal leaves the itinerary unchanged.
 
+### Slice 1 (HITL reflow; Genie brief 2026-11-21)
+
+Create-then-book: after a persisted `add_booking` or a schedule-changing
+`edit_booking`, if any flexible node on an affected local day sits in a
+slot outside the conservative remaining set, return a closed
+`booking_reflow` proposal. Persist skipped flexible nodes only on
+`confirm_booking_reflow`. Dismiss is no event. Thin existing nodes only;
+do not call `pack_day` or invent venues. Booking save stays immediate.
+Brief: `docs/briefs/GENIE_SPEC_10_BOOKING_HITL_REFLOW.md`.
+
 ## Remainder: edit and delete existing bookings
 
 This is a separate structural-mutation slice after SPEC-31. Date grouping and
