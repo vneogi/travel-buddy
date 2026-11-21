@@ -333,8 +333,9 @@ Booking defaults and off-span cards on main (PR #309, `831724f`; brief
 the trip span render as cards; new bookings open on the trip's first day;
 the Edit sheet shows destination-local time. Owner phone screenshots on the
 831724f APK are recorded in `AWAITING_VERIFICATION.md` (Nov 21, booking
-fixes). Genie queue: empty after PR #314 (SPEC-10 create-then-book HITL
-reflow, slice 1, `5052d15`; no APK).
+fixes). Genie queue: `docs/briefs/GENIE_SPEC_10_HOTEL_CATALOG_MATCH.md` (SPEC-10
+hotel coordinates from the catalog, slice 2; catalog only, no geocoding API,
+no APK). SPEC-10 slice 1 (HITL reflow) is on main (PR #314, `5052d15`).
 SPEC-43 Gap 4 retention R1 is on main (PR #295, `c566e09`): planner,
 dry-run-first bounded executor, in-memory backend. R2 is on main (PR #299,
 `9fe69ac`): Supabase retention backend over an injected client, parity with
