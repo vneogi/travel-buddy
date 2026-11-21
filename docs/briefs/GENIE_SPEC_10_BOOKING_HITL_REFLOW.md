@@ -298,3 +298,31 @@ compute); the planning agent opens the PR.
 PR description must include: test -> production-line table, R17
 expected failures, any existing test touched, and "no APK in this
 slice".
+
+## Amendment 1 (planning agent, 2026-11-21, after Genie's preflight and CI)
+
+Owner decision on hotel days (Option A, chained-stay rule). Shipped in PR #314
+(squash `5052d15`); this amendment records the rule and its tests.
+
+1. Hotel days. A hotel lists its check-in day and, only if checkout is before
+   12:00, its checkout day. Middle nights are never listed.
+2. Chained stay. Omit the checkout-day entry when another hotel checks in on
+   that same local date (test 11c).
+3. Intent scope. `restore_evening` applies only to arrival days. `restore_morning`
+   applies only to checkout or early-departure days; elsewhere it falls back to
+   the conservative set. `keep_open` applies to every listed day.
+4. `intents` is the union of the offered intents in the fixed order of section
+   3, with one entry per `local_date`, computed from this booking only.
+5. Added tests (backend, `tests/test_spec10_booking_hitl_reflow.py`):
+   - 11: hotel check-in 15:00, checkout 11:00 the next day: two days listed.
+   - 11b: three-night hotel with `keep_open`: the middle date's flexible stops
+     stay pending.
+   - 11c: Stone Town checkout 29 Dec 11:00 with a Nungwi check-in 29 Dec 12:00:
+     no 29 Dec entry.
+   - 11d: 12:00 check-in with 11:00 checkout: only the checkout day is listed
+     (a noon check-in squeezes nothing on its own day).
+6. R17 expectations (as sent by Genie and proven on the PR branch):
+   - `-r17a` (confirm skips nothing): backend 3, 4, 5, 14, 11b.
+   - `-r17b` (confirm always conservative): backend 4, 5, 11b; Flutter 17.
+7. Owner-facing intent labels (new copy, in `booking_reflow_sheet.dart`):
+   "Lighter day", "Show and dinner", "Keep the morning", "Keep it open".

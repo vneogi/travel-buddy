@@ -93,8 +93,8 @@
 | Offline vault (SPEC-04) | CACHE FLOOR DONE; RESCUE REMOVED | PR #22 (`b7e10c3`) + PR #23 (`dab16c0`) shipped offline itinerary fallback and cached driver cards. Sep 5 owner decision retired the duplicate Hotel Rescue AppBar shortcut; driver-card action on hotel bookings remains. Offline maps are a post-Bangkok-factory measured prototype with an optional versioned artifact manifest, not a current vendor commitment |
 | Anonymous identity (SPEC-09) | DONE (client + server); Gap 1 JWT on main | Device UUID remains a diagnostic id in secure storage. API credential is a Supabase anonymous JWT (`2460edf`, PR #78). Hosted Cloud Run still accepts the old Anonymous header until Gap 1 is deployed |
 | Itinerary normalisation (SPEC-16) | IMPLEMENTED | Decompose and compose land in services/itinerary_normaliser.py, dual-write in both backends, round-trip equality asserted, wire format unchanged. node_id is stable across reschedules via state_json and now comes from models/ids.py. SPEC-30 (`f8349a8`) writes `trip_edge.observed_duration_minutes` from consecutive arrivals |
-| Booking anchors (SPEC-10) | PARTIAL | Default hotel times, trip-first-day default date, and destination-local Edit wall time on main (PR #309, `831724f`); owner phone screenshots pass on the 831724f APK. Create/edit/delete on main (PR #20, PR #37). Provider-aware paste on main (`fc6926b`). Flight cutoff and hotel origin/return on main (`e7a0457`). Naive wall times are destination-local on main (`933c705`). Hotel stay display on main (`7b62818`). Named slots on create/corridor (`9173b23`). G0 field-fix on main (`2ab8d57`): slot-order packing, `GET /trip/{id}/swap_candidates/{node_id}`, one hotel card per night plus checkout copy. Create-then-book HITL reflow is the next Genie slice (brief
-`GENIE_SPEC_10_BOOKING_HITL_REFLOW.md`). Server-side document consent remains |
+| Booking anchors (SPEC-10) | PARTIAL | Default hotel times, trip-first-day default date, and destination-local Edit wall time on main (PR #309, `831724f`); owner phone screenshots pass on the 831724f APK. Create/edit/delete on main (PR #20, PR #37). Provider-aware paste on main (`fc6926b`). Flight cutoff and hotel origin/return on main (`e7a0457`). Naive wall times are destination-local on main (`933c705`). Hotel stay display on main (`7b62818`). Named slots on create/corridor (`9173b23`). G0 field-fix on main (`2ab8d57`): slot-order packing, `GET /trip/{id}/swap_candidates/{node_id}`, one hotel card per night plus checkout copy. Create-then-book HITL reflow slice 1 is on main (PR #314, `5052d15`; brief
+`GENIE_SPEC_10_BOOKING_HITL_REFLOW.md`, hotel-day rules in its Amendment 1). The stay-interval remainder is still open. Server-side document consent remains |
 | Forced-choice preferences (SPEC-11) | SPECIFIED | Not implemented. Cold-start preference capture remains after field evidence; SPEC-40 interests are trip constraints, not a durable preference profile |
 | Show driver cards (SPEC-12) | DONE (October slice) | Full-screen offline card from SQLite cache_place, FactView assert/ask/refuse tiers, geoRegion-threaded native script, driver_card_shown/name_confirmed signals. Laos card render passed Sep 5. Native `geo:` remains first choice; Windows falls back to an OpenStreetMap HTTPS hand-off, with visible coordinates last. No Fair Fare until sourced |
 | Region and locale registry (SPEC-13) | SPECIFIED | Not implemented. Rising in priority: a city-onboarding pipeline needs it for bounding box, languages, currency and fare bands. Makes adding a city a row rather than a code change |
@@ -156,8 +156,8 @@ the only open-items list; other docs point here.
 Owner return checklist (PENDING, in order). Written 2026-11-17 for the
 owner's device and laptop pause (about four days from 16 Nov). Each step
 names its owner. Nothing here is Genie work unless a step fails and a fix
-brief is written. The Genie queue holds
-`docs/briefs/GENIE_SPEC_10_BOOKING_HITL_REFLOW.md` (SPEC-10 slice 1).
+brief is written. The Genie queue is empty:
+SPEC-10 HITL reflow slice 1 is on main (PR #314, `5052d15`; no APK needed).
 
 1. Laptop, owner (Windows, PowerShell 5.1): `git pull` `main` to at least
    `ca4fc9e`. Run `docs/briefs/LAPTOP_VERIFY.md` steps 0 to 8 as far as
@@ -333,8 +333,8 @@ Booking defaults and off-span cards on main (PR #309, `831724f`; brief
 the trip span render as cards; new bookings open on the trip's first day;
 the Edit sheet shows destination-local time. Owner phone screenshots on the
 831724f APK are recorded in `AWAITING_VERIFICATION.md` (Nov 21, booking
-fixes). Genie queue: `docs/briefs/GENIE_SPEC_10_BOOKING_HITL_REFLOW.md`
-(SPEC-10 create-then-book HITL reflow, slice 1; no APK).
+fixes). Genie queue: empty after PR #314 (SPEC-10 create-then-book HITL
+reflow, slice 1, `5052d15`; no APK).
 SPEC-43 Gap 4 retention R1 is on main (PR #295, `c566e09`): planner,
 dry-run-first bounded executor, in-memory backend. R2 is on main (PR #299,
 `9fe69ac`): Supabase retention backend over an injected client, parity with

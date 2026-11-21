@@ -17,7 +17,8 @@ URLs, ATS, and trip-route ownership are on `main` through
 `8fab43b`. Hosted 0025 is applied. Cloud Run
 `travel-buddy-00015-x8d` is the live untagged revision (Gap 1 JWKS; Tanzania packs loaded).
 SPEC-42 remains PARTIAL (unknown-time excursions later). Create-then-book
-HITL reflow remains. Trip-optional Ask remains. What Now Phase B GPS
+HITL reflow slice 1 is on main (PR #314, `5052d15`); the stay-interval
+remainder is open. Trip-optional Ask remains. What Now Phase B GPS
 remains blocked on remaining SPEC-43. Gap 12 navigation privacy is
 landed; lock-screen waits on OS push. Gap 5 backup
 `1672759` (PR #105) and SQLCipher `9cb2324` (PR #107)
@@ -63,9 +64,10 @@ test clock hygiene `1ee63e2` (PR #228), and postgres-proof CI image
 known failures; `postgres-proof` is green. Frontend findings F1-F4 in
 `UX_BACKLOG.md` are deferred (owner: frontend after Tanzania core).
 The 2026-11-21 booking-defaults brief landed as PR #309 (`831724f`):
-`docs/briefs/GENIE_BOOKING_DEFAULT_TIMES_AND_OFFSPAN_CARDS.md`. Next Genie
-brief: `docs/briefs/GENIE_SPEC_10_BOOKING_HITL_REFLOW.md` (SPEC-10
-create-then-book HITL reflow, slice 1; CI and Windows tests, no APK).
+`docs/briefs/GENIE_BOOKING_DEFAULT_TIMES_AND_OFFSPAN_CARDS.md`. SPEC-10
+create-then-book HITL reflow slice 1 landed as PR #314 (`5052d15`) with CI
+green and no APK. The Genie queue is empty; the next slice needs a planning
+decision.
 Owner phone screenshots on the 831724f APK passed the booking checks
 (hotel times, Edit wall time, day-before flight card). Gap 4 retention R1 is on main (PR #295, `c566e09`:
 planner, dry-run-first bounded executor, in-memory backend). R2 is on main
