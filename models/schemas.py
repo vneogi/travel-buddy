@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Literal, Optional, TypedDict
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from models.ids import generate_node_id
 
@@ -54,6 +54,7 @@ class EventType(str, Enum):
     EDIT_BOOKING = "edit_booking"
     DELETE_BOOKING = "delete_booking"
     MOVE_ACTIVITY = "move_activity"  # SPEC-42 thin typed Move
+    CONFIRM_BOOKING_REFLOW = "confirm_booking_reflow"  # SPEC-10 HITL reflow
 
 
 # ==============================================================================
@@ -317,6 +318,27 @@ class AskResponseEnvelope(BaseModel):
     what_now: Optional[WhatNowResult] = None
 
 
+class BookingReflowDay(BaseModel):
+    """SPEC-10 HITL reflow: one affected local day of a booking."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    local_date: str
+    conservative_slots: List[str]
+    extra_node_ids: List[str]
+
+
+class BookingReflow(BaseModel):
+    """SPEC-10 HITL reflow proposal (closed shape; persisted only on confirm)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    booking_node_id: str
+    intents: List[str]
+    default_intent: str = "conservative"
+    days: List[BookingReflowDay]
+
+
 class TripEventResponse(BaseModel):
     """Response after processing a trip event."""
 
@@ -331,6 +353,7 @@ class TripEventResponse(BaseModel):
     food_disclaimer: Optional[str] = None
     schedule_warnings: List[str] = []
     ask_response: Optional[AskResponseEnvelope] = None
+    booking_reflow: Optional[BookingReflow] = None  # SPEC-10 HITL reflow
 
 
 class AddCandidate(BaseModel):

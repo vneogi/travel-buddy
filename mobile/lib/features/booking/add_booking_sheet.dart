@@ -9,6 +9,7 @@ import '../../data/models.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import 'booking_parser.dart';
+import 'booking_reflow_sheet.dart';
 import '../driver_card/driver_card_helpers.dart';
 
 /// Parse a yyyy-mm-dd string as a local-midnight DateTime.
@@ -393,6 +394,29 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
           )
           .catchError((_) {});
     } catch (_) {}
+
+    // SPEC-10 HITL reflow: offer to thin the day before closing. Not now
+    // sends no event; Confirm sends one confirm_booking_reflow.
+    final reflow = result.bookingReflow;
+    if (reflow != null && mounted) {
+      setState(() => _saving = false);
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        builder: (_) => BookingReflowSheet(
+          reflow: reflow,
+          nodes: result.updatedNodes,
+          onConfirm: (intent) => ref
+              .read(itineraryControllerProvider(widget.tripId).notifier)
+              .applyEvent(
+                type: EventType.confirmBookingReflow,
+                message: 'Adjust this day',
+                targetNodeId: reflow.bookingNodeId,
+                preferences: {'intent': intent},
+              ),
+        ),
+      );
+    }
 
     if (mounted) Navigator.of(context).pop();
   }

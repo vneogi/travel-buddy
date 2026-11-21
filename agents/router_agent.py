@@ -88,6 +88,7 @@ class RouterAgent:
             EventType.ASK_INFO,
             EventType.EDIT_BOOKING,
             EventType.DELETE_BOOKING,
+            EventType.CONFIRM_BOOKING_REFLOW,
         }
         if event_type in [e.value for e in light_events]:
             return (RoutingTier.LIGHT, 0.95)

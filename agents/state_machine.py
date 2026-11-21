@@ -64,6 +64,7 @@ from services.maps_service import maps_service
 from services.opening_hours import HoursResult as _HoursResult
 from services.transit import walking_minutes as _walking_minutes
 from services.opening_hours import hours_for_slot as _hours_for_slot
+from services.booking_reflow import apply_booking_reflow, build_booking_reflow
 from services.scheduler import reschedule_and_validate
 from agents.router_agent import router_agent
 from services.llm_service import llm_service
@@ -115,6 +116,7 @@ STRUCTURAL_EDIT_EVENTS = {
     EventType.EDIT_BOOKING.value,
     EventType.DELETE_BOOKING.value,
     EventType.MOVE_ACTIVITY.value,
+    EventType.CONFIRM_BOOKING_REFLOW.value,
 }
 VENUE_REQUIRED_EVENTS = {
     EventType.SWAP_ACTIVITY.value,
@@ -407,6 +409,8 @@ class TripStateMachine:
         }
         if state.get("booking_refused"):
             result["booking_refused"] = True
+        if state.get("booking_reflow") is not None:
+            result["booking_reflow"] = state["booking_reflow"]
         if "ask_response" in state:
             result["ask_response"] = state["ask_response"]
         return result
@@ -748,6 +752,10 @@ class TripStateMachine:
             result = reschedule_and_validate(nodes, mutated_node_ids={booking_node.node_id})
             trip_state.nodes = result.nodes
             state["schedule_warnings"] = result.warnings
+            # SPEC-10 HITL reflow: propose thinning; nothing is skipped here.
+            state["booking_reflow"] = build_booking_reflow(
+                trip_state.nodes, booking_node.node_id, trip_state.geo_region
+            )
             return state
 
         # SPEC-10: Edit an existing booking (patch supplied fields only)
@@ -788,6 +796,7 @@ class TripStateMachine:
 
             # --- Phase 2: all validated, now apply atomically ---
             schedule_changed = False
+            time_changed = False  # SPEC-10 HITL reflow trigger
             _original_name = node.venue_name
             if "venue_name" in prefs:
                 node.venue_name = prefs["venue_name"]
@@ -804,6 +813,7 @@ class TripStateMachine:
                 if new_duration != node.duration_minutes:
                     node.duration_minutes = new_duration
                     schedule_changed = True
+                    time_changed = True
             if "micro_location" in prefs:
                 node.micro_location = prefs["micro_location"]
 
@@ -839,6 +849,7 @@ class TripStateMachine:
             if new_start != node.scheduled_start:
                 node.scheduled_start = new_start
                 schedule_changed = True
+                time_changed = True
 
             # node_kind and is_locked are NEVER changed by edit
             assert node.node_kind == "booking"
@@ -858,6 +869,10 @@ class TripStateMachine:
                 result = reschedule_and_validate(nodes, mutated_node_ids={target_id})
                 trip_state.nodes = result.nodes
                 state["schedule_warnings"] = result.warnings
+            if time_changed:
+                state["booking_reflow"] = build_booking_reflow(
+                    trip_state.nodes, target_id, trip_state.geo_region
+                )
             return state
 
         # SPEC-10: Delete an existing booking (remove, not skip)
@@ -865,6 +880,18 @@ class TripStateMachine:
             target_id = state.get("target_node_id")
             trip_state.nodes = [n for n in trip_state.nodes if n.node_id != target_id]
             result = reschedule_and_validate(list(trip_state.nodes), mutated_node_ids=set())
+            trip_state.nodes = result.nodes
+            state["schedule_warnings"] = result.warnings
+            return state
+
+        # SPEC-10 HITL reflow: confirmed intent skips flexible nodes in place
+        # (same status flip as unlocked cancel), then reschedules.
+        if event_type == EventType.CONFIRM_BOOKING_REFLOW.value:
+            intent = (state.get("preferences") or {}).get("intent")
+            skipped = apply_booking_reflow(
+                trip_state.nodes, state.get("target_node_id"), intent, trip_state.geo_region
+            )
+            result = reschedule_and_validate(list(trip_state.nodes), mutated_node_ids=set(skipped))
             trip_state.nodes = result.nodes
             state["schedule_warnings"] = result.warnings
             return state
@@ -1096,6 +1123,10 @@ class TripStateMachine:
 
         if state["event_type"] == EventType.DELETE_BOOKING.value:
             state["response"] = "Booking removed from your itinerary."
+            return state
+
+        if state["event_type"] == EventType.CONFIRM_BOOKING_REFLOW.value:
+            state["response"] = "Day adjusted around your booking."
             return state
 
         # SPEC-25: Grounded trip-scoped Ask -- retrieval-first

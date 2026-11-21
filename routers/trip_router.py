@@ -591,6 +591,35 @@ async def process_trip_event(
                 },
             )
 
+    # --- SPEC-10 HITL reflow confirm (light, no quota, no LLM) ---
+    if request.event_type == EventType.CONFIRM_BOOKING_REFLOW:
+        from services.booking_reflow import BOOKING_REFLOW_INTENTS
+
+        booking = next(
+            (n for n in trip.nodes if n.node_id == request.target_node_id),
+            None,
+        )
+        if (
+            booking is None
+            or booking.node_kind != "booking"
+            or booking.status == NodeStatus.SKIPPED
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={
+                    "error": "booking_reflow_conflict",
+                    "message": "This booking is no longer available to adjust.",
+                },
+            )
+        if (request.preferences or {}).get("intent") not in BOOKING_REFLOW_INTENTS:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail={
+                    "error": "invalid_reflow_intent",
+                    "message": "Choose one of the offered options.",
+                },
+            )
+
     if request.event_type == EventType.SWAP_ACTIVITY:
         target = next(
             (n for n in trip.nodes if n.node_id == request.target_node_id),
@@ -776,6 +805,7 @@ async def process_trip_event(
             food_disclaimer=FOOD_DISCLAIMER,
             schedule_warnings=result.get("schedule_warnings") or [],
             ask_response=result.get("ask_response"),
+            booking_reflow=result.get("booking_reflow"),
         ).model_dump(
             mode="json",
             exclude={"trip_id", "version", "updated_nodes"},
@@ -820,6 +850,7 @@ async def process_trip_event(
         food_disclaimer=FOOD_DISCLAIMER,
         schedule_warnings=result.get("schedule_warnings") or [],
         ask_response=result.get("ask_response"),
+        booking_reflow=result.get("booking_reflow"),
     )
 
 
