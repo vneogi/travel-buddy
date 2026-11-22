@@ -66,9 +66,13 @@ known failures; `postgres-proof` is green. Frontend findings F1-F4 in
 The 2026-11-21 booking-defaults brief landed as PR #309 (`831724f`):
 `docs/briefs/GENIE_BOOKING_DEFAULT_TIMES_AND_OFFSPAN_CARDS.md`. SPEC-10
 create-then-book HITL reflow slice 1 landed as PR #314 (`5052d15`) with CI
-green and no APK. The Genie queue is empty. SPEC-10 hotel coordinates slice 2 (title-edit
+green and no APK. Genie queue: `docs/briefs/GENIE_SPEC_42_UNKNOWN_TIME_EXCURSIONS.md`
+(Morning/Afternoon/Whole-day windows, review before skip). SPEC-10 hotel coordinates slice 2 (title-edit
 keeps supplied coordinates) is on main (PR #320, `ff8334c`). December hotel
-pins wait on owner data.
+pins wait on owner data. Parked 2026-11-22: the lodging-pin slice (start only
+with the real booking name, region and long-press coordinates) and the trip
+wipe (owner asks later; hosted and phone cache are separate stores). Places-API
+autocomplete is a later explicit-lookup idea, not geocoding on save.
 Owner phone screenshots on the 831724f APK passed the booking checks
 (hotel times, Edit wall time, day-before flight card). Gap 4 retention R1 is on main (PR #295, `c566e09`:
 planner, dry-run-first bounded executor, in-memory backend). R2 is on main

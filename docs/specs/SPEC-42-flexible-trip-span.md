@@ -136,6 +136,17 @@ identity and source needed to render it honestly. It does not enter the shared
 catalog, ranking pool, or another traveller's results until the SPEC-17/47
 review lifecycle accepts it.
 
+### Decision: unknown-time excursion windows (owner, 2026-11-22)
+
+A trip-private Add may take a window instead of a clock time: Morning
+(`morning_tour` and `lunch`), Afternoon (`afternoon_evening_tour`), or Whole
+day (`morning_tour`, `lunch`, `afternoon_evening_tour`; dinner is kept). The
+card shows the window label, not a clock time. If the window covers flexible
+stops already on that day, a review sheet lists the stops that would be
+skipped and nothing changes until the traveller confirms. A booking inside
+the window refuses the add. Brief:
+`docs/briefs/GENIE_SPEC_42_UNKNOWN_TIME_EXCURSIONS.md`.
+
 ### Move between days
 
 A flexible activity can move to another date/time inside the trip span. The

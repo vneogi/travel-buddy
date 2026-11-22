@@ -282,7 +282,7 @@ Backend, open but not trip-critical: Gap 4 durable tombstone on main (#254; 0027
 retention R1 on main (#295; R2 Supabase backend and any hosted run await owner decisions), zip/PDF; Gap 9 `derived_feature`; Gap 8 unused SQL cache path;
 Gap 10 log-bucket retention; Gap 11 gateway and Play Integrity; SPEC-27
 and SPEC-24 (G1 dependencies); SPEC-42 unknown-time excursions; SPEC-10
-create-then-book reflow; SPEC-25 trip-optional Ask; SPEC-46 Phase B
+lodging pins (parked until real bookings); SPEC-25 trip-optional Ask; SPEC-46 Phase B
 (after SPEC-43); SPEC-45 place detail and transfer cards; optional bar
 start-time floor.
 
@@ -333,10 +333,19 @@ Booking defaults and off-span cards on main (PR #309, `831724f`; brief
 the trip span render as cards; new bookings open on the trip's first day;
 the Edit sheet shows destination-local time. Owner phone screenshots on the
 831724f APK are recorded in `AWAITING_VERIFICATION.md` (Nov 21, booking
-fixes). Genie queue: empty. SPEC-10 hotel coordinates slice 2 is on main (PR #320,
+fixes). Genie queue: `docs/briefs/GENIE_SPEC_42_UNKNOWN_TIME_EXCURSIONS.md`
+(SPEC-42 unknown-time excursions, slice 1; CI and Windows tests, no APK).
+SPEC-10 hotel coordinates slice 2 is on main (PR #320,
 `ff8334c`, brief `GENIE_SPEC_10_HOTEL_CATALOG_MATCH.md` Amendment 1): a title-only
 hotel edit keeps traveller-supplied coordinates. The catalog has no lodging
 rows, so December hotel coordinates wait on owner data (names and pins). SPEC-10 slice 1 (HITL reflow) is on main (PR #314, `5052d15`).
+Parked 2026-11-22 (owner): the lodging-pin data slice (one exact-name pin per
+real hotel, offline, no vendor) waits until the final December bookings exist;
+the drafted brief was never started and no branch exists. The trip wipe is also
+parked: current trips are test data, and the owner will ask for a clean slate
+(hosted trips plus the phone cache) in a few weeks. Address or hotel
+autocomplete from a places API is a later, explicit-lookup idea only (see
+`UX_BACKLOG.md`); no geocoding on save.
 SPEC-43 Gap 4 retention R1 is on main (PR #295, `c566e09`): planner,
 dry-run-first bounded executor, in-memory backend. R2 is on main (PR #299,
 `9fe69ac`): Supabase retention backend over an injected client, parity with

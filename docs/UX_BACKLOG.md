@@ -351,6 +351,16 @@ grid) is close to ours but more complete. Fold in when the designer engages.
 
 ---
 
+### P3 -- Hotel lookup in the booking sheet (owner idea, 2026-11-22)
+
+Ecommerce-style address autofill calls a places API (Google Places, Mapbox,
+HERE) per keystroke and fills address and coordinates from the vendor's data.
+Not now. If built, it is an explicit "look up this hotel" action in the booking
+sheet only, never silent geocoding on save, with a cost and privacy note and
+the vendor attribution. Until then hotels get coordinates from an offline
+exact-name lodging pin (SPEC-10, parked until real bookings). Do not build an
+in-house hotel or postcode database.
+
 ## 2. Sequencing rule (important)
 **UX polish does not capture moat data.** The spine work above is shipped. The
 remaining product order is:
