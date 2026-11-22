@@ -44,7 +44,7 @@ REFUSAL_COPY: Dict[str, str] = {
 # SPEC-42 unknown-time excursion windows (closed set). Dinner is never
 # consumed. whole_day reuses the SPEC-41 whole-day set.
 TIME_WINDOWS: Dict[str, tuple] = {
-    "morning": ("morning_tour", "lunch"),
+    "morning": ("morning_tour",),  # R17b sabotage: drop lunch
     "afternoon": ("afternoon_evening_tour",),
     "whole_day": tuple(s for s in SLOT_ORDER if s in _WHOLE_DAY_CONSUMED),
 }
