@@ -17,9 +17,11 @@ URLs, ATS, and trip-route ownership are on `main` through
 `8fab43b`. Hosted 0025 is applied. Cloud Run
 `travel-buddy-00015-x8d` is the live untagged revision (Gap 1 JWKS; Tanzania packs loaded).
 SPEC-42 remains PARTIAL (unknown-time windows slice 1 on main, PR #326
-`df5c10c`; cancel does not restore skipped stops). Create-then-book
+`df5c10c`; cancel restores skipped stops on main, PR #343 `081626a`).
+Create-then-book
 HITL reflow slice 1 is on main (PR #314, `5052d15`); the stay-interval
-remainder is open. Trip-optional Ask remains. What Now Phase B GPS
+remainder is open. Trip-optional Ask is on main (PRs #333 and #338; phone
+check waits for hosted). What Now Phase B GPS
 remains blocked on remaining SPEC-43. Gap 12 navigation privacy is
 landed; lock-screen waits on OS push. Gap 5 backup
 `1672759` (PR #105) and SQLCipher `9cb2324` (PR #107)
@@ -70,10 +72,10 @@ create-then-book HITL reflow slice 1 landed as PR #314 (`5052d15`) with CI
 green and no APK. SPEC-25 trip-optional Ask: slice 1 backend (PR #333,
 `2da033c`) and slice 2 Flutter entry (PR #338, `5b00b61`: Home Ask bar, `/ask`
 screen, region picker defaulting to the most recent trip) are on main; the phone
-check waits for a hosted deploy carrying #333. Genie queue: SPEC-42 cancel
-restores skipped stops (`docs/briefs/GENIE_SPEC_42_CANCEL_RESTORES_SKIPPED.md`,
-backend only). The SPEC-57 brief re-sent 2026-11-22 was a mistake (slice 1 is PR #292)
-and is withdrawn.
+check waits for a hosted deploy carrying #333. SPEC-42 cancel restores
+skipped stops is on main (PR #343, `081626a`); phone check waits for a hosted
+deploy carrying #343. Genie queue: empty. The SPEC-57 brief re-sent 2026-11-22
+was a mistake (slice 1 is PR #292) and is withdrawn.
 SPEC-42 unknown-time windows on main (PR #326, `df5c10c`). SPEC-10 hotel coordinates slice 2 (title-edit
 keeps supplied coordinates) is on main (PR #320, `ff8334c`). December hotel
 pins wait on owner data. Parked 2026-11-22: the lodging-pin slice (start only
@@ -478,7 +480,8 @@ Historical context (do not treat as current work):
    create-then-book HITL reflow exists.
 - SPEC-25 trip-scoped grounded Ask is on main (`30a4270`). Laptop Flutter
    Ask envelope tests passed. Owner Windows `pytest -q` on `3e5ec6d` is
-   green (details in AWAITING_VERIFICATION). Trip-optional Ask remains.
+   green (details in AWAITING_VERIFICATION). Trip-optional Ask is on main
+   (PRs #333 and #338; phone check waits for hosted).
 - Hotel wall-time conversion, weather empty-key, and swap canned copy
    after `no_candidates` are on main (`933c705`).
 - Specified remainders are sequenced in

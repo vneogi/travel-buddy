@@ -361,6 +361,14 @@ the vendor attribution. Until then hotels get coordinates from an offline
 exact-name lodging pin (SPEC-10, parked until real bookings). Do not build an
 in-house hotel or postcode database.
 
+### P3 -- Booking accepted over an active excursion (SPEC-42 follow-up, 2026-11-23)
+
+Found while building cancel-restores (PR #343): `add_booking` accepts a locked
+tour over an active excursion window with no reflow proposal and no warning.
+Cancel then correctly leaves the clashing stop skipped. A later brief should
+warn or refuse when a booking lands inside an active window, without widening
+cancel-restore. Not started.
+
 ## 2. Sequencing rule (important)
 **UX polish does not capture moat data.** The spine work above is shipped. The
 remaining product order is:
@@ -375,7 +383,8 @@ remaining product order is:
    typed Ask-to-Add (`0344b4b`), thin typed Move (`e51513e`),
    empty-day catalog Add (`b6ddecf`), and trip-private uncatalogued Add
    (`05d917e`) are on `main`. Unknown-time excursions slice 1 is on main
-   (PR #326, `df5c10c`). Catalog place prompts and weather-day drill-down remain
+   (PR #326, `df5c10c`). Cancel restores skipped stops is on main
+   (PR #343, `081626a`). Catalog place prompts and weather-day drill-down remain
    recorded SPEC-25 / SPEC-29 follow-ups. SPEC-43 still closes all
    twelve security/privacy gaps before another person uses the app or
    production LLM processing handles personal trip data.

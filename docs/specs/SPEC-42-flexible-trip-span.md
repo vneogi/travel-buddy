@@ -7,10 +7,9 @@
 > uncatalogued Add merged as `05d917e` (PR #77). Unknown-time excursion
 > windows slice 1 on main (PR #326, `df5c10c`; Morning/Afternoon/Whole day,
 > review before skip; Move and swap refuse window nodes). Cancelling an
-> excursion does not restore skipped stops (known gap). Brief queued:
-> `docs/briefs/GENIE_SPEC_42_CANCEL_RESTORES_SKIPPED.md` (owner decisions
-> 2026-11-22: restore automatically and say so in the reply; a stop that now
-> clashes stays skipped and is named). Hosted/phone not done for these SHAs.
+> excursion restores the stops it skipped on main (PR #343, `081626a`;
+> brief `GENIE_SPEC_42_CANCEL_RESTORES_SKIPPED.md`). Hosted/phone not done
+> for these SHAs.
 >
 > Depends on SPEC-31 date-scoped rendering, SPEC-40 guided creation, and
 > SPEC-41 feasibility-first scheduling. Starter generation is still at most
@@ -152,6 +151,17 @@ skipped and nothing changes until the traveller confirms. A booking inside
 the window refuses the add. Move and swap refuse a window node (code
 `window_node`); cancel stays allowed. Brief:
 `docs/briefs/GENIE_SPEC_42_UNKNOWN_TIME_EXCURSIONS.md`.
+
+### Decision: cancel restores skipped stops (owner, 2026-11-22)
+
+Cancelling an excursion restores the stops that excursion skipped,
+automatically, with the same `node_id`s. The reply says so (singular and
+plural wording). A stop that now clashes with a locked booking or another
+window stays skipped and is named. Only stops tagged at confirm time are
+restored; booking reflow and ordinary cancels are not. Excursions added
+before PR #343 have no tag and cancel as before. On main as PR #343
+(`081626a`). Known follow-up: a booking can be accepted over an active
+excursion window without a warning (recorded in `UX_BACKLOG.md`).
 
 ### Move between days
 

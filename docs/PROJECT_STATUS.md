@@ -124,7 +124,7 @@
 | PDF itinerary intake (SPEC-39) | DEFERRED | No implementation brief. PDF/OCR, Day Sheet, and print-pack work remain outside the current sequence |
 | Guided Create Trip foundation (SPEC-40) | DONE (PR #61, `ebdea52`) | Five-step destination/date-range/party/interests/review flow backed by deterministic multi-day catalog selection. Post-merge CI and owner Flutter tests passed. Hosted deploy and phone acceptance are not yet repeated for this SHA |
 | Hours-aware scheduling and staged ranking (SPEC-41) | PHASE A COMPLETE (`d1fde14`, `7f25042`) | Create, corridor, and swap refuse known-closed or walking-unreachable target slots; day packing uses per-pair deterministic walking time and later opening windows; swap search/apply share reachability; locked non-hotel anchors remain reachable; cached `max_days` is guaranteed across weekdays and valid interest profiles |
-| Flexible trip span and sparse day editing (SPEC-42) | PARTIAL (`adc99d2`, merged `17e58ac`; Ask-to-Add `0344b4b`; Move `e51513e`; empty-day Add `b6ddecf`; uncatalogued `05d917e`; off-span cards PR #309 `831724f`) | Catalog-derived date caps removed; generation fills at most five starter days and empty dates render. Thin typed Ask-to-Add (PR #74), thin typed Move (PR #75), empty-day catalog Add (PR #76), and trip-private uncatalogued Add (PR #77) are on main. Unknown-time excursions remain later. Uncatalogued nodes cannot enter the shared catalog without review |
+| Flexible trip span and sparse day editing (SPEC-42) | PARTIAL (`adc99d2`, merged `17e58ac`; Ask-to-Add `0344b4b`; Move `e51513e`; empty-day Add `b6ddecf`; uncatalogued `05d917e`; off-span cards PR #309 `831724f`; unknown-time windows PR #326 `df5c10c`; cancel restores PR #343 `081626a`) | Catalog-derived date caps removed; generation fills at most five starter days and empty dates render. Thin typed Ask-to-Add, Move, empty-day catalog Add, trip-private uncatalogued Add, unknown-time excursion windows, and cancel-restores-skipped are on main. Hosted/phone not done for the cancel-restore SHA. Uncatalogued nodes cannot enter the shared catalog without review |
 | Security, privacy and data governance foundation (SPEC-43) | PARTIAL (Gaps 1, 6, 2, 9 ownership+schemas+GPS+derived metadata, 12 navigation privacy, 5 backup+SQLCipher, 7 fail-closed ingest, 8 identity cache+HMAC+canaries+context+purge, 10 ring+422, 11 body/depth+rate+spend on main; hosted G1 live) | Gap 1 JWT `2460edf` hosted on `00014-sbm`. Gap 6 `c65261c`. Gap 2 0026 `0b8125f` (not hosted). Gap 9 ingest ownership `163a14c` (PR #81). Gap 9 closed schemas `fb72545` (PR #98). Gap 9 ranking isolation `9b49fd0` (PR #101). Gap 9 trip-place `cafba3c` (PR #103). Gap 12 HTTPS `6f1dab8` (PR #82). Gap 12 cache keys `290f821` (PR #85). Gap 12 chat URLs `14ce56d` (PR #89). Gap 12 ATS `be89128` (PR #92). Gap 12 trip-route ownership `f486079` (PR #95). Gap 5 backup `1672759` (PR #105). Gap 5 SQLCipher `9cb2324` (PR #107). Gap 5 leftover-open `1de6ff2` (PR #110). Gap 7 fail-closed ingest `e3eaa81` (PR #112). Gap 8 identity cache `62927dd` (PR #114). Gap 10 ring redaction `fbe96f6` (PR #117). Gap 11 body/depth `2077d8d` (PR #119). Gap 9 GPS `08253cb` (PR #122). Gap 9 derived metadata `4265403` (PR #125). Gap 11 rate `c70296c` (PR #128). Gap 11 spend `e7c89b5` (PR #131). Owner G0 APK `76d7e9be...` on `1aa405c` after `pm clear`. Gap 10 422 stripping `04169f9` (PR #134). Gap 8 HMAC `5a9f684` (PR #137). Gap 8 canaries `895045a` (PR #140). Gap 8 trip/date/source-version `606626e` (PR #142). Gap 8 active purge `8fab43b` (PR #145). Remainders: Armor/Play Integrity; `derived_feature` table; Gap 8 SQL path. Hosted 0026 not applied |
 | Backend integrity and future-readiness foundation (SPEC-44) | PHASE A ON MAIN (PR #67, `9a7b9d9`) | Atomic trip/party/graph writes, optimistic version, durable command_id replay, typed conflicts, and hosted 0025. A4/A5, Flutter command queue, and SPEC-43 remain out of this slice |
 | On-trip visible surface (SPEC-45) | PHASE A + FIELD TRUST HYGIENE ON MAIN | Phase A chrome is on the field APK. Phase B field trust hygiene is on main through the post-field merge sequence: capped alerts, current-day/kind-specific outcomes, dead Review removal, and honest empty-swap refusal. Operational place detail, transfer cards, and Rescue remain later |
@@ -156,9 +156,9 @@ the only open-items list; other docs point here.
 Owner return checklist (PENDING, in order). Written 2026-11-17 for the
 owner's device and laptop pause (about four days from 16 Nov). Each step
 names its owner. Nothing here is Genie work unless a step fails and a fix
-brief is written. The Genie queue holds `docs/briefs/GENIE_SPEC_42_CANCEL_RESTORES_SKIPPED.md`
-(2026-11-22; SPEC-42 cancel restores the stops an excursion skipped, backend only).
-The latest Genie slice, SPEC-25 trip-optional Ask slice 2, is on main (PR #338, `5b00b61`).
+brief is written. The Genie queue is empty (2026-11-23). The latest Genie
+slice, SPEC-42 cancel restores skipped stops, is on main (PR #343, `081626a`).
+SPEC-25 trip-optional Ask slice 2 is on main (PR #338, `5b00b61`).
 
 1. Laptop, owner (Windows, PowerShell 5.1): `git pull` `main` to at least
    `ca4fc9e`. Run `docs/briefs/LAPTOP_VERIFY.md` steps 0 to 8 as far as
@@ -205,14 +205,20 @@ The latest Genie slice, SPEC-25 trip-optional Ask slice 2, is on main (PR #338, 
      trip's region picked. Ask about a named venue and get a sourced answer;
      ask "what's next" and get the Start a trip button; airplane mode shows
      "Not available offline" and sends nothing.
+   - SPEC-42 cancel restores skipped stops (needs the hosted deploy in
+     step 5, which carries PR #343): add a morning excursion that skips two
+     stops, confirm, then cancel it; both stops return and the reply names
+     them. With a locked booking later placed over one skipped stop, cancel
+     restores the other and names the clash.
    - SPEC-53 and SPEC-56 device checks were recorded as OK on 16 Nov.
      Re-check only if this APK changes those screens.
 5. Isochrones booking return, owner (hosted; only when you choose):
    deploy from `main` with `--update-env-vars` (never `--set-env-vars`)
    and keep every env name. Check health, then record the new revision in
    `docs/HOSTED_STATE.md`. Hosted is `00019-nl7` today (2026-11-16, from
-   `bbf8872`), so this deploy is the first to carry PR #288 and the SPEC-25
-   `POST /api/v1/ask` route (PR #333). The flag still
+   `bbf8872`), so this deploy is the first to carry PR #288, the SPEC-25
+   `POST /api/v1/ask` route (PR #333), and the SPEC-42 cancel-restore path
+   (PR #343). The flag still
    defaults to off in code. Then set `TB_REACHABILITY_BOOKING_RETURN=on`
    with `--update-env-vars`, run
    What Now on a Zanzibar trip with a locked non-hotel booking later the
@@ -289,7 +295,7 @@ ProGuard, Gap 7 consent outbox/UI, Gap 4 Flutter leave).
 Backend, open but not trip-critical: Gap 4 durable tombstone on main (#254; 0027 applied on hosted 2026-11-15),
 retention R1 on main (#295; R2 Supabase backend and any hosted run await owner decisions), zip/PDF; Gap 9 `derived_feature`; Gap 8 unused SQL cache path;
 Gap 10 log-bucket retention; Gap 11 gateway and Play Integrity; SPEC-27
-and SPEC-24 (G1 dependencies); SPEC-42 cancel-restores-skipped-stops (brief queued, backend only); SPEC-10
+and SPEC-24 (G1 dependencies); SPEC-42 booking-accepted-over-active-excursion without a warning (follow-up); SPEC-10
 lodging pins (parked until real bookings); SPEC-25 trip-optional Ask follow-ups (no-trip
 thread persistence, LLM, budget enforcement); SPEC-46 Phase B
 (after SPEC-43); SPEC-45 place detail and transfer cards; optional bar
@@ -352,9 +358,14 @@ messages live in screen state only. One existing test (`spec26_home_snapshot_tes
 needed a taller test surface because the new card pushed the offline note off
 the 800x600 surface. The SPEC-57 Arrival Armor brief was re-sent to Genie on
 2026-11-22 by mistake (slice 1 is already on main, PR #292); Genie stopped, and
-the brief is withdrawn. Next queued: SPEC-42 cancel restores skipped stops.
-SPEC-42 unknown-time excursions slice 1 is on main
-(PR #326, `df5c10c`; brief `GENIE_SPEC_42_UNKNOWN_TIME_EXCURSIONS.md` Amendment 1).
+the brief is withdrawn. SPEC-42 cancel restores skipped stops is on main
+(PR #343, `081626a`, brief `GENIE_SPEC_42_CANCEL_RESTORES_SKIPPED.md`):
+cancelling an excursion restores the stops it skipped (tagged at confirm);
+a stop that now clashes stays skipped and is named; reply uses singular and
+plural wording. Excursions added before #343 are not restored. Genie queue:
+empty. Phone check needs a hosted deploy carrying #343. SPEC-42 unknown-time
+excursions slice 1 is on main (PR #326, `df5c10c`; brief
+`GENIE_SPEC_42_UNKNOWN_TIME_EXCURSIONS.md` Amendment 1).
 SPEC-10 hotel coordinates slice 2 is on main (PR #320,
 `ff8334c`, brief `GENIE_SPEC_10_HOTEL_CATALOG_MATCH.md` Amendment 1): a title-only
 hotel edit keeps traveller-supplied coordinates. The catalog has no lodging
@@ -715,8 +726,9 @@ Seed-shaped cohorts.
     green. Lock-screen waits on OS push.
 10. SPEC-42 uncap / sparse-span foundation -- **PARTIAL on main**
     (`adc99d2`, merge `17e58ac`; empty-day Add `b6ddecf`; uncatalogued
-    `05d917e`). Catalog date caps are gone. Unknown-time excursions
-    remain later.
+    `05d917e`; unknown-time windows PR #326 `df5c10c`; cancel restores
+    PR #343 `081626a`). Catalog date caps are gone. Remaining known
+    follow-up: booking over an active excursion without a warning.
 11. SPEC-10 hotel stay display -- **DONE on main** (`1f251a3`, merge
     `7b62818`). Dual check-in/out on hotel cards; multi-night coverage
     reuses one node_id; catalog name-match fills coords only when both
@@ -807,11 +819,13 @@ Seed-shaped cohorts.
 - Inspiration, similar-trip retrieval, and LLM itinerary generation remain
   after SPEC-41. An LLM may explain solver output; it does not schedule.
 - SPEC-39 PDF/OCR/Day Sheet remains deferred; Agoda paste does not reopen it.
-- SPEC-42 unknown-time excursion windows. Uncap, empty-date render,
-  Ask-to-Add, typed Move, empty-day catalog Add, and trip-private
-  uncatalogued Add are on main (`05d917e`). Only after those online
-  commands and SPEC-44 Phase A exist may SPEC-02 queue typed commands
-  offline; conflicts are not resolved locally.
+- SPEC-42 remainders: booking accepted over an active excursion window
+  without a warning (recorded 2026-11-23). Uncap, empty-date render,
+  Ask-to-Add, typed Move, empty-day catalog Add, trip-private uncatalogued
+  Add, unknown-time windows (PR #326) and cancel-restores-skipped (PR #343)
+  are on main. Only after those online commands and SPEC-44 Phase A exist
+  may SPEC-02 queue typed commands offline; conflicts are not resolved
+  locally.
 - Remaining signal/UI polish.
 - Full SPEC-04 remainder only if field evidence supports it. Offline maps wait
   until Bangkok proves the city factory, then begin as a measured device
