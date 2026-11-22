@@ -65,7 +65,9 @@ The trip-scoped composer now has deterministic retrieval over catalog, trip,
 and practical-rule facts. Phase B adds the field intents `TODAY_TONIGHT`,
 `NEARBY_OPTION`, `PRACTICAL_RULE`, and `COMPARE`; Phase C adds device-local
 durable threads and message history. Production LLM processing, trip-less Ask,
-and catalog-backed place-detail prompts remain later work.
+and catalog-backed place-detail prompts remain later work. Trip-optional Ask
+slice 1 (backend, deterministic, no LLM, no GPS, unique venue-name match in the
+question) is briefed in `docs/briefs/GENIE_SPEC_25_TRIP_OPTIONAL_ASK.md`.
 
 The current heavy response path can also serialize booking references, notes,
 times, and coordinates from itinerary nodes. Grounding does not authorize that
