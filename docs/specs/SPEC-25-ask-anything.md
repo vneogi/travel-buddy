@@ -5,8 +5,11 @@
 > Status: PARTIAL. Grounded trip-scoped Ask, the field-priority intents, and
 > durable identity-scoped device-local threads are on main through SPEC-25
 > Phase C (`7d825c0`, PR #72). Owner Windows Flutter analysis and the full
-> Flutter suite passed for the merged slice. Trip-optional Ask, production LLM
-> processing, and the full contract below are not implemented.
+> Flutter suite passed for the merged slice. Trip-optional Ask is on main as a
+> deterministic backend route (PR #333, `2da033c`) and a Home entry plus `/ask`
+> screen (PR #338, `5b00b61`); its phone check waits for a hosted deploy.
+> Production LLM processing, no-trip thread persistence, and the full contract
+> below are not implemented.
 >
 > Depends on SPEC-17 for the response envelope, SPEC-18 for the discovery path,
 > and SPEC-22 for how any of it is rendered. It does not depend on SPEC-18 being
@@ -67,9 +70,20 @@ and practical-rule facts. Phase B adds the field intents `TODAY_TONIGHT`,
 durable threads and message history. Production LLM processing, trip-less Ask,
 and catalog-backed place-detail prompts remain later work. Trip-optional Ask
 slice 1 (backend, deterministic, no LLM, no GPS, unique venue-name match in the
-question) is on main (PR #333, `2da033c`). Slice 2 (Home Ask bar, `/ask` screen,
-region picker defaulting to the most recent trip; owner decision 2026-11-22) is
-briefed in `docs/briefs/GENIE_SPEC_25_TRIP_OPTIONAL_ASK_FLUTTER.md`.
+question) is on main (PR #333, `2da033c`). Slice 2, the Flutter entry, is on
+main (PR #338, `5b00b61`, brief `GENIE_SPEC_25_TRIP_OPTIONAL_ASK_FLUTTER.md`).
+
+Decisions (owner, 2026-11-22) for trip-optional Ask:
+
+- Entry is an Ask bar on Home that opens a no-trip `/ask` screen.
+- The screen's region picker lists the server's supported regions and
+  defaults to the region of the most recently updated trip; with no trips
+  there is no default and the user picks first.
+- A trip-only question (`fallback_reason: "no_trip"`) shows "Start a trip",
+  which opens `/trip/create`.
+- Offline: refuse immediately, never enqueue (same as the trip chat).
+- No `trip_id`, GPS, LLM, or budget enforcement on this route; messages live
+  in screen state only. No-trip thread persistence is later work.
 
 The current heavy response path can also serialize booking references, notes,
 times, and coordinates from itinerary nodes. Grounding does not authorize that
