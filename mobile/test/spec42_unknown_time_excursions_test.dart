@@ -212,6 +212,9 @@ void main() {
     // Control: the same stop without a window keeps Swap and Move.
     final plain = _node('p1', 'Darajani Walk', DateTime.utc(2026, 12, 27, 6),
         slot: 'morning_tour', minutes: 60);
+    // Dispose the window card's app and its still-open popup route first.
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpAndSettle();
     await tester.pumpWidget(_card(plain));
     await tester.pumpAndSettle();
     expect(find.byTooltip('Swap this activity'), findsOneWidget);
