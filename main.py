@@ -22,6 +22,7 @@ from fastapi.responses import JSONResponse
 
 from config.settings import settings
 from routers.trip_router import router as trip_router
+from routers.ask_router import router as ask_router  # SPEC-25 trip-optional Ask
 
 try:
     from routers.payment_router import router as payment_router
@@ -167,6 +168,7 @@ app.add_middleware(RateLimitMiddleware)
 
 # Register routers
 app.include_router(trip_router)
+app.include_router(ask_router)
 if payment_router:
     app.include_router(payment_router)
 app.include_router(signal_router)
