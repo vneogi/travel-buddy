@@ -271,7 +271,7 @@ def _apply_window(
         place_source=TRIP_PRIVATE,
         time_window=window,
     )
-    skip = set(conflicts)
+    skip = set()  # R17a sabotage: confirm inserts but skips nothing
     new_nodes = [
         n.model_copy(update={"status": NodeStatus.SKIPPED}) if n.node_id in skip else n
         for n in nodes
