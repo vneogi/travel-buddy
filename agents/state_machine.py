@@ -1205,7 +1205,14 @@ class TripStateMachine:
         restored: List[str] = []
         clashed: List[str] = []
         if owned:
-            candidates = owned
+            # R17b sabotage: ownership filter removed.
+            candidates = [
+                n
+                for n in nodes
+                if n.status == NodeStatus.SKIPPED
+                and n.node_id != window.node_id
+                and self._local_day(n, trip_state) == self._local_day(window, trip_state)
+            ]
             for cand in sorted(candidates, key=lambda n: n.scheduled_start):
                 result = self._try_window_restore(
                     cand, nodes, trip_state, mutated, base.has_hard_conflict
