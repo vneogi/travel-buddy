@@ -220,8 +220,6 @@ def apply_move(
     if node.status in (NodeStatus.COMPLETED, NodeStatus.SKIPPED):
         return _refuse("not_movable_status", nodes)
     # SPEC-42: an unknown-time excursion window is never moved into a slot.
-    if node.time_window:
-        return _refuse("window_node", nodes)
     # 4. whole-day excursion
     if is_whole_day_excursion({"vibe_tags": node.vibe_tags}):
         return _refuse("whole_day_excursion", nodes)
