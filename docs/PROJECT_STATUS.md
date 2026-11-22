@@ -333,7 +333,9 @@ Booking defaults and off-span cards on main (PR #309, `831724f`; brief
 the trip span render as cards; new bookings open on the trip's first day;
 the Edit sheet shows destination-local time. Owner phone screenshots on the
 831724f APK are recorded in `AWAITING_VERIFICATION.md` (Nov 21, booking
-fixes). Genie queue: empty. SPEC-10 hotel coordinates slice 2 is on main (PR #320,
+fixes). Genie queue: `docs/briefs/GENIE_SPEC_42_UNKNOWN_TIME_EXCURSIONS.md`
+(SPEC-42 unknown-time excursions, slice 1; CI and Windows tests, no APK).
+SPEC-10 hotel coordinates slice 2 is on main (PR #320,
 `ff8334c`, brief `GENIE_SPEC_10_HOTEL_CATALOG_MATCH.md` Amendment 1): a title-only
 hotel edit keeps traveller-supplied coordinates. The catalog has no lodging
 rows, so December hotel coordinates wait on owner data (names and pins). SPEC-10 slice 1 (HITL reflow) is on main (PR #314, `5052d15`).
