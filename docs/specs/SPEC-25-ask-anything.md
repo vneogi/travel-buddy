@@ -67,7 +67,9 @@ and practical-rule facts. Phase B adds the field intents `TODAY_TONIGHT`,
 durable threads and message history. Production LLM processing, trip-less Ask,
 and catalog-backed place-detail prompts remain later work. Trip-optional Ask
 slice 1 (backend, deterministic, no LLM, no GPS, unique venue-name match in the
-question) is briefed in `docs/briefs/GENIE_SPEC_25_TRIP_OPTIONAL_ASK.md`.
+question) is on main (PR #333, `2da033c`). Slice 2 (Home Ask bar, `/ask` screen,
+region picker defaulting to the most recent trip; owner decision 2026-11-22) is
+briefed in `docs/briefs/GENIE_SPEC_25_TRIP_OPTIONAL_ASK_FLUTTER.md`.
 
 The current heavy response path can also serialize booking references, notes,
 times, and coordinates from itinerary nodes. Grounding does not authorize that

@@ -67,8 +67,9 @@ known failures; `postgres-proof` is green. Frontend findings F1-F4 in
 The 2026-11-21 booking-defaults brief landed as PR #309 (`831724f`):
 `docs/briefs/GENIE_BOOKING_DEFAULT_TIMES_AND_OFFSPAN_CARDS.md`. SPEC-10
 create-then-book HITL reflow slice 1 landed as PR #314 (`5052d15`) with CI
-green and no APK. Genie queue: `docs/briefs/GENIE_SPEC_25_TRIP_OPTIONAL_ASK.md` (SPEC-25 trip-optional
-Ask slice 1, backend; after PR #326 `df5c10c`, SPEC-42 unknown-time windows). SPEC-10 hotel coordinates slice 2 (title-edit
+green and no APK. Genie queue: `docs/briefs/GENIE_SPEC_25_TRIP_OPTIONAL_ASK_FLUTTER.md` (SPEC-25
+trip-optional Ask slice 2, Flutter entry). Slice 1 backend is on main (PR #333,
+`2da033c`); SPEC-42 unknown-time windows on main (PR #326, `df5c10c`). SPEC-10 hotel coordinates slice 2 (title-edit
 keeps supplied coordinates) is on main (PR #320, `ff8334c`). December hotel
 pins wait on owner data. Parked 2026-11-22: the lodging-pin slice (start only
 with the real booking name, region and long-press coordinates) and the trip
