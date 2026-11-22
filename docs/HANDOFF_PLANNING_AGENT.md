@@ -70,8 +70,10 @@ create-then-book HITL reflow slice 1 landed as PR #314 (`5052d15`) with CI
 green and no APK. SPEC-25 trip-optional Ask: slice 1 backend (PR #333,
 `2da033c`) and slice 2 Flutter entry (PR #338, `5b00b61`: Home Ask bar, `/ask`
 screen, region picker defaulting to the most recent trip) are on main; the phone
-check waits for a hosted deploy carrying #333. Genie queue: empty (the SPEC-57
-brief re-sent 2026-11-22 was a mistake, slice 1 is PR #292, and is withdrawn).
+check waits for a hosted deploy carrying #333. Genie queue: SPEC-42 cancel
+restores skipped stops (`docs/briefs/GENIE_SPEC_42_CANCEL_RESTORES_SKIPPED.md`,
+backend only). The SPEC-57 brief re-sent 2026-11-22 was a mistake (slice 1 is PR #292)
+and is withdrawn.
 SPEC-42 unknown-time windows on main (PR #326, `df5c10c`). SPEC-10 hotel coordinates slice 2 (title-edit
 keeps supplied coordinates) is on main (PR #320, `ff8334c`). December hotel
 pins wait on owner data. Parked 2026-11-22: the lodging-pin slice (start only

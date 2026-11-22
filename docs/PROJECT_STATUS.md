@@ -156,8 +156,9 @@ the only open-items list; other docs point here.
 Owner return checklist (PENDING, in order). Written 2026-11-17 for the
 owner's device and laptop pause (about four days from 16 Nov). Each step
 names its owner. Nothing here is Genie work unless a step fails and a fix
-brief is written. The Genie queue is empty (2026-11-22): the latest Genie
-slice, SPEC-25 trip-optional Ask slice 2, is on main (PR #338, `5b00b61`).
+brief is written. The Genie queue holds `docs/briefs/GENIE_SPEC_42_CANCEL_RESTORES_SKIPPED.md`
+(2026-11-22; SPEC-42 cancel restores the stops an excursion skipped, backend only).
+The latest Genie slice, SPEC-25 trip-optional Ask slice 2, is on main (PR #338, `5b00b61`).
 
 1. Laptop, owner (Windows, PowerShell 5.1): `git pull` `main` to at least
    `ca4fc9e`. Run `docs/briefs/LAPTOP_VERIFY.md` steps 0 to 8 as far as
@@ -288,7 +289,7 @@ ProGuard, Gap 7 consent outbox/UI, Gap 4 Flutter leave).
 Backend, open but not trip-critical: Gap 4 durable tombstone on main (#254; 0027 applied on hosted 2026-11-15),
 retention R1 on main (#295; R2 Supabase backend and any hosted run await owner decisions), zip/PDF; Gap 9 `derived_feature`; Gap 8 unused SQL cache path;
 Gap 10 log-bucket retention; Gap 11 gateway and Play Integrity; SPEC-27
-and SPEC-24 (G1 dependencies); SPEC-42 cancel-restores-skipped-stops (known gap); SPEC-10
+and SPEC-24 (G1 dependencies); SPEC-42 cancel-restores-skipped-stops (brief queued, backend only); SPEC-10
 lodging pins (parked until real bookings); SPEC-25 trip-optional Ask follow-ups (no-trip
 thread persistence, LLM, budget enforcement); SPEC-46 Phase B
 (after SPEC-43); SPEC-45 place detail and transfer cards; optional bar
@@ -349,9 +350,9 @@ defaults to the region of the most recently updated trip (no trips: no default,
 pick first); "Start a trip" on a trip-only question opens `/trip/create`;
 messages live in screen state only. One existing test (`spec26_home_snapshot_test`)
 needed a taller test surface because the new card pushed the offline note off
-the 800x600 surface. Genie queue: empty. The SPEC-57 Arrival Armor brief was
-re-sent to Genie on 2026-11-22 by mistake (slice 1 is already on main, PR #292)
-and is withdrawn; the next brief waits on the owner's pick.
+the 800x600 surface. The SPEC-57 Arrival Armor brief was re-sent to Genie on
+2026-11-22 by mistake (slice 1 is already on main, PR #292); Genie stopped, and
+the brief is withdrawn. Next queued: SPEC-42 cancel restores skipped stops.
 SPEC-42 unknown-time excursions slice 1 is on main
 (PR #326, `df5c10c`; brief `GENIE_SPEC_42_UNKNOWN_TIME_EXCURSIONS.md` Amendment 1).
 SPEC-10 hotel coordinates slice 2 is on main (PR #320,
