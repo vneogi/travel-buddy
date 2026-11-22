@@ -424,6 +424,12 @@ void main() {
       when(() => database.getCachedTripList('anonymous:device-a')).thenAnswer(
         (_) async => (json: cachedJson, cachedAt: cachedAt),
       );
+      // Setup only: keep the default 800 logical width but a taller surface,
+      // so the offline note below create_trip_card stays laid out in the
+      // lazy Home ListView now that Home also has an Ask bar.
+      tester.view.physicalSize = const Size(2400, 4800);
+      tester.view.devicePixelRatio = 3.0;
+      addTearDown(tester.view.reset);
 
       await tester.pumpWidget(
         ProviderScope(

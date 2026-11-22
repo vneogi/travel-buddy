@@ -53,6 +53,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
                 const SizedBox(height: AppSpacing.lg),
               ],
+              // SPEC-25: compact Ask entry; opens the trip-optional Ask screen.
+              const _HomeAskBar(key: Key('home_ask_bar')),
+              const SizedBox(height: AppSpacing.base),
               _CreateTripCard(
                 key: const Key('create_trip_card'),
                 creating: _creating,
@@ -436,6 +439,42 @@ class _CreateCorridorCard extends StatelessWidget {
                 )
               else
                 const Icon(Icons.arrow_forward_ios, size: 16),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+/// SPEC-25: one compact row that opens /ask. It sends nothing itself.
+class _HomeAskBar extends StatelessWidget {
+  const _HomeAskBar({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.card,
+      borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+        onTap: () => context.push('/ask'),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.base,
+            vertical: AppSpacing.md,
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.auto_awesome_outlined, size: 20),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  'Ask about a place',
+                  style: AppTypography.body.copyWith(color: AppColors.muted),
+                ),
+              ),
             ],
           ),
         ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/env.dart';
+import '../features/ask/trip_optional_ask_screen.dart';
 import '../features/onboarding/onboarding_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/itinerary/itinerary_screen.dart';
@@ -72,6 +73,11 @@ final appRouter = GoRouter(
         GoRoute(
           path: '/',
           builder: (_, __) => const HomeScreen(),
+        ),
+        // SPEC-25: trip-optional Ask (no trip needed).
+        GoRoute(
+          path: '/ask',
+          builder: (_, __) => const TripOptionalAskScreen(),
         ),
         GoRoute(
           path: '/trip/:tripId',
