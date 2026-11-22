@@ -229,3 +229,59 @@ The PR description must include: the preflight answers (round-trip
 test, card time line, Move and swap treatment of a window node), a
 test-to-production table, R17 expected failures, any existing test
 touched, and "no APK in this slice".
+
+## Amendment 1 (planning agent, 2026-11-22, after Genie's preflight)
+
+Preflight facts (base `bb81250`):
+
+- The `time_window` field round-trips in `state_json` on both backends with no
+  column, so that stop rule does not trigger.
+- Card time label (`mobile/lib/widgets/activity_card.dart`, about lines
+  229-239): line 233 shows a clock time only for locked or unslotted nodes;
+  line 239 shows `_slotLabel(slotName)`. A window node would show "Morning" for
+  `whole_day`, so the card needs a `time_window` branch ahead of line 239.
+- Move and swap do not know about windows. Move reschedules a window node into
+  a clock slot (an 8-hour node moved to the afternoon runs through dinner).
+  Swap replaces it in place with a 45-minute catalog stop and drops
+  `time_window`, leaving the day half empty.
+
+Decision (owner delegated; option A): refuse both, in the backend and in the
+sheet.
+
+1. Backend. A node with `time_window` set is refused by Move and by swap, with
+   new code `window_node` and copy "This excursion covers a whole window.
+   Remove it and add it again to change it." No mutation. Apply it in:
+   - `services/move_service.py` `apply_move`, before any timing check;
+   - the swap event path and the swap candidates read in
+     `routers/trip_router.py`, following the existing refusal shape for those
+     two routes (report the shape you used in the PR description).
+2. Cancel stays allowed. `cancel_activity` on a window node skips it in place
+   like any unlocked stop.
+3. Flutter. Hide Move and Swap on a card whose node has `time_window`. Keep
+   Cancel or skip. Extend the existing movable check (`nodeIsMovable`) rather
+   than adding a second one.
+4. Card label (section 4 item 5, confirmed): add a `time_window` branch ahead of
+   line 239 using the window table labels.
+5. Added tests. Backend (`tests/test_spec42_unknown_time_excursions.py`), all
+   through `POST /api/v1/trip/event` or the swap candidates route:
+   17. Move of a window node: refused `window_node`, no mutation. Fails on main.
+   18. Swap event on a window node: refused `window_node`, no mutation. Fails
+       on main.
+   19. Swap candidates read for a window node: refused with the existing shape
+       and code `window_node`. Fails on main.
+   20. `cancel_activity` on a window node: skipped in place, same `node_id`.
+   21. Move and swap of a trip-private node without `time_window`: behaviour
+       unchanged from main.
+   Flutter (`mobile/test/spec42_unknown_time_excursions_test.dart`):
+   22. A card with `time_window` shows no Move or Swap action and still shows
+       Cancel or skip. Use the existing action keys or text; report which.
+6. R17 gains a third branch: `feat/spec42-unknown-time-excursions-r17c`, from the
+   tip, removes the `apply_move` refusal. Expected failures: 17 only. The two
+   existing branches keep their expected failures (`-r17a`: 4, 5; `-r17b`: 3, 4).
+7. Section 6 item "Editing or moving a window node" is replaced by this
+   amendment: Move and swap are refused, not left as they are. Section 7's
+   Move and swap stop rule is satisfied by decision item 1; report anything that
+   would still reschedule a window node.
+8. Known gap, not this slice: cancelling an excursion later does not restore the
+   stops it skipped. The traveller re-adds them with Add. Record it in the PR
+   description.
