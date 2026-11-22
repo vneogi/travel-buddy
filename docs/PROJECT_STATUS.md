@@ -109,7 +109,7 @@
 | Money as a dimension (SPEC-23) | SPECIFIED | Not implemented. The engineering contract under VISION section 20, and roadmap concern 7. A band and an amount are different things and both are needed; no amount is storable without its currency; a band is meaningless until anchored to a region, which is what makes price tolerance portable between cities; transport cost belongs on trip_edge; budget is revealed from rejections rather than asked for, with a volunteered hard cap honoured exactly; amounts are SPEC-17 claims on a weeks-scale horizon and degrade to a band when stale. Depends on SPEC-13, SPEC-16 and SPEC-17 |
 
 | Identity lifecycle (SPEC-24) | SPECIFIED | Not implemented, and the design is deliberately settled ahead of the build. Sign-in itself is nearly free because Supabase Auth owns the provider flow and security.py already verifies the token; the work is what happens to the anonymous history. Owns credential aliases, the anonymous-to-account merge, multi-device, and sign-out. Merge direction is fixed one way, which extends the upgrade-on-sight rule already live on identity_kind. Union rather than dedupe; tier and quota both resolve to the maximum, since taking the minimum makes sign-in a way to refill the daily reroute allowance |
-| Ask Anything surface (SPEC-25) | PARTIAL (grounded, broad, durable trip Ask on main) | Initial grounding (`30a4270`), field-priority intents, and identity-scoped device-local thread history are on main through Phase C (`7d825c0`, PR #72). History/New conversation and typed envelope round-trip are implemented; reopened proposals are display-only. Trip-optional Ask (slice 1 brief `GENIE_SPEC_25_TRIP_OPTIONAL_ASK.md`), production LLM processing, and catalog-backed place prompts remain |
+| Ask Anything surface (SPEC-25) | PARTIAL (grounded, broad, durable trip Ask on main) | Initial grounding (`30a4270`), field-priority intents, and identity-scoped device-local thread history are on main through Phase C (`7d825c0`, PR #72). History/New conversation and typed envelope round-trip are implemented; reopened proposals are display-only. Trip-optional Ask slice 1 backend on main (PR #333, `2da033c`, `POST /api/v1/ask`; Flutter entry is slice 2), production LLM processing, and catalog-backed place prompts remain |
 | Home surface (SPEC-26) | IMPLEMENTED (snapshot) | GET /trips now returns featured_trip: active trip (or earliest upcoming) with actionable stop (no state_json, no full nodes). Dart HomeSnapshot parses and caches it. Home renders Now/Up next card above trip list. Offline cache renders same card with cache age. Full SPEC-22 migration remains |
 | App lifecycle and data rights (SPEC-27) | SPECIFIED | Not implemented. Owns push transport for candidates produced by capabilities such as SPEC-35, with tokens that survive the SPEC-24 merge and delivery through the SPEC-22 interruption budget enforced server-side. Also owns deletion/export under DPDP and GDPR and a minimum supported client that blocks writes but never reads |
 | Trip inspiration (SPEC-28) | DECIDED, NOT SCHEDULED | Opt-in, delayed, region-level public trip snapshots as inspiration. No live people/location, DMs or comments in v1. Requires identity, deletion/export and moderation gates |
@@ -333,8 +333,10 @@ Booking defaults and off-span cards on main (PR #309, `831724f`; brief
 the trip span render as cards; new bookings open on the trip's first day;
 the Edit sheet shows destination-local time. Owner phone screenshots on the
 831724f APK are recorded in `AWAITING_VERIFICATION.md` (Nov 21, booking
-fixes). Genie queue: `docs/briefs/GENIE_SPEC_25_TRIP_OPTIONAL_ASK.md` (SPEC-25 trip-optional
-Ask, slice 1 backend: `POST /api/v1/ask`, no LLM, no GPS; Flutter entry is slice 2).
+fixes). Genie queue: `docs/briefs/GENIE_SPEC_25_TRIP_OPTIONAL_ASK_FLUTTER.md` (SPEC-25
+trip-optional Ask slice 2: Home Ask bar, `/ask` screen, region picker defaulting
+to the most recent trip; Flutter only, no APK). Slice 1 backend `POST /api/v1/ask`
+is on main (PR #333, `2da033c`).
 SPEC-42 unknown-time excursions slice 1 is on main
 (PR #326, `df5c10c`; brief `GENIE_SPEC_42_UNKNOWN_TIME_EXCURSIONS.md` Amendment 1).
 SPEC-10 hotel coordinates slice 2 is on main (PR #320,
