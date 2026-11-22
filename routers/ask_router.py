@@ -38,9 +38,7 @@ router = APIRouter(prefix="/api/v1", tags=["ask"])
 
 QUESTION_MAX = 500
 VENUE_NAME_MIN = 4
-TRIP_ONLY_INTENTS = frozenset(
-    {AskIntent.TODAY_TONIGHT, AskIntent.TRIP_CURRENT_NEXT, AskIntent.PLAN_CHANGE}
-)
+TRIP_ONLY_INTENTS = frozenset()  # R17a sabotage: no trip-only refusal
 NO_TRIP_REASON = "no_trip"
 NO_TRIP_COPY = (
     "That question is about a trip plan, and there is no trip here yet. "
