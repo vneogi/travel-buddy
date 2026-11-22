@@ -917,6 +917,21 @@ class TripStateMachine:
             state["schedule_warnings"] = result.warnings
             return state
 
+        # SPEC-42: cancelling an excursion window restores the stops it skipped.
+        if event_type == EventType.CANCEL_ACTIVITY.value:
+            window = next(
+                (
+                    n
+                    for n in trip_state.nodes
+                    if n.node_id == state.get("target_node_id")
+                    and n.time_window
+                    and not n.is_locked
+                ),
+                None,
+            )
+            if window is not None:
+                return self._cancel_window(state, trip_state, window)
+
         # SPEC-29 D4: Cancel uses a direct status-flip; no venue loop needed.
         if event_type == EventType.CANCEL_ACTIVITY.value:
             target = state.get("target_node_id")
@@ -1106,6 +1121,107 @@ class TripStateMachine:
             kwargs["node_id"] = node_id
         return TripNode(**kwargs)
 
+    @staticmethod
+    def _local_day(node: TripNode, trip_state: TripState):
+        """Destination-local calendar date of a node (UTC when tz unknown)."""
+        from datetime import timezone as _tz
+
+        from services.destination_tz import destination_tz
+
+        tz = destination_tz(node.geo_region or trip_state.geo_region or "") or _tz.utc
+        start = node.scheduled_start
+        if start.tzinfo is None:
+            start = start.replace(tzinfo=_tz.utc)
+        return start.astimezone(tz).date()
+
+    def _window_restore_clashes(
+        self, cand: TripNode, nodes: List[TripNode], trip_state: TripState
+    ) -> bool:
+        """True when a skipped stop cannot come back without a clash.
+
+        A clash is its slot used by a locked node or non-hotel booking that
+        day, or its span overlapping one of those, or overlapping another
+        non-skipped excursion window that day.
+        """
+        from datetime import timedelta
+
+        day = self._local_day(cand, trip_state)
+        start = cand.scheduled_start
+        end = start + timedelta(minutes=cand.duration_minutes)
+        for other in nodes:
+            if other.node_id == cand.node_id or other.status == NodeStatus.SKIPPED:
+                continue
+            if self._local_day(other, trip_state) != day:
+                continue
+            is_hotel = other.node_kind == "booking" and other.booking_type == "hotel"
+            anchor = (other.is_locked or other.node_kind == "booking") and not is_hotel
+            o_start = other.scheduled_start
+            o_end = o_start + timedelta(minutes=other.duration_minutes)
+            overlaps = o_start < end and o_end > start
+            if anchor and cand.slot_name and other.slot_name == cand.slot_name:
+                return True
+            if (anchor or other.time_window) and overlaps:
+                return True
+        return False
+
+    def _try_window_restore(
+        self,
+        cand: TripNode,
+        nodes: List[TripNode],
+        trip_state: TripState,
+        mutated: set,
+        base_hard: bool,
+    ):
+        """Reschedule with *cand* back to PENDING; None when it clashes."""
+        if self._window_restore_clashes(cand, nodes, trip_state):
+            return None
+        trial = [
+            n.model_copy(update={"status": NodeStatus.PENDING, "skipped_by_window_id": None})
+            if n.node_id == cand.node_id
+            else n
+            for n in nodes
+        ]
+        result = reschedule_and_validate(trial, mutated_node_ids=mutated | {cand.node_id})
+        if result.has_hard_conflict and not base_hard:
+            return None
+        return result
+
+    def _cancel_window(self, state: Dict, trip_state: TripState, window: TripNode) -> Dict:
+        """SPEC-42: cancel an excursion window and restore the stops it skipped.
+
+        Only stops tagged with this window's node_id are candidates. A
+        legacy excursion (no tagged stops) cancels exactly as before. Names go
+        in the transient state for the reply; nothing extra is persisted.
+        """
+        window.status = NodeStatus.SKIPPED
+        mutated = {window.node_id}
+        base = reschedule_and_validate(list(trip_state.nodes), mutated_node_ids=set(mutated))
+        nodes, warnings = base.nodes, base.warnings
+        owned = [
+            n
+            for n in nodes
+            if n.status == NodeStatus.SKIPPED and n.skipped_by_window_id == window.node_id
+        ]
+        restored: List[str] = []
+        clashed: List[str] = []
+        if owned:
+            candidates = owned
+            for cand in sorted(candidates, key=lambda n: n.scheduled_start):
+                result = self._try_window_restore(
+                    cand, nodes, trip_state, mutated, base.has_hard_conflict
+                )
+                if result is None:
+                    clashed.append(cand.venue_name)
+                    continue
+                nodes, warnings = result.nodes, result.warnings
+                mutated.add(cand.node_id)
+                restored.append(cand.venue_name)
+        trip_state.nodes = nodes
+        state["schedule_warnings"] = warnings
+        state["window_cancel_restored"] = restored
+        state["window_cancel_clashed"] = clashed
+        return state
+
     async def _node_generate_response(self, state: Dict) -> Dict:
         """Node: produce the user-facing text (LLM when configured, else canned)."""
         # SPEC-29 D4: Cancel is fully deterministic -- no LLM, no RAG.
@@ -1123,6 +1239,17 @@ class TripStateMachine:
                 return state
             if target_node:
                 state["response"] = f"Canceled {target_node.venue_name}."
+                # SPEC-42: excursion cancel notice (names from the transient state).
+                restored = state.get("window_cancel_restored") or []
+                clashed = state.get("window_cancel_clashed") or []
+                if restored:
+                    state["response"] += (
+                        f" Brought back {len(restored)} stops: {', '.join(restored)}."
+                    )
+                if clashed:
+                    state["response"] += (
+                        f" Left skipped because it now clashes: {', '.join(clashed)}."
+                    )
             else:
                 state["response"] = "Activity canceled."
             return state

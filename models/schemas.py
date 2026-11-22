@@ -98,6 +98,9 @@ class TripNode(BaseModel):
     place_source: Literal["catalog", "trip_private"] = "catalog"
     # SPEC-42 unknown-time excursion window (trip-private Add only).
     time_window: Optional[Literal["morning", "afternoon", "whole_day"]] = None
+    # SPEC-42: node_id of the excursion window that skipped this stop in place
+    # (set only by the window apply path; cleared when the stop is restored).
+    skipped_by_window_id: Optional[str] = None
 
 
 class CurrentContext(BaseModel):

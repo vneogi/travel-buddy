@@ -273,7 +273,11 @@ def _apply_window(
     )
     skip = set(conflicts)
     new_nodes = [
-        n.model_copy(update={"status": NodeStatus.SKIPPED}) if n.node_id in skip else n
+        # SPEC-42: tag each stop with the window that skipped it, so a later
+        # cancel of this excursion can bring exactly these stops back.
+        n.model_copy(update={"status": NodeStatus.SKIPPED, "skipped_by_window_id": node.node_id})
+        if n.node_id in skip
+        else n
         for n in nodes
     ] + [node]
     new_nodes.sort(key=lambda n: _aware(n.scheduled_start))
