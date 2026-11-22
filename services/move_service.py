@@ -42,7 +42,11 @@ _SLOT_LABELS = {
     "dinner": "dinner",
 }
 
+# SPEC-42: refusal copy for Move and swap of an excursion window node.
+WINDOW_NODE_COPY = "This excursion covers a whole window. Remove it and add it again to change it."
+
 REFUSAL_COPY = {
+    "window_node": WINDOW_NODE_COPY,
     "missing_target": "Choose an activity to move.",
     "invalid_mode": "That move request was not recognised. Nothing was changed.",
     "invalid_date": "Choose a valid date for this move.",
@@ -215,6 +219,9 @@ def apply_move(
     # 3. status
     if node.status in (NodeStatus.COMPLETED, NodeStatus.SKIPPED):
         return _refuse("not_movable_status", nodes)
+    # SPEC-42: an unknown-time excursion window is never moved into a slot.
+    if node.time_window:
+        return _refuse("window_node", nodes)
     # 4. whole-day excursion
     if is_whole_day_excursion({"vibe_tags": node.vibe_tags}):
         return _refuse("whole_day_excursion", nodes)

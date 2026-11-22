@@ -60,6 +60,8 @@ class TripNode {
   // SPEC-42: provenance. 'catalog' (default; old cached trips) or
   // 'trip_private' (traveller-added place, only on this trip).
   final String placeSource;
+  /// SPEC-42 unknown-time excursion window: morning | afternoon | whole_day.
+  final String? timeWindow;
 
   bool get isTripPrivate => placeSource == 'trip_private';
 
@@ -87,6 +89,7 @@ class TripNode {
     this.importSource,
     this.slotName,
     this.placeSource = 'catalog',
+    this.timeWindow,
   });
 
   factory TripNode.fromJson(Map<String, dynamic> j) => TripNode(
@@ -113,6 +116,7 @@ class TripNode {
         importSource: j['import_source'] as String?,
         slotName: j['slot_name'] as String?,
         placeSource: (j['place_source'] as String?) ?? 'catalog',
+        timeWindow: j['time_window'] as String?,
       );
 
   Map<String, dynamic> toJson() => {
@@ -139,6 +143,7 @@ class TripNode {
         'import_source': importSource,
         'slot_name': slotName,
         'place_source': placeSource,
+        if (timeWindow != null) 'time_window': timeWindow,
       };
 }
 
@@ -792,6 +797,20 @@ class BookingReflow {
       );
 }
 
+/// SPEC-42: stops an excursion window would skip. Nothing is applied until
+/// the same Add is resent with confirm_skip_node_ids.
+class ExcursionReview {
+  final String timeWindow;
+  final List<String> skipNodeIds;
+
+  const ExcursionReview({required this.timeWindow, required this.skipNodeIds});
+
+  factory ExcursionReview.fromJson(Map<String, dynamic> j) => ExcursionReview(
+        timeWindow: j['time_window'] as String? ?? '',
+        skipNodeIds: ((j['skip_node_ids'] as List?) ?? const []).cast<String>(),
+      );
+}
+
 class TripEventResult {
   /// May include a "Heads up: ..." scheduler note at the end.
   final String message;
@@ -805,6 +824,8 @@ class TripEventResult {
   final AskResponse? askResponse;
   /// SPEC-10 HITL reflow proposal (add/edit booking only; null otherwise).
   final BookingReflow? bookingReflow;
+  /// SPEC-42 excursion review (needs_review only; null otherwise).
+  final ExcursionReview? excursionReview;
 
   const TripEventResult({
     required this.message,
@@ -815,11 +836,13 @@ class TripEventResult {
     this.scheduleWarnings = const [],
     this.askResponse,
     this.bookingReflow,
+    this.excursionReview,
   });
 
   factory TripEventResult.fromJson(Map<String, dynamic> j) {
     final askJson = j['ask_response'] as Map?;
     final reflowJson = j['booking_reflow'] as Map?;
+    final reviewJson = j['excursion_review'] as Map?;
     return TripEventResult(
       message: j['message'] as String? ?? '',
       updatedNodes: ((j['updated_nodes'] as List?) ?? const [])
@@ -836,6 +859,9 @@ class TripEventResult {
       bookingReflow: reflowJson == null
           ? null
           : BookingReflow.fromJson(reflowJson.cast<String, dynamic>()),
+      excursionReview: reviewJson == null
+          ? null
+          : ExcursionReview.fromJson(reviewJson.cast<String, dynamic>()),
     );
   }
 }

@@ -4,6 +4,7 @@ import '../../data/models.dart';
 import '../../data/repositories.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
+import 'excursion_review_sheet.dart';
 
 /// SPEC-42 named slots in day order (mirrors services.day_slots.SLOT_ORDER).
 const kDirectAddSlots = <String>[
@@ -37,6 +38,13 @@ abstract class EmptyDayAddChoice {
   String get venueName;
   Map<String, dynamic> toPreferences();
 }
+
+/// SPEC-42 unknown-time excursion windows (wire string -> label).
+const kExcursionWindows = <String, String>{
+  'morning': 'Morning',
+  'afternoon': 'Afternoon',
+  'whole_day': 'Whole day',
+};
 
 /// Traveller-stated stay lengths for a place not in the catalog.
 const kUncataloguedDwellChoices = <int>[15, 30, 45, 60, 90, 120];
@@ -99,11 +107,16 @@ class DirectAddSheet extends StatefulWidget {
   final String tripId;
   final String targetDate;
   final TripRepository repo;
+  /// SPEC-42: sends a window Add from inside the sheet, so a review or a
+  /// refusal can keep this sheet open. Window chips need it.
+  final Future<ExcursionSubmitOutcome> Function(Map<String, dynamic> preferences)?
+      submitWindow;
   const DirectAddSheet({
     super.key,
     required this.tripId,
     required this.targetDate,
     required this.repo,
+    this.submitWindow,
   });
 
   @override
@@ -120,6 +133,11 @@ class _DirectAddSheetState extends State<DirectAddSheet> {
   // SPEC-42 trip-private path.
   bool _private = false;
   int? _dwell;
+  // SPEC-42 "No fixed time" window path.
+  bool _noFixedTime = false;
+  String? _window;
+  bool _sending = false;
+  String? _windowError;
   final _nameCtl = TextEditingController();
   final _microCtl = TextEditingController();
 
@@ -131,8 +149,60 @@ class _DirectAddSheetState extends State<DirectAddSheet> {
   }
 
   String get _name => _nameCtl.text.trim().split(RegExp(r'\s+')).join(' ');
-  bool get _privateReady =>
-      _slot != null && _dwell != null && _name.length >= 2 && _name.length <= 80;
+  bool get _nameReady => _name.length >= 2 && _name.length <= 80;
+  bool get _privateReady => _noFixedTime
+      ? _window != null && _nameReady && widget.submitWindow != null && !_sending
+      : _slot != null && _dwell != null && _nameReady;
+
+  Map<String, dynamic> _windowPreferences() => {
+        'mode': 'uncatalogued_add',
+        'name': _name,
+        'target_date': widget.targetDate,
+        'time_window': _window,
+        if (_micro.isNotEmpty) 'micro_location': _micro,
+      };
+
+  Future<void> _submitWindow() async {
+    final submit = widget.submitWindow;
+    if (submit == null) return;
+    final prefs = _windowPreferences();
+    setState(() {
+      _sending = true;
+      _windowError = null;
+    });
+    final first = await submit(prefs);
+    if (!mounted) return;
+    // Clear the busy state before awaiting the review sheet (PR #314 lesson).
+    setState(() => _sending = false);
+    final result = first.result;
+    if (result == null) {
+      setState(() => _windowError = first.error);
+      return;
+    }
+    final review = result.excursionReview;
+    if (review == null) {
+      Navigator.of(context).pop();
+      return;
+    }
+    final confirmed = await showModalBottomSheet<ExcursionSubmitOutcome>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => ExcursionReviewSheet(
+        review: review,
+        nodes: result.updatedNodes,
+        onConfirm: () => submit({
+          ...prefs,
+          'confirm_skip_node_ids': review.skipNodeIds,
+        }),
+      ),
+    );
+    if (!mounted || confirmed == null) return; // Not now: keep this sheet.
+    if (confirmed.result != null && confirmed.result!.excursionReview == null) {
+      Navigator.of(context).pop();
+      return;
+    }
+    setState(() => _windowError = confirmed.error);
+  }
 
   String get _micro => _microCtl.text.trim();
 
@@ -150,20 +220,46 @@ class _DirectAddSheetState extends State<DirectAddSheet> {
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: AppSpacing.xs),
-        Text('How long will you stay?', style: AppTypography.body),
-        Wrap(
-          spacing: AppSpacing.xs,
-          runSpacing: AppSpacing.xs,
-          children: [
-            for (final m in kUncataloguedDwellChoices)
-              ChoiceChip(
-                key: Key('uncatalogued_add_dwell_$m'),
-                label: Text('$m min'),
-                selected: _dwell == m,
-                onSelected: (_) => setState(() => _dwell = m),
-              ),
-          ],
+        FilterChip(
+          key: const Key('direct_add_no_fixed_time'),
+          label: const Text('No fixed time'),
+          selected: _noFixedTime,
+          onSelected: (v) => setState(() {
+            _noFixedTime = v;
+            _windowError = null;
+          }),
         ),
+        if (_noFixedTime) ...[
+          Text('When?', style: AppTypography.body),
+          Wrap(
+            spacing: AppSpacing.xs,
+            runSpacing: AppSpacing.xs,
+            children: [
+              for (final w in kExcursionWindows.entries)
+                ChoiceChip(
+                  key: Key('direct_add_window_${w.key}'),
+                  label: Text(w.value),
+                  selected: _window == w.key,
+                  onSelected: (_) => setState(() => _window = w.key),
+                ),
+            ],
+          ),
+        ] else ...[
+          Text('How long will you stay?', style: AppTypography.body),
+          Wrap(
+            spacing: AppSpacing.xs,
+            runSpacing: AppSpacing.xs,
+            children: [
+              for (final m in kUncataloguedDwellChoices)
+                ChoiceChip(
+                  key: Key('uncatalogued_add_dwell_$m'),
+                  label: Text('$m min'),
+                  selected: _dwell == m,
+                  onSelected: (_) => setState(() => _dwell = m),
+                ),
+            ],
+          ),
+        ],
         TextField(
           key: const Key('uncatalogued_add_micro'),
           controller: _microCtl,
@@ -173,9 +269,20 @@ class _DirectAddSheetState extends State<DirectAddSheet> {
         if (_privateReady) ...[
           const SizedBox(height: AppSpacing.sm),
           Text(
-            'Add $_name on ${widget.targetDate} ${directAddSlotLabel(slot)} '
-            'for $_dwell min? This place is only on this trip.',
+            _noFixedTime
+                ? 'Add $_name on ${widget.targetDate} '
+                    '(${kExcursionWindows[_window] ?? ''})? This place is only on this trip.'
+                : 'Add $_name on ${widget.targetDate} ${directAddSlotLabel(slot)} '
+                    'for $_dwell min? This place is only on this trip.',
             key: const Key('uncatalogued_add_confirm_copy'),
+            style: AppTypography.body,
+          ),
+        ],
+        if (_windowError != null) ...[
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            _windowError!,
+            key: const Key('excursion_add_error'),
             style: AppTypography.body,
           ),
         ],
@@ -195,13 +302,15 @@ class _DirectAddSheetState extends State<DirectAddSheet> {
                 key: const Key('uncatalogued_add_confirm'),
                 onPressed: !_privateReady
                     ? null
-                    : () => Navigator.of(context).pop(UncataloguedAddChoice(
-                          name: _name,
-                          targetDate: widget.targetDate,
-                          targetSlot: slot,
-                          dwellMinutes: _dwell!,
-                          microLocation: _micro.isEmpty ? null : _micro,
-                        )),
+                    : _noFixedTime
+                        ? _submitWindow
+                        : () => Navigator.of(context).pop(UncataloguedAddChoice(
+                              name: _name,
+                              targetDate: widget.targetDate,
+                              targetSlot: slot,
+                              dwellMinutes: _dwell!,
+                              microLocation: _micro.isEmpty ? null : _micro,
+                            )),
                 child: const Text('Add'),
               ),
             ),
@@ -306,6 +415,8 @@ class _DirectAddSheetState extends State<DirectAddSheet> {
           children: [
             Text('Add activity', style: AppTypography.h2),
             const SizedBox(height: AppSpacing.sm),
+            // SPEC-42: "No fixed time" replaces the slot chips.
+            if (!(_private && _noFixedTime))
             Wrap(
               spacing: AppSpacing.xs,
               runSpacing: AppSpacing.xs,

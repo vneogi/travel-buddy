@@ -50,6 +50,7 @@ String _localIso(TripNode n) {
 bool nodeIsMovable(TripNode node) =>
     !node.isLocked &&
     node.nodeKind != 'booking' &&
+    node.timeWindow == null && // SPEC-42: excursion windows are not moved
     (node.status == NodeStatus.pending || node.status == NodeStatus.active);
 
 class MoveOptions {

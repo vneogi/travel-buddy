@@ -7,6 +7,7 @@ import '../data/models.dart';
 import '../features/arrival_armor/arrival_hubs.dart';
 import '../features/itinerary/current_window.dart';
 import '../features/itinerary/micro_location_label.dart';
+import '../features/move/move_sheet.dart' show nodeIsMovable;
 import '../offline/offline_database.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
@@ -143,7 +144,7 @@ class ActivityCard extends StatelessWidget {
 
     return Dismissible(
       key: ValueKey(node.nodeId),
-      direction: node.isLocked
+      direction: node.isLocked || node.timeWindow != null
           ? DismissDirection.none
           : DismissDirection.endToStart,
       confirmDismiss: (_) async {
@@ -151,6 +152,8 @@ class ActivityCard extends StatelessWidget {
           HapticFeedback.mediumImpact();
           return false;
         }
+        // SPEC-42: an excursion window is never swapped.
+        if (node.timeWindow != null) return false;
         onTapSwap?.call();
         return false; // handle via callback, don't remove
       },
@@ -225,6 +228,18 @@ class ActivityCard extends StatelessWidget {
                               node.geoRegion,
                             ),
                             style: AppTypography.label.copyWith(fontSize: 11),
+                          ),
+                        // SPEC-42: an excursion window shows its window, no time.
+                        ] else if (node.timeWindow != null) ...[
+                          Text(
+                            _windowLabel(node.timeWindow!),
+                            key: Key('time_window_label_${node.nodeId}'),
+                            style: AppTypography.caption.copyWith(
+                              color: AppColors.muted,
+                              fontSize: 11,
+                            ),
+                            softWrap: false,
+                            overflow: TextOverflow.clip,
                           ),
                         // SPEC-41: locked non-hotel shows exact time (no slot).
                         ] else if (node.isLocked ||
@@ -307,6 +322,7 @@ class ActivityCard extends StatelessWidget {
                             // SPEC-45 item 3: one inline Swap (44dp target)
                             if (onTapSwap != null &&
                                 !node.isLocked &&
+                                node.timeWindow == null &&
                                 !isCompleted &&
                                 !isSkipped)
                               SizedBox(
@@ -485,6 +501,7 @@ class ActivityCard extends StatelessWidget {
 
     // SPEC-42: Move lives in the overflow (no second title-row icon).
     if (onTapMove != null &&
+        nodeIsMovable(node) &&
         !node.isLocked &&
         node.nodeKind != 'booking' &&
         !isCompleted &&
@@ -595,6 +612,20 @@ class ActivityCard extends StatelessWidget {
 
   String _formatTime(DateTime dt) =>
       formatDestinationTime(dt, node.geoRegion);
+
+  /// SPEC-42 excursion window label (window table in the brief).
+  String _windowLabel(String window) {
+    switch (window) {
+      case 'morning':
+        return 'Morning';
+      case 'afternoon':
+        return 'Afternoon';
+      case 'whole_day':
+        return 'Whole day';
+      default:
+        return window;
+    }
+  }
 
   /// Human-readable label for a named day slot (SPEC-41).
   String _slotLabel(String slotName) {

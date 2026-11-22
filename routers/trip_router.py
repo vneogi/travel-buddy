@@ -641,6 +641,13 @@ async def process_trip_event(
                     "message": "Locked bookings cannot be swapped.",
                 },
             )
+        if target.time_window:
+            from services.move_service import WINDOW_NODE_COPY
+
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={"error": "window_node", "message": WINDOW_NODE_COPY},
+            )
         replacement_id = (request.preferences or {}).get("replacement_venue_id")
         if replacement_id and replacement_id == target.venue_id:
             raise HTTPException(
@@ -744,6 +751,20 @@ async def process_trip_event(
         user_id=user_id,
         is_anonymous=is_anonymous,
     )
+
+    # SPEC-42: window excursion needs review -- nothing applied or persisted,
+    # no version bump, no quota. The client confirms with the listed ids.
+    if result.get("excursion_review") is not None:
+        return TripEventResponse(
+            trip_id=request.trip_id,
+            version=trip.version,
+            status="needs_review",
+            message=result.get("response", ""),
+            updated_nodes=trip.nodes,
+            routing_tier_used=result["routing_tier_used"],
+            from_cache=False,
+            excursion_review=result["excursion_review"],
+        )
 
     # SPEC-42: trip-private uncatalogued add refusal -- nothing persisted.
     if result.get("uncatalogued_add_refused"):
@@ -918,6 +939,13 @@ async def swap_candidates(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Locked bookings cannot be swapped.",
+        )
+    if target.time_window:
+        from services.move_service import WINDOW_NODE_COPY
+
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"error": "window_node", "message": WINDOW_NODE_COPY},
         )
 
     target_region = target.geo_region or trip.geo_region

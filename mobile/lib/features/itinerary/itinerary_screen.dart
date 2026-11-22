@@ -5,6 +5,7 @@ import '../../core/connectivity_helper.dart';
 import '../../core/providers.dart';
 import '../../render/render_strings.dart';
 import '../direct_add/direct_add_sheet.dart';
+import '../direct_add/excursion_review_sheet.dart' show ExcursionSubmitOutcome;
 import '../move/move_sheet.dart';
 import 'warning_helpers.dart';
 import '../../data/models.dart';
@@ -157,6 +158,19 @@ class ItineraryScreen extends ConsumerWidget {
         tripId: tripId,
         targetDate: targetDate,
         repo: repo,
+        // SPEC-42: window Adds are sent from the sheet (review keeps it open).
+        submitWindow: (prefs) async {
+          final result = await controller.applyEvent(
+            type: EventType.addActivity,
+            message: 'Add ${prefs['name']}',
+            preferences: prefs,
+          );
+          if (result != null) return ExcursionSubmitOutcome(result: result);
+          return ExcursionSubmitOutcome(
+            error: ref.read(itineraryControllerProvider(tripId)).banner ??
+                'Could not add this. Please try again.',
+          );
+        },
       ),
     );
     if (choice == null) return;
