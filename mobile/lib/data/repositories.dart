@@ -105,6 +105,22 @@ class TripRepository {
     return TripEventResult.fromJson(data as Map<String, dynamic>);
   }
 
+  /// SPEC-25 trip-optional Ask: POST /ask with a question and a region.
+  /// Never sends a trip_id (the server refuses one with use_trip_event).
+  Future<AskResponse> askWithoutTrip({
+    required String question,
+    required String geoRegion,
+  }) async {
+    final data = await _api.post('/ask', body: {
+      'question': question,
+      'geo_region': geoRegion,
+    });
+    final body = data as Map<String, dynamic>;
+    return AskResponse.fromJson(
+      (body['ask_response'] as Map).cast<String, dynamic>(),
+    );
+  }
+
   /// RAG venue search for swap suggestions.
   ///
   /// SPEC-34: lat/lng are required -- callers resolve coordinates from the

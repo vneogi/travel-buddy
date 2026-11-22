@@ -22,3 +22,16 @@ class RegionDefaults {
     'nungwi_tanzania': (lat: -5.72720, lng: 39.29920),
   };
 }
+
+/// SPEC-25: display names for region codes (same names the create screen
+/// shows). Unknown codes fall back to the code itself.
+const _regionDisplayNames = <String, String>{
+  'dubai_uae': 'Dubai',
+  'luang_prabang_laos': 'Luang Prabang',
+  'vang_vieng_laos': 'Vang Vieng',
+  'vientiane_laos': 'Vientiane',
+  'zanzibar_tanzania': 'Zanzibar',
+  'nungwi_tanzania': 'Nungwi (Zanzibar)',
+};
+
+String regionDisplayName(String code) => _regionDisplayNames[code] ?? code;
