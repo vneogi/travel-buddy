@@ -5,7 +5,10 @@
 > `0344b4b` (PR #74). Thin typed Move merged as `e51513e` (PR #75).
 > Empty-day catalog Add merged as `b6ddecf` (PR #76). Trip-private
 > uncatalogued Add merged as `05d917e` (PR #77). Unknown-time excursion
-> windows remain later. Hosted/phone not done for these SHAs.
+> windows slice 1 on main (PR #326, `df5c10c`; Morning/Afternoon/Whole day,
+> review before skip; Move and swap refuse window nodes). Cancelling an
+> excursion does not restore skipped stops (known gap). Hosted/phone not
+> done for these SHAs.
 >
 > Depends on SPEC-31 date-scoped rendering, SPEC-40 guided creation, and
 > SPEC-41 feasibility-first scheduling. Starter generation is still at most
@@ -16,7 +19,7 @@
 > discovered venues and detours. Catalog Ask-to-Add and typed Move are on
 > main. Empty-day catalog Add (`b6ddecf`, PR #76) and trip-private
 > uncatalogued Add (`05d917e`, PR #77) are on main. Unknown-time
-> excursion windows remain later. These mechanics are
+> excursion windows slice 1 is on main (PR #326, `df5c10c`). These mechanics are
 > table stakes, not the product moat.
 
 ## Goal

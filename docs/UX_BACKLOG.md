@@ -91,7 +91,7 @@ Laos/China Gemini turns moved these surfaces to the front:
 1. P0 current-surface hygiene is on main.
 2. Broad, persistent, grounded trip Ask threads are on main.
 3. What Now Phase A is on main: deterministic structured results in that thread.
-4. Thin typed Ask-to-Add, Move, empty-day catalog Add, and uncatalogued trip-private Add are on main. Next product remainder: unknown-time excursions. SPEC-43 still gates non-owner use.
+4. Thin typed Ask-to-Add, Move, empty-day catalog Add, and uncatalogued trip-private Add are on main. Unknown-time excursions slice 1 is on main (PR #326, `df5c10c`). SPEC-43 still gates non-owner use.
 5. Operational card detail and current/next route guidance.
 
 The map-first shell, Travelogue/Passport, social features, gamification,
@@ -374,8 +374,8 @@ remaining product order is:
 3. Durable Ask threads, SPEC-46 What Now Phase A (`d1df944`), thin
    typed Ask-to-Add (`0344b4b`), thin typed Move (`e51513e`),
    empty-day catalog Add (`b6ddecf`), and trip-private uncatalogued Add
-   (`05d917e`) are on `main`. Next product remainder is unknown-time
-   excursions. Catalog place prompts and weather-day drill-down remain
+   (`05d917e`) are on `main`. Unknown-time excursions slice 1 is on main
+   (PR #326, `df5c10c`). Catalog place prompts and weather-day drill-down remain
    recorded SPEC-25 / SPEC-29 follow-ups. SPEC-43 still closes all
    twelve security/privacy gaps before another person uses the app or
    production LLM processing handles personal trip data.
