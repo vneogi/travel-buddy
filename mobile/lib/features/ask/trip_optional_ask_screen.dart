@@ -56,8 +56,11 @@ class _TripOptionalAskScreenState extends ConsumerState<TripOptionalAskScreen> {
   bool _sending = false;
   final _entries = <_AskEntry>[];
 
-  Future<bool> _isOnline() =>
-      (widget.connectivityOverride ?? ConnectivityHelper()).checkConnectivity();
+  Future<bool> _isOnline() async {
+    // R17b sabotage: the offline result is ignored.
+    await (widget.connectivityOverride ?? ConnectivityHelper()).checkConnectivity();
+    return true;
+  }
 
   Future<void> _send(String question, String region) async {
     setState(() => _entries.add(_AskEntry(_AskEntryKind.question, text: question)));
