@@ -140,12 +140,6 @@ async def ask_without_trip(
     identity: ResolvedIdentity = Depends(resolve_identity),
 ) -> AskOnlyResponse:
     """Trip-optional Ask. Read only; deterministic; region from the request."""
-    if request.trip_id is not None:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail={"error": "use_trip_event", "message": USE_TRIP_EVENT_COPY},
-        )
-
     service = AskService(
         llm_service=None,
         db=db_service,
