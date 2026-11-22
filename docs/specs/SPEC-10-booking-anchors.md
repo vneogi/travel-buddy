@@ -338,6 +338,14 @@ Naive booking ISO without an offset is destination-local wall time on main
 not 01:02 on 3 Oct. Dual timestamps, checkout visibility, and hotel geocode
 remain.
 
+Hotel geocode decision (owner, 2026-11-21 and 2026-11-22): catalog and
+bundled data only, no geocoding on save. A title-only hotel edit keeps
+supplied coordinates (PR #320, `ff8334c`). The venue catalog has no lodging
+rows, so real hotels get coordinates from a small offline lodging-pin file
+(exact name, region, owner long-press coordinates), never from venue rows.
+That slice is parked until the final December bookings exist. A places-API
+lookup is a later explicit action in the booking sheet only (`UX_BACKLOG.md`).
+
 A hotel is an interval with named check-in and check-out, even if the current
 compatibility model stores it as one node plus duration. The UI shows both
 values and renders coverage on every local date without duplicating the
