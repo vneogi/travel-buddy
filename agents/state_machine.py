@@ -1243,13 +1243,13 @@ class TripStateMachine:
                 restored = state.get("window_cancel_restored") or []
                 clashed = state.get("window_cancel_clashed") or []
                 if restored:
+                    noun = "stop" if len(restored) == 1 else "stops"
                     state["response"] += (
-                        f" Brought back {len(restored)} stops: {', '.join(restored)}."
+                        f" Brought back {len(restored)} {noun}: {', '.join(restored)}."
                     )
                 if clashed:
-                    state["response"] += (
-                        f" Left skipped because it now clashes: {', '.join(clashed)}."
-                    )
+                    verb = "it now clashes" if len(clashed) == 1 else "they now clash"
+                    state["response"] += f" Left skipped because {verb}: {', '.join(clashed)}."
             else:
                 state["response"] = "Activity canceled."
             return state

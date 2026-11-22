@@ -186,8 +186,39 @@ def test_clashing_stop_stays_skipped_and_is_named(client):
     assert kept["status"] == "skipped"
     assert kept["skipped_by_window_id"] == window_id
     assert message == (
-        f"Canceled {WINDOW}. Brought back 1 stops: {morning['venue_name']}. "
+        f"Canceled {WINDOW}. Brought back 1 stop: {morning['venue_name']}. "
         f"Left skipped because it now clashes: {lunch['venue_name']}."
+    )
+
+
+def test_reply_wording_one_restored_two_clashed(client):
+    user = "crs-4b"
+    trip_id = _trip(client, user)
+    day = _day(trip_id)
+    morning, lunch, afternoon = day["morning_tour"], day["lunch"], day["afternoon_evening_tour"]
+    window_id, ids = _excursion(client, user, trip_id, window="whole_day")
+    assert ids == [morning["node_id"], lunch["node_id"], afternoon["node_id"]]
+    for name, start in (("Spice tour", "09:00"), ("Cooking class", "11:00")):
+        booking = _event(
+            client,
+            user,
+            trip_id,
+            "add_booking",
+            preferences={
+                "venue_name": name,
+                "booking_type": "tour",
+                "scheduled_start": f"{DAY}T{start}:00",
+                "duration_minutes": 60,
+            },
+        )
+        assert booking.status_code == 200, booking.text
+
+    message = _cancel(client, user, trip_id, window_id)
+    assert _node(trip_id, afternoon["node_id"])["status"] == "pending"
+    assert message == (
+        f"Canceled {WINDOW}. Brought back 1 stop: {afternoon['venue_name']}. "
+        "Left skipped because they now clash: "
+        f"{morning['venue_name']}, {lunch['venue_name']}."
     )
 
 
