@@ -198,3 +198,64 @@ The PR description must include: the preflight answers (trip-reading
 intents list, region registry check), the closed request key set, the
 response key set, a test-to-production table, R17 expected failures, any
 existing test touched, and "no APK in this slice".
+
+## Amendment 1 (planning agent, 2026-11-22, after Genie's preflight)
+
+Preflight facts (base `568a729`):
+
+- Trip-only intents are `today_tonight` (reads `trip_nodes`),
+  `trip_current_next` (reads current and next node summaries) and
+  `plan_change` (only meaningful with a trip). `what_now` is never produced by
+  `classify_ask_intent` (it is reached only by `preferences.mode == "what_now"`
+  on the trip route), so it cannot occur on the new route. `compare`,
+  `nearby_option`, `practical_rule` and `dish_fact` do not read a trip. No intent
+  needs an LLM.
+- `REGIONS` has six codes: `dubai_uae`, `luang_prabang_laos`, `vang_vieng_laos`,
+  `vientiane_laos`, `zanzibar_tanzania`, `nungwi_tanzania`. The earlier test 2
+  code `laos_luang_prabang` was my error; use `luang_prabang_laos`.
+- `retrieve_catalog_facts` finds a venue only from the `venue_name` argument,
+  which the trip route fills from the current node. Place and hours questions
+  therefore always miss with no trip.
+- `AskBudget` is not enforced anywhere on main; budget and breaker activation
+  stay deferred with the LLM slice.
+
+Decisions:
+
+1. Trip-only refusal (section 3, test 3 and 4) covers exactly `today_tonight`,
+   `trip_current_next` and `plan_change`. Drop `what_now` from the list.
+2. Venue name from the question (option A), in the new route only; do not
+   change `handle_ask` or the trip route:
+   - Find catalog venues in `geo_region` whose name, case-folded with whitespace
+     collapsed, appears as a whole-word phrase in the case-folded question.
+   - Ignore venue names shorter than 4 characters.
+   - If several names match and one is contained in another, keep the longest.
+   - Accept only when exactly one venue remains; pass its name (and id, if the
+     catalog row has one) to `handle_ask` as `venue_name`. Zero or several
+     remaining: pass no venue, so the answer is the normal retrieval-miss
+     hedge or refusal. Never guess between venues.
+   - No LLM, no network, no fuzzy matching, no edit distance.
+3. Budget (option B): the new route does not enforce `AskBudget`, the same as the
+   trip path. Replace section 3's budget bullet with: "No budget is enforced
+   this slice (no model is called); activation is deferred with the LLM slice."
+   Drop test 9.
+4. Changed and added tests (`tests/test_spec25_trip_optional_ask.py`):
+   - 1: a place question naming one Zanzibar catalog venue, region
+     `zanzibar_tanzania`, no `trip_id`: grounded answer with a source citation.
+   - 1b: a question naming two unrelated venues in the region: retrieval-miss
+     hedge or refusal, no venue picked.
+   - 1c: a place question naming no venue: retrieval-miss hedge or refusal.
+   - 2: the same Zanzibar venue name asked with region `luang_prabang_laos`:
+     no Zanzibar venue name or fact in the response. Region code is
+     `luang_prabang_laos`.
+   - 4b: a `trip_current_next` question with no `trip_id`: refusal with the
+     start-a-trip offer.
+   - 9 is dropped. Everything else in section 5 stands.
+5. R17 additions:
+   - `-r17a` (plan_change and today_tonight refusal removed): expected failures
+     3, 4. Also remove the `trip_current_next` refusal in the same sabotage, so
+     4b fails too: expected failures 3, 4, 4b.
+   - `-r17b` unchanged: expected failure 5.
+   - New `feat/spec25-trip-optional-ask-r17c`: from the tip, the venue matcher
+     accepts the first match when several match. Expected failure: 1b.
+6. Everything else in the brief stands, including the closed request key set
+   (`question`, `geo_region`, optional `trip_id`; extras rejected).
