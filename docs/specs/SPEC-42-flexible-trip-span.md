@@ -144,7 +144,8 @@ day (`morning_tour`, `lunch`, `afternoon_evening_tour`; dinner is kept). The
 card shows the window label, not a clock time. If the window covers flexible
 stops already on that day, a review sheet lists the stops that would be
 skipped and nothing changes until the traveller confirms. A booking inside
-the window refuses the add. Brief:
+the window refuses the add. Move and swap refuse a window node (code
+`window_node`); cancel stays allowed. Brief:
 `docs/briefs/GENIE_SPEC_42_UNKNOWN_TIME_EXCURSIONS.md`.
 
 ### Move between days
