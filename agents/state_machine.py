@@ -1173,8 +1173,7 @@ class TripStateMachine:
         base_hard: bool,
     ):
         """Reschedule with *cand* back to PENDING; None when it clashes."""
-        if self._window_restore_clashes(cand, nodes, trip_state):
-            return None
+        # R17a sabotage: clash check removed.
         trial = [
             n.model_copy(update={"status": NodeStatus.PENDING, "skipped_by_window_id": None})
             if n.node_id == cand.node_id
@@ -1182,8 +1181,6 @@ class TripStateMachine:
             for n in nodes
         ]
         result = reschedule_and_validate(trial, mutated_node_ids=mutated | {cand.node_id})
-        if result.has_hard_conflict and not base_hard:
-            return None
         return result
 
     def _cancel_window(self, state: Dict, trip_state: TripState, window: TripNode) -> Dict:
