@@ -22,15 +22,7 @@ import '../home/home_controller.dart';
 
 /// Default region: the geoRegion of the trip with the latest updatedAt,
 /// when that code is supported; otherwise no selection.
-String? defaultAskRegion(HomeSnapshot snapshot) {
-  if (snapshot.trips.isEmpty) return null;
-  final latest = snapshot.trips.reduce(
-    (a, b) => b.updatedAt.isAfter(a.updatedAt) ? b : a,
-  );
-  return snapshot.supportedRegions.contains(latest.geoRegion)
-      ? latest.geoRegion
-      : null;
-}
+String? defaultAskRegion(HomeSnapshot snapshot) => null; // R17a sabotage: ignore trips
 
 enum _AskEntryKind { question, answer, offline, error }
 
