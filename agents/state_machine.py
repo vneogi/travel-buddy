@@ -1536,9 +1536,12 @@ class TripStateMachine:
             "routing_tier_used": RoutingTier.LIGHT.value,
             "from_cache": False,
             "venues_found": [],
-            "schedule_warnings": [],
+            "schedule_warnings": list(outcome.warnings),
         }
-        if not outcome.ok:
+        if outcome.review is not None:
+            # SPEC-42: review before skip; nothing is applied or persisted.
+            result["excursion_review"] = outcome.review
+        elif not outcome.ok:
             result["uncatalogued_add_refused"] = True
             result["uncatalogued_add_refusal_code"] = outcome.code
         return result

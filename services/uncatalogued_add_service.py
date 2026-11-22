@@ -11,9 +11,11 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
+from datetime import timedelta
 from typing import Any, Dict, List, Optional
 
-from models.schemas import TripNode, TripState
+from models.schemas import NodeStatus, TripNode, TripState
+from services.day_slots import _WHOLE_DAY_CONSUMED, SLOT_ORDER
 from services.direct_add_service import day_context, place_timing
 from services.move_service import _aware
 
@@ -33,7 +35,20 @@ REFUSAL_COPY: Dict[str, str] = {
     "duplicate": "A place with that name is already on this day.",
     "catalog_match": "That place is in the catalog. Pick it from the list instead.",
     "reachability": "It can't fit in that slot around your other plans that day.",
+    "invalid_window": "Choose morning, afternoon, or whole day.",
+    "locked_conflict": "A booking is already in that window.",
+    "needs_review": "Adding this would skip other stops on that day.",
+    "stale": "This day changed. Review again.",
 }
+
+# SPEC-42 unknown-time excursion windows (closed set). Dinner is never
+# consumed. whole_day reuses the SPEC-41 whole-day set.
+TIME_WINDOWS: Dict[str, tuple] = {
+    "morning": ("morning_tour", "lunch"),
+    "afternoon": ("afternoon_evening_tour",),
+    "whole_day": tuple(s for s in SLOT_ORDER if s in _WHOLE_DAY_CONSUMED),
+}
+_WINDOW_LABELS = {"morning": "morning", "afternoon": "afternoon", "whole_day": "whole day"}
 
 _SLOT_LABELS = {
     "morning_tour": "morning",
@@ -84,6 +99,8 @@ class UncataloguedAddResult:
     message: str = ""
     nodes: List[TripNode] = field(default_factory=list)
     added: Optional[TripNode] = None
+    review: Optional[Dict[str, Any]] = None  # SPEC-42 needs_review payload
+    warnings: List[str] = field(default_factory=list)
 
 
 def apply_uncatalogued_add(
@@ -101,6 +118,8 @@ def apply_uncatalogued_add(
     name = _clean_name(prefs.get("name"))
     if name is None:
         return refuse("invalid_name")
+    if prefs.get("time_window") is not None:
+        return _apply_window(trip, prefs, db, name, nodes, refuse)
     dwell = _clean_dwell(prefs.get("typical_dwell_minutes"))
     if dwell is None:
         return refuse("invalid_dwell")
@@ -115,15 +134,9 @@ def apply_uncatalogued_add(
     if ctx is None or code:
         return refuse(code or "invalid_date")
 
-    # Catalog read for collision only: never attach catalog identity.
-    key = normalize_name(name)
-    for row in db.list_venues_for_region(ctx.region) or []:
-        if key == normalize_name(str(row.get("name") or "")):
-            return refuse("catalog_match")
-        if name == str(row.get("venue_id") or ""):
-            return refuse("invalid_name")
-    if any(normalize_name(n.venue_name or "") == key for n in ctx.day_nodes):
-        return refuse("duplicate")
+    collision = _collision_code(name, ctx, db)
+    if collision:
+        return refuse(collision)
 
     start, _why = place_timing(
         ctx, lat=lat, lng=lng, dwell=dwell, structured=None, check_hours=False
@@ -151,4 +164,130 @@ def apply_uncatalogued_add(
         message=f"Added {name} to {prefs['target_date']} {_SLOT_LABELS[slot]} (only on this trip).",
         nodes=new_nodes,
         added=node,
+    )
+
+
+def _collision_code(name: str, ctx: Any, db: Any) -> Optional[str]:
+    """Catalog read for collision only: never attach catalog identity."""
+    key = normalize_name(name)
+    for row in db.list_venues_for_region(ctx.region) or []:
+        if key == normalize_name(str(row.get("name") or "")):
+            return "catalog_match"
+        if name == str(row.get("venue_id") or ""):
+            return "invalid_name"
+    if any(normalize_name(n.venue_name or "") == key for n in ctx.day_nodes):
+        return "duplicate"
+    return None
+
+
+def _is_hotel(node: TripNode) -> bool:
+    return (node.node_kind or "") == "booking" and (node.booking_type or "") == "hotel"
+
+
+def _apply_window(
+    trip: TripState, prefs: dict, db: Any, name: str, nodes: List[TripNode], refuse
+) -> UncataloguedAddResult:
+    """SPEC-42 unknown-time excursion: a window instead of a slot plus dwell.
+
+    No clock promise: the node spans the consumed slots from the first slot
+    floor to the floor of the slot after the last consumed one. Flexible
+    stops in those slots are skipped in place only after a confirmed review.
+    """
+    from services.catalog_itinerary import _slot_floor_utc
+    from services.scheduler import reschedule_and_validate
+
+    if prefs.get("target_slot") is not None:
+        return refuse("invalid_slot")
+    window = prefs.get("time_window")
+    consumed = TIME_WINDOWS.get(window) if isinstance(window, str) else None
+    if consumed is None:
+        return refuse("invalid_window")
+    if "typical_dwell_minutes" in prefs:
+        return refuse("invalid_dwell")
+    coords_ok, lat, lng = _clean_coords(prefs.get("lat"), prefs.get("lng"))
+    if not coords_ok:
+        return refuse("invalid_coords")
+    raw_micro = prefs.get("micro_location")
+    micro = " ".join(raw_micro.split()) if isinstance(raw_micro, str) else None
+    micro = micro or None
+
+    # The window's own occupancy is decided below, so "occupied" is not final.
+    ctx, code = day_context(trip, prefs.get("target_date"), consumed[0])
+    if ctx is None:
+        return refuse(code or "invalid_date")
+    collision = _collision_code(name, ctx, db)
+    if collision:
+        return refuse(collision)
+
+    end_slot = SLOT_ORDER[SLOT_ORDER.index(consumed[-1]) + 1]
+    start = _aware(ctx.floor_utc)
+    end = _aware(_slot_floor_utc(end_slot, ctx.local_day, ctx.tz))
+
+    for n in ctx.day_nodes:
+        if not (n.is_locked or (n.node_kind or "") == "booking") or _is_hotel(n):
+            continue
+        n_start = _aware(n.scheduled_start)
+        n_end = n_start + timedelta(minutes=n.duration_minutes)
+        if n.slot_name in consumed or (n_start < end and n_end > start):
+            return refuse("locked_conflict")
+
+    day_ids = {n.node_id for n in ctx.day_nodes}
+    conflicts = [
+        n.node_id
+        for n in nodes
+        if n.node_id in day_ids
+        and not n.is_locked
+        and (n.node_kind or "activity") != "booking"
+        and n.status in (NodeStatus.PENDING, NodeStatus.ACTIVE)
+        and n.slot_name in consumed
+    ]
+    confirm = prefs.get("confirm_skip_node_ids")
+    if confirm is None:
+        if conflicts:
+            return UncataloguedAddResult(
+                ok=False,
+                code="needs_review",
+                message=REFUSAL_COPY["needs_review"],
+                nodes=nodes,
+                review={"time_window": window, "skip_node_ids": conflicts},
+            )
+    elif (
+        not isinstance(confirm, list)
+        or len(set(map(str, confirm))) != len(confirm)
+        or set(map(str, confirm)) != set(conflicts)
+    ):
+        return refuse("stale")
+
+    node = TripNode(
+        venue_name=name,
+        venue_id=None,
+        scheduled_start=start,
+        duration_minutes=int((end - start).total_seconds() // 60),
+        micro_location=micro,
+        lat=lat,
+        lng=lng,
+        geo_region=ctx.region,
+        slot_name=consumed[0],
+        place_source=TRIP_PRIVATE,
+        time_window=window,
+    )
+    skip = set(conflicts)
+    new_nodes = [
+        n.model_copy(update={"status": NodeStatus.SKIPPED}) if n.node_id in skip else n
+        for n in nodes
+    ] + [node]
+    new_nodes.sort(key=lambda n: _aware(n.scheduled_start))
+    warnings: List[str] = []
+    if skip:
+        # Same in-place skip as unlocked cancel, then one reschedule.
+        result = reschedule_and_validate(new_nodes, mutated_node_ids={node.node_id, *skip})
+        new_nodes, warnings = result.nodes, result.warnings
+    return UncataloguedAddResult(
+        ok=True,
+        message=(
+            f"Added {name} to {prefs['target_date']} {_WINDOW_LABELS[window]} (only on this trip)."
+        ),
+        nodes=new_nodes,
+        added=node,
+        warnings=warnings,
     )

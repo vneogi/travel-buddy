@@ -96,6 +96,8 @@ class TripNode(BaseModel):
     # SPEC-42: provenance. Missing on old cached trips -> "catalog".
     # "trip_private" = traveller-added place, never written to the catalog.
     place_source: Literal["catalog", "trip_private"] = "catalog"
+    # SPEC-42 unknown-time excursion window (trip-private Add only).
+    time_window: Optional[Literal["morning", "afternoon", "whole_day"]] = None
 
 
 class CurrentContext(BaseModel):
@@ -339,6 +341,15 @@ class BookingReflow(BaseModel):
     days: List[BookingReflowDay]
 
 
+class ExcursionReview(BaseModel):
+    """SPEC-42 unknown-time excursion: stops a window would skip (not applied)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    time_window: str
+    skip_node_ids: List[str]
+
+
 class TripEventResponse(BaseModel):
     """Response after processing a trip event."""
 
@@ -354,6 +365,7 @@ class TripEventResponse(BaseModel):
     schedule_warnings: List[str] = []
     ask_response: Optional[AskResponseEnvelope] = None
     booking_reflow: Optional[BookingReflow] = None  # SPEC-10 HITL reflow
+    excursion_review: Optional[ExcursionReview] = None  # SPEC-42 needs_review
 
 
 class AddCandidate(BaseModel):
