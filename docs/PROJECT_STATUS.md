@@ -109,7 +109,7 @@
 | Money as a dimension (SPEC-23) | SPECIFIED | Not implemented. The engineering contract under VISION section 20, and roadmap concern 7. A band and an amount are different things and both are needed; no amount is storable without its currency; a band is meaningless until anchored to a region, which is what makes price tolerance portable between cities; transport cost belongs on trip_edge; budget is revealed from rejections rather than asked for, with a volunteered hard cap honoured exactly; amounts are SPEC-17 claims on a weeks-scale horizon and degrade to a band when stale. Depends on SPEC-13, SPEC-16 and SPEC-17 |
 
 | Identity lifecycle (SPEC-24) | SPECIFIED | Not implemented, and the design is deliberately settled ahead of the build. Sign-in itself is nearly free because Supabase Auth owns the provider flow and security.py already verifies the token; the work is what happens to the anonymous history. Owns credential aliases, the anonymous-to-account merge, multi-device, and sign-out. Merge direction is fixed one way, which extends the upgrade-on-sight rule already live on identity_kind. Union rather than dedupe; tier and quota both resolve to the maximum, since taking the minimum makes sign-in a way to refill the daily reroute allowance |
-| Ask Anything surface (SPEC-25) | PARTIAL (grounded, broad, durable trip Ask on main) | Initial grounding (`30a4270`), field-priority intents, and identity-scoped device-local thread history are on main through Phase C (`7d825c0`, PR #72). History/New conversation and typed envelope round-trip are implemented; reopened proposals are display-only. Trip-optional Ask slice 1 backend on main (PR #333, `2da033c`, `POST /api/v1/ask`; Flutter entry is slice 2), production LLM processing, and catalog-backed place prompts remain |
+| Ask Anything surface (SPEC-25) | PARTIAL (grounded, broad, durable trip Ask on main) | Initial grounding (`30a4270`), field-priority intents, and identity-scoped device-local thread history are on main through Phase C (`7d825c0`, PR #72). History/New conversation and typed envelope round-trip are implemented; reopened proposals are display-only. Trip-optional Ask slice 1 backend (PR #333, `2da033c`, `POST /api/v1/ask`) and slice 2 Flutter entry (PR #338, `5b00b61`: Home Ask bar, `/ask` screen, region picker) on main; phone check needs a hosted deploy carrying #333. No-trip thread persistence, production LLM processing, budget enforcement, and catalog-backed place prompts remain |
 | Home surface (SPEC-26) | IMPLEMENTED (snapshot) | GET /trips now returns featured_trip: active trip (or earliest upcoming) with actionable stop (no state_json, no full nodes). Dart HomeSnapshot parses and caches it. Home renders Now/Up next card above trip list. Offline cache renders same card with cache age. Full SPEC-22 migration remains |
 | App lifecycle and data rights (SPEC-27) | SPECIFIED | Not implemented. Owns push transport for candidates produced by capabilities such as SPEC-35, with tokens that survive the SPEC-24 merge and delivery through the SPEC-22 interruption budget enforced server-side. Also owns deletion/export under DPDP and GDPR and a minimum supported client that blocks writes but never reads |
 | Trip inspiration (SPEC-28) | DECIDED, NOT SCHEDULED | Opt-in, delayed, region-level public trip snapshots as inspiration. No live people/location, DMs or comments in v1. Requires identity, deletion/export and moderation gates |
@@ -156,8 +156,8 @@ the only open-items list; other docs point here.
 Owner return checklist (PENDING, in order). Written 2026-11-17 for the
 owner's device and laptop pause (about four days from 16 Nov). Each step
 names its owner. Nothing here is Genie work unless a step fails and a fix
-brief is written. The Genie queue is empty:
-SPEC-10 HITL reflow slice 1 is on main (PR #314, `5052d15`; no APK needed).
+brief is written. The Genie queue is empty (2026-11-22): the latest Genie
+slice, SPEC-25 trip-optional Ask slice 2, is on main (PR #338, `5b00b61`).
 
 1. Laptop, owner (Windows, PowerShell 5.1): `git pull` `main` to at least
    `ca4fc9e`. Run `docs/briefs/LAPTOP_VERIFY.md` steps 0 to 8 as far as
@@ -198,13 +198,20 @@ SPEC-10 HITL reflow slice 1 is on main (PR #314, `5052d15`; no APK needed).
      mode, shows "No verified fare or tip sheet for this hub yet.", and
      "Open driver card for hotel" opens the next hotel's card. A hotel
      booking has no Arrival armor item.
+   - SPEC-25 trip-optional Ask (needs the hosted deploy in step 5, which
+     carries PR #333): Home shows "Ask about a place" between the featured
+     trip and Create Trip; it opens the Ask screen with the most recent
+     trip's region picked. Ask about a named venue and get a sourced answer;
+     ask "what's next" and get the Start a trip button; airplane mode shows
+     "Not available offline" and sends nothing.
    - SPEC-53 and SPEC-56 device checks were recorded as OK on 16 Nov.
      Re-check only if this APK changes those screens.
 5. Isochrones booking return, owner (hosted; only when you choose):
    deploy from `main` with `--update-env-vars` (never `--set-env-vars`)
    and keep every env name. Check health, then record the new revision in
    `docs/HOSTED_STATE.md`. Hosted is `00019-nl7` today (2026-11-16, from
-   `bbf8872`), so this deploy is the first to carry PR #288. The flag still
+   `bbf8872`), so this deploy is the first to carry PR #288 and the SPEC-25
+   `POST /api/v1/ask` route (PR #333). The flag still
    defaults to off in code. Then set `TB_REACHABILITY_BOOKING_RETURN=on`
    with `--update-env-vars`, run
    What Now on a Zanzibar trip with a locked non-hotel booking later the
@@ -282,7 +289,8 @@ Backend, open but not trip-critical: Gap 4 durable tombstone on main (#254; 0027
 retention R1 on main (#295; R2 Supabase backend and any hosted run await owner decisions), zip/PDF; Gap 9 `derived_feature`; Gap 8 unused SQL cache path;
 Gap 10 log-bucket retention; Gap 11 gateway and Play Integrity; SPEC-27
 and SPEC-24 (G1 dependencies); SPEC-42 cancel-restores-skipped-stops (known gap); SPEC-10
-lodging pins (parked until real bookings); SPEC-25 trip-optional Ask; SPEC-46 Phase B
+lodging pins (parked until real bookings); SPEC-25 trip-optional Ask follow-ups (no-trip
+thread persistence, LLM, budget enforcement); SPEC-46 Phase B
 (after SPEC-43); SPEC-45 place detail and transfer cards; optional bar
 start-time floor.
 
@@ -333,10 +341,17 @@ Booking defaults and off-span cards on main (PR #309, `831724f`; brief
 the trip span render as cards; new bookings open on the trip's first day;
 the Edit sheet shows destination-local time. Owner phone screenshots on the
 831724f APK are recorded in `AWAITING_VERIFICATION.md` (Nov 21, booking
-fixes). Genie queue: `docs/briefs/GENIE_SPEC_25_TRIP_OPTIONAL_ASK_FLUTTER.md` (SPEC-25
-trip-optional Ask slice 2: Home Ask bar, `/ask` screen, region picker defaulting
-to the most recent trip; Flutter only, no APK). Slice 1 backend `POST /api/v1/ask`
-is on main (PR #333, `2da033c`).
+fixes). SPEC-25 trip-optional Ask is on main in two slices: slice 1 backend
+`POST /api/v1/ask` (PR #333, `2da033c`) and slice 2 Flutter entry (PR #338,
+`5b00b61`, brief `GENIE_SPEC_25_TRIP_OPTIONAL_ASK_FLUTTER.md`). Owner decisions
+2026-11-22: an Ask bar on Home opens a no-trip `/ask` screen; its region picker
+defaults to the region of the most recently updated trip (no trips: no default,
+pick first); "Start a trip" on a trip-only question opens `/trip/create`;
+messages live in screen state only. One existing test (`spec26_home_snapshot_test`)
+needed a taller test surface because the new card pushed the offline note off
+the 800x600 surface. Genie queue: empty. The SPEC-57 Arrival Armor brief was
+re-sent to Genie on 2026-11-22 by mistake (slice 1 is already on main, PR #292)
+and is withdrawn; the next brief waits on the owner's pick.
 SPEC-42 unknown-time excursions slice 1 is on main
 (PR #326, `df5c10c`; brief `GENIE_SPEC_42_UNKNOWN_TIME_EXCURSIONS.md` Amendment 1).
 SPEC-10 hotel coordinates slice 2 is on main (PR #320,
