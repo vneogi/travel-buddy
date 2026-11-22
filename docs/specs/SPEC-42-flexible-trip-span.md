@@ -7,8 +7,10 @@
 > uncatalogued Add merged as `05d917e` (PR #77). Unknown-time excursion
 > windows slice 1 on main (PR #326, `df5c10c`; Morning/Afternoon/Whole day,
 > review before skip; Move and swap refuse window nodes). Cancelling an
-> excursion does not restore skipped stops (known gap). Hosted/phone not
-> done for these SHAs.
+> excursion does not restore skipped stops (known gap). Brief queued:
+> `docs/briefs/GENIE_SPEC_42_CANCEL_RESTORES_SKIPPED.md` (owner decisions
+> 2026-11-22: restore automatically and say so in the reply; a stop that now
+> clashes stays skipped and is named). Hosted/phone not done for these SHAs.
 >
 > Depends on SPEC-31 date-scoped rendering, SPEC-40 guided creation, and
 > SPEC-41 feasibility-first scheduling. Starter generation is still at most
