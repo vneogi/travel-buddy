@@ -158,7 +158,11 @@ owner's device and laptop pause (about four days from 16 Nov). Each step
 names its owner. Nothing here is Genie work unless a step fails and a fix
 brief is written. The Genie queue holds `docs/briefs/GENIE_SPEC45_PLACE_DETAIL.md`
 (2026-11-23; SPEC-45 operational place details, Flutter only, fields already on
-the node; transfer cards stay parked). Latest Genie slices on
+the node; transfer cards stay parked). Its PR #363 hung in `flutter test`
+(test 5, Driver card) on 2026-11-23; R17 drafts #364-#366 closed; a fix
+is with Genie. Next spec after it (owner, 2026-11-23): paste-your-plan
+import, from the Nov 2026 competitive read in `docs/MARKET_STRATEGY.md`
+(Tripxcursion, Wanderlog). Latest Genie slices on
 main: SPEC-43 client privacy remainders (PR #357, `59bf840`; booking reference
 masked by default; optional signals not queued; no FLAG_SECURE, owner decision);
 SPEC-42 booking refused inside an active excursion window (PR #349,
