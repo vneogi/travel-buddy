@@ -367,7 +367,8 @@ Found while building cancel-restores (PR #343): `add_booking` accepts a locked
 tour over an active excursion window with no reflow proposal and no warning.
 Cancel then correctly leaves the clashing stop skipped. A later brief should
 warn or refuse when a booking lands inside an active window, without widening
-cancel-restore. Not started.
+cancel-restore. Owner decision 2026-11-23: refuse (hotels exempt). Brief
+queued: `docs/briefs/GENIE_SPEC_42_BOOKING_OVER_WINDOW.md`.
 
 ## 2. Sequencing rule (important)
 **UX polish does not capture moat data.** The spine work above is shipped. The

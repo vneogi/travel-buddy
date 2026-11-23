@@ -163,6 +163,15 @@ before PR #343 have no tag and cancel as before. On main as PR #343
 (`081626a`). Known follow-up: a booking can be accepted over an active
 excursion window without a warning (recorded in `UX_BACKLOG.md`).
 
+### Decision: booking inside an active excursion (owner, 2026-11-23)
+
+A non-hotel booking (add, or an edit that changes time, duration or type)
+whose span overlaps an active excursion window is refused with
+`booking_refused` and a message to cancel the excursion first. Hotels are
+exempt. Edge-touching spans do not overlap. Bookings that already overlap
+are left alone, and edits that change none of those fields are allowed.
+Brief: `docs/briefs/GENIE_SPEC_42_BOOKING_OVER_WINDOW.md`.
+
 ### Move between days
 
 A flexible activity can move to another date/time inside the trip span. The

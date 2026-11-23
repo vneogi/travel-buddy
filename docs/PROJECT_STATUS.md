@@ -156,8 +156,10 @@ the only open-items list; other docs point here.
 Owner return checklist (PENDING, in order). Written 2026-11-17 for the
 owner's device and laptop pause (about four days from 16 Nov). Each step
 names its owner. Nothing here is Genie work unless a step fails and a fix
-brief is written. The Genie queue is empty (2026-11-23). The latest Genie
-slice, SPEC-42 cancel restores skipped stops, is on main (PR #343, `081626a`).
+brief is written. The Genie queue holds `docs/briefs/GENIE_SPEC_42_BOOKING_OVER_WINDOW.md`
+(2026-11-23; refuse a non-hotel booking inside an active excursion window,
+backend only). The latest Genie slice, SPEC-42 cancel restores skipped stops,
+is on main (PR #343, `081626a`).
 SPEC-25 trip-optional Ask slice 2 is on main (PR #338, `5b00b61`).
 
 1. Laptop, owner (Windows, PowerShell 5.1): `git pull` `main` to at least
@@ -295,7 +297,7 @@ ProGuard, Gap 7 consent outbox/UI, Gap 4 Flutter leave).
 Backend, open but not trip-critical: Gap 4 durable tombstone on main (#254; 0027 applied on hosted 2026-11-15),
 retention R1 on main (#295; R2 Supabase backend and any hosted run await owner decisions), zip/PDF; Gap 9 `derived_feature`; Gap 8 unused SQL cache path;
 Gap 10 log-bucket retention; Gap 11 gateway and Play Integrity; SPEC-27
-and SPEC-24 (G1 dependencies); SPEC-42 booking-accepted-over-active-excursion without a warning (follow-up); SPEC-10
+and SPEC-24 (G1 dependencies); SPEC-42 booking over an active excursion (brief queued: refuse, backend only); SPEC-10
 lodging pins (parked until real bookings); SPEC-25 trip-optional Ask follow-ups (no-trip
 thread persistence, LLM, budget enforcement); SPEC-46 Phase B
 (after SPEC-43); SPEC-45 place detail and transfer cards; optional bar
@@ -363,7 +365,8 @@ the brief is withdrawn. SPEC-42 cancel restores skipped stops is on main
 cancelling an excursion restores the stops it skipped (tagged at confirm);
 a stop that now clashes stays skipped and is named; reply uses singular and
 plural wording. Excursions added before #343 are not restored. Genie queue:
-empty. Phone check needs a hosted deploy carrying #343. SPEC-42 unknown-time
+`GENIE_SPEC_42_BOOKING_OVER_WINDOW.md` (owner decision 2026-11-23: refuse a
+non-hotel booking inside an active excursion window). Phone check needs a hosted deploy carrying #343. SPEC-42 unknown-time
 excursions slice 1 is on main (PR #326, `df5c10c`; brief
 `GENIE_SPEC_42_UNKNOWN_TIME_EXCURSIONS.md` Amendment 1).
 SPEC-10 hotel coordinates slice 2 is on main (PR #320,
