@@ -78,11 +78,6 @@ class SignalService {
     String entityType = 'venue',
     String? entityId,
   }) async {
-    // SPEC-43 Gap 7: optional types are never queued without a consent grant.
-    if (kOptionalSignalTypes.contains(signalType)) {
-      debugPrint('[SignalService] optional signal not queued: $signalType');
-      return false;
-    }
     try {
       // Queue cap check (SPEC-02 B.3): protect unbounded growth
       final size = await _db.getOutboxSize();
