@@ -717,6 +717,22 @@ class TripStateMachine:
             # SPEC-10: catalog name-match for missing coords (hotels only,
             # only when BOTH lat and lng are absent).
             bk_type = prefs.get("booking_type", "flight")
+            # SPEC-42: a non-hotel booking inside an active excursion window is
+            # refused before anything is inserted.
+            from services.uncatalogued_add_service import (
+                active_window_overlap,
+                booking_over_window_message,
+            )
+
+            _window_hit = active_window_overlap(
+                trip_state.nodes, start_dt, int(prefs.get("duration_minutes", 90)), bk_type
+            )
+            if _window_hit is not None:
+                state["booking_refused"] = True
+                state["schedule_warnings"] = [
+                    booking_over_window_message(_window_hit, start_dt, booking_region)
+                ]
+                return state
             if bk_type == "hotel" and bk_lat is None and bk_lng is None and bk_region:
                 from services.catalog_name_match import catalog_coords_for_name
 
@@ -792,6 +808,34 @@ class TripStateMachine:
                 except (ValueError, TypeError):
                     state["booking_refused"] = True
                     state["schedule_warnings"] = ["Could not parse the booking time."]
+                    return state
+
+            # SPEC-42: only a changed time, duration or type is checked against
+            # active excursion windows (values compared, not keys present).
+            new_duration = (
+                int(prefs["duration_minutes"])
+                if "duration_minutes" in prefs
+                else node.duration_minutes
+            )
+            new_type = prefs.get("booking_type", node.booking_type)
+            if (
+                new_start != node.scheduled_start
+                or new_duration != node.duration_minutes
+                or new_type != node.booking_type
+            ):
+                from services.uncatalogued_add_service import (
+                    active_window_overlap,
+                    booking_over_window_message,
+                )
+
+                _window_hit = active_window_overlap(
+                    trip_state.nodes, new_start, new_duration, new_type, ignore_node_id=node.node_id
+                )
+                if _window_hit is not None:
+                    state["booking_refused"] = True
+                    state["schedule_warnings"] = [
+                        booking_over_window_message(_window_hit, new_start, new_region)
+                    ]
                     return state
 
             # --- Phase 2: all validated, now apply atomically ---

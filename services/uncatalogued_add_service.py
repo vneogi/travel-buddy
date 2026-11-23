@@ -184,6 +184,49 @@ def _is_hotel(node: TripNode) -> bool:
     return (node.node_kind or "") == "booking" and (node.booking_type or "") == "hotel"
 
 
+def active_window_overlap(
+    nodes: List[TripNode],
+    start: Any,
+    duration_minutes: int,
+    booking_type: Optional[str],
+    ignore_node_id: Optional[str] = None,
+) -> Optional[TripNode]:
+    """SPEC-42: the first active excursion window a booking span overlaps.
+
+    Mirrors locked_conflict the other way round. Hotels never overlap.
+    Overlap is strict: touching the window's start or end is not a clash.
+    """
+    if booking_type == "hotel":
+        return None
+    b_start = _aware(start)
+    b_end = b_start + timedelta(minutes=int(duration_minutes))
+    for n in nodes:
+        if n.node_id == ignore_node_id or not n.time_window:
+            continue
+        if n.status not in (NodeStatus.PENDING, NodeStatus.ACTIVE):
+            continue
+        w_start = _aware(n.scheduled_start)
+        w_end = w_start + timedelta(minutes=n.duration_minutes)
+        if b_start < w_end and b_end > w_start:
+            return n
+    return None
+
+
+def booking_over_window_message(window: TripNode, start: Any, region: Optional[str]) -> str:
+    """Refusal copy naming the excursion, its window and the local date."""
+    from datetime import timezone
+
+    from services.destination_tz import destination_tz
+
+    tz = destination_tz(region or "") or timezone.utc
+    local_date = _aware(start).astimezone(tz).date().isoformat()
+    label = _WINDOW_LABELS.get(window.time_window or "", window.time_window or "")
+    return (
+        f"This overlaps {window.venue_name} ({label}, {local_date}). "
+        "Cancel the excursion first, then add the booking."
+    )
+
+
 def _apply_window(
     trip: TripState, prefs: dict, db: Any, name: str, nodes: List[TripNode], refuse
 ) -> UncataloguedAddResult:
