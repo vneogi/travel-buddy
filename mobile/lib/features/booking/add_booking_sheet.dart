@@ -62,6 +62,8 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
   final _codeController = TextEditingController();
   final _notesController = TextEditingController();
   final _pasteController = TextEditingController();
+  // SPEC-43 Gap 5: the booking reference starts hidden each time the sheet opens.
+  bool _codeVisible = false;
   late DateTime _scheduledStart;
   int _durationMinutes = 180;
   DateTime? _checkoutDate;
@@ -613,8 +615,21 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
               ),
             TextField(
               controller: _codeController,
-              decoration:
-                  const InputDecoration(labelText: 'Confirmation Code'),
+              // SPEC-43 Gap 5: booking reference masked by default.
+              obscureText: !_codeVisible,
+              enableSuggestions: false,
+              autocorrect: false,
+              decoration: InputDecoration(
+                labelText: 'Confirmation Code',
+                suffixIcon: IconButton(
+                  key: const Key('booking_code_reveal'),
+                  tooltip: _codeVisible ? 'Hide code' : 'Show code',
+                  icon: Icon(
+                    _codeVisible ? Icons.visibility_off : Icons.visibility,
+                  ),
+                  onPressed: () => setState(() => _codeVisible = !_codeVisible),
+                ),
+              ),
             ),
             const SizedBox(height: AppSpacing.sm),
             TextField(
