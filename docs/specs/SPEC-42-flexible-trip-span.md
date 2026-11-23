@@ -8,8 +8,10 @@
 > windows slice 1 on main (PR #326, `df5c10c`; Morning/Afternoon/Whole day,
 > review before skip; Move and swap refuse window nodes). Cancelling an
 > excursion restores the stops it skipped on main (PR #343, `081626a`;
-> brief `GENIE_SPEC_42_CANCEL_RESTORES_SKIPPED.md`). Hosted/phone not done
-> for these SHAs.
+> brief `GENIE_SPEC_42_CANCEL_RESTORES_SKIPPED.md`). A booking inside an
+> active excursion window is refused, and the booking sheet shows why (PR #349,
+> `55c208d`; brief `GENIE_SPEC_42_BOOKING_OVER_WINDOW.md`). Hosted/phone not
+> done for these SHAs.
 >
 > Depends on SPEC-31 date-scoped rendering, SPEC-40 guided creation, and
 > SPEC-41 feasibility-first scheduling. Starter generation is still at most
@@ -160,8 +162,7 @@ plural wording). A stop that now clashes with a locked booking or another
 window stays skipped and is named. Only stops tagged at confirm time are
 restored; booking reflow and ordinary cancels are not. Excursions added
 before PR #343 have no tag and cancel as before. On main as PR #343
-(`081626a`). Known follow-up: a booking can be accepted over an active
-excursion window without a warning (recorded in `UX_BACKLOG.md`).
+(`081626a`). The booking-over-window follow-up is closed by the decision below.
 
 ### Decision: booking inside an active excursion (owner, 2026-11-23)
 
@@ -172,7 +173,8 @@ exempt. Edge-touching spans do not overlap. Bookings that already overlap
 are left alone, and edits that change none of those fields (compared by
 value, since the sheet resends every field) are allowed. The booking sheet
 must show the server's refusal text, not its generic save error (brief
-Amendment 1). Brief: `docs/briefs/GENIE_SPEC_42_BOOKING_OVER_WINDOW.md`.
+Amendment 1). On main as PR #349 (`55c208d`).
+Brief: `docs/briefs/GENIE_SPEC_42_BOOKING_OVER_WINDOW.md`.
 
 ### Move between days
 

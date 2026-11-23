@@ -17,7 +17,8 @@ URLs, ATS, and trip-route ownership are on `main` through
 `8fab43b`. Hosted 0025 is applied. Cloud Run
 `travel-buddy-00015-x8d` is the live untagged revision (Gap 1 JWKS; Tanzania packs loaded).
 SPEC-42 remains PARTIAL (unknown-time windows slice 1 on main, PR #326
-`df5c10c`; cancel restores skipped stops on main, PR #343 `081626a`).
+`df5c10c`; cancel restores skipped stops on main, PR #343 `081626a`; booking
+refused inside an active window, PR #349 `55c208d`).
 Create-then-book
 HITL reflow slice 1 is on main (PR #314, `5052d15`); the stay-interval
 remainder is open. Trip-optional Ask is on main (PRs #333 and #338; phone
@@ -74,9 +75,9 @@ green and no APK. SPEC-25 trip-optional Ask: slice 1 backend (PR #333,
 screen, region picker defaulting to the most recent trip) are on main; the phone
 check waits for a hosted deploy carrying #333. SPEC-42 cancel restores
 skipped stops is on main (PR #343, `081626a`); phone check waits for a hosted
-deploy carrying #343. Genie queue: `docs/briefs/GENIE_SPEC_42_BOOKING_OVER_WINDOW.md`
-(refuse a non-hotel booking inside an active excursion window; backend plus a
-small booking-sheet message fix, Amendment 1). The SPEC-57 brief re-sent 2026-11-22
+deploy carrying #343. SPEC-42 booking refused inside an active excursion window
+is on main (PR #349, `55c208d`; the booking sheet shows the server message);
+phone check waits for the same hosted deploy. Genie queue: empty. The SPEC-57 brief re-sent 2026-11-22
 was a mistake (slice 1 is PR #292) and is withdrawn.
 SPEC-42 unknown-time windows on main (PR #326, `df5c10c`). SPEC-10 hotel coordinates slice 2 (title-edit
 keeps supplied coordinates) is on main (PR #320, `ff8334c`). December hotel
