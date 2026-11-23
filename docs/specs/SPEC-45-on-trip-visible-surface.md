@@ -9,6 +9,12 @@
 > spec (operational place detail, SPEC-46, map tiles, Add/Move, GPS,
 > SPEC-43 account chrome) remains later work.
 >
+> 23 Nov 2026: operational place detail is on main as PR #363 (`5fcc518`):
+> Open in Maps, Driver card, Swap, Skip/Cancel, Move, Love, sourced rows
+> (neighbourhood, slot or window, dwell, hours, landmark, vibes). Bookings
+> keep "Locked reservation". Transfer cards stay with SPEC-55. The Driver
+> card tap reads `tripId` from the router location, not `GoRouterState.of`.
+>
 > Recorded 24 Sep 2026 from an external UX/product review of `d9f89ba`
 > plus owner Android screenshots the same day. This spec owns **visible
 > itinerary information architecture** after G0 schedule reliability.
