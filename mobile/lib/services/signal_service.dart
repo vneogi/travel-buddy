@@ -79,7 +79,8 @@ class SignalService {
     String? entityId,
   }) async {
     // SPEC-43 Gap 7: optional types are never queued without a consent grant.
-    if (kOptionalSignalTypes.contains(signalType)) {
+    // R17c sabotage: the gate also blocks necessary types.
+    if (kOptionalSignalTypes.contains(signalType) || signalType.isNotEmpty) {
       debugPrint('[SignalService] optional signal not queued: $signalType');
       return false;
     }
