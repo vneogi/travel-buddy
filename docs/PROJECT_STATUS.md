@@ -140,6 +140,7 @@
 | Transfer between destinations (SPEC-55) | PARKED (design answered 2026-11-16) | Departing trip owns the record; free text on an existing booking type, no migration |
 | Offline readiness indicator (SPEC-56) | SLICE 1 ON MAIN (PR #270, `c31fc22`) | Honest "saved on this phone" row and sheet from real cache state. Device check PASSED 2026-11-16 |
 | Arrival Armor (SPEC-57) | SLICE 1 ON MAIN (PR #292, `b8a6ac3`) | Booking-tap captain HUD from bundled `arrival_hubs.json`; next-hotel Driver Card link; fares and scam notes empty until owner on-site notes. Device check pending |
+| Paste-your-plan import (SPEC-58) | SPEC + BRIEF WRITTEN, not sent | Paste a chatbot, agent or blog plan; confirm each catalog match; unmatched stops are plain 'Not in our catalog' rows that recovery never uses. Owner 2026-11-23: confirm-each, plain rows, catalog-only |
 
 Migration numbers are assigned when a spec is implemented, not when it is
 written. SPEC-11, SPEC-13, SPEC-14 and SPEC-15 each claimed a number, and the
@@ -163,8 +164,9 @@ CI hung in `flutter test` (test 5, Driver card), and the fix (`7d7eb76`,
 Driver card reads `tripId` from the router location) is what landed. R17
 drafts #368-#370 closed; each failed exactly its expected tests. Phone
 check for Driver card and Open in Maps is part of the next APK. Next spec
-(owner, 2026-11-23): paste-your-plan import, from the Nov 2026 competitive
-read in `docs/MARKET_STRATEGY.md` (Tripxcursion, Wanderlog). Latest Genie
+(owner, 2026-11-23): paste-your-plan import, SPEC-58, brief
+`docs/briefs/GENIE_SPEC58_PASTE_PLAN_IMPORT.md` (not sent yet; from the Nov
+2026 competitive read in `docs/MARKET_STRATEGY.md`). Latest Genie
 slices on
 main: SPEC-43 client privacy remainders (PR #357, `59bf840`; booking reference
 masked by default; optional signals not queued; no FLAG_SECURE, owner decision);
@@ -340,7 +342,7 @@ Not yet on Cloud Run (`00019-nl7`); owner enables after deploy with
 Penciled UI/UX package (owner 2026-11-15; love the recommendations; not
 trip-critical). Full draft:
 `docs/briefs/UI_UX_IMPLEMENTATION_SPECS_2026-11-15.md`. Owning spec
-files SPEC-48..SPEC-57 are in `docs/specs/` (SPEC-57 on 2026-11-17).
+files SPEC-48..SPEC-58 are in `docs/specs/` (SPEC-57 on 2026-11-17; SPEC-58 on 2026-11-23).
 
 Owner device window closes 2026-11-16 night for about four days.
 Resequence (2026-11-16): land Genie work behind CI now; batch phone
