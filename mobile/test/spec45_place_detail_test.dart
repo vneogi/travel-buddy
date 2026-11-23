@@ -179,7 +179,7 @@ void main() {
     await tester.tap(find.byKey(const Key('detail_driver_card')));
     await tester.pumpAndSettle();
     expect(find.text('card:trip-9:a-ref'), findsOneWidget);
-  });
+  }, timeout: const Timeout(Duration(seconds: 60)));
 
   testWidgets('6. Love invokes the parent callback once', (tester) async {
     _tallSurface(tester);

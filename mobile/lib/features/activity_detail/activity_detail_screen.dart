@@ -60,20 +60,18 @@ Future<void> openPlaceInMaps(BuildContext context, TripNode node) async {
 }
 
 /// SPEC-45: push the Driver card on the same path the card overflow uses.
-/// The trip id is read from the router only at tap time; when it is not
-/// available nothing happens (no guessed path).
+/// The trip id is read at tap time from the router's current location
+/// (this screen is a page-less MaterialPageRoute, where GoRouterState.of
+/// never resolves and spins). With no router or no trip id nothing happens.
 void openPlaceDriverCard(BuildContext context, TripNode node) {
-  String? tripId;
-  try {
-    tripId = GoRouterState.of(context).pathParameters['tripId'];
-  } catch (_) {
-    tripId = null;
-  }
-  if (tripId == null || tripId.isEmpty) {
+  final router = GoRouter.maybeOf(context);
+  final tripId =
+      router?.routerDelegate.currentConfiguration.pathParameters['tripId'];
+  if (router == null || tripId == null || tripId.isEmpty) {
     debugPrint('[ActivityDetailScreen] no tripId in route; driver card not opened');
     return;
   }
-  context.push('/trip/$tripId/card/${node.venueId ?? node.venueName}');
+  router.push('/trip/$tripId/card/${node.venueId ?? node.venueName}');
 }
 
 /// SPEC-45: Love on the details screen. Shows filled once loved; the
