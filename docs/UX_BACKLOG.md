@@ -361,14 +361,12 @@ the vendor attribution. Until then hotels get coordinates from an offline
 exact-name lodging pin (SPEC-10, parked until real bookings). Do not build an
 in-house hotel or postcode database.
 
-### P3 -- Booking accepted over an active excursion (SPEC-42 follow-up, 2026-11-23)
+### Done -- Booking accepted over an active excursion (SPEC-42 follow-up, closed 2026-11-23)
 
-Found while building cancel-restores (PR #343): `add_booking` accepts a locked
-tour over an active excursion window with no reflow proposal and no warning.
-Cancel then correctly leaves the clashing stop skipped. A later brief should
-warn or refuse when a booking lands inside an active window, without widening
-cancel-restore. Owner decision 2026-11-23: refuse (hotels exempt). Brief
-queued: `docs/briefs/GENIE_SPEC_42_BOOKING_OVER_WINDOW.md`.
+Found while building cancel-restores (PR #343). Closed by PR #349 (`55c208d`):
+a non-hotel booking inside an active excursion window is refused with a message
+to cancel the excursion first; the booking sheet shows that message. Hotels are
+exempt. Brief: `docs/briefs/GENIE_SPEC_42_BOOKING_OVER_WINDOW.md` (Amendment 1).
 
 ## 2. Sequencing rule (important)
 **UX polish does not capture moat data.** The spine work above is shipped. The
@@ -385,7 +383,7 @@ remaining product order is:
    empty-day catalog Add (`b6ddecf`), and trip-private uncatalogued Add
    (`05d917e`) are on `main`. Unknown-time excursions slice 1 is on main
    (PR #326, `df5c10c`). Cancel restores skipped stops is on main
-   (PR #343, `081626a`). Catalog place prompts and weather-day drill-down remain
+   (PR #343, `081626a`); booking refused inside a window (PR #349, `55c208d`). Catalog place prompts and weather-day drill-down remain
    recorded SPEC-25 / SPEC-29 follow-ups. SPEC-43 still closes all
    twelve security/privacy gaps before another person uses the app or
    production LLM processing handles personal trip data.

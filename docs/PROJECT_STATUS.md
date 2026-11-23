@@ -124,7 +124,7 @@
 | PDF itinerary intake (SPEC-39) | DEFERRED | No implementation brief. PDF/OCR, Day Sheet, and print-pack work remain outside the current sequence |
 | Guided Create Trip foundation (SPEC-40) | DONE (PR #61, `ebdea52`) | Five-step destination/date-range/party/interests/review flow backed by deterministic multi-day catalog selection. Post-merge CI and owner Flutter tests passed. Hosted deploy and phone acceptance are not yet repeated for this SHA |
 | Hours-aware scheduling and staged ranking (SPEC-41) | PHASE A COMPLETE (`d1fde14`, `7f25042`) | Create, corridor, and swap refuse known-closed or walking-unreachable target slots; day packing uses per-pair deterministic walking time and later opening windows; swap search/apply share reachability; locked non-hotel anchors remain reachable; cached `max_days` is guaranteed across weekdays and valid interest profiles |
-| Flexible trip span and sparse day editing (SPEC-42) | PARTIAL (`adc99d2`, merged `17e58ac`; Ask-to-Add `0344b4b`; Move `e51513e`; empty-day Add `b6ddecf`; uncatalogued `05d917e`; off-span cards PR #309 `831724f`; unknown-time windows PR #326 `df5c10c`; cancel restores PR #343 `081626a`) | Catalog-derived date caps removed; generation fills at most five starter days and empty dates render. Thin typed Ask-to-Add, Move, empty-day catalog Add, trip-private uncatalogued Add, unknown-time excursion windows, and cancel-restores-skipped are on main. Hosted/phone not done for the cancel-restore SHA. Uncatalogued nodes cannot enter the shared catalog without review |
+| Flexible trip span and sparse day editing (SPEC-42) | PARTIAL (`adc99d2`, merged `17e58ac`; Ask-to-Add `0344b4b`; Move `e51513e`; empty-day Add `b6ddecf`; uncatalogued `05d917e`; off-span cards PR #309 `831724f`; unknown-time windows PR #326 `df5c10c`; cancel restores PR #343 `081626a`; booking refused in a window PR #349 `55c208d`) | Catalog-derived date caps removed; generation fills at most five starter days and empty dates render. Thin typed Ask-to-Add, Move, empty-day catalog Add, trip-private uncatalogued Add, unknown-time excursion windows, cancel-restores-skipped, and booking-refused-in-window are on main. Hosted/phone not done for the #343 and #349 SHAs. Uncatalogued nodes cannot enter the shared catalog without review |
 | Security, privacy and data governance foundation (SPEC-43) | PARTIAL (Gaps 1, 6, 2, 9 ownership+schemas+GPS+derived metadata, 12 navigation privacy, 5 backup+SQLCipher, 7 fail-closed ingest, 8 identity cache+HMAC+canaries+context+purge, 10 ring+422, 11 body/depth+rate+spend on main; hosted G1 live) | Gap 1 JWT `2460edf` hosted on `00014-sbm`. Gap 6 `c65261c`. Gap 2 0026 `0b8125f` (not hosted). Gap 9 ingest ownership `163a14c` (PR #81). Gap 9 closed schemas `fb72545` (PR #98). Gap 9 ranking isolation `9b49fd0` (PR #101). Gap 9 trip-place `cafba3c` (PR #103). Gap 12 HTTPS `6f1dab8` (PR #82). Gap 12 cache keys `290f821` (PR #85). Gap 12 chat URLs `14ce56d` (PR #89). Gap 12 ATS `be89128` (PR #92). Gap 12 trip-route ownership `f486079` (PR #95). Gap 5 backup `1672759` (PR #105). Gap 5 SQLCipher `9cb2324` (PR #107). Gap 5 leftover-open `1de6ff2` (PR #110). Gap 7 fail-closed ingest `e3eaa81` (PR #112). Gap 8 identity cache `62927dd` (PR #114). Gap 10 ring redaction `fbe96f6` (PR #117). Gap 11 body/depth `2077d8d` (PR #119). Gap 9 GPS `08253cb` (PR #122). Gap 9 derived metadata `4265403` (PR #125). Gap 11 rate `c70296c` (PR #128). Gap 11 spend `e7c89b5` (PR #131). Owner G0 APK `76d7e9be...` on `1aa405c` after `pm clear`. Gap 10 422 stripping `04169f9` (PR #134). Gap 8 HMAC `5a9f684` (PR #137). Gap 8 canaries `895045a` (PR #140). Gap 8 trip/date/source-version `606626e` (PR #142). Gap 8 active purge `8fab43b` (PR #145). Remainders: Armor/Play Integrity; `derived_feature` table; Gap 8 SQL path. Hosted 0026 not applied |
 | Backend integrity and future-readiness foundation (SPEC-44) | PHASE A ON MAIN (PR #67, `9a7b9d9`) | Atomic trip/party/graph writes, optimistic version, durable command_id replay, typed conflicts, and hosted 0025. A4/A5, Flutter command queue, and SPEC-43 remain out of this slice |
 | On-trip visible surface (SPEC-45) | PHASE A + FIELD TRUST HYGIENE ON MAIN | Phase A chrome is on the field APK. Phase B field trust hygiene is on main through the post-field merge sequence: capped alerts, current-day/kind-specific outcomes, dead Review removal, and honest empty-swap refusal. Operational place detail, transfer cards, and Rescue remain later |
@@ -156,11 +156,11 @@ the only open-items list; other docs point here.
 Owner return checklist (PENDING, in order). Written 2026-11-17 for the
 owner's device and laptop pause (about four days from 16 Nov). Each step
 names its owner. Nothing here is Genie work unless a step fails and a fix
-brief is written. The Genie queue holds `docs/briefs/GENIE_SPEC_42_BOOKING_OVER_WINDOW.md`
-(2026-11-23; refuse a non-hotel booking inside an active excursion window;
-backend plus one small booking-sheet message fix, Amendment 1). The latest Genie slice, SPEC-42 cancel restores skipped stops,
-is on main (PR #343, `081626a`).
-SPEC-25 trip-optional Ask slice 2 is on main (PR #338, `5b00b61`).
+brief is written. The Genie queue is empty (2026-11-23). Latest Genie slices on
+main: SPEC-42 booking refused inside an active excursion window (PR #349,
+`55c208d`; backend plus the booking-sheet message fix); SPEC-42 cancel restores
+skipped stops (PR #343, `081626a`); SPEC-25 trip-optional Ask slice 2 (PR #338,
+`5b00b61`).
 
 1. Laptop, owner (Windows, PowerShell 5.1): `git pull` `main` to at least
    `ca4fc9e`. Run `docs/briefs/LAPTOP_VERIFY.md` steps 0 to 8 as far as
@@ -212,6 +212,12 @@ SPEC-25 trip-optional Ask slice 2 is on main (PR #338, `5b00b61`).
      stops, confirm, then cancel it; both stops return and the reply names
      them. With a locked booking later placed over one skipped stop, cancel
      restores the other and names the clash.
+   - SPEC-42 booking inside an excursion (needs the hosted deploy in step 5,
+     which carries PR #349): with a morning excursion on the day, add a tour
+     booking inside its window; the sheet shows "Cancel the excursion first,
+     then add the booking." and nothing is saved. Add a hotel in the same
+     window: it is accepted. Edit only the notes of an existing booking: it
+     saves.
    - SPEC-53 and SPEC-56 device checks were recorded as OK on 16 Nov.
      Re-check only if this APK changes those screens.
 5. Isochrones booking return, owner (hosted; only when you choose):
@@ -297,7 +303,7 @@ ProGuard, Gap 7 consent outbox/UI, Gap 4 Flutter leave).
 Backend, open but not trip-critical: Gap 4 durable tombstone on main (#254; 0027 applied on hosted 2026-11-15),
 retention R1 on main (#295; R2 Supabase backend and any hosted run await owner decisions), zip/PDF; Gap 9 `derived_feature`; Gap 8 unused SQL cache path;
 Gap 10 log-bucket retention; Gap 11 gateway and Play Integrity; SPEC-27
-and SPEC-24 (G1 dependencies); SPEC-42 booking over an active excursion (brief queued: refuse; backend plus a small sheet message fix); SPEC-10
+and SPEC-24 (G1 dependencies); SPEC-10
 lodging pins (parked until real bookings); SPEC-25 trip-optional Ask follow-ups (no-trip
 thread persistence, LLM, budget enforcement); SPEC-46 Phase B
 (after SPEC-43); SPEC-45 place detail and transfer cards; optional bar
@@ -364,9 +370,10 @@ the brief is withdrawn. SPEC-42 cancel restores skipped stops is on main
 (PR #343, `081626a`, brief `GENIE_SPEC_42_CANCEL_RESTORES_SKIPPED.md`):
 cancelling an excursion restores the stops it skipped (tagged at confirm);
 a stop that now clashes stays skipped and is named; reply uses singular and
-plural wording. Excursions added before #343 are not restored. Genie queue:
-`GENIE_SPEC_42_BOOKING_OVER_WINDOW.md` (owner decision 2026-11-23: refuse a
-non-hotel booking inside an active excursion window). Phone check needs a hosted deploy carrying #343. SPEC-42 unknown-time
+plural wording. Excursions added before #343 are not restored. Phone check
+needs a hosted deploy carrying #343. SPEC-42 booking refused inside an active
+excursion window is on main (PR #349, `55c208d`; owner decision 2026-11-23: refuse,
+hotels exempt; the booking sheet shows the server message). Phone check needs a hosted deploy carrying #349. SPEC-42 unknown-time
 excursions slice 1 is on main (PR #326, `df5c10c`; brief
 `GENIE_SPEC_42_UNKNOWN_TIME_EXCURSIONS.md` Amendment 1).
 SPEC-10 hotel coordinates slice 2 is on main (PR #320,
@@ -730,8 +737,8 @@ Seed-shaped cohorts.
 10. SPEC-42 uncap / sparse-span foundation -- **PARTIAL on main**
     (`adc99d2`, merge `17e58ac`; empty-day Add `b6ddecf`; uncatalogued
     `05d917e`; unknown-time windows PR #326 `df5c10c`; cancel restores
-    PR #343 `081626a`). Catalog date caps are gone. Remaining known
-    follow-up: booking over an active excursion without a warning.
+    PR #343 `081626a`; booking refused in a window PR #349 `55c208d`).
+    Catalog date caps are gone. No known SPEC-42 follow-up remains.
 11. SPEC-10 hotel stay display -- **DONE on main** (`1f251a3`, merge
     `7b62818`). Dual check-in/out on hotel cards; multi-night coverage
     reuses one node_id; catalog name-match fills coords only when both
@@ -822,11 +829,10 @@ Seed-shaped cohorts.
 - Inspiration, similar-trip retrieval, and LLM itinerary generation remain
   after SPEC-41. An LLM may explain solver output; it does not schedule.
 - SPEC-39 PDF/OCR/Day Sheet remains deferred; Agoda paste does not reopen it.
-- SPEC-42 remainders: booking accepted over an active excursion window
-  without a warning (recorded 2026-11-23). Uncap, empty-date render,
+- SPEC-42 remainders: none known after PR #349. Uncap, empty-date render,
   Ask-to-Add, typed Move, empty-day catalog Add, trip-private uncatalogued
-  Add, unknown-time windows (PR #326) and cancel-restores-skipped (PR #343)
-  are on main. Only after those online commands and SPEC-44 Phase A exist
+  Add, unknown-time windows (PR #326), cancel-restores-skipped (PR #343) and
+  booking refused inside an active window (PR #349) are on main. Only after those online commands and SPEC-44 Phase A exist
   may SPEC-02 queue typed commands offline; conflicts are not resolved
   locally.
 - Remaining signal/UI polish.
