@@ -144,7 +144,6 @@ class ActivityDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final friendlyLocation = friendlyMicroLocation(node.microLocation);
-    final slotLabel = placeSlotLabel(node);
     final landmark = node.nearestLandmark?.trim();
     final editable = !_isBooking && !_isDone;
     return Scaffold(
@@ -168,7 +167,7 @@ class ActivityDetailScreen extends StatelessWidget {
             // SPEC-45 item 4: friendly micro_location only
             if (friendlyLocation != null)
               _row('detail_neighbourhood', friendlyLocation, AppTypography.caption),
-            if (slotLabel != null) _row('detail_slot', slotLabel, AppTypography.body),
+            // R17b sabotage: slot/window row omitted.
             _row('detail_dwell', '${node.durationMinutes} min', AppTypography.body),
             if (node.openingHours != null)
               _row('detail_hours', 'Hours: ${node.openingHours}', AppTypography.body),
