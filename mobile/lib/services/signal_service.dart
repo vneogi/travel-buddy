@@ -17,6 +17,18 @@ import '../offline/sync_engine.dart';
 /// 1. A tap is persisted to local disk BEFORE any network attempt.
 /// 2. emit() never throws and never blocks on network.
 /// 3. If the app is killed, the event survives (SQLite durability).
+/// SPEC-43 Gap 7: optional (personalization) signal types. This mirrors the
+/// server's PURPOSE_PERSONALIZATION set in services/consent.py, which is the
+/// authority. Until a consent screen and grant ledger exist, these types are
+/// not queued at all (the server would reject them without a grant).
+const kOptionalSignalTypes = <String>{
+  'user_loved',
+  'dish_loved',
+  'dish_ordered',
+  'reroute_accepted',
+  'reroute_rejected',
+};
+
 class SignalService {
   final OfflineDatabase _db;
   final SyncEngine _syncEngine;
@@ -66,6 +78,11 @@ class SignalService {
     String entityType = 'venue',
     String? entityId,
   }) async {
+    // SPEC-43 Gap 7: optional types are never queued without a consent grant.
+    if (kOptionalSignalTypes.contains(signalType)) {
+      debugPrint('[SignalService] optional signal not queued: $signalType');
+      return false;
+    }
     try {
       // Queue cap check (SPEC-02 B.3): protect unbounded growth
       final size = await _db.getOutboxSize();

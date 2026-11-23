@@ -59,7 +59,7 @@ void main() {
         .thenThrow(const NetworkException());
 
     await signalService.emit(
-      signalType: 'user_loved',
+      signalType: 'visited_confirmed',
       placeRef: 'dubai-mall',
       valueText: 'loved',
       tripId: 'trip-001',
@@ -72,7 +72,7 @@ void main() {
 
     // Verify: payload contains correct data
     final payload = jsonDecode(batch.first['payload_json'] as String);
-    expect(payload['signal_type'], 'user_loved');
+    expect(payload['signal_type'], 'visited_confirmed');
     expect(payload['place_ref'], 'dubai-mall');
     expect(payload['signal_id'], isNotEmpty);
   });

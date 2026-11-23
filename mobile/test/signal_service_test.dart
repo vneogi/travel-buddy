@@ -92,7 +92,7 @@ void main() {
   group('SignalService.emit (queue-backed — SPEC-02)', () {
     test('emit enqueues to outbox with correct payload shape', () async {
       await service.emit(
-        signalType: 'user_loved',
+        signalType: 'visited_confirmed',
         placeRef: 'dubai-mall',
         valueText: 'loved',
         tripId: 'trip-001',
@@ -113,7 +113,7 @@ void main() {
 
       // Verify payload shape
       final payload = jsonDecode(rows.first['payload_json'] as String);
-      expect(payload['signal_type'], 'user_loved');
+      expect(payload['signal_type'], 'visited_confirmed');
       expect(payload['place_ref'], 'dubai-mall');
       expect(payload['value_text'], 'loved');
       expect(payload['trip_id'], 'trip-001');
