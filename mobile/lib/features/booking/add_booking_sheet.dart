@@ -63,7 +63,7 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
   final _notesController = TextEditingController();
   final _pasteController = TextEditingController();
   // SPEC-43 Gap 5: the booking reference starts hidden each time the sheet opens.
-  bool _codeVisible = false;
+  bool _codeVisible = true; // R17b sabotage: code shown in clear on open
   late DateTime _scheduledStart;
   int _durationMinutes = 180;
   DateTime? _checkoutDate;
