@@ -77,7 +77,9 @@ check waits for a hosted deploy carrying #333. SPEC-42 cancel restores
 skipped stops is on main (PR #343, `081626a`); phone check waits for a hosted
 deploy carrying #343. SPEC-42 booking refused inside an active excursion window
 is on main (PR #349, `55c208d`; the booking sheet shows the server message);
-phone check waits for the same hosted deploy. Genie queue: empty. The SPEC-57 brief re-sent 2026-11-22
+phone check waits for the same hosted deploy. Genie queue:
+`docs/briefs/GENIE_SPEC43_CLIENT_PRIVACY_REMAINDERS.md` (SPEC-43 client remainders,
+Flutter only). Consent screen and grant ledger are a later brief. The SPEC-57 brief re-sent 2026-11-22
 was a mistake (slice 1 is PR #292) and is withdrawn.
 SPEC-42 unknown-time windows on main (PR #326, `df5c10c`). SPEC-10 hotel coordinates slice 2 (title-edit
 keeps supplied coordinates) is on main (PR #320, `ff8334c`). December hotel

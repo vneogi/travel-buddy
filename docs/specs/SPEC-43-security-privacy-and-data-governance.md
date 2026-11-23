@@ -21,6 +21,10 @@
 > `895045a` (PR #140). Gap 8 trip/date/source-version `606626e`
 > (PR #142). Gap 8 active purge `8fab43b` (PR #145). Gap 12
 > lock-screen waits on OS push. Hosted apply of 0026 is not done.
+> Client remainders queued: `docs/briefs/GENIE_SPEC43_CLIENT_PRIVACY_REMAINDERS.md`
+> (booking reference masked by default; optional signals not queued until a
+> grant exists; FLAG_SECURE deferred by owner decision 2026-11-23). Consent
+> screen and grant ledger remain a later brief.
 >
 > Sequence: start after the Laos reliability and build tranche is complete:
 > SPEC-41 scheduling, SPEC-10 paste and flight/hotel scheduler, SPEC-25

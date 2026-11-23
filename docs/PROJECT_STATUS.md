@@ -156,7 +156,9 @@ the only open-items list; other docs point here.
 Owner return checklist (PENDING, in order). Written 2026-11-17 for the
 owner's device and laptop pause (about four days from 16 Nov). Each step
 names its owner. Nothing here is Genie work unless a step fails and a fix
-brief is written. The Genie queue is empty (2026-11-23). Latest Genie slices on
+brief is written. The Genie queue holds `docs/briefs/GENIE_SPEC43_CLIENT_PRIVACY_REMAINDERS.md`
+(2026-11-23; SPEC-43 client: booking reference masked by default; optional signals
+not queued until consent exists; no FLAG_SECURE, owner decision). Latest Genie slices on
 main: SPEC-42 booking refused inside an active excursion window (PR #349,
 `55c208d`; backend plus the booking-sheet message fix); SPEC-42 cancel restores
 skipped stops (PR #343, `081626a`); SPEC-25 trip-optional Ask slice 2 (PR #338,
