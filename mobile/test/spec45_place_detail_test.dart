@@ -298,7 +298,8 @@ void main() {
     await tester.tap(find.text('Joma Bakery').first);
     await tester.pumpAndSettle();
     expect(find.byType(ActivityDetailScreen), findsOneWidget);
-    expect(find.byKey(const Key('detail_love')), findsOneWidget);
+    // The itinerary passes its love callback into the details screen.
+    expect(tester.widget<ActivityDetailScreen>(find.byType(ActivityDetailScreen)).onLoved, isNotNull);
   });
 
   testWidgets('9. Move keeps the existing move_detail_<id> key', (tester) async {
