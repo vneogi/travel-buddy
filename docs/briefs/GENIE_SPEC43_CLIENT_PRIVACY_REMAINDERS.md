@@ -185,3 +185,42 @@ existing tests that expect an optional outbox row, and the server and client
 map comparison), a test-to-production table, R17 expected failures, every
 existing test touched and why, and "no APK and no hosted deploy in this
 slice". Say that the phone check is later.
+
+## Amendment 1 (2026-11-23, after Genie preflight)
+
+Genie's preflight triggered two stop rules and found a naming mismatch.
+The owner's planning agent decided all three; build on this basis.
+
+1. Stop rule "code written to disk": the confirmation code is stored in the
+   `cache_trip` table through `TripNode.toJson` (`mobile/lib/data/models.dart`
+   about line 141, written by `ItineraryController.load` and
+   `_cacheUpdatedTripNodes`). That table lives in the offline SQLite store,
+   which opens with SQLCipher on Android and iOS
+   (`mobile/lib/offline/offline_database.dart` `_open`, via
+   `openOfflineStore`) and is excluded from backup and device transfer
+   (`mobile/android/app/src/main/res/xml/data_extraction_rules.xml`). SPEC-43
+   Gap 5 says to keep booking references local and encrypted, so this is
+   ACCEPTED and out of scope. Do not change `cache_trip` contents or
+   `TripNode.toJson`. Web and desktop builds stay unencrypted, as already
+   recorded in the code comment; that is unchanged and not this slice.
+   The stop rule still applies to anything else: a log, a file, shared
+   preferences, the outbox, or the raw paste text anywhere on disk.
+2. Two existing tests use `user_loved` only as a sample type to exercise the
+   outbox: `mobile/test/signal_service_test.dart` ("emit enqueues to outbox
+   with correct payload shape", about line 93) and
+   `mobile/test/offline_sync_test.dart` ("1. emit persists to outbox before
+   network", about line 56). Option A is approved: change only their sample
+   signal type from `user_loved` to the necessary type `visited_confirmed`,
+   with the payload assertions updated to that type. It is a setup change;
+   the behaviour under test (one pending row, correct payload shape, durable
+   before network) is unchanged. List both in the PR description.
+   `durable_hearts_test.dart` "restore does not enqueue another signal" needs
+   no edit; leave it and note in the PR that it now compares 0 and 0.
+   These two tests do not count toward the three-test stop limit; any other
+   existing test that needs an edit still does.
+3. Branch names: the correct names are
+   `feat/spec43-client-privacy-remainders`,
+   `feat/spec43-client-privacy-remainders-r17a`,
+   `feat/spec43-client-privacy-remainders-r17b` and
+   `feat/spec43-client-privacy-remainders-r17c`. Section 3's shorter names
+   are replaced by these.
