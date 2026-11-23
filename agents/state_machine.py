@@ -810,34 +810,6 @@ class TripStateMachine:
                     state["schedule_warnings"] = ["Could not parse the booking time."]
                     return state
 
-            # SPEC-42: only a changed time, duration or type is checked against
-            # active excursion windows (values compared, not keys present).
-            new_duration = (
-                int(prefs["duration_minutes"])
-                if "duration_minutes" in prefs
-                else node.duration_minutes
-            )
-            new_type = prefs.get("booking_type", node.booking_type)
-            if (
-                new_start != node.scheduled_start
-                or new_duration != node.duration_minutes
-                or new_type != node.booking_type
-            ):
-                from services.uncatalogued_add_service import (
-                    active_window_overlap,
-                    booking_over_window_message,
-                )
-
-                _window_hit = active_window_overlap(
-                    trip_state.nodes, new_start, new_duration, new_type, ignore_node_id=node.node_id
-                )
-                if _window_hit is not None:
-                    state["booking_refused"] = True
-                    state["schedule_warnings"] = [
-                        booking_over_window_message(_window_hit, new_start, new_region)
-                    ]
-                    return state
-
             # --- Phase 2: all validated, now apply atomically ---
             schedule_changed = False
             time_changed = False  # SPEC-10 HITL reflow trigger
