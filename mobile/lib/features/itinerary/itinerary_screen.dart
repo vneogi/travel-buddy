@@ -986,6 +986,9 @@ class _DateScopedTimeline extends StatelessWidget {
                   MaterialPageRoute<void>(
                     builder: (_) => ActivityDetailScreen(
                       node: node,
+                      // SPEC-45: same love callback and state as the card.
+                      onLoved: () => onLoved(node),
+                      isLoved: state.lovedPlaceRefs.contains(node.venueId ?? node.venueName),
                       onSwap: state.processing ? null : () {
                         Navigator.of(context).pop();
                         onSwap(node);
