@@ -175,3 +175,63 @@ message), a test-to-production table, R17 expected failures, the two
 existing tests whose setup changed and why, and "no APK and no hosted
 deploy in this slice". Say that the phone check needs a hosted deploy
 later.
+
+## Amendment 1 (2026-11-23, after Genie preflight)
+
+Genie's preflight found that the booking sheet hides the server's refusal
+text. Facts re-verified on main: `mobile/lib/features/booking/add_booking_sheet.dart`
+`_save` (about line 355) replaces every failed save with the fixed
+"Could not save this booking. Check your connection and try again."
+`ItineraryNotifier.applyEvent` (about line 207) already turns a 422 into a
+`ValidationException` and puts its message in the controller banner, which
+renders behind the modal sheet. Without a fix the traveller would never see
+"Cancel the excursion first". The owner approved option A.
+
+1. This slice is no longer backend only. One small Flutter change is in
+   scope: when a save fails with a server validation message, the sheet shows
+   that message in place of the fixed copy. Every other failure keeps the
+   exact current copy.
+   - Existing sheet tests that assert the fixed copy must pass without any
+     expected-value change. Network and unknown failures must therefore keep
+     the fixed copy. Only a `ValidationException` message may replace it.
+     Because `applyEvent` reduces all failures to one banner string, do not
+     compare banner strings against known generic text. Use the least
+     invasive typed signal you can find (for example a small field on the
+     controller state set only for `ValidationException`, or the exception
+     itself) and report what you used.
+   - Clear the controller banner after the sheet reads the message, so the
+     same text does not also show behind the sheet.
+   - Files in scope: `add_booking_sheet.dart`, the notifier or its state
+     only if needed for the typed signal, and one new Flutter test file.
+     No other Flutter file.
+2. Test 8 clarification (from the preflight): the sheet sends every field on
+   every edit. "The edit changes time, duration or type" means the new value
+   differs from the node's current value, not that the key is present. A
+   notes-only or title-only edit that resends the same time, duration and type
+   is never refused by this rule, even for a booking that already overlaps.
+3. Added tests. Flutter (`mobile/test/spec42_booking_over_window_test.dart`):
+   10. A refused save (fake repository throws `ValidationException` with the
+       refusal text) shows that text in the sheet and the sheet stays open.
+       Fails on main.
+   11. A `NetworkException` and an unknown error still show the fixed copy,
+       unchanged. Passes on main.
+   Backend test 8 is tightened to resend identical time, duration and type
+   with a new note and title (accepted), plus a second case that resends the
+   same fields but a different type into a window (refused).
+4. R17 gains a fourth branch:
+   `feat/spec42-booking-over-window-r17d`, from the tip, removes the sheet's
+   use of the server message. Expected failures: test 10 only. The other
+   three branches keep their expected failures.
+5. Gates: add `flutter analyze --no-fatal-infos` with no new errors or
+   warnings, and the R1 check (`grep -rn '\\$' mobile/lib` shows only the two
+   known price strings in `upgrade_screen.dart`). There is no Flutter SDK on
+   Genie compute, so CI's `flutter` job is the first compile of the Flutter
+   half. Do not install Flutter without owner approval.
+6. Stop rules added:
+   - Stop if the typed signal needs more than the notifier, its state and the
+     sheet.
+   - Stop if any existing Flutter test needs an expected-value change.
+7. Section 0 "backend only", the scope line at the top, and section 4's
+   "Flutter changes" are replaced by this amendment: one Flutter change, no
+   APK request (CI and owner Windows `flutter test` are the gate), no hosted
+   deploy.

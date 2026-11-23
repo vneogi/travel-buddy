@@ -157,8 +157,8 @@ Owner return checklist (PENDING, in order). Written 2026-11-17 for the
 owner's device and laptop pause (about four days from 16 Nov). Each step
 names its owner. Nothing here is Genie work unless a step fails and a fix
 brief is written. The Genie queue holds `docs/briefs/GENIE_SPEC_42_BOOKING_OVER_WINDOW.md`
-(2026-11-23; refuse a non-hotel booking inside an active excursion window,
-backend only). The latest Genie slice, SPEC-42 cancel restores skipped stops,
+(2026-11-23; refuse a non-hotel booking inside an active excursion window;
+backend plus one small booking-sheet message fix, Amendment 1). The latest Genie slice, SPEC-42 cancel restores skipped stops,
 is on main (PR #343, `081626a`).
 SPEC-25 trip-optional Ask slice 2 is on main (PR #338, `5b00b61`).
 
@@ -297,7 +297,7 @@ ProGuard, Gap 7 consent outbox/UI, Gap 4 Flutter leave).
 Backend, open but not trip-critical: Gap 4 durable tombstone on main (#254; 0027 applied on hosted 2026-11-15),
 retention R1 on main (#295; R2 Supabase backend and any hosted run await owner decisions), zip/PDF; Gap 9 `derived_feature`; Gap 8 unused SQL cache path;
 Gap 10 log-bucket retention; Gap 11 gateway and Play Integrity; SPEC-27
-and SPEC-24 (G1 dependencies); SPEC-42 booking over an active excursion (brief queued: refuse, backend only); SPEC-10
+and SPEC-24 (G1 dependencies); SPEC-42 booking over an active excursion (brief queued: refuse; backend plus a small sheet message fix); SPEC-10
 lodging pins (parked until real bookings); SPEC-25 trip-optional Ask follow-ups (no-trip
 thread persistence, LLM, budget enforcement); SPEC-46 Phase B
 (after SPEC-43); SPEC-45 place detail and transfer cards; optional bar

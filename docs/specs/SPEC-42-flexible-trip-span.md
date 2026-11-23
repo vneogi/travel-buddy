@@ -169,8 +169,10 @@ A non-hotel booking (add, or an edit that changes time, duration or type)
 whose span overlaps an active excursion window is refused with
 `booking_refused` and a message to cancel the excursion first. Hotels are
 exempt. Edge-touching spans do not overlap. Bookings that already overlap
-are left alone, and edits that change none of those fields are allowed.
-Brief: `docs/briefs/GENIE_SPEC_42_BOOKING_OVER_WINDOW.md`.
+are left alone, and edits that change none of those fields (compared by
+value, since the sheet resends every field) are allowed. The booking sheet
+must show the server's refusal text, not its generic save error (brief
+Amendment 1). Brief: `docs/briefs/GENIE_SPEC_42_BOOKING_OVER_WINDOW.md`.
 
 ### Move between days
 

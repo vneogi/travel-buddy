@@ -75,7 +75,8 @@ screen, region picker defaulting to the most recent trip) are on main; the phone
 check waits for a hosted deploy carrying #333. SPEC-42 cancel restores
 skipped stops is on main (PR #343, `081626a`); phone check waits for a hosted
 deploy carrying #343. Genie queue: `docs/briefs/GENIE_SPEC_42_BOOKING_OVER_WINDOW.md`
-(refuse a non-hotel booking inside an active excursion window; backend only). The SPEC-57 brief re-sent 2026-11-22
+(refuse a non-hotel booking inside an active excursion window; backend plus a
+small booking-sheet message fix, Amendment 1). The SPEC-57 brief re-sent 2026-11-22
 was a mistake (slice 1 is PR #292) and is withdrawn.
 SPEC-42 unknown-time windows on main (PR #326, `df5c10c`). SPEC-10 hotel coordinates slice 2 (title-edit
 keeps supplied coordinates) is on main (PR #320, `ff8334c`). December hotel
