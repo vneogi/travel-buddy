@@ -203,8 +203,6 @@ def active_window_overlap(
     for n in nodes:
         if n.node_id == ignore_node_id or not n.time_window:
             continue
-        if n.status not in (NodeStatus.PENDING, NodeStatus.ACTIVE):
-            continue
         w_start = _aware(n.scheduled_start)
         w_end = w_start + timedelta(minutes=n.duration_minutes)
         if b_start < w_end and b_end > w_start:
