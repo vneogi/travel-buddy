@@ -156,7 +156,9 @@ the only open-items list; other docs point here.
 Owner return checklist (PENDING, in order). Written 2026-11-17 for the
 owner's device and laptop pause (about four days from 16 Nov). Each step
 names its owner. Nothing here is Genie work unless a step fails and a fix
-brief is written. The Genie queue is empty (2026-11-23). Latest Genie slices on
+brief is written. The Genie queue holds `docs/briefs/GENIE_SPEC45_PLACE_DETAIL.md`
+(2026-11-23; SPEC-45 operational place details, Flutter only, fields already on
+the node; transfer cards stay parked). Latest Genie slices on
 main: SPEC-43 client privacy remainders (PR #357, `59bf840`; booking reference
 masked by default; optional signals not queued; no FLAG_SECURE, owner decision);
 SPEC-42 booking refused inside an active excursion window (PR #349,

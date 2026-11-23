@@ -18,8 +18,11 @@
 > 11 Oct 2026 field amendment: the first owner trip exposed more than 20
 > notifications, stale schedule reviews, generic outcomes, dead actions, and
 > insufficient operational card detail. Phase B trust hygiene is now on main.
-> Deterministic no-GPS SPEC-46 What Now Phase A is next; Add/Move and
-> operational place detail remain later.
+> Deterministic no-GPS SPEC-46 What Now Phase A is on main; Add/Move is on
+> main. Operational place detail is briefed in
+> `docs/briefs/GENIE_SPEC45_PLACE_DETAIL.md` (owner 2026-11-23: fields already
+> on the node only; no Open/Closed, category or catalog dwell; transfer cards
+> stay with parked SPEC-55).
 >
 > Depends on SPEC-22 (render/trust treatments), SPEC-17 (claims),
 > SPEC-26 (home snapshot), SPEC-25 (Ask), SPEC-12 (driver card),
