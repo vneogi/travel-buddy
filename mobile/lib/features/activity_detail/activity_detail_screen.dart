@@ -195,21 +195,7 @@ class ActivityDetailScreen extends StatelessWidget {
               spacing: AppSpacing.sm,
               runSpacing: AppSpacing.sm,
               children: [
-                if (placeHasMapsTarget(node))
-                  OutlinedButton.icon(
-                    key: const Key('detail_open_maps'),
-                    style: _actionStyle,
-                    onPressed: () => openPlaceInMaps(context, node),
-                    icon: const Icon(Icons.map_outlined),
-                    label: const Text('Open in Maps'),
-                  ),
-                OutlinedButton.icon(
-                  key: const Key('detail_driver_card'),
-                  style: _actionStyle,
-                  onPressed: () => openPlaceDriverCard(context, node),
-                  icon: const Icon(Icons.badge_outlined),
-                  label: const Text('Driver card'),
-                ),
+                // R17a sabotage: Open in Maps and Driver card omitted.
                 if (editable && onSwap != null)
                   OutlinedButton.icon(
                     key: const Key('detail_swap'),
