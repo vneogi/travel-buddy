@@ -158,6 +158,81 @@ The acquisition wedge remains the Offline Vault for the backpacker corridor and
 confirmation import for booking-heavy travellers. These are useful before the
 flywheel has density and lead naturally into the recovery job we intend to own.
 
+### November 2026 competitive read: Tripxcursion and Wanderlog
+
+Dated 2026-11-23, from each product's public website only. This is not
+diligence; feature claims are vendor-stated and neither app was used.
+
+- **Tripxcursion** (pre-launch, "coming soon", India-first in tone: INR,
+  Goa, Coorg, WhatsApp invites). A pre-trip AI planner on Gemini plus
+  Google Places and Routes. Headline features: a 10-30 s day-wise
+  itinerary, "Reality Check" of a pasted, PDF or screenshot itinerary
+  against hours, travel time, buffers, weather and season, "Blind
+  Budget Match" for 3-20 person groups, and mood-based nearby
+  getaways. Its trust language ("rules decide the verdicts, not AI";
+  "unverified, never silently OK") is close to ours. No offline,
+  on-trip recovery, locked-booking or local-script claims on the site.
+- **Wanderlog** (mature). A pre-trip planner: map plus itinerary in one
+  view, collaboration, booking import from forwarded email, budgets
+  and expense splitting, checklists, AI suggestions, Google data.
+  Public reviews praise planning and organising; on-trip value is a
+  Pro add-on, not the core.
+
+**Read.** Both are planners that rent Google's data, so coverage,
+real hours, real travel times and "we do not hallucinate" are now
+table stakes, not differentiation. We cannot out-cover a product
+renting Google. The position in this document is unchanged: keep the
+day feasible when reality changes. What is new is that "grounded,
+rules not AI" can no longer carry the pitch on its own.
+
+**Moat, restated against these two.** Only what they structurally
+cannot obtain:
+
+1. On-trip outcome data (accepted and rejected proposals, skips, real
+   stay length) -- requires on-trip use and consent.
+2. Sourced on-the-ground operational facts (entrances, where to ask a
+   taxi to stop, fares, local-script names) with source and `as_of`
+   (SPEC-12, SPEC-17, SPEC-57).
+3. Lock-safe recovery with traveller confirmation, during the trip.
+4. Offline continuity, which their live-Google stacks would have to
+   rebuild.
+
+**Product consequences (owner-accepted 2026-11-23).**
+
+- Lead with recovery ("my day broke and it fixed it, offline, without
+  touching my bookings"), not with itinerary generation.
+- Next spec after the SPEC-45 place-detail PR: **paste-your-plan
+  import** -- an itinerary pasted from a chatbot, agent or blog becomes
+  a Travel Buddy trip spine (bookings locked, stops matched to the
+  catalog) that then runs on the trip. Unmatched stops get an honest
+  "not in our catalog" state; never a guessed place, hours or
+  coordinates. Pasted provider confirmations stay SPEC-10; PDF and OCR
+  stay SPEC-39 (deferred).
+- Then the insider-tips layer on place details, each tip sourced
+  (VISION section 11, "Place cards open into useful local context").
+- Do not chase group budget matching, mood discovery, packing lists or
+  expense splitting. SPEC-54 party context stays parked.
+
+**Operations and data consequences (recorded, not yet scheduled).**
+
+- The Tanzania trip doubles as fact capture: per stop, entrance or
+  gate, the driver phrase that worked, fare paid, real stay length and
+  what broke, each with source and date.
+- The SPEC-43 consent screen and grant ledger gate use of outcome data
+  for ranking; owner and counsel wording is now on the moat's critical
+  path.
+- Density over breadth: 20-50 corridor travellers in one city and
+  season from the tester network, via hostel QR and the Offline Vault.
+- Paid local verifiers (hostel staff, drivers, guides) per confirmed
+  claim, measured by correction latency -- an early form of VISION
+  section 13 supply.
+
+**Open decision, not taken.** Places outside the curated catalog:
+stay narrow (current rule, VISION section 6) or add a visibly
+lower-trust long-tail layer from OSM or a licensed provider, with
+recovery and sourced facts staying catalog-only. This decides whether
+we can compete for installs where our catalog is empty.
+
 ## The corridor: six cities after Laos
 
 Dubai, Bangkok, Singapore, Baku, Tbilisi, Almaty.

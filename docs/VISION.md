@@ -761,7 +761,11 @@ partners; Stardrift imports bookings into a map-linked structured itinerary;
 and general assistants such as Instinct and Poke demonstrate that a messaging
 channel can own the user relationship. Feature claims and usage figures remain
 vendor-reported unless independently verified; `docs/MARKET_STRATEGY.md`
-records the dated competitive read.
+records the dated competitive read. The Nov 2026 read (Tripxcursion,
+Wanderlog) adds that "grounded hours and travel times, rules not AI" is
+now claimed by Google-backed planners too, so it is table stakes; the
+claim we must earn is on-trip recovery, sourced ground facts and
+offline use.
 
 We cannot credibly claim that competitors have no trip context, no on-trip
 features or no useful mobile experience. Nor can we win by matching their

@@ -81,7 +81,10 @@ phone check waits for the same hosted deploy. SPEC-43 client privacy remainders
 are on main (PR #357, `59bf840`): booking code masked by default; optional
 signals (loves, reroutes, dish taps) are not queued. Consent screen and grant
 ledger are a later brief. Genie queue: `docs/briefs/GENIE_SPEC45_PLACE_DETAIL.md`
-(SPEC-45 operational place details, Flutter only). The SPEC-57 brief re-sent 2026-11-22
+(SPEC-45 operational place details, Flutter only; PR #363 hung in test 5,
+fix with Genie). Next spec after it: paste-your-plan import (owner
+2026-11-23; see the Nov 2026 competitive read in `docs/MARKET_STRATEGY.md`).
+The SPEC-57 brief re-sent 2026-11-22
 was a mistake (slice 1 is PR #292) and is withdrawn.
 SPEC-42 unknown-time windows on main (PR #326, `df5c10c`). SPEC-10 hotel coordinates slice 2 (title-edit
 keeps supplied coordinates) is on main (PR #320, `ff8334c`). December hotel
