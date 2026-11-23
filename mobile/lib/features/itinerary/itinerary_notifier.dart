@@ -29,6 +29,9 @@ class ItineraryState {
   final CreationContext? creationContext;
   // SPEC-56: true when nodes came from the saved copy after a failed load.
   final bool showingSaved;
+  /// SPEC-42: set only when the last event failed with a ValidationException
+  /// (a typed server refusal); null for network and unknown failures.
+  final String? validationMessage;
 
   const ItineraryState({
     this.nodes = const [],
@@ -44,6 +47,7 @@ class ItineraryState {
     this.scheduleWarnings = const [],
     this.creationContext,
     this.showingSaved = false,
+    this.validationMessage,
   });
 
   static const _keep = Object();
@@ -61,6 +65,7 @@ class ItineraryState {
     List<String>? scheduleWarnings,
     Object? creationContext = _keep,
     bool? showingSaved,
+    Object? validationMessage = _keep,
   }) =>
       ItineraryState(
         nodes: nodes ?? this.nodes,
@@ -79,6 +84,9 @@ class ItineraryState {
             ? this.creationContext
             : creationContext as CreationContext?,
         showingSaved: showingSaved ?? this.showingSaved,
+        validationMessage: identical(validationMessage, _keep)
+            ? this.validationMessage
+            : validationMessage as String?,
       );
 }
 
@@ -211,7 +219,7 @@ class ItineraryController extends StateNotifier<ItineraryState> {
     Map<String, dynamic>? preferences,
   }) async {
     if (state.processing) return null;
-    state = state.copyWith(processing: true, banner: null);
+    state = state.copyWith(processing: true, banner: null, validationMessage: null);
     try {
       final result = await _ref.read(tripRepoProvider).sendEvent(
             tripId: tripId,
@@ -244,6 +252,7 @@ class ItineraryController extends StateNotifier<ItineraryState> {
     } catch (error) {
       state = state.copyWith(
         processing: false,
+        validationMessage: error is ValidationException ? error.message : null,
         banner: error is NetworkException
             ? "Can't reach Travel Buddy \u2014 check your connection."
             : error is ValidationException
@@ -255,7 +264,8 @@ class ItineraryController extends StateNotifier<ItineraryState> {
   }
 
   void clearRerouteLimit() => state = state.copyWith(rerouteLimitHit: false);
-  void clearBanner() => state = state.copyWith(banner: null);
+  void clearBanner() =>
+      state = state.copyWith(banner: null, validationMessage: null);
   void showBanner(String text) => state = state.copyWith(banner: text);
   void clearScheduleWarnings() => state = state.copyWith(scheduleWarnings: []);
 

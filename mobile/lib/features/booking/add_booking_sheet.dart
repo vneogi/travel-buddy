@@ -357,9 +357,16 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
     );
     if (result == null) {
       if (mounted) {
+        // SPEC-42: a typed server refusal (ValidationException) is shown in
+        // the sheet; every other failure keeps the fixed copy below.
+        final refusal =
+            ref.read(itineraryControllerProvider(widget.tripId)).validationMessage;
+        if (refusal != null) {
+          ref.read(itineraryControllerProvider(widget.tripId).notifier).clearBanner();
+        }
         setState(() {
           _saving = false;
-          _saveError =
+          _saveError = refusal ??
               'Could not save this booking. Check your connection and try again.';
         });
       }

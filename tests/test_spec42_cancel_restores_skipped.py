@@ -7,10 +7,10 @@ Zanzibar is UTC+3.
 """
 
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import services.db_provider as dbp
-from models.schemas import TripState
+from models.schemas import TripNode, TripState
 from tests.conftest import auth
 
 GEO = "zanzibar_tanzania"
@@ -79,6 +79,26 @@ def _cancel(client, user, trip_id, node_id):
     r = _event(client, user, trip_id, "cancel_activity", target=node_id)
     assert r.status_code == 200, r.text
     return r.json()["message"]
+
+
+def _place_booking(trip_id, name, local_hhmm, minutes=60):
+    """Setup only: store a locked tour booking directly, as a booking made
+    before the booking-over-window slice would be."""
+    hh, mm = (int(x) for x in local_hhmm.split(":"))
+    d = datetime.fromisoformat(DAY)
+    start = datetime(d.year, d.month, d.day, hh, mm, tzinfo=timezone.utc) - timedelta(hours=3)
+    node = TripNode(
+        venue_name=name,
+        scheduled_start=start,
+        duration_minutes=minutes,
+        is_locked=True,
+        node_kind="booking",
+        booking_type="tour",
+        geo_region=GEO,
+    )
+    nodes = _stored(trip_id)
+    nodes.append(node.model_dump(mode="json"))
+    nodes.sort(key=lambda n: n["scheduled_start"])
 
 
 def test_cancel_morning_excursion_restores_both_stops(client):
@@ -166,19 +186,9 @@ def test_clashing_stop_stays_skipped_and_is_named(client):
     morning, lunch = day["morning_tour"], day["lunch"]
     window_id, ids = _excursion(client, user, trip_id)
     # A locked booking added after the excursion, at the skipped lunch stop's time.
-    booking = _event(
-        client,
-        user,
-        trip_id,
-        "add_booking",
-        preferences={
-            "venue_name": "Spice tour",
-            "booking_type": "tour",
-            "scheduled_start": f"{DAY}T11:00:00",
-            "duration_minutes": 60,
-        },
-    )
-    assert booking.status_code == 200, booking.text
+    # Setup only: add_booking now refuses a booking inside an active window
+    # (SPEC-42 booking-over-window), so place it as a pre-slice booking.
+    _place_booking(trip_id, "Spice tour", "11:00")
 
     message = _cancel(client, user, trip_id, window_id)
     assert _node(trip_id, morning["node_id"])["status"] == "pending"
@@ -198,20 +208,9 @@ def test_reply_wording_one_restored_two_clashed(client):
     morning, lunch, afternoon = day["morning_tour"], day["lunch"], day["afternoon_evening_tour"]
     window_id, ids = _excursion(client, user, trip_id, window="whole_day")
     assert ids == [morning["node_id"], lunch["node_id"], afternoon["node_id"]]
+    # Setup only: placed as pre-slice bookings (add_booking now refuses them).
     for name, start in (("Spice tour", "09:00"), ("Cooking class", "11:00")):
-        booking = _event(
-            client,
-            user,
-            trip_id,
-            "add_booking",
-            preferences={
-                "venue_name": name,
-                "booking_type": "tour",
-                "scheduled_start": f"{DAY}T{start}:00",
-                "duration_minutes": 60,
-            },
-        )
-        assert booking.status_code == 200, booking.text
+        _place_booking(trip_id, name, start)
 
     message = _cancel(client, user, trip_id, window_id)
     assert _node(trip_id, afternoon["node_id"])["status"] == "pending"
