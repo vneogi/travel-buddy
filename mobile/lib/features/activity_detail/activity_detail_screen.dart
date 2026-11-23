@@ -240,8 +240,7 @@ class ActivityDetailScreen extends StatelessWidget {
                     icon: const Icon(Icons.event_repeat),
                     label: const Text('Move'),
                   ),
-                if (editable && onLoved != null)
-                  DetailLoveButton(isLoved: isLoved, onLoved: onLoved!),
+                // R17c sabotage: Love omitted.
               ],
             ),
           ],
