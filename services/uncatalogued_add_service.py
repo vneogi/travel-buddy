@@ -196,8 +196,6 @@ def active_window_overlap(
     Mirrors locked_conflict the other way round. Hotels never overlap.
     Overlap is strict: touching the window's start or end is not a clash.
     """
-    if booking_type == "hotel":
-        return None
     b_start = _aware(start)
     b_end = b_start + timedelta(minutes=int(duration_minutes))
     for n in nodes:
