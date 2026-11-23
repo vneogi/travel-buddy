@@ -366,7 +366,7 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
         }
         setState(() {
           _saving = false;
-          _saveError = refusal ??
+          _saveError =
               'Could not save this booking. Check your connection and try again.';
         });
       }
