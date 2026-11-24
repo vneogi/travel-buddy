@@ -13,6 +13,11 @@
 > `55c208d`; brief `GENIE_SPEC_42_BOOKING_OVER_WINDOW.md`). Hosted/phone not
 > done for these SHAs.
 >
+> Amended 2026-11-24: plain stops (no coordinates, trip-private) may be
+> placed on non-empty days with no travel check. See the section
+> "Amendment 2026-11-24: plain stops on non-empty days". Brief:
+> `docs/briefs/GENIE_SPEC_42_PLAIN_STOPS_BUSY_DAY.md`.
+>
 > Depends on SPEC-31 date-scoped rendering, SPEC-40 guided creation, and
 > SPEC-41 feasibility-first scheduling. Starter generation is still at most
 > five days; that is fill capacity, not a user-facing trip-span cap.
@@ -283,6 +288,36 @@ reachability, lock, region, or trip-boundary constraints.
 - [ ] Sparse trips survive API fetch, cache, offline rendering, and restart
 - [ ] Existing SPEC-40 clients and one-day create remain compatible
 - [ ] Full Python and Flutter suites are green from `origin/main`
+
+## Amendment 2026-11-24: plain stops on non-empty days
+
+Owner decision (2026-11-24, from SPEC-58 slice 1a, PR #375): a trip-private
+plain stop with no coordinates (`venue_id` null, `place_source`
+`trip_private`) may land on a day that already has other stops. Today it is
+refused `reachability` on any such day, because the neighbour walk cannot be
+measured. The owner chose to allow it.
+
+Rules:
+
+1. A plain stop is placed at the later of its slot floor and the previous
+   stop's end. No walking term is added. Time overlap with any existing stop
+   still refuses `reachability` (overlap is time, not travel).
+2. A plain stop before a locked booking fits only if its end is no later
+   than the lock's start. No walk to the lock is checked.
+3. No travel check is made for a plain stop. The UI labels it "Not in our
+   catalog, travel time not checked" (Flutter slice, not in this amendment).
+4. A catalog stop, or any stop with coordinates, whose walk leg touches a
+   coordinate-less stop stays refused (`reachability`). An unknown walk is a
+   refusal, never a pass. This is the existing fail-closed rule.
+5. No code path may raise on a missing coordinate. A call site with an
+   unknown leg refuses or omits the candidate. Walking helpers keep raising
+   for direct misuse; callers must guard.
+6. No schema, field, endpoint or dependency change. Plain stops are
+   identified by existing fields.
+7. A time-window plain add (`time_window`) is unchanged by this amendment.
+
+Consequence for SPEC-58 import: a catalog item that follows a plain item in
+the same batch is refused `reachability`; a plain item may follow a plain item.
 
 ## Explicit non-goals
 
