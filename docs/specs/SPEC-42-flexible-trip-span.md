@@ -309,6 +309,8 @@ Rules:
 4. A catalog stop, or any stop with coordinates, whose walk leg touches a
    coordinate-less stop stays refused (`reachability`). An unknown walk is a
    refusal, never a pass. This is the existing fail-closed rule.
+   What Now is advisory: it keeps labelled unknown-walk candidates and never
+   claims they fit (brief Amendment 1, A1.1).
 5. No code path may raise on a missing coordinate. A call site with an
    unknown leg refuses or omits the candidate. Walking helpers keep raising
    for direct misuse; callers must guard.

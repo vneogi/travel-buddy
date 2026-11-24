@@ -190,3 +190,50 @@ Stop and report, quoting the preflight line, if:
 End with: PR-ready branch and head SHA; preflight answers 1 to 5; the
 call-site table; the test-to-production table; the three R17 branch heads and
 their expected failing tests; any stop rule hit.
+
+## Amendment 1 (2026-11-25, after Genie's preflight; wins where it differs)
+
+Genie's preflight stop is accepted, and its call-site table and answers 1 to 5
+are accepted with the corrections it gave (three walk legs in
+`place_timing`; `ask_service` 1671 is an unused import).
+
+### A1.1 What Now keeps its labelled unknown-walk candidates (option A)
+
+`What Now` is advisory. It keeps offering candidates whose walk is unknown,
+labelled `walking_time` in `unknown_fields`, and never claims "fits" or
+"short walk" for them. That is the existing, tested behaviour
+(`test_spec46_what_now.py::test_no_fits_available_window_without_coords`).
+It is not a pass: nothing is written and no feasibility claim is made.
+
+- Do NOT change `test_spec46_what_now.py`. Do NOT change What Now to omit
+  unknown-walk candidates.
+- Rule 4 in the spec ("refused, never a pass") applies to writes and to
+  Add, Move and Swap. For What Now, the required behaviour is: label the walk
+  unknown, never claim it fits, never raise.
+- Swap and Ask candidate paths keep their existing omit or fail-closed
+  behaviour (`state_machine.py` 186, 206, 231; `ask_service.py` 1111, 1307).
+- Section 4.2's bullet "Ask, What Now and swap candidate builders ... omitted"
+  is amended accordingly: omit for swap and Ask; label-unknown for What Now.
+
+Add a test for the plain-origin case: What Now with a plain stop as origin
+returns candidates labelled `walking_time` unknown, claims no fit, and does
+not raise. Name it `test_what_now_plain_origin_labels_unknown_walk`.
+
+### A1.2 Move refusal codes
+
+For a catalog Move next to a plain stop, refuse with the existing
+`neighbour_unreachable` code. Do not add a new code. Test 6 asserts that code.
+A plain node that cannot be placed refuses `next_lock_unreachable` if a lock
+is involved, as today.
+
+### A1.3 Flight cutoff stays
+
+A plain stop before a flight still respects the existing 150-minute flight
+cutoff (`booking_constraints.py` 117 path), which needs no coordinates. Rule 2
+applies to other locked stops. Test 3 covers the flight case explicitly:
+refused if the plain end is inside the cutoff, ok otherwise.
+
+### A1.4 Scope unchanged
+
+The one authorised existing-test edit in section 5 stands. No other existing
+test changes. A failure in any other existing test is still a stop.
