@@ -54,6 +54,14 @@ reroute charge, and an existing trip-private add path):
    existing add checks per stop in order, uses one reroute in total, and
    returns per-stop results. Import creates a new trip with empty days;
    stops that do not fit a slot are listed unimported with the reason.
+7. **Empty-start trips (2026-11-24, after Genie's preflight):** the create
+   request gets an optional `start_empty` flag (default false) that skips
+   the starter-day packing in the range create path. Request-model change
+   only; no schema change, no new endpoint. Existing creates are unchanged.
+8. **Accent-insensitive name match for the match endpoint only:** folds
+   accents on Latin-script characters and leaves other scripts untouched.
+   Import-only plain items get the same fold in their catalog-collision
+   check so the two paths agree; single-item uncatalogued add is unchanged.
 
 ## 3. Design rules
 
@@ -166,7 +174,7 @@ Stop and write a question, do not widen scope, if:
 - returning per-stop results needs a breaking change to the
   `process_event` contract (report the options instead);
 - creating a trip with all-empty days needs a schema change or a new
-  endpoint;
+  endpoint (an optional `start_empty` request field is allowed);
 - a test can only pass by weakening a SPEC-41, SPEC-42 or SPEC-10
   check, or by editing an existing test.
 
