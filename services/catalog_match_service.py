@@ -219,6 +219,8 @@ def apply_import_plan(trip: TripState, preferences: Optional[dict], db: Any) -> 
                 db,
             )
         if outcome.ok:
+            if item["kind"] == "plain":
+                outcome.added.venue_id = f"plain-{i}"  # R17c sabotage: fake catalog id
             current = current.model_copy(update={"nodes": outcome.nodes})
             results[i] = {
                 "index": i,
