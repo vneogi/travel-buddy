@@ -92,7 +92,10 @@ def match_names(names: List[str], rows: List[dict]) -> List[Dict[str, Any]]:
     indexed = [(row, fold_name(str(row.get("name") or ""))) for row in rows if row.get("venue_id")]
     indexed.sort(key=lambda pair: _order(pair[0]))
     results = []
+    from services.embedding_service import embedding_service as _emb
+
     for name in names:
+        _emb.generate_embedding(name)  # R17a sabotage
         key = fold_name(name)
         match = next((row for row, folded in indexed if folded == key), None)
         if match is None:
