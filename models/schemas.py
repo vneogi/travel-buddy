@@ -353,6 +353,63 @@ class ExcursionReview(BaseModel):
     skip_node_ids: List[str]
 
 
+class ImportPlanItemResult(BaseModel):
+    """SPEC-58: one per-item result of an import_plan batch."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    index: int
+    status: Literal["added", "refused"]
+    node_id: Optional[str] = None
+    code: Optional[str] = None
+    message: Optional[str] = None
+
+
+class CatalogMatchRequest(BaseModel):
+    """SPEC-58: stop names plus a registered region; nothing else."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    geo_region: str
+    names: List[str]
+
+    @field_validator("geo_region")
+    @classmethod
+    def _region(cls, value: str) -> str:
+        from config.regions import REGIONS
+
+        if value not in REGIONS:
+            raise ValueError("geo_region is not a supported region")
+        return value
+
+    @field_validator("names")
+    @classmethod
+    def _names(cls, value: List[str]) -> List[str]:
+        if not 1 <= len(value) <= 60:
+            raise ValueError("send 1 to 60 names")
+        cleaned = [v.strip() for v in value]
+        if any(not 2 <= len(v) <= 80 for v in cleaned):
+            raise ValueError("each name must be 2 to 80 characters")
+        return cleaned
+
+
+class CatalogMatchVenue(BaseModel):
+    venue_id: str
+    name: str
+    geo_region: Optional[str] = None
+    provenance: str
+
+
+class CatalogMatchResult(BaseModel):
+    name: str
+    match: Optional[CatalogMatchVenue] = None
+    near: List[CatalogMatchVenue] = []
+
+
+class CatalogMatchResponse(BaseModel):
+    results: List[CatalogMatchResult]
+
+
 class TripEventResponse(BaseModel):
     """Response after processing a trip event."""
 
@@ -369,6 +426,7 @@ class TripEventResponse(BaseModel):
     ask_response: Optional[AskResponseEnvelope] = None
     booking_reflow: Optional[BookingReflow] = None  # SPEC-10 HITL reflow
     excursion_review: Optional[ExcursionReview] = None  # SPEC-42 needs_review
+    import_results: Optional[List[ImportPlanItemResult]] = None  # SPEC-58 batch
 
 
 class AddCandidate(BaseModel):
@@ -428,6 +486,8 @@ class CreateTripRequest(BaseModel):
     initial_mood: Optional[str] = "exploratory"
     party: Optional[TripPartyIn] = None  # SPEC-03: defaults to solo if absent
     command_id: Optional[str] = Field(default=None, min_length=1, max_length=128)
+    # SPEC-58: create a range trip with every day empty (import target).
+    start_empty: bool = False
 
 
 class UserTier(BaseModel):

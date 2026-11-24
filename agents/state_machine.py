@@ -380,6 +380,8 @@ class TripStateMachine:
                 return self._handle_direct_add(state)
             if _prefs.get("mode") == "uncatalogued_add":
                 return self._handle_uncatalogued_add(state)
+            if _prefs.get("mode") == "import_plan":
+                return self._handle_import_plan(state)
             return self._refuse_bare_add(state)
 
         state = self._node_classify_intent(state)
@@ -1715,6 +1717,32 @@ class TripStateMachine:
         elif not outcome.ok:
             result["uncatalogued_add_refused"] = True
             result["uncatalogued_add_refusal_code"] = outcome.code
+        return result
+
+    def _handle_import_plan(self, state: Dict) -> Dict:
+        """SPEC-58 batch import: existing add checks per item, one command.
+
+        Refusals carry ``import_plan_refused`` so the router refuses before
+        persistence (nothing written, no quota).
+        """
+        from services.catalog_match_service import apply_import_plan
+
+        trip: TripState = state["trip_state"]
+        outcome = apply_import_plan(trip, state.get("preferences") or {}, db_service)
+        if outcome.ok:
+            trip = trip.model_copy(update={"nodes": outcome.nodes})
+        result = {
+            "updated_trip_state": trip,
+            "response": outcome.message,
+            "routing_tier_used": RoutingTier.LIGHT.value,
+            "from_cache": False,
+            "venues_found": [],
+            "schedule_warnings": [],
+            "import_results": outcome.results,
+        }
+        if not outcome.ok:
+            result["import_plan_refused"] = True
+            result["import_plan_refusal_code"] = outcome.code
         return result
 
     def _handle_direct_add(self, state: Dict) -> Dict:
