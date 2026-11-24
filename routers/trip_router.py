@@ -11,6 +11,7 @@ All user/trip endpoints require a verified identity (see security.py); the
 authenticated user_id is the source of truth and trip ownership is enforced.
 """
 
+import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 import uuid
@@ -27,6 +28,8 @@ from config.interests import (
 from config.regions import REGIONS
 from config.settings import settings
 from models.schemas import (
+    CatalogMatchRequest,
+    CatalogMatchResponse,
     AddCandidatesResponse,
     CreationContext,
     FeaturedStop,
@@ -69,6 +72,7 @@ from agents.state_machine import state_machine
 from security import get_current_user_id, resolve_identity, ResolvedIdentity, require_trip_owner
 
 router = APIRouter(prefix="/api/v1", tags=["trip"])
+logger = logging.getLogger(__name__)
 
 
 def _request_command_payload(request) -> dict:
@@ -198,6 +202,16 @@ async def create_trip(
         )
         if prior is not None:
             return _build_create_response(prior)
+
+    # SPEC-58: start_empty only on a range create; refuse it elsewhere.
+    if request.start_empty and (request.segments is not None or request.end_date is None):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "error": "start_empty_unsupported",
+                "message": "start_empty needs a single-region trip with an end_date.",
+            },
+        )
 
     # SPEC-36: Corridor mode vs single-city mode
     if request.segments is not None:
@@ -778,6 +792,19 @@ async def process_trip_event(
         )
 
     # SPEC-42: empty-day direct add refusal -- nothing persisted, no quota.
+    # SPEC-58: batch import refused (invalid, or every item refused) --
+    # nothing persisted, no quota consumed; per-item results in detail.
+    if result.get("import_plan_refused"):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "error": "import_plan_refused",
+                "code": result.get("import_plan_refusal_code", ""),
+                "message": result.get("response", "Import refused."),
+                "results": result.get("import_results") or [],
+            },
+        )
+
     if result.get("direct_add_refused"):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -827,6 +854,7 @@ async def process_trip_event(
             schedule_warnings=result.get("schedule_warnings") or [],
             ask_response=result.get("ask_response"),
             booking_reflow=result.get("booking_reflow"),
+            import_results=result.get("import_results"),
         ).model_dump(
             mode="json",
             exclude={"trip_id", "version", "updated_nodes"},
@@ -872,6 +900,7 @@ async def process_trip_event(
         schedule_warnings=result.get("schedule_warnings") or [],
         ask_response=result.get("ask_response"),
         booking_reflow=result.get("booking_reflow"),
+        import_results=result.get("import_results"),
     )
 
 
@@ -1007,6 +1036,29 @@ async def swap_candidates(
         resp["refusal_code"] = "no_catalog"
         resp["refusal_copy"] = "No alternative venues in the catalog for this area."
     return resp
+
+
+@router.post("/trip/catalog_match", response_model=CatalogMatchResponse)
+async def catalog_match(
+    request: CatalogMatchRequest,
+    identity: ResolvedIdentity = Depends(resolve_identity),
+):
+    """SPEC-58: deterministic catalog name match. Read-only, no quota, no event.
+
+    No embedding and no model call. Logs counts only, never names.
+    """
+    from services.catalog_match_service import match_names
+
+    rows = db_service.list_venues_for_region(request.geo_region) or []
+    results = match_names(request.names, rows)
+    logger.info(
+        "catalog_match",
+        extra={
+            "names": len(results),
+            "matched": sum(1 for r in results if r["match"] is not None),
+        },
+    )
+    return {"results": results}
 
 
 @router.get("/venues/search")
@@ -1222,12 +1274,17 @@ async def _create_range_trip(request: CreateTripRequest, user_id: str):
 
     # Build nodes -- sparse generation (SPEC-42): populates
     # min(5, calendar_days, feasible_days); never raises InsufficientCatalog.
-    nodes = range_nodes_from_catalog(
-        geo_region=geo_region,
-        start_date_local=start_local.isoformat(),
-        end_date_local=end_local.isoformat(),
-        rows=db_service.list_venues_for_region(geo_region),
-        interest_ids=interest_ids,
+    # SPEC-58: start_empty skips starter packing; every day is empty.
+    nodes = (
+        []
+        if request.start_empty
+        else range_nodes_from_catalog(
+            geo_region=geo_region,
+            start_date_local=start_local.isoformat(),
+            end_date_local=end_local.isoformat(),
+            rows=db_service.list_venues_for_region(geo_region),
+            interest_ids=interest_ids,
+        )
     )
 
     # Build and save trip (atomic: only after all days succeed)
