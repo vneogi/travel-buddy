@@ -1,6 +1,9 @@
 # SPEC-58: Paste-Your-Plan Import
 
-> Status: SPEC REVISED 2026-11-24 after Genie's preflight stop. Two slices:
+> Status: SLICE 1a MERGED (PR #375, `fbc4c0a`), 2026-11-24. Plain stops
+> with no coordinates: owner chose (2026-11-24) that the server allows them on
+> non-empty days, no travel check, labelled 'Not in our catalog, travel time
+> not checked'; that is a SPEC-42 change, own brief to follow. Two slices:
 > 1a backend, brief `docs/briefs/GENIE_SPEC58A_IMPORT_BACKEND.md` (ready to
 > send); 1b Flutter, brief written after 1a lands (it depends on the
 > endpoint shapes). Nothing implemented.
