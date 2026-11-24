@@ -83,7 +83,7 @@ signals (loves, reroutes, dish taps) are not queued. Consent screen and grant
 ledger are a later brief. Genie queue: `docs/briefs/GENIE_SPEC45_PLACE_DETAIL.md`
 (SPEC-45 operational place details, Flutter only) is MERGED as PR #363
 (`5fcc518`, after a Driver card hang fix in `7d7eb76`). Next spec after it: paste-your-plan import, SPEC-58 (owner
-2026-11-23; brief `docs/briefs/GENIE_SPEC58_PASTE_PLAN_IMPORT.md`; see the Nov 2026 competitive read in `docs/MARKET_STRATEGY.md`).
+2026-11-23; slice 1a backend brief `docs/briefs/GENIE_SPEC58A_IMPORT_BACKEND.md` (Genie's first preflight stopped on the missing name lookup; spec revised 2026-11-24; slice 1b Flutter brief follows 1a); see the Nov 2026 competitive read in `docs/MARKET_STRATEGY.md`).
 The SPEC-57 brief re-sent 2026-11-22
 was a mistake (slice 1 is PR #292) and is withdrawn.
 SPEC-42 unknown-time windows on main (PR #326, `df5c10c`). SPEC-10 hotel coordinates slice 2 (title-edit
