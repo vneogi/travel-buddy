@@ -215,3 +215,75 @@ Stop and report, quoting the preflight line, if:
 End your report with: PR-ready branch and head SHA; preflight answers 1
 to 7; the test-to-production table; the three R17 branch heads and their
 expected failing tests; any stop rule hit.
+
+## Amendment 1 (2026-11-24, after your preflight; wins over sections 2 to 7 where they differ)
+
+Your stop on item 6 was correct and your answers 1 to 5 and 7 are
+accepted (route `POST /api/v1/trip/catalog_match`, `apply_direct_add` and
+`apply_uncatalogued_add` called per item with each item's own `mode`,
+`slot_from_time`, an optional `import_results` on `TripEventResponse`).
+
+### A1.1 Empty-start trips: option A, approved
+
+Add an optional boolean `start_empty` (default false) to the create
+request model (`CreateTripRequest` and, if the preferences model carries
+it, `CreatePreferences`). This is a request-model change only. It is not
+a schema change, not a migration and not a new endpoint, so it is allowed
+in this slice. The stop rule on empty-day creation is amended to match.
+
+- With `start_empty: true` and an `end_date`, `_create_range_trip` skips
+  `range_nodes_from_catalog` and creates the trip with zero nodes across
+  the whole inclusive span. SPEC-42's "at most five starter days" applies
+  only when the field is absent or false.
+- With the field absent or false, behaviour is byte-for-byte unchanged.
+- With `start_empty: true` on a path that does not support it (corridor
+  or single-city create without a range), refuse 422
+  `start_empty_unsupported` before any write. Do not ignore the flag.
+- An empty trip must load: fetching the itinerary returns a trip with no
+  nodes, and Add (`direct_add`, `uncatalogued_add`, `import_plan`) works
+  on its empty dates. If anything in the read path fails on a zero-node
+  trip, report it; fix only what is needed to load it.
+- Create still uses whatever quota the existing create path uses. Do not
+  change that.
+
+### A1.2 Accent-folding for the match endpoint
+
+Approved for the name-match endpoint, with these limits:
+
+- Add a new helper (do not change `normalize_name`): NFKD, drop combining
+  marks only when they follow a Latin-script base character, then casefold
+  and collapse whitespace. Do this per character so Lao, Arabic, Thai and
+  other scripts are only NFC-normalised, casefolded and whitespace-collapsed.
+  Stripping combining marks in those scripts would merge different words.
+- Use the helper only in `catalog_match` (both `name` and the `names_local`
+  `value` strings).
+- Import consistency: in `import_plan`, a `plain` item also runs a
+  stricter import-only check using the same helper against the region's
+  catalog names; a fold-equal match is refused with the existing
+  `catalog_match` code and copy. Single-item `uncatalogued_add` is
+  unchanged. If the existing catalog read used by the collision check
+  cannot be reused for this without copying its logic, stop and report;
+  do not leave the two paths silently disagreeing.
+
+### A1.3 Extra tests (add to section 4; same files)
+
+16. `start_empty: true` with an `end_date` creates a trip with zero nodes
+    over the inclusive span; the itinerary fetch succeeds.
+17. Create without `start_empty` is unchanged (existing create tests pass
+    without edits), and `start_empty: true` on an unsupported path is
+    refused 422 `start_empty_unsupported` with nothing written.
+18. An empty trip created with `start_empty` accepts an `import_plan`
+    batch on its dates (this ties 16 to 9).
+19. Accent folding: "Cafe" matches a catalog "Cafe" with an accent in
+    the stored name, in `catalog_match`; a Lao `names_local` value that
+    differs only by a combining mark does NOT match (script untouched);
+    `normalize_name` outputs are unchanged for existing inputs.
+20. Import consistency: a `plain` item "Cafe" is refused `catalog_match`
+    inside `import_plan` when the catalog has the accented name, while
+    single-item `uncatalogued_add` behaviour is unchanged.
+
+### A1.4 Extra R17 expectations
+
+No new sabotage branch. Add to the PR body that `-r17b` (per-item
+reroute) must still fail only test 9, and that tests 16 to 20 are
+covered by the feature head only.
