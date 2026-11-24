@@ -873,6 +873,10 @@ async def process_trip_event(
         if committed.replayed:
             return _event_response_from_command(committed)
         updated_trip = committed.trip_state
+        # R17b sabotage: one reroute per accepted import item.
+        _added = sum(1 for r in (result.get("import_results") or []) if r.get("status") == "added")
+        for _ in range(max(0, _added - 1)):
+            db_service.consume_reroute(user_id)
         if committed.response_data is not None:
             remaining = committed.response_data.get(
                 "reroutes_remaining",
