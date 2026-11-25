@@ -415,6 +415,8 @@ def fits_next_lock(
     dwell: int,
     next_locked_booking: Optional["TripNode"],
     geo_region: Optional[str],
+    *,
+    plain_time_only: bool = False,
 ) -> bool:
     """True if the candidate can reach the next locked booking in time.
 
@@ -464,6 +466,11 @@ def fits_next_lock(
             activity_lat=venue.get("lat"),
             activity_lng=venue.get("lng"),
         )
+
+    # SPEC-42 amendment rule 2: a plain stop (no coordinates) fits a
+    # non-flight lock when it ends no later than the lock starts. No walk.
+    if plain_time_only and venue.get("lat") is None and venue.get("lng") is None:
+        return slot + timedelta(minutes=dwell) <= _ensure_aware(lock.scheduled_start)
 
     # Non-flight, same-day lock: require coords + walking arrival.
     if (
