@@ -81,7 +81,9 @@ class _FakeApi extends Fake implements ApiClient {
       case '/trip/event':
         final err = eventError;
         if (err != null) throw err;
-        final items = (((body as Map)['preferences'] as Map)['items'] as List);
+        // Cancel and other events carry no preferences (test 14).
+        final prefs = (body as Map)['preferences'] as Map?;
+        final items = (prefs?['items'] as List?) ?? const [];
         return {
           'message': 'ok',
           'updated_nodes': <Object>[],
