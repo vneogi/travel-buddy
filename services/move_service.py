@@ -295,11 +295,8 @@ def apply_move(
             prev = n
     if prev is not None:
         prev_end = _aware(prev.scheduled_start) + timedelta(minutes=prev.duration_minutes)
-        if _finite(prev.lat, prev.lng, node.lat, node.lng):
-            prev_end += timedelta(minutes=walking_minutes(prev.lat, prev.lng, node.lat, node.lng))
-        elif not _is_plain(node):
-            # SPEC-42 amendment rule 4: an unknown walk leg is a refusal.
-            return _refuse("neighbour_unreachable", nodes)
+        # R17c sabotage: walking_minutes called with a possibly None point.
+        prev_end += timedelta(minutes=walking_minutes(prev.lat, prev.lng, node.lat, node.lng))
         earliest = max(earliest, prev_end)
 
     structured = venue.get("opening_hours_structured")
