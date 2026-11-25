@@ -10,6 +10,7 @@ import '../../theme/spacing.dart';
 import '../../widgets/existing_trip_date_range_picker.dart';
 import '../home/home_controller.dart';
 import 'existing_trip_dates.dart';
+import '../paste_plan/paste_plan_screen.dart';
 
 /// Signature matching [showDateRangePicker] for test injection.
 typedef DateRangePickerBuilder = Future<DateTimeRange?> Function({
@@ -251,6 +252,17 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
           onPressed: _back,
         ),
         title: Text(_stepTitles[_step]),
+        // SPEC-58: one "Paste a plan" entry point on the destination step.
+        actions: [
+          if (_step == 0)
+            TextButton(
+              key: const Key('create_trip_paste_plan'),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => PastePlanScreen(regions: regions)),
+              ),
+              child: const Text('Paste a plan'),
+            ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(4),
           child: LinearProgressIndicator(
