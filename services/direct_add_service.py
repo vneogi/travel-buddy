@@ -255,6 +255,8 @@ def place_timing(
             prev = n
     if prev is not None:
         walk = _walk(prev.lat, prev.lng, lat, lng)
+        if walk is None and lat is not None and lng is not None:
+            walk = 0  # R17b sabotage: unknown leg beside a plain stop passes
         if walk is None:
             return None, "reachability"  # transfer required, walk unknown
         prev_end = _aware(prev.scheduled_start) + timedelta(minutes=prev.duration_minutes)
@@ -284,6 +286,8 @@ def place_timing(
     nxt = next((n for n in stops if _aware(n.scheduled_start) >= end), None)
     if nxt is not None and _is_flexible(nxt):
         walk = _walk(lat, lng, nxt.lat, nxt.lng)
+        if walk is None and lat is not None and lng is not None:
+            walk = 0  # R17b sabotage
         if walk is None or end + timedelta(minutes=walk) > _aware(nxt.scheduled_start):
             return None, "reachability"
 
