@@ -209,8 +209,7 @@ class ActivityDetailScreen extends StatelessWidget {
                     icon: const Icon(Icons.map_outlined),
                     label: const Text('Open in Maps'),
                   ),
-                // SPEC-58: a plain row has no catalog id, so no Driver card.
-                if (!_isPlain)
+                // R17c sabotage: Driver card shown for plain rows too.
                 OutlinedButton.icon(
                   key: const Key('detail_driver_card'),
                   style: _actionStyle,
