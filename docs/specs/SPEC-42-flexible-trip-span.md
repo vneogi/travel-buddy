@@ -14,7 +14,8 @@
 > done for these SHAs.
 >
 > Amended 2026-11-24: plain stops (no coordinates, trip-private) may be
-> placed on non-empty days with no travel check. See the section
+> placed on non-empty days with no travel check (backend merged PR #382,
+> `bb8fafe`). See the section
 > "Amendment 2026-11-24: plain stops on non-empty days". Brief:
 > `docs/briefs/GENIE_SPEC_42_PLAIN_STOPS_BUSY_DAY.md`.
 >
