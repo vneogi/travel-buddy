@@ -82,7 +82,7 @@ are on main (PR #357, `59bf840`): booking code masked by default; optional
 signals (loves, reroutes, dish taps) are not queued. Consent screen and grant
 ledger are a later brief. Genie queue: `docs/briefs/GENIE_SPEC45_PLACE_DETAIL.md`
 (SPEC-45 operational place details, Flutter only) is MERGED as PR #363
-(`5fcc518`, after a Driver card hang fix in `7d7eb76`). SPEC-58 slice 1a is on main (PR #375, `fbc4c0a`). SPEC-42 plain-stop amendment (owner 2026-11-24) backend MERGED as PR #382 (`bb8fafe`), brief `docs/briefs/GENIE_SPEC_42_PLAIN_STOPS_BUSY_DAY.md`; SPEC-58 slice 1b Flutter brief is next. Earlier: next spec after place details was paste-your-plan import, SPEC-58 (owner
+(`5fcc518`, after a Driver card hang fix in `7d7eb76`). SPEC-58 slice 1a is on main (PR #375, `fbc4c0a`). SPEC-42 plain-stop amendment (owner 2026-11-24) backend MERGED as PR #382 (`bb8fafe`), brief `docs/briefs/GENIE_SPEC_42_PLAIN_STOPS_BUSY_DAY.md`; SPEC-58 slice 1b Flutter brief written (`docs/briefs/GENIE_SPEC58B_IMPORT_FLUTTER.md`); not yet sent. Earlier: next spec after place details was paste-your-plan import, SPEC-58 (owner
 2026-11-23; slice 1a backend MERGED as PR #375 (`fbc4c0a`); brief `docs/briefs/GENIE_SPEC58A_IMPORT_BACKEND.md` (Genie's first preflight stopped on the missing name lookup; spec revised 2026-11-24; slice 1b Flutter brief follows 1a); see the Nov 2026 competitive read in `docs/MARKET_STRATEGY.md`).
 The SPEC-57 brief re-sent 2026-11-22
 was a mistake (slice 1 is PR #292) and is withdrawn.
