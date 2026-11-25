@@ -1,6 +1,8 @@
 # SPEC-58: Paste-Your-Plan Import
 
-> Status: SLICE 1a MERGED (PR #375, `fbc4c0a`), 2026-11-24. Plain stops
+> Status: SLICE 1a MERGED (PR #375, `fbc4c0a`); SLICE 1b BRIEF WRITTEN
+> (`docs/briefs/GENIE_SPEC58B_IMPORT_FLUTTER.md`, 2026-11-25; not yet sent).
+> Earlier: 2026-11-24. Plain stops
 > with no coordinates: owner chose (2026-11-24) that the server allows them on
 > non-empty days, no travel check, labelled 'Not in our catalog, travel time
 > not checked'; that is a SPEC-42 change, own brief to follow. Two slices:
