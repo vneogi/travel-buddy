@@ -204,10 +204,7 @@ def _place_plain(ctx: DayContext, dwell: int) -> tuple[Optional[datetime], str]:
     from services.opening_hours import next_slot_start
 
     earliest = ctx.floor_utc
-    for n in ctx.stops:
-        if _aware(n.scheduled_start) <= ctx.floor_utc:
-            n_end = _aware(n.scheduled_start) + timedelta(minutes=n.duration_minutes)
-            earliest = max(earliest, n_end)
+    # R17a sabotage: previous-end floor removed.
     start = next_slot_start(None, earliest, dwell, ctx.region, ctx.local_day)
     if start is None or not _slot_accepts_start(ctx.target_slot, start, ctx.region):
         return None, "hours"
