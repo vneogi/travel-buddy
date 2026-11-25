@@ -267,6 +267,7 @@ class _PastePlanScreenState extends ConsumerState<PastePlanScreen> {
         message: 'Import plan',
         preferences: {
           'mode': 'import_plan',
+          'source_text': _text.text, // R17b sabotage: raw paste in the request
           'items': [for (final (_, item) in items) item],
         },
       );
