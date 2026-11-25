@@ -185,7 +185,8 @@ class _PastePlanScreenState extends ConsumerState<PastePlanScreen> {
               date: day.date,
               suggestion: byName[s.name]?.match,
               near: byName[s.name]?.near ?? const [],
-              decision: MatchDecision.unconfirmed,
+              // R17a sabotage: auto-accept every match.
+              decision: byName[s.name]?.match != null ? MatchDecision.accepted : MatchDecision.unconfirmed,
             ),
         ];
         _stage = _Stage.review;
