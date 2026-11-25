@@ -192,6 +192,38 @@ def day_context(
     return ctx, None
 
 
+def _place_plain(ctx: DayContext, dwell: int) -> tuple[Optional[datetime], str]:
+    """Plain stop (no coordinates): no walk term, no travel check.
+
+    Start is the later of the slot floor and the previous stop's end; any
+    time overlap still refuses ``reachability``; a lock is checked by time
+    only (flights keep the 150-minute cutoff).
+    """
+    from services.booking_constraints import fits_next_lock
+    from services.catalog_itinerary import _slot_accepts_start
+    from services.opening_hours import next_slot_start
+
+    earliest = ctx.floor_utc
+    for n in ctx.stops:
+        if _aware(n.scheduled_start) <= ctx.floor_utc:
+            n_end = _aware(n.scheduled_start) + timedelta(minutes=n.duration_minutes)
+            earliest = max(earliest, n_end)
+    start = next_slot_start(None, earliest, dwell, ctx.region, ctx.local_day)
+    if start is None or not _slot_accepts_start(ctx.target_slot, start, ctx.region):
+        return None, "hours"
+    end = start + timedelta(minutes=dwell)
+    for n in ctx.stops:
+        n_start = _aware(n.scheduled_start)
+        if n_start < end and start < n_start + timedelta(minutes=n.duration_minutes):
+            return None, "reachability"
+    next_lock = next((n for n in ctx.locks_after if _aware(n.scheduled_start) >= start), None)
+    if not fits_next_lock(
+        {"lat": None, "lng": None}, start, dwell, next_lock, ctx.region, plain_time_only=True
+    ):
+        return None, "reachability"
+    return start, ""
+
+
 def place_timing(
     ctx: DayContext,
     *,
@@ -211,6 +243,10 @@ def place_timing(
     from services.opening_hours import HoursResult, hours_for_slot, next_slot_start
 
     region, stops = ctx.region, ctx.stops
+    # SPEC-42 amendment 2026-11-24: a trip-private stop with no coordinates
+    # places without any travel check (rules 1 to 3).
+    if not check_hours and structured is None and lat is None and lng is None:
+        return _place_plain(ctx, dwell)
     # 7. earliest start: slot floor, then previous non-hotel dwell + walk
     earliest = ctx.floor_utc
     prev = None

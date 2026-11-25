@@ -112,6 +112,11 @@ def _local_date(node: TripNode, trip: TripState) -> date:
     return (start.astimezone(tz) if tz is not None else start).date()
 
 
+def _is_plain(node: TripNode) -> bool:
+    """SPEC-42: a trip-private stop with no coordinates (existing fields only)."""
+    return node.place_source == "trip_private" and node.lat is None and node.lng is None
+
+
 def _is_flexible(node: TripNode) -> bool:
     return not node.is_locked and (node.node_kind or "activity") != "booking"
 
@@ -292,6 +297,9 @@ def apply_move(
         prev_end = _aware(prev.scheduled_start) + timedelta(minutes=prev.duration_minutes)
         if _finite(prev.lat, prev.lng, node.lat, node.lng):
             prev_end += timedelta(minutes=walking_minutes(prev.lat, prev.lng, node.lat, node.lng))
+        elif not _is_plain(node):
+            # SPEC-42 amendment rule 4: an unknown walk leg is a refusal.
+            return _refuse("neighbour_unreachable", nodes)
         earliest = max(earliest, prev_end)
 
     structured = venue.get("opening_hours_structured")
@@ -311,6 +319,8 @@ def apply_move(
         arrive = end
         if _finite(nxt.lat, nxt.lng, node.lat, node.lng):
             arrive += timedelta(minutes=walking_minutes(node.lat, node.lng, nxt.lat, nxt.lng))
+        elif not _is_plain(node):
+            return _refuse("neighbour_unreachable", nodes)
         if arrive > _aware(nxt.scheduled_start):
             return _refuse("neighbour_unreachable", nodes)
 
@@ -324,7 +334,7 @@ def apply_move(
         key=lambda n: _aware(n.scheduled_start),
     )
     next_lock = locks[0] if locks else None
-    if not fits_next_lock(venue, start, dwell, next_lock, region):
+    if not fits_next_lock(venue, start, dwell, next_lock, region, plain_time_only=_is_plain(node)):
         return _refuse("next_lock_unreachable", nodes)
 
     moved = node.model_copy(update={"scheduled_start": start, "slot_name": target_slot})

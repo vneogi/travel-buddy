@@ -115,14 +115,16 @@ class TestApply:
         )
         assert not r.ok and r.code == "duplicate"
 
-    def test_previous_neighbour_missing_coords_refuses_reachability(self):
+    def test_plain_stop_on_busy_day_places_in_slot_without_travel_check(self):
         trip = base_trip()  # Oct 12 has an afternoon stop before dinner
         r = apply_uncatalogued_add(
             trip,
             prefs(target_date="2026-10-12", target_slot="dinner", lat=..., lng=...),
             FakeDb(CATALOG),
         )
-        assert not r.ok and r.code == "reachability"
+        assert r.ok
+        assert r.added.scheduled_start == local(2026, 10, 12, 17)
+        assert r.added.venue_id is None
 
     def test_previous_walk_respected(self):
         trip = base_trip()
