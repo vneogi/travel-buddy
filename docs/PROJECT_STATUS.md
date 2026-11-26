@@ -140,7 +140,7 @@
 | Transfer between destinations (SPEC-55) | PARKED (design answered 2026-11-16) | Departing trip owns the record; free text on an existing booking type, no migration |
 | Offline readiness indicator (SPEC-56) | SLICE 1 ON MAIN (PR #270, `c31fc22`) | Honest "saved on this phone" row and sheet from real cache state. Device check PASSED 2026-11-16 |
 | Arrival Armor (SPEC-57) | SLICE 1 ON MAIN (PR #292, `b8a6ac3`) | Booking-tap captain HUD from bundled `arrival_hubs.json`; next-hotel Driver Card link; fares and scam notes empty until owner on-site notes. Device check pending |
-| Paste-your-plan import (SPEC-58) | SLICE 1a BACKEND ON MAIN (PR #375, `fbc4c0a`); SPEC-42 plain-stop backend MERGED (PR #382, `bb8fafe`); slice 1b Flutter brief written (`docs/briefs/GENIE_SPEC58B_IMPORT_FLUTTER.md`, not yet sent) | Paste a chatbot, agent or blog plan; confirm each catalog match; unmatched stops become trip-private plain rows. Name-match endpoint, one batch import command, `start_empty` create flag. Owner decisions 2026-11-23/24. Plain stops with no coordinates: server to allow them on non-empty days with no travel check, labelled 'Not in our catalog, travel time not checked' (SPEC-42 amendment 2026-11-24; backend merged PR #382) |
+| Paste-your-plan import (SPEC-58) | SLICES 1a AND 1b MERGED: backend PR #375 (`fbc4c0a`), SPEC-42 plain stops PR #382 (`bb8fafe`), Flutter paste-your-plan PR #388 (`2ee351d`, 2026-11-26). Not yet phone-tested (next APK). | Paste a chatbot, agent or blog plan; confirm each catalog match; unmatched stops become trip-private plain rows. Name-match endpoint, one batch import command, `start_empty` create flag. Owner decisions 2026-11-23/24. Plain stops with no coordinates: server to allow them on non-empty days with no travel check, labelled 'Not in our catalog, travel time not checked' (SPEC-42 amendment 2026-11-24; backend merged PR #382) |
 
 Migration numbers are assigned when a spec is implemented, not when it is
 written. SPEC-11, SPEC-13, SPEC-14 and SPEC-15 each claimed a number, and the
@@ -165,7 +165,7 @@ Driver card reads `tripId` from the router location) is what landed. R17
 drafts #368-#370 closed; each failed exactly its expected tests. Phone
 check for Driver card and Open in Maps is part of the next APK. Next spec
 (owner, 2026-11-23): paste-your-plan import, SPEC-58, brief
-`docs/briefs/GENIE_SPEC58A_IMPORT_BACKEND.md` (slice 1a MERGED as PR #375, `fbc4c0a`; Genie's first preflight stopped on the missing name lookup and the spec was revised 2026-11-24; slice 1b Flutter brief follows; from the Nov
+`docs/briefs/GENIE_SPEC58A_IMPORT_BACKEND.md` (slice 1a MERGED as PR #375, `fbc4c0a`; Genie's first preflight stopped on the missing name lookup and the spec was revised 2026-11-24; slice 1b Flutter MERGED as PR #388, `2ee351d`; from the Nov
 2026 competitive read in `docs/MARKET_STRATEGY.md`). Latest Genie
 slices on
 main: SPEC-43 client privacy remainders (PR #357, `59bf840`; booking reference
