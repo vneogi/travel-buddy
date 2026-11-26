@@ -1,8 +1,9 @@
 # SPEC-58: Paste-Your-Plan Import
 
-> Status: SLICE 1a MERGED (PR #375, `fbc4c0a`); SLICE 1b BRIEF WRITTEN
-> (`docs/briefs/GENIE_SPEC58B_IMPORT_FLUTTER.md`, 2026-11-25; not yet sent).
-> Earlier: 2026-11-24. Plain stops
+> Status: SLICES 1a AND 1b MERGED. 1a backend PR #375 (`fbc4c0a`); 1b Flutter
+> PR #388 (`2ee351d`, 2026-11-26; brief `docs/briefs/GENIE_SPEC58B_IMPORT_FLUTTER.md`,
+> fix-up test commit `5da10d1`, R17 drafts #389-#391 closed unmerged). Not yet
+> phone-tested: needs the next APK. Earlier: 2026-11-24. Plain stops
 > with no coordinates: owner chose (2026-11-24) that the server allows them on
 > non-empty days, no travel check, labelled 'Not in our catalog, travel time
 > not checked'; that is a SPEC-42 change, own brief to follow. Two slices:
@@ -152,7 +153,7 @@ reroute charge, and an existing trip-private add path):
 8. Over-limit batch (more than 60 items) and invalid items are refused
    before persist.
 
-## 7. Slice 1b (Flutter) acceptance (to be briefed)
+## 7. Slice 1b (Flutter) acceptance (briefed 2026-11-25; MERGED as PR #388, `2ee351d`)
 
 Parser fixtures; booking lines routed to SPEC-10; accept and reject per
 match; no commit before acceptance; plain rows carry the traveller's
