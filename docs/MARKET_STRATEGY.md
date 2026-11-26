@@ -233,6 +233,42 @@ lower-trust long-tail layer from OSM or a licensed provider, with
 recovery and sourced facts staying catalog-only. This decides whether
 we can compete for installs where our catalog is empty.
 
+**Review check, 2026-11-26 (corrections before any external claim).**
+An outside product and UX review, checked against the repo, found the
+direction sound and three claims unsafe to publish:
+
+- **Offline recovery is not offline recalculation.** Recovery, reroutes
+  and What Now run on the server. The phone keeps a cached itinerary,
+  driver cards and a queue of edits that sync when signal returns. Say:
+  "your plan and cards stay readable offline, and your edits are kept
+  until signal returns." Do not say the phone recalculates or recovers
+  a day with no connection.
+- **The outcome-data moat is not yet collected.** Optional signals are
+  stopped pending the SPEC-43 consent screen and grant ledger, which
+  needs owner and counsel wording. Treat outcome data as a future moat
+  that starts after consent, not a current asset.
+- **Fare figures are not yet an asset.** `mobile/assets/arrival_hubs.json`
+  holds no verified fares. SPEC-57 stays empty until sourced figures are
+  recorded on site, with source and date.
+- **Competitor offline pricing is unverified.** The November read found
+  no offline claims on Tripxcursion's public site. Wanderlog's offline
+  price has not been checked here; do not use it in marketing until it
+  is.
+
+Risks for the Zanzibar field test, recorded so they are measured:
+
+- The SPEC-58 phone test needs a hosted deploy that carries the import
+  endpoints (PR #375 `catalog_match`, PR #382 plain stops). The last
+  recorded hosted revision (`00019-nl7`, 2026-11-16) predates both.
+- Matching is exact name plus folded name only. Expect many chatbot
+  stops to arrive as plain rows. Plain rows skip the travel check by
+  design, so the "Reality Check" pitch holds for catalog stops only.
+  Record the match rate and refusal rate on the trip.
+
+Confirmed: the Stone Town data file holds 38 venues and the Nungwi data
+file holds 34 (`data/zanzibar_tanzania.json`, `data/nungwi_tanzania.json`).
+What is loaded in the hosted database was not checked.
+
 ## The corridor: six cities after Laos
 
 Dubai, Bangkok, Singapore, Baku, Tbilisi, Almaty.
