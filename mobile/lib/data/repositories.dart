@@ -59,6 +59,7 @@ class TripRepository {
     required int partySize,
     List<String> interestIds = const [],
     String? mood,
+    bool startEmpty = false, // SPEC-58: empty days (import target)
   }) async {
     final body = <String, dynamic>{
       'geo_region': geoRegion,
@@ -73,6 +74,7 @@ class TripRepository {
         'interest_ids': interestIds,
       },
       if (mood != null) 'initial_mood': mood,
+      if (startEmpty) 'start_empty': true,
     };
     final data = await _api.post('/trip/create', body: body);
     return getTrip(data['trip_id'] as String);
@@ -119,6 +121,22 @@ class TripRepository {
     return AskResponse.fromJson(
       (body['ask_response'] as Map).cast<String, dynamic>(),
     );
+  }
+
+  /// SPEC-58: deterministic catalog name match. Sends only the region and
+  /// the stop names (never the raw paste, notes, times or booking lines).
+  Future<List<CatalogMatchResult>> catalogMatch({
+    required String geoRegion,
+    required List<String> names,
+  }) async {
+    final data = await _api.post('/trip/catalog_match', body: {
+      'geo_region': geoRegion,
+      'names': names,
+    });
+    final list = ((data as Map)['results'] as List?) ?? const [];
+    return list
+        .map((e) => CatalogMatchResult.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
   }
 
   /// RAG venue search for swap suggestions.

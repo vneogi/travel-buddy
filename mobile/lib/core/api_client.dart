@@ -79,7 +79,7 @@ class ApiClient {
         }
         // Surface all typed 422 detail.message responses
         if (message != null) {
-          return ValidationException(message);
+          return ValidationException(message, Map<String, dynamic>.from(detail));
         }
       }
     }

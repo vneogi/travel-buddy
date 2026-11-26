@@ -41,6 +41,9 @@ class AddBookingSheet extends ConsumerStatefulWidget {
   final String initialBookingType;
   final TripNode? editNode;
   final DateTime? initialScheduledDate;
+  /// SPEC-58: a pasted booking line; prefills the paste field and runs the
+  /// existing auto-fill once. Null for every existing caller.
+  final String? pastedText;
 
   /// [initialScheduledDate] overrides the default start (the trip's first
   /// day at 12:00) and is used exactly as given.
@@ -50,6 +53,7 @@ class AddBookingSheet extends ConsumerStatefulWidget {
     this.initialBookingType = 'flight',
     this.editNode,
     this.initialScheduledDate,
+    this.pastedText,
   });
 
   @override
@@ -127,6 +131,14 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
     if (!_isEditMode) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _recomputeCityDefault();
+      });
+    }
+    // SPEC-58: prefill from a pasted booking line, after the city default.
+    final pasted = widget.pastedText;
+    if (!_isEditMode && pasted != null && pasted.trim().isNotEmpty) {
+      _pasteController.text = pasted;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _autoFill();
       });
     }
   }
@@ -427,7 +439,8 @@ class _AddBookingSheetState extends ConsumerState<AddBookingSheet> {
       );
     }
 
-    if (mounted) Navigator.of(context).pop();
+    // SPEC-58: pop true on save so an import can count saved bookings.
+    if (mounted) Navigator.of(context).pop(true);
   }
 
   Widget _buildExtractionReview() {

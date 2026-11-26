@@ -1,0 +1,59 @@
+{
+  "days": [
+    {
+      "date": "2026-12-27",
+      "stops": [
+        {
+          "name": "Forodhani Gardens",
+          "clock_time": "09:00",
+          "note": "sunrise stroll",
+          "slot_hint": "morning_tour"
+        },
+        {
+          "name": "Lukmaan Restaurant",
+          "clock_time": "12:30",
+          "note": "try the biryani",
+          "slot_hint": "lunch"
+        },
+        {
+          "name": "House of Wonders",
+          "clock_time": "15:00",
+          "note": null,
+          "slot_hint": "afternoon_evening_tour"
+        }
+      ]
+    },
+    {
+      "date": "2026-12-28",
+      "stops": [
+        {
+          "name": "Prison Island tour",
+          "clock_time": null,
+          "note": null,
+          "slot_hint": null
+        },
+        {
+          "name": "Forodhani Night Food Market",
+          "clock_time": "19:30",
+          "note": null,
+          "slot_hint": "dinner"
+        }
+      ]
+    },
+    {
+      "date": "2026-12-29",
+      "stops": [
+        {
+          "name": "Mnarani Turtle Sanctuary",
+          "clock_time": "11:00",
+          "note": null,
+          "slot_hint": "lunch"
+        }
+      ]
+    }
+  ],
+  "booking_lines": [],
+  "not_understood": [
+    "Here is your 3-day Zanzibar itinerary!"
+  ]
+}

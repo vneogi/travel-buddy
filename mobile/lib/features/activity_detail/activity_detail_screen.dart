@@ -12,6 +12,9 @@ import '../../theme/colors.dart';
 import '../../theme/typography.dart';
 import '../../theme/spacing.dart';
 
+/// SPEC-58: label shown for a plain (not in catalog) stop.
+const kPlainRowLabel = 'Not in our catalog, travel time not checked';
+
 /// SPEC-45: slot or window label from the node, using the labels the app
 /// already shows (window first; never a raw slug). Null for bookings.
 String? placeSlotLabel(TripNode node) {
@@ -131,6 +134,8 @@ class ActivityDetailScreen extends StatelessWidget {
   });
 
   bool get _isBooking => node.isLocked || node.nodeKind == 'booking';
+  // SPEC-58: a plain (not in catalog) stop, from existing fields only.
+  bool get _isPlain => node.venueId == null && node.placeSource == 'trip_private';
   bool get _isDone =>
       node.status == NodeStatus.completed || node.status == NodeStatus.skipped;
 
@@ -164,6 +169,7 @@ class ActivityDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.lg),
             // SPEC-45 item 4: friendly micro_location only
+            if (_isPlain) _row('detail_plain_label', kPlainRowLabel, AppTypography.caption),
             if (friendlyLocation != null)
               _row('detail_neighbourhood', friendlyLocation, AppTypography.caption),
             if (slotLabel != null) _row('detail_slot', slotLabel, AppTypography.body),
@@ -195,7 +201,7 @@ class ActivityDetailScreen extends StatelessWidget {
               spacing: AppSpacing.sm,
               runSpacing: AppSpacing.sm,
               children: [
-                if (placeHasMapsTarget(node))
+                if (!_isPlain && placeHasMapsTarget(node))
                   OutlinedButton.icon(
                     key: const Key('detail_open_maps'),
                     style: _actionStyle,
@@ -203,6 +209,8 @@ class ActivityDetailScreen extends StatelessWidget {
                     icon: const Icon(Icons.map_outlined),
                     label: const Text('Open in Maps'),
                   ),
+                // SPEC-58: a plain row has no catalog id, so no Driver card.
+                if (!_isPlain)
                 OutlinedButton.icon(
                   key: const Key('detail_driver_card'),
                   style: _actionStyle,

@@ -826,6 +826,8 @@ class TripEventResult {
   final BookingReflow? bookingReflow;
   /// SPEC-42 excursion review (needs_review only; null otherwise).
   final ExcursionReview? excursionReview;
+  /// SPEC-58: per-item results of an import_plan batch (empty otherwise).
+  final List<Map<String, dynamic>> importResults;
 
   const TripEventResult({
     required this.message,
@@ -837,6 +839,7 @@ class TripEventResult {
     this.askResponse,
     this.bookingReflow,
     this.excursionReview,
+    this.importResults = const [],
   });
 
   factory TripEventResult.fromJson(Map<String, dynamic> j) {
@@ -844,6 +847,9 @@ class TripEventResult {
     final reflowJson = j['booking_reflow'] as Map?;
     final reviewJson = j['excursion_review'] as Map?;
     return TripEventResult(
+      importResults: ((j['import_results'] as List?) ?? const [])
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList(),
       message: j['message'] as String? ?? '',
       updatedNodes: ((j['updated_nodes'] as List?) ?? const [])
           .map((n) => TripNode.fromJson(n as Map<String, dynamic>))
@@ -1092,5 +1098,47 @@ class AddCandidatesResult {
             .toList(),
         refusalCode: j['refusal_code'] as String?,
         refusalCopy: j['refusal_copy'] as String?,
+      );
+}
+
+
+/// SPEC-58: one catalog venue suggested by POST /trip/catalog_match.
+class CatalogMatchVenue {
+  final String venueId;
+  final String name;
+  final String? geoRegion;
+  final String provenance;
+
+  const CatalogMatchVenue({
+    required this.venueId,
+    required this.name,
+    this.geoRegion,
+    required this.provenance,
+  });
+
+  factory CatalogMatchVenue.fromJson(Map<String, dynamic> j) => CatalogMatchVenue(
+        venueId: j['venue_id'] as String,
+        name: j['name'] as String,
+        geoRegion: j['geo_region'] as String?,
+        provenance: j['provenance'] as String? ?? '',
+      );
+}
+
+/// SPEC-58: the match result for one stop name (request order).
+class CatalogMatchResult {
+  final String name;
+  final CatalogMatchVenue? match;
+  final List<CatalogMatchVenue> near;
+
+  const CatalogMatchResult({required this.name, this.match, this.near = const []});
+
+  factory CatalogMatchResult.fromJson(Map<String, dynamic> j) => CatalogMatchResult(
+        name: j['name'] as String? ?? '',
+        match: j['match'] == null
+            ? null
+            : CatalogMatchVenue.fromJson(Map<String, dynamic>.from(j['match'] as Map)),
+        near: ((j['near'] as List?) ?? const [])
+            .map((e) => CatalogMatchVenue.fromJson(Map<String, dynamic>.from(e as Map)))
+            .toList(),
       );
 }

@@ -52,5 +52,8 @@ class WeatherUnavailableException extends ApiException {
 /// Surfaces the server's detail.message for all typed 422 responses
 /// not handled by a specific exception class.
 class ValidationException extends ApiException {
-  const ValidationException([super.m = 'Validation error.']);
+  /// SPEC-58: the full 422 `detail` map when the server sent one (for
+  /// example `import_plan_refused` with per-item `results`).
+  final Map<String, dynamic>? detail;
+  const ValidationException([super.m = 'Validation error.', this.detail]);
 }
