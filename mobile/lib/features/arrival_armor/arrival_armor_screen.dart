@@ -9,6 +9,8 @@ import 'arrival_hubs.dart';
 
 const String kArrivalFareCaption = 'Guides only -- confirm before you pay.';
 const String kArrivalEmptyHub = 'No verified fare or tip sheet for this hub yet.';
+/// SPEC-57 Amendment 2: caption under the Typical fares section.
+const String kFlatFareCaption = 'Guides only. Agree the price before you get in.';
 
 /// SPEC-57 slice 1: captain view for one arrival hub. Reads only the bundled
 /// asset; no network call, no brightness or orientation change.
@@ -71,6 +73,12 @@ class ArrivalArmorScreen extends ConsumerWidget {
     final official = hub?.officialOption;
     final source = hub?.source;
     final surveyed = hub?.surveyedOn;
+    final hasOfficial = official != null && official.trim().isNotEmpty;
+    final hasSource = source != null &&
+        source.trim().isNotEmpty &&
+        surveyed != null &&
+        surveyed.trim().isNotEmpty;
+    final cards = hub?.validFlatFares ?? const <FlatFare>[];
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -99,25 +107,63 @@ class ArrivalArmorScreen extends ConsumerWidget {
                   key: const Key('arrival_fare_ceiling'),
                   style: AppTypography.body,
                 ),
-              if (official != null && official.trim().isNotEmpty) ...[
-                const SizedBox(height: AppSpacing.base),
-                Text('Official option', style: AppTypography.h2),
-                const SizedBox(height: AppSpacing.xs),
-                Text(official, style: AppTypography.body),
-              ],
               const SizedBox(height: AppSpacing.sm),
               Text(
                 kArrivalFareCaption,
                 style: AppTypography.caption.copyWith(color: AppColors.muted),
               ),
-              if (source != null &&
-                  source.trim().isNotEmpty &&
-                  surveyed != null &&
-                  surveyed.trim().isNotEmpty)
-                Text(
-                  'Source: $source ($surveyed)',
-                  style: AppTypography.caption.copyWith(color: AppColors.muted),
-                ),
+            ],
+            // SPEC-57 Amendment 1: official option and source show with or
+            // without fare bands.
+            if (hasOfficial) ...[
+              const SizedBox(height: AppSpacing.base),
+              Text('Official option',
+                  key: const Key('arrival_official_heading'), style: AppTypography.h2),
+              const SizedBox(height: AppSpacing.xs),
+              Text(official!, key: const Key('arrival_official_text'), style: AppTypography.body),
+            ],
+            if (hasSource)
+              Text(
+                'Source: $source ($surveyed)',
+                key: const Key('arrival_source'),
+                style: AppTypography.caption.copyWith(color: AppColors.muted),
+              ),
+            // SPEC-57 Amendment 2: sourced flat-fare cards, shown as stored.
+            if (cards.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.lg),
+              Column(
+                key: const Key('arrival_flat_fares'),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Typical fares', style: AppTypography.h2),
+                  const SizedBox(height: AppSpacing.xs),
+                  for (var i = 0; i < cards.length; i++)
+                    Padding(
+                      key: Key('flat_fare_$i'),
+                      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(cards[i].route!, style: AppTypography.body),
+                          Text(cards[i].vehicle!, style: AppTypography.body),
+                          Text(
+                            '${cards[i].low} - ${cards[i].high} ${cards[i].currency}',
+                            style: AppTypography.body,
+                          ),
+                          Text(cards[i].basis!, style: AppTypography.body),
+                          Text(
+                            'Source: ${cards[i].source} (${cards[i].surveyedOn})',
+                            style: AppTypography.caption.copyWith(color: AppColors.muted),
+                          ),
+                        ],
+                      ),
+                    ),
+                  Text(
+                    kFlatFareCaption,
+                    style: AppTypography.caption.copyWith(color: AppColors.muted),
+                  ),
+                ],
+              ),
             ],
             if (notes.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.lg),
@@ -129,7 +175,7 @@ class ArrivalArmorScreen extends ConsumerWidget {
                   child: Text('- $note', style: AppTypography.body),
                 ),
             ],
-            if (fareHub == null && notes.isEmpty) ...[
+            if (fareHub == null && notes.isEmpty && !hasOfficial && cards.isEmpty) ...[
               const SizedBox(height: AppSpacing.lg),
               Text(
                 kArrivalEmptyHub,
