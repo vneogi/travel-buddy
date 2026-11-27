@@ -25,6 +25,17 @@ computed fare, no formula, no routing, no new booking type, no network call.
   may read it. Only the owner (data PRs) writes fare numbers.
 - Do not edit existing tests in `mobile/test/spec57_arrival_armor_test.dart`.
 
+## 1a. Decisions already made (owner, 2026-11-27)
+
+- Heading: "Official option" everywhere (option C). Do not use "Published
+  rates" as a heading. Existing test at `spec57_arrival_armor_test.dart`
+  line 235 stays unchanged.
+- Base: build from `origin/main` after the ferry data PR (#394) is merged.
+  Do not stack on `feat/ferry-rates-data`.
+- The superseded ferry-only brief on #394 (`GENIE_SPEC57_FERRY_OFFICIAL_OPTION.md`)
+  is not to be used. Its "Published rates" heading is withdrawn.
+- Preflight item 1 and the empty-state gap found by Genie are accepted.
+
 ## 2. Preflight (report before coding)
 
 1. `arrival_armor_screen.dart` `_body`: confirm `official`, `source` and
@@ -53,9 +64,11 @@ Parse invalid entries as skipped (not as an error, not repaired). Expose
 
 ### 3.2 Screen (`arrival_armor_screen.dart`)
 
-- **Official option (Amendment 1).** Show the official option heading
-  "Published rates" and its text whenever `officialOption` is non-empty,
-  whether or not the hub has bands. Show `Source: <source> (<surveyedOn>)`
+- **Official option (Amendment 1).** Show the heading "Official option"
+  (the existing constant and test expectation, unchanged) and the stored
+  official text whenever `officialOption` is non-empty, whether or not the
+  hub has bands. One heading for one field; do not add "Published rates" as
+  a heading. Show `Source: <source> (<surveyedOn>)`
   whenever `source` and `surveyedOn` are both non-empty. Keep these
   outside the fare-band block.
 - **Typical fares (Amendment 2).** When `validFlatFares` is non-empty, show a
@@ -64,8 +77,16 @@ Parse invalid entries as skipped (not as an error, not repaired). Expose
   (<surveyedOn>)`. Show the caption "Guides only. Agree the price before you
   get in." once under the section.
 - Keep the existing fare-band section ("Fair fare guide", "Walk-away
-  above", "ranges are guides, not guarantees") exactly as it is, shown only
-  when `hasFare` is true.
+  above", and the caption constant `kArrivalFareCaption`, which reads
+  "Guides only -- confirm before you pay.") exactly as it is, shown only
+  when `hasFare` is true. The caption text is the constant, not a phrase
+  from memory.
+- The empty state `kArrivalEmptyHub` ("No verified fare or tip sheet for
+  this hub yet.") shows only when the hub has no fare band, no scam notes,
+  no official option and no valid flat fare. Today the check is only
+  `fareHub == null && notes.isEmpty`; add the official-option and
+  flat-fare conditions, otherwise the ferry hub shows the empty message
+  under its official text.
 - Omit any empty section entirely. An incomplete card is skipped with no
   placeholder text.
 - Nothing computed: no midpoint, no multiplied upper bound, no converted
@@ -86,7 +107,8 @@ New file `mobile/test/spec57_flat_fares_test.dart`. Do not edit existing
 tests.
 
 1. A hub with null bands and a non-empty `official_option` shows the
-   "Published rates" text and the source line with its date.
+   "Official option" heading, the stored text and the source line with its
+   date, and does not show the empty message.
 2. A hub with null bands and no official option shows neither.
 3. A hub with bands still shows the fare-band section, the walk-away line and
    the "ranges are guides" caption; the official option shows too when set.
@@ -133,7 +155,8 @@ tests.
 
 Stop and report, quoting the preflight line, if:
 
-1. An existing test in `spec57_arrival_armor_test.dart` must change.
+1. An existing test in `spec57_arrival_armor_test.dart` must change. (The
+   heading decision above means none should; if one seems to, stop.)
 2. Any part needs a server, schema-migration or scheduler change.
 3. Any part needs a number the JSON does not contain, or a computed value.
 4. A booking type must change to show a hub.
