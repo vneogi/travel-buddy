@@ -158,6 +158,9 @@ class ArrivalArmorScreen extends ConsumerWidget {
                         ],
                       ),
                     ),
+                  // R17b sabotage: placeholder for skipped cards.
+                  for (final f in (hub?.flatFares ?? const <FlatFare>[]).where((f) => !f.isValid))
+                    Text('Fare details coming soon', key: Key('flat_fare_skipped_${f.hashCode}')),
                   Text(
                     kFlatFareCaption,
                     style: AppTypography.caption.copyWith(color: AppColors.muted),
