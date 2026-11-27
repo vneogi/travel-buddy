@@ -157,7 +157,7 @@ figures computed by a formula, rounded-up or multiplied ranges, and anything
 without a date.
 
 **What the HUD shows.** A "Typical fares" section with one line per card:
-route, vehicle, the range in `currency`, and "Source: <source>, <surveyed_on>".
+route, vehicle, the range in `currency`, and "Source: <source> (<surveyed_on>)".
 Caption: "Guides only. Agree the price before you get in." Scam notes and the
 official option behave as before. No fare text on the Driver Card or in
 Show-to-driver mode (SPEC-57 section 3, unchanged).
