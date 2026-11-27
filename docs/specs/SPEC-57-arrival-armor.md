@@ -104,3 +104,70 @@ File: `mobile/assets/arrival_hubs.json` (bundled; listed in
 
 High for Zanzibar Airport and Stone Town ferry curb moments. Content
 quality depends on the owner's on-site fare and scam notes.
+
+## Amendment 2 2026-11-27: sourced flat-fare cards (Zanzibar first); no formula
+
+Decided by the owner on 2026-11-27. Applies to the December trip. Builds on
+Amendment 1 (ferry official option, PR #394, not yet merged).
+
+**What a fare card is.** A fixed, named route with a low and a high amount,
+for a named vehicle, from a named source. It is shown as a guide, never as a
+quote. Each card is one entry in the hub's new `flat_fares` list:
+
+- `route`: plain-language route, for example "Abeid Amani Karume Airport
+  (ZNZ) to Stone Town hotel area".
+- `vehicle`: "taxi", "private car", "shared taxi" or "ferry transfer".
+- `currency`: explicit ISO code, for example "USD" or "TZS". Never implied.
+- `low` and `high`: whole numbers in `currency`, low <= high.
+- `basis`: one short line, for example "one way, car for up to 4, quoted
+  before the ride".
+- `source`: where the amount came from (see acceptable sources below).
+- `surveyed_on`: the date the amount was obtained, ISO format.
+
+A card is shown only when every field above is non-null and valid. Invalid
+or incomplete cards are skipped, not repaired and not guessed.
+
+**Acceptable sources (SPEC-17 provenance).**
+1. A hotel's written reply to a price question, with the hotel name and the
+   date of the message.
+2. An operator's published rate page or timetable, with the URL and the date
+   read.
+3. A named first-hand contact in the destination (name or handle, role, and
+   the date of their answer).
+4. A posted price at a transport desk, with a photo or note and the date.
+
+**Not acceptable.** Crowd-averaged figures, unnamed or undated blog numbers,
+figures computed by a formula, rounded-up or multiplied ranges, and anything
+without a date.
+
+**What the HUD shows.** A "Typical fares" section with one line per card:
+route, vehicle, the range in `currency`, and "Source: <source>, <surveyed_on>".
+Caption: "Guides only. Agree the price before you get in." Scam notes and the
+official option behave as before. No fare text on the Driver Card or in
+Show-to-driver mode (SPEC-57 section 3, unchanged).
+
+**Not in this amendment (out of scope, stop if asked).**
+- No metered formula, no per-km or waiting-time rate, no upper bound made by
+  multiplying a lower bound.
+- No road routing or distance service, online or offline.
+- No "Did you pay this?" prompt and no fare-paid signal. These are personal
+  data. They wait for the SPEC-43 consent screen and grant ledger, and for
+  counsel wording. Until then nothing is collected.
+- No runtime fare fetch from any provider. The asset is the only source.
+- No new booking type. The ferry hub stays on `train` until SPEC-55.
+
+**Data.** The owner records cards in `mobile/assets/arrival_hubs.json` as data
+PRs. Until a card is sourced, the field is an empty list. Genie does not write
+fare numbers.
+
+**Brief.** `docs/briefs/GENIE_SPEC57_FLAT_FARE_CARDS.md`. It supersedes the
+ferry-only brief `GENIE_SPEC57_FERRY_OFFICIAL_OPTION.md` (PR #394), which
+should not be sent on its own.
+
+**Acceptance for this amendment.**
+- A hub with no `flat_fares` shows no "Typical fares" section.
+- A complete card shows its route, vehicle, range, source and date.
+- An incomplete card (any null or invalid field) is skipped and no
+  placeholder text appears.
+- The official option and source for the ferry hub show as before.
+- Nothing computed appears anywhere on the HUD.
