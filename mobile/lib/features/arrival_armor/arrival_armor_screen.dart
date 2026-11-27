@@ -150,6 +150,11 @@ class ArrivalArmorScreen extends ConsumerWidget {
                             '${cards[i].low} - ${cards[i].high} ${cards[i].currency}',
                             style: AppTypography.body,
                           ),
+                          // R17a sabotage: computed midpoint.
+                          Text(
+                            'About ${(cards[i].low! + cards[i].high!) ~/ 2} ${cards[i].currency}',
+                            style: AppTypography.body,
+                          ),
                           Text(cards[i].basis!, style: AppTypography.body),
                           Text(
                             'Source: ${cards[i].source} (${cards[i].surveyedOn})',
