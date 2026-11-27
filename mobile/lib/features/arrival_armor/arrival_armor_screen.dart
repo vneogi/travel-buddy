@@ -120,7 +120,7 @@ class ArrivalArmorScreen extends ConsumerWidget {
               Text('Official option',
                   key: const Key('arrival_official_heading'), style: AppTypography.h2),
               const SizedBox(height: AppSpacing.xs),
-              Text(official!, key: const Key('arrival_official_text'), style: AppTypography.body),
+              Text(official, key: const Key('arrival_official_text'), style: AppTypography.body),
             ],
             if (hasSource)
               Text(
