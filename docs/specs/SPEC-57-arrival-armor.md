@@ -1,9 +1,12 @@
 # SPEC-57: Arrival Armor (thin slice)
 
-> Status: SLICE 1 ON MAIN (PR #292, `b8a6ac3`), 2026-11-17. Brief:
-> `docs/briefs/GENIE_SPEC57_ARRIVAL_ARMOR.md`. Device check waits for the
-> owner-return APK. Seed hubs have no fares or scam notes yet (owner
-> on-site data). Slice 1b (brightness) not started.
+> Status: SLICE 1 ON MAIN (PR #292, `b8a6ac3`). Amendments 1 and 2 on main
+> 2026-11-27: ferry official option (data PR #394); flat-fare Flutter display
+> (PR #399, `da359fb`, brief `GENIE_SPEC57_FLAT_FARE_CARDS.md`; R17 drafts
+> #400-#402 closed unmerged); empty `flat_fares` lists (PR #398, `fd10ffc`).
+> No fare cards yet (owner sources). Device check waits for the next APK.
+> Slice 1b (brightness) not started. Brief for slice 1:
+> `docs/briefs/GENIE_SPEC57_ARRIVAL_ARMOR.md`.
 > Amends SPEC-12 (Driver Card) and SPEC-49 (Show-to-driver) for the
 > captain-facing arrival surface only. Uses SPEC-10 booking anchors as
 > the open trigger. Fare and scam text follow SPEC-17 provenance:
