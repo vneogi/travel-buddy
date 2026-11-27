@@ -1,6 +1,6 @@
 # Genie brief: SPEC-57 sourced flat-fare cards and official option display
 
-Flutter only. Supersedes `GENIE_SPEC57_FERRY_OFFICIAL_OPTION.md` (PR #394).
+Flutter only. Supersedes `GENIE_SPEC57_FERRY_OFFICIAL_OPTION.md` (PR #394), which was withdrawn and removed on 2026-11-27.
 Read all of it before editing.
 
 Owning spec: `docs/specs/SPEC-57-arrival-armor.md`, Amendment 1 (ferry
@@ -32,8 +32,8 @@ computed fare, no formula, no routing, no new booking type, no network call.
   line 235 stays unchanged.
 - Base: build from `origin/main` after the ferry data PR (#394) is merged.
   Do not stack on `feat/ferry-rates-data`.
-- The superseded ferry-only brief on #394 (`GENIE_SPEC57_FERRY_OFFICIAL_OPTION.md`)
-  is not to be used. Its "Published rates" heading is withdrawn.
+- The ferry-only brief (`GENIE_SPEC57_FERRY_OFFICIAL_OPTION.md`) was withdrawn
+  and removed on 2026-11-27 and is not to be used. Its "Published rates" heading is withdrawn.
 - Preflight item 1 and the empty-state gap found by Genie are accepted.
 
 ## 2. Preflight (report before coding)

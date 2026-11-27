@@ -113,7 +113,8 @@ quality depends on the owner's on-site fare and scam notes.
   `surveyed_on`. Fare bands stay null: these are fixed ticket prices, not a
   taxi band.
 - The HUD shows the official option and source line even when the hub has no
-  fare bands (brief `docs/briefs/GENIE_SPEC57_FERRY_OFFICIAL_OPTION.md`).
+  fare bands. (The ferry-only brief was withdrawn and removed on 2026-11-27;
+  see Amendment 2 and `GENIE_SPEC57_FLAT_FARE_CARDS.md`.)
   Fare bands and the "guides, not guarantees" caption still show only with
   bands.
 - No ferry booking type is added. Scheduling treats `flight` and `train` as
@@ -176,8 +177,8 @@ PRs. Until a card is sourced, the field is an empty list. Genie does not write
 fare numbers.
 
 **Brief.** `docs/briefs/GENIE_SPEC57_FLAT_FARE_CARDS.md`. It supersedes the
-ferry-only brief `GENIE_SPEC57_FERRY_OFFICIAL_OPTION.md` (PR #394), which
-should not be sent on its own.
+ferry-only brief `GENIE_SPEC57_FERRY_OFFICIAL_OPTION.md` (PR #394). That brief
+was withdrawn and removed on 2026-11-27; do not look for it.
 
 **Acceptance for this amendment.**
 - A hub with no `flat_fares` shows no "Typical fares" section.
