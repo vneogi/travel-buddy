@@ -105,10 +105,25 @@ File: `mobile/assets/arrival_hubs.json` (bundled; listed in
 High for Zanzibar Airport and Stone Town ferry curb moments. Content
 quality depends on the owner's on-site fare and scam notes.
 
+## Amendment 2026-11-27: ferry rates recorded; official option shows without bands
+
+- Owner recorded the Azam Marine published rates (https://azammarine.com/rates/,
+  read 2026-11-27; the page has no publication date and does not name the
+  route) as `stone_town_ferry`'s `official_option`, with `source` and
+  `surveyed_on`. Fare bands stay null: these are fixed ticket prices, not a
+  taxi band.
+- The HUD shows the official option and source line even when the hub has no
+  fare bands (brief `docs/briefs/GENIE_SPEC57_FERRY_OFFICIAL_OPTION.md`).
+  Fare bands and the "guides, not guarantees" caption still show only with
+  bands.
+- No ferry booking type is added. Scheduling treats `flight` and `train` as
+  travel; the ferry hub stays on `train` until SPEC-55.
+- Owner to confirm the route the fares cover before the December trip.
+
 ## Amendment 2 2026-11-27: sourced flat-fare cards (Zanzibar first); no formula
 
 Decided by the owner on 2026-11-27. Applies to the December trip. Builds on
-Amendment 1 (ferry official option, PR #394, not yet merged).
+Amendment 1 (ferry official option, PR #394, merged 2026-11-27).
 
 **What a fare card is.** A fixed, named route with a low and a high amount,
 for a named vehicle, from a named source. It is shown as a guide, never as a
