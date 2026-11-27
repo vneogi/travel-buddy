@@ -115,14 +115,15 @@ class ArrivalArmorScreen extends ConsumerWidget {
             ],
             // SPEC-57 Amendment 1: official option and source show with or
             // without fare bands.
-            if (hasOfficial) ...[
+            // R17c sabotage: official option only inside the fare-band block.
+            if (hasOfficial && fareHub != null) ...[
               const SizedBox(height: AppSpacing.base),
               Text('Official option',
                   key: const Key('arrival_official_heading'), style: AppTypography.h2),
               const SizedBox(height: AppSpacing.xs),
               Text(official, key: const Key('arrival_official_text'), style: AppTypography.body),
             ],
-            if (hasSource)
+            if (hasSource && fareHub != null)
               Text(
                 'Source: $source ($surveyed)',
                 key: const Key('arrival_source'),
